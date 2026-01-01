@@ -194,6 +194,13 @@ type HTTPSettings struct {
 	// sure it did not come from the client.
 	// +optional
 	EarlyRequestHeaderModifier *gwv1.HTTPHeaderFilter `json:"earlyRequestHeaderModifier,omitempty"`
+
+	// ClientCertificateForwarding configures which parts of the client certificate
+	// should be forwarded to upstream backends via headers.
+	// This is only applicable when mTLS is configured on the listener.
+	// See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-msg-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-setcurrentclientcertdetails
+	// +optional
+	ClientCertificateForwarding *ClientCertificateForwarding `json:"clientCertificateForwarding,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -788,4 +795,31 @@ type EnvoyHealthCheck struct {
 	// +kubebuilder:validation:Pattern="^/[-a-zA-Z0-9@:%.+~#?&/=_]+$"
 	// +required
 	Path string `json:"path"`
+}
+
+// ClientCertificateForwarding configures which parts of the client certificate
+// should be forwarded to upstream backends via headers.
+// This configuration is only effective when mTLS is configured on the listener.
+type ClientCertificateForwarding struct {
+	// Subject forwards the certificate subject to upstream.
+	// +optional
+	Subject *bool `json:"subject,omitempty"`
+
+	// Cert forwards the full certificate to upstream in URL encoded PEM format.
+	// This will appear in the XFCC header comma separated from other values with the value Cert="PEM".
+	// +optional
+	Cert *bool `json:"cert,omitempty"`
+
+	// Chain forwards the certificate chain (including the leaf cert) to upstream in URL encoded PEM format.
+	// This will appear in the XFCC header comma separated from other values with the value Chain="PEM".
+	// +optional
+	Chain *bool `json:"chain,omitempty"`
+
+	// Dns forwards DNS type Subject Alternative Names from the certificate to upstream.
+	// +optional
+	Dns *bool `json:"dns,omitempty"`
+
+	// Uri forwards URI type Subject Alternative Name from the certificate to upstream.
+	// +optional
+	Uri *bool `json:"uri,omitempty"`
 }

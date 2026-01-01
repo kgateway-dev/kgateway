@@ -50,6 +50,7 @@ type HttpListenerPolicyIr struct {
 	acceptHttp10                  *bool
 	defaultHostForHttp10          *string
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
+	clientCertForwarding          *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
 }
 
 func (d *HttpListenerPolicyIr) Equals(in any) bool {
@@ -143,6 +144,12 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}) {
 		return false
 	}
+
+	// Check clientCertForwarding
+	if !proto.Equal(d.clientCertForwarding, d2.clientCertForwarding) {
+		return false
+	}
+
 	return true
 }
 
@@ -185,6 +192,8 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		xffNumTrustedHops = ptr.To(uint32(*h.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
+	clientCertForwarding := convertClientCertificateForwarding(h.ClientCertificateForwarding)
+
 	return &HttpListenerPolicyIr{
 		accessLogConfig:               accessLog,
 		accessLogPolicies:             h.AccessLog,
@@ -201,6 +210,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		acceptHttp10:                  h.AcceptHttp10,
 		defaultHostForHttp10:          h.DefaultHostForHttp10,
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
+		clientCertForwarding:          clientCertForwarding,
 	}, errs
 }
 
@@ -271,4 +281,35 @@ func convertHeaderMutations(spec *gwv1.HTTPHeaderFilter) []*envoycorev3.TypedExt
 		Name:        "envoy.http.early_header_mutation.header_mutation",
 		TypedConfig: utils.MustMessageToAny(policy),
 	}}
+}
+
+func convertClientCertificateForwarding(config *kgateway.ClientCertificateForwarding) *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails {
+	if config == nil {
+		return nil
+	}
+
+	// Check if at least one field is set
+	if config.Subject == nil && config.Cert == nil && config.Chain == nil && config.Dns == nil && config.Uri == nil {
+		return nil
+	}
+
+	result := &envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails{}
+
+	if config.Subject != nil {
+		result.Subject = wrapperspb.Bool(*config.Subject)
+	}
+	if config.Cert != nil {
+		result.Cert = *config.Cert
+	}
+	if config.Chain != nil {
+		result.Chain = *config.Chain
+	}
+	if config.Dns != nil {
+		result.Dns = *config.Dns
+	}
+	if config.Uri != nil {
+		result.Uri = *config.Uri
+	}
+
+	return result
 }

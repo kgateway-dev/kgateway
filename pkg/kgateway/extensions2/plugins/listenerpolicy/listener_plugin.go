@@ -416,6 +416,10 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		out.HttpProtocolOptions.DefaultHostForHttp_10 = *policy.defaultHostForHttp10
 	}
 
+	if policy.clientCertForwarding != nil {
+		out.SetCurrentClientCertDetails = policy.clientCertForwarding
+	}
+
 	return nil
 }
 

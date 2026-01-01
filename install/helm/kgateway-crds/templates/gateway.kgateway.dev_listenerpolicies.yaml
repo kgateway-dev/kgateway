@@ -1157,6 +1157,36 @@ spec:
                           type: object
                         maxItems: 16
                         type: array
+                      clientCertificateForwarding:
+                        description: |-
+                          ClientCertificateForwarding configures which parts of the client certificate
+                          should be forwarded to upstream backends via headers.
+                          This is only applicable when mTLS is configured on the listener.
+                          See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-msg-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-setcurrentclientcertdetails
+                        properties:
+                          cert:
+                            description: |-
+                              Cert forwards the full certificate to upstream in URL encoded PEM format.
+                              This will appear in the XFCC header comma separated from other values with the value Cert="PEM".
+                            type: boolean
+                          chain:
+                            description: |-
+                              Chain forwards the certificate chain (including the leaf cert) to upstream in URL encoded PEM format.
+                              This will appear in the XFCC header comma separated from other values with the value Chain="PEM".
+                            type: boolean
+                          dns:
+                            description: Dns forwards DNS type Subject Alternative
+                              Names from the certificate to upstream.
+                            type: boolean
+                          subject:
+                            description: Subject forwards the certificate subject
+                              to upstream.
+                            type: boolean
+                          uri:
+                            description: Uri forwards URI type Subject Alternative
+                              Name from the certificate to upstream.
+                            type: boolean
+                        type: object
                       defaultHostForHttp10:
                         description: |-
                           DefaultHostForHttp10 specifies a default host for HTTP/1.0 requests. This is highly suggested if acceptHttp10 is true and a no-op if acceptHttp10 is false.
@@ -2902,6 +2932,36 @@ spec:
                                 type: object
                               maxItems: 16
                               type: array
+                            clientCertificateForwarding:
+                              description: |-
+                                ClientCertificateForwarding configures which parts of the client certificate
+                                should be forwarded to upstream backends via headers.
+                                This is only applicable when mTLS is configured on the listener.
+                                See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-msg-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-setcurrentclientcertdetails
+                              properties:
+                                cert:
+                                  description: |-
+                                    Cert forwards the full certificate to upstream in URL encoded PEM format.
+                                    This will appear in the XFCC header comma separated from other values with the value Cert="PEM".
+                                  type: boolean
+                                chain:
+                                  description: |-
+                                    Chain forwards the certificate chain (including the leaf cert) to upstream in URL encoded PEM format.
+                                    This will appear in the XFCC header comma separated from other values with the value Chain="PEM".
+                                  type: boolean
+                                dns:
+                                  description: Dns forwards DNS type Subject Alternative
+                                    Names from the certificate to upstream.
+                                  type: boolean
+                                subject:
+                                  description: Subject forwards the certificate subject
+                                    to upstream.
+                                  type: boolean
+                                uri:
+                                  description: Uri forwards URI type Subject Alternative
+                                    Name from the certificate to upstream.
+                                  type: boolean
+                              type: object
                             defaultHostForHttp10:
                               description: |-
                                 DefaultHostForHttp10 specifies a default host for HTTP/1.0 requests. This is highly suggested if acceptHttp10 is true and a no-op if acceptHttp10 is false.
