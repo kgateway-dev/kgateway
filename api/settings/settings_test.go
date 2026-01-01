@@ -219,6 +219,7 @@ func TestSettings(t *testing.T) {
 				XdsServiceName:                       wellknown.DefaultXdsService,
 				XdsServicePort:                       wellknown.DefaultXdsPort,
 				AgentgatewayXdsServicePort:           wellknown.DefaultAgwXdsPort,
+				UseRustFormations:                    true,
 				DefaultImageRegistry:                 "cr.kgateway.dev",
 				DefaultImageTag:                      "",
 				DefaultImagePullPolicy:               "IfNotPresent",
