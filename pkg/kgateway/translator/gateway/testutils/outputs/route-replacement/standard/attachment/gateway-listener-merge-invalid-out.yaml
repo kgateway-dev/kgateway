@@ -24,9 +24,15 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: transformation
+          name: dynamic_modules/simple_mutations
           typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -86,14 +92,15 @@ Routes:
         cluster: kube_gwtest_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     typedPerFilterConfig:
-      transformation:
-        '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-        transformations:
-        - requestMatch:
-            requestTransformation:
-              transformationTemplate:
-                body:
-                  text: '{{ invalid_template }'
+      dynamic_modules/simple_mutations:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+        dynamicModuleConfig:
+          name: rust_module
+        filterConfig:
+          '@type': type.googleapis.com/google.protobuf.StringValue
+          value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
+            }"}}}'
+        perRouteConfigName: http_simple_mutations
   - domains:
     - api.a.example.com
     metadata:
@@ -110,14 +117,15 @@ Routes:
         cluster: kube_gwtest_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     typedPerFilterConfig:
-      transformation:
-        '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-        transformations:
-        - requestMatch:
-            requestTransformation:
-              transformationTemplate:
-                body:
-                  text: '{{ invalid_template }'
+      dynamic_modules/simple_mutations:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+        dynamicModuleConfig:
+          name: rust_module
+        filterConfig:
+          '@type': type.googleapis.com/google.protobuf.StringValue
+          value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
+            }"}}}'
+        perRouteConfigName: http_simple_mutations
   - domains:
     - backend.b.example.com
     name: listener~8080~backend_b_example_com
@@ -144,14 +152,15 @@ Routes:
         cluster: kube_gwtest_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     typedPerFilterConfig:
-      transformation:
-        '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-        transformations:
-        - requestMatch:
-            requestTransformation:
-              transformationTemplate:
-                body:
-                  text: '{{ invalid_template }'
+      dynamic_modules/simple_mutations:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+        dynamicModuleConfig:
+          name: rust_module
+        filterConfig:
+          '@type': type.googleapis.com/google.protobuf.StringValue
+          value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
+            }"}}}'
+        perRouteConfigName: http_simple_mutations
   - domains:
     - www.b.example.com
     name: listener~8080~www_b_example_com

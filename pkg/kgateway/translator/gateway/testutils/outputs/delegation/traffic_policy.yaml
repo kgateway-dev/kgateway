@@ -42,9 +42,15 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: transformation
+          name: dynamic_modules/simple_mutations
           typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -79,24 +85,14 @@ Routes:
         cluster: kube_a_svc-a_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              requestTransformation:
-                transformationTemplate:
-                  headers:
-                    x-foo-req:
-                      text: abc
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
-              responseTransformation:
-                transformationTemplate:
-                  headers:
-                    x-foo-resp:
-                      text: xyz
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"set":[{"name":"x-foo-req","value":"abc"}]},"response":{"set":[{"name":"x-foo-resp","value":"xyz"}]}}'
+          perRouteConfigName: http_simple_mutations
     - match:
         prefix: /
       name: listener~80~example_com-route-2-httproute-example-route-infra-0-0-matcher-0

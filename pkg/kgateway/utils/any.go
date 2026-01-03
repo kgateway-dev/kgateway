@@ -1,8 +1,12 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // MessageToAny takes any given proto message msg and returns the marshalled bytes of the proto, and a url to the type
@@ -26,4 +30,48 @@ func MustMessageToAny(msg proto.Message) *anypb.Any {
 
 func AnyToMessage(a *anypb.Any) (proto.Message, error) {
 	return anypb.UnmarshalNew(a, proto.UnmarshalOptions{})
+}
+
+// AnyToJson converts an anypb.Any containing a google.protobuf.StringValue
+// (which itself contains a JSON string) into a Go map or object.
+func AnyToJson(anyVal *anypb.Any) (any, error) {
+	if anyVal == nil {
+		return nil, nil
+	}
+
+	// 1. Extract the string from the Any wrapper
+	sv := &wrapperspb.StringValue{}
+	if err := anyVal.UnmarshalTo(sv); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal Any to StringValue: %w", err)
+	}
+
+	// 2. Parse the internal string as JSON
+	var result any
+	if err := json.Unmarshal([]byte(sv.GetValue()), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse internal JSON string: %w", err)
+	}
+
+	return result, nil
+}
+
+// JsonToAny converts a Go object (map, slice, etc.) back into a JSON string
+// and wraps it in a google.protobuf.Any message.
+func JsonToAny(obj any) (*anypb.Any, error) {
+	// 1. Convert the Go object back into a JSON byte slice
+	jsonBytes, err := json.Marshal(obj)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal object to JSON: %w", err)
+	}
+
+	// 2. Create a wrapperspb.StringValue message from the JSON string
+	sv := wrapperspb.String(string(jsonBytes))
+
+	// 3. Wrap the StringValue into an anypb.Any message
+	// This automatically sets the TypeUrl to "type.googleapis.com"
+	anyVal, err := anypb.New(sv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Any message: %w", err)
+	}
+
+	return anyVal, nil
 }
