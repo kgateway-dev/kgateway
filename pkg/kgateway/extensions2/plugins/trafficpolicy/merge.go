@@ -283,13 +283,13 @@ func mergeRustformation(
 
 		p1Json, err := utils.AnyToJson(p1.spec.rustformation.config.FilterConfig)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("failed to convert p1 config to json: %s", err.Error())
 		} else if p1Json != nil {
 			logger.Info("rustformation: p1 %v", p1Json)
 		}
 		p2Json, err := utils.AnyToJson(p2.spec.rustformation.config.FilterConfig)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("failed to convert p2 config to json: %s", err.Error())
 		} else if p2Json != nil {
 			logger.Info("rustformation: p2 %v", p2Json)
 		}
@@ -303,14 +303,14 @@ func mergeRustformation(
 			if opts.Strategy == policy.OverridableDeepMerge {
 				err = mergeRustformationJsonInPlace(p2Json, p1Json)
 				if err != nil {
-					logger.Error(err.Error())
+					logger.Error("failed to merge json: %s", err.Error())
 					return
 				}
 				anyMsg, err = utils.JsonToAny(p2Json)
 			} else {
 				err = mergeRustformationJsonInPlace(p1Json, p2Json)
 				if err != nil {
-					logger.Error(err.Error())
+					logger.Error("failed to merge json: %s", err.Error())
 					return
 				}
 				anyMsg, err = utils.JsonToAny(p1Json)
@@ -318,7 +318,7 @@ func mergeRustformation(
 		}
 
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("failed to convert json to any: %s", err.Error())
 			return
 		}
 

@@ -731,10 +731,10 @@ func (s *testingSuite) SetRustformationInController(enabled bool) {
 
 	rustFormationsEnvVar := corev1.EnvVar{
 		Name:  "KGW_USE_RUST_FORMATIONS",
-		Value: "true",
+		Value: "false",
 	}
 	controllerDeployModified := controllerDeploymentOriginal.DeepCopy()
-	if enabled {
+	if !enabled {
 		// add the environment variable RUSTFORMATIONS to the modified controller deployment
 		controllerDeployModified.Spec.Template.Spec.Containers[0].Env = append(
 			controllerDeployModified.Spec.Template.Spec.Containers[0].Env,
