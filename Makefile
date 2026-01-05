@@ -224,11 +224,11 @@ envtest-path: ## Set the envtest path
 # you that -ld_classic is deprecated, but that's better than broken race
 # condition detection)
 # See: https://github.com/golang/go/issues/61229
-GO_TEST_ENV ?= \
-ifeq ($(GOOS), darwin) \
-ifeq ($(GOARCH), arm64) \
-	override GO_TEST_ENV := CGO_LDFLAGS="-Wl,-ld_classic" \
-endif \
+GO_TEST_ENV ?=
+ifeq ($(GOOS), darwin)
+ifeq ($(GOARCH), arm64)
+	override GO_TEST_ENV := CGO_LDFLAGS="-Wl,-ld_classic"
+endif
 endif
 
 # Skip -race on e2e. This requires building the codebase twice, and provides no value as the only code executed is test code.
