@@ -1686,6 +1686,10 @@ spec:
                         maxItems: 16
                         minItems: 1
                         type: array
+                      cipherSuites:
+                        items:
+                          type: string
+                        type: array
                       handshakeTimeout:
                         description: |-
                           handshakeTimeout specifies the deadline for a TLS handshake to complete.
@@ -1696,6 +1700,10 @@ spec:
                           rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                         - message: handshakeTimeout must be at least 100ms
                           rule: duration(self) >= duration('100ms')
+                      maxProtocolVersion:
+                        type: string
+                      minProtocolVersion:
+                        type: string
                     type: object
                     x-kubernetes-validations:
                     - message: at least one of the fields in [handshakeTimeout] must

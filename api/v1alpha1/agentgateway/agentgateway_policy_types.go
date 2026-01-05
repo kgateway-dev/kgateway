@@ -334,8 +334,42 @@ type FrontendTLS struct {
 	// +kubebuilder:validation:MaxItems=16
 	// +optional
 	AlpnProtocols *[]TinyString `json:"alpnProtocols,omitempty"`
+
+	MinTLSVersion *TLSVersion `json:"minProtocolVersion,omitempty"`
+
+	MaxTLSVersion *TLSVersion `json:"maxProtocolVersion,omitempty"`
+
+	CipherSuites []CipherSuite `json:"cipherSuites,omitempty"`
+
 	// TODO: mirror the tuneables on BackendTLS
 }
+
+type TLSVersion string
+
+const (
+	TLSVersion1_0 TLSVersion = "1.0"
+	TLSVersion1_1 TLSVersion = "1.1"
+	TLSVersion1_2 TLSVersion = "1.2"
+	TLSVersion1_3 TLSVersion = "1.3"
+)
+
+type CipherSuite string
+
+const (
+	// TLS 1.3 cipher suites
+	CipherSuiteTLS13_AES_256_GCM_SHA384       CipherSuite = "TLS13_AES_256_GCM_SHA384"
+	CipherSuiteTLS13_AES_128_GCM_SHA256       CipherSuite = "TLS13_AES_128_GCM_SHA256"
+	CipherSuiteTLS13_CHACHA20_POLY1305_SHA256 CipherSuite = "TLS13_CHACHA20_POLY1305_SHA256"
+
+	// TLS 1.2 cipher suites
+	CipherSuiteTLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384       CipherSuite = "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+	CipherSuiteTLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256       CipherSuite = "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+	CipherSuiteTLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 CipherSuite = "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256"
+
+	CipherSuiteTLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384       CipherSuite = "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+	CipherSuiteTLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256       CipherSuite = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+	CipherSuiteTLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 CipherSuite = "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+)
 
 // +kubebuilder:validation:AtLeastOneOf=keepalive
 type FrontendTCP struct {
