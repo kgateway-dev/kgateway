@@ -42,6 +42,11 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
+          name: ratelimit/local
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+            statPrefix: http_local_rate_limiter
+        - disabled: true
           name: dynamic_modules/simple_mutations
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
@@ -51,11 +56,6 @@ Listeners:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
             filterName: http_simple_mutations
-        - disabled: true
-          name: ratelimit/local
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-            statPrefix: http_local_rate_limiter
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

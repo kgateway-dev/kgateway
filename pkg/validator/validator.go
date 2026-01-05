@@ -13,7 +13,8 @@ import (
 var (
 	defaultEnvoyPath = "/usr/local/bin/envoy"
 	// TODO(tim): avoid hardcoding the envoy image version in multiple places.
-	defaultEnvoyImage = "quay.io/solo-io/envoy-gloo:1.36.3-patch1"
+	//	defaultEnvoyImage = "quay.io/solo-io/envoy-gloo:1.36.3-patch1"
+	defaultEnvoyImage = "ghcr.io/kgateway-dev/envoy-wrapper:v2.2.0-beta.4"
 )
 
 // ErrInvalidXDS is returned when Envoy rejects the supplied JSON.
@@ -43,6 +44,7 @@ func NewBinary(path ...string) Validator {
 
 func (b *binaryValidator) Validate(ctx context.Context, json string) error {
 	cmd := exec.CommandContext(ctx, b.path, "--mode", "validate", "--config-path", "/dev/fd/0", "-l", "critical", "--log-format", "%v") //nolint:gosec // G204: envoy binary with controlled args for config validation
+	cmd.Env = append(cmd.Env, "ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib")
 	cmd.Stdin = strings.NewReader(json)
 	var e bytes.Buffer
 	cmd.Stderr = &e
@@ -80,6 +82,8 @@ func (d *dockerValidator) Validate(ctx context.Context, json string) error {
 		"--rm",
 		"-i",
 		"--platform", "linux/amd64",
+		//		"-e", "ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib",
+		"--entrypoint", "/usr/local/bin/envoy",
 		d.img,
 		"--mode",
 		"validate",

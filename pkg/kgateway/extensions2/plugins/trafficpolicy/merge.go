@@ -300,12 +300,21 @@ func mergeRustformation(
 		} else if p2Json == nil {
 			return
 		} else {
-			err = mergeRustformationJsonInPlace(p1Json, p2Json)
-			if err != nil {
-				logger.Error(err.Error())
-				return
+			if opts.Strategy == policy.OverridableDeepMerge {
+				err = mergeRustformationJsonInPlace(p2Json, p1Json)
+				if err != nil {
+					logger.Error(err.Error())
+					return
+				}
+				anyMsg, err = utils.JsonToAny(p2Json)
+			} else {
+				err = mergeRustformationJsonInPlace(p1Json, p2Json)
+				if err != nil {
+					logger.Error(err.Error())
+					return
+				}
+				anyMsg, err = utils.JsonToAny(p1Json)
 			}
-			anyMsg, err = utils.JsonToAny(p1Json)
 		}
 
 		if err != nil {

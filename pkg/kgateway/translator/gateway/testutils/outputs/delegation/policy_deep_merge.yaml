@@ -92,7 +92,7 @@ Routes:
             name: rust_module
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
-            value: '{"response":{"add":[{"name":"source","value":"a"},{"name":"source","value":"example"}]}}'
+            value: '{"response":{"add":[{"name":"source","value":"example"},{"name":"source","value":"a"}]}}'
           perRouteConfigName: http_simple_mutations
     - match:
         pathSeparatedPrefix: /a/2
