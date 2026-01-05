@@ -18,6 +18,8 @@ const (
 
 	// Kind strings
 	ServiceKind          = "Service"
+	ConfigMapKind        = "ConfigMap"
+	SecretKind           = "Secret"
 	HTTPRouteKind        = "HTTPRoute"
 	TCPRouteKind         = "TCPRoute"
 	TLSRouteKind         = "TLSRoute"

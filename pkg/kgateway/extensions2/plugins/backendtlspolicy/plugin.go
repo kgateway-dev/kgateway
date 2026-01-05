@@ -189,7 +189,7 @@ func buildTranslateFunc(
 
 		case len(spec.Validation.CACertificateRefs) > 0:
 			certRef := spec.Validation.CACertificateRefs[0]
-			refKind := "ConfigMap"
+			refKind := kgwellknown.ConfigMapKind
 			if certRef.Kind != "" {
 				refKind = string(certRef.Kind)
 			}
@@ -198,7 +198,7 @@ func buildTranslateFunc(
 			var err error
 
 			switch refKind {
-			case "ConfigMap":
+			case kgwellknown.ConfigMapKind:
 				nn := types.NamespacedName{
 					Name:      string(certRef.Name),
 					Namespace: policyCR.Namespace,
@@ -215,7 +215,8 @@ func buildTranslateFunc(
 					logger.Error("error extracting CA cert from ConfigMap", "error", perr, "policy_name", policyCR.Name)
 					return &policyIr, perr
 				}
-			case "Secret":
+			case kgwellknown.SecretKind:
+				// secret is always in the same namespace as the policy (LocalObjectReference), no need to check reference grant
 				secret, err := secrets.GetSecretWithoutRefGrant(krtctx, string(certRef.Name), policyCR.Namespace)
 				if err != nil {
 					perr := fmt.Errorf("%w: %v", ErrSecretNotFound, err)
