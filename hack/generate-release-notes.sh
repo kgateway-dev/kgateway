@@ -2,7 +2,6 @@
 
 set -o errexit
 set -o nounset
-set -o pipefail
 
 # Track execution time
 SECONDS=0
@@ -13,7 +12,6 @@ CURRENT_TAG="HEAD"
 OUTPUT_DIR="${OUTPUT_DIR:-_output}"
 OUTPUT_FILE="${OUTPUT_DIR}/RELEASE_NOTES.md"
 REPO_OVERRIDE=""
-DEBUG=${DEBUG:-""}
 TEMP_DIR=""
 
 # Help message
@@ -28,22 +26,15 @@ function show_help() {
     echo ""
     echo "Environment variables:"
     echo "  GITHUB_TOKEN               GitHub API token (required)"
-    echo "  DEBUG                      Set to any value to enable debug output"
     echo ""
     echo "Examples:"
     echo "  $0 -p v2.0.0 -c v2.1.0"
     echo "  $0 -p v2.0.0-rc.1 -c v2.0.0-rc.2 -o changelog.md"
 }
 
-function debug() {
-    if [ -n "$DEBUG" ]; then
-        echo "DEBUG: $*" >&2
-    fi
-}
-
 function cleanup() {
     if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
-        rm -rf "$TEMP_DIR"
+        rm -rf "$TEMP_DIR" || echo "Warning: Failed to cleanup temporary directory $TEMP_DIR"
     fi
 }
 
@@ -138,17 +129,28 @@ function process_prs() {
     local pr_numbers_file="$5"
 
     # Get PR numbers from commit messages
-    git log "$start_ref..$end_ref" --pretty=format:"%s%n%b" | \
+    # First, get the git log output
+    local git_log_output
+    git_log_output=$(git log "$start_ref..$end_ref" --pretty=format:"%s%n%b")
+
+    # Check if git log has any output
+    if [ -z "$git_log_output" ]; then
+        echo "No commits found between $start_ref and $end_ref"
+        return
+    fi
+
+    # Extract PR numbers from the git log output
+    echo "$git_log_output" | \
         grep -o -E "(#|\\()[0-9]+\\)?" | \
         tr -d '#()' | \
         sort -un > "$pr_numbers_file"
 
     if [ ! -s "$pr_numbers_file" ]; then
-        debug "No PR numbers found in commit messages between $start_ref and $end_ref"
+        echo "No PR numbers found in commit messages between $start_ref and $end_ref"
         return
     fi
 
-    debug "Processing PRs from $owner/$repo..."
+    echo "Processing PRs from $owner/$repo..."
 
     # Process each PR
     while read -r PR_NUMBER; do
@@ -159,13 +161,13 @@ function process_prs() {
 
         # Check if PR exists
         if [[ $(echo "$PR_DATA" | jq -r '.message // empty') == "Not Found" ]]; then
-            debug "PR #$PR_NUMBER not found, trying issue endpoint..."
+            echo "PR #$PR_NUMBER not found, trying issue endpoint..."
             # Try to fetch as an issue instead
             PR_DATA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
                 -H "Accept: application/vnd.github.v3+json" \
                 "https://api.github.com/repos/$owner/$repo/issues/$PR_NUMBER")
             if [[ $(echo "$PR_DATA" | jq -r '.message // empty') == "Not Found" ]]; then
-                debug "Issue #$PR_NUMBER not found either, skipping"
+                echo "Issue #$PR_NUMBER not found either, skipping"
                 continue
             fi
         fi
@@ -177,11 +179,11 @@ function process_prs() {
         # Extract release note
         RELEASE_NOTE=$(extract_release_note "$PR_BODY")
 
-        debug "Extracted release note for PR #$PR_NUMBER: '$RELEASE_NOTE'"
+        echo "Extracted release note for PR #$PR_NUMBER: '$RELEASE_NOTE'"
 
         # Skip if release note is "NONE" or empty
         if is_none_release_note "$RELEASE_NOTE"; then
-            debug "Skipping PR #$PR_NUMBER - release note is none/empty"
+            echo "Skipping PR #$PR_NUMBER - release note is none/empty"
             continue
         fi
 
@@ -199,18 +201,18 @@ function process_prs() {
 
         # Skip if no kind label
         if [[ -z "$KIND" ]]; then
-            debug "PR #$PR_NUMBER missing kind label, skipping"
+            echo "PR #$PR_NUMBER missing kind label, skipping"
             continue
         fi
 
-        debug "Found PR #$PR_NUMBER ($KIND): $PR_TITLE"
+        echo "Found PR #$PR_NUMBER ($KIND): $PR_TITLE"
 
         # Get section title
         SECTION_TITLE=$(get_section_title "$KIND")
         if [ -n "$SECTION_TITLE" ]; then
             local pr_link="([#$PR_NUMBER](https://github.com/$owner/$repo/pull/$PR_NUMBER))"
             local formatted_note=$(format_release_note "$RELEASE_NOTE" "$pr_link")
-            debug "Formatted note for PR #$PR_NUMBER: '$formatted_note'"
+            echo "Formatted note for PR #$PR_NUMBER: '$formatted_note'"
             echo "$formatted_note" >> "$TEMP_DIR/$KIND.txt"
         fi
     done < "$pr_numbers_file"
@@ -273,9 +275,9 @@ else
     REPO="kgateway"
 fi
 
-debug "Repository: $OWNER/$REPO"
-debug "Previous tag: $PREVIOUS_TAG"
-debug "Current tag/ref: $CURRENT_TAG"
+echo "Repository: $OWNER/$REPO"
+echo "Previous tag: $PREVIOUS_TAG"
+echo "Current tag/ref: $CURRENT_TAG"
 
 # Process PRs
 echo "Fetching PRs between $PREVIOUS_TAG and $CURRENT_TAG..."
@@ -290,26 +292,31 @@ for KIND in breaking_change feature fix deprecation documentation cleanup instal
     fi
 done
 
-if [[ $FOUND_NOTES -eq 0 ]]; then
-    echo "No release notes found in any PRs"
-    exit 1
-fi
-
 # Ensure output directory exists
 mkdir -p "$(dirname "$OUTPUT_FILE")"
 
+if [[ $FOUND_NOTES -eq 0 ]]; then
+    echo "No release notes found in any PRs"
+    cat > "$OUTPUT_FILE" << EOF
+    ## Release Notes
+
+    No release notes generated
+EOF
+    exit 0
+fi
+
 # Initialize the output file
 cat > "$OUTPUT_FILE" << EOF
-# Release Notes
+## Release Notes
 
-## Changes since $PREVIOUS_TAG
+### Changes since $PREVIOUS_TAG
 EOF
 
 # Generate the final release notes
 for KIND in breaking_change feature fix deprecation documentation cleanup install bump; do
     if [[ -f "$TEMP_DIR/$KIND.txt" ]]; then
         SECTION_TITLE=$(get_section_title "$KIND")
-        echo -e "\n### $SECTION_TITLE\n" >> "$OUTPUT_FILE"
+        echo -e "\n#### $SECTION_TITLE\n" >> "$OUTPUT_FILE"
         cat "$TEMP_DIR/$KIND.txt" >> "$OUTPUT_FILE"
     fi
 done

@@ -26,6 +26,19 @@ spec:
           name: infra-backend-v3
           namespace: default
           port: 8080
+    - type: ExternalAuth
+      externalAuth:
+        protocol: HTTP
+        http:
+          path: /auth
+          allowedHeaders:
+            - hello
+          allowedResponseHeaders:
+            - world
+        backendRef:
+          name: infra-backend-v3
+          namespace: default
+          port: 8080
     backendRefs:
     - name: infra-backend-v1
       port: 8080
@@ -148,6 +161,20 @@ output:
         name: request-multiple-mirrors-headers
         namespace: default
       trafficPolicies:
+      - extAuthz:
+          http:
+            includeResponseHeaders:
+            - world
+            path: '"/auth" + request.path'
+          includeRequestHeaders:
+          - Authorization
+          - :authority
+          - hello
+          target:
+            port: 8080
+            service:
+              hostname: infra-backend-v3.default.svc.cluster.local
+              namespace: default
       - requestMirror:
           mirrors:
           - backend:

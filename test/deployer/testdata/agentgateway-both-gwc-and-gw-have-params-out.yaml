@@ -108,8 +108,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: GW_NAME
-          value: gw-using-gw-params
         - name: RUST_BACKTRACE
           value: "1"
         - name: RUST_LOG
@@ -122,6 +120,15 @@ spec:
               fieldPath: metadata.namespace
         - name: GATEWAY
           value: gw-using-gw-params
+        - name: CPU_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              divisor: "1"
+              resource: limits.cpu
+        - name: INSTANCE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         image: from-gw/agentgateway@sha256:fd697c0542524e19a19baf75acfd06714b95bf4f7c60bf22c86164dd647ceb48
         name: agentgateway
         ports:

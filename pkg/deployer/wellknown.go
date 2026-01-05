@@ -14,7 +14,7 @@ const (
 	// AgentgatewayImage is the agentgateway image repository
 	AgentgatewayImage = "agentgateway"
 	// AgentgatewayRegistry is the agentgateway registry
-	AgentgatewayRegistry = "ghcr.io/agentgateway"
+	AgentgatewayRegistry = "cr.agentgateway.dev"
 	// AgentgatewayDefaultTag is the default agentgateway image tag
 	// Note: should be in sync with version in go.mod and test/deployer/testdata/*
 	AgentgatewayDefaultTag = "0.11.0-alpha.f0552ee66d6d9beddfca829dee1a029841c7bb43"

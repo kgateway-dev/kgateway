@@ -251,12 +251,18 @@ func translateMCPBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBa
 			}
 		}
 	}
+	// defaults to stateful session routing
+	sessionRouting := api.MCPBackend_STATEFUL
+	if mcp.SessionRouting == agentgateway.Stateless {
+		sessionRouting = api.MCPBackend_STATELESS
+	}
 	mcpBackend := &api.Backend{
 		Key:  be.Namespace + "/" + be.Name,
 		Name: plugins.ResourceName(be),
 		Kind: &api.Backend_Mcp{
 			Mcp: &api.MCPBackend{
-				Targets: mcpTargets,
+				Targets:      mcpTargets,
+				StatefulMode: sessionRouting,
 			},
 		},
 		InlinePolicies: inlinePolicies,

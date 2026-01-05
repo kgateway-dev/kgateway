@@ -74,6 +74,26 @@ dockers:
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
   - image_templates:
+      - &agentgateway_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+    use: buildx
+    dockerfile: &agentgateway_dockerfile cmd/kgateway/Dockerfile.agentgateway
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+      - "--build-arg=GOARCH=arm64"
+  - image_templates:
+      - &agentgateway_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+    use: buildx
+    dockerfile: *agentgateway_dockerfile
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+      - "--build-arg=GOARCH=amd64"
+  - image_templates:
       - &sds_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
     dockerfile: &sds_dockerfile cmd/sds/Dockerfile
@@ -109,6 +129,8 @@ dockers:
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
       - "--build-arg=RUST_BUILD_ARCH=aarch64"
       - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64,mode=max,ignore-error=true"
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
       - internal/envoyinit
@@ -125,6 +147,8 @@ dockers:
       - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
       - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64,mode=max,ignore-error=true"
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
       - internal/envoyinit
@@ -133,6 +157,10 @@ docker_manifests:
     image_templates:
       - *controller_arm_image
       - *controller_amd_image
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}"
+    image_templates:
+      - *agentgateway_arm_image
+      - *agentgateway_amd_image
   - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}"
     image_templates:
       - *sds_arm_image
@@ -168,7 +196,9 @@ release:
 
     ### Helm Charts
 
-    The Helm chart is available at {{ .Env.VANITY_REGISTRY }}/charts/kgateway.
+    The Helm charts are available at:
+    * [{{ .Env.VANITY_REGISTRY }}/charts/kgateway]({{ .Env.VANITY_REGISTRY }}/charts/kgateway).
+    * [{{ .Env.AGW_VANITY_REGISTRY }}/charts/agentgateway]({{ .Env.AGW_VANITY_REGISTRY }}/charts/agentgateway).
 
     ### Docker Images
 
@@ -177,6 +207,7 @@ release:
     - {{ .Env.VANITY_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}
     - {{ .Env.VANITY_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}
     - {{ .Env.VANITY_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}
+    - {{ .Env.AGW_VANITY_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}
 
     ## Quickstart
 
@@ -184,8 +215,8 @@ release:
     ```
     helm install kgateway-crds oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway-crds --version {{ .Env.VERSION }} --namespace kgateway-system --create-namespace
     helm install kgateway oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway --version {{ .Env.VERSION }} --namespace kgateway-system --create-namespace
-    helm install agentgateway-crds oci://{{ .Env.IMAGE_REGISTRY }}/charts/agentgateway-crds --version {{ .Env.VERSION }} --namespace agentgateway-system --create-namespace
-    helm install agentgateway oci://{{ .Env.IMAGE_REGISTRY }}/charts/agentgateway --version {{ .Env.VERSION }} --namespace agentgateway-system --create-namespace
+    helm install agentgateway-crds oci://{{ .Env.AGW_VANITY_REGISTRY }}/charts/agentgateway-crds --version {{ .Env.VERSION }} --namespace agentgateway-system --create-namespace
+    helm install agentgateway oci://{{ .Env.AGW_VANITY_REGISTRY }}/charts/agentgateway --version {{ .Env.VERSION }} --namespace agentgateway-system --create-namespace
     ```
 
     For detailed installation instructions and next steps, please visit our [quickstart guide](https://kgateway.dev/docs/quickstart/).

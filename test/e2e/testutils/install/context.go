@@ -10,6 +10,7 @@ type Context struct {
 
 	// ChartType specifies which chart to install: "kgateway" or "agentgateway"
 	// Defaults to "kgateway" for backwards compatibility
+	// TODO: convert to enum
 	ChartType string
 
 	// ProfileValuesManifestFile points to the file that contains the set of Helm values for a given profile

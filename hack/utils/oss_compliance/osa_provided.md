@@ -3,7 +3,7 @@ Name|Version|License
 [cel.dev/expr](https://cel.dev/expr)|v0.25.1|Apache License 2.0
 [semver/v3](https://github.com/Masterminds/semver)|v3.4.0|MIT License
 [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)|v1.10.1|BSD 3-clause "New" or "Revised" License
-[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.11.0-alpha.1.0.20251218160022-f0552ee66d6d|Apache License 2.0
+[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.11.0|Apache License 2.0
 [anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go)|v1.13.0|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.7.0|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20251110193048-8bfbf64dc13e|Apache License 2.0
@@ -55,7 +55,7 @@ Name|Version|License
 [klog/v2](https://k8s.io/klog/v2)|v2.130.1|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20251002143259-bc988d571ff4|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.22.3|Apache License 2.0
-[sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.4.0|Apache License 2.0
+[sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.4.1|Apache License 2.0
 [sigs.k8s.io/gateway-api-inference-extension](https://sigs.k8s.io/gateway-api-inference-extension)|v1.1.0|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.6.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License

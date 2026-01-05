@@ -7,6 +7,7 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -234,6 +235,9 @@ func translateBackendHTTP(policy *agentgateway.AgentgatewayPolicy, target *api.P
 			p.Version = api.BackendPolicySpec_BackendHTTP_HTTP2
 		}
 	}
+	if rt := http.RequestTimeout; rt != nil {
+		p.RequestTimeout = durationpb.New(rt.Duration)
+	}
 	tp := &api.Policy{
 		Key:    policy.Namespace + "/" + policy.Name + backendHttpPolicySuffix + attachmentName(target),
 		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
@@ -299,9 +303,23 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 		return nil, nil
 	}
 
-	idp := api.BackendPolicySpec_McpAuthentication_AUTH0
-	if authnPolicy.McpIDP != nil && *authnPolicy.McpIDP == agentgateway.Keycloak {
-		idp = api.BackendPolicySpec_McpAuthentication_KEYCLOAK
+	idp := api.BackendPolicySpec_McpAuthentication_UNSPECIFIED
+	if authnPolicy.McpIDP != nil {
+		if *authnPolicy.McpIDP == agentgateway.Keycloak {
+			idp = api.BackendPolicySpec_McpAuthentication_KEYCLOAK
+		} else if *authnPolicy.McpIDP == agentgateway.Auth0 {
+			idp = api.BackendPolicySpec_McpAuthentication_AUTH0
+		}
+	}
+
+	// default mode is Optional
+	mode := api.BackendPolicySpec_McpAuthentication_OPTIONAL
+	if authnPolicy.Mode == agentgateway.JWTAuthenticationModeStrict {
+		mode = api.BackendPolicySpec_McpAuthentication_STRICT
+	} else if authnPolicy.Mode == agentgateway.JWTAuthenticationModePermissive {
+		mode = api.BackendPolicySpec_McpAuthentication_PERMISSIVE
+	} else if authnPolicy.Mode == agentgateway.JWTAuthenticationModeOptional {
+		mode = api.BackendPolicySpec_McpAuthentication_OPTIONAL
 	}
 
 	jwksUrl, _, err := jwks_url.JwksUrlBuilderFactory().BuildJwksUrlAndTlsConfig(ctx.Krt, policy.Name, policy.Namespace, &authnPolicy.JWKS)
@@ -341,6 +359,7 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 			Extra: extraResourceMetadata,
 		},
 		JwksInline: translatedInlineJwks,
+		Mode:       mode,
 	}
 	mcpAuthnPolicy := &api.Policy{
 		Key:    policy.Namespace + "/" + policy.Name + mcpAuthenticationPolicySuffix + attachmentName(target),

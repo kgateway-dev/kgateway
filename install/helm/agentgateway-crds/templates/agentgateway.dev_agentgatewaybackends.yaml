@@ -543,6 +543,22 @@ spec:
                                                             settings for managing
                                                             HTTP requests to the backend.
                                                           properties:
+                                                            requestTimeout:
+                                                              description: requestTimeout
+                                                                specifies the deadline
+                                                                for receiving a response
+                                                                from the backend.
+                                                              type: string
+                                                              x-kubernetes-validations:
+                                                              - message: invalid duration
+                                                                  value
+                                                                rule: matches(self,
+                                                                  '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                              - message: requestTimeout
+                                                                  must be at least
+                                                                  1ms
+                                                                rule: duration(self)
+                                                                  >= duration('1ms')
                                                             version:
                                                               description: |-
                                                                 version specifies the HTTP protocol version to use when connecting to the backend.
@@ -780,6 +796,7 @@ spec:
                                                         - CreditCard
                                                         - PhoneNumber
                                                         - Email
+                                                        - CaSin
                                                         type: string
                                                       type: array
                                                     matches:
@@ -1013,6 +1030,7 @@ spec:
                                                         - CreditCard
                                                         - PhoneNumber
                                                         - Email
+                                                        - CaSin
                                                         type: string
                                                       type: array
                                                     matches:
@@ -1307,6 +1325,17 @@ spec:
                                     description: http defines settings for managing
                                       HTTP requests to the backend.
                                     properties:
+                                      requestTimeout:
+                                        description: requestTimeout specifies the
+                                          deadline for receiving a response from the
+                                          backend.
+                                        type: string
+                                        x-kubernetes-validations:
+                                        - message: invalid duration value
+                                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                        - message: requestTimeout must be at least
+                                            1ms
+                                          rule: duration(self) >= duration('1ms')
                                       version:
                                         description: |-
                                           version specifies the HTTP protocol version to use when connecting to the backend.
@@ -1735,6 +1764,14 @@ spec:
               mcp:
                 description: mcp represents an MCP backend
                 properties:
+                  sessionRouting:
+                    description: |-
+                      SessionRouting configures MCP session behavior for requests.
+                      Defaults to Stateful if not set.
+                    enum:
+                    - Stateful
+                    - Stateless
+                    type: string
                   targets:
                     description: |-
                       Targets is a list of MCPBackend targets to use for this backend.
@@ -1947,6 +1984,15 @@ spec:
                                   description: http defines settings for managing
                                     HTTP requests to the backend.
                                   properties:
+                                    requestTimeout:
+                                      description: requestTimeout specifies the deadline
+                                        for receiving a response from the backend.
+                                      type: string
+                                      x-kubernetes-validations:
+                                      - message: invalid duration value
+                                        rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                      - message: requestTimeout must be at least 1ms
+                                        rule: duration(self) >= duration('1ms')
                                     version:
                                       description: |-
                                         version specifies the HTTP protocol version to use when connecting to the backend.
@@ -1994,7 +2040,8 @@ spec:
                                             backendRef:
                                               description: |-
                                                 backendRef references the remote JWKS server to reach.
-                                                Supported types: Service and Backend.
+                                                Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
+                                                can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
                                               properties:
                                                 group:
                                                   default: ""
@@ -2076,9 +2123,8 @@ spec:
                                                   least 5m.
                                                 rule: duration(self) >= duration('5m')
                                             jwksPath:
-                                              description: Path to IdP jwks endpoint.
-                                                Default tls settings are used to connect
-                                                to this url.
+                                              description: Path to IdP jwks endpoint,
+                                                relative to the root, commonly ".well-known/jwks.json".
                                               maxLength: 2000
                                               minLength: 1
                                               type: string
@@ -2086,6 +2132,13 @@ spec:
                                           - backendRef
                                           - jwksPath
                                           type: object
+                                        mode:
+                                          description: validation mode for JWT authentication.
+                                          enum:
+                                          - Strict
+                                          - Optional
+                                          - Permissive
+                                          type: string
                                         provider:
                                           description: McpIDP specifies the identity
                                             provider to use for authentication
@@ -2669,6 +2722,17 @@ spec:
                                           description: http defines settings for managing
                                             HTTP requests to the backend.
                                           properties:
+                                            requestTimeout:
+                                              description: requestTimeout specifies
+                                                the deadline for receiving a response
+                                                from the backend.
+                                              type: string
+                                              x-kubernetes-validations:
+                                              - message: invalid duration value
+                                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                              - message: requestTimeout must be at
+                                                  least 1ms
+                                                rule: duration(self) >= duration('1ms')
                                             version:
                                               description: |-
                                                 version specifies the HTTP protocol version to use when connecting to the backend.
@@ -2883,6 +2947,7 @@ spec:
                                         - CreditCard
                                         - PhoneNumber
                                         - Email
+                                        - CaSin
                                         type: string
                                       type: array
                                     matches:
@@ -3106,6 +3171,7 @@ spec:
                                         - CreditCard
                                         - PhoneNumber
                                         - Email
+                                        - CaSin
                                         type: string
                                       type: array
                                     matches:
@@ -3392,6 +3458,15 @@ spec:
                     description: http defines settings for managing HTTP requests
                       to the backend.
                     properties:
+                      requestTimeout:
+                        description: requestTimeout specifies the deadline for receiving
+                          a response from the backend.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: requestTimeout must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
                       version:
                         description: |-
                           version specifies the HTTP protocol version to use when connecting to the backend.
@@ -3436,7 +3511,8 @@ spec:
                               backendRef:
                                 description: |-
                                   backendRef references the remote JWKS server to reach.
-                                  Supported types: Service and Backend.
+                                  Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
+                                  can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
                                 properties:
                                   group:
                                     default: ""
@@ -3514,8 +3590,8 @@ spec:
                                 - message: cacheDuration must be at least 5m.
                                   rule: duration(self) >= duration('5m')
                               jwksPath:
-                                description: Path to IdP jwks endpoint. Default tls
-                                  settings are used to connect to this url.
+                                description: Path to IdP jwks endpoint, relative to
+                                  the root, commonly ".well-known/jwks.json".
                                 maxLength: 2000
                                 minLength: 1
                                 type: string
@@ -3523,6 +3599,13 @@ spec:
                             - backendRef
                             - jwksPath
                             type: object
+                          mode:
+                            description: validation mode for JWT authentication.
+                            enum:
+                            - Strict
+                            - Optional
+                            - Permissive
+                            type: string
                           provider:
                             description: McpIDP specifies the identity provider to
                               use for authentication

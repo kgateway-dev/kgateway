@@ -15,6 +15,7 @@ import (
 )
 
 func (p *Provider) EventuallyObjectsExist(ctx context.Context, objects ...client.Object) {
+	p.t.Helper()
 	for _, o := range objects {
 		p.Gomega.Eventually(ctx, func(innerG Gomega) {
 			err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
@@ -28,6 +29,7 @@ func (p *Provider) EventuallyObjectsExist(ctx context.Context, objects ...client
 }
 
 func (p *Provider) EventuallyObjectsNotExist(ctx context.Context, objects ...client.Object) {
+	p.t.Helper()
 	for _, o := range objects {
 		p.Gomega.Eventually(ctx, func(innerG Gomega) {
 			err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
@@ -43,6 +45,7 @@ func (p *Provider) EventuallyObjectsNotExist(ctx context.Context, objects ...cli
 // EventuallyObjectTypesNotExist asserts that eventually no objects of the specified types exist on the cluster.
 // The `objectLists` holds the object list types to check, e.g. to check that no HTTPRoutes exist on the cluster, pass in HTTPRouteList{}
 func (p *Provider) EventuallyObjectTypesNotExist(ctx context.Context, objectLists ...client.ObjectList) {
+	p.t.Helper()
 	for _, o := range objectLists {
 		p.Gomega.Eventually(ctx, func(innerG Gomega) {
 			err := p.clusterContext.Client.List(ctx, o)
@@ -57,6 +60,7 @@ func (p *Provider) EventuallyObjectTypesNotExist(ctx context.Context, objectList
 }
 
 func (p *Provider) ConsistentlyObjectsNotExist(ctx context.Context, objects ...client.Object) {
+	p.t.Helper()
 	for _, o := range objects {
 		p.Gomega.Consistently(ctx, func(innerG Gomega) {
 			err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
@@ -70,11 +74,13 @@ func (p *Provider) ConsistentlyObjectsNotExist(ctx context.Context, objects ...c
 }
 
 func (p *Provider) ExpectNamespaceNotExist(ctx context.Context, ns string) {
+	p.t.Helper()
 	_, err := p.clusterContext.Clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
 	p.Gomega.Expect(apierrors.IsNotFound(err)).To(BeTrue(), fmt.Sprintf("namespace %s should not be found in cluster", ns))
 }
 
 func (p *Provider) EventuallyNamespaceExists(ctx context.Context, ns string) {
+	p.t.Helper()
 	p.Gomega.Eventually(ctx, func(innerG Gomega) {
 		_, err := p.clusterContext.Clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
 		innerG.Expect(err).NotTo(HaveOccurred(), "namespace %s should exist", ns)
@@ -86,5 +92,6 @@ func (p *Provider) EventuallyNamespaceExists(ctx context.Context, ns string) {
 }
 
 func (p *Provider) ExpectObjectDeleted(manifest string, err error, actualOutput string) {
+	p.t.Helper()
 	p.Assert.NoError(err, "can delete "+manifest)
 }

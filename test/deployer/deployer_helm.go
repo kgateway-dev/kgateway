@@ -182,7 +182,6 @@ func (dt DeployerTester) RunHelmChartTest(
 		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
 		err = os.WriteFile(outputFile, got, 0o644) //nolint:gosec // G306: Golden test file can be readable
 		assert.NoError(t, err, "error writing output file")
-		t.FailNow()
 	}
 	data, err := os.ReadFile(outputFile)
 	if err != nil {

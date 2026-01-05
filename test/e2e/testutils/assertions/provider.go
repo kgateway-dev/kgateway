@@ -16,6 +16,8 @@ import (
 // Provider is the entity that provides methods which assert behaviors of a Kubernetes Cluster
 // These assertions occur against a running instance of kgateway, within a Kubernetes Cluster.
 type Provider struct {
+	t *testing.T
+
 	Assert  *assert.Assertions
 	Require *require.Assertions
 
@@ -32,6 +34,7 @@ type Provider struct {
 func NewProvider(t *testing.T) *Provider {
 	gomega.RegisterTestingT(t)
 	return &Provider{
+		t:       t,
 		Assert:  assert.New(t),
 		Require: require.New(t),
 		Gomega:  gomega.NewWithT(t),

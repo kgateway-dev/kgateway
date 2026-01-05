@@ -18,6 +18,8 @@ func processAgentgatewaySyncerOptions(opts ...AgentgatewaySyncerOption) *agentga
 
 func WithGatewayTransformationFunc(f translator.GatewayTransformationFunction) AgentgatewaySyncerOption {
 	return func(o *agentgatewaySyncerConfig) {
-		o.GatewayTransformationFunc = f
+		if f != nil {
+			o.GatewayTransformationFunc = f
+		}
 	}
 }

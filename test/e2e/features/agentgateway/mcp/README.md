@@ -264,7 +264,7 @@ curl -s -X POST "http://keycloak.default:7080/realms/mcp/protocol/openid-connect
 
 Then use the token to make the request:
 ```shell
-curl -v -X POST http://gw.default.svc.cluster.local:8080/mcp \
+curl -v -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json,text/event-stream" \
   -H "Authorization: Bearer $TOKEN" \

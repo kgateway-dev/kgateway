@@ -1,0 +1,55 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: tls-policy
+  namespace: default
+spec:
+  targetRefs:
+  - kind: Gateway
+    name: test
+    group: gateway.networking.k8s.io
+  frontend:
+    tls:
+      alpnProtocols:
+      - h2
+      - http/1.1
+      handshakeTimeout: 15s
+---
+# Output
+output:
+- Policy:
+    frontend:
+      tls:
+        alpn:
+          protocols:
+          - h2
+          - http/1.1
+        tlsHandshakeTimeout: 15s
+    key: frontend/default/tls-policy:frontend-tls:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: tls-policy
+      namespace: default
+    target:
+      gateway:
+        name: test
+        namespace: default
+status:
+  ancestors:
+  - ancestorRef:
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      name: test
+      namespace: default
+    conditions:
+    - lastTransitionTime: fake
+      message: Policy accepted
+      reason: Valid
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: fake
+      message: Attached to all targets
+      reason: Attached
+      status: "True"
+      type: Attached
+    controllerName: agentgateway.dev/agentgateway

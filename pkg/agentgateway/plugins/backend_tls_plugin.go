@@ -71,6 +71,10 @@ func translatePoliciesForBackendTLS(
 			policyTarget = &api.PolicyTarget{
 				Kind: utils.ServiceTarget(btls.Namespace, string(target.Name), (*string)(target.SectionName)),
 			}
+		case wellknown.InferencePoolKind:
+			policyTarget = &api.PolicyTarget{
+				Kind: utils.InferencePoolTarget(btls.Namespace, string(target.Name), (*string)(target.SectionName)),
+			}
 		default:
 			logger.Warn("unsupported target kind", "kind", target.Kind, "policy", btls.Name)
 			continue

@@ -902,8 +902,11 @@ func processExtProcPolicy(
 	if err != nil {
 		return nil, fmt.Errorf("failed to build extProc: %v", err)
 	}
+
 	spec := &api.TrafficPolicySpec_ExtProc{
 		Target: be,
+		// always use FAIL_CLOSED to prevent silent data loss when ExtProc is unavailable.
+		FailureMode: api.TrafficPolicySpec_ExtProc_FAIL_CLOSED,
 	}
 
 	extprocPolicy := &api.Policy{

@@ -9,6 +9,7 @@ env:
   VERSION: '1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }}
   GO_TEST_RETRIES: 2
+  ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -59,7 +60,7 @@ jobs:
         # December 4, 2025: ~22 minutes
         - cluster-name: 'cluster-six'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$'
+          go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
           localstack: 'false'
         # December 4, 2025: ~9 minutes
         - cluster-name: 'api-validation' # TODO: rename to cluster-seven
@@ -79,7 +80,7 @@ jobs:
         # December 4, 2025: ~17 minutes
         - cluster-name: 'agent-gateway-cluster'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestAgentgatewayIntegration|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRolloutAgentGateway$$'
+          go-test-run-regex: '^TestAgentgatewayIntegration$$|^TestZeroDowntimeRolloutAgentgateway$$'
           agentgateway: 'true'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support

@@ -89,6 +89,11 @@ var (
 	GwApiRequireSessionPersistence = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_1_0,
 	}
+
+	// Gateway.spec.tls.frontend was added in 1.4.0 experimental
+	GwApiRequireFrontendTLSConfig = map[GwApiChannel]*GwApiVersion{
+		GwApiChannelExperimental: &GwApiV1_4_0,
+	}
 )
 
 // selfManagedGatewayAnnotation is the annotation used to mark a Gateway as self-managed in e2e tests
@@ -320,7 +325,7 @@ func (s *BaseTestingSuite) SetupSuite() {
 	s.detectAndCacheGwApiInfo()
 
 	// Check suite-level version requirements before proceeding
-	if s.skipSuite() {
+	if s.SkipSuite() {
 		// There isn't a way to skip the whole suite, but still need to check here to avoid the setup of potentially incompatible resources.
 		s.T().Logf("Suite requires Gateway API %s, but current is %s/%s", s.MinGwApiVersion, s.getCurrentGwApiChannel(), s.getCurrentGwApiVersion())
 		return
@@ -335,7 +340,7 @@ func (s *BaseTestingSuite) SetupSuite() {
 }
 
 func (s *BaseTestingSuite) TearDownSuite() {
-	if testutils.ShouldSkipCleanup(s.T()) || s.skipSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) || s.SkipSuite() {
 		return
 	}
 
@@ -346,7 +351,7 @@ func (s *BaseTestingSuite) TearDownSuite() {
 
 func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 	// Check first if the suite should be skipped due to version requirements to cover cases when the testcase is not defined.
-	if s.skipSuite() {
+	if s.SkipSuite() {
 		s.T().Skip("Skipping all tests in suite due to gateway API version requirements")
 	}
 
@@ -379,7 +384,7 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 
 	// Check if the test was skipped due to version requirements
 	// If so, don't try to delete resources that were never applied
-	if s.skipTest(testCase) || s.skipSuite() {
+	if s.skipTest(testCase) || s.SkipSuite() {
 		return
 	}
 
@@ -605,8 +610,8 @@ func (s *BaseTestingSuite) skipTest(testCase *TestCase) bool {
 	return !s.checkCompatibleWithApiVersion(testCase.MinGwApiVersion, testCase.MaxGwApiVersion, currentChannel, currentVersion)
 }
 
-// skipSuite determines if the entire suite should be skipped based on suite-level minimum version requirements.
-func (s *BaseTestingSuite) skipSuite() bool {
+// SkipSuite determines if the entire suite should be skipped based on suite-level minimum version requirements.
+func (s *BaseTestingSuite) SkipSuite() bool {
 	if len(s.MinGwApiVersion) == 0 {
 		return false // No requirements = run on any channel/version
 	}

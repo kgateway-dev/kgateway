@@ -393,6 +393,7 @@ func GetDefaultClassInfo(
 	classInfos := map[string]*deployer.GatewayClassInfo{}
 	refOverrides := globalSettings.GatewayClassParametersRefs
 	if globalSettings.EnableEnvoy {
+		logger.Info("enabling envoy gateway class")
 		classInfos[gatewayClassName] = &deployer.GatewayClassInfo{
 			Description:       "Standard class for managing Gateway API ingress traffic.",
 			Labels:            map[string]string{},
@@ -417,6 +418,7 @@ func GetDefaultClassInfo(
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
+		logger.Info("enabling agentgateway gateway class")
 		classInfos[agwClassName] = &deployer.GatewayClassInfo{
 			Description:       "Specialized class for agentgateway.",
 			Labels:            map[string]string{},
