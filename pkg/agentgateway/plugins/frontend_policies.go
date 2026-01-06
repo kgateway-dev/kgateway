@@ -244,33 +244,25 @@ func translateFrontendTLS(policy *agentgateway.AgentgatewayPolicy, name string, 
 
 	if tls.MaxTLSVersion != nil {
 		switch *tls.MaxTLSVersion {
-		case agentgateway.TLSVersion1_0:
-			spec.MaxTlsVersion = ptr.Of(api.TLSConfig_TLS_V1_0)
-		case agentgateway.TLSVersion1_1:
-			spec.MaxTlsVersion = ptr.Of(api.TLSConfig_TLS_V1_1)
 		case agentgateway.TLSVersion1_2:
-			spec.MaxTlsVersion = ptr.Of(api.TLSConfig_TLS_V1_2)
+			spec.MaxVersion = ptr.Of(api.TLSConfig_TLS_V1_2)
 		case agentgateway.TLSVersion1_3:
-			spec.MaxTlsVersion = ptr.Of(api.TLSConfig_TLS_V1_3)
+			spec.MaxVersion = ptr.Of(api.TLSConfig_TLS_V1_3)
 		default:
-			logger.Warn("unknown tls version", "version", tls.MaxTLSVersion)
-			spec.MaxTlsVersion = nil
+			logger.Warn("unknown tls version for max", "version", tls.MaxTLSVersion)
+			spec.MaxVersion = nil
 		}
 	}
 
 	if tls.MinTLSVersion != nil {
 		switch *tls.MinTLSVersion {
-		case agentgateway.TLSVersion1_0:
-			spec.MinTlsVersion = ptr.Of(api.TLSConfig_TLS_V1_0)
-		case agentgateway.TLSVersion1_1:
-			spec.MinTlsVersion = ptr.Of(api.TLSConfig_TLS_V1_1)
 		case agentgateway.TLSVersion1_2:
-			spec.MinTlsVersion = ptr.Of(api.TLSConfig_TLS_V1_2)
+			spec.MinVersion = ptr.Of(api.TLSConfig_TLS_V1_2)
 		case agentgateway.TLSVersion1_3:
-			spec.MinTlsVersion = ptr.Of(api.TLSConfig_TLS_V1_3)
+			spec.MinVersion = ptr.Of(api.TLSConfig_TLS_V1_3)
 		default:
-			logger.Warn("unknown tls version", "version", tls.MinTLSVersion)
-			spec.MinTlsVersion = nil
+			logger.Warn("unknown tls version for min", "version", tls.MinTLSVersion)
+			spec.MinVersion = nil
 		}
 	}
 

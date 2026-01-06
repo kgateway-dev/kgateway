@@ -344,15 +344,16 @@ type FrontendTLS struct {
 	// TODO: mirror the tuneables on BackendTLS
 }
 
+// +kubebuilder:validation:Enum="1.2";"1.3"
 type TLSVersion string
 
 const (
-	TLSVersion1_0 TLSVersion = "1.0"
-	TLSVersion1_1 TLSVersion = "1.1"
+	// agentgateway currently only supports TLS 1.2 and TLS 1.3
 	TLSVersion1_2 TLSVersion = "1.2"
 	TLSVersion1_3 TLSVersion = "1.3"
 )
 
+// +kubebuilder:validation:Enum=TLS13_AES_256_GCM_SHA384;TLS13_AES_128_GCM_SHA256;TLS13_CHACHA20_POLY1305_SHA256;TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384;TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256;TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256;TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384;TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256;TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
 type CipherSuite string
 
 const (
