@@ -19,6 +19,7 @@ import (
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/sets"
 	"istio.io/istio/pkg/workloadapi"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -77,6 +78,8 @@ type Syncer struct {
 	Outputs OutputCollections
 
 	gatewayCollectionOptions []translator.GatewayCollectionConfigOption
+
+	customResourceCollections func(cfg CustomResourceCollectionsConfig)
 }
 
 func NewAgwSyncer(
@@ -102,6 +105,7 @@ func NewAgwSyncer(
 		NackPublisher:            nack.NewPublisher(client),
 		gatewayCollectionOptions: []translator.GatewayCollectionConfigOption{
 			translator.WithGatewayTransformationFunc(cfg.GatewayTransformationFunc)},
+		customResourceCollections: cfg.CustomResourceCollections,
 	}
 	logger.Debug("init agentgateway Syncer", "controllername", controllerName)
 
@@ -119,12 +123,40 @@ type OutputCollections struct {
 	Addresses krt.Collection[Address]
 }
 
+type CustomResourceCollectionsConfig struct {
+	ControllerName    string
+	Gateways          krt.Collection[*gwv1.Gateway]
+	ListenerSets      krt.Collection[translator.ListenerSet]
+	GatewayClasses    krt.Collection[translator.GatewayClass]
+	Namespaces        krt.Collection[*corev1.Namespace]
+	Grants            translator.ReferenceGrants
+	Secrets           krt.Collection[*corev1.Secret]
+	ConfigMaps        krt.Collection[*corev1.ConfigMap]
+	KrtOpts           krtutil.KrtOptions
+	StatusCollections *status.StatusCollections
+}
+
 func (s *Syncer) buildResourceCollections(krtopts krtutil.KrtOptions) {
 	// Build core collections for irs
 	gatewayClasses := translator.GatewayClassesCollection(s.agwCollections.GatewayClasses, krtopts)
 	refGrants := translator.BuildReferenceGrants(translator.ReferenceGrantsCollection(s.agwCollections.ReferenceGrants, krtopts))
 	listenerSetStatus, listenerSets := s.buildListenerSetCollection(gatewayClasses, refGrants, krtopts)
 	status.RegisterStatus(s.statusCollections, listenerSetStatus, translator.GetStatus)
+	if s.customResourceCollections != nil {
+		s.customResourceCollections(CustomResourceCollectionsConfig{
+			ControllerName:    s.controllerName,
+			Gateways:          s.agwCollections.Gateways,
+			ListenerSets:      listenerSets,
+			GatewayClasses:    gatewayClasses,
+			Namespaces:        s.agwCollections.Namespaces,
+			Grants:            refGrants,
+			Secrets:           s.agwCollections.Secrets,
+			ConfigMaps:        s.agwCollections.ConfigMaps,
+			KrtOpts:           krtopts,
+			StatusCollections: s.statusCollections,
+		})
+	}
+
 	gatewayInitialStatus, gateways := s.buildGatewayCollection(gatewayClasses, listenerSets, refGrants, krtopts)
 
 	// Build Agw resources for gateway

@@ -384,7 +384,7 @@ func ListenerSetCollection(
 			status := obj.Status.DeepCopy()
 
 			p := ls.ParentRef
-			if normalizeReference(p.Group, p.Kind, wellknown.GatewayGVK) != wellknown.GatewayGVK {
+			if NormalizeReference(p.Group, p.Kind, wellknown.GatewayGVK) != wellknown.GatewayGVK {
 				// Cannot report status since we don't know if it is for us
 				return nil, nil
 			}
@@ -407,7 +407,7 @@ func ListenerSetCollection(
 
 			controllerName := class.Controller
 
-			if !namespaceAcceptedByAllowListeners(obj.Namespace, parentGwObj, func(s string) *corev1.Namespace {
+			if !NamespaceAcceptedByAllowListeners(obj.Namespace, parentGwObj, func(s string) *corev1.Namespace {
 				return ptr.Flatten(krt.FetchOne(ctx, namespaces, krt.FilterKey(s)))
 			}) {
 				//reportNotAllowedListenerSet(status, obj)
@@ -491,8 +491,8 @@ func BuildRouteParents(
 	}
 }
 
-// namespaceAcceptedByAllowListeners determines a list of allowed namespaces for a given AllowedListener
-func namespaceAcceptedByAllowListeners(localNamespace string, parent *gwv1.Gateway, lookupNamespace func(string) *corev1.Namespace) bool {
+// NamespaceAcceptedByAllowListeners determines a list of allowed namespaces for a given AllowedListener
+func NamespaceAcceptedByAllowListeners(localNamespace string, parent *gwv1.Gateway, lookupNamespace func(string) *corev1.Namespace) bool {
 	lr := parent.Spec.AllowedListeners
 	// Default allows none
 	if lr == nil || lr.Namespaces == nil {
@@ -579,18 +579,18 @@ func reportListenerSetStatus(
 	// Accepted: is the configuration valid. We only have errors in listeners, and the status is not supposed to
 	// be tied to listeners, so this is always accepted
 	// Programmed: is the data plane "ready" (note: eventually consistent)
-	gatewayConditions := map[string]*condition{
+	gatewayConditions := map[string]*Condition{
 		string(gwv1.GatewayConditionAccepted): {
-			reason:  string(gwv1.GatewayReasonAccepted),
-			message: "Resource accepted",
+			Reason:  string(gwv1.GatewayReasonAccepted),
+			Message: "Resource accepted",
 		},
 		string(gwv1.GatewayConditionProgrammed): {
-			reason:  string(gwv1.GatewayReasonProgrammed),
-			message: "Resource programmed",
+			Reason:  string(gwv1.GatewayReasonProgrammed),
+			Message: "Resource programmed",
 		},
 	}
 
 	//setProgrammedCondition(gatewayConditions, internal, gatewayServices, warnings, allUsable)
 
-	gs.Conditions = setConditions(obj.Generation, gs.Conditions, gatewayConditions)
+	gs.Conditions = SetConditions(obj.Generation, gs.Conditions, gatewayConditions)
 }

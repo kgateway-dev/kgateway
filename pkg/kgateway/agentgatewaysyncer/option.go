@@ -4,6 +4,7 @@ import "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 
 type agentgatewaySyncerConfig struct {
 	GatewayTransformationFunc translator.GatewayTransformationFunction
+	CustomResourceCollections func(cfg CustomResourceCollectionsConfig)
 }
 
 type AgentgatewaySyncerOption func(*agentgatewaySyncerConfig)
@@ -20,6 +21,14 @@ func WithGatewayTransformationFunc(f translator.GatewayTransformationFunction) A
 	return func(o *agentgatewaySyncerConfig) {
 		if f != nil {
 			o.GatewayTransformationFunc = f
+		}
+	}
+}
+
+func WithCustomResourceCollections(f func(cfg CustomResourceCollectionsConfig)) AgentgatewaySyncerOption {
+	return func(o *agentgatewaySyncerConfig) {
+		if f != nil {
+			o.CustomResourceCollections = f
 		}
 	}
 }

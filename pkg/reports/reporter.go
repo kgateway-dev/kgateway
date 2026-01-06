@@ -274,6 +274,10 @@ func (g *ListenerSetReport) SetCondition(gc reporter.GatewayCondition) {
 	meta.SetStatusCondition(&g.conditions, condition)
 }
 
+func (g *ListenerSetReport) GetObservedGeneration() int64 {
+	return g.observedGeneration
+}
+
 func NewListenerReport(name string) *ListenerReport {
 	lr := ListenerReport{}
 	// Set SupportedKinds to empty slice because it must be non-nil

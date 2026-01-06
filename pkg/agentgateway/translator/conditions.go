@@ -58,30 +58,30 @@ type ConfigError struct {
 	Message string
 }
 
-type condition struct {
-	// reason defines the reason to report on success. Ignored if error is set
-	reason string
-	// message defines the message to report on success. Ignored if error is set
-	message string
-	// status defines the status to report on success. The inverse will be set if error is set
+type Condition struct {
+	// Reason defines the Reason to report on success. Ignored if error is set
+	Reason string
+	// Message defines the Message to report on success. Ignored if error is set
+	Message string
+	// Status defines the Status to report on success. The inverse will be set if error is set
 	// If not set, will default to StatusTrue
-	status metav1.ConditionStatus
-	// error defines an error state; the reason and message will be replaced with that of the error and
+	Status metav1.ConditionStatus
+	// Error defines an Error state; the reason and message will be replaced with that of the Error and
 	// the status inverted
-	error *ConfigError
-	// setOnce, if enabled, will only set the condition if it is not yet present or set to this reason
-	setOnce string
+	Error *ConfigError
+	// SetOnce, if enabled, will only set the condition if it is not yet present or set to this reason
+	SetOnce string
 }
 
-// setConditions sets the existingConditions with the new conditions
-func setConditions(generation int64, existingConditions []metav1.Condition, conditions map[string]*condition) []metav1.Condition {
+// SetConditions sets the existingConditions with the new conditions
+func SetConditions(generation int64, existingConditions []metav1.Condition, conditions map[string]*Condition) []metav1.Condition {
 	// Sort keys for deterministic ordering
 	for _, k := range slices.Sort(maps.Keys(conditions)) {
 		cond := conditions[k]
 		setter := kstatus.UpdateConditionIfChanged
-		if cond.setOnce != "" {
+		if cond.SetOnce != "" {
 			setter = func(conditions []metav1.Condition, condition metav1.Condition) []metav1.Condition {
-				return kstatus.CreateCondition(conditions, condition, cond.setOnce)
+				return kstatus.CreateCondition(conditions, condition, cond.SetOnce)
 			}
 		}
 		// A condition can be "negative polarity" (ex: ListenerInvalid) or "positive polarity" (ex:
@@ -91,17 +91,17 @@ func setConditions(generation int64, existingConditions []metav1.Condition, cond
 		// will be inverted to StatusTrue to indicate listeners are invalid. See
 		// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
 		// for more information
-		if cond.error != nil {
+		if cond.Error != nil {
 			existingConditions = setter(existingConditions, metav1.Condition{
 				Type:               k,
-				Status:             kstatus.InvertStatus(cond.status),
+				Status:             kstatus.InvertStatus(cond.Status),
 				ObservedGeneration: generation,
 				LastTransitionTime: metav1.Now(),
-				Reason:             cond.error.Reason,
-				Message:            cond.error.Message,
+				Reason:             cond.Error.Reason,
+				Message:            cond.Error.Message,
 			})
 		} else {
-			status := cond.status
+			status := cond.Status
 			if status == "" {
 				status = kstatus.StatusTrue
 			}
@@ -110,8 +110,8 @@ func setConditions(generation int64, existingConditions []metav1.Condition, cond
 				Status:             status,
 				ObservedGeneration: generation,
 				LastTransitionTime: metav1.Now(),
-				Reason:             cond.reason,
-				Message:            cond.message,
+				Reason:             cond.Reason,
+				Message:            cond.Message,
 			})
 		}
 	}
@@ -119,7 +119,7 @@ func setConditions(generation int64, existingConditions []metav1.Condition, cond
 }
 
 func reportListenerCondition(index int, l gwv1.Listener, obj controllers.Object,
-	statusListeners []gwv1.ListenerStatus, conditions map[string]*condition,
+	statusListeners []gwv1.ListenerStatus, conditions map[string]*Condition,
 ) []gwv1.ListenerStatus {
 	for index >= len(statusListeners) {
 		statusListeners = append(statusListeners, gwv1.ListenerStatus{})
@@ -127,16 +127,16 @@ func reportListenerCondition(index int, l gwv1.Listener, obj controllers.Object,
 	cond := statusListeners[index].Conditions
 	supported, valid := GenerateSupportedKinds(l)
 	if !valid {
-		conditions[string(gwv1.ListenerConditionResolvedRefs)] = &condition{
-			reason:  string(gwv1.ListenerReasonInvalidRouteKinds),
-			status:  metav1.ConditionFalse,
-			message: "Invalid route kinds",
+		conditions[string(gwv1.ListenerConditionResolvedRefs)] = &Condition{
+			Reason:  string(gwv1.ListenerReasonInvalidRouteKinds),
+			Status:  metav1.ConditionFalse,
+			Message: "Invalid route kinds",
 		}
 	}
 	statusListeners[index] = gwv1.ListenerStatus{
 		Name:           l.Name,
 		SupportedKinds: supported,
-		Conditions:     setConditions(obj.GetGeneration(), cond, conditions),
+		Conditions:     SetConditions(obj.GetGeneration(), cond, conditions),
 	}
 	return statusListeners
 }

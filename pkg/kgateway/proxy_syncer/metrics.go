@@ -87,14 +87,14 @@ func (r snapshotResourcesMetricLabels) toMetricsLabels() []metrics.Label {
 	}
 }
 
-// statusSyncMetricLabels defines the labels for status sync metrics.
-type statusSyncMetricLabels struct {
+// StatusSyncMetricLabels defines the labels for status sync metrics.
+type StatusSyncMetricLabels struct {
 	Name      string
 	Namespace string
 	Syncer    string
 }
 
-func (s statusSyncMetricLabels) toMetricsLabels() []metrics.Label {
+func (s StatusSyncMetricLabels) toMetricsLabels() []metrics.Label {
 	return []metrics.Label{
 		{Name: nameLabel, Value: s.Name},
 		{Name: namespaceLabel, Value: s.Namespace},
@@ -102,10 +102,10 @@ func (s statusSyncMetricLabels) toMetricsLabels() []metrics.Label {
 	}
 }
 
-// collectStatusSyncMetrics is called at the start of a status sync function to
+// CollectStatusSyncMetrics is called at the start of a status sync function to
 // begin metrics collection and returns a function called at the end to complete
 // metrics recording.
-func collectStatusSyncMetrics(labels statusSyncMetricLabels) func(error) {
+func CollectStatusSyncMetrics(labels StatusSyncMetricLabels) func(error) {
 	if !metrics.Active() {
 		return func(err error) {}
 	}

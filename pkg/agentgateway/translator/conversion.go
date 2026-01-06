@@ -633,7 +633,7 @@ func buildAgwDestination(
 	k schema.GroupVersionKind,
 	backendCol krt.Collection[*v1alpha2.AgentgatewayBackend],
 ) (*api.RouteBackend, *reporter.RouteCondition) {
-	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
+	ref := NormalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
 	if toNs := to.Namespace; toNs != nil && string(*toNs) != ns {
 		if !ctx.Grants.BackendAllowed(ctx.Krt, k, to.Name, *toNs, ns, ref) {
@@ -814,10 +814,10 @@ var allowedParentReferences = sets.New(
 	wellknown.ServiceEntryGVK,
 )
 
-// normalizeReference normalizes group and kind references to a standard GVK format.
+// NormalizeReference normalizes group and kind references to a standard GVK format.
 // If group or kind are nil/empty, it uses the default GVK's group/kind.
 // Empty group is treated as "core" API group.
-func normalizeReference(group *gwv1.Group, kind *gwv1.Kind, defaultGVK schema.GroupVersionKind) schema.GroupVersionKind {
+func NormalizeReference(group *gwv1.Group, kind *gwv1.Kind, defaultGVK schema.GroupVersionKind) schema.GroupVersionKind {
 	result := defaultGVK
 
 	if kind != nil && *kind != "" {
@@ -844,7 +844,7 @@ func normalizeReference(group *gwv1.Group, kind *gwv1.Kind, defaultGVK schema.Gr
 
 // ToInternalParentReference converts a gwv1.ParentReference to a ParentKey.
 func ToInternalParentReference(p gwv1.ParentReference, localNamespace string) (ParentKey, error) {
-	ref := normalizeReference(p.Group, p.Kind, wellknown.GatewayGVK)
+	ref := NormalizeReference(p.Group, p.Kind, wellknown.GatewayGVK)
 	if !allowedParentReferences.Contains(wellknown.GatewayGVK) {
 		return ParentKey{}, fmt.Errorf("unsupported Parent: %v/%v", p.Group, p.Kind)
 	}
@@ -1214,23 +1214,23 @@ func BuildListener(
 	listenerIndex int,
 	portErr error,
 ) ([]string, *TLSInfo, []gwv1.ListenerStatus, bool) {
-	listenerConditions := map[string]*condition{
+	listenerConditions := map[string]*Condition{
 		string(gwv1.ListenerConditionAccepted): {
-			reason:  string(gwv1.ListenerReasonAccepted),
-			message: "No errors found",
+			Reason:  string(gwv1.ListenerReasonAccepted),
+			Message: "No errors found",
 		},
 		string(gwv1.ListenerConditionProgrammed): {
-			reason:  string(gwv1.ListenerReasonProgrammed),
-			message: "No errors found",
+			Reason:  string(gwv1.ListenerReasonProgrammed),
+			Message: "No errors found",
 		},
 		string(gwv1.ListenerConditionConflicted): {
-			reason:  string(gwv1.ListenerReasonNoConflicts),
-			message: "No errors found",
-			status:  kstatus.StatusFalse,
+			Reason:  string(gwv1.ListenerReasonNoConflicts),
+			Message: "No errors found",
+			Status:  kstatus.StatusFalse,
 		},
 		string(gwv1.ListenerConditionResolvedRefs): {
-			reason:  string(gwv1.ListenerReasonResolvedRefs),
-			message: "No errors found",
+			Reason:  string(gwv1.ListenerReasonResolvedRefs),
+			Message: "No errors found",
 		},
 	}
 
@@ -1242,15 +1242,15 @@ func BuildListener(
 		err = validateTLS(tlsInfo)
 	}
 	if err != nil {
-		listenerConditions[string(gwv1.ListenerConditionResolvedRefs)].error = err
-		listenerConditions[string(gwv1.GatewayConditionProgrammed)].error = &ConfigError{
+		listenerConditions[string(gwv1.ListenerConditionResolvedRefs)].Error = err
+		listenerConditions[string(gwv1.GatewayConditionProgrammed)].Error = &ConfigError{
 			Reason:  string(gwv1.GatewayReasonInvalid),
 			Message: "Bad TLS configuration",
 		}
 		ok = false
 	}
 	if portErr != nil {
-		listenerConditions[string(gwv1.ListenerConditionAccepted)].error = &ConfigError{
+		listenerConditions[string(gwv1.ListenerConditionAccepted)].Error = &ConfigError{
 			Reason:  string(gwv1.ListenerReasonUnsupportedProtocol),
 			Message: portErr.Error(),
 		}
@@ -1261,7 +1261,7 @@ func BuildListener(
 	// TODO: do we need this?
 	_, perr := listenerProtocolToAgw(l.Protocol)
 	if perr != nil {
-		listenerConditions[string(gwv1.ListenerConditionAccepted)].error = &ConfigError{
+		listenerConditions[string(gwv1.ListenerConditionAccepted)].Error = &ConfigError{
 			Reason:  string(gwv1.ListenerReasonUnsupportedProtocol),
 			Message: perr.Error(),
 		}
@@ -1430,7 +1430,7 @@ func buildCaCertificateReference(
 		Info: TLSInfo{},
 	}
 
-	switch normalizeReference(&ref.Group, &ref.Kind, schema.GroupVersionKind{}) {
+	switch NormalizeReference(&ref.Group, &ref.Kind, schema.GroupVersionKind{}) {
 	case wellknown.ConfigMapGVK:
 		res.Kind = wellknown.ConfigMapGVK.Kind
 		cm := ptr.Flatten(krt.FetchOne(ctx, configMaps, krt.FilterObjectName(res.Source)))
@@ -1487,7 +1487,7 @@ func buildSecretReference(
 	gw controllers.Object,
 	secrets krt.Collection[*corev1.Secret],
 ) (*SecretReference, *ConfigError) {
-	if normalizeReference(ref.Group, ref.Kind, wellknown.SecretGVK) != wellknown.SecretGVK {
+	if NormalizeReference(ref.Group, ref.Kind, wellknown.SecretGVK) != wellknown.SecretGVK {
 		return nil, &ConfigError{Reason: InvalidTLS, Message: fmt.Sprintf("invalid certificate reference %v, only secret is allowed", objectReferenceString(ref))}
 	}
 
