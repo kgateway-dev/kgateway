@@ -196,8 +196,8 @@ github.com/PuerkitoBio/goquery v1.10.1 h1:Y8JGYUkXWTGRB6Ars3+j3kN0xg1YqqlwvdTV8W
 github.com/PuerkitoBio/goquery v1.10.1/go.mod h1:IYiHrOMps66ag56LEH7QYDDupKXyo5A8qrjIx3ZtujY=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpHMqeKTCYkitsPqHNxTmd4SNR5r94FGM8=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d/go.mod h1:asat636LX7Bqt5lYEZ27JNDcqxfjdBQuJ/MM4CN/Lzo=
-github.com/agentgateway/agentgateway v0.11.0-alpha.1.0.20251218160022-f0552ee66d6d h1:pr4TOPsfQwjpUIsx0sO+t7+XVCWIXFmmeWEEboK9gCc=
-github.com/agentgateway/agentgateway v0.11.0-alpha.1.0.20251218160022-f0552ee66d6d/go.mod h1:/Lzpteag/nnE4bwW/3Dh5GaxuICmCQs40VhQpkTatlk=
+github.com/agentgateway/agentgateway v0.11.0 h1:+0SDC/YTRJFUtkfFGe3zvxydIEJHGrwVL6pQEThy+yc=
+github.com/agentgateway/agentgateway v0.11.0/go.mod h1:/Lzpteag/nnE4bwW/3Dh5GaxuICmCQs40VhQpkTatlk=
 github.com/agnivade/levenshtein v1.2.1 h1:EHBY3UOn1gwdy/VbFwgo4cxecRznFk7fKWN1KOX7eoM=
 github.com/agnivade/levenshtein v1.2.1/go.mod h1:QVVI16kDrtSuwcpd0p1+xMC6Z/VfhtCyDIjcwga4/DU=
 github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7/go.mod h1:6zEj6s6u/ghQa61ZWa/C2Aw3RkjiTBOix7dkqa1VLIs=
@@ -2347,8 +2347,8 @@ sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231019135941-15d7928
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231019135941-15d792835235/go.mod h1:TF/lVLWS+JNNaVqJuDDictY2hZSXSsIHCx4FClMvqFg=
 sigs.k8s.io/controller-tools v0.19.1-0.20251023132335-bf7d6b742e6a h1:xQ53A2QHllr4m5a6jJBZ+gmA3X1PTpFUZZOJmKmqsZA=
 sigs.k8s.io/controller-tools v0.19.1-0.20251023132335-bf7d6b742e6a/go.mod h1:1xadwE5nu9G5zDyJQxFP1AE8E4t7kIkQraKHux9GuE4=
-sigs.k8s.io/gateway-api v1.4.0 h1:ZwlNM6zOHq0h3WUX2gfByPs2yAEsy/EenYJB78jpQfQ=
-sigs.k8s.io/gateway-api v1.4.0/go.mod h1:AR5RSqciWP98OPckEjOjh2XJhAe2Na4LHyXD2FUY7Qk=
+sigs.k8s.io/gateway-api v1.4.1 h1:NPxFutNkKNa8UfLd2CMlEuhIPMQgDQ6DXNKG9sHbJU8=
+sigs.k8s.io/gateway-api v1.4.1/go.mod h1:AR5RSqciWP98OPckEjOjh2XJhAe2Na4LHyXD2FUY7Qk=
 sigs.k8s.io/gateway-api-inference-extension v1.1.0 h1:MqRYk+3LNUWB0MbTgTZVhmJGNDTvm8l3ze4MOlzR7MU=
 sigs.k8s.io/gateway-api-inference-extension v1.1.0/go.mod h1:BmJy8Hvc2EHl3Oa/Ka8/4RqwVHCCbX7BLndLdMNtugI=
 sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 h1:IpInykpT6ceI+QxKBbEflcR5EXP7sU1kvOlxwZh5txg=

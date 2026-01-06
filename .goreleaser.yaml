@@ -74,6 +74,26 @@ dockers:
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
   - image_templates:
+      - &agentgateway_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+    use: buildx
+    dockerfile: &agentgateway_dockerfile cmd/kgateway/Dockerfile.agentgateway
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+      - "--build-arg=GOARCH=arm64"
+  - image_templates:
+      - &agentgateway_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+    use: buildx
+    dockerfile: *agentgateway_dockerfile
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+      - "--build-arg=GOARCH=amd64"
+  - image_templates:
       - &sds_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
     dockerfile: &sds_dockerfile cmd/sds/Dockerfile
@@ -137,6 +157,10 @@ docker_manifests:
     image_templates:
       - *controller_arm_image
       - *controller_amd_image
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}"
+    image_templates:
+      - *agentgateway_arm_image
+      - *agentgateway_amd_image
   - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}"
     image_templates:
       - *sds_arm_image
@@ -183,6 +207,7 @@ release:
     - {{ .Env.VANITY_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}
     - {{ .Env.VANITY_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}
     - {{ .Env.VANITY_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}
+    - {{ .Env.AGW_VANITY_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}
 
     ## Quickstart
 

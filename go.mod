@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go and test/deployer/testdata/*
-	github.com/agentgateway/agentgateway v0.11.0-alpha.1.0.20251218160022-f0552ee66d6d
+	github.com/agentgateway/agentgateway v0.11.0
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/cncf/xds/go v0.0.0-20251110193048-8bfbf64dc13e
 	github.com/envoyproxy/go-control-plane v0.14.0
@@ -48,7 +48,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20250814151709-d7b6acb124c3 // indirect
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 	sigs.k8s.io/controller-runtime v0.22.3
-	sigs.k8s.io/gateway-api v1.4.0
+	sigs.k8s.io/gateway-api v1.4.1
 	sigs.k8s.io/gateway-api-inference-extension v1.1.0
 	sigs.k8s.io/yaml v1.6.0
 )

@@ -880,6 +880,12 @@ type BackendHTTP struct {
 	// +kubebuilder:validation:Enum=HTTP1;HTTP2
 	// +optional
 	Version *HTTPVersion `json:"version,omitempty"`
+
+	// requestTimeout specifies the deadline for receiving a response from the backend.
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="requestTimeout must be at least 1ms"
+	// +optional
+	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
 }
 
 type HTTPVersion string

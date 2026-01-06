@@ -453,7 +453,7 @@ type APIKeySource struct {
 	Cookie *string `json:"cookie,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;secretSelector
+// +kubebuilder:validation:ExactlyOneOf=secretRef;secretSelector;disable
 type APIKeyAuthentication struct {
 	// keySources specifies the list of key sources to extract the API key from.
 	// Key sources are processed in array order and the first one that successfully
@@ -530,6 +530,11 @@ type APIKeyAuthentication struct {
 	//
 	// +optional
 	SecretSelector *LabelSelector `json:"secretSelector,omitempty"`
+
+	// Disable the API key authentication filter.
+	// Can be used to disable API key authentication policies applied at a higher level in the config hierarchy.
+	// +optional
+	Disable *shared.PolicyDisable `json:"disable,omitempty"`
 }
 
 // LabelSelector selects resources using label selectors.

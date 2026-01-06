@@ -1,0 +1,75 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route-disable
+spec:
+  hostnames:
+    - httpbin
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /status/200
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /get
+      name: public-route
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-keys-secret-gateway
+type: Opaque
+stringData:
+  client1: k-123
+  client2: k-456
+---
+# Apply API key auth at Gateway level
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: api-key-auth-gateway
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
+  apiKeyAuthentication:
+    keySources:
+    - header: "api-key"
+    forwardCredential: false
+    secretRef:
+      name: api-keys-secret-gateway
+---
+# Disable API key auth for specific route using the disable field
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: api-key-auth-route-disable
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: httpbin-route-disable
+      sectionName: public-route
+  apiKeyAuthentication:
+    # disable to override gateway-level policy
+    disable: {}

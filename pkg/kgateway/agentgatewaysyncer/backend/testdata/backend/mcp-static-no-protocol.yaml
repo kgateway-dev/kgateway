@@ -10,6 +10,7 @@ spec:
       static:
         host: mcp-server.example.com
         port: 8080
+    sessionRouting: Stateless
 ---
 # Output
 output:
@@ -24,6 +25,7 @@ output:
 - backend:
     key: default/mcp-static-no-protocol
     mcp:
+      statefulMode: STATELESS
       targets:
       - backend:
           backend: default/mcp-static-no-protocol/default-target

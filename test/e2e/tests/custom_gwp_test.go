@@ -250,9 +250,13 @@ func TestCustomGWP(t *testing.T) {
 		helmutils.InstallOpts{
 			Namespace:       installNs,
 			CreateNamespace: true,
-			ValuesFiles:     []string{e2e.CommonRecommendationManifest, e2e.ManifestPath("custom-gwp-2.yaml")},
-			ReleaseName:     helmutils.AgentgatewayChartName,
-			ChartUri:        chartUriAgentgateway,
+			ValuesFiles: []string{
+				e2e.CommonRecommendationManifest,
+				e2e.ManifestPath("custom-gwp-2.yaml"),
+				e2e.ManifestPath("agent-gateway-integration.yaml"),
+			},
+			ReleaseName: helmutils.AgentgatewayChartName,
+			ChartUri:    chartUriAgentgateway,
 		})
 	if err != nil {
 		t.Fatalf("failed to upgrade Helm: %v", err)

@@ -52,7 +52,7 @@ controller:
     # -- Set the image registry for the controller.
     registry: ""
     # -- Set the image repository for the controller.
-    repository: kgateway
+    repository: controller
     # -- Set the image pull policy for the controller.
     pullPolicy: ""
     # -- Set the image tag for the controller.

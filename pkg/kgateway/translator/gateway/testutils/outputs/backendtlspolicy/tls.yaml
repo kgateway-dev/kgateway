@@ -80,6 +80,48 @@ Clusters:
       sni: example2.com
   type: STRICT_DNS
 - connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_backend-service_443
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        tlsParams: {}
+        validationContext:
+          matchTypedSubjectAltNames:
+          - matcher:
+              exact: example.com
+            sanType: DNS
+          trustedCa:
+            inlineString: |
+              -----BEGIN CERTIFICATE-----
+              MIIDFzCCAf+gAwIBAgIUUP+jhPkrikdqW87lHMDpW3wY13wwDQYJKoZIhvcNAQEL
+              BQAwGzEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTAeFw0yNTA3MDIxMjM0MjRa
+              Fw0yNjA3MDIxMjM0MjRaMBsxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEi
+              MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC2xPi+xL+5M9e6uJb4B9f9Ds2z
+              1Mqeq2OmEaPAwg1BOaRpg9pZ5X9jaj/LGkJ8X7BR6DfMOEvxEBu2ugvO/zlNVd23
+              uWcxdSMjRB52mGZDNycsSCKSJ71EeaWjhI7+IGdJJ2rzaw2NZwiCfcjVgkH7Gfxf
+              OYc7mm18wif9YxVJi87IF8aBJE6u7aKhnQT+SgD2w91+OZNFVBdFEIcqjRH1WMOF
+              KkCY8ejr0aiBWimQVk41iLj1/F/bSqhdadMlBRc3ToLFXOY39HlU7Dq7cf2QfVwf
+              zkUViFwpzvPETX/WVO9IiVExD3cpC3zUjDukjSAd26QS4xP4mvnjo3pymNTnAgMB
+              AAGjUzBRMB0GA1UdDgQWBBSk3FlWiH9236y5hhj7ItT/efSsVjAfBgNVHSMEGDAW
+              gBSk3FlWiH9236y5hhj7ItT/efSsVjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3
+              DQEBCwUAA4IBAQB/j8eD4TfUuCPPCp37Pd/YiWUFa0pZWD1rJcwZtmZFW2E7/86T
+              l0yBEcgbKIsZmUT2rnJG4zcCumAxpzP5LuoO9Wu5RUgqFbM+nGnQ39w53mVC3CV4
+              hcZxSNizMicSwmA01M4HTdv9P7tj/7m9tTb8VQ/TywI3kdMajOPDI+GtrE76m+pP
+              sozQotvRMRmona9+496LBFsStBaP8NiAqZfuleNj0hD1oAdL3ekQ+HZ1b1ABfa6D
+              BxIrQCVvyC4Jl0zLmnEDPIBvsroCVivq4C/MKXbXsn/bDrhMHd5yqDv1/mmvGRSn
+              2b5vNa1aVtIqWJGKpuI2rKzd7LSIQv+kuFF3
+              -----END CERTIFICATE-----
+      sni: example.com
+  type: EDS
+- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
@@ -196,6 +238,25 @@ Statuses:
           group: gateway.kgateway.dev
           kind: Backend
           name: backend1
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    BackendTLSPolicy/default/tls-policy-secret-ref:
+      ancestors:
+      - ancestorRef:
+          group: ""
+          kind: Service
+          name: backend-service
           namespace: default
         conditions:
         - lastTransitionTime: null

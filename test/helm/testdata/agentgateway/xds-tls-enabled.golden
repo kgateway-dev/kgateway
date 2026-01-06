@@ -273,7 +273,7 @@ spec:
       serviceAccountName: test-release-agentgateway
       containers:
         - name: controller
-          image: "cr.agentgateway.dev/kgateway:0.0.1"
+          image: "cr.agentgateway.dev/controller:0.0.1"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9978

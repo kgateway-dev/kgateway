@@ -11,6 +11,7 @@ spec:
         services:
           matchLabels:
             app: mcp-server
+    sessionRouting: Stateless
 ---
 apiVersion: v1
 kind: Service
@@ -32,6 +33,7 @@ output:
 - backend:
     key: default/mcp-service-selector
     mcp:
+      statefulMode: STATELESS
       targets:
       - backend:
           port: 8080
