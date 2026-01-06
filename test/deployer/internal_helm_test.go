@@ -246,6 +246,14 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			Name:      "agentgateway AGWP with pod scheduling fields",
 			InputFile: "agentgateway-agwp-pod-scheduling",
 		},
+		{
+			Name:      "agentgateway with static IP address via overlay",
+			InputFile: "agentgateway-loadbalancer-static-ip",
+		},
+		{
+			Name:      "agentgateway GKE with subsetting and external static IP",
+			InputFile: "agentgateway-gke-subsetting-static-ip",
+		},
 		// TLS test cases
 		{
 			Name:                        "basic gateway with TLS enabled",
