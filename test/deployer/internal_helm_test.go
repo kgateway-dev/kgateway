@@ -60,6 +60,12 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 		}
 	}
 
+	// Istio override function for tests that need Istio auto mTLS enabled
+	istioOverride := func(inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator {
+		inputs.IstioAutoMtlsEnabled = true
+		return nil
+	}
+
 	tests := []HelmTestCase{
 		{
 			Name:      "basic gateway with default gatewayclass and no gwparams",
@@ -261,6 +267,40 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			// Custom configmap name via AgentgatewayParameters deployment overlay:
 			Name:      "agentgateway with custom configmap name via overlay",
 			InputFile: "agentgateway-custom-configmap",
+		},
+		{
+			Name:                        "gateway with istio enabled",
+			InputFile:                   "istio-enabled",
+			HelmValuesGeneratorOverride: istioOverride,
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "name: sds",
+					"sds container should be present when istio is enabled")
+				assert.Contains(t, outputYaml, "name: istio-proxy",
+					"istio-proxy container should be present when istio is enabled")
+				assert.Contains(t, outputYaml, "ISTIO_MTLS_SDS_ENABLED",
+					"ISTIO_MTLS_SDS_ENABLED env var should be present")
+				assert.Contains(t, outputYaml, "name: istio-certs",
+					"istio-certs volume should be present")
+			},
+		},
+		{
+			Name:                        "waypoint gateway with istio enabled",
+			InputFile:                   "istio-enabled-waypoint",
+			HelmValuesGeneratorOverride: istioOverride,
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "name: sds",
+					"sds container should be present when istio is enabled")
+				assert.Contains(t, outputYaml, "name: istio-proxy",
+					"istio-proxy container should be present when istio is enabled")
+				// Waypoint-specific: ClusterIP service type
+				assert.Contains(t, outputYaml, "type: ClusterIP",
+					"waypoint should have ClusterIP service type")
+				// Waypoint-specific: port 15008 for HBONE
+				assert.Contains(t, outputYaml, "port: 15008",
+					"waypoint should have port 15008 for HBONE")
+			},
 		},
 	}
 
