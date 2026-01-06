@@ -751,7 +751,7 @@ func (s *testingSuite) SetRustformationInController(enabled bool) {
 	err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, controllerDeployModified, client.MergeFrom(controllerDeploymentOriginal))
 	s.Assert().NoError(err, "patching controller deployment")
 
-	if enabled {
+	if !enabled {
 		// wait for the changes to be reflected in pod
 		s.TestInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
 			s.Ctx,
