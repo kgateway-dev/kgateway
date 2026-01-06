@@ -98,13 +98,26 @@ func TestUpstreamTlsConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			validation := &envoytlsv3.CertificateValidationContext{}
-			tlsCtx, err := ResolveUpstreamSslConfig(tt.cm, validation, tt.sni)
+			caCert, err := sslutils.GetCACertFromConfigMap(tt.cm)
+			if err != nil {
+				// If we got an error extracting CA cert, check if it matches expected error
+				if tt.expectedError == "" {
+					t.Fatalf("unexpected error extracting CA cert: %v", err)
+				}
+				if !strings.Contains(err.Error(), tt.expectedError) {
+					t.Fatalf("expected error %v but got %v", tt.expectedError, err)
+				}
+				return
+			}
+			// If we expected an error but didn't get one during extraction, continue to check ResolveUpstreamSslConfigFromCA
+			tlsCtx, err := ResolveUpstreamSslConfigFromCA(caCert, validation, tt.sni)
 			if tt.expectedError != "" && err == nil {
 				t.Fatalf("expected error but got nil")
 			} else if tt.expectedError != "" && err != nil {
 				if !strings.Contains(err.Error(), tt.expectedError) {
 					t.Fatalf("expected error %v but got %v", tt.expectedError, err)
 				}
+				return
 			} else if tt.expectedError == "" && err != nil {
 				t.Fatalf("expected no error but got %v", err)
 			}

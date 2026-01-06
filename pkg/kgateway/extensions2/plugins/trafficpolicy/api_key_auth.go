@@ -3,6 +3,7 @@ package trafficpolicy
 import (
 	"fmt"
 
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
@@ -21,7 +22,8 @@ const (
 
 // apiKeyAuthIR is the internal representation of an API key authentication policy.
 type apiKeyAuthIR struct {
-	config *envoyapikeyauthv3.ApiKeyAuthPerRoute
+	config  *envoyapikeyauthv3.ApiKeyAuthPerRoute
+	disable bool
 }
 
 func (a *apiKeyAuthIR) Equals(other *apiKeyAuthIR) bool {
@@ -29,6 +31,9 @@ func (a *apiKeyAuthIR) Equals(other *apiKeyAuthIR) bool {
 		return true
 	}
 	if a == nil || other == nil {
+		return false
+	}
+	if a.disable != other.disable {
 		return false
 	}
 	if a.config == nil && other.config == nil {
@@ -65,6 +70,14 @@ func constructAPIKeyAuth(
 	}
 
 	ak := spec.APIKeyAuthentication
+
+	// Handle disable case
+	if ak.Disable != nil {
+		out.apiKeyAuth = &apiKeyAuthIR{
+			disable: true,
+		}
+		return nil
+	}
 
 	// Resolve secrets using SecretIndex with ReferenceGrant validation
 	var secrets []ir.Secret
@@ -200,7 +213,17 @@ func (p *trafficPolicyPluginGwPass) handleAPIKeyAuth(
 	pCtxTypedFilterConfig *ir.TypedFilterConfigMap,
 	apiKeyAuthIr *apiKeyAuthIR,
 ) {
-	if apiKeyAuthIr == nil || apiKeyAuthIr.config == nil {
+	if apiKeyAuthIr == nil {
+		return
+	}
+
+	// Handle disable case - set disabled flag to override parent policy
+	if apiKeyAuthIr.disable {
+		pCtxTypedFilterConfig.AddTypedConfig(apiKeyAuthFilterNamePrefix, &envoyroutev3.FilterConfig{Disabled: true})
+		return
+	}
+
+	if apiKeyAuthIr.config == nil {
 		return
 	}
 

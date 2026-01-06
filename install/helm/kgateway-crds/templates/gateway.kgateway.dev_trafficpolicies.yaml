@@ -64,6 +64,11 @@ spec:
                       If not specified, the client identifier will not be forwarded in any header.
                       Example: "x-client-id"
                     type: string
+                  disable:
+                    description: |-
+                      Disable the API key authentication filter.
+                      Can be used to disable API key authentication policies applied at a higher level in the config hierarchy.
+                    type: object
                   forwardCredential:
                     description: |-
                       forwardCredential controls whether the API key is included in the request sent to the upstream.
@@ -211,9 +216,9 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of the fields in [secretRef secretSelector]
-                    must be set
-                  rule: '[has(self.secretRef),has(self.secretSelector)].filter(x,x==true).size()
+                - message: exactly one of the fields in [secretRef secretSelector
+                    disable] must be set
+                  rule: '[has(self.secretRef),has(self.secretSelector),has(self.disable)].filter(x,x==true).size()
                     == 1'
               autoHostRewrite:
                 description: |-

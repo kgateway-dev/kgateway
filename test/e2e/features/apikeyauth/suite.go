@@ -561,3 +561,60 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 		expectAPIKeyAuthDenied,
 	)
 }
+
+// TestAPIKeyAuthDisableAtRouteLevel tests the NEW disable field feature
+// This test verifies that API key auth can be disabled at route level to override gateway-level policy
+func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
+	// Verify HTTPRoute is accepted before running the test
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-disable", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+
+	// Test /status/200 route - has gateway-level policy, no route-level override
+	statusReqCurlOpts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(8080),
+		curl.WithPath("/status/200"),
+	}
+	// missing API key, should fail (gateway-level policy applies)
+	s.T().Log("The /status/200 route has gateway-level API key auth, should fail without API key")
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		statusReqCurlOpts,
+		expectAPIKeyAuthDenied,
+	)
+	// has valid API key, should succeed
+	s.T().Log("The /status/200 route should succeed with valid API key from gateway-level policy")
+	statusWithAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		statusWithAPIKeyCurlOpts,
+		expectStatus200Success,
+	)
+
+	// Test /get route - has disable: {} at route level, should NOT require API key
+	getReqCurlOpts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(8080),
+		curl.WithPath("/get"),
+	}
+	// missing API key, should SUCCEED (disable field overrides gateway-level policy)
+	s.T().Log("The /get route has disable: {} at route level, should succeed without API key (NEW FEATURE)")
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getReqCurlOpts,
+		expectStatus200Success,
+	)
+	// has API key, should still succeed (API key is ignored when disabled)
+	s.T().Log("The /get route with disable should succeed even with API key present")
+	getWithAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getWithAPIKeyCurlOpts,
+		expectStatus200Success,
+	)
+}
