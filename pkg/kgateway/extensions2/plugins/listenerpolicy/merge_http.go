@@ -34,6 +34,7 @@ func MergeHttpPolicies(
 		mergeAcceptHttp10,
 		mergeDefaultHostForHttp10,
 		mergeEarlyHeaderMutation,
+		mergeMaxRequestHeadersKb,
 	}
 	for _, mergeFunc := range mergeFuncs {
 		mergeFunc(origin, p1, p2, p2Ref, p2MergeOrigins, mergeOpts, mergeOrigins)
@@ -255,4 +256,20 @@ func mergeEarlyHeaderMutation(
 
 	p1.earlyHeaderMutationExtensions = slices.Clone(p2.earlyHeaderMutationExtensions)
 	mergeOrigins.SetOne(origin+"earlyHeaderMutationExtensions", p2Ref, p2MergeOrigins)
+}
+
+func mergeMaxRequestHeadersKb(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.maxRequestHeadersKb, p2.maxRequestHeadersKb, opts) {
+		return
+	}
+
+	p1.maxRequestHeadersKb = p2.maxRequestHeadersKb
+	mergeOrigins.SetOne(origin+"maxRequestHeadersKb", p2Ref, p2MergeOrigins)
 }

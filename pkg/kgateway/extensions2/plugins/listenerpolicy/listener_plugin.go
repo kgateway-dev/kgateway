@@ -416,6 +416,11 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		out.HttpProtocolOptions.DefaultHostForHttp_10 = *policy.defaultHostForHttp10
 	}
 
+	// translate maxRequestHeadersKb
+	if policy.maxRequestHeadersKb != nil {
+		out.MaxRequestHeadersKb = wrapperspb.UInt32(*policy.maxRequestHeadersKb)
+	}
+
 	return nil
 }
 
