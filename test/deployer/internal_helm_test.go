@@ -263,8 +263,8 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "agentgateway-custom-configmap",
 		},
 		{
-			Name:      "agentgateway with static IP address",
-			InputFile: "agentgateway-loadbalancer-static-ip",
+			Name:      "agentgateway with Gateway.spec.addresses",
+			InputFile: "agentgateway-gateway-addresses",
 		},
 	}
 
