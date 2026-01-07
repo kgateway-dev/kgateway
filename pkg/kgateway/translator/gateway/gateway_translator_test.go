@@ -341,6 +341,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy ExtAuth with cross-namespace GatewayExtension", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extauth-cross-namespace.yaml",
+			outputFile: "traffic-policy/extauth-cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy API Key Authentication at route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/api-key-auth-route.yaml",
@@ -589,6 +600,17 @@ func TestBasic(t *testing.T) {
 			outputFile: "traffic-policy/extproc-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy ExtProc with cross-namespace GatewayExtension", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extproc-cross-namespace.yaml",
+			outputFile: "traffic-policy/extproc-cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
 				Name:      "example-gateway",
 			},
 		})
@@ -1663,6 +1685,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/rate-limit-full-config.yaml",
 			outputFile: "traffic-policy/rate-limit-full-config.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy RateLimit with cross-namespace GatewayExtension", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/ratelimit-cross-namespace.yaml",
+			outputFile: "traffic-policy/ratelimit-cross-namespace.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

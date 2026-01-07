@@ -1,0 +1,247 @@
+# This test validates cross-namespace ExtAuth GatewayExtension configuration
+# with ReferenceGrant enforcement at multiple attachment levels.
+#
+# Coverage:
+# 1. Gateway-level attachment: "gateway-policy" targets the Gateway
+# 2. Listener-level attachment: "listener-policy" targets listener "http2" via sectionName
+# 3. HTTPRoute-level attachment (allowed): "route-allowed-policy" targets "cross-namespace-allowed"
+# 4. HTTPRoute-level attachment (denied): "route-denied-policy" targets "cross-namespace-denied"
+#
+# All policies reference GatewayExtensions that use cross-namespace Service backendRefs:
+# - "allowed-extauth-ext" in "default" namespace: Has ReferenceGrant (should succeed)
+# - "denied-extauth-ext" in "denied" namespace: Missing ReferenceGrant (should fail)
+#
+# The test verifies that cross-namespace Service references in ExtAuth provider
+# backendRefs require a ReferenceGrant, and that the translator correctly handles
+# both allowed and denied cases across all attachment levels.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  allowedRoutes:
+    namespaces:
+      from: All
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+    - name: http2
+      protocol: HTTP
+      port: 8080
+---
+# Route for gateway-level policy test
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gateway-level-route
+spec:
+  parentRefs:
+    - name: example-gateway
+      sectionName: http
+  hostnames:
+    - "gateway.example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /gateway
+---
+# Route for listener-level policy test
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: listener-level-route
+spec:
+  parentRefs:
+    - name: example-gateway
+      sectionName: http2
+  hostnames:
+    - "listener.example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /listener
+---
+# Route for HTTPRoute-level policy test (allowed)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cross-namespace-allowed
+spec:
+  parentRefs:
+    - name: example-gateway
+      sectionName: http
+  hostnames:
+    - "allowed.example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /allowed
+---
+# Route for HTTPRoute-level policy test (denied)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cross-namespace-denied
+spec:
+  parentRefs:
+    - name: example-gateway
+      sectionName: http
+  hostnames:
+    - "denied.example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /denied
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+spec:
+  selector:
+    app: backend-svc
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+# Gateway-level policy attachment
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-policy
+spec:
+  targetRefs:
+    - kind: Gateway
+      group: gateway.networking.k8s.io
+      name: example-gateway
+  extAuth:
+    extensionRef:
+      name: allowed-extauth-ext
+---
+# Listener-level policy attachment (via sectionName)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: listener-policy
+spec:
+  targetRefs:
+    - kind: Gateway
+      group: gateway.networking.k8s.io
+      name: example-gateway
+      sectionName: http2
+  extAuth:
+    extensionRef:
+      name: allowed-extauth-ext
+---
+# HTTPRoute-level policy attachment (allowed - has ReferenceGrant)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-allowed-policy
+spec:
+  targetRefs:
+    - kind: HTTPRoute
+      group: gateway.networking.k8s.io
+      name: cross-namespace-allowed
+  extAuth:
+    extensionRef:
+      name: allowed-extauth-ext
+---
+# HTTPRoute-level policy attachment (denied - missing ReferenceGrant)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-denied-policy
+spec:
+  targetRefs:
+    - kind: HTTPRoute
+      group: gateway.networking.k8s.io
+      name: cross-namespace-denied
+  extAuth:
+    extensionRef:
+      name: denied-extauth-ext
+      namespace: denied
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: remote-extauth
+  namespace: remote
+spec:
+  selector:
+    app: remote-extauth
+  ports:
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+      appProtocol: kubernetes.io/h2c
+---
+# Allow GatewayExtensions in the "default" namespace to reference the remote ext-authz Service in the "remote" namespace
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-gwext-to-remote-extauth
+  namespace: remote
+spec:
+  from:
+    - group: gateway.kgateway.dev
+      kind: GatewayExtension
+      namespace: default
+  to:
+    - group: ""
+      kind: Service
+      name: remote-extauth
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: allowed-extauth-ext
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        group: ""
+        kind: Service
+        name: remote-extauth
+        namespace: remote
+        port: 9000
+---
+# has to be in another namespace because the ReferenceGrant allow-gwext-to-remote-extauth
+# applies to all GatewayExtensions in the "default" namespace,
+# i.e. RefGrants are not scoped to a specific GatewayExtension.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: denied-extauth-ext
+  namespace: denied
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        group: ""
+        kind: Service
+        name: remote-extauth
+        namespace: remote
+        port: 9000

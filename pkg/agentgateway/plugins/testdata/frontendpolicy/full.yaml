@@ -29,19 +29,23 @@ spec:
         add:
           - expression: 'request.headers["user-agent"]'
             name: http.useragent
-#    tracing:
-#      backendRef:
-#        name: my-otel
-#        namespace: some-other-ns
-#      protocol: GRPC
-#      clientSampling: "true"
-#      randomSampling: "true"
-#      attributes:
-#        remove:
-#          - response.code
-#        add:
-#          - expression: 'request.headers["user-agent"]'
-#            name: http.useragent
+    tracing:
+      backendRef:
+        name: my-otel
+        namespace: some-other-ns
+        port: 4317
+      protocol: GRPC
+      clientSampling: "true"
+      randomSampling: "true"
+      resources:
+        - name: service.name
+          expression: "agent-gateway"
+      attributes:
+        remove:
+          - response.code
+        add:
+          - expression: 'request.headers["user-agent"]'
+            name: http.useragent
 
 ---
 # Output
@@ -66,7 +70,7 @@ output:
         alpn:
           protocols:
           - custom
-        tlsHandshakeTimeout: 10s
+        handshakeTimeout: 10s
     key: frontend/default/agw:frontend-tls:default/test
     name:
       kind: AgentgatewayPolicy
@@ -120,13 +124,9 @@ status:
       namespace: default
     conditions:
     - lastTransitionTime: fake
-      message: Policy accepted
-      reason: Valid
+      message: 'failed to translate tracing backend ref: unable to find the Service
+        some-other-ns/my-otel'
+      reason: PartiallyValid
       status: "True"
       type: Accepted
-    - lastTransitionTime: fake
-      message: Attached to all targets
-      reason: Attached
-      status: "True"
-      type: Attached
     controllerName: agentgateway.dev/agentgateway
