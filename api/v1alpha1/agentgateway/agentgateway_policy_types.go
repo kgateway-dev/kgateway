@@ -813,6 +813,9 @@ const (
 
 	// RouteTypeEmbeddings processes OpenAI /v1/embeddings format requests
 	RouteTypeEmbeddings RouteType = "Embeddings"
+
+	//RouteTypeRealtime processes OpenAI /v1/realtime requests
+	RouteTypeRealtime RouteType = "Realtime"
 )
 
 // +kubebuilder:validation:AtLeastOneOf=authorization;authentication

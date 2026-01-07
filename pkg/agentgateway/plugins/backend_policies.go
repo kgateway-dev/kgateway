@@ -567,6 +567,8 @@ func translateRouteType(rt agentgateway.RouteType) api.BackendPolicySpec_Ai_Rout
 		return api.BackendPolicySpec_Ai_ANTHROPIC_TOKEN_COUNT
 	case agentgateway.RouteTypeEmbeddings:
 		return api.BackendPolicySpec_Ai_EMBEDDINGS
+	case agentgateway.RouteTypeRealtime:
+		return api.BackendPolicySpec_Ai_REALTIME
 	default:
 		// Default to completions if unknown type
 		return api.BackendPolicySpec_Ai_COMPLETIONS
