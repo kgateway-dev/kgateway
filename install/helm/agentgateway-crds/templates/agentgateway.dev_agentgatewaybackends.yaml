@@ -543,6 +543,22 @@ spec:
                                                             settings for managing
                                                             HTTP requests to the backend.
                                                           properties:
+                                                            requestTimeout:
+                                                              description: requestTimeout
+                                                                specifies the deadline
+                                                                for receiving a response
+                                                                from the backend.
+                                                              type: string
+                                                              x-kubernetes-validations:
+                                                              - message: invalid duration
+                                                                  value
+                                                                rule: matches(self,
+                                                                  '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                              - message: requestTimeout
+                                                                  must be at least
+                                                                  1ms
+                                                                rule: duration(self)
+                                                                  >= duration('1ms')
                                                             version:
                                                               description: |-
                                                                 version specifies the HTTP protocol version to use when connecting to the backend.
@@ -780,6 +796,7 @@ spec:
                                                         - CreditCard
                                                         - PhoneNumber
                                                         - Email
+                                                        - CaSin
                                                         type: string
                                                       type: array
                                                     matches:
@@ -1013,6 +1030,7 @@ spec:
                                                         - CreditCard
                                                         - PhoneNumber
                                                         - Email
+                                                        - CaSin
                                                         type: string
                                                       type: array
                                                     matches:
@@ -1307,6 +1325,17 @@ spec:
                                     description: http defines settings for managing
                                       HTTP requests to the backend.
                                     properties:
+                                      requestTimeout:
+                                        description: requestTimeout specifies the
+                                          deadline for receiving a response from the
+                                          backend.
+                                        type: string
+                                        x-kubernetes-validations:
+                                        - message: invalid duration value
+                                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                        - message: requestTimeout must be at least
+                                            1ms
+                                          rule: duration(self) >= duration('1ms')
                                       version:
                                         description: |-
                                           version specifies the HTTP protocol version to use when connecting to the backend.
@@ -1735,6 +1764,14 @@ spec:
               mcp:
                 description: mcp represents an MCP backend
                 properties:
+                  sessionRouting:
+                    description: |-
+                      SessionRouting configures MCP session behavior for requests.
+                      Defaults to Stateful if not set.
+                    enum:
+                    - Stateful
+                    - Stateless
+                    type: string
                   targets:
                     description: |-
                       Targets is a list of MCPBackend targets to use for this backend.
@@ -1947,6 +1984,15 @@ spec:
                                   description: http defines settings for managing
                                     HTTP requests to the backend.
                                   properties:
+                                    requestTimeout:
+                                      description: requestTimeout specifies the deadline
+                                        for receiving a response from the backend.
+                                      type: string
+                                      x-kubernetes-validations:
+                                      - message: invalid duration value
+                                        rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                      - message: requestTimeout must be at least 1ms
+                                        rule: duration(self) >= duration('1ms')
                                     version:
                                       description: |-
                                         version specifies the HTTP protocol version to use when connecting to the backend.
@@ -2676,6 +2722,17 @@ spec:
                                           description: http defines settings for managing
                                             HTTP requests to the backend.
                                           properties:
+                                            requestTimeout:
+                                              description: requestTimeout specifies
+                                                the deadline for receiving a response
+                                                from the backend.
+                                              type: string
+                                              x-kubernetes-validations:
+                                              - message: invalid duration value
+                                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                              - message: requestTimeout must be at
+                                                  least 1ms
+                                                rule: duration(self) >= duration('1ms')
                                             version:
                                               description: |-
                                                 version specifies the HTTP protocol version to use when connecting to the backend.
@@ -2890,6 +2947,7 @@ spec:
                                         - CreditCard
                                         - PhoneNumber
                                         - Email
+                                        - CaSin
                                         type: string
                                       type: array
                                     matches:
@@ -3113,6 +3171,7 @@ spec:
                                         - CreditCard
                                         - PhoneNumber
                                         - Email
+                                        - CaSin
                                         type: string
                                       type: array
                                     matches:
@@ -3399,6 +3458,15 @@ spec:
                     description: http defines settings for managing HTTP requests
                       to the backend.
                     properties:
+                      requestTimeout:
+                        description: requestTimeout specifies the deadline for receiving
+                          a response from the backend.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: requestTimeout must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
                       version:
                         description: |-
                           version specifies the HTTP protocol version to use when connecting to the backend.

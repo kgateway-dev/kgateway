@@ -3,6 +3,7 @@ package trafficpolicy
 import (
 	"testing"
 
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -115,6 +116,36 @@ func TestAPIKeyAuthIREquals(t *testing.T) {
 				},
 			},
 			expected: true,
+		},
+		{
+			name:        "both disabled are equal",
+			apiKeyAuth1: &apiKeyAuthIR{disable: true},
+			apiKeyAuth2: &apiKeyAuthIR{disable: true},
+			expected:    true,
+		},
+		{
+			name:        "disabled vs enabled are not equal",
+			apiKeyAuth1: &apiKeyAuthIR{disable: true},
+			apiKeyAuth2: &apiKeyAuthIR{config: createAPIKeyAuth("api-key", false)},
+			expected:    false,
+		},
+		{
+			name:        "enabled vs disabled are not equal",
+			apiKeyAuth1: &apiKeyAuthIR{config: createAPIKeyAuth("api-key", false)},
+			apiKeyAuth2: &apiKeyAuthIR{disable: true},
+			expected:    false,
+		},
+		{
+			name:        "disabled with config vs disabled without config are not equal",
+			apiKeyAuth1: &apiKeyAuthIR{disable: true, config: createAPIKeyAuth("api-key", false)},
+			apiKeyAuth2: &apiKeyAuthIR{disable: true},
+			expected:    false,
+		},
+		{
+			name:        "disabled with same config are equal",
+			apiKeyAuth1: &apiKeyAuthIR{disable: true, config: createAPIKeyAuth("api-key", false)},
+			apiKeyAuth2: &apiKeyAuthIR{disable: true, config: createAPIKeyAuth("api-key", false)},
+			expected:    true,
 		},
 	}
 
@@ -238,22 +269,25 @@ func TestAPIKeyAuthIRValidate(t *testing.T) {
 
 func TestHandleAPIKeyAuth(t *testing.T) {
 	tests := []struct {
-		name         string
-		apiKeyAuthIr *apiKeyAuthIR
-		expectChain  bool
-		expectRoute  bool
+		name           string
+		apiKeyAuthIr   *apiKeyAuthIR
+		expectChain    bool
+		expectRoute    bool
+		expectDisabled bool
 	}{
 		{
-			name:         "nil IR does nothing",
-			apiKeyAuthIr: nil,
-			expectChain:  false,
-			expectRoute:  false,
+			name:           "nil IR does nothing",
+			apiKeyAuthIr:   nil,
+			expectChain:    false,
+			expectRoute:    false,
+			expectDisabled: false,
 		},
 		{
-			name:         "nil policy does nothing",
-			apiKeyAuthIr: &apiKeyAuthIR{config: nil},
-			expectChain:  false,
-			expectRoute:  false,
+			name:           "nil policy does nothing",
+			apiKeyAuthIr:   &apiKeyAuthIR{config: nil},
+			expectChain:    false,
+			expectRoute:    false,
+			expectDisabled: false,
 		},
 		{
 			name: "valid policy adds to chain and route",
@@ -276,8 +310,18 @@ func TestHandleAPIKeyAuth(t *testing.T) {
 					},
 				},
 			},
-			expectChain: true,
-			expectRoute: true,
+			expectChain:    true,
+			expectRoute:    true,
+			expectDisabled: false,
+		},
+		{
+			name: "disabled policy sets disabled route config",
+			apiKeyAuthIr: &apiKeyAuthIR{
+				disable: true,
+			},
+			expectChain:    false,
+			expectRoute:    true,
+			expectDisabled: true,
 		},
 	}
 
@@ -301,10 +345,17 @@ func TestHandleAPIKeyAuth(t *testing.T) {
 				config := typedFilterConfig.GetTypedConfig(apiKeyAuthFilterNamePrefix)
 				assert.NotNil(t, config, "should add per-route config")
 				if config != nil {
-					perRouteConfig, ok := config.(*envoyapikeyauthv3.ApiKeyAuthPerRoute)
-					require.True(t, ok, "config should be ApiKeyAuthPerRoute")
-					assert.NotNil(t, perRouteConfig.Credentials)
-					assert.NotNil(t, perRouteConfig.KeySources)
+					if tt.expectDisabled {
+						// When disabled, we get a FilterConfig with Disabled=true
+						filterConfig, ok := config.(*envoyroutev3.FilterConfig)
+						require.True(t, ok, "config should be FilterConfig when disabled")
+						assert.True(t, filterConfig.Disabled, "filter should be disabled")
+					} else {
+						perRouteConfig, ok := config.(*envoyapikeyauthv3.ApiKeyAuthPerRoute)
+						require.True(t, ok, "config should be ApiKeyAuthPerRoute")
+						assert.NotNil(t, perRouteConfig.Credentials)
+						assert.NotNil(t, perRouteConfig.KeySources)
+					}
 				}
 			} else {
 				config := typedFilterConfig.GetTypedConfig(apiKeyAuthFilterNamePrefix)

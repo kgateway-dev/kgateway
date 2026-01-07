@@ -117,8 +117,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: GW_NAME
-          value: gw
         - name: RUST_BACKTRACE
           value: "1"
         - name: RUST_LOG
@@ -131,6 +129,15 @@ spec:
               fieldPath: metadata.namespace
         - name: GATEWAY
           value: gw
+        - name: CPU_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              divisor: "1"
+              resource: limits.cpu
+        - name: INSTANCE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         image: agentgateway:v1.0.0
         imagePullPolicy: IfNotPresent
         name: agentgateway

@@ -1,0 +1,176 @@
+# This test validates cross-namespace RateLimit GatewayExtension configuration
+# with ReferenceGrant enforcement. It includes:
+#
+# 1. Two HTTPRoutes: "cross-namespace-allowed" and "cross-namespace-denied"
+# 2. Two TrafficPolicies "allowed-policy" and "denied-policy" that reference RateLimit GatewayExtensions
+# 3. A remote rate limit Service "remote-ratelimit" in the "remote" namespace
+# 4. Two GatewayExtensions with RateLimit providers that reference the remote Service:
+#    - "allowed-ratelimit-ext": Has a ReferenceGrant allowing cross-namespace access (should succeed)
+#    - "denied-ratelimit-ext" in the "denied" namespace: Missing a ReferenceGrant (should not apply policy)
+#
+# The test verifies that cross-namespace Service references in RateLimit provider
+# backendRefs require a ReferenceGrant, and that the translator correctly handles
+# both allowed and denied cases.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  allowedRoutes:
+    namespaces:
+      from: All
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cross-namespace-allowed
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "allowed.example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /allowed
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cross-namespace-denied
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "denied.example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /denied
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+spec:
+  selector:
+    app: backend-svc
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: allowed-policy
+spec:
+  targetRefs:
+    - kind: HTTPRoute
+      group: gateway.networking.k8s.io
+      name: cross-namespace-allowed
+  rateLimit:
+    global:
+      descriptors:
+        - entries:
+            - type: Path
+      extensionRef:
+        name: allowed-ratelimit-ext
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: denied-policy
+spec:
+  targetRefs:
+    - kind: HTTPRoute
+      group: gateway.networking.k8s.io
+      name: cross-namespace-denied
+  rateLimit:
+    global:
+      descriptors:
+        - entries:
+            - type: Path
+      extensionRef:
+        name: denied-ratelimit-ext
+        namespace: denied
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: remote-ratelimit
+  namespace: remote
+spec:
+  selector:
+    app: remote-ratelimit
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+      appProtocol: kubernetes.io/h2c
+---
+# Allow GatewayExtensions in the "default" namespace to reference the remote rate limit Service in the "remote" namespace
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-gwext-to-remote-ratelimit
+  namespace: remote
+spec:
+  from:
+    - group: gateway.kgateway.dev
+      kind: GatewayExtension
+      namespace: default
+  to:
+    - group: ""
+      kind: Service
+      name: remote-ratelimit
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: allowed-ratelimit-ext
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        group: ""
+        kind: Service
+        name: remote-ratelimit
+        namespace: remote
+        port: 8081
+    domain: "api-gateway"
+---
+# has to be in another namespace because the ReferenceGrant allow-gwext-to-remote-ratelimit
+# applies to all GatewayExtensions in the "default" namespace,
+# i.e. RefGrants are not scoped to a specific GatewayExtension.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: denied-ratelimit-ext
+  namespace: denied
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        group: ""
+        kind: Service
+        name: remote-ratelimit
+        namespace: remote
+        port: 8081
+    domain: "api-gateway"

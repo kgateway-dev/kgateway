@@ -135,23 +135,30 @@ data:
               explicit_http_config:
                 http2_protocol_options: {}
               http_filters:
-              - name: transform
+              - name: envoy.filters.http.credential_injector
                 typed_config:
-                  "@type": type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
-                  transformations:
-                  - match:
-                      prefix: "/"
-                    route_transformations:
-                      request_transformation:
-                        transformation_template:
-                          headers:
-                            authorization: {"text": 'Bearer {{ "{{ trim(data_source(\"token\")) -}}" }}'}
-                          passthrough: {}
-                          data_sources:
-                            token:
-                              filename: "/var/run/secrets/tokens/xds-token"
-                              watched_directory:
-                                path: "/var/run/secrets/tokens"
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.credential_injector.v3.CredentialInjector
+                  credential:
+                    name: envoy.http.injected_credentials.generic
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.http.injected_credentials.generic.v3.Generic
+                      credential:
+                        name: xds-jwt-token
+                        sds_config:
+                          path_config_source:
+                            path: "/etc/envoy/xds_service_account_token.json"
+                          resource_api_version: V3
+                  overwrite: true
+              - name: envoy.filters.http.header_mutation
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
+                  mutations:
+                    request_mutations:
+                      - append:
+                          append_action: OVERWRITE_IF_EXISTS
+                          header:
+                            key: "Authorization"
+                            value: "Bearer %REQ(Authorization)%"
               - name: envoy.filters.http.upstream_codec
                 typed_config:
                   "@type": type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
@@ -190,6 +197,12 @@ data:
       lds_config:
         resource_api_version: V3
         ads: {}
+  xds_service_account_token.json: |
+    {"resources":[{
+      "@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
+      "name":"xds-jwt-token",
+      "generic_secret": {"secret":{"filename":"/var/run/secrets/tokens/xds-token"}}
+    }]}
 kind: ConfigMap
 metadata:
   labels:

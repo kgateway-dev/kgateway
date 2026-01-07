@@ -1,0 +1,22 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway-waypoint
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Waypoint class for managing east-west traffic with Istio ambient mesh.
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: waypoint
+  namespace: default
+spec:
+  gatewayClassName: kgateway-waypoint
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
