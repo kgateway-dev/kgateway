@@ -60,6 +60,12 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 		}
 	}
 
+	// Istio override function for tests that need Istio auto mTLS enabled
+	istioOverride := func(inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator {
+		inputs.IstioAutoMtlsEnabled = true
+		return nil
+	}
+
 	tests := []HelmTestCase{
 		{
 			Name:      "basic gateway with default gatewayclass and no gwparams",
@@ -246,6 +252,14 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			Name:      "agentgateway AGWP with pod scheduling fields",
 			InputFile: "agentgateway-agwp-pod-scheduling",
 		},
+		{
+			Name:      "agentgateway with static IP address via overlay",
+			InputFile: "agentgateway-loadbalancer-static-ip",
+		},
+		{
+			Name:      "agentgateway GKE with subsetting and external static IP",
+			InputFile: "agentgateway-gke-subsetting-static-ip",
+		},
 		// TLS test cases
 		{
 			Name:                        "basic gateway with TLS enabled",
@@ -261,6 +275,40 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			// Custom configmap name via AgentgatewayParameters deployment overlay:
 			Name:      "agentgateway with custom configmap name via overlay",
 			InputFile: "agentgateway-custom-configmap",
+		},
+		{
+			Name:                        "gateway with istio enabled",
+			InputFile:                   "istio-enabled",
+			HelmValuesGeneratorOverride: istioOverride,
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "name: sds",
+					"sds container should be present when istio is enabled")
+				assert.Contains(t, outputYaml, "name: istio-proxy",
+					"istio-proxy container should be present when istio is enabled")
+				assert.Contains(t, outputYaml, "ISTIO_MTLS_SDS_ENABLED",
+					"ISTIO_MTLS_SDS_ENABLED env var should be present")
+				assert.Contains(t, outputYaml, "name: istio-certs",
+					"istio-certs volume should be present")
+			},
+		},
+		{
+			Name:                        "waypoint gateway with istio enabled",
+			InputFile:                   "istio-enabled-waypoint",
+			HelmValuesGeneratorOverride: istioOverride,
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "name: sds",
+					"sds container should be present when istio is enabled")
+				assert.Contains(t, outputYaml, "name: istio-proxy",
+					"istio-proxy container should be present when istio is enabled")
+				// Waypoint-specific: ClusterIP service type
+				assert.Contains(t, outputYaml, "type: ClusterIP",
+					"waypoint should have ClusterIP service type")
+				// Waypoint-specific: port 15008 for HBONE
+				assert.Contains(t, outputYaml, "port: 15008",
+					"waypoint should have port 15008 for HBONE")
+			},
 		},
 	}
 

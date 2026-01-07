@@ -194,6 +194,14 @@ type HTTPSettings struct {
 	// sure it did not come from the client.
 	// +optional
 	EarlyRequestHeaderModifier *gwv1.HTTPHeaderFilter `json:"earlyRequestHeaderModifier,omitempty"`
+
+	// MaxRequestHeadersKb sets the maximum size of request headers that Envoy will accept.
+	// If unset, the Envoy default is 60 KiB.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-max-request-headers-kb
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=8192
+	MaxRequestHeadersKb *int32 `json:"maxRequestHeadersKb,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
