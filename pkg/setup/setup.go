@@ -49,7 +49,7 @@ type Options struct {
 	ExtraRunnables []func(ctx context.Context, commoncol *collections.CommonCollections, agw *agwplugins.AgwCollections, s *apisettings.Settings) (bool, manager.Runnable)
 	// Validator is the validator to use for the controller.
 	Validator validator.Validator
-	// ExtraAgwResourceStatusHandlers maps policy kinds to their status sync handlers for AgentGateway
+	// ExtraAgwResourceStatusHandlers maps resource kinds to their status sync handlers for AgentGateway
 	ExtraAgwResourceStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwResourceStatusSyncHandler
 
 	CommonCollectionsOptions  []collections.Option
