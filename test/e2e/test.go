@@ -152,6 +152,8 @@ func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
 	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
 }
 
+// InstallKgatewayFromLocalChart installs the controller and CRD chart based on the `ChartType` of the underlying
+// TestInstallation. By default `kgateway` will be installed but can be set to `agentgateway`
 func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 	chartType := i.Metadata.GetChartType()
 	if chartType == "agentgateway" {
@@ -266,10 +268,14 @@ func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Con
 		helmutils.InstallOpts{
 			Namespace:       i.Metadata.InstallNamespace,
 			CreateNamespace: true,
-			ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
-			ReleaseName:     helmutils.AgentgatewayChartName,
-			ChartUri:        chartUri,
-			ExtraArgs:       i.Metadata.ExtraHelmArgs,
+			ValuesFiles: []string{
+				i.Metadata.ProfileValuesManifestFile,
+				i.Metadata.ValuesManifestFile,
+				ManifestPath("agent-gateway-integration.yaml"),
+			},
+			ReleaseName: helmutils.AgentgatewayChartName,
+			ChartUri:    chartUri,
+			ExtraArgs:   i.Metadata.ExtraHelmArgs,
 		})
 	i.Assertions.Require.NoError(err)
 	i.Assertions.EventuallyGatewayInstallSucceeded(ctx)

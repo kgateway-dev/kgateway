@@ -30,6 +30,10 @@ func MustKindContextWithScheme(clusterName string, scheme *runtime.Scheme) *Cont
 	}
 
 	kubeCtx := os.Getenv(testutils.KubeCtx)
+	if kubeCtx == "" {
+		// Default KubeCtx used is "kind-<ClusterName>" as documented in testutils.KubeCtx
+		kubeCtx = "kind-" + clusterName
+	}
 	restCfg, err := kubeutils.GetRestConfigWithKubeContext(kubeCtx)
 	if err != nil {
 		panic(err)

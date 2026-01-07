@@ -8,6 +8,7 @@ inlinePolicies:
 - ai:
     routes:
       /v1/chat/completions: COMPLETIONS
+      /v1/embeddings: EMBEDDINGS
       /v1/messages: MESSAGES
       /v1/messages/count_tokens: ANTHROPIC_TOKEN_COUNT
       /v1/models: MODELS

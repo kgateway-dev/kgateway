@@ -3,16 +3,14 @@ package backendtlspolicy
 import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	corev1 "k8s.io/api/core/v1"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 )
 
 // handles conversion into envoy auth types
 // based on https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/utils/ssl.go#L76
 
-func ResolveUpstreamSslConfig(cm *corev1.ConfigMap, validation *envoytlsv3.CertificateValidationContext, sni string) (*envoytlsv3.UpstreamTlsContext, error) {
-	common, err := ResolveCommonSslConfig(cm, validation, false)
+// ResolveUpstreamSslConfigFromCA creates an UpstreamTlsContext from a CA certificate string
+func ResolveUpstreamSslConfigFromCA(caCert string, validation *envoytlsv3.CertificateValidationContext, sni string) (*envoytlsv3.UpstreamTlsContext, error) {
+	common, err := ResolveCommonSslConfigFromCA(caCert, validation, false)
 	if err != nil {
 		return nil, err
 	}
@@ -23,15 +21,10 @@ func ResolveUpstreamSslConfig(cm *corev1.ConfigMap, validation *envoytlsv3.Certi
 	}, nil
 }
 
-func ResolveCommonSslConfig(cm *corev1.ConfigMap, validation *envoytlsv3.CertificateValidationContext, mustHaveCert bool) (*envoytlsv3.CommonTlsContext, error) {
-	caCrt, err := sslutils.GetCACertFromConfigMap(cm)
-	if err != nil {
-		return nil, err
-	}
-
+func ResolveCommonSslConfigFromCA(caCert string, validation *envoytlsv3.CertificateValidationContext, mustHaveCert bool) (*envoytlsv3.CommonTlsContext, error) {
 	caCrtData := envoycorev3.DataSource{
 		Specifier: &envoycorev3.DataSource_InlineString{
-			InlineString: caCrt,
+			InlineString: caCert,
 		},
 	}
 

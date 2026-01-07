@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -22,9 +21,11 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -33,8 +34,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
+var logger = logging.New("plugin/backendtlspolicy")
+
 var (
 	ErrConfigMapNotFound = errors.New("ConfigMap not found")
+
+	ErrSecretNotFound = errors.New("Secret not found")
 
 	ErrCreatingTLSConfig = errors.New("TLS config error")
 
@@ -75,7 +80,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	)
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
 
-	translate := buildTranslateFunc(commoncol.ConfigMaps.Collection())
+	translate := buildTranslateFunc(commoncol.ConfigMaps.Collection(), commoncol.Secrets)
 
 	policyStatusMarker, tlsPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		tlsPolicyIR, err := translate(krtctx, i)
@@ -153,6 +158,7 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 
 func buildTranslateFunc(
 	cfgmaps krt.Collection[*corev1.ConfigMap],
+	secrets *krtcollections.SecretIndex,
 ) func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {
 	return func(krtctx krt.HandlerContext, policyCR *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {
 		spec := policyCR.Spec
@@ -182,23 +188,54 @@ func buildTranslateFunc(
 			}
 
 		case len(spec.Validation.CACertificateRefs) > 0:
-
 			certRef := spec.Validation.CACertificateRefs[0]
-			nn := types.NamespacedName{
-				Name:      string(certRef.Name),
-				Namespace: policyCR.Namespace,
+			refKind := kgwellknown.ConfigMapKind
+			if certRef.Kind != "" {
+				refKind = string(certRef.Kind)
 			}
-			cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
-			if cfgmap == nil {
-				err := fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn)
-				slog.Error("error fetching policy", "error", err, "policy_name", policyCR.Name)
-				return &policyIr, err
-			}
+
+			var caCert string
 			var err error
-			tlsContextDefault, err = ResolveUpstreamSslConfig(*cfgmap, validationContext, string(spec.Validation.Hostname))
+
+			switch refKind {
+			case kgwellknown.ConfigMapKind:
+				nn := types.NamespacedName{
+					Name:      string(certRef.Name),
+					Namespace: policyCR.Namespace,
+				}
+				cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
+				if cfgmap == nil {
+					err := fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn)
+					logger.Error("error fetching ConfigMap", "error", err, "policy_name", policyCR.Name)
+					return &policyIr, err
+				}
+				caCert, err = sslutils.GetCACertFromConfigMap(*cfgmap)
+				if err != nil {
+					perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
+					logger.Error("error extracting CA cert from ConfigMap", "error", perr, "policy_name", policyCR.Name)
+					return &policyIr, perr
+				}
+			case kgwellknown.SecretKind:
+				// secret is always in the same namespace as the policy (LocalObjectReference), no need to check reference grant
+				secret, err := secrets.GetSecretWithoutRefGrant(krtctx, string(certRef.Name), policyCR.Namespace)
+				if err != nil {
+					perr := fmt.Errorf("%w: %v", ErrSecretNotFound, err)
+					logger.Error("error fetching Secret", "error", perr, "policy_name", policyCR.Name)
+					return &policyIr, perr
+				}
+				caCert, err = sslutils.GetCACertFromSecret(secret)
+				if err != nil {
+					perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
+					logger.Error("error extracting CA cert from Secret", "error", perr, "policy_name", policyCR.Name)
+					return &policyIr, perr
+				}
+			default:
+				return &policyIr, fmt.Errorf("%w: unsupported certificate reference kind: %s", ErrInvalidValidationSpec, refKind)
+			}
+			tlsContextDefault, err = ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
 			if err != nil {
 				perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
-				slog.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)
+				logger.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)
 				return &policyIr, perr
 			}
 		default:
@@ -207,7 +244,7 @@ func buildTranslateFunc(
 
 		typedConfig, err := utils.MessageToAny(tlsContextDefault)
 		if err != nil {
-			slog.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
+			logger.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
 			return &policyIr, ErrParsingTLSConfig
 		}
 		policyIr.transportSocket = &envoycorev3.TransportSocket{

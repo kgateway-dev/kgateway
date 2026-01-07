@@ -5,11 +5,13 @@ package zero_downtime_rollout
 import (
 	"context"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -19,17 +21,44 @@ import (
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
-type testingSuite struct {
+var (
+	serviceManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	gatewayManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
+	agentgatewayManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "agentgateway.yaml")
+
+	proxyObjectMeta = metav1.ObjectMeta{
+		Name:      "gw",
+		Namespace: "default",
+	}
+
+	agentgatewayObjectMeta = metav1.ObjectMeta{
+		Name:      "agentgw",
+		Namespace: "default",
+	}
+)
+
+type testingSuiteKgateway struct {
 	*base.BaseTestingSuite
 }
 
-func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+func NewTestingSuiteKgateway(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &testingSuiteKgateway{
+		base.NewBaseTestingSuite(
+			ctx,
+			testInst,
+			base.TestCase{
+				Manifests: []string{serviceManifest},
+			},
+			map[string]*base.TestCase{
+				"TestZeroDowntimeRollout": {
+					Manifests: []string{gatewayManifest, defaults.CurlPodManifest},
+				},
+			},
+		),
 	}
 }
 
-func (s *testingSuite) TestZeroDowntimeRollout() {
+func (s *testingSuiteKgateway) TestZeroDowntimeRollout() {
 	// Ensure the gateway pod is up and running.
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
 		proxyObjectMeta.GetNamespace(), metav1.ListOptions{
@@ -82,7 +111,28 @@ func (s *testingSuite) TestZeroDowntimeRollout() {
 	s.NotContains(string(cmd.Output()), "Error distribution")
 }
 
-func (s *testingSuite) TestZeroDowntimeRolloutAgentGateway() {
+type testingSuiteAgentgateway struct {
+	*base.BaseTestingSuite
+}
+
+func NewTestingSuiteAgentgateway(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &testingSuiteAgentgateway{
+		base.NewBaseTestingSuite(
+			ctx,
+			testInst,
+			base.TestCase{
+				Manifests: []string{serviceManifest},
+			},
+			map[string]*base.TestCase{
+				"TestZeroDowntimeRolloutAgentgateway": {
+					Manifests: []string{agentgatewayManifest, defaults.CurlPodManifest},
+				},
+			},
+		),
+	}
+}
+
+func (s *testingSuiteAgentgateway) TestZeroDowntimeRolloutAgentgateway() {
 	// Ensure the agentgateway pod is up and running.
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
 		agentgatewayObjectMeta.GetNamespace(), metav1.ListOptions{

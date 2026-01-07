@@ -17,9 +17,6 @@ on:
         default: false
         description: "Run load testing suite after release"
   push:
-    tags:
-      - 'v*'
-      - '!v**-main'
     branches:
       - main
   pull_request:
@@ -30,6 +27,7 @@ env:
   # this uses the `github.repository_owner` to support releases from forks (useful for testing).
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   VANITY_REGISTRY: cr.kgateway.dev/kgateway-dev
+  AGW_VANITY_REGISTRY: cr.agentgateway.dev
   MAIN_VERSION: v2.2.0-main
   GORELEASER_DISABLE_RELEASE: false
 
@@ -44,6 +42,8 @@ jobs:
     outputs:
       version: ${{ steps.set_vars.outputs.version }}
       goreleaser_args: ${{ steps.set_vars.outputs.goreleaser_args }}
+      needs_release: ${{ steps.set_vars.outputs.needs_release }}
+      previous_tag: ${{ steps.set_vars.outputs.previous_tag }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -63,20 +63,32 @@ jobs:
               echo "Error: Version '$VERSION' does not match required semver format (e.g., v1.2.3, v2.0.0-alpha.1)"
               exit 1
             fi
-            echo "goreleaser_args=--clean --skip=validate" >> "$GITHUB_OUTPUT"
+            # Find the previous tag for release notes generation
+            PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD 2>/dev/null || echo "")
+            NEEDS_RELEASE=true
+            GORELEASER_ARGS="--clean --skip=validate --release-notes _output/RELEASE_NOTES.md"
           elif [[ $GITHUB_REF == refs/heads/main ]]; then
             VERSION="${MAIN_VERSION}"
-            echo "goreleaser_args=--clean --skip=validate" >> "$GITHUB_OUTPUT"
+            NEEDS_RELEASE=false
+            GORELEASER_ARGS="--clean --skip=validate"
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
             GIT_TAG=$(git describe --tags --abbrev=0)
             PR_NUM=$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')
             VERSION="${GIT_TAG}-pr.${PR_NUM}-${GIT_SHA}"
-            echo "goreleaser_args=--snapshot --clean" >> "$GITHUB_OUTPUT"
+            NEEDS_RELEASE=false
+            GORELEASER_ARGS="--snapshot --clean"
           else
             echo "Unknown event type"
             exit 1
           fi
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+          # Group redirects to satisfy shellcheck SC2129
+          {
+            echo "version=${VERSION}"
+            echo "previous_tag=${PREVIOUS_TAG:-}"
+            echo "needs_release=${NEEDS_RELEASE}"
+            echo "goreleaser_args=${GORELEASER_ARGS}"
+          } >> "$GITHUB_OUTPUT"
 
   helm:
     name: Package helm charts
@@ -100,9 +112,38 @@ jobs:
         env:
           VERSION: ${{ needs.setup.outputs.version }}
           IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
+
+  release-notes:
+    name: Generate release notes
+    needs: setup
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        if: ${{ needs.setup.outputs.needs_release == 'true' }}
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        if: ${{ needs.setup.outputs.needs_release == 'true' }}
+        # Note(tim): CURRENT_TAG defaults to HEAD since the version tag doesn't exist yet.
+        # This is because that tag is created by goreleaser. We may want to move tag management
+        # outside of goreleaser in the future. The additional benefit of doing that is we can
+        # remove the logic where we set --skip-validate when we configure the goreleaser args.
+        run: make release-notes PREVIOUS_TAG="${{ needs.setup.outputs.previous_tag }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload release notes
+        if: ${{ needs.setup.outputs.needs_release == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-notes
+          path: _output/RELEASE_NOTES.md
+          retention-days: 1
+
   goreleaser:
     name: goreleaser
-    needs: [setup, helm]
+    needs: [setup, helm, release-notes]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -127,6 +168,13 @@ jobs:
       - uses: "docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392" # v3.6.0
       - uses: "docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2" # v3.10 .0
 
+      - name: Download release notes
+        if: ${{ needs.setup.outputs.needs_release == 'true' }}
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-notes
+          path: _output
+
       - name: Run goreleaser
         run: make release
         env:
@@ -140,7 +188,7 @@ jobs:
   validate:
     name: Validate release artifacts
     needs: [setup, helm, goreleaser]
-    if: ${{ startsWith(github.ref, 'refs/tags/') || inputs.validate }}
+    if: ${{ inputs.validate }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

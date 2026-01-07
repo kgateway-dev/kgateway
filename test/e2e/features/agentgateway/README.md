@@ -30,8 +30,8 @@ make docker
 
 Then load it into the kind cluster where you are running the e2e tests:
 ```shell
-AGW_TAG=$(docker images ghcr.io/agentgateway/agentgateway --format "{{.Tag}}" | head -n 1)
-kind load --name kind docker-image ghcr.io/agentgateway/agentgateway:$AGW_TAG
+AGW_TAG=$(docker images cr.agentgateway.dev/agentgateway --format "{{.Tag}}" | head -n 1)
+kind load --name kind docker-image cr.agentgateway.dev/agentgateway:$AGW_TAG
 ```
 
 You can either configure the agentgateway GatewayClass or a specific Gateway to use the local image.
@@ -67,7 +67,7 @@ kind: Gateway
 metadata:
   name: gw
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
   - protocol: HTTP
     port: 8080
@@ -97,7 +97,7 @@ kind: Gateway
 metadata:
   name: gw
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   infrastructure:
     parametersRef:
       group: agentgateway.dev

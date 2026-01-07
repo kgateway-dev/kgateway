@@ -543,6 +543,22 @@ spec:
                                                             settings for managing
                                                             HTTP requests to the backend.
                                                           properties:
+                                                            requestTimeout:
+                                                              description: requestTimeout
+                                                                specifies the deadline
+                                                                for receiving a response
+                                                                from the backend.
+                                                              type: string
+                                                              x-kubernetes-validations:
+                                                              - message: invalid duration
+                                                                  value
+                                                                rule: matches(self,
+                                                                  '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                              - message: requestTimeout
+                                                                  must be at least
+                                                                  1ms
+                                                                rule: duration(self)
+                                                                  >= duration('1ms')
                                                             version:
                                                               description: |-
                                                                 version specifies the HTTP protocol version to use when connecting to the backend.
@@ -757,11 +773,14 @@ spec:
                                                     and data masking.
                                                   properties:
                                                     action:
-                                                      default: MASK
+                                                      default: Mask
                                                       description: |-
                                                         The action to take if a regex pattern is matched in a request or response.
                                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                                        Defaults to `MASK`.
+                                                        Defaults to `Mask`.
+                                                      enum:
+                                                      - Mask
+                                                      - Reject
                                                       type: string
                                                     builtins:
                                                       description: |-
@@ -777,6 +796,7 @@ spec:
                                                         - CreditCard
                                                         - PhoneNumber
                                                         - Email
+                                                        - CaSin
                                                         type: string
                                                       type: array
                                                     matches:
@@ -987,11 +1007,14 @@ spec:
                                                     and data masking.
                                                   properties:
                                                     action:
-                                                      default: MASK
+                                                      default: Mask
                                                       description: |-
                                                         The action to take if a regex pattern is matched in a request or response.
                                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                                        Defaults to `MASK`.
+                                                        Defaults to `Mask`.
+                                                      enum:
+                                                      - Mask
+                                                      - Reject
                                                       type: string
                                                     builtins:
                                                       description: |-
@@ -1007,6 +1030,7 @@ spec:
                                                         - CreditCard
                                                         - PhoneNumber
                                                         - Email
+                                                        - CaSin
                                                         type: string
                                                       type: array
                                                     matches:
@@ -1219,6 +1243,7 @@ spec:
                                           - Passthrough
                                           - Responses
                                           - AnthropicTokenCount
+                                          - Embeddings
                                           type: string
                                         description: |-
                                           routes defines how to identify the type of traffic to handle.
@@ -1300,6 +1325,17 @@ spec:
                                     description: http defines settings for managing
                                       HTTP requests to the backend.
                                     properties:
+                                      requestTimeout:
+                                        description: requestTimeout specifies the
+                                          deadline for receiving a response from the
+                                          backend.
+                                        type: string
+                                        x-kubernetes-validations:
+                                        - message: invalid duration value
+                                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                        - message: requestTimeout must be at least
+                                            1ms
+                                          rule: duration(self) >= duration('1ms')
                                       version:
                                         description: |-
                                           version specifies the HTTP protocol version to use when connecting to the backend.
@@ -1728,6 +1764,14 @@ spec:
               mcp:
                 description: mcp represents an MCP backend
                 properties:
+                  sessionRouting:
+                    description: |-
+                      SessionRouting configures MCP session behavior for requests.
+                      Defaults to Stateful if not set.
+                    enum:
+                    - Stateful
+                    - Stateless
+                    type: string
                   targets:
                     description: |-
                       Targets is a list of MCPBackend targets to use for this backend.
@@ -1940,6 +1984,15 @@ spec:
                                   description: http defines settings for managing
                                     HTTP requests to the backend.
                                   properties:
+                                    requestTimeout:
+                                      description: requestTimeout specifies the deadline
+                                        for receiving a response from the backend.
+                                      type: string
+                                      x-kubernetes-validations:
+                                      - message: invalid duration value
+                                        rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                      - message: requestTimeout must be at least 1ms
+                                        rule: duration(self) >= duration('1ms')
                                     version:
                                       description: |-
                                         version specifies the HTTP protocol version to use when connecting to the backend.
@@ -1987,8 +2040,8 @@ spec:
                                             backendRef:
                                               description: |-
                                                 backendRef references the remote JWKS server to reach.
-                                                Not implemented yet, only jwksUri is currently supported.
-                                                Supported types: Service and Backend.
+                                                Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
+                                                can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
                                               properties:
                                                 group:
                                                   default: ""
@@ -2069,18 +2122,23 @@ spec:
                                               - message: cacheDuration must be at
                                                   least 5m.
                                                 rule: duration(self) >= duration('5m')
-                                            uri:
-                                              description: IdP jwks endpoint. Default
-                                                tls settings are used to connect to
-                                                this url.
-                                              pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
+                                            jwksPath:
+                                              description: Path to IdP jwks endpoint,
+                                                relative to the root, commonly ".well-known/jwks.json".
+                                              maxLength: 2000
+                                              minLength: 1
                                               type: string
+                                          required:
+                                          - backendRef
+                                          - jwksPath
                                           type: object
-                                          x-kubernetes-validations:
-                                          - message: exactly one of the fields in
-                                              [uri backendRef] must be set
-                                            rule: '[has(self.uri),has(self.backendRef)].filter(x,x==true).size()
-                                              == 1'
+                                        mode:
+                                          description: validation mode for JWT authentication.
+                                          enum:
+                                          - Strict
+                                          - Optional
+                                          - Permissive
+                                          type: string
                                         provider:
                                           description: McpIDP specifies the identity
                                             provider to use for authentication
@@ -2664,6 +2722,17 @@ spec:
                                           description: http defines settings for managing
                                             HTTP requests to the backend.
                                           properties:
+                                            requestTimeout:
+                                              description: requestTimeout specifies
+                                                the deadline for receiving a response
+                                                from the backend.
+                                              type: string
+                                              x-kubernetes-validations:
+                                              - message: invalid duration value
+                                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                              - message: requestTimeout must be at
+                                                  least 1ms
+                                                rule: duration(self) >= duration('1ms')
                                             version:
                                               description: |-
                                                 version specifies the HTTP protocol version to use when connecting to the backend.
@@ -2855,11 +2924,14 @@ spec:
                                     for prompt guards and data masking.
                                   properties:
                                     action:
-                                      default: MASK
+                                      default: Mask
                                       description: |-
                                         The action to take if a regex pattern is matched in a request or response.
                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                        Defaults to `MASK`.
+                                        Defaults to `Mask`.
+                                      enum:
+                                      - Mask
+                                      - Reject
                                       type: string
                                     builtins:
                                       description: |-
@@ -2875,6 +2947,7 @@ spec:
                                         - CreditCard
                                         - PhoneNumber
                                         - Email
+                                        - CaSin
                                         type: string
                                       type: array
                                     matches:
@@ -3075,11 +3148,14 @@ spec:
                                     for prompt guards and data masking.
                                   properties:
                                     action:
-                                      default: MASK
+                                      default: Mask
                                       description: |-
                                         The action to take if a regex pattern is matched in a request or response.
                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                        Defaults to `MASK`.
+                                        Defaults to `Mask`.
+                                      enum:
+                                      - Mask
+                                      - Reject
                                       type: string
                                     builtins:
                                       description: |-
@@ -3095,6 +3171,7 @@ spec:
                                         - CreditCard
                                         - PhoneNumber
                                         - Email
+                                        - CaSin
                                         type: string
                                       type: array
                                     matches:
@@ -3300,6 +3377,7 @@ spec:
                           - Passthrough
                           - Responses
                           - AnthropicTokenCount
+                          - Embeddings
                           type: string
                         description: |-
                           routes defines how to identify the type of traffic to handle.
@@ -3380,6 +3458,15 @@ spec:
                     description: http defines settings for managing HTTP requests
                       to the backend.
                     properties:
+                      requestTimeout:
+                        description: requestTimeout specifies the deadline for receiving
+                          a response from the backend.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: requestTimeout must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
                       version:
                         description: |-
                           version specifies the HTTP protocol version to use when connecting to the backend.
@@ -3424,8 +3511,8 @@ spec:
                               backendRef:
                                 description: |-
                                   backendRef references the remote JWKS server to reach.
-                                  Not implemented yet, only jwksUri is currently supported.
-                                  Supported types: Service and Backend.
+                                  Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
+                                  can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
                                 properties:
                                   group:
                                     default: ""
@@ -3502,17 +3589,23 @@ spec:
                                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                 - message: cacheDuration must be at least 5m.
                                   rule: duration(self) >= duration('5m')
-                              uri:
-                                description: IdP jwks endpoint. Default tls settings
-                                  are used to connect to this url.
-                                pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
+                              jwksPath:
+                                description: Path to IdP jwks endpoint, relative to
+                                  the root, commonly ".well-known/jwks.json".
+                                maxLength: 2000
+                                minLength: 1
                                 type: string
+                            required:
+                            - backendRef
+                            - jwksPath
                             type: object
-                            x-kubernetes-validations:
-                            - message: exactly one of the fields in [uri backendRef]
-                                must be set
-                              rule: '[has(self.uri),has(self.backendRef)].filter(x,x==true).size()
-                                == 1'
+                          mode:
+                            description: validation mode for JWT authentication.
+                            enum:
+                            - Strict
+                            - Optional
+                            - Permissive
+                            type: string
                           provider:
                             description: McpIDP specifies the identity provider to
                               use for authentication

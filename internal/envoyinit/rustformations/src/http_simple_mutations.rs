@@ -1,15 +1,17 @@
+use anyhow::{Context, Result};
 use envoy_proxy_dynamic_modules_rust_sdk::*;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use serde::Deserialize;
+use serde_json::Value as JsonValue;
 use std::collections::HashMap;
-use transformations::{LocalTransformationConfig, TransformationOps};
+use transformations::{
+    LocalTransform, LocalTransformationConfig, TransformationError, TransformationOps,
+};
 
 #[cfg(test)]
 use mockall::*;
 
-lazy_static! {
-    static ref EMPTY_MAP: HashMap<String, String> = HashMap::new();
-}
+static EMPTY_MAP: Lazy<HashMap<String, String>> = Lazy::new(HashMap::new);
 #[derive(Deserialize, Clone)]
 pub struct FilterConfig {
     transformations: LocalTransformationConfig,
@@ -17,16 +19,55 @@ pub struct FilterConfig {
 
 struct EnvoyTransformationOps<'a> {
     envoy_filter: &'a mut dyn EnvoyHttpFilter,
-    //    TODO: see comment for get_random_pattern() below
-    //    random_pattern_map: &'a mut Option<HashMap<String, String>>,
 }
 
+impl<'a> EnvoyTransformationOps<'a> {
+    fn new(envoy_filter: &'a mut dyn EnvoyHttpFilter) -> EnvoyTransformationOps<'a> {
+        EnvoyTransformationOps { envoy_filter }
+    }
+}
 impl TransformationOps for EnvoyTransformationOps<'_> {
+    fn add_request_header(&mut self, key: &str, value: &[u8]) -> bool {
+        self.envoy_filter.add_request_header(key, value)
+    }
     fn set_request_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.set_request_header(key, value)
     }
     fn remove_request_header(&mut self, key: &str) -> bool {
         self.envoy_filter.remove_request_header(key)
+    }
+    fn parse_request_json_body(&mut self) -> Result<JsonValue> {
+        let Some(buffers) = self.envoy_filter.get_buffered_request_body() else {
+            return Ok(JsonValue::Null);
+        };
+
+        if buffers.is_empty() {
+            return Ok(JsonValue::Null);
+        }
+        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
+        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
+        let body = chunks.concat();
+        serde_json::from_slice(&body).context("failed to parse request body as json")
+    }
+    fn get_request_body(&mut self) -> Vec<u8> {
+        if let Some(buffers) = self.envoy_filter.get_buffered_request_body() {
+            // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
+            let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
+            chunks.concat();
+        }
+
+        Vec::default()
+    }
+    fn drain_request_body(&mut self, number_of_bytes: usize) -> bool {
+        self.envoy_filter
+            .drain_buffered_request_body(number_of_bytes)
+    }
+    fn append_request_body(&mut self, data: &[u8]) -> bool {
+        self.envoy_filter.append_buffered_request_body(data)
+    }
+
+    fn add_response_header(&mut self, key: &str, value: &[u8]) -> bool {
+        self.envoy_filter.add_response_header(key, value)
     }
     fn set_response_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.set_response_header(key, value)
@@ -34,29 +75,31 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
     fn remove_response_header(&mut self, key: &str) -> bool {
         self.envoy_filter.remove_response_header(key)
     }
-    /*
-       TODO: was trying to use this to store the pattern in the request context that can be re-used
-             for all replace_with_random() custom function but have not been able to find a way to
-             do that yet with rust and minijinja
+    fn parse_response_json_body(&mut self) -> Result<JsonValue> {
+        let Some(buffers) = self.envoy_filter.get_buffered_response_body() else {
+            return Ok(JsonValue::Null);
+        };
+        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
+        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
+        let body = chunks.concat();
+        serde_json::from_slice(&body).context("failed to parse response body as json")
+    }
+    fn get_response_body(&mut self) -> Vec<u8> {
+        let Some(buffers) = self.envoy_filter.get_buffered_response_body() else {
+            return Vec::default();
+        };
 
-       fn get_random_pattern(&mut self, key: &str) -> String {
-           let map = self.random_pattern_map.get_or_insert_with(HashMap::new);
-
-           if let Some(pattern) = map.get(key) {
-               return pattern.clone();
-           }
-
-           let new_pattern = rand::thread_rng()
-               .sample_iter(&Alphanumeric)
-               .take(8)
-               .map(char::from)
-               .collect()
-
-           map.insert(key.to_string(), new_pattern.clone());
-
-           new_pattern
-       }
-    */
+        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
+        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
+        chunks.concat()
+    }
+    fn drain_response_body(&mut self, number_of_bytes: usize) -> bool {
+        self.envoy_filter
+            .drain_buffered_response_body(number_of_bytes)
+    }
+    fn append_response_body(&mut self, data: &[u8]) -> bool {
+        self.envoy_filter.append_buffered_response_body(data)
+    }
 }
 
 impl FilterConfig {
@@ -69,7 +112,7 @@ impl FilterConfig {
             Ok(cfg) => cfg,
             Err(err) => {
                 // Dont panic if there is incorrect configuration
-                envoy_log_error!("Error parsing filter config: {filter_config} {err}");
+                envoy_log_error!("error parsing filter config: {filter_config} {err}");
                 return None;
             }
         };
@@ -88,7 +131,6 @@ impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
         Box::new(Filter {
             filter_config: self.clone(),
             per_route_config: None,
-            env: transformations::jinja::new_jinja_env(),
             request_headers_map: None,
         })
     }
@@ -97,7 +139,6 @@ impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
 pub struct Filter {
     filter_config: FilterConfig,
     per_route_config: Option<Box<PerRouteConfig>>,
-    env: minijinja::Environment<'static>,
     request_headers_map: Option<HashMap<String, String>>,
 }
 
@@ -156,44 +197,103 @@ impl Filter {
         self.request_headers_map.as_ref().unwrap_or(&EMPTY_MAP)
     }
 
-    fn transform_request_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
-        let request_transform = match self.get_per_route_config() {
+    // set_per_route_config() has to be called before calling this function
+    fn get_request_transform(&self) -> &Option<LocalTransform> {
+        match self.get_per_route_config() {
             Some(config) => &config.transformations.request,
             None => &self.filter_config.transformations.request,
-        };
-
-        if let Some(transform) = request_transform {
-            if let Err(e) = transformations::jinja::transform_request_headers(
-                transform,
-                &self.env,
-                self.get_request_headers_map(),
-                EnvoyTransformationOps { envoy_filter },
-            ) {
-                envoy_log_warn!("{e}");
-            }
         }
     }
 
-    fn transform_response_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
-        let response_transform = match self.get_per_route_config() {
-            Some(config) => &config.transformations.response,
-            None => &self.filter_config.transformations.response,
+    // set_per_route_config() has to be called before calling this function
+    fn has_request_transform(&self) -> bool {
+        let Some(transform) = self.get_request_transform() else {
+            return false;
         };
 
-        if let Some(transform) = response_transform {
-            // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
-            let response_headers_map = self.create_headers_map(envoy_filter.get_response_headers());
+        !transform.is_empty()
+    }
 
-            if let Err(e) = transformations::jinja::transform_response_headers(
+    // set_per_route_config() has to be called before calling this function
+    fn get_response_transform(&self) -> &Option<LocalTransform> {
+        match self.get_per_route_config() {
+            Some(config) => &config.transformations.response,
+            None => &self.filter_config.transformations.response,
+        }
+    }
+
+    // set_per_route_config() has to be called before calling this function
+    fn has_response_transform(&self) -> bool {
+        let Some(transform) = self.get_response_transform() else {
+            return false;
+        };
+
+        !transform.is_empty()
+    }
+
+    fn transform_request<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) -> bool {
+        if let Some(transform) = self.get_request_transform() {
+            match transformations::jinja::transform_request(
                 transform,
-                &self.env,
                 self.get_request_headers_map(),
-                &response_headers_map,
-                EnvoyTransformationOps { envoy_filter },
+                EnvoyTransformationOps::new(envoy_filter),
             ) {
-                envoy_log_warn!("{e}");
+                Ok(()) => {}
+                Err(err) => {
+                    if let Some(e) = err.downcast_ref::<TransformationError>() {
+                        match e {
+                            TransformationError::UndeclaredJsonVariables(_msg) => {
+                                envoy_log_error!("{:#}", err);
+                                envoy_filter.send_response(400, Vec::default(), None);
+                                return false;
+                            }
+                        }
+                    } else if let Some(e) = err.downcast_ref::<serde_json::error::Error>() {
+                        envoy_log_error!("json parsing error: {:#}", e);
+                        envoy_filter.send_response(400, Vec::default(), None);
+                        return false;
+                    } else {
+                        envoy_log_warn!("{:#}", err);
+                    }
+                }
             }
         }
+
+        true
+    }
+
+    fn transform_response<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) -> bool {
+        if let Some(transform) = self.get_response_transform() {
+            let response_headers_map = self.create_headers_map(envoy_filter.get_response_headers());
+
+            match transformations::jinja::transform_response(
+                transform,
+                self.get_request_headers_map(),
+                &response_headers_map,
+                EnvoyTransformationOps::new(envoy_filter),
+            ) {
+                Ok(()) => {}
+                Err(err) => {
+                    if let Some(e) = err.downcast_ref::<TransformationError>() {
+                        match e {
+                            TransformationError::UndeclaredJsonVariables(_msg) => {
+                                envoy_log_error!("{:#}", err);
+                                envoy_filter.send_response(400, Vec::default(), None);
+                                return false;
+                            }
+                        }
+                    } else if let Some(e) = err.downcast_ref::<serde_json::error::Error>() {
+                        envoy_log_error!("json parsing error: {:#}", e);
+                        envoy_filter.send_response(400, Vec::default(), None);
+                        return false;
+                    } else {
+                        envoy_log_warn!("{:#}", err);
+                    }
+                }
+            }
+        }
+
+        true
     }
 }
 
@@ -204,20 +304,29 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         envoy_filter: &mut EHF,
         _end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_headers_status {
-        envoy_log_trace!("on_request_headers");
-        // TODO: need to test if we get called even if there is no transformation setting
-        //       if yes, we need to short circuit here and return Continue
+        self.set_per_route_config(envoy_filter);
+        if !self.has_request_transform() {
+            envoy_log_trace!("on_request_headers skipping");
+            return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
+        }
+
         if !_end_of_stream {
             // TODO: this here always stop iteration to wait for the full request body,
             //       need to support body passthrough
+            envoy_log_trace!("on_request_headers buffering");
+            //            return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopAllIterationAndBuffer;
             return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration;
         }
+        envoy_log_trace!("on_request_headers");
 
-        self.set_per_route_config(envoy_filter);
-        // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
         self.populate_request_headers_map(envoy_filter.get_request_headers());
-        self.transform_request_headers(envoy_filter);
-        abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue
+        if self.transform_request(envoy_filter) {
+            return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
+        }
+
+        // If transform had a critical error, it would have sent a local reply with 400 already,
+        // so return StopIteration here
+        abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration
     }
 
     fn on_request_body(
@@ -225,35 +334,84 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         envoy_filter: &mut EHF,
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_body_status {
-        envoy_log_trace!("on_request_body");
-        // TODO: need to test if we get called even if there is no transformation setting
-        //       if yes, we need to short circuit here and return Continue
-        if !end_of_stream {
-            // TODO: Technically, we don't need to buffer the body yet as we don't support parsing the body now
-            //       but it will be coming next. This is mimicking the C++ transformation filter behavior to
-            //       always buffer the request body by default unless passthrough is set. Will revisit and consider
-            //       if this is the desired behavior when we implement parsing the body
-            return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::StopIterationAndBuffer;
+        self.set_per_route_config(envoy_filter);
+        if !self.has_request_transform() {
+            envoy_log_trace!("on_request_body skipping");
+            return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue;
         }
 
-        self.set_per_route_config(envoy_filter);
-        // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
+        if !end_of_stream {
+            envoy_log_trace!("on_request_body buffering");
+            // This is mimicking the C++ transformation filter behavior to always buffer the request body by
+            // default unless passthrough is set but kgateway doesn't support body passthrough in
+            // transformation API.
+            return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::StopIterationAndBuffer;
+        }
+        envoy_log_trace!("on_request_body");
+
         self.populate_request_headers_map(envoy_filter.get_request_headers());
-        self.transform_request_headers(envoy_filter);
-        abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
+        if self.transform_request(envoy_filter) {
+            return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue;
+        }
+
+        // If transform had a critical error, it would have sent a local reply with 400 already,
+        // so return StopIteration here
+        abi::envoy_dynamic_module_type_on_http_filter_request_body_status::StopIterationAndBuffer
     }
 
     fn on_response_headers(
         &mut self,
         envoy_filter: &mut EHF,
-        _end_of_stream: bool,
+        end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_response_headers_status {
-        envoy_log_trace!("on_response_headers");
         self.set_per_route_config(envoy_filter);
-        // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
+        if !self.has_response_transform() {
+            envoy_log_trace!("on_response_header skipping");
+            return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
+        }
+
+        if !end_of_stream {
+            envoy_log_trace!("on_response_headers buffering");
+            return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::StopIteration;
+        }
+        envoy_log_trace!("on_response_headers");
         self.populate_request_headers_map(envoy_filter.get_request_headers());
-        self.transform_response_headers(envoy_filter);
-        abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue
+        if self.transform_response(envoy_filter) {
+            return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
+        }
+
+        // If transform had a critical error, it would have sent a local reply with 400 already,
+        // so return StopIteration here
+        abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::StopIteration
+    }
+
+    fn on_response_body(
+        &mut self,
+        envoy_filter: &mut EHF,
+        end_of_stream: bool,
+    ) -> abi::envoy_dynamic_module_type_on_http_filter_response_body_status {
+        self.set_per_route_config(envoy_filter);
+        if !self.has_response_transform() {
+            envoy_log_trace!("on_response_body skipping");
+            return abi::envoy_dynamic_module_type_on_http_filter_response_body_status::Continue;
+        }
+        if !end_of_stream {
+            envoy_log_trace!("on_response_body buffering");
+            // This is mimicking the C++ transformation filter behavior to always buffer the response body by
+            // default unless passthrough is set but kgateway doesn't support body passthrough in
+            // transformation API.
+            return abi::envoy_dynamic_module_type_on_http_filter_response_body_status::StopIterationAndBuffer;
+        }
+        envoy_log_trace!("on_response_body");
+
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
+        if self.transform_response(envoy_filter) {
+            return abi::envoy_dynamic_module_type_on_http_filter_response_body_status::Continue;
+        }
+
+        // If transform had a critical error, it would have sent a local reply with 400 already,
+        // so return StopIteration here
+        abi::envoy_dynamic_module_type_on_http_filter_response_body_status::StopIterationAndBuffer
     }
 }
 

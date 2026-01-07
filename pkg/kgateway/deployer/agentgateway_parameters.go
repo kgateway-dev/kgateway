@@ -2,20 +2,17 @@ package deployer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"istio.io/istio/pkg/kube/kclient"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer/strategicpatch"
@@ -32,78 +29,59 @@ func NewAgentgatewayParametersApplier(params *agentgateway.AgentgatewayParameter
 	return &AgentgatewayParametersApplier{params: params}
 }
 
+func setIfNonNil[T any](dst **T, src *T) {
+	if src != nil {
+		*dst = src
+	}
+}
+
+func setIfNonZero[T comparable](dst *T, src T) {
+	var zero T
+	if src != zero {
+		*dst = src
+	}
+}
+
 // ApplyToHelmValues applies the AgentgatewayParameters configs to the helm
 // values.  This is called before rendering the helm chart. (We render a helm
 // chart, but we do not use helm beyond that point.)
 func (a *AgentgatewayParametersApplier) ApplyToHelmValues(vals *deployer.HelmConfig) {
-	if a.params == nil || vals == nil || vals.Gateway == nil {
+	if a.params == nil || vals == nil || vals.Agentgateway == nil {
 		return
 	}
 
 	configs := a.params.Spec.AgentgatewayParametersConfigs
+	res := vals.Agentgateway.AgentgatewayParametersConfigs
 
+	// Do a manual merge of the fields.
 	if configs.Image != nil {
-		if vals.Gateway.Image == nil {
-			vals.Gateway.Image = &deployer.HelmImage{}
+		if res.Image == nil {
+			res.Image = &agentgateway.Image{}
 		}
-		if configs.Image.Registry != nil {
-			vals.Gateway.Image.Registry = configs.Image.Registry
-		}
-		if configs.Image.Repository != nil {
-			vals.Gateway.Image.Repository = configs.Image.Repository
-		}
-		if configs.Image.Tag != nil {
-			vals.Gateway.Image.Tag = configs.Image.Tag
-		}
-		if configs.Image.Digest != nil {
-			vals.Gateway.Image.Digest = configs.Image.Digest
-		}
-		if configs.Image.PullPolicy != nil {
-			vals.Gateway.Image.PullPolicy = (*string)(configs.Image.PullPolicy)
-		}
+		setIfNonNil(&res.Image.Tag, configs.Image.Tag)
+		setIfNonNil(&res.Image.Registry, configs.Image.Registry)
+		setIfNonNil(&res.Image.Repository, configs.Image.Repository)
+		setIfNonNil(&res.Image.PullPolicy, configs.Image.PullPolicy)
+		setIfNonNil(&res.Image.Digest, configs.Image.Digest)
 	}
-
-	if configs.Resources != nil {
-		vals.Gateway.Resources = configs.Resources
-	}
+	setIfNonNil(&res.Resources, configs.Resources)
+	setIfNonNil(&res.Shutdown, configs.Shutdown)
+	setIfNonNil(&res.RawConfig, configs.RawConfig)
 
 	// Apply logging.level as RUST_LOG first, then merge explicit env vars on top.
 	// This ensures explicit env vars override logging.level if both specify RUST_LOG.
 	if configs.Logging != nil {
-		if configs.Logging.Level != "" {
-			vals.Gateway.Env = mergeEnvVars(vals.Gateway.Env, []corev1.EnvVar{
-				{Name: "RUST_LOG", Value: configs.Logging.Level},
-			})
+		if res.Logging == nil {
+			res.Logging = &agentgateway.AgentgatewayParametersLogging{}
 		}
-		if configs.Logging.Format != "" {
-			format := string(configs.Logging.Format)
-			vals.Gateway.LogFormat = &format
-			// NOTE: The Deployment needs to have a new rollout if the only
-			// thing that changes is the ConfigMap. The usual solution with
-			// Helm is an annotation on the Deployment with a hash of the
-			// ConfigMap's contents, and that's what our helm chart does. See
-			// https://helm.sh/docs/howto/charts_tips_and_tricks/#automatically-roll-deployments
-		}
-	}
-
-	// Apply rawConfig if present - this will be merged with typed config in the helm template
-	if configs.RawConfig != nil && configs.RawConfig.Raw != nil {
-		var rawConfigMap map[string]any
-		if err := json.Unmarshal(configs.RawConfig.Raw, &rawConfigMap); err == nil {
-			vals.Gateway.RawConfig = rawConfigMap
-		}
+		setIfNonZero(&res.Logging.Level, configs.Logging.Level)
+		setIfNonZero(&res.Logging.Format, configs.Logging.Format)
 	}
 
 	// Apply explicit environment variables last so they can override logging.level.
-	vals.Gateway.Env = mergeEnvVars(vals.Gateway.Env, configs.Env)
+	res.Env = mergeEnvVars(res.Env, configs.Env)
 
-	if configs.Shutdown != nil {
-		vals.Gateway.TerminationGracePeriodSeconds = ptr.To(configs.Shutdown.Max)
-		if vals.Gateway.GracefulShutdown == nil {
-			vals.Gateway.GracefulShutdown = &kgateway.GracefulShutdownSpec{}
-		}
-		vals.Gateway.GracefulShutdown.SleepTimeSeconds = ptr.To(configs.Shutdown.Min)
-	}
+	vals.Agentgateway.AgentgatewayParametersConfigs = res
 }
 
 // mergeEnvVars merges two slices of environment variables.
@@ -276,25 +254,14 @@ func (g *agentgatewayParametersHelmValuesGenerator) getDefaultAgentgatewayHelmVa
 		return nil, ErrNoValidPorts
 	}
 
-	gtw := &deployer.HelmGateway{
-		DataPlaneType:    deployer.DataPlaneAgentgateway,
-		Name:             &gw.Name,
-		GatewayName:      &gw.Name,
-		GatewayNamespace: &gw.Namespace,
+	gtw := &deployer.AgentgatewayHelmGateway{
+		Name: &gw.Name,
 		GatewayClassName: func() *string {
 			s := string(gw.Spec.GatewayClassName)
 			return &s
 		}(),
 		Ports: ports,
 		Xds: &deployer.HelmXds{
-			Host: &g.inputs.ControlPlane.XdsHost,
-			Port: &g.inputs.ControlPlane.XdsPort,
-			Tls: &deployer.HelmXdsTls{
-				Enabled: func() *bool { b := g.inputs.ControlPlane.XdsTLS; return &b }(),
-				CaCert:  &g.inputs.ControlPlane.XdsTlsCaPath,
-			},
-		},
-		AgwXds: &deployer.HelmXds{
 			Host: &g.inputs.ControlPlane.XdsHost,
 			Port: &g.inputs.ControlPlane.AgwXdsPort,
 			Tls: &deployer.HelmXdsTls{
@@ -309,59 +276,12 @@ func (g *agentgatewayParametersHelmValuesGenerator) getDefaultAgentgatewayHelmVa
 		gtw.GatewayLabels = translateInfraMeta(i.Labels)
 	}
 
-	gtw.Image = &deployer.HelmImage{
+	gtw.Image = &agentgateway.Image{
 		Registry:   ptr.To(deployer.AgentgatewayRegistry),
 		Repository: ptr.To(deployer.AgentgatewayImage),
 		Tag:        ptr.To(deployer.AgentgatewayDefaultTag),
-		PullPolicy: ptr.To(""),
-	}
-	gtw.DataPlaneType = deployer.DataPlaneAgentgateway
-
-	gtw.TerminationGracePeriodSeconds = ptr.To(int64(60))
-	gtw.GracefulShutdown = &kgateway.GracefulShutdownSpec{
-		Enabled:          ptr.To(true),
-		SleepTimeSeconds: ptr.To(int64(10)),
+		PullPolicy: nil,
 	}
 
-	gtw.ReadinessProbe = &corev1.Probe{
-		ProbeHandler: corev1.ProbeHandler{
-			HTTPGet: &corev1.HTTPGetAction{
-				Path: "/healthz/ready",
-				Port: intstr.FromInt(15021),
-			},
-		},
-		PeriodSeconds: 10,
-	}
-	gtw.StartupProbe = &corev1.Probe{
-		ProbeHandler: corev1.ProbeHandler{
-			HTTPGet: &corev1.HTTPGetAction{
-				Path: "/healthz/ready",
-				Port: intstr.FromInt(15021),
-			},
-		},
-		PeriodSeconds:    1,
-		TimeoutSeconds:   2,
-		FailureThreshold: 60,
-		SuccessThreshold: 1,
-	}
-
-	gtw.PodSecurityContext = &corev1.PodSecurityContext{
-		Sysctls: []corev1.Sysctl{
-			{
-				Name:  "net.ipv4.ip_unprivileged_port_start",
-				Value: "0",
-			},
-		},
-	}
-	gtw.SecurityContext = &corev1.SecurityContext{
-		AllowPrivilegeEscalation: ptr.To(false),
-		Capabilities: &corev1.Capabilities{
-			Drop: []corev1.Capability{"ALL"},
-		},
-		ReadOnlyRootFilesystem: ptr.To(true),
-		RunAsNonRoot:           ptr.To(true),
-		RunAsUser:              ptr.To(int64(10101)),
-	}
-
-	return &deployer.HelmConfig{Gateway: gtw}, nil
+	return &deployer.HelmConfig{Agentgateway: gtw}, nil
 }

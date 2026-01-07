@@ -25,6 +25,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks_url"
 	agentjwksstore "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwksstore"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -169,7 +170,7 @@ func WithExtraManagerConfig(mgrConfigFuncs ...func(context.Context, manager.Mana
 	}
 }
 
-func WithExtraRunnables(runnables ...func(ctx context.Context, commoncol *collections.CommonCollections, agw *agwplugins.AgwCollections) manager.Runnable) func(*setup) {
+func WithExtraRunnables(runnables ...func(ctx context.Context, commoncol *collections.CommonCollections, agw *agwplugins.AgwCollections, s *apisettings.Settings) (bool, manager.Runnable)) func(*setup) {
 	return func(s *setup) {
 		s.extraRunnables = runnables
 	}
@@ -238,7 +239,7 @@ type setup struct {
 	// extra controller manager config, like adding registering additional controllers
 	extraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	// extra Runnable to add to the manager
-	extraRunnables               []func(ctx context.Context, commoncol *collections.CommonCollections, agw *agwplugins.AgwCollections) manager.Runnable
+	extraRunnables               []func(ctx context.Context, commoncol *collections.CommonCollections, agw *agwplugins.AgwCollections, settings *apisettings.Settings) (bool, manager.Runnable)
 	krtDebugger                  *krt.DebugHandler
 	globalSettings               *apisettings.Settings
 	leaderElectionID             string
@@ -268,17 +269,6 @@ func New(opts ...func(*setup)) (*setup, error) {
 		opt(s)
 	}
 
-	if s.restConfig == nil {
-		s.restConfig = ctrl.GetConfigOrDie()
-	}
-	if s.apiClient == nil {
-		apiClient, err := apiclient.New(s.restConfig)
-		if err != nil {
-			return nil, fmt.Errorf("error creating API client: %w", err)
-		}
-		s.apiClient = apiClient
-	}
-
 	if s.globalSettings == nil {
 		var err error
 		s.globalSettings, err = apisettings.BuildSettings()
@@ -289,6 +279,17 @@ func New(opts ...func(*setup)) (*setup, error) {
 	}
 
 	SetupLogging(s.globalSettings.LogLevel)
+
+	if s.restConfig == nil {
+		s.restConfig = ctrl.GetConfigOrDie()
+	}
+	if s.apiClient == nil {
+		apiClient, err := apiclient.New(s.restConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error creating API client: %w", err)
+		}
+		s.apiClient = apiClient
+	}
 
 	// Adjust leader election ID based on which controllers are enabled.
 	// This allows split helm charts to deploy separate controllers that don't compete for the same lease.
@@ -436,6 +437,9 @@ func (s *setup) Start(ctx context.Context) error {
 			slog.Error("error creating agw common collections", "error", err)
 			return err
 		}
+
+		jwksUrlFactory := jwks_url.NewJwksUrlFactory(agwCollections.ConfigMaps, agwCollections.Backends, agwCollections.AgentgatewayPolicies)
+		jwks_url.JwksUrlBuilderFactory = func() jwks_url.JwksUrlBuilder { return jwksUrlFactory }
 	}
 
 	for _, mgrCfgFunc := range s.extraManagerConfig {
@@ -447,7 +451,10 @@ func (s *setup) Start(ctx context.Context) error {
 
 	runnablesRegistry := make(map[string]any)
 	for _, runnable := range s.extraRunnables {
-		r := runnable(ctx, commoncol, agwCollections)
+		enabled, r := runnable(ctx, commoncol, agwCollections, s.globalSettings)
+		if !enabled {
+			continue
+		}
 		if named, ok := r.(common.NamedRunnable); ok {
 			runnablesRegistry[named.RunnableName()] = struct{}{}
 		}
@@ -581,13 +588,20 @@ func SetupLogging(levelStr string) {
 }
 
 func buildJwksStore(ctx context.Context, mgr manager.Manager, apiClient apiclient.Client, commonCollections *collections.CommonCollections, agwCollections *agwplugins.AgwCollections) error {
-	jwksStoreCtrl := agentjwksstore.NewJWKSStoreController(apiClient, agwCollections)
-	if err := mgr.Add(jwksStoreCtrl); err != nil {
+	jwksStorePolicyCtrl := agentjwksstore.NewJWKSStorePolicyController(apiClient, agwCollections, jwks_url.JwksUrlBuilderFactory)
+	if err := mgr.Add(jwksStorePolicyCtrl); err != nil {
 		return err
 	}
-	jwksStoreCtrl.Init(ctx)
-	jwksStore := jwks.BuildJwksStore(ctx, apiClient, commonCollections, jwksStoreCtrl.JwksQueue(), jwks.DefaultJwksStorePrefix, namespaces.GetPodNamespace())
+	jwksStorePolicyCtrl.Init(ctx)
+
+	jwksStore := jwks.BuildJwksStore(ctx, apiClient, commonCollections, jwksStorePolicyCtrl.JwksChanges(), jwks.DefaultJwksStorePrefix, namespaces.GetPodNamespace())
 	if err := mgr.Add(jwksStore); err != nil {
+		return err
+	}
+
+	jwksStoreCMCtrl := agentjwksstore.NewJWKSStoreConfigMapsController(apiClient, jwks.DefaultJwksStorePrefix, namespaces.GetPodNamespace(), jwksStore)
+	jwksStoreCMCtrl.Init(ctx)
+	if err := mgr.Add(jwksStoreCMCtrl); err != nil {
 		return err
 	}
 

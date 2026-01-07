@@ -17,6 +17,10 @@ func NewKrtOptions(stop <-chan struct{}, debugger *krt.DebugHandler) KrtOptions 
 	}
 }
 
+func (k KrtOptions) ToIstio() krt.OptionsBuilder {
+	return krt.NewOptionsBuilder(k.Stop, k.namePrefix, k.Debugger)
+}
+
 func (k KrtOptions) WithPrefix(name string) KrtOptions {
 	k.namePrefix = name
 	return k

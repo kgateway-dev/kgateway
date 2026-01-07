@@ -36,7 +36,7 @@ func GetAgwResourceName(r *api.Resource) string {
 // Gateway may be empty, which means it applies to all gateways
 type AgwResource struct {
 	Resource *api.Resource        `json:"resource"`
-	Gateway  types.NamespacedName `json:"gateway"`
+	Gateway  types.NamespacedName `json:"gateway,omitzero"`
 }
 
 func (g AgwResource) IntoProto() *api.Resource {

@@ -17,20 +17,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
-func TestAgentgatewayParametersApplier_ApplyToHelmValues_NilParams(t *testing.T) {
-	applier := NewAgentgatewayParametersApplier(nil)
-	vals := &deployer.HelmConfig{
-		Gateway: &deployer.HelmGateway{
-			LogLevel: ptr.To("info"),
-		},
-	}
-
-	applier.ApplyToHelmValues(vals)
-
-	// Values should be unchanged
-	assert.Equal(t, "info", *vals.Gateway.LogLevel)
-}
-
 func TestAgentgatewayParametersApplier_ApplyToHelmValues_Image(t *testing.T) {
 	params := &agentgateway.AgentgatewayParameters{
 		Spec: agentgateway.AgentgatewayParametersSpec{
@@ -46,15 +32,15 @@ func TestAgentgatewayParametersApplier_ApplyToHelmValues_Image(t *testing.T) {
 
 	applier := NewAgentgatewayParametersApplier(params)
 	vals := &deployer.HelmConfig{
-		Gateway: &deployer.HelmGateway{},
+		Agentgateway: &deployer.AgentgatewayHelmGateway{},
 	}
 
 	applier.ApplyToHelmValues(vals)
 
-	require.NotNil(t, vals.Gateway.Image)
-	assert.Equal(t, "custom.registry.io", *vals.Gateway.Image.Registry)
-	assert.Equal(t, "custom/agentgateway", *vals.Gateway.Image.Repository)
-	assert.Equal(t, "v1.0.0", *vals.Gateway.Image.Tag)
+	require.NotNil(t, vals.Agentgateway.Image)
+	assert.Equal(t, "custom.registry.io", *vals.Agentgateway.Image.Registry)
+	assert.Equal(t, "custom/agentgateway", *vals.Agentgateway.Image.Repository)
+	assert.Equal(t, "v1.0.0", *vals.Agentgateway.Image.Tag)
 }
 
 func TestAgentgatewayParametersApplier_ApplyToHelmValues_Resources(t *testing.T) {
@@ -77,14 +63,14 @@ func TestAgentgatewayParametersApplier_ApplyToHelmValues_Resources(t *testing.T)
 
 	applier := NewAgentgatewayParametersApplier(params)
 	vals := &deployer.HelmConfig{
-		Gateway: &deployer.HelmGateway{},
+		Agentgateway: &deployer.AgentgatewayHelmGateway{},
 	}
 
 	applier.ApplyToHelmValues(vals)
 
-	require.NotNil(t, vals.Gateway.Resources)
-	assert.Equal(t, "512Mi", vals.Gateway.Resources.Limits.Memory().String())
-	assert.Equal(t, "500m", vals.Gateway.Resources.Limits.Cpu().String())
+	require.NotNil(t, vals.Agentgateway.Resources)
+	assert.Equal(t, "512Mi", vals.Agentgateway.Resources.Limits.Memory().String())
+	assert.Equal(t, "500m", vals.Agentgateway.Resources.Limits.Cpu().String())
 }
 
 func TestAgentgatewayParametersApplier_ApplyToHelmValues_Env(t *testing.T) {
@@ -101,43 +87,14 @@ func TestAgentgatewayParametersApplier_ApplyToHelmValues_Env(t *testing.T) {
 
 	applier := NewAgentgatewayParametersApplier(params)
 	vals := &deployer.HelmConfig{
-		Gateway: &deployer.HelmGateway{
-			Env: []corev1.EnvVar{
-				{Name: "EXISTING_VAR", Value: "existing_value"},
-			},
-		},
+		Agentgateway: &deployer.AgentgatewayHelmGateway{},
 	}
 
 	applier.ApplyToHelmValues(vals)
 
-	require.Len(t, vals.Gateway.Env, 3)
-	assert.Equal(t, "EXISTING_VAR", vals.Gateway.Env[0].Name)
-	assert.Equal(t, "CUSTOM_VAR", vals.Gateway.Env[1].Name)
-	assert.Equal(t, "ANOTHER_VAR", vals.Gateway.Env[2].Name)
-}
-
-func TestAgentgatewayParametersApplier_ApplyToHelmValues_Logging(t *testing.T) {
-	params := &agentgateway.AgentgatewayParameters{
-		Spec: agentgateway.AgentgatewayParametersSpec{
-			AgentgatewayParametersConfigs: agentgateway.AgentgatewayParametersConfigs{
-				Logging: &agentgateway.AgentgatewayParametersLogging{
-					Level: "debug",
-				},
-			},
-		},
-	}
-
-	applier := NewAgentgatewayParametersApplier(params)
-	vals := &deployer.HelmConfig{
-		Gateway: &deployer.HelmGateway{},
-	}
-
-	applier.ApplyToHelmValues(vals)
-
-	// Level should be set as RUST_LOG env var
-	require.Len(t, vals.Gateway.Env, 1)
-	assert.Equal(t, "RUST_LOG", vals.Gateway.Env[0].Name)
-	assert.Equal(t, "debug", vals.Gateway.Env[0].Value)
+	require.Len(t, vals.Agentgateway.Env, 2)
+	assert.Equal(t, "CUSTOM_VAR", vals.Agentgateway.Env[0].Name)
+	assert.Equal(t, "ANOTHER_VAR", vals.Agentgateway.Env[1].Name)
 }
 
 func TestAgentgatewayParametersApplier_ApplyOverlaysToObjects(t *testing.T) {
@@ -228,19 +185,11 @@ func TestAgentgatewayParametersApplier_ApplyToHelmValues_RawConfig(t *testing.T)
 
 	applier := NewAgentgatewayParametersApplier(params)
 	vals := &deployer.HelmConfig{
-		Gateway: &deployer.HelmGateway{},
+		Agentgateway: &deployer.AgentgatewayHelmGateway{},
 	}
 
 	applier.ApplyToHelmValues(vals)
-
-	require.NotNil(t, vals.Gateway.RawConfig)
-	tracing, ok := vals.Gateway.RawConfig["tracing"].(map[string]any)
-	require.True(t, ok, "tracing should be a map")
-	assert.Equal(t, "http://jaeger:4317", tracing["otlpEndpoint"])
-
-	metrics, ok := vals.Gateway.RawConfig["metrics"].(map[string]any)
-	require.True(t, ok, "metrics should be a map")
-	assert.Equal(t, true, metrics["enabled"])
+	assert.Equal(t, vals.Agentgateway.RawConfig.Raw, rawConfigJSON)
 }
 
 func TestAgentgatewayParametersApplier_ApplyToHelmValues_RawConfigWithLogging(t *testing.T) {
@@ -268,15 +217,12 @@ func TestAgentgatewayParametersApplier_ApplyToHelmValues_RawConfigWithLogging(t 
 
 	applier := NewAgentgatewayParametersApplier(params)
 	vals := &deployer.HelmConfig{
-		Gateway: &deployer.HelmGateway{},
+		Agentgateway: &deployer.AgentgatewayHelmGateway{},
 	}
 
 	applier.ApplyToHelmValues(vals)
 
 	// Both should be set - merging happens in helm template
-	assert.Equal(t, "text", *vals.Gateway.LogFormat)
-	require.NotNil(t, vals.Gateway.RawConfig)
-	tracing, ok := vals.Gateway.RawConfig["tracing"].(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, "http://jaeger:4317", tracing["otlpEndpoint"])
+	assert.Equal(t, "text", string(vals.Agentgateway.Logging.Format))
+	assert.Equal(t, vals.Agentgateway.RawConfig.Raw, rawConfigJSON)
 }

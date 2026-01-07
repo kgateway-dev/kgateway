@@ -98,21 +98,7 @@ func GetCACertFromConfigMap(cm *corev1.ConfigMap) (string, error) {
 	if !ok {
 		return "", ErrMissingCACertKey
 	}
-
-	// Validate CA certificate by trying to parse it
-	candidateCert, err := cert.ParseCertsPEM([]byte(caCrt))
-	if err != nil {
-		return "", ErrInvalidCACertificate(cm.Name, cm.Namespace, err)
-	}
-
-	// Clean and encode the certificate to ensure proper formatting
-	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
-	if err != nil {
-		return "", ErrInvalidCACertificate(cm.Name, cm.Namespace, err)
-	}
-
-	cleanedChain := string(cleanedChainBytes)
-	return cleanedChain, nil
+	return getCACertFromBytes([]byte(caCrt), cm.Name, cm.Namespace)
 }
 
 // GetCACertFromSecret validates and extracts the ca.crt string from an ir.Secret
@@ -122,22 +108,28 @@ func GetCACertFromSecret(secret *ir.Secret) (string, error) {
 		return "", ErrMissingCACertKey
 	}
 
-	caCrt := string(caCrtBytes)
+	return getCACertFromBytes(caCrtBytes, secret.Name, secret.Namespace)
+}
+
+// getCACertFromBytes validates and extracts the ca.crt string from certificate bytes
+func getCACertFromBytes(caCrtBytes []byte, name, namespace string) (string, error) {
+	if len(caCrtBytes) == 0 {
+		return "", ErrMissingCACertKey
+	}
 
 	// Validate CA certificate by trying to parse it
-	candidateCert, err := cert.ParseCertsPEM([]byte(caCrt))
+	candidateCert, err := cert.ParseCertsPEM(caCrtBytes)
 	if err != nil {
-		return "", ErrInvalidCACertificateSecret(secret.Name, secret.Namespace, err)
+		return "", ErrInvalidCACertificate(name, namespace, err)
 	}
 
 	// Clean and encode the certificate to ensure proper formatting
 	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
 	if err != nil {
-		return "", ErrInvalidCACertificateSecret(secret.Name, secret.Namespace, err)
+		return "", ErrInvalidCACertificate(name, namespace, err)
 	}
 
-	cleanedChain := string(cleanedChainBytes)
-	return cleanedChain, nil
+	return string(cleanedChainBytes), nil
 }
 
 type TLSExtensionOptionFunc = func(in string, out *ir.TLSConfig) error

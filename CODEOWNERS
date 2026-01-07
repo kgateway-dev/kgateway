@@ -1,0 +1,10 @@
+# CODEOWNERS file for kgateway
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# API definitions and CRDs - critical for kgateway API compatibility
+/api/v1alpha1/kgateway @kgateway-dev/kgateway-api-owners
+
+# API definitions and CRDs - critical for agw API compatibility
+/api/v1alpha1/agentgateway @kgateway-dev/agentgateway-api-owners
+
+# Note: Other directories are intentionally not assigned specific owners at this time to avoid process overhead.
