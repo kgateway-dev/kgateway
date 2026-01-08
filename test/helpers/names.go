@@ -5,5 +5,5 @@ const (
 	DefaultKgatewayDeploymentName = "kgateway"
 
 	// container within the kgateway pod; its name is currently hardcoded
-	KgatewayContainerName = "kgateway"
+	KgatewayContainerName = "controller"
 )

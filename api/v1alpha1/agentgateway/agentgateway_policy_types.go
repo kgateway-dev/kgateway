@@ -251,7 +251,6 @@ type BackendTLS struct {
 	AlpnProtocols *[]TinyString `json:"alpnProtocols,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="!has(self.tracing)",message="tracing is not currently implemented"
 type Frontend struct {
 	// tcp defines settings on managing incoming TCP connections.
 	// +optional
@@ -268,7 +267,6 @@ type Frontend struct {
 	AccessLog *AccessLog `json:"accessLog,omitempty"`
 
 	// Tracing contains various settings for OpenTelemetry tracer.
-	// TODO: not currently implemented
 	// +optional
 	Tracing *Tracing `json:"tracing,omitempty"`
 }
@@ -336,8 +334,51 @@ type FrontendTLS struct {
 	// +kubebuilder:validation:MaxItems=16
 	// +optional
 	AlpnProtocols *[]TinyString `json:"alpnProtocols,omitempty"`
+
+	// MinTLSVersion configures the minimum TLS version to support.
+	// +optional
+	MinTLSVersion *TLSVersion `json:"minProtocolVersion,omitempty"`
+
+	// MaxTLSVersion configures the maximum TLS version to support.
+	// +optional
+	MaxTLSVersion *TLSVersion `json:"maxProtocolVersion,omitempty"`
+
+	// CipherSuites configures the list of cipher suites for a TLS listener.
+	// The value is a comma-separated list of cipher suites, e.g "TLS13_AES_256_GCM_SHA384,TLS13_AES_128_GCM_SHA256".
+	// Use in the TLS options field of a TLS listener.
+	// +optional
+	CipherSuites []CipherSuite `json:"cipherSuites,omitempty"`
+
 	// TODO: mirror the tuneables on BackendTLS
 }
+
+// +kubebuilder:validation:Enum="1.2";"1.3"
+type TLSVersion string
+
+const (
+	// agentgateway currently only supports TLS 1.2 and TLS 1.3
+	TLSVersion1_2 TLSVersion = "1.2"
+	TLSVersion1_3 TLSVersion = "1.3"
+)
+
+// +kubebuilder:validation:Enum=TLS13_AES_256_GCM_SHA384;TLS13_AES_128_GCM_SHA256;TLS13_CHACHA20_POLY1305_SHA256;TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384;TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256;TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256;TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384;TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256;TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+type CipherSuite string
+
+const (
+	// TLS 1.3 cipher suites
+	CipherSuiteTLS13_AES_256_GCM_SHA384       CipherSuite = "TLS13_AES_256_GCM_SHA384"
+	CipherSuiteTLS13_AES_128_GCM_SHA256       CipherSuite = "TLS13_AES_128_GCM_SHA256"
+	CipherSuiteTLS13_CHACHA20_POLY1305_SHA256 CipherSuite = "TLS13_CHACHA20_POLY1305_SHA256"
+
+	// TLS 1.2 cipher suites
+	CipherSuiteTLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384       CipherSuite = "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+	CipherSuiteTLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256       CipherSuite = "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+	CipherSuiteTLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 CipherSuite = "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256"
+
+	CipherSuiteTLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384       CipherSuite = "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+	CipherSuiteTLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256       CipherSuite = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+	CipherSuiteTLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 CipherSuite = "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+)
 
 // +kubebuilder:validation:AtLeastOneOf=keepalive
 type FrontendTCP struct {
@@ -815,6 +856,9 @@ const (
 
 	// RouteTypeEmbeddings processes OpenAI /v1/embeddings format requests
 	RouteTypeEmbeddings RouteType = "Embeddings"
+
+	//RouteTypeRealtime processes OpenAI /v1/realtime requests
+	RouteTypeRealtime RouteType = "Realtime"
 )
 
 // +kubebuilder:validation:AtLeastOneOf=authorization;authentication
@@ -1260,7 +1304,7 @@ const (
 
 type Tracing struct {
 	// backendRef references the OTLP server to reach.
-	// Supported types: Service and Backend.
+	// Supported types: Service and AgentgatewayBackend.
 	// +required
 	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 	// protocol specifies the OTLP protocol variant to use.
@@ -1269,9 +1313,13 @@ type Tracing struct {
 	// +optional
 	Protocol TracingProtocol `json:"protocol,omitempty"`
 
-	// attributes specifies customizations to the key-value pairs that are included in the trace
+	// attributes specify customizations to the key-value pairs that are included in the trace.
 	// +optional
 	Attributes *LogTracingAttributes `json:"attributes,omitempty"`
+
+	// resources describe the entity producing telemetry and specify the resources to be included in the trace.
+	// +optional
+	Resources []ResourceAdd `json:"resources,omitempty"`
 
 	// randomSampling is an expression to determine the amount of random sampling. Random sampling will initiate a new
 	// trace span if the incoming request does not have a trace initiated already. This should evaluate to a float between
@@ -1283,4 +1331,11 @@ type Tracing struct {
 	// 0.0-1.0, or a boolean (true/false) If unspecified, client sampling is 100% enabled.
 	// +optional
 	ClientSampling *shared.CELExpression `json:"clientSampling,omitempty"`
+}
+
+type ResourceAdd struct {
+	// +required
+	Name ShortString `json:"name"`
+	// +required
+	Expression shared.CELExpression `json:"expression"`
 }

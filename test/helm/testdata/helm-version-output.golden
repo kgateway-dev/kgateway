@@ -16,7 +16,7 @@
     app.kubernetes.io/instance: foobar
     app.kubernetes.io/version: "v0.0.2"
 --
-        - name: kgateway
+        - name: controller
           image: "cr.kgateway.dev/kgateway-dev/kgateway:v0.0.2"
 --
             - name: KGW_DEFAULT_IMAGE_TAG

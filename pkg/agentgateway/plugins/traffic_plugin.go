@@ -282,7 +282,7 @@ func translatePolicyToAgw(
 	agwPolicies := make([]AgwPolicy, 0)
 	var errs []error
 
-	frontend, err := translateFrontendPolicyToAgw(policy, policyTarget)
+	frontend, err := translateFrontendPolicyToAgw(ctx, policy, policyTarget)
 	agwPolicies = append(agwPolicies, frontend...)
 	if err != nil {
 		errs = append(errs, err)
@@ -1205,7 +1205,7 @@ func buildBackendRef(ctx PolicyCtx, ref gwv1.BackendObjectReference, defaultNS s
 			},
 			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 		}, nil
-	case wellknown.BackendGVK.GroupKind():
+	case wellknown.AgentgatewayBackendGVK.GroupKind():
 		key := namespace + "/" + string(ref.Name)
 		be := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Collections.Backends, krt.FilterKey(key)))
 		if be == nil {

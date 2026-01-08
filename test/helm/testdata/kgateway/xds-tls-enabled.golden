@@ -282,7 +282,7 @@ spec:
     spec:
       serviceAccountName: test-release-kgateway
       containers:
-        - name: kgateway
+        - name: controller
           image: "cr.kgateway.dev/kgateway-dev/kgateway:v0.0.2"
           imagePullPolicy: IfNotPresent
           ports:

@@ -14,6 +14,11 @@ spec:
       - h2
       - http/1.1
       handshakeTimeout: 15s
+      minProtocolVersion: "1.2"
+      maxProtocolVersion: "1.3"
+      cipherSuites:
+      - TLS13_AES_256_GCM_SHA384
+      - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
 ---
 # Output
 output:
@@ -24,7 +29,12 @@ output:
           protocols:
           - h2
           - http/1.1
-        tlsHandshakeTimeout: 15s
+        cipherSuites:
+        - TLS_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        handshakeTimeout: 15s
+        maxVersion: TLS_V1_3
+        minVersion: TLS_V1_2
     key: frontend/default/tls-policy:frontend-tls:default/test
     name:
       kind: AgentgatewayPolicy
