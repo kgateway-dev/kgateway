@@ -31,7 +31,7 @@ func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	agentgatewaySuiteRunner.Register("BasicRouting", agentgateway.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("Extauth", extauth.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("Extproc", extproc.NewTestingSuite)
-	agentgatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewAgentgatewayTestingSuite)
+	agentgatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("MCP", mcp.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("AIBackend", aibackend.NewTestingSuite)
