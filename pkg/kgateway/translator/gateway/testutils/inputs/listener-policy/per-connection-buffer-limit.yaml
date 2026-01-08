@@ -47,5 +47,6 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  perConnectionBufferLimitBytes: 65536
+  default:
+    perConnectionBufferLimitBytes: 65536
 

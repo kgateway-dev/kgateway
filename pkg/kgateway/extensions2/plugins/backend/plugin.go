@@ -15,7 +15,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -175,7 +174,7 @@ func buildTranslateFunc(
 			var secret *ir.Secret
 			if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret {
 				var err error
-				secret, err = pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
+				secret, err = secrets.GetSecretWithoutRefGrant(krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
 				if err != nil {
 					beIr.errors = append(beIr.errors, err)
 				}
@@ -292,7 +291,7 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+func (p *backendPlugin) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	result := []filters.StagedHttpFilter{}
 
 	var errs []error

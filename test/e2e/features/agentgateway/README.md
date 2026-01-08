@@ -1,11 +1,11 @@
-# agentgateway e2e tests 
+# agentgateway e2e tests
 
 ## Setup
 
 The agentgateway control plane is automatically enabled when installing kgateway.
 
 
-## Testing with an unreleased agentgateway commit 
+## Testing with an unreleased agentgateway commit
 
 Add this line to the kgateway go.mod to point to the unreleased agentgateway commit:
 ```shell
@@ -25,13 +25,13 @@ make run -B
 
 In the agentgateway repo (on your branch), build the docker image locally with:
 ```shell
-make docker 
+make docker
 ```
 
 Then load it into the kind cluster where you are running the e2e tests:
 ```shell
-AGW_TAG=$(docker images ghcr.io/agentgateway/agentgateway --format "{{.Tag}}" | head -n 1)
-kind load --name kind docker-image ghcr.io/agentgateway/agentgateway:$AGW_TAG
+AGW_TAG=$(docker images cr.agentgateway.dev/agentgateway --format "{{.Tag}}" | head -n 1)
+kind load --name kind docker-image cr.agentgateway.dev/agentgateway:$AGW_TAG
 ```
 
 You can either configure the agentgateway GatewayClass or a specific Gateway to use the local image.
@@ -39,27 +39,27 @@ You can either configure the agentgateway GatewayClass or a specific Gateway to 
 GatewayClass example:
 ```shell
 kubectl apply -f - <<EOF
-kind: GatewayParameters
-apiVersion: gateway.kgateway.dev/v1alpha1
+kind: AgentgatewayParameters
+apiVersion: agentgateway.dev/v1alpha1
 metadata:
-  name: gwp
+  name: agwp
+  namespace: default
 spec:
-  kube:
-    agentgateway:
-      logLevel: debug
-      image:
-        tag: $AGW_TAG
+  logging:
+    level: debug
+  image:
+    tag: $AGW_TAG
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/agentgateway
+  controllerName: agentgateway.dev/agentgateway
   parametersRef:
-    group: gateway.kgateway.dev
-    kind: GatewayParameters
-    name: gwp
+    group: agentgateway.dev
+    kind: AgentgatewayParameters
+    name: agwp
     namespace: default
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -81,16 +81,16 @@ EOF
 Gateway example:
 ```shell
 kubectl apply -f - <<EOF
-kind: GatewayParameters
-apiVersion: gateway.kgateway.dev/v1alpha1
+kind: AgentgatewayParameters
+apiVersion: agentgateway.dev/v1alpha1
 metadata:
-  name: gwp
+  name: agwp
+  namespace: default
 spec:
-  kube:
-    agentgateway:
-      logLevel: debug
-      image:
-        tag: $AGW_TAG
+  logging:
+    level: debug
+  image:
+    tag: $AGW_TAG
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -100,9 +100,9 @@ spec:
   gatewayClassName: agentgateway
   infrastructure:
     parametersRef:
-      group: gateway.kgateway.dev
-      kind: GatewayParameters
-      name: gwp
+      group: agentgateway.dev
+      kind: AgentgatewayParameters
+      name: agwp
   listeners:
   - protocol: HTTP
     port: 8080

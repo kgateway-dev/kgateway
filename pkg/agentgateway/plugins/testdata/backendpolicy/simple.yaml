@@ -29,6 +29,7 @@ spec:
         interval: 30s
     http:
       version: HTTP2
+      requestTimeout: 10s
     auth:
       secretRef:
         name: hello
@@ -48,6 +49,7 @@ output:
 - Policy:
     backend:
       backendHttp:
+        requestTimeout: 10s
         version: HTTP2
     key: default/agw:backend-http:default/test
     name:
@@ -92,8 +94,8 @@ status:
     - lastTransitionTime: fake
       message: |-
         ConfigMap default/ca-bundle not found
-        failed to get secret default/hello: failed to find secret hello
+        secret default/hello not found
       reason: PartiallyValid
       status: "True"
       type: Accepted
-    controllerName: kgateway.dev/agentgateway
+    controllerName: agentgateway.dev/agentgateway

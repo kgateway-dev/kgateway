@@ -4,4 +4,6 @@ package agentgateway
 
 type AgentgatewayBackendExpansion interface{}
 
+type AgentgatewayParametersExpansion interface{}
+
 type AgentgatewayPolicyExpansion interface{}

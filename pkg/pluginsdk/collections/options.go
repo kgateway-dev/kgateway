@@ -17,12 +17,16 @@ type option struct {
 
 func WithGatewayForDeployerTransformationFunc(f func(config *krtcollections.GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer) Option {
 	return func(o *option) {
-		o.gatewayForDeployerTransformationFunc = f
+		if f != nil {
+			o.gatewayForDeployerTransformationFunc = f
+		}
 	}
 }
 
 func WithGatewayForEnvoyTransformationFunc(f func(config *krtcollections.GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway) Option {
 	return func(o *option) {
-		o.gatewayForEnvoyTransformationFunc = f
+		if f != nil {
+			o.gatewayForEnvoyTransformationFunc = f
+		}
 	}
 }

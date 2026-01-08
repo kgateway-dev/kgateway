@@ -26,7 +26,7 @@ var (
 	tracingConfigMapManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tracing-configmap.yaml")
 
 	tracingAgentGatewayDeploymentMeta = metav1.ObjectMeta{
-		Name:      "agent-gateway",
+		Name:      "agentgateway",
 		Namespace: "default",
 	}
 
@@ -64,11 +64,11 @@ func (s *testingSuite) TestTracingConfigMap() {
 	s.T().Log("Testing tracing ConfigMap configuration")
 
 	// Ensure the ConfigMap exists before checking the gateway
-	s.verifyConfigMapExists("agent-gateway-config", "default")
+	s.verifyConfigMapExists("agentgateway-config", "default")
 
 	s.waitForAgentgatewayPodsRunning()
 
-	s.verifyConfigMapMountedInDeployment("agent-gateway-config", tracingAgentGatewayDeploymentMeta)
+	s.verifyConfigMapMountedInDeployment("agentgateway-config", tracingAgentGatewayDeploymentMeta)
 
 	// Verify that the tracing configuration is actually loaded and active
 	s.verifyTracingConfigurationActive(tracingAgentGatewayDeploymentMeta)
@@ -92,7 +92,7 @@ func (s *testingSuite) waitForAgentgatewayPodsRunning() {
 	s.TestInstallation.Assertions.EventuallyPodsRunning(
 		s.T().Context(),
 		"default",
-		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=agent-gateway"},
+		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=agentgateway"},
 		60*time.Second,
 	)
 }
@@ -128,7 +128,7 @@ func (s *testingSuite) verifyTracingConfigurationActive(deploymentMeta metav1.Ob
 	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.T().Context(),
 		deploymentMeta.Namespace,
-		defaults.WellKnownAppLabel+"=agent-gateway",
+		defaults.WellKnownAppLabel+"=agentgateway",
 	)
 	s.Require().NoError(err)
 	s.Require().NotEmpty(pods, "No agentgateway pods found")

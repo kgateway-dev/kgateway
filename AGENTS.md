@@ -8,7 +8,7 @@ kgateway is a **dual control plane** implementing the Kubernetes Gateway API for
 ### Controller Names & Isolation
 kgateway supports **two independent controllers** that can run side-by-side:
 - **Envoy Controller**: `kgateway.dev/kgateway` (defined in `wellknown.DefaultGatewayControllerName`)
-- **Agentgateway Controller**: `kgateway.dev/agentgateway` (defined in `wellknown.DefaultAgwControllerName`)
+- **Agentgateway Controller**: `agentgateway.dev/agentgateway` (defined in `wellknown.DefaultAgwControllerName`)
 
 **Critical Requirements:**
 1. Controllers MUST always respect `GatewayClass.spec.controllerName` Classname can matter, in the case of waypoints, but its always more specific information
@@ -34,11 +34,11 @@ kgateway supports **two independent controllers** that can run side-by-side:
 **Deployment:**
 - Gateway reconciler checks enable flags before calling deployer
 - Deployer selects chart based on Gateway's controllerName from GatewayClass
-- Chart selection: envoy chart for `kgateway.dev/kgateway`, agentgateway chart for `kgateway.dev/agentgateway`
+- Chart selection: envoy chart for `kgateway.dev/kgateway`, agentgateway chart for `agentgateway.dev/agentgateway`
 
 **Enable Flags:**
 - `EnableEnvoy` (default: true): Controls if envoy ProxySyncer, StatusSyncer, and GatewayClass creation run
-- `EnableAgentgateway` (default: true): Controls if agentgateway AgwSyncer, StatusSyncer, and GatewayClass creation run  
+- `EnableAgentgateway` (default: true): Controls if agentgateway AgwSyncer, StatusSyncer, and GatewayClass creation run
 - Gateway reconciler checks flags before deploying resources for each controller
 
 ### Key Files for Controller Filtering
@@ -248,10 +248,36 @@ Gateway API version is in `go.mod` and CRD install URL in Makefile (`CONFORMANCE
 ## Opening Pull Requests
 
 1. Ensure all linters pass: `make analyze`, `make verify`
-2. When PR is ready to review/merge, follow this PR template: https://raw.githubusercontent.com/kgateway-dev/.github/refs/heads/main/.github/PULL_REQUEST_TEMPLATE.md
-   Specifically must haves are the `Description`, `# Change Type` and `# Changelog` sections.
+2. If you modified files in `.github/`: Run `make lint-actions` to lint GitHub Actions workflows
 3. Ensure tests pass in CI (unit + e2e + conformance)
+4. Use the PR template structure below
+
+### PR Body Structure
+
+Every PR must include these sections:
+
+1. **Description** - Explain motivation, what changed, and link issues (`Fixes #123`)
+
+2. **Change Type** - Include one or more `/kind` commands in the PR body:
+   - `/kind feature`, `/kind fix`, `/kind cleanup`, `/kind documentation`
+   - `/kind breaking_change`, `/kind deprecation`, `/kind design`
+   - `/kind bump`, `/kind flake`, `/kind install`
+
+3. **Changelog** - A fenced code block with `release-note` as the language identifier containing the release note text, or `NONE` if not user-facing
+
+4. **Additional Notes** (optional) - Extra context for reviewers
 
 ## Style
 
 All code and comments should use American English spelling (i.e. "color" not "colour", "honor" not "honour").
+
+### Markdown Output
+
+When generating markdown documentation:
+
+- Use ordered heading levels (no skipping from `#` to `###`)
+- Headings should not end in punctuation
+- Use consistent bullet types within a list (don't mix `-` and `*`)
+- No empty headings
+- Use `->` instead of `→` for arrows (ASCII-compatible)
+- **Prefer mermaid diagrams over ASCII art** - use fenced mermaid code blocks for flowcharts, sequence diagrams, and architecture diagrams instead of box-drawing characters (┌ └ │ ├ ─ ► ▼ etc.)

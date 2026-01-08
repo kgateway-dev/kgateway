@@ -1,0 +1,71 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-secure
+spec:
+  parentRefs:
+    - name: super-gateway
+  hostnames:
+    - "secureroute.com"
+  rules:
+    - backendRefs:
+        - name: backend-0
+          port: 8080
+---
+# jwks were generated using hack/utils/jwt/jwt-generator.go
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: route-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-secure
+  traffic:
+    jwtAuthentication:
+      mode: Strict
+      providers:
+      - issuer: https://kgateway.dev
+        jwks:
+          remote:
+            jwksPath: org-one/keys
+            backendRef:
+              group: agentgateway.dev
+              kind: AgentgatewayBackend
+              name: dummy-idp-1
+              port: 8443
+      - issuer: https://kgateway.dev
+        jwks:
+          remote:
+            jwksPath: org-two/keys
+            backendRef:
+              group: agentgateway.dev
+              kind: AgentgatewayBackend
+              name: dummy-idp
+              port: 8443
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: dummy-idp
+spec:
+  policies:
+    tls:
+      insecureSkipVerify: All
+  static:
+    host: dummy-idp.default
+    port: 8443
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: dummy-idp-1
+spec:
+  policies:
+    tls:
+      caCertificateRefs:
+      - name: ca
+  static:
+    host: dummy-idp.default
+    port: 8443

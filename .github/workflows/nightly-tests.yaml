@@ -2,6 +2,7 @@ name: Nightly Tests
 
 env:
   GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }} # necessary to pass upgrade tests
+  ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
 
 on:
   schedule:
@@ -90,7 +91,7 @@ jobs:
     - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
-    name: GwApi E2E
+    name: E2E ${{ matrix.gateway-api-version.version }} ${{ matrix.gateway-api-version.channel }} ${{ matrix.controllers.agentgateway && 'AGW' || 'KGW' }}
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
@@ -103,6 +104,10 @@ jobs:
                               { version: 'v1.3.0', channel: 'standard' },
                               { version: 'v1.2.1', channel: 'experimental' },
                               { version: 'v1.2.1', channel: 'standard' }]
+        controllers: [
+          {regex: "^TestAgentgateway", agentgateway: true},
+          {regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestParallelControllers$$|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$", agentgateway: false}
+        ]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -124,6 +129,7 @@ jobs:
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+        agentgateway: ${{ matrix.controllers.agentgateway }}
         localstack: "true"
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
@@ -136,6 +142,6 @@ jobs:
       with:
         cluster-name: "kgw-api-e2e-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
         test-args: '-timeout=120m'
-        run-regex: "^Test"
+        run-regex: ${{ matrix.controllers.regex }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         matrix-label: "nightly-kgw-api-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"

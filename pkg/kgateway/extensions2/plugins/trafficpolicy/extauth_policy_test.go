@@ -238,7 +238,7 @@ func TestHttpFilters(t *testing.T) {
 		}
 
 		// Execute
-		httpFilters, err := plugin.HttpFilters(fcc)
+		httpFilters, err := plugin.HttpFilters(ir.HttpFiltersContext{}, fcc)
 		// Verify
 		require.NoError(t, err)
 		require.NotNil(t, httpFilters)

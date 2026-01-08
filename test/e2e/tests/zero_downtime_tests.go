@@ -9,6 +9,12 @@ import (
 
 func ZeroDowntimeRolloutSuiteRunner() e2e.SuiteRunner {
 	zeroDowntimeSuiteRunner := e2e.NewSuiteRunner(false)
-	zeroDowntimeSuiteRunner.Register("ZeroDowntimeRollout", zero_downtime_rollout.NewTestingSuite)
+	zeroDowntimeSuiteRunner.Register("ZeroDowntimeRollout", zero_downtime_rollout.NewTestingSuiteKgateway)
+	return zeroDowntimeSuiteRunner
+}
+
+func ZeroDowntimeRolloutAgentgatewaySuiteRunner() e2e.SuiteRunner {
+	zeroDowntimeSuiteRunner := e2e.NewSuiteRunner(false)
+	zeroDowntimeSuiteRunner.Register("ZeroDowntimeRolloutAgentgateway", zero_downtime_rollout.NewTestingSuiteAgentgateway)
 	return zeroDowntimeSuiteRunner
 }

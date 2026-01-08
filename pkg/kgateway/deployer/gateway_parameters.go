@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 
 	"helm.sh/helm/v3/pkg/chart"
@@ -16,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -34,8 +34,16 @@ var (
 func NewGatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *GatewayParameters {
 	gp := &GatewayParameters{
 		inputs: inputs,
-		// build this once versus on every getHelmValuesGenerator call
-		kgwParameters: newkgatewayParameters(cli, inputs),
+	}
+
+	// Only create the kgateway parameters client if Envoy is enabled
+	if inputs.CommonCollections.Settings.EnableEnvoy {
+		gp.kgwParameters = newkgatewayParameters(cli, inputs)
+	}
+
+	// Only create the agentgateway parameters client if agentgateway is enabled
+	if inputs.CommonCollections.Settings.EnableAgentgateway {
+		gp.agwHelmValuesGenerator = newAgentgatewayParametersHelmValuesGenerator(cli, inputs)
 	}
 
 	return gp
@@ -45,6 +53,7 @@ type GatewayParameters struct {
 	inputs                      *deployer.Inputs
 	helmValuesGeneratorOverride deployer.HelmValuesGenerator
 	kgwParameters               *kgatewayParameters
+	agwHelmValuesGenerator      *agentgatewayParametersHelmValuesGenerator
 }
 
 type kgatewayParameters struct {
@@ -56,6 +65,24 @@ type kgatewayParameters struct {
 func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.HelmValuesGenerator) *GatewayParameters {
 	gp.helmValuesGeneratorOverride = generator
 	return gp
+}
+
+// GetGatewayParametersClient returns the GatewayParameters client if Envoy is enabled, nil otherwise.
+// This allows the reconciler to reuse the same client for watching changes.
+func (gp *GatewayParameters) GetGatewayParametersClient() kclient.Client[*kgateway.GatewayParameters] {
+	if gp.kgwParameters != nil {
+		return gp.kgwParameters.gwParamClient
+	}
+	return nil
+}
+
+// GetAgentgatewayParametersClient returns the AgentgatewayParameters client if Agentgateway is enabled, nil otherwise.
+// This allows the reconciler to reuse the same client for watching changes.
+func (gp *GatewayParameters) GetAgentgatewayParametersClient() kclient.Client[*agentgateway.AgentgatewayParameters] {
+	if gp.agwHelmValuesGenerator != nil {
+		return gp.agwHelmValuesGenerator.agwParamClient
+	}
+	return nil
 }
 
 func LoadEnvoyChart() (*chart.Chart, error) {
@@ -80,7 +107,55 @@ func (gp *GatewayParameters) GetCacheSyncHandlers() []cache.InformerSynced {
 		return gp.helmValuesGeneratorOverride.GetCacheSyncHandlers()
 	}
 
-	return gp.kgwParameters.GetCacheSyncHandlers()
+	var handlers []cache.InformerSynced
+	if gp.kgwParameters != nil {
+		handlers = append(handlers, gp.kgwParameters.GetCacheSyncHandlers()...)
+	}
+	if gp.agwHelmValuesGenerator != nil {
+		handlers = append(handlers, gp.agwHelmValuesGenerator.GetCacheSyncHandlers()...)
+	}
+	return handlers
+}
+
+// PostProcessObjects implements deployer.ObjectPostProcessor.
+// It applies AgentgatewayParameters overlays to the rendered objects.
+// When both GatewayClass and Gateway have AgentgatewayParameters, the overlays
+// are applied in order: GatewayClass first, then Gateway on top.
+func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.Object, rendered []client.Object) error {
+	// Check if override implements ObjectPostProcessor and delegate to it
+	if gp.helmValuesGeneratorOverride != nil {
+		if postProcessor, ok := gp.helmValuesGeneratorOverride.(deployer.ObjectPostProcessor); ok {
+			return postProcessor.PostProcessObjects(ctx, obj, rendered)
+		}
+	}
+
+	// Fall back to default implementation
+	gw, ok := obj.(*gwv1.Gateway)
+	if !ok || gp.agwHelmValuesGenerator == nil {
+		return nil
+	}
+
+	resolved, err := gp.agwHelmValuesGenerator.GetResolvedParametersForGateway(gw)
+	if err != nil {
+		return nil
+	}
+
+	// Apply overlays in order: GatewayClass first, then Gateway.
+	// This allows Gateway-level overlays to override GatewayClass-level overlays.
+	if resolved.gatewayClassAGWP != nil {
+		applier := NewAgentgatewayParametersApplier(resolved.gatewayClassAGWP)
+		if err := applier.ApplyOverlaysToObjects(rendered); err != nil {
+			return err
+		}
+	}
+	if resolved.gatewayAGWP != nil {
+		applier := NewAgentgatewayParametersApplier(resolved.gatewayAGWP)
+		if err := applier.ApplyOverlaysToObjects(rendered); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func GatewayReleaseNameAndNamespace(obj client.Object) (string, string) {
@@ -101,9 +176,45 @@ func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer
 		return gp.helmValuesGeneratorOverride, nil
 	}
 
+	// Need a GatewayClass client to determine which controller this Gateway uses.
+	// Use whichever parameter client is available (both have gwClassClient).
+	var gwClassClient kclient.Client[*gwv1.GatewayClass]
+	if gp.kgwParameters != nil {
+		gwClassClient = gp.kgwParameters.gwClassClient
+	} else if gp.agwHelmValuesGenerator != nil {
+		gwClassClient = gp.agwHelmValuesGenerator.gwClassClient
+	} else {
+		return nil, fmt.Errorf("no parameter clients available")
+	}
+
+	// Check if the GatewayClass uses the agentgateway controller
+	gwc, err := getGatewayClassFromGateway(gwClassClient, gw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get GatewayClass of Gateway: %w", err)
+	}
+
+	if string(gwc.Spec.ControllerName) == gp.inputs.AgentgatewayControllerName {
+		if gp.agwHelmValuesGenerator == nil {
+			// this should never happen, as the controller should not let any of these GatewayClass's through if agentgateway is not enabled
+			return nil, fmt.Errorf("agentgateway is not enabled but Gateway %s/%s uses agentgateway controller", gw.GetNamespace(), gw.GetName())
+		}
+		slog.Debug("using AgentgatewayParameters HelmValuesGenerator for Gateway",
+			"gateway_name", gw.GetName(),
+			"gateway_namespace", gw.GetNamespace(),
+			"controller_name", gwc.Spec.ControllerName,
+		)
+		return gp.agwHelmValuesGenerator, nil
+	}
+
+	// Use kgwParameters for helm values generation (envoy-based gateways).
+	if gp.kgwParameters == nil {
+		// this should never happen, as the controller should not let any of these GatewayClass's through if envoy is not enabled
+		return nil, fmt.Errorf("envoy is not enabled but Gateway %s/%s uses envoy controller", gw.GetNamespace(), gw.GetName())
+	}
 	slog.Debug("using default HelmValuesGenerator for Gateway",
 		"gateway_name", gw.GetName(),
 		"gateway_namespace", gw.GetNamespace(),
+		"controller_name", gwc.Spec.ControllerName,
 	)
 	return gp.kgwParameters, nil
 }
@@ -157,11 +268,22 @@ func (k *kgatewayParameters) getGatewayParametersForGateway(gw *gwv1.Gateway) (*
 		return k.getDefaultGatewayParameters(gw)
 	}
 
-	gwpName := gw.Spec.Infrastructure.ParametersRef.Name
-	if group := gw.Spec.Infrastructure.ParametersRef.Group; group != kgateway.GroupName {
+	ref := gw.Spec.Infrastructure.ParametersRef
+	// If the parametersRef is for AgentgatewayParameters, treat it as no GatewayParameters
+	// (AgentgatewayParameters overlays are applied via PostProcessObjects)
+	if ref.Group == agentgateway.GroupName && ref.Kind == gwv1.Kind(wellknown.AgentgatewayParametersGVK.Kind) {
+		slog.Debug("the Gateway references AgentgatewayParameters, using default GatewayParameters",
+			"gateway_name", gw.GetName(),
+			"gateway_namespace", gw.GetNamespace(),
+		)
+		return k.getDefaultGatewayParameters(gw)
+	}
+
+	gwpName := ref.Name
+	if group := ref.Group; group != kgateway.GroupName {
 		return nil, fmt.Errorf("invalid group %s for GatewayParameters", group)
 	}
-	if kind := gw.Spec.Infrastructure.ParametersRef.Kind; kind != gwv1.Kind(wellknown.GatewayParametersGVK.Kind) {
+	if kind := ref.Kind; kind != gwv1.Kind(wellknown.GatewayParametersGVK.Kind) {
 		return nil, fmt.Errorf("invalid kind %s for GatewayParameters", kind)
 	}
 
@@ -184,7 +306,7 @@ func (k *kgatewayParameters) getGatewayParametersForGateway(gw *gwv1.Gateway) (*
 		if err != nil {
 			return nil, err
 		}
-		mergedGwp = deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
+		mergedGwp, err = deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
 			ControllerName:             string(gwc.Spec.ControllerName),
 			ClassName:                  gwc.GetName(),
 			ImageInfo:                  k.inputs.ImageInfo,
@@ -192,6 +314,9 @@ func (k *kgatewayParameters) getGatewayParametersForGateway(gw *gwv1.Gateway) (*
 			AgwControllerName:          k.inputs.AgentgatewayControllerName,
 			OmitDefaultSecurityContext: true,
 		})
+		if err != nil {
+			return nil, err
+		}
 	}
 	deployer.DeepMergeGatewayParameters(mergedGwp, gwp)
 	return mergedGwp, nil
@@ -210,7 +335,7 @@ func (k *kgatewayParameters) getDefaultGatewayParameters(gw *gwv1.Gateway) (*kga
 func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.GatewayClass) (*kgateway.GatewayParameters, error) {
 	// Our defaults depend on OmitDefaultSecurityContext, but these are the defaults
 	// when not OmitDefaultSecurityContext:
-	defaultGwp := deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
+	defaultGwp, err := deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
 		ControllerName:             string(gwc.Spec.ControllerName),
 		ClassName:                  gwc.GetName(),
 		ImageInfo:                  k.inputs.ImageInfo,
@@ -218,10 +343,22 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 		AgwControllerName:          k.inputs.AgentgatewayControllerName,
 		OmitDefaultSecurityContext: false,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	paramRef := gwc.Spec.ParametersRef
 	if paramRef == nil {
 		// when there is no parametersRef, just return the defaults
+		return defaultGwp, nil
+	}
+
+	// If the parametersRef is for AgentgatewayParameters, treat it as no GatewayParameters
+	// (AgentgatewayParameters overlays are applied via PostProcessObjects)
+	if paramRef.Group == agentgateway.GroupName && string(paramRef.Kind) == wellknown.AgentgatewayParametersGVK.Kind {
+		slog.Debug("the GatewayClass references AgentgatewayParameters, using default GatewayParameters",
+			"gatewayclass_name", gwc.GetName(),
+		)
 		return defaultGwp, nil
 	}
 
@@ -255,7 +392,7 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 	// correctly set when they aren't overridden by the GatewayParameters.
 	mergedGwp := defaultGwp
 	if ptr.Deref(gwp.Spec.Kube.GetOmitDefaultSecurityContext(), false) {
-		mergedGwp = deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
+		mergedGwp, err = deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
 			ControllerName:             string(gwc.Spec.ControllerName),
 			ClassName:                  gwc.GetName(),
 			ImageInfo:                  k.inputs.ImageInfo,
@@ -263,6 +400,9 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 			AgwControllerName:          k.inputs.AgentgatewayControllerName,
 			OmitDefaultSecurityContext: true,
 		})
+		if err != nil {
+			return nil, err
+		}
 	}
 	deployer.DeepMergeGatewayParameters(mergedGwp, gwp)
 	return mergedGwp, nil
@@ -270,7 +410,8 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 
 func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.GatewayParameters) (*deployer.HelmConfig, error) {
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
-	ports := deployer.GetPortsValues(irGW, gwParam, irGW.ControllerName == k.inputs.AgentgatewayControllerName)
+	// kgatewayParameters is only used for envoy gateways (agentgateway uses agentgatewayParametersHelmValuesGenerator)
+	ports := deployer.GetPortsValues(irGW, gwParam, false)
 	if len(ports) == 0 {
 		return nil, ErrNoValidPorts
 	}
@@ -291,16 +432,6 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 				CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
 			},
 		},
-		AgwXds: &deployer.HelmXds{
-			// The agentgateway xds host/port MUST map to the Service definition for the Control Plane
-			// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-			Host: &k.inputs.ControlPlane.XdsHost,
-			Port: &k.inputs.ControlPlane.AgwXdsPort,
-			Tls: &deployer.HelmXdsTls{
-				Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
-				CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
-			},
-		},
 	}
 	if i := gw.Spec.Infrastructure; i != nil {
 		gtw.GatewayAnnotations = translateInfraMeta(i.Annotations)
@@ -313,7 +444,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 
 	// Inject xDS CA certificate into Helm values if TLS is enabled
 	if k.inputs.ControlPlane.XdsTLS {
-		if err := k.injectXdsCACertificate(vals); err != nil {
+		if err := injectXdsCACertificate(k.inputs.ControlPlane.XdsTlsCaPath, vals); err != nil {
 			return nil, fmt.Errorf("failed to inject xDS CA certificate: %w", err)
 		}
 	}
@@ -355,6 +486,10 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 
 	// service values
 	gateway.Service = deployer.GetServiceValues(svcConfig)
+	// Extract loadBalancerIP from Gateway.spec.addresses and set it on the service if service type is LoadBalancer
+	if err := deployer.SetLoadBalancerIPFromGateway(gw, gateway.Service); err != nil {
+		return nil, err
+	}
 	// serviceaccount values
 	gateway.ServiceAccount = deployer.GetServiceAccountValues(svcAccountConfig)
 	// pod template values
@@ -374,37 +509,21 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
 	gateway.PriorityClassName = podConfig.GetPriorityClassName()
 
-	// Determine data plane type based on the Gateway's controllerName from its GatewayClass
-	// This ensures the chart selection is driven by the controller, not by GatewayParameters
-	isAgentgateway := irGW.ControllerName == k.inputs.AgentgatewayControllerName
-
-	// data plane container
-	if isAgentgateway {
-		agwConfig := kubeProxyConfig.GetAgentgateway()
-		gateway.DataPlaneType = deployer.DataPlaneAgentgateway
-		gateway.Resources = agwConfig.GetResources()
-		gateway.SecurityContext = agwConfig.GetSecurityContext()
-		gateway.Image = deployer.GetImageValues(agwConfig.GetImage())
-		gateway.Env = agwConfig.GetEnv()
-		gateway.ExtraVolumeMounts = agwConfig.ExtraVolumeMounts
-		gateway.LogLevel = agwConfig.GetLogLevel()
-		gateway.CustomConfigMapName = agwConfig.GetCustomConfigMapName()
-	} else {
-		gateway.DataPlaneType = deployer.DataPlaneEnvoy
-		logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
-		gateway.LogLevel = logLevel
-		compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
-		compLogLevelStr, err := deployer.ComponentLogLevelsToString(compLogLevels)
-		if err != nil {
-			return nil, err
-		}
-		gateway.ComponentLogLevel = &compLogLevelStr
-		gateway.Resources = envoyContainerConfig.GetResources()
-		gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
-		gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())
-		gateway.Env = envoyContainerConfig.GetEnv()
-		gateway.ExtraVolumeMounts = envoyContainerConfig.ExtraVolumeMounts
+	// kgatewayParameters is only used for envoy gateways (agentgateway uses agentgatewayParametersHelmValuesGenerator)
+	gateway.DataPlaneType = deployer.DataPlaneEnvoy
+	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
+	gateway.LogLevel = logLevel
+	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
+	compLogLevelStr, err := deployer.ComponentLogLevelsToString(compLogLevels)
+	if err != nil {
+		return nil, err
 	}
+	gateway.ComponentLogLevel = &compLogLevelStr
+	gateway.Resources = envoyContainerConfig.GetResources()
+	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
+	gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())
+	gateway.Env = envoyContainerConfig.GetEnv()
+	gateway.ExtraVolumeMounts = envoyContainerConfig.ExtraVolumeMounts
 
 	// istio values
 	gateway.Istio = deployer.GetIstioValues(k.inputs.IstioAutoMtlsEnabled, istioConfig)
@@ -414,35 +533,6 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	gateway.Stats = deployer.GetStatsValues(statsConfig)
 
 	return vals, nil
-}
-
-// injectXdsCACertificate reads the CA certificate from the control plane's mounted TLS Secret
-// and injects it into the Helm values so it can be used by the proxy templates.
-func (k *kgatewayParameters) injectXdsCACertificate(vals *deployer.HelmConfig) error {
-	caCertPath := k.inputs.ControlPlane.XdsTlsCaPath
-	if _, err := os.Stat(caCertPath); os.IsNotExist(err) {
-		return fmt.Errorf("xDS TLS is enabled but CA certificate file not found at %s. "+
-			"Ensure the xDS TLS secret is properly mounted and contains ca.crt", caCertPath,
-		)
-	}
-
-	caCert, err := os.ReadFile(caCertPath)
-	if err != nil {
-		return fmt.Errorf("failed to read CA certificate from %s: %w", caCertPath, err)
-	}
-	if len(caCert) == 0 {
-		return fmt.Errorf("CA certificate at %s is empty", caCertPath)
-	}
-
-	caCertStr := string(caCert)
-	if vals.Gateway.Xds != nil && vals.Gateway.Xds.Tls != nil {
-		vals.Gateway.Xds.Tls.CaCert = &caCertStr
-	}
-	if vals.Gateway.AgwXds != nil && vals.Gateway.AgwXds.Tls != nil {
-		vals.Gateway.AgwXds.Tls.CaCert = &caCertStr
-	}
-
-	return nil
 }
 
 func getGatewayClassFromGateway(cli kclient.Client[*gwv1.GatewayClass], gw *gwv1.Gateway) (*gwv1.GatewayClass, error) {

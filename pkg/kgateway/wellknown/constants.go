@@ -1,5 +1,11 @@
 package wellknown
 
+import (
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
+)
+
 const (
 	// Note: These are coming from istio: https://github.com/istio/istio/blob/fa321ebd2a1186325788b0f461aa9f36a1a8d90e/pilot/pkg/model/service.go#L206
 	// IstioCertSecret is the secret that holds the server cert and key for Istio mTLS
@@ -20,6 +26,9 @@ const (
 	// IngressUseWaypointLabel is a Service/ServiceEntry label to ask the ingress to use
 	// a waypoint for ingress traffic.
 	IngressUseWaypointLabel = "istio.io/ingress-use-waypoint"
+
+	// OAuth2HMACSecretKey is the key within the OAuth2HMACSecret that holds the HMAC secret key for OAuth2
+	OAuth2HMACSecretKey = "hmac-secret"
 )
 
 const (
@@ -46,3 +55,6 @@ const (
 	// SecretKey is the key name for in the secret data for the secret access key.
 	SecretKey = "secretKey"
 )
+
+// OAuth2HMACSecret is the secret that holds the HMAC key for OAuth2
+var OAuth2HMACSecret = types.NamespacedName{Name: "oauth2-hmac-secret", Namespace: namespaces.GetPodNamespace()}

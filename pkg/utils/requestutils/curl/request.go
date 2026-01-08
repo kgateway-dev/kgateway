@@ -93,6 +93,10 @@ type requestConfig struct {
 	tlsVersion    string
 	tlsMaxVersion string
 
+	// Client certificate options
+	clientCert string
+	clientKey  string
+
 	additionalArgs []string
 }
 
@@ -166,6 +170,14 @@ func (c *requestConfig) generateArgs() []string {
 	}
 	if c.tlsMaxVersion != "" {
 		args = append(args, "--tls-max", c.tlsMaxVersion)
+	}
+
+	// Client certificate options
+	if c.clientCert != "" {
+		args = append(args, "--cert", c.clientCert)
+	}
+	if c.clientKey != "" {
+		args = append(args, "--key", c.clientKey)
 	}
 
 	if len(c.additionalArgs) > 0 {

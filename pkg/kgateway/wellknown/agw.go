@@ -7,10 +7,12 @@ import (
 )
 
 var (
-	AgentgatewayPolicyGVK  = buildAgwGvk("AgentgatewayPolicy")
-	AgentgatewayBackendGVK = buildAgwGvk("AgentgatewayBackend")
-	AgentgatewayPolicyGVR  = AgentgatewayPolicyGVK.GroupVersion().WithResource("agentgatewaypolicies")
-	AgentgatewayBackendGVR = AgentgatewayBackendGVK.GroupVersion().WithResource("agentgatewaybackends")
+	AgentgatewayBackendGVK    = buildAgwGvk("AgentgatewayBackend")
+	AgentgatewayParametersGVK = buildAgwGvk("AgentgatewayParameters")
+	AgentgatewayPolicyGVK     = buildAgwGvk("AgentgatewayPolicy")
+	AgentgatewayBackendGVR    = AgentgatewayBackendGVK.GroupVersion().WithResource("agentgatewaybackends")
+	AgentgatewayParametersGVR = AgentgatewayParametersGVK.GroupVersion().WithResource("agentgatewayparameters")
+	AgentgatewayPolicyGVR     = AgentgatewayPolicyGVK.GroupVersion().WithResource("agentgatewaypolicies")
 )
 
 func buildAgwGvk(kind string) schema.GroupVersionKind {

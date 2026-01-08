@@ -1,3 +1,10 @@
+/*
+TODO: look into enabling this to avoid accidental use of unwrap() and
+crash the process. However, there are many tests using unwrap() that
+will make the linter unhappy.
+#![deny(clippy::unwrap_used, clippy::expect_used)]
+ */
+
 use envoy_proxy_dynamic_modules_rust_sdk::*;
 use std::any::Any;
 
@@ -38,7 +45,7 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
     let filter_config = match std::str::from_utf8(filter_config) {
         Ok(config) => config,
         Err(_) => {
-            envoy_log_error!("Invalid UTF-8 in filter configuration");
+            envoy_log_error!("invalid UTF-8 in filter configuration");
             return None;
         }
     };
@@ -57,7 +64,7 @@ fn new_http_filter_per_route_config_fn(name: &str, config: &[u8]) -> Option<Box<
     let per_route_config = match std::str::from_utf8(config) {
         Ok(config) => config,
         Err(_) => {
-            envoy_log_error!("Invalid UTF-8 in per route filter configuration");
+            envoy_log_error!("invalid UTF-8 in per route filter configuration");
             return None;
         }
     };

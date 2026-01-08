@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -21,6 +22,7 @@ const (
 )
 
 func translateFrontendPolicyToAgw(
+	policyCtx PolicyCtx,
 	policy *agentgateway.AgentgatewayPolicy,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
@@ -54,34 +56,98 @@ func translateFrontendPolicyToAgw(
 	}
 
 	if s := frontend.Tracing; s != nil {
-		pol := translateFrontendTracing(policy, policyName, policyTarget)
+		pol, err := translateFrontendTracing(policyCtx, policy, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing tracing", "err", err)
+			errs = append(errs, err)
+		}
 		agwPolicies = append(agwPolicies, pol...)
 	}
 
 	return agwPolicies, errors.Join(errs...)
 }
 
-func translateFrontendTracing(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
+func translateFrontendTracing(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	tracing := policy.Spec.Frontend.Tracing
+	if tracing == nil {
+		return nil, nil
+	}
+
+	provider, err := buildBackendRef(ctx, tracing.BackendRef, policy.Namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to translate tracing backend ref: %v", err)
+	}
+
+	var addAttributes []*api.FrontendPolicySpec_TracingAttribute
+	var rmAttributes []string
+	if tracing.Attributes != nil {
+		for _, add := range tracing.Attributes.Add {
+			addAttributes = append(addAttributes, &api.FrontendPolicySpec_TracingAttribute{
+				Name:  add.Name,
+				Value: string(add.Expression),
+			})
+		}
+		for _, rm := range tracing.Attributes.Remove {
+			rmAttributes = append(rmAttributes, rm)
+		}
+	}
+
+	var addResources []*api.FrontendPolicySpec_TracingAttribute
+	if tracing.Resources != nil {
+		for _, add := range tracing.Resources {
+			addResources = append(addResources, &api.FrontendPolicySpec_TracingAttribute{
+				Name:  add.Name,
+				Value: string(add.Expression),
+			})
+		}
+	}
+
+	var randomSampling *string
+	if tracing.RandomSampling != nil {
+		randomSampling = ptr.Of(string(*tracing.RandomSampling))
+	}
+
+	var clientSampling *string
+	if tracing.ClientSampling != nil {
+		clientSampling = ptr.Of(string(*tracing.ClientSampling))
+	}
+
+	var protocol api.FrontendPolicySpec_Tracing_Protocol
+	switch tracing.Protocol {
+	case agentgateway.TracingProtocolGrpc:
+		protocol = api.FrontendPolicySpec_Tracing_GRPC
+	case agentgateway.TracingProtocolHttp:
+		protocol = api.FrontendPolicySpec_Tracing_HTTP
+	default:
+		// default to HTTP
+		protocol = api.FrontendPolicySpec_Tracing_HTTP
+	}
+
 	tracingPolicy := &api.Policy{
 		Key:    name + frontendTracingPolicySuffix + attachmentName(target),
 		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Frontend{
 			Frontend: &api.FrontendPolicySpec{
-				// TODO: implement this
-				Kind: &api.FrontendPolicySpec_Tracing_{Tracing: &api.FrontendPolicySpec_Tracing{}},
+				Kind: &api.FrontendPolicySpec_Tracing_{Tracing: &api.FrontendPolicySpec_Tracing{
+					ProviderBackend: provider,
+					Attributes:      addAttributes,
+					Remove:          rmAttributes,
+					Resources:       addResources,
+					Protocol:        protocol,
+					RandomSampling:  randomSampling,
+					ClientSampling:  clientSampling,
+				}},
 			},
 		},
 	}
-	_ = tracing
 
 	logger.Debug("generated tracing policy",
 		"policy", policy.Name,
 		"agentgateway_policy", tracingPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: tracingPolicy}}
+	return []AgwPolicy{{Policy: tracingPolicy}}, nil
 }
 
 func translateFrontendAccessLog(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
@@ -169,7 +235,7 @@ func translateFrontendTLS(policy *agentgateway.AgentgatewayPolicy, name string, 
 	tls := policy.Spec.Frontend.TLS
 	spec := &api.FrontendPolicySpec_TLS{}
 	if ka := tls.HandshakeTimeout; ka != nil {
-		spec.TlsHandshakeTimeout = durationpb.New(ka.Duration)
+		spec.HandshakeTimeout = durationpb.New(ka.Duration)
 	}
 
 	if tls.AlpnProtocols != nil {

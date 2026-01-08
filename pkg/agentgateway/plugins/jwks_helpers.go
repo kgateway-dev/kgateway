@@ -7,7 +7,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/jwks"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks"
 )
 
 // resolveRemoteJWKSInline resolves a remote JWKS URI to an inline JWKS string by
@@ -22,7 +22,7 @@ func resolveRemoteJWKSInline(ctx PolicyCtx, jwksURI string) (string, error) {
 	}
 	jwksCM := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Collections.ConfigMaps, krt.FilterObjectName(*jwksStoreName)))
 	if jwksCM == nil {
-		return "", fmt.Errorf("jwks ConfigMap isn't available")
+		return "", fmt.Errorf("jwks ConfigMap %v isn't available", jwksStoreName)
 	}
 	jwksForURI, err := jwks.JwksFromConfigMap(jwksCM)
 	if err != nil {

@@ -35,6 +35,9 @@ z := $(shell mkdir -p $(OUTPUT_DIR))
 
 BUILDX_BUILD ?= docker buildx build -q
 
+# Helper variable for escaping commas in Make functions
+comma := ,
+
 # A semver resembling 1.0.1-dev. Most calling GHA jobs customize this. Exported for use in goreleaser.yaml.
 VERSION ?= 1.0.1-dev
 export VERSION
@@ -117,11 +120,12 @@ fmt-changed: ## Format only the changed code with golangci-lint (skip deleted fi
 .PHONY: mod-download
 mod-download:  ## Download the dependencies
 	go mod download all
+	cd tools && go mod download all
 
 .PHONY: mod-tidy-nested
 mod-tidy-nested:  ## Tidy go mod files in nested modules
 	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
-	@echo "Tidying hack/krtequals..." && cd hack/krtequals && go mod tidy
+	@echo "Tidying tools..." && cd tools && go mod tidy
 
 .PHONY: mod-tidy
 mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
@@ -180,7 +184,7 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 .PHONY: e2e-test
-e2e-test: dummy-idp-docker dummy-auth0-docker kind-load-dummy-idp kind-load-dummy-auth0
+e2e-test: extproc-server-docker kind-load-extproc-server
 e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
@@ -191,6 +195,13 @@ e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
 test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
 test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
+
+.PHONY: golden-deployer
+golden-deployer:  ## Refreshes golden files for ./test/deployer snapshot testing
+	REFRESH_GOLDEN=true go test ./test/deployer/... > /dev/null || true
+	@echo ""
+	@echo "This must pass after refreshing:"
+	go test ./test/deployer/...
 
 #----------------------------------------------------------------------------------
 # Env test
@@ -224,7 +235,7 @@ E2E_GO_TEST_ARGS ?= -vet=off -timeout=25m -outputdir=$(OUTPUT_DIR)
 # Testing flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (kgateway_test).
-GO_TEST_ARGS ?= $(E2E_GO_TEST_ARGS) -race
+GO_TEST_ARGS ?= -timeout=25m -outputdir=$(OUTPUT_DIR) -race
 GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=cover.out
 GO_TEST_COVERAGE ?= go tool github.com/vladopajic/go-test-coverage/v2
 
@@ -419,12 +430,14 @@ generate-licenses: $(STAMP_DIR)/generate-licenses  ## Generate the licenses for 
 K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway pkg/ api/)
 CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/pkg/kgateway
 export CONTROLLER_IMAGE_REPO ?= kgateway
+export AGENTGATEWAY_IMAGE_REPO ?= agentgateway-controller
 
 # We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/kgateway/...
 
+# TODO: is this target obsolete?
 .PHONY: kgateway
 kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 
@@ -444,13 +457,14 @@ $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT
 $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile.agentgateway
 	$(BUILDX_BUILD) --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile.agentgateway \
 		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
+		-t $(IMAGE_REGISTRY)/$(AGENTGATEWAY_IMAGE_REPO):$(VERSION)
 	@touch $@
 
 .PHONY: kgateway-docker
 kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
-.PHONY: kgateway-agentgateway-docker
-kgateway-agentgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH)
+
+.PHONY: agentgateway-controller-docker
+agentgateway-controller-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH)
 
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config
@@ -489,6 +503,16 @@ ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
+# Registry cache for envoyinit Docker build (set to enable, e.g., ghcr.io/kgateway-dev/envoy-wrapper-cache)
+
+# Only --cache-from is used here because --cache-to type=registry requires the
+# docker-container buildx driver, but we use --load (though a Kind local
+# registry with --push would probably be better) which requires the docker
+# driver. Cache is populated by goreleaser when a PR lands on main or a release
+# is cut.
+ENVOYINIT_CACHE_REF ?=
+ENVOYINIT_CACHE_FROM := $(if $(ENVOYINIT_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF),)
+
 RUSTFORMATIONS_DIR := internal/envoyinit/
 # find all the files under the rustformation directory but exclude the target and pkg directory
 RUSTFORMATIONS_SRC_FILES := $(shell find $(RUSTFORMATIONS_DIR) \( -type d -name target -o -type d -name pkg \) -prune -o -type f -print)
@@ -517,6 +541,7 @@ $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_D
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		--build-arg RUST_BUILD_ARCH=$(RUST_BUILD_ARCH) \
 		--build-arg RUSTFORMATIONS_DIR=./rustformations \
+		$(ENVOYINIT_CACHE_FROM) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 	@touch $@
 
@@ -556,40 +581,26 @@ kind-load-dummy-idp:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) --name $(CLUSTER_NAME)
 
 #----------------------------------------------------------------------------------
-# dummy auth0 idp (used in mcp auth e2e tests)
+# extproc-server (used in e2e tests)
 #----------------------------------------------------------------------------------
 
-DUMMY_AUTH0_DIR=hack/dummy-auth0
-DUMMY_AUTH0_OUTPUT_DIR=$(OUTPUT_DIR)/$(DUMMY_AUTH0_DIR)
-export DUMMY_AUTH0_IMAGE_REPO ?= dummy-auth0
-DUMMY_AUTH0_VERSION=0.0.1
+EXTPROC_SERVER_DIR=test/e2e/features/agentgateway/extproc/example
+EXTPROC_SERVER_OUTPUT_DIR=$(OUTPUT_DIR)/$(EXTPROC_SERVER_DIR)
+export EXTPROC_SERVER_IMAGE_REPO ?= extproc-server
+EXTPROC_SERVER_VERSION=0.0.1
 
-.PHONY: dummy-auth0
-dummy-auth0: $(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH)
-
-$(DUMMY_AUTH0_OUTPUT_DIR):
-	mkdir -p $(DUMMY_AUTH0_OUTPUT_DIR)
-
-$(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0: ./hack/dummy-auth0/Dockerfile | $(DUMMY_AUTH0_OUTPUT_DIR)
-	cp $< $@
-
-$(DUMMY_AUTH0_OUTPUT_DIR)/auth0_mock.py: ./hack/dummy-auth0/auth0_mock.py | $(DUMMY_AUTH0_OUTPUT_DIR)
-	cp $< $@
-
-$(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH): $(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0 $(DUMMY_AUTH0_OUTPUT_DIR)/auth0_mock.py
-	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_AUTH0_OUTPUT_DIR) -f $(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0 \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(DUMMY_AUTH0_IMAGE_REPO):$(DUMMY_AUTH0_VERSION)
+$(EXTPROC_SERVER_OUTPUT_DIR)/.docker-stamp-$(EXTPROC_SERVER_VERSION)-$(GOARCH): $(shell find $(EXTPROC_SERVER_DIR) -name '*.go') $(EXTPROC_SERVER_DIR)/Dockerfile
+	$(BUILDX_BUILD) --load $(PLATFORM) $(EXTPROC_SERVER_DIR) -f $(EXTPROC_SERVER_DIR)/Dockerfile \
+		-t $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
+	@mkdir -p $(dir $@)
 	@touch $@
 
-.PHONY: dummy-auth0-docker
-dummy-auth0-docker: $(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH)
+.PHONY: extproc-server-docker
+extproc-server-docker: $(EXTPROC_SERVER_OUTPUT_DIR)/.docker-stamp-$(EXTPROC_SERVER_VERSION)-$(GOARCH)
 
-.PHONY: kind-load-dummy-auth0
-kind-load-dummy-auth0:
-	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(DUMMY_AUTH0_IMAGE_REPO):$(DUMMY_AUTH0_VERSION) --name $(CLUSTER_NAME)
-
+.PHONY: kind-load-extproc-server
+kind-load-extproc-server:
+	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION) --name $(CLUSTER_NAME)
 
 #----------------------------------------------------------------------------------
 # Helm
@@ -606,9 +617,14 @@ HELM ?= go tool helm
 HELM_PACKAGE_ARGS ?= --version $(VERSION) --app-version $(VERSION)
 HELM_CHART_DIR=install/helm/kgateway
 HELM_CHART_DIR_CRD=install/helm/kgateway-crds
+HELM_CHART_DIR_AGW=install/helm/agentgateway
+HELM_CHART_DIR_AGW_CRD=install/helm/agentgateway-crds
 
 .PHONY: package-kgateway-charts
 package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart ## Package the kgateway charts
+
+.PHONY: package-agentgateway-charts
+package-agentgateway-charts: package-agentgateway-chart package-agentgateway-crd-chart ## Package the agentgateway charts
 
 .PHONY: package-kgateway-chart
 package-kgateway-chart: ## Package the kgateway charts
@@ -622,10 +638,24 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
 
+.PHONY: package-agentgateway-chart
+package-agentgateway-chart: ## Package the agentgateway chart
+	mkdir -p $(TEST_ASSET_DIR); \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_AGW); \
+	$(HELM) repo index $(TEST_ASSET_DIR);
+
+.PHONY: package-agentgateway-crd-chart
+package-agentgateway-crd-chart: ## Package the agentgateway crd chart
+	mkdir -p $(TEST_ASSET_DIR); \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_AGW_CRD); \
+	$(HELM) repo index $(TEST_ASSET_DIR);
+
 .PHONY: release-charts
-release-charts: package-kgateway-charts ## Release the kgateway charts
+release-charts: package-kgateway-charts package-agentgateway-charts ## Release the kgateway and agentgateway charts
 	$(HELM) push $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
 	$(HELM) push $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
 
 .PHONY: deploy-kgateway-crd-chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
@@ -640,23 +670,40 @@ deploy-kgateway-chart: ## Deploy the kgateway chart
 	--set image.tag=$(VERSION) \
 	-f $(HELM_ADDITIONAL_VALUES)
 
+.PHONY: deploy-agentgateway-crd-chart
+deploy-agentgateway-crd-chart: ## Deploy the agentgateway crd chart
+	$(HELM) upgrade --install agentgateway-crds $(TEST_ASSET_DIR)/agentgateway-crds-$(VERSION).tgz --namespace $(INSTALL_NAMESPACE) --create-namespace
+
+.PHONY: deploy-agentgateway-chart
+deploy-agentgateway-chart: ## Deploy the agentgateway chart
+	$(HELM) upgrade --install agentgateway $(TEST_ASSET_DIR)/agentgateway-$(VERSION).tgz \
+	--namespace $(INSTALL_NAMESPACE) --create-namespace \
+	--set image.registry=$(IMAGE_REGISTRY) \
+	--set image.tag=$(VERSION) \
+	--set controller.image.repository=$(AGENTGATEWAY_IMAGE_REPO) \
+	-f $(HELM_ADDITIONAL_VALUES)
+
 .PHONY: lint-kgateway-charts
-lint-kgateway-charts: ## Lint the kgateway charts
+lint-kgateway-charts: ## Lint the kgateway and agentgateway charts
 	$(HELM) lint $(HELM_CHART_DIR)
 	$(HELM) lint $(HELM_CHART_DIR_CRD)
+	$(HELM) lint $(HELM_CHART_DIR_AGW)
+	$(HELM) lint $(HELM_CHART_DIR_AGW_CRD)
 
 #----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
 
-GORELEASER ?= go tool github.com/goreleaser/goreleaser/v2
 GORELEASER_ARGS ?= --snapshot --clean
 GORELEASER_TIMEOUT ?= 60m
 GORELEASER_CURRENT_TAG ?= $(VERSION)
 
 .PHONY: release
 release: ## Create a release using goreleaser
-	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) $(GORELEASER) release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
+	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) go tool -modfile=tools/go.mod goreleaser release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
+.PHONY: release-notes
+release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG optional)
+	./hack/generate-release-notes.sh -p $(PREVIOUS_TAG) -c $(or $(CURRENT_TAG),HEAD)
 
 #----------------------------------------------------------------------------------
 # Development
@@ -695,14 +742,20 @@ metallb: ## Install the MetalLB load balancer
 .PHONY: deploy-kgateway
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
+.PHONY: deploy-agentgateway
+deploy-agentgateway: package-agentgateway-charts deploy-agentgateway-crd-chart deploy-agentgateway-chart ## Deploy the agentgateway chart and CRDs
+
 .PHONY: setup-base
 setup-base: kind-create gw-api-crds gie-crds metallb ## Setup the base infrastructure (kind cluster, CRDs, and MetalLB)
 
 .PHONY: setup
-setup: setup-base kind-build-and-load package-kgateway-charts dummy-auth0-docker kind-load-dummy-auth0 ## Setup the complete infrastructure (base setup plus images and charts)
+setup: setup-base kind-build-and-load package-kgateway-charts package-agentgateway-charts dummy-idp-docker kind-load-dummy-idp  ## Setup the complete infrastructure (base setup plus images and charts)
 
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment
+
+.PHONY: run-agentgateway
+run-agentgateway: setup deploy-agentgateway  ## Set up complete development environment
 
 .PHONY: undeploy
 undeploy: undeploy-kgateway undeploy-kgateway-crds ## Undeploy the application from the cluster
@@ -729,7 +782,6 @@ kind-load-%:
 # Depends on: IMAGE_REGISTRY, VERSION, CLUSTER_NAME
 # Envoy image may be specified via ENVOY_IMAGE on the command line or at the top of this file
 kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image and load it into kind
-kind-build-and-load-kgateway-agentgateway: kgateway-agentgateway-docker kind-load-kgateway ; ## Use to build specified image and load it into kind
 
 # Update the docker image used by a deployment
 # This works for most of our deployments because the deployment name and container name both match
@@ -753,13 +805,17 @@ kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specifie
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: kind-build-and-load-kgateway
+kind-build-and-load: kind-build-and-load-agentgateway-controller
 kind-build-and-load: kind-build-and-load-envoy-wrapper
 kind-build-and-load: kind-build-and-load-sds
+kind-build-and-load: kind-build-and-load-dummy-idp
 
 .PHONY: kind-load ## Use to load all images into kind
 kind-load: kind-load-kgateway
+kind-load: kind-load-agentgateway-controller
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
+kind-load: kind-load-dummy-idp
 
 #----------------------------------------------------------------------------------
 # Load Testing

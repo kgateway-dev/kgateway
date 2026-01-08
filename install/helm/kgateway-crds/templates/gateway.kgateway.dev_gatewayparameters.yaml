@@ -54,16 +54,18 @@ spec:
                 properties:
                   agentgateway:
                     description: |-
-                      Configure the agentgateway integration. If agentgateway is disabled, the
-                      EnvoyContainer values will be used by default to configure the data
-                      plane proxy.
+                      Obsolete: This field is no longer used. Agentgateway configuration is now
+                      determined automatically based on the GatewayClass controllerName
+                      (agentgateway.dev/agentgateway). Use the AgentgatewayParameters API to
+                      configure agentgateway deployments. Any values specified here are ignored.
                     properties:
-                      customConfigMapName:
+                      enabled:
                         description: |-
-                          Name of the custom configmap to use instead of the default generated one.
-                          When set, the agent gateway will use this configmap instead of creating the default one.
-                          The configmap must contain a 'config.yaml' key with the agent gateway configuration.
-                        type: string
+                          Obsolete: This field is no longer used. The agentgateway dataplane is
+                          automatically enabled when the Gateway references a GatewayClass with
+                          controllerName: agentgateway.dev/agentgateway. Use the AgentgatewayParameters
+                          API to configure agentgateway deployments. Any values specified here are ignored.
+                        type: boolean
                       env:
                         description: The container environment variables.
                         items:
@@ -292,7 +294,7 @@ spec:
                       image:
                         description: "The agentgateway container image. See\nhttps://kubernetes.io/docs/concepts/containers/images\nfor
                           details.\n\nDefault values, which may be overridden individually:\n\n\tregistry:
-                          ghcr.io/agentgateway\n\trepository: agentgateway\n\ttag:
+                          cr.agentgateway.dev\n\trepository: agentgateway\n\ttag:
                           <agentgateway version>\n\tpullPolicy: IfNotPresent"
                         properties:
                           digest:
@@ -652,10 +654,7 @@ spec:
                         type: object
                     type: object
                   envoyContainer:
-                    description: |-
-                      Configuration for the container running Envoy.
-                      If the Gateway uses a GatewayClass with controllerName: kgateway.dev/agentgateway,
-                      the EnvoyContainer values will be ignored.
+                    description: Configuration for the container running Envoy.
                     properties:
                       bootstrap:
                         description: Initial envoy configuration.

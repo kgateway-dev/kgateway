@@ -14,6 +14,10 @@ RUN mkdir -p rustformations/src transformations/src \
     && echo "pub fn dummy() {}" > transformations/src/lib.rs
 COPY ${RUSTFORMATIONS_DIR}/rustformations/Cargo.toml ./rustformations
 COPY ${RUSTFORMATIONS_DIR}/transformations/Cargo.toml ./transformations
+# REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, we can remove these
+ARG PATCHED_SDK_DIR=patched-envoy-sdk
+COPY ${RUSTFORMATIONS_DIR}/${PATCHED_SDK_DIR} ${PATCHED_SDK_DIR}
+# END REMOVE
 ARG RUST_BUILD_ARCH=x86_64 # options are x86_64 or aarch64
 # Because we built the dummy lib in this Stage to cache all the dependencies in docker layer cache
 # That unfortunately also cached the dummy libs, and in Stage 2 when we COPY, it preserved

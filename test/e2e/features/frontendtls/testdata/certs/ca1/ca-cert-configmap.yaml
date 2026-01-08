@@ -1,0 +1,34 @@
+# CA certificate for validating client certificates in FrontendTLSConfig tests
+# This CA is used to sign the client certificates in client-cert-secret.yaml
+# Generated with:
+#   openssl genrsa -out ca-key.pem 2048
+#   openssl req -new -x509 -days 365 -key ca-key.pem -out ca-cert.pem \
+#     -subj "/CN=Test CA/O=Test Org"
+#   # Then base64 encode and update ca.crt in this file
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ca-cert
+  namespace: default
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDKzCCAhOgAwIBAgIUUe9RAlK3aQm6uAwK6EvlHIeRSTIwDQYJKoZIhvcNAQEL
+    BQAwJTEQMA4GA1UEAwwHVGVzdCBDQTERMA8GA1UECgwIVGVzdCBPcmcwHhcNMjUx
+    MjAzMTkyMDAwWhcNMjYxMjAzMTkyMDAwWjAlMRAwDgYDVQQDDAdUZXN0IENBMREw
+    DwYDVQQKDAhUZXN0IE9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+    ALKdLcHlW1pqctfu2PVNuuUSfX18QfnKsPZk6WHlpRpzPiudT90sleHYt/mIWzk2
+    +7Dx3DrjCnNj8bULkrYARp6c6dO5r4k8BBuzxE0we7RPoRVkBzIGkzK22Z2yz/cs
+    LIOqKgSVXbneqYyJBlVYaJYPZ3uJH1QTcG9bOslckNVYPDtZuD0PGG8JzieNITSY
+    smm5px68p/EVIr3OP5ecUMhCcEgWIo+992h5teIlOMpXpZb2Wm1ABpr8jaGJVgtO
+    vn67mzRc7PBl5iT6cdUnG99LUMIhj73cKy1W+9i3elF8w4SEW/7uMvNK0WwkFaFl
+    l8Hzi8yfsV3EC0WPRuqp3jcCAwEAAaNTMFEwHQYDVR0OBBYEFNZroy3SiFR+l3HI
+    tw+npPPl5M5mMB8GA1UdIwQYMBaAFNZroy3SiFR+l3HItw+npPPl5M5mMA8GA1Ud
+    EwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAIpnex0iW9jtbYJhfxzE4Wmm
+    fNG3n13wZae/brOnj69VkK6ZJ35Ogjv9eybJIaicYCpkQhaiA5X7BU6cAc90IWdv
+    b7tury8qT1zwbTxzxeGpvct6877OtcClk1BNb9OqdBdZncDg+WeS9ZkQm/aqEapA
+    QuJci70Ynkre0udQtenazF8njlvngaw3GJdQ6ogZ1m5W0PPVaAMC/Ie88eolH0x8
+    EHk+WI7OPFRYrj7mgl/n3ZSE/GT3Er/iz6KSBRiR3MO8oX0EpBIoAoliqzN3cmYX
+    YViYxaXeR0p3dIhgHI9toNXc0At575ZPmjJchLdWzkjPdThy7VYKaK6yxicYVLI=
+    -----END CERTIFICATE-----
+

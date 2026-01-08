@@ -1,25 +1,46 @@
 package agentgatewaybackend_test
 
 import (
+	"crypto/tls"
 	"fmt"
 	"testing"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/proto"
+	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/test/util/assert"
 	"istio.io/istio/pkg/util/protomarshal"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks_url"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/testutils"
 	agentgatewaybackend "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
+
+type jwksUrlFactoryForTesting struct{}
+
+func (f *jwksUrlFactoryForTesting) BuildJwksUrlAndTlsConfig(_ krt.HandlerContext, _, _ string, _ *agentgateway.RemoteJWKS) (string, *tls.Config, error) {
+	return "http://store-uninitialized/", nil, nil
+}
+
+func TestTranslateAgwBackend(t *testing.T) {
+	testutils.RunForDirectory(t, "testdata/backend", func(t *testing.T, ctx plugins.PolicyCtx) (*agentgateway.AgentgatewayBackendStatus, []*api.Resource) {
+		backend := testutils.GetTestResource(t, ctx.Collections.Backends)
+		jwks_url.JwksUrlBuilderFactory = func() jwks_url.JwksUrlBuilder { return &jwksUrlFactoryForTesting{} }
+		status, results := agentgatewaybackend.TranslateAgwBackend(ctx, backend)
+		return status, slices.Map(results, func(r agwir.AgwResource) *api.Resource {
+			return r.Resource
+		})
+	})
+}
 
 func TestBuildMCP(t *testing.T) {
 	tests := []struct {
@@ -44,7 +65,7 @@ func TestBuildMCP(t *testing.T) {
 									Host:     "mcp-server.example.com",
 									Port:     8080,
 									Path:     stringPtr("override-sse"),
-									Protocol: ptr.To(agentgateway.MCPProtocolSSE),
+									Protocol: ptr.Of(agentgateway.MCPProtocolSSE),
 								},
 							},
 						},
@@ -199,8 +220,8 @@ func TestBuildAIBackend(t *testing.T) {
 						LLM: &agentgateway.LLMProvider{
 							AzureOpenAI: &agentgateway.AzureOpenAIConfig{
 								Endpoint:       "endpoint-123.openai.azure.com",
-								DeploymentName: ptr.To("my-deployment"),
-								ApiVersion:     ptr.To("2024-02-15-preview"),
+								DeploymentName: ptr.Of("my-deployment"),
+								ApiVersion:     ptr.Of("2024-02-15-preview"),
 							},
 						},
 					},
@@ -278,7 +299,7 @@ func TestBuildAIBackend(t *testing.T) {
 					AI: &agentgateway.AIBackend{
 						LLM: &agentgateway.LLMProvider{
 							Bedrock: &agentgateway.BedrockConfig{
-								Model:  ptr.To("anthropic.claude-3-haiku-20240307-v1:0"),
+								Model:  ptr.Of("anthropic.claude-3-haiku-20240307-v1:0"),
 								Region: "eu-west-1",
 								Guardrail: &agentgateway.AWSGuardrailConfig{
 									GuardrailIdentifier: "test-guardrail",
@@ -477,6 +498,8 @@ func TestBuildAIBackend(t *testing.T) {
 								"/v1/messages":              agentgateway.RouteTypeMessages,
 								"/v1/responses":             agentgateway.RouteTypeResponses,
 								"/v1/messages/count_tokens": agentgateway.RouteTypeAnthropicTokenCount,
+								"/v1/embeddings":            agentgateway.RouteTypeEmbeddings,
+								"/v1/realtime":              agentgateway.RouteTypeRealtime,
 								"/v1/models":                agentgateway.RouteTypeModels,
 							},
 						},
@@ -707,7 +730,7 @@ func createMockMCPService(namespace, serviceName, labels string) *corev1.Service
 				{
 					Name:        "mcp",
 					Port:        8080,
-					AppProtocol: ptr.To("kgateway.dev/mcp"),
+					AppProtocol: ptr.Of("kgateway.dev/mcp"),
 				},
 			},
 		},
@@ -715,7 +738,7 @@ func createMockMCPService(namespace, serviceName, labels string) *corev1.Service
 	return mockService
 }
 
-// createMockServiceCollectionMultiNamespace creates a mock service collection with services in multiple namespaces
+// createMockMultipleNamespaceServices creates a mock service collection with services in multiple namespaces
 func createMockMultipleNamespaceServices() []any {
 	services := []any{
 		&corev1.Service{
@@ -731,7 +754,7 @@ func createMockMultipleNamespaceServices() []any {
 					{
 						Name:        "mcp",
 						Port:        8080,
-						AppProtocol: ptr.To("kgateway.dev/mcp"),
+						AppProtocol: ptr.Of("kgateway.dev/mcp"),
 					},
 				},
 			},
@@ -749,7 +772,7 @@ func createMockMultipleNamespaceServices() []any {
 					{
 						Name:        "mcp",
 						Port:        8080,
-						AppProtocol: ptr.To("kgateway.dev/mcp"),
+						AppProtocol: ptr.Of("kgateway.dev/mcp"),
 					},
 				},
 			},
@@ -767,7 +790,7 @@ func createMockMultipleNamespaceServices() []any {
 					{
 						Name:        "mcp",
 						Port:        8080,
-						AppProtocol: ptr.To("kgateway.dev/mcp"),
+						AppProtocol: ptr.Of("kgateway.dev/mcp"),
 					},
 				},
 			},

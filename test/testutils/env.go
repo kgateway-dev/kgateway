@@ -53,6 +53,10 @@ const (
 	// test framework does not need to install/uninstall Istio.
 	SkipIstioInstall = "SKIP_ISTIO_INSTALL"
 
+	// SkipBugReport can be used to skip the automatic bug report generation on test failure.
+	// This is useful when running tests in a local development environment to fail fast without generating bug reports.
+	SkipBugReport = "SKIP_BUG_REPORT"
+
 	// GithubAction is used by Github Actions and is the name of the currently running action or ID of a step
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
 	GithubAction = "GITHUB_ACTION"
@@ -105,6 +109,10 @@ func ShouldFailFastAndPersist() bool {
 // waste your time and confuse you if each test case starts in a chaotic state.
 func ShouldSkipAllTeardown() bool {
 	return envutils.IsEnvTruthy(SkipAllTeardown)
+}
+
+func ShouldSkipBugReport() bool {
+	return envutils.IsEnvTruthy(SkipBugReport)
 }
 
 // TestingT is an interface that matches the subset of testing.T methods we need

@@ -10,16 +10,20 @@ import (
 	"path/filepath"
 	"sort"
 	"testing"
+	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/anypb"
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
@@ -41,6 +45,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -60,6 +65,7 @@ type translationResult struct {
 	Listeners     []*envoylistenerv3.Listener
 	ExtraClusters []*envoyclusterv3.Cluster
 	Clusters      []*envoyclusterv3.Cluster
+	Secrets       []*envoytlsv3.Secret
 	Statuses      *Statuses
 }
 
@@ -102,6 +108,14 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		result["Clusters"] = clusters
+	}
+
+	if len(tr.Secrets) > 0 {
+		secrets, err := marshalProtoMessages(tr.Secrets, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Secrets"] = secrets
 	}
 
 	// Add statuses if they exist
@@ -182,6 +196,21 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			tr.Clusters[i] = cluster
+		}
+	}
+
+	if secretsData, ok := result["Secrets"]; ok {
+		var secrets []json.RawMessage
+		if err := json.Unmarshal(secretsData, &secrets); err != nil {
+			return err
+		}
+		tr.Secrets = make([]*envoytlsv3.Secret, len(secrets))
+		for i, secretData := range secrets {
+			secret := &envoytlsv3.Secret{}
+			if err := m.Unmarshal(secretData, secret); err != nil {
+				return err
+			}
+			tr.Secrets[i] = secret
 		}
 	}
 
@@ -275,6 +304,7 @@ func TestTranslationWithExtraPlugins(
 		Listeners:     result.Proxy.Listeners,
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
+		Secrets:       result.Proxy.Secrets,
 		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
 	outputYaml, err := testutils.MarshalAnyYaml(output)
@@ -321,7 +351,12 @@ func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 		return "", err
 	}
 
-	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+	// Sort credentials by client name to ensure deterministic comparison
+	credentialSortFn := func(x, y *envoyapikeyauthv3.Credential) bool {
+		return x.Client < y.Client
+	}
+
+	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), protocmp.SortRepeated(credentialSortFn), cmpopts.EquateNaNs()), nil
 }
 
 func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationResult {
@@ -338,8 +373,84 @@ func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationR
 	sort.Slice(proxy.ExtraClusters, func(i, j int) bool {
 		return proxy.ExtraClusters[i].GetName() < proxy.ExtraClusters[j].GetName()
 	})
+	sort.Slice(proxy.Secrets, func(i, j int) bool {
+		return proxy.Secrets[i].GetName() < proxy.Secrets[j].GetName()
+	})
+
+	// Sort credentials in routes to ensure deterministic output
+	// This is to avoid local changes every time the test is run with REFRESH_GOLDEN=true
+	for _, routeConfig := range proxy.Routes {
+		sortCredentialsInRouteConfiguration(routeConfig)
+	}
 
 	return proxy
+}
+
+// sortCredentialsInRouteConfiguration sorts API key auth credentials within route configurations
+func sortCredentialsInRouteConfiguration(routeConfig *envoyroutev3.RouteConfiguration) {
+	if routeConfig == nil {
+		return
+	}
+
+	for _, vh := range routeConfig.GetVirtualHosts() {
+		// Sort credentials in route-level typedPerFilterConfig
+		for _, route := range vh.GetRoutes() {
+			sortCredentialsInRoute(route)
+		}
+
+		// Sort credentials in virtual host-level typedPerFilterConfig
+		if vh.GetTypedPerFilterConfig() != nil {
+			if config, ok := vh.GetTypedPerFilterConfig()["envoy.filters.http.api_key_auth"]; ok {
+				sortCredentialsInAny(config)
+			}
+		}
+	}
+
+	// Sort credentials in route configuration-level typedPerFilterConfig
+	if routeConfig.GetTypedPerFilterConfig() != nil {
+		if config, ok := routeConfig.GetTypedPerFilterConfig()["envoy.filters.http.api_key_auth"]; ok {
+			sortCredentialsInAny(config)
+		}
+	}
+}
+
+// sortCredentialsInRoute sorts API key auth credentials in a route's typedPerFilterConfig
+func sortCredentialsInRoute(route *envoyroutev3.Route) {
+	if route == nil || route.GetTypedPerFilterConfig() == nil {
+		return
+	}
+
+	if config, ok := route.GetTypedPerFilterConfig()["envoy.filters.http.api_key_auth"]; ok {
+		sortCredentialsInAny(config)
+	}
+}
+
+// sortCredentialsInAny sorts credentials in an ApiKeyAuthPerRoute config stored as anypb.Any
+func sortCredentialsInAny(config *anypb.Any) {
+	if config == nil {
+		return
+	}
+
+	// Unmarshal to ApiKeyAuthPerRoute
+	apiKeyAuth := &envoyapikeyauthv3.ApiKeyAuthPerRoute{}
+	if err := config.UnmarshalTo(apiKeyAuth); err != nil {
+		// Not an ApiKeyAuthPerRoute, skip
+		return
+	}
+
+	// Sort credentials by client name
+	if len(apiKeyAuth.Credentials) > 0 {
+		sort.Slice(apiKeyAuth.Credentials, func(i, j int) bool {
+			return apiKeyAuth.Credentials[i].Client < apiKeyAuth.Credentials[j].Client
+		})
+
+		// Marshal back to Any and update the config
+		a, err := utils.MessageToAny(apiKeyAuth)
+		if err == nil {
+			config.TypeUrl = a.TypeUrl
+			config.Value = a.Value
+		}
+	}
 }
 
 func compareClusters(expectedFile string, actualClusters []*envoyclusterv3.Cluster) (string, error) {
@@ -546,16 +657,21 @@ func (tc TestCase) Run(
 	gvkToStructuralSchema := extraConfig.GVKToStructuralSchema
 	if len(gvkToStructuralSchema) == 0 {
 		var err error
-		crdDir := filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
-		gvkToStructuralSchema, err = testutils.GetStructuralSchemas(crdDir)
+		gvkToStructuralSchema, err = testutils.GetStructuralSchemasForBothCharts()
 		r.NoError(err, "error getting structural schemas")
 	}
 
 	var allObjs []client.Object
+	var fakeNow time.Time
 	for _, file := range tc.InputFiles {
 		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
+		}
+		// add a creation timestamp to each object to ensure consistent application of policy
+		for _, obj := range objs {
+			fakeNow = fakeNow.Add(time.Second)
+			obj.SetCreationTimestamp(metav1.NewTime(fakeNow))
 		}
 		allObjs = append(allObjs, objs...)
 	}

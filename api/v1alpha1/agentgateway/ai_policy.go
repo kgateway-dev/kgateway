@@ -62,7 +62,7 @@ type Message struct {
 // BuiltIn regex patterns for specific types of strings in prompts.
 // For example, if you specify `CreditCard`, any credit card numbers
 // in the request or response are matched.
-// +kubebuilder:validation:Enum=Ssn;CreditCard;PhoneNumber;Email
+// +kubebuilder:validation:Enum=Ssn;CreditCard;PhoneNumber;Email;CaSin
 type BuiltIn string
 
 const (
@@ -77,18 +77,22 @@ const (
 
 	// Default regex matching for email addresses.
 	EMAIL BuiltIn = "Email"
+
+	// Default regex matching for Canadian Social Insurance Numbers.
+	CA_SIN BuiltIn = "CaSin"
 )
 
 // Action to take if a regex pattern is matched in a request or response.
 // This setting applies only to request matches. PromptguardResponse matches are always masked by default.
+// +kubebuilder:validation:Enum=Mask;Reject
 type Action string
 
 const (
 	// Mask the matched data in the request.
-	MASK Action = "MASK"
+	MASK Action = "Mask"
 
 	// Reject the request if the regex matches content in the request.
-	REJECT Action = "REJECT"
+	REJECT Action = "Reject"
 )
 
 // Regex configures the regular expression (regex) matching for prompt guards and data masking.
@@ -105,8 +109,8 @@ type Regex struct {
 
 	// The action to take if a regex pattern is matched in a request or response.
 	// This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-	// Defaults to `MASK`.
-	// +kubebuilder:default=MASK
+	// Defaults to `Mask`.
+	// +kubebuilder:default=Mask
 	// +optional
 	Action *Action `json:"action,omitempty"`
 }

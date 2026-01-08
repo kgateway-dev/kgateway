@@ -206,12 +206,8 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 	// Select the appropriate chart based on whether agentgateway is enabled
 	chartToUse := d.chart
 	if d.agentgatewayChart != nil {
-		if gateway, ok := vals["gateway"].(map[string]any); ok {
-			if dataPlaneType, ok := gateway["dataPlaneType"].(string); ok {
-				if dataPlaneType == string(DataPlaneAgentgateway) {
-					chartToUse = d.agentgatewayChart
-				}
-			}
+		if _, ok := vals["agentgateway"].(map[string]any); ok {
+			chartToUse = d.agentgatewayChart
 		}
 	}
 
@@ -256,6 +252,13 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 		return nil, fmt.Errorf("failed to get objects to deploy %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
 	}
 
+	// Apply post-processing if the HelmValuesGenerator implements ObjectPostProcessor
+	if postProcessor, ok := d.helmValues.(ObjectPostProcessor); ok {
+		if err := postProcessor.PostProcessObjects(ctx, obj, objs); err != nil {
+			return nil, fmt.Errorf("failed to post-process objects for %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
+		}
+	}
+
 	return objs, nil
 }
 
@@ -296,9 +299,19 @@ func (d *Deployer) SetNamespaceAndOwnerWithGVK(owner client.Object, ownerGVK sch
 	return objs
 }
 
-// getControllerNameForGatewayClass returns the appropriate controller name based on the gateway class name
-func (d *Deployer) getControllerNameForGatewayClass(gatewayClassName string) string {
-	if gatewayClassName == d.agwGatewayClassName {
+// getControllerNameForGatewayClass looks up the GatewayClass and returns the controller name
+// from its spec, falling back to class name comparison if the lookup fails.
+func (d *Deployer) getControllerNameForGatewayClass(ctx context.Context, gatewayClassName string) string {
+	gwc, err := d.client.GatewayAPI().GatewayV1().GatewayClasses().Get(ctx, gatewayClassName, metav1.GetOptions{})
+	if err != nil {
+		logger.Debug("failed to look up GatewayClass, falling back to class name comparison",
+			"gateway_class_name", gatewayClassName, "error", err)
+		if gatewayClassName == d.agwGatewayClassName {
+			return d.agwControllerName
+		}
+		return d.controllerName
+	}
+	if string(gwc.Spec.ControllerName) == d.agwControllerName {
 		return d.agwControllerName
 	}
 	return d.controllerName
@@ -313,7 +326,7 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 	controllerName := d.controllerName
 	if sourceObj != nil {
 		if gw, ok := sourceObj.(*gwv1.Gateway); ok {
-			controllerName = d.getControllerNameForGatewayClass(string(gw.Spec.GatewayClassName))
+			controllerName = d.getControllerNameForGatewayClass(ctx, string(gw.Spec.GatewayClassName))
 		}
 		// For InferencePool objects, use the agwControllerName if this deployer was configured
 		// with the agent gateway controller name as the primary controller

@@ -11,6 +11,7 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -95,9 +96,9 @@ func (h *filterChainTranslator) initFilterChain(fcc ir.FilterChainCommon) *envoy
 	return fc
 }
 
-func (h *filterChainTranslator) computeHttpFilters(l ir.HttpFilterChainIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
+func (h *filterChainTranslator) computeHttpFilters(l ir.HttpFilterChainIR, lis ir.ListenerIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
 	// 1. Generate all the network filters (including the HttpConnectionManager)
-	networkFilters, err := h.computeNetworkFiltersForHttp(l, reporter)
+	networkFilters, err := h.computeNetworkFiltersForHttp(l, lis, reporter)
 	if err != nil {
 		logger.Error("error computing network filters", "error", err)
 		// TODO: report? return error?
@@ -110,8 +111,9 @@ func (h *filterChainTranslator) computeHttpFilters(l ir.HttpFilterChainIR, repor
 	return networkFilters
 }
 
-func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChainIR, listenerReporter sdkreporter.ListenerReporter) ([]*envoylistenerv3.Filter, error) {
+func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChainIR, lis ir.ListenerIR, listenerReporter sdkreporter.ListenerReporter) ([]*envoylistenerv3.Filter, error) {
 	hcm := hcmNetworkFilterTranslator{
+		lis:               lis,
 		routeConfigName:   n.routeConfigName,
 		pluginPass:        n.pluginPass,
 		listenerReporter:  listenerReporter,
@@ -186,6 +188,7 @@ func sortNetworkFilters(filters filters.StagedNetworkFilterList) []*envoylistene
 }
 
 type hcmNetworkFilterTranslator struct {
+	lis               ir.ListenerIR
 	routeConfigName   string
 	pluginPass        TranslationPassPlugins
 	listenerReporter  sdkreporter.ListenerReporter
@@ -218,8 +221,9 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			pctx := &ir.HcmContext{
-				Policy:  pol.PolicyIr,
-				Gateway: h.gateway,
+				ListenerPort: h.lis.BindPort,
+				Policy:       pol.PolicyIr,
+				Gateway:      h.gateway,
 			}
 			if err := pass.ApplyHCM(pctx, httpConnectionManager); err != nil {
 				h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
@@ -273,10 +277,12 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 
 func (h *hcmNetworkFilterTranslator) computeHttpFilters(l ir.HttpFilterChainIR) []*envoyhttp.HttpFilter {
 	var httpFilters filters.StagedHttpFilterList
-
+	hCtx := ir.HttpFiltersContext{
+		ListenerPort: h.lis.BindPort,
+	}
 	// run the HttpFilter Plugins
 	for _, plug := range h.pluginPass {
-		stagedFilters, err := plug.HttpFilters(l.FilterChainCommon)
+		stagedFilters, err := plug.HttpFilters(hCtx, l.FilterChainCommon)
 		if err != nil {
 			// what to do with errors here? ignore the listener??
 			h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
@@ -483,10 +489,24 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 	if len(tlsConfig.EcdhCurves) > 0 {
 		common.TlsParams.EcdhCurves = tlsConfig.EcdhCurves
 	}
+
 	// TODO: add verify subject alt names (validation context) https://github.com/kgateway-dev/kgateway/issues/12955
+
+	validationContext := buildValidationContext(tlsConfig)
+
+	// Set ValidationContextType if we have any validation context configured
+	if validationContext != nil {
+		common.ValidationContextType = &envoytlsv3.CommonTlsContext_ValidationContext{
+			ValidationContext: validationContext,
+		}
+	}
 
 	out := &envoytlsv3.DownstreamTlsContext{
 		CommonTlsContext: common,
+	}
+
+	if tlsConfig.ClientCertificateValidation != nil {
+		out.RequireClientCertificate = &wrapperspb.BoolValue{Value: tlsConfig.ClientCertificateValidation.RequireClientCertificate}
 	}
 	typedConfig, _ := utils.MessageToAny(out)
 
@@ -494,6 +514,50 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 		Name:       wellknown.TransportSocketTls,
 		ConfigType: &envoycorev3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 	}
+}
+
+func buildValidationContext(tlsConfig *ir.TLSConfig) *envoytlsv3.CertificateValidationContext {
+	var validationContext *envoytlsv3.CertificateValidationContext
+	if len(tlsConfig.VerifyCertificateHash) > 0 {
+		validationContext = &envoytlsv3.CertificateValidationContext{
+			VerifyCertificateHash: tlsConfig.VerifyCertificateHash,
+		}
+	}
+
+	// We have already validated that if there are verify subject alt names, there is a trusted CA
+	if len(tlsConfig.VerifySubjectAltNames) > 0 {
+		if validationContext == nil {
+			validationContext = &envoytlsv3.CertificateValidationContext{}
+		}
+		for _, name := range tlsConfig.VerifySubjectAltNames {
+			validationContext.MatchTypedSubjectAltNames = append(validationContext.MatchTypedSubjectAltNames, &envoytlsv3.SubjectAltNameMatcher{
+				SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+				Matcher: &envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: name},
+				},
+			})
+		}
+	}
+
+	// Handle client certificate validation (mTLS) - merge with existing ValidationContext if present
+	if tlsConfig.ClientCertificateValidation != nil {
+		if len(tlsConfig.ClientCertificateValidation.CACertificates) > 0 {
+			// Combine all CA certificates into a single trusted CA
+			var combinedCA []byte
+			for i, caCert := range tlsConfig.ClientCertificateValidation.CACertificates {
+				if i > 0 {
+					combinedCA = append(combinedCA, '\n')
+				}
+				combinedCA = append(combinedCA, caCert...)
+			}
+			if validationContext == nil {
+				validationContext = &envoytlsv3.CertificateValidationContext{}
+			}
+			validationContext.TrustedCa = bytesDataSource(combinedCA)
+		}
+	}
+
+	return validationContext
 }
 
 func bytesDataSource(s []byte) *envoycorev3.DataSource {
