@@ -540,7 +540,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 
 	if f := p.localRateLimitInChain[fcc.FilterChainName]; f != nil {
-		filter := filters.MustNewStagedFilter(localRateLimitFilterNamePrefix, f, filters.BeforeStage(filters.AcceptedStage))
+		filter := filters.MustNewStagedFilter(localRateLimitFilterNamePrefix, f, filters.DuringStage(filters.RateLimitStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
 	}

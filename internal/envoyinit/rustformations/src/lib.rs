@@ -5,6 +5,15 @@ will make the linter unhappy.
 #![deny(clippy::unwrap_used, clippy::expect_used)]
  */
 
+// REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, we can remove these
+
+#[cfg(target_arch = "x86_64")]
+extern crate envoy_sdk_local as envoy_proxy_dynamic_modules_rust_sdk;
+
+#[cfg(not(target_arch = "x86_64"))]
+extern crate envoy_sdk_remote as envoy_proxy_dynamic_modules_rust_sdk;
+
+// END REMOVE
 use envoy_proxy_dynamic_modules_rust_sdk::*;
 use std::any::Any;
 
