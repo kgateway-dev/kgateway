@@ -24,7 +24,7 @@ output:
           protocols:
           - h2
           - http/1.1
-        tlsHandshakeTimeout: 15s
+        handshakeTimeout: 15s
     key: frontend/default/tls-policy:frontend-tls:default/test
     name:
       kind: AgentgatewayPolicy
