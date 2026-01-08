@@ -263,7 +263,6 @@ func mergeRustformation(
 	}
 
 	if !policy.IsMergeable(p1.spec.rustformation, p2.spec.rustformation, opts) {
-		logger.Info("not mergeable")
 		return
 	}
 
@@ -289,20 +288,15 @@ func mergeRustformation(
 			}}
 
 		}
-		// Always Concat so that the original slice in the IR is never modified
-		logger.Info("rustformation: deepmerge")
-
 		p1Json, err := utils.AnyToJson(p1.spec.rustformation.config.FilterConfig)
 		if err != nil {
 			logger.Error("failed to convert p1 config to json", "error", err.Error())
-		} else if p1Json != nil {
-			logger.Info("rustformation", "p1", p1Json)
+			return
 		}
 		p2Json, err := utils.AnyToJson(p2.spec.rustformation.config.FilterConfig)
 		if err != nil {
 			logger.Error("failed to convert p2 config to json", "error", err.Error())
-		} else if p2Json != nil {
-			logger.Info("rustformation", "p2", p2Json)
+			return
 		}
 
 		var anyMsg *anypb.Any
