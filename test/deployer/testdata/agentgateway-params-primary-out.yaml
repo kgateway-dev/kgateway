@@ -139,6 +139,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
         image: cr.agentgateway.dev/custom-agentgateway:v1.0.0
         name: agentgateway
         ports:

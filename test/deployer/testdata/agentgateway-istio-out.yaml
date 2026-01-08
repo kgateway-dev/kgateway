@@ -2,16 +2,12 @@ apiVersion: v1
 automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
-  annotations:
-    foo: |-
-      bar
-      attack
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -19,26 +15,15 @@ metadata:
 apiVersion: v1
 data:
   config.yaml: |
-    blah: |-
-      bar
-      attack
-    config:
-      logging:
-        format: |-
-          json
-          attack
+    config: {}
 kind: ConfigMap
 metadata:
-  annotations:
-    foo: |-
-      bar
-      attack
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -46,16 +31,12 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    foo: |-
-      bar
-      attack
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -76,16 +57,12 @@ status:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    foo: |-
-      bar
-      attack
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -99,18 +76,17 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 742e237f5e52d6e9ec5ec88bfbf17d33ca53da13d2eeb84a856ea88bf28d5533
-        foo: |-
-          bar
-          attack
+        checksum/config: bb8bdc8cacbd1ae4af6e9f72baafbd5859e9422ade140b725464c0ec0d7fee9d
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
-        gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
+        gateway.networking.k8s.io/gateway-class-name: agentgateway
         gateway.networking.k8s.io/gateway-name: gw
+        istio.io/dataplane-mode: none
+        sidecar.istio.io/inject: "false"
     spec:
       containers:
       - args:
@@ -158,10 +134,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.serviceAccountName
-        image: v1 attack/v1 attack:v1 attack@v1 attack
-        imagePullPolicy: |-
-          v1
-          attack
+        - name: CA_ADDRESS
+          value: https://foo:443
+        - name: TRUST_DOMAIN
+          value: not.cluster.local
+        image: cr.agentgateway.dev/agentgateway:0.11.1
         name: agentgateway
         ports:
         - containerPort: 15020
@@ -197,6 +174,10 @@ spec:
         - mountPath: /var/run/secrets/xds-tokens
           name: xds-token
           readOnly: true
+        - mountPath: /var/run/secrets/istio
+          name: istiod-ca-cert
+        - mountPath: /var/run/secrets/tokens
+          name: istio-token
       securityContext:
         sysctls:
         - name: net.ipv4.ip_unprivileged_port_start
@@ -216,4 +197,14 @@ spec:
               path: xds-token
       - emptyDir: {}
         name: tmp
+      - configMap:
+          name: istio-ca-root-cert
+        name: istiod-ca-cert
+      - name: istio-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              audience: istio-ca
+              expirationSeconds: 43200
+              path: istio-token
 status: {}

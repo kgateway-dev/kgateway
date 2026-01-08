@@ -167,6 +167,10 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "agentgateway-shutdown",
 		},
 		{
+			Name:      "agentgateway with Istio configuration",
+			InputFile: "agentgateway-istio",
+		},
+		{
 			Name:      "agentgateway with logging format json",
 			InputFile: "agentgateway-logging-format",
 		},

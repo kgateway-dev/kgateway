@@ -457,6 +457,7 @@ func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collect
 		GatewaysByNetwork: Networks.GatewaysByNetwork,
 		Flags: ambient.FeatureFlags{
 			EnableK8SServiceSelectWorkloadEntries: true,
+			EnableMtlsTransportProtocol:           true,
 		},
 		Network: func(ctx krt.HandlerContext) network.ID {
 			return ""

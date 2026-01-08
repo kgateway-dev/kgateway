@@ -152,6 +152,22 @@ type AgentgatewayParametersConfigs struct {
 	//
 	// +optional
 	Shutdown *ShutdownSpec `json:"shutdown,omitempty"`
+
+	// Configure Istio integration. If enabled, Agentgateway can natively connect to Istio enabled pods with mTLS.
+	//
+	// +optional
+	Istio *IstioSpec `json:"istio,omitempty"`
+}
+
+type IstioSpec struct {
+	// The address of the Istio CA. If unset, defaults to `https://istiod.istio-system.svc:15012`.
+	//
+	// +optional
+	CaAddress string `json:"caAddress,omitempty"`
+	// The Istio trust domain. If not set, defaults to `cluster.local`.
+	//
+	// +optional
+	TrustDomain string `json:"trustDomain,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="self.min <= self.max",message="The 'min' value must be less than or equal to the 'max' value."

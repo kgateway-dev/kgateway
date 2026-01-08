@@ -66,6 +66,7 @@ func (a *AgentgatewayParametersApplier) ApplyToHelmValues(vals *deployer.HelmCon
 	}
 	setIfNonNil(&res.Resources, configs.Resources)
 	setIfNonNil(&res.Shutdown, configs.Shutdown)
+	setIfNonNil(&res.Istio, configs.Istio)
 	setIfNonNil(&res.RawConfig, configs.RawConfig)
 
 	// Apply logging.level as RUST_LOG first, then merge explicit env vars on top.

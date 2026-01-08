@@ -33,6 +33,7 @@ spec:
           (dict "gateway.networking.k8s.io/gateway-class-name" .Values.agentgateway.gatewayClassName)
           (include "kgateway.gateway.selectorLabels" . | fromYaml)
           ($gateway.gatewayLabels | default dict)
+          ((hasKey $gateway "istio") | ternary (dict "istio.io/dataplane-mode" "none" "sidecar.istio.io/inject" "false") (dict))
         ) | nindent 8 }}
     spec:
       serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
@@ -153,6 +154,20 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
             {{- end }}
+            {{- if not (hasKey $userEnvNames "SERVICE_ACCOUNT") }}
+            - name: SERVICE_ACCOUNT
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.serviceAccountName
+            {{- end }}
+            {{- if and (not (hasKey $userEnvNames "CA_ADDRESS")) (hasKey $gateway "istio") }}
+            - name: CA_ADDRESS
+              value: {{ $gateway.istio.caAddress | default "https://istiod.istio-system.svc:15012" | quote }}
+            {{- end }}
+            {{- if and (not (hasKey $userEnvNames "TRUST_DOMAIN")) (hasKey $gateway "istio") }}
+            - name: TRUST_DOMAIN
+              value: {{ $gateway.istio.trustDomain | default "cluster.local" | quote }}
+            {{- end }}
           {{- /* User-specified env vars */}}
           {{- with $gateway.env }}
             {{- toYaml . | nindent 12 }}
@@ -170,6 +185,12 @@ spec:
             - name: xds-ca
               mountPath: /etc/xds-tls
               readOnly: true
+            {{- end }}
+            {{- if hasKey $gateway "istio" }}
+            - mountPath: /var/run/secrets/istio
+              name: istiod-ca-cert
+            - mountPath: /var/run/secrets/tokens
+              name: istio-token
             {{- end }}
       volumes:
         - name: config-volume
@@ -191,5 +212,17 @@ spec:
             items:
             - key: ca.crt
               path: ca.crt
+        {{- end }}
+        {{- if hasKey $gateway "istio" }}
+        - configMap:
+            name: istio-ca-root-cert
+          name: istiod-ca-cert
+        - name: istio-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: istio-ca
+                  expirationSeconds: 43200
+                  path: istio-token
         {{- end }}
       terminationGracePeriodSeconds: {{($gateway.shutdown).max|default 60|int}}
