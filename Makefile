@@ -203,6 +203,13 @@ golden-deployer:  ## Refreshes golden files for ./test/deployer snapshot testing
 	@echo "This must pass after refreshing:"
 	go test ./test/deployer/...
 
+.PHONY: golden-helm
+golden-helm:  ## Refreshes golden files for ./test/helm snapshot testing
+	REFRESH_GOLDEN=true go test ./test/helm/... > /dev/null || true
+	@echo ""
+	@echo "This must pass after refreshing:"
+	go test ./test/helm/...
+
 #----------------------------------------------------------------------------------
 # Env test
 #----------------------------------------------------------------------------------

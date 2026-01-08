@@ -25,7 +25,7 @@ func TestHelmChartVersionAndAppVersion(t *testing.T) {
 	_, err = os.Stat(absHelmChartPath)
 	require.NoError(t, err, "helm chart not found at %s", absHelmChartPath)
 
-	helmCmd := exec.Command("helm", "template", "foobar", absHelmChartPath)
+	helmCmd := exec.Command("helm", "template", "foobar", absHelmChartPath, "--namespace", "default")
 	grepCmd := exec.Command("grep", "-E", "-w", "-B", "1", "v0\\.0\\.[12]")
 
 	helmOutput, err := helmCmd.StdoutPipe()
@@ -127,7 +127,8 @@ func TestHelmChartTemplate(t *testing.T) {
 				require.NoError(t, err, "helm chart not found at %s", absHelmChartPath)
 
 				// Build helm template command args
-				args := []string{"template", "test-release", absHelmChartPath}
+				// Explicitly set namespace to avoid picking up the current kubectl context's namespace
+				args := []string{"template", "test-release", absHelmChartPath, "--namespace", "default"}
 
 				// If we have custom values, write them to a temp file
 				if vc.valuesYAML != "" {
