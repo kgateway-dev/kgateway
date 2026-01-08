@@ -101,14 +101,16 @@ func TestHelmChartTemplate(t *testing.T) {
 		},
 		{
 			name: "pdb-min-available",
-			valuesYAML: `podDisruptionBudget:
-  minAvailable: 1
+			valuesYAML: `controller:
+  podDisruptionBudget:
+    minAvailable: 1
 `,
 		},
 		{
 			name: "pdb-max-unavailable",
-			valuesYAML: `podDisruptionBudget:
-  maxUnavailable: 25%
+			valuesYAML: `controller:
+  podDisruptionBudget:
+    maxUnavailable: 25%
 `,
 		},
 	}

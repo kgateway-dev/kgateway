@@ -83,6 +83,13 @@ controller:
   #   rollingUpdate:
   #     maxSurge: 100%
   strategy: {}
+  # -- Set pod disruption budget for the controller. Note that this does not
+  #    affect the data plane.
+  # E.g.:
+  #
+  # podDisruptionBudget:
+  #   minAvailable: 100%
+  podDisruptionBudget: {}
 
 # -- Configure the default container image for the components that Helm deploys. You can override these settings for each particular component in that component's section, such as 'controller.image' for the agentgateway control plane. If you use your own private registry, make sure to include the imagePullSecrets.
 image:
@@ -113,10 +120,3 @@ discoveryNamespaceSelectors: []
 #        namespace: kgateway-system
 gatewayClassParametersRefs: {}
 
-# -- Set pod disruption budget for the controller. Note that this does not
-#    affect the data plane.
-# E.g.:
-#
-# podDisruptionBudget:
-#   minAvailable: 100%
-podDisruptionBudget: {}
