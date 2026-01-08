@@ -503,6 +503,15 @@ func (c GVKListenerSets) Equals(in GVKListenerSets) bool {
 	return true
 }
 
+// implement marshal json for krt snapshot dump
+func (l GVKListenerSets) MarshalJSON() ([]byte, error) {
+	m := make(map[string]ListenerSets)
+	for gvk, ls := range l {
+		m[gvk.String()] = ls
+	}
+	return json.Marshal(m)
+}
+
 type ListenerSets []ListenerSet
 
 func (c ListenerSets) Equals(in ListenerSets) bool {
