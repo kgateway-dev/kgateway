@@ -29,35 +29,6 @@ metadata:
   name: gw
 ---
 apiVersion: v1
-data:
-  ca.crt: |
-    -----BEGIN CERTIFICATE-----
-    MIICljCCAX4CCQCKSGhvPtMNGzANBgkqhkiG9w0BAQsFADANMQswCQYDVQQGEwJV
-    UzAeFw0yNDA3MDEwMDAwMDBaFw0yNTA3MDEwMDAwMDBaMA0xCzAJBgNVBAYTAlVT
-    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1234567890ABCDEFGHIj
-    klmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ab
-    cdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ123456
-    7890abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
-    1234567890abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTU
-    VWXYZ1234567890abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNO
-    PQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHI
-    JKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz1234567890ABC
-    DEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz123456
-    wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
-    -----END CERTIFICATE-----
-kind: ConfigMap
-metadata:
-  labels:
-    app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: kgateway
-    app.kubernetes.io/name: gw
-    app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway
-    gateway.networking.k8s.io/gateway-name: gw
-    kgateway: kube-gateway
-  name: gw-xds-ca
----
-apiVersion: v1
 kind: Service
 metadata:
   labels:
@@ -70,6 +41,7 @@ metadata:
     kgateway: kube-gateway
   name: gw
 spec:
+  loadBalancerIP: 203.0.113.11
   ports:
   - name: listener-8080
     port: 8080
@@ -141,9 +113,7 @@ spec:
         - name: RUST_LOG
           value: info
         - name: XDS_ADDRESS
-          value: https://xds.cluster.local:9978
-        - name: XDS_ROOT_CA
-          value: /etc/xds-tls/ca.crt
+          value: http://xds.cluster.local:9978
         - name: NAMESPACE
           valueFrom:
             fieldRef:
@@ -195,9 +165,6 @@ spec:
         - mountPath: /var/run/secrets/xds-tokens
           name: xds-token
           readOnly: true
-        - mountPath: /etc/xds-tls
-          name: xds-ca
-          readOnly: true
       securityContext:
         sysctls:
         - name: net.ipv4.ip_unprivileged_port_start
@@ -217,10 +184,4 @@ spec:
               path: xds-token
       - emptyDir: {}
         name: tmp
-      - configMap:
-          items:
-          - key: ca.crt
-            path: ca.crt
-          name: gw-xds-ca
-        name: xds-ca
 status: {}

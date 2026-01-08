@@ -277,6 +277,10 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "agentgateway-custom-configmap",
 		},
 		{
+			Name:      "agentgateway with Gateway.spec.addresses",
+			InputFile: "agentgateway-gateway-addresses",
+		},
+		{
 			Name:                        "gateway with istio enabled",
 			InputFile:                   "istio-enabled",
 			HelmValuesGeneratorOverride: istioOverride,

@@ -200,6 +200,10 @@ type HelmEndpointPickerExtension struct {
 	PoolNamespace string `json:"poolNamespace"`
 }
 
+type AgentgatewayHelmService struct {
+	LoadBalancerIP *string `json:"loadBalancerIP,omitempty"`
+}
+
 type AgentgatewayHelmGateway struct {
 	agentgateway.AgentgatewayParametersConfigs `json:",inline"`
 	// naming
@@ -209,7 +213,8 @@ type AgentgatewayHelmGateway struct {
 	GatewayLabels      map[string]string `json:"gatewayLabels,omitempty"`
 
 	// deployment/service values
-	Ports []HelmPort `json:"ports,omitempty"`
+	Ports   []HelmPort               `json:"ports,omitempty"`
+	Service *AgentgatewayHelmService `json:"service,omitempty"`
 
 	// agentgateway xds values
 	Xds *HelmXds `json:"xds,omitempty"`

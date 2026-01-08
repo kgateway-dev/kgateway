@@ -251,7 +251,6 @@ type BackendTLS struct {
 	AlpnProtocols *[]TinyString `json:"alpnProtocols,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="!has(self.tracing)",message="tracing is not currently implemented"
 type Frontend struct {
 	// tcp defines settings on managing incoming TCP connections.
 	// +optional
@@ -268,7 +267,6 @@ type Frontend struct {
 	AccessLog *AccessLog `json:"accessLog,omitempty"`
 
 	// Tracing contains various settings for OpenTelemetry tracer.
-	// TODO: not currently implemented
 	// +optional
 	Tracing *Tracing `json:"tracing,omitempty"`
 }
@@ -815,6 +813,9 @@ const (
 
 	// RouteTypeEmbeddings processes OpenAI /v1/embeddings format requests
 	RouteTypeEmbeddings RouteType = "Embeddings"
+
+	//RouteTypeRealtime processes OpenAI /v1/realtime requests
+	RouteTypeRealtime RouteType = "Realtime"
 )
 
 // +kubebuilder:validation:AtLeastOneOf=authorization;authentication
@@ -1260,7 +1261,7 @@ const (
 
 type Tracing struct {
 	// backendRef references the OTLP server to reach.
-	// Supported types: Service and Backend.
+	// Supported types: Service and AgentgatewayBackend.
 	// +required
 	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 	// protocol specifies the OTLP protocol variant to use.
@@ -1269,9 +1270,13 @@ type Tracing struct {
 	// +optional
 	Protocol TracingProtocol `json:"protocol,omitempty"`
 
-	// attributes specifies customizations to the key-value pairs that are included in the trace
+	// attributes specify customizations to the key-value pairs that are included in the trace.
 	// +optional
 	Attributes *LogTracingAttributes `json:"attributes,omitempty"`
+
+	// resources describe the entity producing telemetry and specify the resources to be included in the trace.
+	// +optional
+	Resources []ResourceAdd `json:"resources,omitempty"`
 
 	// randomSampling is an expression to determine the amount of random sampling. Random sampling will initiate a new
 	// trace span if the incoming request does not have a trace initiated already. This should evaluate to a float between
@@ -1283,4 +1288,11 @@ type Tracing struct {
 	// 0.0-1.0, or a boolean (true/false) If unspecified, client sampling is 100% enabled.
 	// +optional
 	ClientSampling *shared.CELExpression `json:"clientSampling,omitempty"`
+}
+
+type ResourceAdd struct {
+	// +required
+	Name ShortString `json:"name"`
+	// +required
+	Expression shared.CELExpression `json:"expression"`
 }

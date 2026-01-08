@@ -1707,8 +1707,8 @@ spec:
                       tracer.
                     properties:
                       attributes:
-                        description: attributes specifies customizations to the key-value
-                          pairs that are included in the trace
+                        description: attributes specify customizations to the key-value
+                          pairs that are included in the trace.
                         properties:
                           add:
                             description: |-
@@ -1751,7 +1751,7 @@ spec:
                       backendRef:
                         description: |-
                           backendRef references the OTLP server to reach.
-                          Supported types: Service and Backend.
+                          Supported types: Service and AgentgatewayBackend.
                         properties:
                           group:
                             default: ""
@@ -1844,13 +1844,30 @@ spec:
                         maxLength: 16384
                         minLength: 1
                         type: string
+                      resources:
+                        description: resources describe the entity producing telemetry
+                          and specify the resources to be included in the trace.
+                        items:
+                          properties:
+                            expression:
+                              description: CELExpression represents a Common Expression
+                                Language (CEL) expression.
+                              maxLength: 16384
+                              minLength: 1
+                              type: string
+                            name:
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                          required:
+                          - expression
+                          - name
+                          type: object
+                        type: array
                     required:
                     - backendRef
                     type: object
                 type: object
-                x-kubernetes-validations:
-                - message: tracing is not currently implemented
-                  rule: '!has(self.tracing)'
               targetRefs:
                 description: targetRefs specifies the target resources by reference
                   to attach the policy to.
