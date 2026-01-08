@@ -292,7 +292,7 @@ func translateFrontendTLS(policy *agentgateway.AgentgatewayPolicy, name string, 
 			continue
 		}
 	}
-	if agwCipherSuites != nil {
+	if len(agwCipherSuites) > 0 {
 		spec.CipherSuites = agwCipherSuites
 	}
 
