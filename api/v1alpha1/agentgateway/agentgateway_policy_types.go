@@ -335,10 +335,18 @@ type FrontendTLS struct {
 	// +optional
 	AlpnProtocols *[]TinyString `json:"alpnProtocols,omitempty"`
 
+	// MinTLSVersion configures the minimum TLS version to support.
+	// +optional
 	MinTLSVersion *TLSVersion `json:"minProtocolVersion,omitempty"`
 
+	// MaxTLSVersion configures the maximum TLS version to support.
+	// +optional
 	MaxTLSVersion *TLSVersion `json:"maxProtocolVersion,omitempty"`
 
+	// CipherSuites configures the list of cipher suites for a TLS listener.
+	// The value is a comma-separated list of cipher suites, e.g "TLS13_AES_256_GCM_SHA384,TLS13_AES_128_GCM_SHA256".
+	// Use in the TLS options field of a TLS listener.
+	// +optional
 	CipherSuites []CipherSuite `json:"cipherSuites,omitempty"`
 
 	// TODO: mirror the tuneables on BackendTLS
