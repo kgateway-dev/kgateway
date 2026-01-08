@@ -137,7 +137,6 @@ func processWebhook(ctx PolicyCtx, namespace string, webhook *agentgateway.Webho
 func processBuiltinRegexRule(builtin agentgateway.BuiltIn, logger *slog.Logger) *api.BackendPolicySpec_Ai_RegexRule {
 	v := api.BackendPolicySpec_Ai_BUILTIN_UNSPECIFIED
 	switch builtin {
-
 	case agentgateway.SSN:
 		v = api.BackendPolicySpec_Ai_SSN
 

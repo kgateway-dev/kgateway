@@ -291,9 +291,9 @@ func FirstSSEDataPayload(out string) (string, bool) {
 		// Curl verbose sometimes prefixes body lines with "<" or "< ".
 		line := strings.TrimSpace(raw)
 		// Find "data:" anywhere on the line (handles "data:", "<data:", "< data:", etc.)
-		if idx := strings.Index(line, "data:"); idx >= 0 {
+		if _, after, ok := strings.Cut(line, "data:"); ok {
 			got = true
-			payload := strings.TrimSpace(line[idx+len("data:"):])
+			payload := strings.TrimSpace(after)
 			if buf.Len() > 0 {
 				buf.WriteByte('\n')
 			}
