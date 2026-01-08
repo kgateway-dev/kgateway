@@ -128,15 +128,18 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "envoy-infrastructure",
 		},
 		{
-			// The GW parametersRef is meant to merge with the GWC
-			// parametersRef, not to replace it, but there's a
-			// bug. TODO(chandler): Issue #13065: fix the bug, but be careful
-			// since it's a breaking change for Envoy data planes and creates
-			// the complex scenario on the AgentgatewayParameters side where,
-			// in the general case, two strategic-merge-patch overlays must be
-			// done.
+			// The GW parametersRef merges with the GWC parametersRef.
+			// GWC has replicas:2, GW has omitDefaultSecurityContext:true.
+			// Both settings should appear in the output.
 			Name:      "both GWC and GW have parametersRef",
 			InputFile: "both-gwc-and-gw-have-params",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "replicas: 2",
+					"replicas from GatewayClass params should be preserved when Gateway has omitDefaultSecurityContext")
+				assert.NotContains(t, outputYaml, "securityContext",
+					"securityContext should be omitted due to Gateway's omitDefaultSecurityContext:true")
+			},
 		},
 		{
 			// Like the above, but swap the actual parameters to test the test:
@@ -205,13 +208,7 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			},
 		},
 		{
-			// The GW parametersRef is meant to override the GWC parametersRef,
-			// not to create a 'merge' of params:
-			Name:      "both GWC and GW have parametersRef",
-			InputFile: "both-gwc-and-gw-have-params",
-		},
-		{
-			// Same as above but with AgentgatewayParameters instead of GatewayParameters:
+			// Test merging GWC and GW AgentgatewayParameters.
 			Name:      "agentgateway both GWC and GW have parametersRef",
 			InputFile: "agentgateway-both-gwc-and-gw-have-params",
 		},

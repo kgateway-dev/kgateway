@@ -301,21 +301,12 @@ func (k *kgatewayParameters) getGatewayParametersForGateway(gw *gwv1.Gateway) (*
 
 	mergedGwp := defaultGwp
 	if ptr.Deref(gwp.Spec.Kube.GetOmitDefaultSecurityContext(), false) {
-		// Need to regenerate defaults with OmitDefaultSecurityContext=true
-		gwc, err := getGatewayClassFromGateway(k.gwClassClient, gw)
-		if err != nil {
-			return nil, err
-		}
-		mergedGwp, err = deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
-			ControllerName:             string(gwc.Spec.ControllerName),
-			ClassName:                  gwc.GetName(),
-			ImageInfo:                  k.inputs.ImageInfo,
-			WaypointClassName:          k.inputs.WaypointGatewayClassName,
-			AgwControllerName:          k.inputs.AgentgatewayControllerName,
-			OmitDefaultSecurityContext: true,
-		})
-		if err != nil {
-			return nil, err
+		// Clear the security context from the defaults to match the behavior of
+		// GetInMemoryGatewayParameters with OmitDefaultSecurityContext=true.
+		// This preserves GatewayClass params (like replicas) while still honoring
+		// the Gateway's omitDefaultSecurityContext setting.
+		if mergedGwp.Spec.Kube != nil && mergedGwp.Spec.Kube.EnvoyContainer != nil {
+			mergedGwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
 		}
 	}
 	deployer.DeepMergeGatewayParameters(mergedGwp, gwp)
