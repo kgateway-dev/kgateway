@@ -304,7 +304,7 @@ clean-bug-report:
 	rm -rf $(BUG_REPORT_DIR)
 
 #----------------------------------------------------------------------------------
-# MARK:Generated Code
+# MARK: Generated Code
 #----------------------------------------------------------------------------------
 # This section uses stamp files to optimize 'make generate-all' by tracking dependencies.
 #
