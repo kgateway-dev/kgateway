@@ -58,7 +58,7 @@ spec:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       name: httpbin-route-get
-  jwt:
+  jwtAuth:
     extensionRef:
       name: basic-jwt-provider
 ---
