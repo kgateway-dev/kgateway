@@ -50,79 +50,125 @@ builds:
     goarch:
       - amd64
       - arm64
-dockers_v2:
-  # 1. Controller Image (kgateway)
-  - id: controller
-    ids:
-      - controller
-    images:
-      - "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}"
-    tags:
-      - "{{ .Env.VERSION }}"
-    dockerfile: cmd/kgateway/Dockerfile
-    build_args:
-      ENVOY_IMAGE: "{{ .Env.ENVOY_IMAGE }}"
-    flags:
+dockers:
+  - image_templates:
+      - &controller_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+    use: buildx
+    dockerfile: &controller_dockerfile cmd/kgateway/Dockerfile
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
       - "--pull"
-    platforms:
-      - linux/amd64
-      - linux/arm64
-
-  # 2. agentgateway Controller Image
-  - id: agentgateway
-    ids:
-      - controller
-    images:
-      - "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}"
-    tags:
-      - "{{ .Env.VERSION }}"
-    dockerfile: cmd/kgateway/Dockerfile.agentgateway
-    flags:
+      - "--platform=linux/arm64"
+      - "--build-arg=GOARCH=arm64"
+      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+  - image_templates:
+      - &controller_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+    use: buildx
+    dockerfile: *controller_dockerfile
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
       - "--pull"
-    platforms:
-      - linux/amd64
-      - linux/arm64
-
-  # 3. SDS Image
-  - id: sds
-    ids:
-      - sds
-    images:
-      - "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}"
-    tags:
-      - "{{ .Env.VERSION }}"
-    dockerfile: cmd/sds/Dockerfile
-    build_args:
-      BASE_IMAGE: "{{ .Env.ALPINE_BASE_IMAGE }}"
-    flags:
+      - "--platform=linux/amd64"
+      - "--build-arg=GOARCH=amd64"
+      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+  - image_templates:
+      - &agentgateway_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+    use: buildx
+    dockerfile: &agentgateway_dockerfile cmd/kgateway/Dockerfile.agentgateway
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
       - "--pull"
-    platforms:
-      - linux/amd64
-      - linux/arm64
-
-  # 4. Envoy Init Image (envoy-wrapper)
-  - id: envoyinit
-    ids:
-      - envoyinit
-    images:
-      - "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}"
-    tags:
-      - "{{ .Env.VERSION }}"
-    dockerfile: cmd/envoyinit/Dockerfile
-    build_args:
-      ENVOY_IMAGE: "{{ .Env.ENVOY_IMAGE }}"
-      ENTRYPOINT_SCRIPT: "/cmd/envoyinit/docker-entrypoint.sh"
-      RUSTFORMATIONS_DIR: "/internal/envoyinit"
-    flags:
+      - "--platform=linux/arm64"
+      - "--build-arg=GOARCH=arm64"
+  - image_templates:
+      - &agentgateway_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+    use: buildx
+    dockerfile: *agentgateway_dockerfile
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
       - "--pull"
-      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:latest"
-      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:latest,mode=max,ignore-error=true"
+      - "--platform=linux/amd64"
+      - "--build-arg=GOARCH=amd64"
+  - image_templates:
+      - &sds_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+    use: buildx
+    dockerfile: &sds_dockerfile cmd/sds/Dockerfile
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+      - "--build-arg=GOARCH=arm64"
+      - "--build-arg=BASE_IMAGE={{ .Env.ALPINE_BASE_IMAGE }}"
+  - image_templates:
+      - &sds_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+    use: buildx
+    dockerfile: *sds_dockerfile
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+      - "--build-arg=GOARCH=amd64"
+      - "--build-arg=BASE_IMAGE={{ .Env.ALPINE_BASE_IMAGE }}"
+  - image_templates:
+      - &envoyinit_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+    use: buildx
+    dockerfile: &envoyinit_dockerfile cmd/envoyinit/Dockerfile
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+      - "--build-arg=GOARCH=arm64"
+      - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
+      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--build-arg=RUST_BUILD_ARCH=aarch64"
+      - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64,mode=max,ignore-error=true"
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
       - internal/envoyinit
-    platforms:
-      - linux/amd64
-      - linux/arm64
+  - image_templates:
+      - &envoyinit_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+    use: buildx
+    dockerfile: *envoyinit_dockerfile
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+      - "--build-arg=GOARCH=amd64"
+      - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
+      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64,mode=max,ignore-error=true"
+    extra_files:
+      - cmd/envoyinit/docker-entrypoint.sh
+      - internal/envoyinit
+docker_manifests:
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}"
+    image_templates:
+      - *controller_arm_image
+      - *controller_amd_image
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}"
+    image_templates:
+      - *agentgateway_arm_image
+      - *agentgateway_amd_image
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}"
+    image_templates:
+      - *sds_arm_image
+      - *sds_amd_image
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}"
+    image_templates:
+      - *envoyinit_arm_image
+      - *envoyinit_amd_image
 changelog:
   # Disable auto-generated changelog from git commits.
   # For real releases, we use --release-notes flag with our custom script output.

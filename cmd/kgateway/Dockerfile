@@ -2,7 +2,7 @@ ARG ENVOY_IMAGE
 
 FROM $ENVOY_IMAGE
 
-ARG TARGETARCH
+ARG GOARCH=amd64
 # eventually may matter for now https://unix.stackexchange.com/a/701288
 # means its not too useful
 ENV DEBIAN_FRONTEND=noninteractive
@@ -15,7 +15,7 @@ RUN apt-get update \
     && apt-get install wget -y \
     && rm -rf  /var/log/*log /var/lib/apt/lists/* /var/log/apt/* /var/lib/dpkg/*-old /var/cache/debconf/*-old
 
-COPY *kgateway-linux-$TARGETARCH /usr/local/bin/kgateway
+COPY kgateway-linux-$GOARCH /usr/local/bin/kgateway
 
 USER 10101
 
