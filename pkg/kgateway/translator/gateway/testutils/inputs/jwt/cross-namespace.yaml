@@ -93,7 +93,7 @@ spec:
     - kind: HTTPRoute
       group: gateway.networking.k8s.io
       name: cross-namespace-allowed
-  jwt:
+  jwtAuth:
     extensionRef:
       name: allowed-jwt-ext
 ---
@@ -106,7 +106,7 @@ spec:
     - kind: HTTPRoute
       group: gateway.networking.k8s.io
       name: cross-namespace-denied
-  jwt:
+  jwtAuth:
     extensionRef:
       name: denied-jwt-ext
       namespace: denied

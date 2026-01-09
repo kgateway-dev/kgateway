@@ -55,7 +55,7 @@ spec:
     - kind: Gateway
       group: gateway.networking.k8s.io
       name: example-gateway
-  jwt:
+  jwtAuth:
     extensionRef:
       name: jwt-ext-allow-missing
 ---
