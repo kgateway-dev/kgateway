@@ -35,6 +35,7 @@ import (
 	pluginsdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 var (
@@ -380,7 +381,12 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 
 		for _, ls := range listenerSets {
 			for _, l := range ls.Spec.Listeners {
-				ports.Insert(l.Port)
+				port, portErr := kubeutils.DetectListenerPortNumber(l.Protocol, l.Port)
+				// Don't need to log an error for the deployer as it will be reflected in the listener status during reconciliation
+				if portErr != nil {
+					continue
+				}
+				ports.Insert(port)
 			}
 		}
 		ir := &ir.GatewayForDeployer{

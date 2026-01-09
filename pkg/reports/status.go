@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 // Status message constants
@@ -218,9 +219,16 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 	finalLsStatus.Conditions = finalConditions
 	fl := make([]gwxv1a1.ListenerEntryStatus, 0, len(finalListeners))
 	for i, f := range finalListeners {
+		listener := ls.Spec.Listeners[i]
+		port, err := kubeutils.DetectListenerPortNumber(listener.Protocol, listener.Port)
+		if err != nil {
+			// Set a random value until upstream to allows 0 for implementations that do not support dynamic port assignment
+			port = 65535
+		}
+
 		fl = append(fl, gwxv1a1.ListenerEntryStatus{
 			Name:           f.Name,
-			Port:           ls.Spec.Listeners[i].Port,
+			Port:           port,
 			SupportedKinds: f.SupportedKinds,
 			AttachedRoutes: f.AttachedRoutes,
 			Conditions:     f.Conditions,

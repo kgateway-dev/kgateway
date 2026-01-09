@@ -25,6 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 // ToAgwResource converts an internal representation to a resource for agentgateway
@@ -422,7 +423,7 @@ func ListenerSetCollection(
 			//}
 
 			for i, l := range ls.Listeners {
-				port, portErr := detectListenerPortNumber(l)
+				port, portErr := kubeutils.DetectListenerPortNumber(l.Protocol, l.Port)
 				l.Port = port
 				standardListener := convertListenerSetToListener(l)
 				originalStatus := slices.Map(status.Listeners, convertListenerSetStatusToStandardStatus)
@@ -530,18 +531,6 @@ func NamespaceAcceptedByAllowListeners(localNamespace string, parent *gwv1.Gatew
 	return ls.Matches(toNamespaceSet(localNamespaceObject.Name, localNamespaceObject.Labels))
 }
 
-func detectListenerPortNumber(l gatewayx.ListenerEntry) (gatewayx.PortNumber, error) {
-	if l.Port != 0 {
-		return l.Port, nil
-	}
-	switch l.Protocol {
-	case gwv1.HTTPProtocolType:
-		return 80, nil
-	case gwv1.HTTPSProtocolType:
-		return 443, nil
-	}
-	return 0, fmt.Errorf("protocol %v requires a port to be set", l.Protocol)
-}
 func convertListenerSetToListener(l gatewayx.ListenerEntry) gwv1.Listener {
 	// For now, structs are identical enough Go can cast them. I doubt this will hold up forever, but we can adjust as needed.
 	return gwv1.Listener(l)
