@@ -35,7 +35,14 @@ output:
         namespace: default
     traffic:
       extAuthz:
-        http: {}
+        grpc:
+          context:
+            hello: world
+          metadata:
+            user: jwt.sub
+        includeRequestBody:
+          allowPartialMessage: true
+          maxRequestBytes: 1024
 status:
   ancestors:
   - ancestorRef:

@@ -827,29 +827,10 @@ func processExtAuthPolicy(
 	policy types.NamespacedName,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
+	var backendErr error
 	be, err := buildBackendRef(ctx, extAuth.BackendRef, policy.Namespace)
 	if err != nil {
-		// if we fail to build the backend ref, short circuit with dummy policy to fail closed
-		extauthPolicy := &api.Policy{
-			Key:    basePolicyName + extauthPolicySuffix + attachmentName(policyTarget),
-			Name:   TypedResourceFromName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
-			Target: policyTarget,
-			Kind: &api.Policy_Traffic{
-				Traffic: &api.TrafficPolicySpec{
-					Phase: phase(policyPhase),
-					Kind: &api.TrafficPolicySpec_ExtAuthz{
-						ExtAuthz: &api.TrafficPolicySpec_ExternalAuth{
-							FailureMode: api.TrafficPolicySpec_ExternalAuth_DENY,
-							Protocol:    &api.TrafficPolicySpec_ExternalAuth_Http{},
-							// nil target corresponds to invalid backend in agentgateway
-							Target: nil,
-						},
-					},
-				},
-			},
-		}
-		// still return the error to report status correctly
-		return []AgwPolicy{{Policy: extauthPolicy}}, fmt.Errorf("failed to build extAuth: %v", err)
+		backendErr = fmt.Errorf("failed to build extAuth: %v", err)
 	}
 
 	spec := &api.TrafficPolicySpec_ExternalAuth{
@@ -907,7 +888,7 @@ func processExtAuthPolicy(
 		"agentgateway_policy", extauthPolicy.Name,
 		"target", policyTarget)
 
-	return []AgwPolicy{{Policy: extauthPolicy}}, nil
+	return []AgwPolicy{{Policy: extauthPolicy}}, backendErr
 }
 
 // processExtProcPolicy processes ExtProc configuration and creates corresponding agentgateway policies
