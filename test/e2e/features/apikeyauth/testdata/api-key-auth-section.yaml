@@ -55,7 +55,7 @@ spec:
       kind: HTTPRoute
       group: gateway.networking.k8s.io
       sectionName: httpbin-get
-  apiKeyAuthentication:
+  apiKeyAuth:
     keySources:
     - header: "api-key"
     forwardCredential: true

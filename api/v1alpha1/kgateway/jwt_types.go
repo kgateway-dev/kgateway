@@ -8,9 +8,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 )
 
-// JWTAuthentication defines the providers used to configure JWT authentication
+// JWTAuth defines the providers used to configure JWT authentication
 // +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
-type JWTAuthentication struct {
+type JWTAuth struct {
 	// ExtensionRef references a GatewayExtension that provides the jwt providers
 	// +optional
 	ExtensionRef *shared.NamespacedObjectReference `json:"extensionRef,omitempty"`

@@ -65,7 +65,7 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: gw
-  apiKeyAuthentication:
+  apiKeyAuth:
     keySources:
     - header: "api-key"
     forwardCredential: false
@@ -83,7 +83,7 @@ spec:
       kind: HTTPRoute
       name: httpbin-route-override
       sectionName: rule1
-  apiKeyAuthentication:
+  apiKeyAuth:
     keySources:
     - header: "api-key"
     forwardCredential: false

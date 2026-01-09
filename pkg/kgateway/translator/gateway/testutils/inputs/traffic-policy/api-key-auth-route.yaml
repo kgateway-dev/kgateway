@@ -61,7 +61,7 @@ metadata:
   name: api-key-auth-route
   namespace: default
 spec:
-  apiKeyAuthentication:
+  apiKeyAuth:
     keySources:
     - header: "x-api-key"
     forwardCredential: false

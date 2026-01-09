@@ -72,7 +72,7 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  apiKeyAuthentication:
+  apiKeyAuth:
     keySources:
     - header: "api-key"
     forwardCredential: false
@@ -91,7 +91,7 @@ spec:
     kind: HTTPRoute
     name: example-route
     sectionName: rule-get
-  apiKeyAuthentication:
+  apiKeyAuth:
     keySources:
     - header: "x-api-key"
     forwardCredential: true

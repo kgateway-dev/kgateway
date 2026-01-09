@@ -53,7 +53,7 @@ spec:
     - name: httpbin-route-query
       kind: HTTPRoute
       group: gateway.networking.k8s.io
-  apiKeyAuthentication:
+  apiKeyAuth:
     keySources:
     - query: api-key
     forwardCredential: true

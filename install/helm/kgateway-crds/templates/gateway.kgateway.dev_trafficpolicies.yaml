@@ -54,8 +54,8 @@ spec:
             description: TrafficPolicySpec defines the desired state of a traffic
               policy.
             properties:
-              apiKeyAuthentication:
-                description: APIKeyAuthentication authenticates users based on a configured
+              apiKeyAuth:
+                description: APIKeyAuth authenticates users based on a configured
                   API Key.
                 properties:
                   clientIdHeader:
@@ -1149,7 +1149,7 @@ spec:
                     set
                   rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
-              jwt:
+              jwtAuth:
                 description: |-
                   JWT specifies the JWT authentication configuration for the policy.
                   This defines the JWT providers and their configurations.

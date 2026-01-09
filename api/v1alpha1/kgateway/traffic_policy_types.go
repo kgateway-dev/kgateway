@@ -122,7 +122,7 @@ type TrafficPolicySpec struct {
 	// JWT specifies the JWT authentication configuration for the policy.
 	// This defines the JWT providers and their configurations.
 	// +optional
-	JWT *JWTAuthentication `json:"jwt,omitempty"`
+	JWTAuth *JWTAuth `json:"jwtAuth,omitempty"`
 
 	// UrlRewrite specifies URL rewrite rules for matching requests.
 	// NOTE: This field is only honored for HTTPRoute targets.
@@ -140,9 +140,9 @@ type TrafficPolicySpec struct {
 	// +optional
 	BasicAuth *BasicAuthPolicy `json:"basicAuth,omitempty"`
 
-	// APIKeyAuthentication authenticates users based on a configured API Key.
+	// APIKeyAuth authenticates users based on a configured API Key.
 	// +optional
-	APIKeyAuthentication *APIKeyAuthentication `json:"apiKeyAuthentication,omitempty"`
+	APIKeyAuth *APIKeyAuth `json:"apiKeyAuth,omitempty"`
 
 	// OAuth2 specifies the configuration to use for OAuth2/OIDC.
 	// Note: the OAuth2 filter does not protect against Cross-Site-Request-Forgery attacks on domains with cached
@@ -454,7 +454,7 @@ type APIKeySource struct {
 }
 
 // +kubebuilder:validation:ExactlyOneOf=secretRef;secretSelector;disable
-type APIKeyAuthentication struct {
+type APIKeyAuth struct {
 	// keySources specifies the list of key sources to extract the API key from.
 	// Key sources are processed in array order and the first one that successfully
 	// extracts a key is used. Within each key source, if multiple types (header, query, cookie) are
