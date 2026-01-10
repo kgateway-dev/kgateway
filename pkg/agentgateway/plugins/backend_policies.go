@@ -650,7 +650,7 @@ func buildAwsAuthPolicy(krtctx krt.HandlerContext, auth *agentgateway.AwsAuth, s
 func buildAzureAuthPolicy(krtctx krt.HandlerContext, auth *agentgateway.AzureAuth, secrets krt.Collection[*corev1.Secret], namespace string) (*api.BackendAuthPolicy, error) {
 	var errs []error
 	if auth == nil {
-		logger.Warn("using implicit AWS auth for AI backend")
+		logger.Warn("using implicit Azure auth for AI backend")
 		return &api.BackendAuthPolicy{
 			Kind: &api.BackendAuthPolicy_Azure{
 				Azure: &api.Azure{
@@ -723,7 +723,7 @@ func buildAzureClientSecret(secrets krt.Collection[*corev1.Secret], krtctx krt.H
 	}
 
 	// Extract tenant ID
-	if value, exists := kubeutils.GetSecretValue(secret, wellknown.TenantId); !exists {
+	if value, exists := kubeutils.GetSecretValue(secret, wellknown.TenantID); !exists {
 		errs = append(errs, errors.New("tenantID is missing or not a valid string"))
 	} else {
 		tenantID = value

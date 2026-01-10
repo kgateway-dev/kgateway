@@ -829,7 +829,6 @@ type AzureAuth struct {
 }
 
 type AzureManagedIdentity struct {
-	// Details for managed identity authentication
 	ClientID   string `json:"clientId,omitempty"`
 	ObjectID   string `json:"objectId,omitempty"`
 	ResourceID string `json:"resourceId,omitempty"`

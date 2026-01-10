@@ -56,8 +56,8 @@ const (
 	SecretKey = "secretKey"
 	// ClientID is the key name for in the secret data for the client id.
 	ClientID = "clientID"
-	// TenantId is the key name for in the secret data for the tenant id.
-	TenantId = "tenantID"
+	// TenantID is the key name for in the secret data for the tenant id.
+	TenantID = "tenantID"
 	// ClientSecret is the key name for in the secret data for the client secret.
 	ClientSecret = "clientSecret"
 )

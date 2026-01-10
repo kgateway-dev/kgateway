@@ -512,9 +512,6 @@ spec:
                                                                     authentication
                                                                   properties:
                                                                     clientId:
-                                                                      description: Details
-                                                                        for managed
-                                                                        identity authentication
                                                                       type: string
                                                                     objectId:
                                                                       type: string
@@ -1360,8 +1357,6 @@ spec:
                                               authentication
                                             properties:
                                               clientId:
-                                                description: Details for managed identity
-                                                  authentication
                                                 type: string
                                               objectId:
                                                 type: string
@@ -2078,8 +2073,6 @@ spec:
                                             authentication
                                           properties:
                                             clientId:
-                                              description: Details for managed identity
-                                                authentication
                                               type: string
                                             objectId:
                                               type: string
@@ -2874,8 +2867,6 @@ spec:
                                                     identity authentication
                                                   properties:
                                                     clientId:
-                                                      description: Details for managed
-                                                        identity authentication
                                                       type: string
                                                     objectId:
                                                       type: string
@@ -3670,7 +3661,6 @@ spec:
                             description: Details for managed identity authentication
                             properties:
                               clientId:
-                                description: Details for managed identity authentication
                                 type: string
                               objectId:
                                 type: string
