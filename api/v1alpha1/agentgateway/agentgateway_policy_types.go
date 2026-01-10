@@ -748,7 +748,7 @@ const (
 	HostnameRewriteModeNone HostnameRewriteMode = "None"
 )
 
-// +kubebuilder:validation:ExactlyOneOf=key;secretRef;passthrough;aws;gcp
+// +kubebuilder:validation:ExactlyOneOf=key;secretRef;passthrough;aws;azure;gcp
 type BackendAuth struct {
 	// key provides an inline key to use as the value of the Authorization header.
 	// This option is the least secure; usage of a Secret is preferred.
@@ -774,6 +774,9 @@ type BackendAuth struct {
 	//
 	// +optional
 	AWS *AwsAuth `json:"aws,omitempty"`
+
+	// Azure specifies an Azure authentication method for the backend.
+	Azure *AzureAuth `json:"azure,omitempty"`
 
 	// Auth specifies to use a Google  authentication method for the backend.
 	// When omitted, we will try to use the default AWS SDK authentication methods.
@@ -813,8 +816,26 @@ type AwsAuth struct {
 	SecretRef corev1.LocalObjectReference `json:"secretRef"`
 }
 
-type BackendAuthPassthrough struct {
+type AzureAuth struct {
+	// SecretRef references a Kubernetes Secret containing the Azure credentials.
+	// The Secret must have keys "clientId", "tenantId", and "clientSecret".
+	SecretRef corev1.LocalObjectReference `json:"secretRef,omitempty"`
+
+	// Details for managed identity authentication
+	ManagedIdentity *AzureManagedIdentity `json:"managedIdentity,omitempty"`
+
+	// TODO: does not appear to have schema??
+	// WorkloadIdentity *AzureWorkloadIdentity `json:"workloadIdentity,omitempty"`
 }
+
+type AzureManagedIdentity struct {
+	// Details for managed identity authentication
+	ClientID   string `json:"clientId,omitempty"`
+	ObjectID   string `json:"objectId,omitempty"`
+	ResourceID string `json:"resourceId,omitempty"`
+}
+
+type BackendAuthPassthrough struct{}
 
 // +kubebuilder:validation:AtLeastOneOf=prompt;promptGuard;defaults;overrides;modelAliases;promptCaching;routes
 type BackendAI struct {
@@ -886,7 +907,7 @@ const (
 	// RouteTypeEmbeddings processes OpenAI /v1/embeddings format requests
 	RouteTypeEmbeddings RouteType = "Embeddings"
 
-	//RouteTypeRealtime processes OpenAI /v1/realtime requests
+	// RouteTypeRealtime processes OpenAI /v1/realtime requests
 	RouteTypeRealtime RouteType = "Realtime"
 )
 
