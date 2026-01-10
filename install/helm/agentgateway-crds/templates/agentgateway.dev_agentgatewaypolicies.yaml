@@ -339,6 +339,40 @@ spec:
                                               required:
                                               - secretRef
                                               type: object
+                                            azure:
+                                              description: Azure specifies an Azure
+                                                authentication method for the backend.
+                                              properties:
+                                                managedIdentity:
+                                                  description: Details for managed
+                                                    identity authentication
+                                                  properties:
+                                                    clientId:
+                                                      description: Details for managed
+                                                        identity authentication
+                                                      type: string
+                                                    objectId:
+                                                      type: string
+                                                    resourceId:
+                                                      type: string
+                                                  type: object
+                                                secretRef:
+                                                  description: |-
+                                                    SecretRef references a Kubernetes Secret containing the Azure credentials.
+                                                    The Secret must have keys "clientId", "tenantId", and "clientSecret".
+                                                  properties:
+                                                    name:
+                                                      default: ""
+                                                      description: |-
+                                                        Name of the referent.
+                                                        This field is effectively required, but due to backwards compatibility is
+                                                        allowed to be empty. Instances of this type with an empty value here are
+                                                        almost certainly wrong.
+                                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                                      type: string
+                                                  type: object
+                                                  x-kubernetes-map-type: atomic
+                                              type: object
                                             key:
                                               description: |-
                                                 key provides an inline key to use as the value of the Authorization header.
@@ -371,9 +405,9 @@ spec:
                                           type: object
                                           x-kubernetes-validations:
                                           - message: exactly one of the fields in
-                                              [key secretRef passthrough aws] must
-                                              be set
-                                            rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws)].filter(x,x==true).size()
+                                              [key secretRef passthrough aws azure]
+                                              must be set
+                                            rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws),has(self.azure)].filter(x,x==true).size()
                                               == 1'
                                         http:
                                           description: http defines settings for managing
@@ -1076,6 +1110,38 @@ spec:
                         required:
                         - secretRef
                         type: object
+                      azure:
+                        description: Azure specifies an Azure authentication method
+                          for the backend.
+                        properties:
+                          managedIdentity:
+                            description: Details for managed identity authentication
+                            properties:
+                              clientId:
+                                description: Details for managed identity authentication
+                                type: string
+                              objectId:
+                                type: string
+                              resourceId:
+                                type: string
+                            type: object
+                          secretRef:
+                            description: |-
+                              SecretRef references a Kubernetes Secret containing the Azure credentials.
+                              The Secret must have keys "clientId", "tenantId", and "clientSecret".
+                            properties:
+                              name:
+                                default: ""
+                                description: |-
+                                  Name of the referent.
+                                  This field is effectively required, but due to backwards compatibility is
+                                  allowed to be empty. Instances of this type with an empty value here are
+                                  almost certainly wrong.
+                                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                type: string
+                            type: object
+                            x-kubernetes-map-type: atomic
+                        type: object
                       key:
                         description: |-
                           key provides an inline key to use as the value of the Authorization header.
@@ -1108,8 +1174,8 @@ spec:
                     type: object
                     x-kubernetes-validations:
                     - message: exactly one of the fields in [key secretRef passthrough
-                        aws] must be set
-                      rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws)].filter(x,x==true).size()
+                        aws azure] must be set
+                      rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws),has(self.azure)].filter(x,x==true).size()
                         == 1'
                   http:
                     description: http defines settings for managing HTTP requests
