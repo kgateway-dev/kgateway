@@ -144,3 +144,36 @@ validation:
   #    Default is "standard".
   level: standard
 
+# -- Extra manifests to deploy.
+#    If you want to make use of templates, putting strings in the array works
+#    best. Otherwise, plain YAML manifests as list entries work as well.
+# E.g., to deploy your own service definition with and a simple ConfigMap
+# without templating:
+# extraManifests:
+#   - |
+#     apiVersion: v1
+#     kind: Service
+#     metadata:
+#       name: {{ include "kgateway.fullname" . }}
+#       namespace: {{ .Release.Namespace }}
+#       labels:
+#         {{- include "kgateway.labels" . | nindent 4 }}
+#     spec:
+#       type: ClusterIP
+#       trafficDistribution: PreferSameZone
+#       externalTrafficPolicy: Local
+#       ports:
+#         - name: grpc-xds
+#           protocol: TCP
+#           port: 5000
+#           targetPort: 5000
+#       selector:
+#         {{- include "kgateway.selectorLabels" . | nindent 4 }}
+#   - apiVersion: v1
+#     kind: ConfigMap
+#     metadata:
+#       name: my-configmap
+#       namespace: default
+#     data:
+#       foo: bar
+extraManifests: []
