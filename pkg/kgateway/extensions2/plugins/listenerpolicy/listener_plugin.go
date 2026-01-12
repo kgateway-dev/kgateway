@@ -98,6 +98,7 @@ func (d *ListenerPolicyIR) Equals(in any) bool {
 	}) {
 		return false
 	}
+
 	return true
 }
 
@@ -109,7 +110,12 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	if !cmputils.PointerValsEqual(d.perConnectionBufferLimitBytes, d2.perConnectionBufferLimitBytes) {
 		return false
 	}
-
+	if (d.http == nil) != (d2.http == nil) {
+		return false
+	}
+	if d.http != nil && !d.http.Equals(d2.http) {
+		return false
+	}
 	return true
 }
 
