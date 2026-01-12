@@ -17,12 +17,13 @@ var (
 	}
 
 	// Manifest files
-	gatewayWithRouteManifest     = getTestFile("common.yaml")
-	simpleServiceManifest        = getTestFile("service.yaml")
-	extAuthManifest              = getTestFile("ext-authz-server.yaml")
-	securedGatewayPolicyManifest = getTestFile("secured-gateway-policy.yaml")
-	securedRouteManifest         = getTestFile("secured-route.yaml")
-	insecureRouteManifest        = getTestFile("insecure-route.yaml")
+	gatewayWithRouteManifest       = getTestFile("common.yaml")
+	simpleServiceManifest          = getTestFile("service.yaml")
+	extAuthManifest                = getTestFile("ext-authz-server.yaml")
+	securedGatewayPolicyManifest   = getTestFile("secured-gateway-policy.yaml")
+	securedRouteManifest           = getTestFile("secured-route.yaml")
+	insecureRouteManifest          = getTestFile("insecure-route.yaml")
+	securedRouteMissingRefManifest = getTestFile("secured-route-missing-ref.yaml")
 )
 
 func getTestFile(filename string) string {
