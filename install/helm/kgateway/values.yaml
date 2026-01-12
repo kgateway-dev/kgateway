@@ -59,6 +59,8 @@ controller:
     tag: ""
   # -- Configure the controller service.
   service:
+    # -- If a service for the controller should be created.
+    enabled: true
     # -- Set the service type for the controller.
     type: ClusterIP
     # -- Set the service ports for gRPC and health endpoints.
