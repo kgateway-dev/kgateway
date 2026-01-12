@@ -113,6 +113,43 @@ func TestHelmChartTemplate(t *testing.T) {
     maxUnavailable: 25%
 `,
 		},
+		{
+			name: "service-full-config",
+			valuesYAML: `controller:
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+      service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+    extraLabels:
+      custom-label: custom-value
+      environment: test
+    clusterIP: ""
+    clusterIPs:
+      - 10.96.0.100
+    externalIPs:
+      - 203.0.113.10
+      - 203.0.113.11
+    loadBalancerIP: 198.51.100.1
+    loadBalancerSourceRanges:
+      - 10.0.0.0/8
+      - 192.168.0.0/16
+    loadBalancerClass: service.k8s.aws/nlb
+    externalTrafficPolicy: Local
+    internalTrafficPolicy: Cluster
+    healthCheckNodePort: 32100
+    sessionAffinity: ClientIP
+    sessionAffinityConfig:
+      clientIP:
+        timeoutSeconds: 10800
+    ipFamilies:
+      - IPv4
+    ipFamilyPolicy: SingleStack
+    publishNotReadyAddresses: true
+    allocateLoadBalancerNodePorts: false
+    trafficDistribution: PreferClose
+`,
+		},
 	}
 
 	for _, chart := range charts {

@@ -59,13 +59,53 @@ controller:
     tag: ""
   # -- Configure the controller service.
   service:
-    # -- Set the service type for the controller.
+    # -- Enable the controller service. Set to false to skip Service creation.
+    enabled: true
+    # -- Set the service type for the controller. Valid values are ClusterIP, NodePort, LoadBalancer, or ExternalName.
     type: ClusterIP
     # -- Set the service ports for gRPC and health endpoints.
     ports:
       grpc: 9977
       health: 9093
       metrics: 9092
+    # -- Add extra annotations to the controller service.
+    annotations: {}
+    # -- Add extra labels to the controller service.
+    extraLabels: {}
+    # -- Set the cluster IP for the service. Use "None" for a headless service.
+    clusterIP: ""
+    # -- Set cluster IPs for dual-stack services. If specified, clusterIP must match the first entry.
+    clusterIPs: []
+    # -- Set the external IPs for the service.
+    externalIPs: []
+    # -- Set the external name for ExternalName type services.
+    externalName: ""
+    # -- Set the load balancer IP for the service (if type is LoadBalancer).
+    loadBalancerIP: ""
+    # -- Set the allowed source ranges for the load balancer (if type is LoadBalancer).
+    loadBalancerSourceRanges: []
+    # -- Set the load balancer class for the service (if type is LoadBalancer).
+    loadBalancerClass: ""
+    # -- Set the external traffic policy. Valid values are Cluster or Local.
+    externalTrafficPolicy: ""
+    # -- Set the internal traffic policy. Valid values are Cluster or Local.
+    internalTrafficPolicy: ""
+    # -- Set the health check node port for LoadBalancer services with externalTrafficPolicy=Local.
+    healthCheckNodePort: null
+    # -- Set the session affinity. Valid values are None or ClientIP.
+    sessionAffinity: ""
+    # -- Configure session affinity settings when sessionAffinity is ClientIP.
+    sessionAffinityConfig: {}
+    # -- Set the IP families for the service. Valid values are IPv4 and IPv6.
+    ipFamilies: []
+    # -- Set the IP family policy. Valid values are SingleStack, PreferDualStack, or RequireDualStack.
+    ipFamilyPolicy: ""
+    # -- Set whether to publish not ready addresses.
+    publishNotReadyAddresses: false
+    # -- Set whether to allocate load balancer node ports (if type is LoadBalancer).
+    allocateLoadBalancerNodePorts: null
+    # -- Set the traffic distribution hint. Valid values are PreferClose (requires feature gate).
+    trafficDistribution: ""
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
   # -- Configure TLS settings for the xDS gRPC servers.
