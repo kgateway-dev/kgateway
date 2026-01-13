@@ -116,6 +116,7 @@ type PolicyCtx struct {
 type ResolvedTarget struct {
 	AgentgatewayTarget *api.PolicyTarget
 	AncestorRefs       []gwv1.ParentReference
+	AttachmentError    string
 }
 
 // TranslateAgentgatewayPolicy generates policies for a single traffic policy
@@ -159,11 +160,12 @@ func TranslateAgentgatewayPolicy(
 			continue
 		}
 
-		ancestorRefs := resolvePolicyAncestorRefs(ctx, policy.Namespace, gk, target.Name, agw)
+		ancestorRefs, attachmentErr := resolvePolicyAncestorRefs(ctx, policy.Namespace, gk, target.Name, target.SectionName, agw)
 
 		policyTargets = append(policyTargets, ResolvedTarget{
 			AgentgatewayTarget: policyTarget,
 			AncestorRefs:       ancestorRefs,
+			AttachmentError:    attachmentErr,
 		})
 	}
 
@@ -212,6 +214,23 @@ func TranslateAgentgatewayPolicy(
 				Message: reporter.PolicyAttachedMsg,
 			})
 		}
+
+		// If we cannot resolve this policy target to a Gateway (e.g., missing HTTPRoute),
+		// report the policy as not attached instead of falling back to a higher-cardinality ancestor.
+		if policyTarget.AttachmentError != "" {
+			meta.SetStatusCondition(&conds, metav1.Condition{
+				Type:    string(shared.PolicyConditionAccepted),
+				Status:  metav1.ConditionTrue,
+				Reason:  string(shared.PolicyReasonValid),
+				Message: reporter.PolicyAcceptedMsg,
+			})
+			meta.SetStatusCondition(&conds, metav1.Condition{
+				Type:    string(shared.PolicyConditionAttached),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(shared.PolicyReasonPending),
+				Message: policyTarget.AttachmentError,
+			})
+		}
 		// TODO: validate the target exists with dataplane https://github.com/kgateway-dev/kgateway/issues/12275
 		// Ensure LastTransitionTime is set for all conditions
 		for i := range conds {
@@ -220,9 +239,9 @@ func TranslateAgentgatewayPolicy(
 			}
 		}
 
-		// Policy status SHOULD be reported per Gateway (lower cardinality).
-		// If we couldn't resolve any Gateway ancestors (e.g., missing route), fall back to the original targetRef.
-		for _, ar := range policyTarget.AncestorRefs {
+		// Policy status SHOULD be reported per Gateway
+		// If we couldn't resolve a Gateway ancestor, report status against a summary ref.
+		appendAncestor := func(ar gwv1.ParentReference) {
 			// Only append valid ancestors: require non-empty controllerName and parentRef name
 			if agw.ControllerName != "" && string(ar.Name) != "" {
 				ancestors = append(ancestors, gwv1.PolicyAncestorStatus{
@@ -231,6 +250,18 @@ func TranslateAgentgatewayPolicy(
 					Conditions:     conds,
 				})
 			}
+		}
+		if len(policyTarget.AncestorRefs) > 0 {
+			for _, ar := range policyTarget.AncestorRefs {
+				appendAncestor(ar)
+			}
+		} else if policyTarget.AttachmentError != "" {
+			// no ancestor refs resolved due to attachment error, report status against a summary ref
+			logger.Warn("failed to resolve ancestor refs", "error", policyTarget.AttachmentError)
+			appendAncestor(gwv1.ParentReference{
+				Group: ptr.Of(gwv1.Group(wellknown.AgentgatewayPolicyGVK.Group)),
+				Name:  "StatusSummary",
+			})
 		}
 	}
 
@@ -272,9 +303,10 @@ func resolvePolicyAncestorRefs(
 	policyNamespace string,
 	targetGK schema.GroupKind,
 	targetName gwv1.ObjectName,
+	sectionName *gwv1.SectionName,
 	agw *AgwCollections,
-) []gwv1.ParentReference {
-	// Default: fall back to the original targetRef.
+) ([]gwv1.ParentReference, string) {
+	// Default: fall back to the original targetRef (for non-route targets)
 	fallback := []gwv1.ParentReference{{
 		Name:      targetName,
 		Namespace: ptr.Of(gwv1.Namespace(policyNamespace)),
@@ -284,7 +316,42 @@ func resolvePolicyAncestorRefs(
 
 	// If the policy is attached directly to a Gateway, that Gateway is the ancestor.
 	if targetGK == wellknown.GatewayGVK.GroupKind() {
-		return fallback
+		// For listener-scoped attachment, keep sectionName to report status per listener.
+		if sectionName != nil {
+			fallback[0].SectionName = sectionName
+			// Validate the listener exists to avoid reporting attached for a non-existent sectionName.
+			key := policyNamespace + "/" + string(targetName)
+			gw := ptr.Flatten(krt.FetchOne(ctx, agw.Gateways, krt.FilterKey(key)))
+			if gw == nil {
+				return fallback, fmt.Sprintf("Policy is not attached: Gateway %s/%s not found", policyNamespace, targetName)
+			}
+			found := false
+			for _, l := range gw.Spec.Listeners {
+				if string(l.Name) == string(*sectionName) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fallback, fmt.Sprintf("Policy is not attached: Gateway %s/%s has no listener %s", policyNamespace, targetName, *sectionName)
+			}
+		}
+		return fallback, ""
+	}
+
+	// If attached to an AgentgatewayBackend, the backend itself is the ancestor.
+	if targetGK == wellknown.AgentgatewayBackendGVK.GroupKind() {
+		key := policyNamespace + "/" + string(targetName)
+		be := ptr.Flatten(krt.FetchOne(ctx, agw.Backends, krt.FilterKey(key)))
+		if be == nil {
+			return nil, fmt.Sprintf("Policy is not attached: AgentgatewayBackend %s/%s not found", policyNamespace, targetName)
+		}
+		return []gwv1.ParentReference{{
+			Name:      targetName,
+			Namespace: ptr.Of(gwv1.Namespace(policyNamespace)),
+			Group:     ptr.Of(gwv1.Group(wellknown.AgentgatewayBackendGVK.Group)),
+			Kind:      ptr.Of(gwv1.Kind(wellknown.AgentgatewayBackendGVK.Kind)),
+		}}, ""
 	}
 
 	// If attached to an HTTPRoute, prefer the Gateway(s) the route attaches to.
@@ -293,7 +360,7 @@ func resolvePolicyAncestorRefs(
 		key := policyNamespace + "/" + string(targetName)
 		route := ptr.Flatten(krt.FetchOne(ctx, agw.HTTPRoutes, krt.FilterKey(key)))
 		if route == nil {
-			return fallback
+			return nil, fmt.Sprintf("Policy is not attached: HTTPRoute %s/%s not found", policyNamespace, targetName)
 		}
 
 		seen := make(map[types.NamespacedName]struct{})
@@ -320,15 +387,15 @@ func resolvePolicyAncestorRefs(
 		}
 
 		if len(refs) == 0 {
-			return fallback
+			return nil, fmt.Sprintf("Policy is not attached: HTTPRoute %s/%s has no Gateway parentRefs", policyNamespace, targetName)
 		}
 		slices.SortStableFunc(refs, func(a, b gwv1.ParentReference) int {
 			return strings.Compare(reports.ParentString(a), reports.ParentString(b))
 		})
-		return refs
+		return refs, ""
 	}
 
-	return fallback
+	return fallback, ""
 }
 
 // translateTrafficPolicyToAgw converts a TrafficPolicy to agentgateway Policy resources

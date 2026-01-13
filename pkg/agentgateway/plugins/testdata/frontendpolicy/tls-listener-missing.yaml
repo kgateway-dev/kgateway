@@ -1,75 +1,54 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: gw
+  name: test
   namespace: default
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: dummy
   listeners:
-    - protocol: HTTP
-      port: 8080
-      name: http
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: r
-  namespace: default
-spec:
-  parentRefs:
-  - name: gw
-  rules:
-  - backendRefs:
-    - name: example-svc
-      port: 8080
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: example-svc
-  namespace: default
-spec:
-  ports:
   - name: http
-    port: 8080
-    targetPort: 8080
+    protocol: HTTP
+    port: 80
 ---
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
-  name: agw
+  name: tls-policy
   namespace: default
 spec:
   targetRefs:
-  - kind: HTTPRoute
-    name: r
+  - kind: Gateway
+    name: test
     group: gateway.networking.k8s.io
-  traffic:
-    timeouts:
-      request: 5s
+    sectionName: https
+  frontend:
+    tls:
+      handshakeTimeout: 15s
 ---
 # Output
 output:
 - Policy:
-    key: traffic/default/agw:timeout:default/r
+    frontend:
+      tls:
+        handshakeTimeout: 15s
+    key: frontend/default/tls-policy:frontend-tls:default/test/https
     name:
       kind: AgentgatewayPolicy
-      name: agw
+      name: tls-policy
       namespace: default
     target:
-      route:
-        name: r
+      gateway:
+        listener: https
+        name: test
         namespace: default
-    traffic:
-      timeout:
-        request: 5s
 status:
   ancestors:
   - ancestorRef:
       group: gateway.networking.k8s.io
       kind: Gateway
-      name: gw
+      name: test
       namespace: default
+      sectionName: https
     conditions:
     - lastTransitionTime: fake
       message: Policy accepted
@@ -77,8 +56,9 @@ status:
       status: "True"
       type: Accepted
     - lastTransitionTime: fake
-      message: Attached to all targets
-      reason: Attached
-      status: "True"
+      message: 'Policy is not attached: Gateway default/test has no listener https'
+      reason: Pending
+      status: "False"
       type: Attached
     controllerName: agentgateway.dev/agentgateway
+

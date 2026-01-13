@@ -86,16 +86,17 @@ output:
 status:
   ancestors:
   - ancestorRef:
-      group: gateway.networking.k8s.io
-      kind: HTTPRoute
-      name: test
-      namespace: default
+      group: agentgateway.dev
+      name: StatusSummary
     conditions:
     - lastTransitionTime: fake
-      message: |-
-        ConfigMap default/ca-bundle not found
-        secret default/hello not found
-      reason: PartiallyValid
+      message: Policy accepted
+      reason: Valid
       status: "True"
       type: Accepted
+    - lastTransitionTime: fake
+      message: 'Policy is not attached: HTTPRoute default/test not found'
+      reason: Pending
+      status: "False"
+      type: Attached
     controllerName: agentgateway.dev/agentgateway
