@@ -130,6 +130,37 @@ controller:
   # podDisruptionBudget:
   #   minAvailable: 100%
   podDisruptionBudget: {}
+  # -- Set horizontal pod autoscaler for the controller. Note that this does not
+  #    affect the data plane. The scaleTargetRef is automatically configured to
+  #    target the controller deployment.
+  # E.g.:
+  #
+  # horizontalPodAutoscaler:
+  #   minReplicas: 1
+  #   maxReplicas: 5
+  #   metrics:
+  #     - type: Resource
+  #       resource:
+  #         name: cpu
+  #         target:
+  #           type: Utilization
+  #           averageUtilization: 80
+  horizontalPodAutoscaler: {}
+  # -- Set vertical pod autoscaler for the controller. Note that this does not
+  #    affect the data plane. The targetRef is automatically configured to
+  #    target the controller deployment.
+  # E.g.:
+  #
+  # verticalPodAutoscaler:
+  #   updatePolicy:
+  #     updateMode: Auto
+  #   resourcePolicy:
+  #     containerPolicies:
+  #       - containerName: "*"
+  #         minAllowed:
+  #           cpu: 100m
+  #           memory: 128Mi
+  verticalPodAutoscaler: {}
 
 # -- Configure the default container image for the components that Helm deploys. You can override these settings for each particular component in that component's section, such as 'controller.image' for the agentgateway control plane. If you use your own private registry, make sure to include the imagePullSecrets.
 image:

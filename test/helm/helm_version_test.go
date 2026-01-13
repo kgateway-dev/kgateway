@@ -150,6 +150,30 @@ func TestHelmChartTemplate(t *testing.T) {
     trafficDistribution: PreferClose
 `,
 		},
+		{
+			name: "hpa-and-vpa",
+			valuesYAML: `controller:
+  horizontalPodAutoscaler:
+    minReplicas: 1
+    maxReplicas: 5
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+  verticalPodAutoscaler:
+    updatePolicy:
+      updateMode: Auto
+    resourcePolicy:
+      containerPolicies:
+        - containerName: "*"
+          minAllowed:
+            cpu: 100m
+            memory: 128Mi
+`,
+		},
 	}
 
 	for _, chart := range charts {
