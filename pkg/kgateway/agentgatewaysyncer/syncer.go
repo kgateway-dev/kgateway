@@ -79,7 +79,9 @@ type Syncer struct {
 
 	gatewayCollectionOptions []translator.GatewayCollectionConfigOption
 
-	customResourceCollections func(cfg CustomResourceCollectionsConfig)
+	customResourceCollections   func(cfg CustomResourceCollectionsConfig)
+	workloadAddressProviderFunc func(model.WorkloadInfo) *workloadapi.Address
+	serviceAddressProviderFunc  func(model.ServiceInfo) *workloadapi.Address
 }
 
 func NewAgwSyncer(
@@ -105,7 +107,9 @@ func NewAgwSyncer(
 		NackPublisher:            nack.NewPublisher(client),
 		gatewayCollectionOptions: []translator.GatewayCollectionConfigOption{
 			translator.WithGatewayTransformationFunc(cfg.GatewayTransformationFunc)},
-		customResourceCollections: cfg.CustomResourceCollections,
+		customResourceCollections:   cfg.CustomResourceCollections,
+		workloadAddressProviderFunc: cfg.WorkloadAddressProviderFunc,
+		serviceAddressProviderFunc:  cfg.ServiceAddressProviderFunc,
 	}
 	logger.Debug("init agentgateway Syncer", "controllername", controllerName)
 
@@ -502,9 +506,25 @@ func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collect
 
 	// Build address collections
 	workloadAddresses := krt.MapCollection(workloads, func(t model.WorkloadInfo) Address {
+		// If AsAddress is not populated and we have a provider function, use it to populate AsAddress
+		// This is called after WorkloadInfo objects are created from Kubernetes resources by Istio's
+		// ambient workload builder, but before they are wrapped in Address structs for XDS.
+		if t.AsAddress.Address == nil && s.workloadAddressProviderFunc != nil {
+			if addr := s.workloadAddressProviderFunc(t); addr != nil {
+				setWorkloadAddress(&t, addr)
+			}
+		}
 		return Address{Workload: &t}
 	})
 	svcAddresses := krt.MapCollection(services, func(t model.ServiceInfo) Address {
+		// If AsAddress is not populated and we have a provider function, use it to populate AsAddress
+		// This is called after ServiceInfo objects are created from Kubernetes resources by Istio's
+		// ambient service builder, but before they are wrapped in Address structs for XDS.
+		if t.AsAddress.Address == nil && s.serviceAddressProviderFunc != nil {
+			if addr := s.serviceAddressProviderFunc(t); addr != nil {
+				setServiceAddress(&t, addr)
+			}
+		}
 		return Address{Service: &t}
 	})
 
