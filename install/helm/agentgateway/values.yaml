@@ -59,52 +59,52 @@ controller:
     tag: ""
   # -- Configure the controller service.
   service:
-    # -- Enable the controller service. Set to false to skip Service creation.
+    # -- Create the controller Service.
     enabled: true
-    # -- Set the service type for the controller. Valid values are ClusterIP, NodePort, LoadBalancer, or ExternalName.
+    # -- Service type.
     type: ClusterIP
-    # -- Set the service ports for gRPC and health endpoints.
+    # -- Service ports.
     ports:
       agwGrpc: 9978
       health: 9093
       metrics: 9092
-    # -- Add extra annotations to the controller service.
+    # -- Service annotations.
     annotations: {}
-    # -- Add extra labels to the controller service.
+    # -- Extra labels for the Service.
     extraLabels: {}
-    # -- Set the cluster IP for the service. Use "None" for a headless service.
+    # -- Cluster IP address.
     clusterIP: ""
-    # -- Set cluster IPs for dual-stack services. If specified, clusterIP must match the first entry.
+    # -- Cluster IPs for dual-stack.
     clusterIPs: []
-    # -- Set the external IPs for the service.
+    # -- External IP addresses.
     externalIPs: []
-    # -- Set the external name for ExternalName type services.
+    # -- External name for ExternalName services.
     externalName: ""
-    # -- Set the load balancer IP for the service (if type is LoadBalancer).
+    # -- Load balancer IP address.
     loadBalancerIP: ""
-    # -- Set the allowed source ranges for the load balancer (if type is LoadBalancer).
+    # -- Allowed source ranges for load balancer.
     loadBalancerSourceRanges: []
-    # -- Set the load balancer class for the service (if type is LoadBalancer).
+    # -- Load balancer class.
     loadBalancerClass: ""
-    # -- Set the external traffic policy. Valid values are Cluster or Local.
+    # -- External traffic policy.
     externalTrafficPolicy: ""
-    # -- Set the internal traffic policy. Valid values are Cluster or Local.
+    # -- Internal traffic policy.
     internalTrafficPolicy: ""
-    # -- Set the health check node port for LoadBalancer services with externalTrafficPolicy=Local.
+    # -- Health check node port.
     healthCheckNodePort: null
-    # -- Set the session affinity. Valid values are None or ClientIP.
+    # -- Session affinity.
     sessionAffinity: ""
-    # -- Configure session affinity settings when sessionAffinity is ClientIP.
+    # -- Session affinity configuration.
     sessionAffinityConfig: {}
-    # -- Set the IP families for the service. Valid values are IPv4 and IPv6.
+    # -- IP families.
     ipFamilies: []
-    # -- Set the IP family policy. Valid values are SingleStack, PreferDualStack, or RequireDualStack.
+    # -- IP family policy.
     ipFamilyPolicy: ""
-    # -- Set whether to publish not ready addresses.
+    # -- Publish not ready addresses.
     publishNotReadyAddresses: false
-    # -- Set whether to allocate load balancer node ports (if type is LoadBalancer).
+    # -- Allocate load balancer node ports.
     allocateLoadBalancerNodePorts: null
-    # -- Set the traffic distribution hint. Valid values are PreferClose (requires feature gate).
+    # -- Traffic distribution.
     trafficDistribution: ""
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
