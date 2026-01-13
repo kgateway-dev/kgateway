@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
+	"sigs.k8s.io/gateway-api-inference-extension/pkg/epp/metadata"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -96,8 +97,8 @@ func TestProcessPoolBackendObjIR_BuildsLoadAssignment(t *testing.T) {
 	assert.Equal(t, uint32(9000), sa.GetPortValue())
 
 	// Check the subset metadata key
-	md := lbs[0].Metadata.FilterMetadata[envoyLbNamespace]
-	val := md.Fields[dstEndpointKey]
+	md := lbs[0].Metadata.FilterMetadata[metadata.DestinationEndpointNamespace]
+	val := md.Fields[metadata.DestinationEndpointKey]
 	expected := structpb.NewStringValue("10.0.0.1:9000")
 	assert.Equal(t, expected.GetStringValue(), val.GetStringValue())
 }
