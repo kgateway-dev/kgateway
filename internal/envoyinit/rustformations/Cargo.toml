@@ -3,9 +3,21 @@ name = "rustformations"
 version = "0.1.0"
 edition = "2021"
 
+# REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, we can remove these
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+envoy-sdk-local = { package = "envoy-proxy-dynamic-modules-rust-sdk", path = "../patched-envoy-sdk/envoy-proxy-dynamic-modules-rust-sdk/dynamic_modules/sdk/rust" }
+
+[target.'cfg(not(target_arch = "x86_64"))'.dependencies]
+# The SDK version must match the Envoy version due to the strict compatibility requirements.
+envoy-sdk-remote = { package = "envoy-proxy-dynamic-modules-rust-sdk", git = "https://github.com/envoyproxy/envoy", rev = "bad8280de85c25b147a90c1d9b8a8c67a13e7134" } #envoy v1.36.4
+
+# END REMOVE
+
 [dependencies]
 # The SDK version must match the Envoy version due to the strict compatibility requirements.
-envoy-proxy-dynamic-modules-rust-sdk = { git = "https://github.com/envoyproxy/envoy", rev = "ddabe691e1aaa74b848d0782dab9dbea3b280319" }
+# REMOVE-ENVOY-1.37 : re-enable this after upgrading to envoy 1.37
+# envoy-proxy-dynamic-modules-rust-sdk = { git = "https://github.com/envoyproxy/envoy", rev = "bad8280de85c25b147a90c1d9b8a8c67a13e7134" } # envoy v1.36.4
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rand = "0.9.0"
