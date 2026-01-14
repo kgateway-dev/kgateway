@@ -146,24 +146,32 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 // Returns the IP address if exactly one valid IP address is found, nil if no addresses are specified,
 // or an error if more than one address is specified or no valid IP address is found.
 func GetLoadBalancerIPFromGatewayAddresses(gw *gwv1.Gateway) (*string, error) {
-	if len(gw.Spec.Addresses) == 0 {
-		return nil, nil
+	ipAddresses := slices.MapFilter(gw.Spec.Addresses, func(addr gwv1.GatewaySpecAddress) *string {
+		if addr.Type == nil || *addr.Type == gwv1.IPAddressType {
+			return &addr.Value
+		}
+		return nil
+	})
+
+	if len(ipAddresses) == 0 && len(gw.Spec.Addresses) != 0 {
+		return nil, ErrNoValidIPAddress
 	}
 
-	if len(gw.Spec.Addresses) > 1 {
+	if len(ipAddresses) == 0 {
+		return nil, nil
+	}
+	if len(ipAddresses) > 1 {
 		return nil, fmt.Errorf("%w: gateway %s/%s has %d addresses", ErrMultipleAddresses, gw.Namespace, gw.Name, len(gw.Spec.Addresses))
 	}
 
-	addr := gw.Spec.Addresses[0]
-	// IPAddressType or nil (defaults to IPAddressType per Gateway API spec)
-	if addr.Type == nil || *addr.Type == gwv1.IPAddressType {
-		// Validate IP format
-		if parsedIP, err := netip.ParseAddr(addr.Value); err == nil && parsedIP.IsValid() {
-			return &addr.Value, nil
-		}
-	}
+	addr := ipAddresses[0]
 
-	return nil, fmt.Errorf("%w: gateway %s/%s has no valid IP address", ErrNoValidIPAddress, gw.Namespace, gw.Name)
+	// Validate IP format
+	parsedIP, err := netip.ParseAddr(addr)
+	if err == nil && parsedIP.IsValid() {
+		return &addr, nil
+	}
+	return nil, ErrNoValidIPAddress
 }
 
 // SetLoadBalancerIPFromGateway extracts the IP address from Gateway.spec.addresses

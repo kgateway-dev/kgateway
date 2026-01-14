@@ -1829,6 +1829,24 @@ spec:
                   When false, Envoy will use the X-Forwarded-For header to determine the client address.
                   See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address
                 type: boolean
+              uuidRequestIdConfig:
+                description: |-
+                  UuidRequestIdConfig configures the behavior of the UUID request ID extension.
+                  This extension sets the x-request-id header to a UUID value.
+                properties:
+                  packTraceReason:
+                    description: |-
+                      PackTraceReason determines if the trace sampling decision is embedded into the UUID.
+                      Defaults to true. Set to false to prevent Envoy from mutating the Request ID,
+                      which is useful when preserving exact UUIDs from external systems.
+                    type: boolean
+                  useRequestIdForTraceSampling:
+                    description: |-
+                      UseRequestIDForTraceSampling determines if the Request ID is used to calculate the
+                      trace sampling decision. Defaults to true. This ensures consistent sampling decisions
+                      for a given Request ID across the mesh.
+                    type: boolean
+                type: object
               xffNumTrustedHops:
                 description: |-
                   XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.

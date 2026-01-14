@@ -827,13 +827,15 @@ func processExtAuthPolicy(
 	policy types.NamespacedName,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
+	var backendErr error
 	be, err := buildBackendRef(ctx, extAuth.BackendRef, policy.Namespace)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build extAuth: %v", err)
+		backendErr = fmt.Errorf("failed to build extAuth: %v", err)
 	}
 
 	spec := &api.TrafficPolicySpec_ExternalAuth{
-		Target: be,
+		Target:      be,
+		FailureMode: api.TrafficPolicySpec_ExternalAuth_DENY,
 	}
 	if g := extAuth.GRPC; g != nil {
 		p := &api.TrafficPolicySpec_ExternalAuth_GRPCProtocol{
@@ -886,7 +888,7 @@ func processExtAuthPolicy(
 		"agentgateway_policy", extauthPolicy.Name,
 		"target", policyTarget)
 
-	return []AgwPolicy{{Policy: extauthPolicy}}, nil
+	return []AgwPolicy{{Policy: extauthPolicy}}, backendErr
 }
 
 // processExtProcPolicy processes ExtProc configuration and creates corresponding agentgateway policies

@@ -2,10 +2,16 @@ package trafficpolicy
 
 import (
 	"encoding/json"
+	"fmt"
 	"slices"
 
+	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
@@ -203,19 +209,130 @@ func mergeTransformation(
 	}
 }
 
+func mergeRustFormationActionListJson(action string, obj1, obj2 map[string]any) {
+	list1, ok1 := obj1[action].([]any)
+	list2, ok2 := obj2[action].([]any)
+	if !ok1 {
+		if ok2 {
+			obj1[action] = list2
+		}
+	} else if ok2 {
+		obj1[action] = append(list1, list2...)
+	}
+}
+
+func mergeRustFormationRequestResponseJson(field string, m1, m2 map[string]any) {
+	obj1, ok1 := m1[field].(map[string]any)
+	obj2, ok2 := m2[field].(map[string]any)
+	if !ok1 {
+		if ok2 {
+			m1[field] = m2[field]
+		}
+	} else if ok2 {
+		mergeRustFormationActionListJson("add", obj1, obj2)
+		mergeRustFormationActionListJson("remove", obj1, obj2)
+		mergeRustFormationActionListJson("set", obj1, obj2)
+	}
+}
+
+func mergeRustformationJsonInPlace(obj1, obj2 any) error {
+	m1, ok1 := obj1.(map[string]any)
+	m2, ok2 := obj2.(map[string]any)
+	if !ok1 || !ok2 {
+		return fmt.Errorf("both arguments must be map[string]any")
+	}
+
+	mergeRustFormationRequestResponseJson("response", m1, m2)
+	mergeRustFormationRequestResponseJson("request", m1, m2)
+
+	return nil
+}
+
 func mergeRustformation(
 	p1, p2 *TrafficPolicy,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins ir.MergeOrigins,
-	_ TrafficPolicyMergeOpts,
+	tpOpts TrafficPolicyMergeOpts,
 ) {
-	accessor := fieldAccessor[rustformationIR]{
-		Get: func(spec *trafficPolicySpecIr) *rustformationIR { return spec.rustformation },
-		Set: func(spec *trafficPolicySpecIr, val *rustformationIR) { spec.rustformation = val },
+	if tpOpts.Transformation != "" {
+		// this is merging 2 policies at the same hierarchical level (no parent->child relationship),
+		// so use tpOpts since it overrides the default merge strategy
+		opts.Strategy = policy.ToInternalMergeStrategy(tpOpts.Transformation)
 	}
-	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "rustformation")
+
+	if !policy.IsMergeable(p1.spec.rustformation, p2.spec.rustformation, opts) {
+		return
+	}
+
+	switch opts.Strategy {
+	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
+		accessor := fieldAccessor[rustformationIR]{
+			Get: func(spec *trafficPolicySpecIr) *rustformationIR { return spec.rustformation },
+			Set: func(spec *trafficPolicySpecIr, val *rustformationIR) { spec.rustformation = val },
+		}
+		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "transformation")
+
+	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
+		if p1.spec.rustformation == nil {
+			filterCfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
+				Value: "{}",
+			})
+			p1.spec.rustformation = &rustformationIR{config: &dynamicmodulesv3.DynamicModuleFilterPerRoute{
+				DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
+					Name: "rust_module",
+				},
+				PerRouteConfigName: "http_simple_mutations",
+				FilterConfig:       filterCfg,
+			}}
+
+		}
+		p1Json, err := utils.AnyToJson(p1.spec.rustformation.config.FilterConfig)
+		if err != nil {
+			logger.Error("failed to convert p1 config to json", "error", err.Error())
+			return
+		}
+		p2Json, err := utils.AnyToJson(p2.spec.rustformation.config.FilterConfig)
+		if err != nil {
+			logger.Error("failed to convert p2 config to json", "error", err.Error())
+			return
+		}
+
+		var anyMsg *anypb.Any
+		if p1Json == nil {
+			anyMsg, err = utils.JsonToAny(p2Json)
+		} else if p2Json == nil {
+			return
+		} else {
+			if opts.Strategy == policy.OverridableDeepMerge {
+				err = mergeRustformationJsonInPlace(p2Json, p1Json)
+				if err != nil {
+					logger.Error("failed to merge json", "error", err.Error())
+					return
+				}
+				anyMsg, err = utils.JsonToAny(p2Json)
+			} else {
+				err = mergeRustformationJsonInPlace(p1Json, p2Json)
+				if err != nil {
+					logger.Error("failed to merge json", "error", err.Error())
+					return
+				}
+				anyMsg, err = utils.JsonToAny(p1Json)
+			}
+		}
+
+		if err != nil {
+			logger.Error("failed to convert json to any", "error", err.Error())
+			return
+		}
+
+		p1.spec.rustformation.config.FilterConfig = anyMsg
+		mergeOrigins.Append("transformation", p2Ref, p2MergeOrigins)
+
+	default:
+		logger.Warn("unsupported merge strategy for transformation policy", "strategy", opts.Strategy, "policy", p2Ref)
+	}
 }
 
 func mergeExtAuth(

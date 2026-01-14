@@ -1,0 +1,142 @@
+# Echo server manifest for testing RequestID header behavior
+# This echo server echoes back request headers in the response body,
+# allowing verification of x-request-id header generation and preservation
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: request-id-echo
+  namespace: default
+data:
+  main.go: |
+    package main
+
+    import (
+      "bufio"
+      "fmt"
+      "log"
+      "net"
+      "strings"
+    )
+
+    func main() {
+      l, err := net.Listen("tcp", ":8000")
+      if err != nil {
+        log.Fatalf("Failed to listen: %v", err)
+      }
+      log.Println("Listening on :8000")
+
+      for {
+        conn, err := l.Accept()
+        if err != nil {
+          log.Printf("Accept error: %v", err)
+          continue
+        }
+        go handleConn(conn)
+      }
+    }
+
+    func handleConn(conn net.Conn) {
+      defer conn.Close()
+      reader := bufio.NewReader(conn)
+
+      var headers []string
+      var requestLines []string
+
+      for {
+        line, err := reader.ReadString('\n')
+        if err != nil {
+          log.Printf("Read error: %v", err)
+          return
+        }
+        line = strings.TrimRight(line, "\r\n")
+        if line == "" {
+          break
+        }
+        requestLines = append(requestLines, line)
+        if len(requestLines) > 1 {
+          headers = append(headers, line)
+        }
+      }
+
+      fmt.Println("=== Incoming request ===")
+      for _, h := range requestLines {
+        fmt.Println(h)
+      }
+
+      body := strings.Join(headers, "\n")
+      response := "HTTP/1.1 200 OK\r\n" +
+        "Content-Type: text/plain\r\n" +
+        fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
+        "\r\n" +
+        body
+
+      conn.Write([]byte(response))
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: request-id-echo
+  namespace: default
+  labels:
+    app: request-id-echo
+spec:
+  selector:
+    app: request-id-echo
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: request-id-echo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: request-id-echo
+  template:
+    metadata:
+      labels:
+        app: request-id-echo
+    spec:
+      containers:
+        - name: request-id-echo
+          image: golang:1.24
+          ports:
+            - containerPort: 8000
+          command: ["go", "run", "/main.go"]
+          volumeMounts:
+            - name: code
+              mountPath: /main.go
+              subPath: main.go
+      volumes:
+        - name: code
+          configMap:
+            name: request-id-echo
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: request-id-echo-route
+  namespace: default
+spec:
+  hostnames:
+  - example.com
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+    namespace: default
+  rules:
+  - backendRefs:
+    - name: request-id-echo
+      port: 8000
+    matches:
+    - path:
+        type: PathPrefix
+        value: /

@@ -45,7 +45,12 @@ export VERSION
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.36.3-patch1
+# When we switch Rustformation to be used by default, we can set ENVOY_IMAGE=envoyproxy/envoy:v1.36.4
+# if we want to switch to use upstream vanilla envoy for the multi-arch arm build. For v2.2 release,
+# we plan to still use envoy-gloo for x86 build (so people can switch back to classic transformation if needed).
+# For arm build, we will use upstream envoy and cannot switch back to classic transformation.
+export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.36.4-patch1
+
 export RUST_BUILD_ARCH ?= x86_64 # override this to aarch64 for local arm build
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
@@ -283,7 +288,7 @@ view-test-coverage:
 	go tool cover -html $(OUTPUT_DIR)/cover.out
 
 #----------------------------------------------------------------------------------
-# Clean
+# MARK: Clean
 #----------------------------------------------------------------------------------
 
 # Important to clean before pushing new releases. Dockerfiles and binaries may not update properly
@@ -311,7 +316,7 @@ clean-bug-report:
 	rm -rf $(BUG_REPORT_DIR)
 
 #----------------------------------------------------------------------------------
-# Generated Code
+# MARK: Generated Code
 #----------------------------------------------------------------------------------
 # This section uses stamp files to optimize 'make generate-all' by tracking dependencies.
 #
@@ -713,11 +718,12 @@ release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG opt
 	./hack/generate-release-notes.sh -p $(PREVIOUS_TAG) -c $(or $(CURRENT_TAG),HEAD)
 
 #----------------------------------------------------------------------------------
-# Development
+# MARK: Development
 #----------------------------------------------------------------------------------
 
 KIND ?= go tool kind
 CLUSTER_NAME ?= kind
+# TODO: This should probably change depending on if kgateway or agw is installed
 INSTALL_NAMESPACE ?= kgateway-system
 
 # The version of the Node Docker image to use for booting the kind cluster: https://hub.docker.com/r/kindest/node/tags
@@ -729,7 +735,7 @@ kind-create: ## Create a KinD cluster
 	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
 
 CONFORMANCE_CHANNEL ?= experimental
-CONFORMANCE_VERSION ?= v1.4.0
+CONFORMANCE_VERSION ?= v1.4.1
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs. HACK: Use SSA to avoid the issue with the CRD annotations being too long.
 	kubectl apply --server-side -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/$(CONFORMANCE_VERSION)/$(CONFORMANCE_CHANNEL)-install.yaml"
@@ -755,6 +761,8 @@ deploy-agentgateway: package-agentgateway-charts deploy-agentgateway-crd-chart d
 .PHONY: setup-base
 setup-base: kind-create gw-api-crds gie-crds metallb ## Setup the base infrastructure (kind cluster, CRDs, and MetalLB)
 
+# Creates a functional kind cluster, builds and loads all images, and packages charts
+# Does NOT deploy anything to the cluster
 .PHONY: setup
 setup: setup-base kind-build-and-load package-kgateway-charts package-agentgateway-charts dummy-idp-docker kind-load-dummy-idp  ## Setup the complete infrastructure (base setup plus images and charts)
 
@@ -844,6 +852,7 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
 
 #----------------------------------------------------------------------------------
+# MARK: Conformance
 # Targets for running Kubernetes Gateway API conformance tests
 #----------------------------------------------------------------------------------
 

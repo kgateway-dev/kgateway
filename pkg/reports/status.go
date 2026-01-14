@@ -101,6 +101,8 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 		})
 	}
 
+	handleInvalidAddresses(gwReport, &gw)
+
 	addMissingGatewayConditions(r.Gateway(&gw), &gw)
 
 	finalConditions := make([]metav1.Condition, 0)
@@ -126,6 +128,31 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	finalGwStatus.Conditions = finalConditions
 	finalGwStatus.Listeners = finalListeners
 	return &finalGwStatus
+}
+
+func handleInvalidAddresses(report *GatewayReport, g *gwv1.Gateway) {
+	for _, addr := range g.Spec.Addresses {
+		if addr.Type == nil {
+			continue
+		}
+		switch *addr.Type {
+		case gwv1.IPAddressType:
+		case gwv1.HostnameAddressType:
+			report.SetCondition(reporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionProgrammed,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonAddressNotUsable,
+				Message: "Hostname addresses may not be used",
+			})
+		default:
+			report.SetCondition(reporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonUnsupportedAddress,
+				Message: "Unknown address kind",
+			})
+		}
+	}
 }
 
 func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XListenerSet) *gwxv1a1.ListenerSetStatus {

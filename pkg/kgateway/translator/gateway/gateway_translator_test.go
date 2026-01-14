@@ -9,6 +9,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
+	// Register the UuidRequestIdConfig proto type so that it can be unmarshaled from Any in tests
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/request_id/uuid/v3"
+
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
@@ -521,6 +524,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "basic-auth/route-disable.yaml",
 			outputFile: "basic-auth/route-disable.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with local rate limiting configurable percentage", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/local-rate-limit-configurable-percentage.yaml",
+			outputFile: "traffic-policy/local-rate-limit-configurable-percentage.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1228,6 +1242,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HTTPListenerPolicy with uuidRequestIdConfig defaults", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/request-id-config-defaults.yaml",
+			outputFile: "httplistenerpolicy/request-id-config-defaults.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPListenerPolicy with uuidRequestIdConfig explicit false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/request-id-config-explicit.yaml",
+			outputFile: "httplistenerpolicy/request-id-config-explicit.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPListenerPolicy with uuidRequestIdConfig mixed values", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/request-id-config-mixed.yaml",
+			outputFile: "httplistenerpolicy/request-id-config-mixed.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with upgrades", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "https-listener-pol/upgrades.yaml",
@@ -1364,6 +1411,39 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/max-request-headers-kb.yaml",
 			outputFile: "listener-policy-http/max-request-headers-kb.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with uuidRequestIdConfig explicit false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/request-id-config-explicit.yaml",
+			outputFile: "listener-policy-http/request-id-config-explicit.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with uuidRequestIdConfig defaults", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/request-id-config-defaults.yaml",
+			outputFile: "listener-policy-http/request-id-config-defaults.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with uuidRequestIdConfig mixed values", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/request-id-config-mixed.yaml",
+			outputFile: "listener-policy-http/request-id-config-mixed.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

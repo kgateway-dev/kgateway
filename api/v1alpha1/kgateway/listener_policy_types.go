@@ -214,6 +214,11 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=8192
 	MaxRequestHeadersKb *int32 `json:"maxRequestHeadersKb,omitempty"`
+
+	// UuidRequestIdConfig configures the behavior of the UUID request ID extension.
+	// This extension sets the x-request-id header to a UUID value.
+	// +optional
+	UuidRequestIdConfig *UuidRequestIdConfig `json:"uuidRequestIdConfig,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -808,4 +813,20 @@ type EnvoyHealthCheck struct {
 	// +kubebuilder:validation:Pattern="^/[-a-zA-Z0-9@:%.+~#?&/=_]+$"
 	// +required
 	Path string `json:"path"`
+}
+
+// UuidRequestIdConfig configures the UUID request ID extension.
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/request_id/uuid/v3/uuid.proto
+type UuidRequestIdConfig struct {
+	// PackTraceReason determines if the trace sampling decision is embedded into the UUID.
+	// Defaults to true. Set to false to prevent Envoy from mutating the Request ID,
+	// which is useful when preserving exact UUIDs from external systems.
+	// +optional
+	PackTraceReason *bool `json:"packTraceReason,omitempty"`
+
+	// UseRequestIDForTraceSampling determines if the Request ID is used to calculate the
+	// trace sampling decision. Defaults to true. This ensures consistent sampling decisions
+	// for a given Request ID across the mesh.
+	// +optional
+	UseRequestIDForTraceSampling *bool `json:"useRequestIdForTraceSampling,omitempty"`
 }

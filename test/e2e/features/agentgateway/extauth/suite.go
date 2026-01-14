@@ -49,6 +49,11 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				insecureRouteManifest,
 			},
 		},
+		"TestExtAuthPolicyMissingBackendRef": {
+			Manifests: []string{
+				securedRouteMissingRefManifest,
+			},
+		},
 	}
 
 	return &testingSuite{
@@ -59,8 +64,6 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // TestExtAuthPolicy tests the basic ExtAuth functionality with header-based allow/deny
 // Checks for gateway level auth with route level opt out
 func (s *testingSuite) TestExtAuthPolicy() {
-	// The BaseTestingSuite automatically handles setup and cleanup of test-specific resources
-
 	testCases := []struct {
 		name                         string
 		headers                      map[string]string
@@ -128,8 +131,6 @@ func (s *testingSuite) TestExtAuthPolicy() {
 
 // TestRouteTargetedExtAuthPolicy tests route level only extauth
 func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
-	// The BaseTestingSuite automatically handles setup and cleanup of test-specific resources
-
 	testCases := []struct {
 		name                         string
 		headers                      map[string]string
@@ -160,6 +161,50 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 		},
 		{
 			name:           "request denied without header on secured route",
+			hostname:       "secureroute.com",
+			headers:        map[string]string{},
+			expectedStatus: http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			// Build curl options
+			opts := []curl.Option{
+				curl.WithHost(kubeutils.ServiceFQDN(proxyObjMeta)),
+				curl.WithHostHeader(tc.hostname),
+				curl.WithPort(8080),
+			}
+
+			// Add test-specific headers
+			for k, v := range tc.headers {
+				opts = append(opts, curl.WithHeader(k, v))
+			}
+
+			// Test the request
+			s.TestInstallation.Assertions.AssertEventualCurlResponse(
+				s.Ctx,
+				testdefaults.CurlPodExecOpt,
+				opts,
+				&testmatchers.HttpResponse{
+					StatusCode: tc.expectedStatus,
+					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
+				})
+		})
+	}
+}
+
+// TestExtAuthPolicyMissingBackendRef tests behavior when the ExtAuth policy is missing a backendRef
+func (s *testingSuite) TestExtAuthPolicyMissingBackendRef() {
+	testCases := []struct {
+		name                         string
+		headers                      map[string]string
+		hostname                     string
+		expectedStatus               int
+		expectedUpstreamBodyContents string
+	}{
+		{
+			name:           "request denied for invalid extauth policy due to missing backendRef",
 			hostname:       "secureroute.com",
 			headers:        map[string]string{},
 			expectedStatus: http.StatusForbidden,

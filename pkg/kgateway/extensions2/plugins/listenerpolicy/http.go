@@ -11,6 +11,7 @@ import (
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/early_header_mutation/header_mutation/v3"
+	envoyuuidv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/request_id/uuid/v3"
 	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -53,6 +54,7 @@ type HttpListenerPolicyIr struct {
 	defaultHostForHttp10          *string
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 	maxRequestHeadersKb           *uint32
+	uuidRequestIdConfig           *envoyuuidv3.UuidRequestIdConfig
 }
 
 func (d *HttpListenerPolicyIr) Equals(in any) bool {
@@ -158,6 +160,11 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	if !cmputils.PointerValsEqual(d.maxRequestHeadersKb, d2.maxRequestHeadersKb) {
 		return false
 	}
+
+	if !proto.Equal(d.uuidRequestIdConfig, d2.uuidRequestIdConfig) {
+		return false
+	}
+
 	return true
 }
 
@@ -205,6 +212,14 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		maxRequestHeadersKb = ptr.To(uint32(*h.MaxRequestHeadersKb)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
+	var uuidRequestIdConfig *envoyuuidv3.UuidRequestIdConfig
+	if h.UuidRequestIdConfig != nil {
+		uuidRequestIdConfig = &envoyuuidv3.UuidRequestIdConfig{
+			PackTraceReason:              wrapperspb.Bool(ptr.Deref(h.UuidRequestIdConfig.PackTraceReason, true)),
+			UseRequestIdForTraceSampling: wrapperspb.Bool(ptr.Deref(h.UuidRequestIdConfig.UseRequestIDForTraceSampling, true)),
+		}
+	}
+
 	return &HttpListenerPolicyIr{
 		accessLogConfig:               accessLog,
 		accessLogPolicies:             h.AccessLog,
@@ -224,6 +239,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		defaultHostForHttp10:          h.DefaultHostForHttp10,
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
 		maxRequestHeadersKb:           maxRequestHeadersKb,
+		uuidRequestIdConfig:           uuidRequestIdConfig,
 	}, errs
 }
 

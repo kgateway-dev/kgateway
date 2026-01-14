@@ -32,7 +32,6 @@ func GetSupportedFeaturesForStandardGateway() []gwv1.SupportedFeature {
 	exemptFeatures := GetCommonExemptFeatures()
 	// backfill individual features that we don't support yet.
 	exemptFeatures.Insert(
-		features.GatewayStaticAddressesFeature,
 		features.GatewayHTTPListenerIsolationFeature,
 	)
 	return getSupportedFeatures(exemptFeatures)
@@ -49,9 +48,6 @@ func GetSupportedFeaturesForWaypointGateway() []gwv1.SupportedFeature {
 // Agent gateways support additional features beyond the standard gateway class.
 func GetSupportedFeaturesForAgentGateway() []gwv1.SupportedFeature {
 	exemptFeatures := GetCommonExemptFeatures()
-	// Agent gateways support GatewayHTTPListenerIsolation and GatewayPort8080,
-	// but still don't support GatewayStaticAddresses.
-	exemptFeatures.Insert(features.GatewayStaticAddressesFeature)
 	return getSupportedFeatures(exemptFeatures)
 }
 

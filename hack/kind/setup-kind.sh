@@ -46,8 +46,7 @@ function create_kind_cluster_or_skip() {
   echo "creating cluster ${CLUSTER_NAME}"
   $KIND create cluster \
     --name "$CLUSTER_NAME" \
-    --image "kindest/node:$CLUSTER_NODE_VERSION" \
-    --config="$SCRIPT_DIR/cluster.yaml"
+    --image "kindest/node:$CLUSTER_NODE_VERSION"
   echo "Finished setting up cluster $CLUSTER_NAME"
 
   # so that you can just build the kind image alone if needed

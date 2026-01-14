@@ -98,8 +98,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gateway-api-version: [ { version: 'v1.4.0', channel: 'experimental' },
-                              { version: 'v1.4.0', channel: 'standard' },
+        gateway-api-version: [ { version: 'v1.4.1', channel: 'experimental' },
+                              { version: 'v1.4.1', channel: 'standard' },
                               { version: 'v1.3.0', channel: 'experimental' },
                               { version: 'v1.3.0', channel: 'standard' },
                               { version: 'v1.2.1', channel: 'experimental' },
