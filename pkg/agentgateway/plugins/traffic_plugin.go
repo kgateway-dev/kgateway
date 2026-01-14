@@ -161,7 +161,7 @@ func TranslateAgentgatewayPolicy(
 			continue
 		}
 
-		ancestorRefs, attachmentErr := resolvePolicyAncestorRefs(ctx, policy.Namespace, gk, target.Name, target.SectionName, agw)
+		ancestorRefs, attachmentErr := resolvePolicyAncestorRefs(ctx, policy.Namespace, gk, target.Name, agw)
 
 		policyTargets = append(policyTargets, ResolvedTarget{
 			AgentgatewayTarget: policyTarget,
