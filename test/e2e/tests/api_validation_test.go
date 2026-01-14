@@ -23,8 +23,10 @@ func TestAPIValidation(t *testing.T) {
 	})
 
 	tests := []struct {
-		name       string
-		input      string
+		name  string
+		input string
+
+		// these are treated as regular expressions, so any special characters must be escaped
 		wantErrors []string
 	}{
 		{
@@ -46,7 +48,7 @@ spec:
     - host: example.com
       port: 80
 `,
-			wantErrors: []string{"exactly one of the fields in [aws static dynamicForwardProxy] must be set"},
+			wantErrors: []string{`exactly one of the fields in \[aws static dynamicForwardProxy\] must be set`},
 		},
 		{
 			name: "Backend: empty lambda qualifier does not match pattern",
@@ -83,7 +85,7 @@ spec:
     maxConcurrentStreams: 100
     overrideStreamErrorOnInvalidHttpMessage: true
 `,
-			wantErrors: []string{"at most one of the fields in [http1ProtocolOptions http2ProtocolOptions] may be set"},
+			wantErrors: []string{`at most one of the fields in \[http1ProtocolOptions http2ProtocolOptions\] may be set`},
 		},
 		{
 			name: "BackendConfigPolicy: HTTP2 protocol options with integer values",
@@ -137,7 +139,7 @@ spec:
     initialConnectionWindowSize: 1000
     initialStreamWindowSize: 2147483648
 `,
-			wantErrors: []string{"InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)"},
+			wantErrors: []string{`InitialConnectionWindowSize must be between 65535 and 2147483647 bytes \(inclusive\)`},
 		},
 		{
 			name: "BackendConfigPolicy: valid target references",
@@ -246,15 +248,15 @@ spec:
         window: 10s
 `,
 			wantErrors: []string{
-				"spec.commonHttpProtocolOptions.idleTimeout: Invalid value: \"1x\": invalid duration value",
-				"spec.commonHttpProtocolOptions.maxStreamDuration: Invalid value: \"abc\": invalid duration value",
-				"spec.connectTimeout: Invalid value: \"-1s\": invalid duration value",
-				"spec.healthCheck.interval: Invalid value: \"b\": invalid duration value",
-				"spec.healthCheck.timeout: Invalid value: \"a\": invalid duration value",
-				"spec.loadBalancer.updateMergeWindow: Invalid value: \"z\": invalid duration value",
-				"spec.tcpKeepalive.keepAliveInterval: Invalid value: \"0\": invalid duration value",
-				"spec.tcpKeepalive.keepAliveInterval: Invalid value: \"0\": keepAliveInterval must be at least 1 second",
-				"spec.tcpKeepalive.keepAliveTime: Invalid value: \"0s\": keepAliveTime must be at least 1 second",
+				"spec.commonHttpProtocolOptions.idleTimeout: Invalid value: .*: invalid duration value",
+				"spec.commonHttpProtocolOptions.maxStreamDuration: Invalid value: .*: invalid duration value",
+				"spec.connectTimeout: Invalid value: .*: invalid duration value",
+				"spec.healthCheck.interval: Invalid value: .*: invalid duration value",
+				"spec.healthCheck.timeout: Invalid value: .*: invalid duration value",
+				"spec.loadBalancer.updateMergeWindow: Invalid value: .*: invalid duration value",
+				"spec.tcpKeepalive.keepAliveInterval: Invalid value: .*: invalid duration value",
+				"spec.tcpKeepalive.keepAliveInterval: Invalid value: .*: keepAliveInterval must be at least 1 second",
+				"spec.tcpKeepalive.keepAliveTime: Invalid value: .*: keepAliveTime must be at least 1 second",
 			},
 		},
 		{
@@ -399,8 +401,8 @@ spec:
         name: test-extension
 `,
 			wantErrors: []string{
-				"spec.rateLimit.global.descriptors[0].entries[0].generic.key in body should be at least 1 chars long",
-				"spec.rateLimit.global.descriptors[0].entries[0].generic.value in body should be at least 1 chars long",
+				`spec.rateLimit.global.descriptors\[0\].entries\[0\].generic.key in body should be at least 1 chars long`,
+				`spec.rateLimit.global.descriptors\[0\].entries\[0\].generic.value in body should be at least 1 chars long`,
 			},
 		},
 		{
@@ -493,8 +495,8 @@ spec:
     perTryTimeout: 1f
 `,
 			wantErrors: []string{
-				"spec.retry.perTryTimeout: Invalid value: \"1f\": invalid duration value",
-				"spec.retry.perTryTimeout: Invalid value: \"string\": type conversion error from 'string' to 'google.protobuf.Duration' evaluating rule: retry.perTryTimeout must be at least 1ms",
+				"spec.retry.perTryTimeout: Invalid value: .*: invalid duration value",
+				"spec.retry.perTryTimeout: Invalid value: .*: type conversion error from 'string' to 'google.protobuf.Duration' evaluating rule: retry.perTryTimeout must be at least 1ms",
 			},
 		},
 		{
@@ -514,7 +516,7 @@ spec:
     - gateway-error
 `,
 			wantErrors: []string{
-				"targetRefs[].sectionName must be set when targeting Gateway resources with retry policy",
+				`targetRefs\[\].sectionName must be set when targeting Gateway resources with retry policy`,
 			},
 		},
 		{
@@ -535,7 +537,7 @@ spec:
     - gateway-error
 `,
 			wantErrors: []string{
-				"targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy",
+				`targetSelectors\[\].sectionName must be set when targeting Gateway resources with retry policy`,
 			},
 		},
 		{
@@ -550,7 +552,7 @@ spec:
     request: foo
 `,
 			wantErrors: []string{
-				"spec.timeouts.request: Invalid value: \"foo\": invalid duration value",
+				"spec.timeouts.request: Invalid value: .*: invalid duration value",
 			},
 		},
 		{
@@ -565,7 +567,7 @@ spec:
     streamIdle: -1s
 `,
 			wantErrors: []string{
-				"spec.timeouts.streamIdle: Invalid value: \"-1s\": invalid duration value",
+				"spec.timeouts.streamIdle: Invalid value: .*: invalid duration value",
 			},
 		},
 		{
@@ -700,8 +702,9 @@ spec:
 			err := ti.Actions.Kubectl().WithReceiver(out).Apply(ctx, []byte(tc.input))
 			if len(tc.wantErrors) > 0 {
 				r.Error(err)
+				output := out.String()
 				for _, wantErr := range tc.wantErrors {
-					r.Contains(out.String(), wantErr)
+					r.Regexp(wantErr, output)
 				}
 			} else {
 				if err != nil {

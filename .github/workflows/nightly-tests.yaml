@@ -91,13 +91,15 @@ jobs:
     - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
-    name: E2E ${{ matrix.gateway-api-version.version }} ${{ matrix.gateway-api-version.channel }} ${{ matrix.controllers.agentgateway && 'AGW' || 'KGW' }}
+    name: E2E (${{ matrix.controllers.agentgateway && 'AGW' || 'KGW' }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
+        env-versions: [ {file: "./.github/workflows/.env/nightly-tests/max_versions.env", label: "max"},
+                        {file: "./.github/workflows/.env/nightly-tests/min_versions.env", label: "min"} ]
         gateway-api-version: [ { version: 'v1.4.1', channel: 'experimental' },
                               { version: 'v1.4.1', channel: 'standard' },
                               { version: 'v1.3.0', channel: 'experimental' },
@@ -118,14 +120,14 @@ jobs:
       uses: falti/dotenv-action@v1.1.4
       id: dotenv
       with:
-        path: "./.github/workflows/.env/nightly-tests/max_versions.env"
+        path: ${{ matrix.env-versions.file }}
         log-variables: true
     - name: Setup KinD Cluster
       uses: ./.github/actions/setup-kind-cluster
       with:
         gateway-api-version: ${{ matrix.gateway-api-version.version }}
         gateway-api-channel: ${{ matrix.gateway-api-version.channel }}
-        cluster-name: "kgw-api-e2e-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+        cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
