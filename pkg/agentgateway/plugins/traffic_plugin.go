@@ -152,7 +152,8 @@ func TranslateAgentgatewayPolicy(
 			policyTarget = &api.PolicyTarget{
 				Kind: utils.ServiceTarget(policy.Namespace, string(target.Name), target.SectionName),
 			}
-			// TODO: inferencepool
+			// TODO: add support for inferencepool https://github.com/kgateway-dev/kgateway/issues/13295
+			// TODO: add support for XListenerSet https://github.com/kgateway-dev/kgateway/issues/13296
 
 		default:
 			// TODO(npolshak): support attaching policies to k8s services, serviceentries, and other backends
@@ -303,7 +304,6 @@ func resolvePolicyAncestorRefs(
 	policyNamespace string,
 	targetGK schema.GroupKind,
 	targetName gwv1.ObjectName,
-	sectionName *gwv1.SectionName,
 	agw *AgwCollections,
 ) ([]gwv1.ParentReference, string) {
 	// Default: fall back to the original targetRef (for non-route targets)
