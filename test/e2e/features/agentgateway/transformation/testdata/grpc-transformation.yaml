@@ -6,7 +6,7 @@ spec:
   logging:
     level: trace
   image:
-    tag: v0.6.0-354-gc09381ed9-dirty
+    tag: v0.6.0-394-g60dae1b53
 ---
 kind: GatewayClass
 apiVersion: gateway.networking.k8s.io/v1
@@ -20,6 +20,8 @@ spec:
     name: params
     namespace: default
 ---
+# grpcurl -plaintext -authority example.com -vv gateway:80 yages.Echo/Ping
+# should have `x-grpc-response: from-grpc` header
 apiVersion: gateway.networking.k8s.io/v1
 kind: GRPCRoute
 metadata:
