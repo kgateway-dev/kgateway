@@ -316,6 +316,11 @@ func resolvePolicyAncestorRefs(
 
 	// If the policy is attached directly to a Gateway, that Gateway is the ancestor.
 	if targetGK == wellknown.GatewayGVK.GroupKind() {
+		key := policyNamespace + "/" + string(targetName)
+		gw := ptr.Flatten(krt.FetchOne(ctx, agw.Gateways, krt.FilterKey(key)))
+		if gw == nil {
+			return nil, fmt.Sprintf("Policy is not attached: Gateway %s/%s not found", policyNamespace, targetName)
+		}
 		// TODO: Validate the listener exists to avoid reporting attached for a non-existent sectionName
 		// Requires listeners attachment to be supported: https://github.com/agentgateway/agentgateway/issues/825
 		return fallback, ""

@@ -1,15 +1,3 @@
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: test
-  namespace: default
-spec:
-  gatewayClassName: dummy
-  listeners:
-  - name: https
-    protocol: HTTPS
-    port: 443
----
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
@@ -18,9 +6,8 @@ metadata:
 spec:
   targetRefs:
   - kind: Gateway
-    name: test
+    name: fake-gw
     group: gateway.networking.k8s.io
-    sectionName: https
   frontend:
     tls:
       handshakeTimeout: 15s
@@ -31,23 +18,20 @@ output:
     frontend:
       tls:
         handshakeTimeout: 15s
-    key: frontend/default/tls-policy:frontend-tls:default/test/https
+    key: frontend/default/tls-policy:frontend-tls:default/fake-gw
     name:
       kind: AgentgatewayPolicy
       name: tls-policy
       namespace: default
     target:
       gateway:
-        listener: https
-        name: test
+        name: fake-gw
         namespace: default
 status:
   ancestors:
   - ancestorRef:
-      group: gateway.networking.k8s.io
-      kind: Gateway
-      name: test
-      namespace: default
+      group: agentgateway.dev
+      name: StatusSummary
     conditions:
     - lastTransitionTime: fake
       message: Policy accepted
@@ -55,8 +39,8 @@ status:
       status: "True"
       type: Accepted
     - lastTransitionTime: fake
-      message: Attached to all targets
-      reason: Attached
-      status: "True"
+      message: 'Policy is not attached: Gateway default/fake-gw not found'
+      reason: Pending
+      status: "False"
       type: Attached
     controllerName: agentgateway.dev/agentgateway
