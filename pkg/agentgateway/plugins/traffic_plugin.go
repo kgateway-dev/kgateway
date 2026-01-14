@@ -144,6 +144,10 @@ func TranslateAgentgatewayPolicy(
 			policyTarget = &api.PolicyTarget{
 				Kind: utils.RouteTarget(policy.Namespace, string(target.Name), wellknown.HTTPRouteGVK.Kind, target.SectionName),
 			}
+		case wellknown.GRPCRouteGVK.GroupKind():
+			policyTarget = &api.PolicyTarget{
+				Kind: utils.RouteTarget(policy.Namespace, string(target.Name), wellknown.GRPCRouteGVK.Kind, target.SectionName),
+			}
 		case wellknown.AgentgatewayBackendGVK.GroupKind():
 			policyTarget = &api.PolicyTarget{
 				Kind: utils.BackendTarget(policy.Namespace, string(target.Name), target.SectionName),

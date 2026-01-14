@@ -63,7 +63,7 @@ type AgentgatewayPolicySpec struct {
 	// +listType=atomic
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'agentgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or AgentgatewayBackend resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'agentgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute', 'GRPCRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, GRPCRoute, XListenerSet, Service, or AgentgatewayBackend resources"
 	// +kubebuilder:validation:XValidation:message="Only one Kind of targetRef can be set on one policy",rule="self.all(l1, !self.exists(l2, l1.kind != l2.kind))"
 	// +optional
 	TargetRefs []shared.LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
@@ -71,7 +71,7 @@ type AgentgatewayPolicySpec struct {
 	// targetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'agentgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or AgentgatewayBackend resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'agentgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute', 'GRPCRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, GRPCRoute, XListenerSet, Service, or AgentgatewayBackend resources"
 	// +kubebuilder:validation:XValidation:message="Only one Kind of targetRef can be set on one policy",rule="self.all(l1, !self.exists(l2, l1.kind != l2.kind))"
 	// +optional
 	TargetSelectors []shared.LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
