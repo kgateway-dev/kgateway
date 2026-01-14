@@ -168,6 +168,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "envoy-proxy-dynamic-modules-rust-sdk"
+version = "0.1.0"
+source = "git+https://github.com/envoyproxy/envoy?rev=bad8280de85c25b147a90c1d9b8a8c67a13e7134#bad8280de85c25b147a90c1d9b8a8c67a13e7134"
+dependencies = [
+ "bindgen",
+ "mockall",
+]
+
+[[package]]
 name = "errno"
 version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -519,7 +528,8 @@ name = "rustformations"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "envoy-proxy-dynamic-modules-rust-sdk",
+ "envoy-proxy-dynamic-modules-rust-sdk 0.1.0",
+ "envoy-proxy-dynamic-modules-rust-sdk 0.1.0 (git+https://github.com/envoyproxy/envoy?rev=bad8280de85c25b147a90c1d9b8a8c67a13e7134)",
  "matchers",
  "minijinja",
  "mockall",
