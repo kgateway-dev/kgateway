@@ -48,7 +48,6 @@ status:
       kind: Gateway
       name: test
       namespace: default
-      sectionName: https
     conditions:
     - lastTransitionTime: fake
       message: Policy accepted
@@ -61,4 +60,3 @@ status:
       status: "True"
       type: Attached
     controllerName: agentgateway.dev/agentgateway
-

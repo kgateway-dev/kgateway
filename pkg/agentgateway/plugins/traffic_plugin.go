@@ -316,26 +316,8 @@ func resolvePolicyAncestorRefs(
 
 	// If the policy is attached directly to a Gateway, that Gateway is the ancestor.
 	if targetGK == wellknown.GatewayGVK.GroupKind() {
-		// For listener-scoped attachment, keep sectionName to report status per listener.
-		if sectionName != nil {
-			fallback[0].SectionName = sectionName
-			// Validate the listener exists to avoid reporting attached for a non-existent sectionName.
-			key := policyNamespace + "/" + string(targetName)
-			gw := ptr.Flatten(krt.FetchOne(ctx, agw.Gateways, krt.FilterKey(key)))
-			if gw == nil {
-				return fallback, fmt.Sprintf("Policy is not attached: Gateway %s/%s not found", policyNamespace, targetName)
-			}
-			found := false
-			for _, l := range gw.Spec.Listeners {
-				if string(l.Name) == string(*sectionName) {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return fallback, fmt.Sprintf("Policy is not attached: Gateway %s/%s has no listener %s", policyNamespace, targetName, *sectionName)
-			}
-		}
+		// TODO: Validate the listener exists to avoid reporting attached for a non-existent sectionName
+		// Requires listeners attachment to be supported: https://github.com/agentgateway/agentgateway/issues/825
 		return fallback, ""
 	}
 
