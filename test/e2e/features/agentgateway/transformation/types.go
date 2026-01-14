@@ -21,6 +21,7 @@ var (
 	transformForHeadersManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-headers.yaml")
 	transformForBodyManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body.yaml")
 	gatewayAttachedTransformManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-attached-transform.yaml")
+	grpcTransformationManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "grpc-transformation.yaml")
 
 	// objects from gateway manifest
 	gateway = &gwv1.Gateway{
