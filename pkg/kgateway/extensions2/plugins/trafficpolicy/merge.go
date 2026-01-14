@@ -286,7 +286,6 @@ func mergeRustformation(
 				PerRouteConfigName: "http_simple_mutations",
 				FilterConfig:       filterCfg,
 			}}
-
 		}
 		p1Json, err := utils.AnyToJson(p1.spec.rustformation.config.FilterConfig)
 		if err != nil {

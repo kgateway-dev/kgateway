@@ -244,6 +244,14 @@ spec:
     protocol: TCP
     port: 9977
     targetPort: 9977
+  - name: health
+    protocol: TCP
+    port: 9093
+    targetPort: 9093
+  - name: metrics
+    protocol: TCP
+    port: 9092
+    targetPort: 9092
   selector:
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
