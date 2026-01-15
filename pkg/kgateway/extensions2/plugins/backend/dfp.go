@@ -25,8 +25,10 @@ var dfpFilterConfig = &envoydfp.FilterConfig{
 
 // DfpIr is the internal representation of a dynamic forward proxy backend.
 type DfpIr struct {
+	// +noKrtEquals
 	clusterTypeConfig *anypb.Any
-	transportSocket   *envoycorev3.TransportSocket
+	// +noKrtEquals
+	transportSocket *envoycorev3.TransportSocket
 }
 
 // Equals checks if two DfpIr objects are equal.

@@ -54,6 +54,7 @@ var (
 )
 
 type backendTlsPolicy struct {
+	// +noKrtEquals
 	ct              time.Time
 	transportSocket *envoycorev3.TransportSocket
 }

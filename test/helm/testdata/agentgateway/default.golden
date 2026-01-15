@@ -226,14 +226,18 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 9978
-      targetPort: grpc-xds-agw
-      protocol: TCP
-      name: grpc-xds-agw
-    - port: 9093
-      targetPort: health
-      protocol: TCP
-      name: health
+  - name: grpc-xds-agw
+    protocol: TCP
+    port: 9978
+    targetPort: grpc-xds-agw
+  - name: health
+    protocol: TCP
+    port: 9093
+    targetPort: health
+  - name: metrics
+    protocol: TCP
+    port: 9092
+    targetPort: metrics
   selector:
     agentgateway: agentgateway
     app.kubernetes.io/name: agentgateway

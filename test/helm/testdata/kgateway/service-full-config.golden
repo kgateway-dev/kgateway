@@ -1,25 +1,4 @@
 ---
-# Source: kgateway/templates/poddisruptionbudget.yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: test-release-kgateway
-  namespace: default
-  labels:
-    helm.sh/chart: kgateway-v0.0.1
-    kgateway: kgateway
-    app.kubernetes.io/name: kgateway
-    app.kubernetes.io/instance: test-release
-    app.kubernetes.io/version: "v0.0.2"
-    app.kubernetes.io/managed-by: Helm
-spec:
-  selector:
-    matchLabels:
-      kgateway: kgateway
-      app.kubernetes.io/name: kgateway
-      app.kubernetes.io/instance: test-release
-  minAvailable: 1
----
 # Source: kgateway/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -258,8 +237,36 @@ metadata:
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "v0.0.2"
     app.kubernetes.io/managed-by: Helm
+    custom-label: custom-value
+    environment: test
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
 spec:
-  type: ClusterIP
+  type: LoadBalancer
+  clusterIPs:
+    - 10.96.0.100
+  externalIPs:
+    - 203.0.113.10
+    - 203.0.113.11
+  loadBalancerIP: 198.51.100.1
+  loadBalancerSourceRanges:
+    - 10.0.0.0/8
+    - 192.168.0.0/16
+  loadBalancerClass: service.k8s.aws/nlb
+  externalTrafficPolicy: Local
+  internalTrafficPolicy: Cluster
+  healthCheckNodePort: 32100
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  publishNotReadyAddresses: true
+  allocateLoadBalancerNodePorts: false
+  trafficDistribution: PreferClose
   ports:
   - name: grpc-xds
     protocol: TCP

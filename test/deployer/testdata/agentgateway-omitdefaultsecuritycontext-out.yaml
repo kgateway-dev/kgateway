@@ -160,6 +160,7 @@ spec:
         - mountPath: /var/run/secrets/xds-tokens
           name: xds-token
           readOnly: true
+      securityContext: {}
       serviceAccountName: gw
       terminationGracePeriodSeconds: 60
       volumes:

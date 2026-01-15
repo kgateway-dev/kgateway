@@ -55,7 +55,8 @@ type ListenerPolicyIR struct {
 type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
 	perConnectionBufferLimitBytes *uint32
-	http                          *HttpListenerPolicyIr
+	// +noKrtEquals
+	http *HttpListenerPolicyIr
 }
 
 func newListenerPolicy(

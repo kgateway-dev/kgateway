@@ -157,9 +157,12 @@ func configureAWSAuth(secret *ir.Secret, region string) (*envoy_request_signing_
 
 // lambdaFilters is a helper struct to store the lambda filters for the given backend.
 type lambdaFilters struct {
-	lambdaConfigAny      *anypb.Any
+	// +noKrtEquals
+	lambdaConfigAny *anypb.Any
+	// +noKrtEquals
 	awsRequestSigningAny *anypb.Any
-	codecConfigAny       *anypb.Any
+	// +noKrtEquals
+	codecConfigAny *anypb.Any
 }
 
 // Equals checks if two lambdaFilters objects are equal.
@@ -289,11 +292,6 @@ func configureLambdaEndpoint(in *kgateway.AwsBackend) (*lambdaEndpointConfig, er
 	config.port = uint32(port)
 
 	return config, nil
-}
-
-// processEndpointsAws processes the endpoints for the aws backend.
-func processEndpointsAws(_ *kgateway.AwsBackend) *ir.EndpointsForBackend {
-	return nil
 }
 
 // staticSecretDerivation is a helper struct to store the decoded secret values

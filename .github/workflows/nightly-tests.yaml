@@ -83,7 +83,7 @@ jobs:
       fail-fast: false
       matrix:
         kube-version: [ { node: 'v1.30.13@sha256:397209b3d947d154f6641f2d0ce8d473732bd91c87d9575ade99049aa33cd648', kubectl: 'v1.30.14', kind: 'v0.29.0' },
-                        { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' }]
+                        { node: 'v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f', kubectl: 'v1.35.0', kind: 'v0.31.0' }]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -91,15 +91,17 @@ jobs:
     - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
-    name: E2E ${{ matrix.gateway-api-version.version }} ${{ matrix.gateway-api-version.channel }} ${{ matrix.controllers.agentgateway && 'AGW' || 'KGW' }}
+    name: E2E (${{ matrix.controllers.agentgateway && 'AGW' || 'KGW' }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        gateway-api-version: [ { version: 'v1.4.0', channel: 'experimental' },
-                              { version: 'v1.4.0', channel: 'standard' },
+        env-versions: [ {file: "./.github/workflows/.env/nightly-tests/max_versions.env", label: "max"},
+                        {file: "./.github/workflows/.env/nightly-tests/min_versions.env", label: "min"} ]
+        gateway-api-version: [ { version: 'v1.4.1', channel: 'experimental' },
+                              { version: 'v1.4.1', channel: 'standard' },
                               { version: 'v1.3.0', channel: 'experimental' },
                               { version: 'v1.3.0', channel: 'standard' },
                               { version: 'v1.2.1', channel: 'experimental' },
@@ -118,14 +120,14 @@ jobs:
       uses: falti/dotenv-action@v1.1.4
       id: dotenv
       with:
-        path: "./.github/workflows/.env/nightly-tests/max_versions.env"
+        path: ${{ matrix.env-versions.file }}
         log-variables: true
     - name: Setup KinD Cluster
       uses: ./.github/actions/setup-kind-cluster
       with:
         gateway-api-version: ${{ matrix.gateway-api-version.version }}
         gateway-api-channel: ${{ matrix.gateway-api-version.channel }}
-        cluster-name: "kgw-api-e2e-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+        cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
@@ -140,8 +142,8 @@ jobs:
         # A single test failure counts as a failure for each of its parent suites, and these tests run for a long time, so use a higher max failure count
         GOTESTSUM_ARGS: '--format=standard-verbose --rerun-fails-max-failures 25'
       with:
-        cluster-name: "kgw-api-e2e-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+        cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
         test-args: '-timeout=120m'
         run-regex: ${{ matrix.controllers.regex }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
-        matrix-label: "nightly-kgw-api-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+        matrix-label: "nightly-kgw-api-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"

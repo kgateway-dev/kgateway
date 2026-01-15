@@ -21,6 +21,7 @@ import (
 )
 
 type directResponse struct {
+	// +noKrtEquals
 	ct   time.Time
 	spec kgateway.DirectResponseSpec
 }

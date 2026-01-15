@@ -1,5 +1,6 @@
 use crate::BodyParseBehavior;
 use crate::LocalTransform;
+use crate::LocalTransformationConfig;
 use crate::NameValuePair;
 use crate::TransformationError;
 use crate::TransformationOps;
@@ -23,6 +24,9 @@ const STATE_LOOKUP_KEY_BODY: &str = "body.dev.kgateway";
 const STATE_LOOKUP_KEY_CONTEXT: &str = "context.dev.kgateway";
 const STATE_LOOKUP_KEY_HEADERS: &str = "headers.dev.kgateway";
 const STATE_LOOKUP_KEY_REQ_HEADERS: &str = "request_headers.dev.kgateway";
+
+const REQUEST_BODY_TEMPLATE_LOOKUP_KEY: &str = "request_body_0";
+const RESPONSE_BODY_TEMPLATE_LOOKUP_KEY: &str = "response_body_0";
 
 static ENV: Lazy<Environment<'static>> = Lazy::new(new_jinja_env);
 
@@ -157,7 +161,7 @@ fn context(state: &State) -> minijinja::Value {
     state.lookup(STATE_LOOKUP_KEY_CONTEXT).unwrap_or_default()
 }
 
-fn new_jinja_env() -> Environment<'static> {
+pub fn new_jinja_env() -> Environment<'static> {
     let mut env = Environment::new();
 
     // if parseAsJson is used for body parsing. minijinja would prefer the json instead of custom function
@@ -200,15 +204,24 @@ fn new_jinja_env() -> Environment<'static> {
     env
 }
 
+// For headers, the template lookup key is the same as the template strings.
+// For bodies, because there will only be 1 for request and 1 for response, we use
+// a short key when we compile the templates. So, pass in RESPONSE_BODY_TEMPLATE_LOOKUP_KEY
+// or REQUEST_BODY_TEMPLATE_LOOKUP_KEY for template_key when rendering body.
+// pass in the same template string as the template_key for headers.
 fn render(
     env: &Environment<'static>,
     ctx: &minijinja::Value,
+    template_key: &str,
     template: &str,
     parsed_body_as_json: bool,
 ) -> Result<String> {
+    if template.is_empty() {
+        return Ok(String::new());
+    }
     let tmpl = env
-        .template_from_str(template)
-        .with_context(|| format!("error creating jinja template {}", template))?;
+        .get_template(template_key)
+        .with_context(|| format!("error looking up jinja template {}", template))?;
     if !parsed_body_as_json {
         // This is to mimic the C++ behavior when a transformation is used that needs
         // the body is parsed as json but it's not enabled. So, we try to detect if
@@ -264,11 +277,11 @@ fn combine_errors(msg: &str, errors: Vec<Error>) -> Result<()> {
 /// On body parsing as json error, we return error immediately so we can send a
 /// 400 response back
 pub fn transform_request<T: TransformationOps>(
+    env: &Environment<'static>,
     transform: &LocalTransform,
     request_headers_map: &HashMap<String, String>,
     mut ops: T,
 ) -> Result<()> {
-    let env = &*ENV;
     let mut errors = Vec::new();
 
     //    let mut m = BTreeMap::new();
@@ -322,7 +335,13 @@ pub fn transform_request<T: TransformationOps>(
     if let Some(body_transform) = transform.body.as_ref() {
         if !body_transform.value.is_empty() {
             ops.drain_request_body(u64::MAX.try_into().unwrap());
-            let rendered = match render(env, &ctx, &body_transform.value, parsed_body_as_json) {
+            let rendered = match render(
+                env,
+                &ctx,
+                REQUEST_BODY_TEMPLATE_LOOKUP_KEY,
+                &body_transform.value,
+                parsed_body_as_json,
+            ) {
                 Ok(str) => Some(str),
                 Err(e) => {
                     errors.push(e);
@@ -354,7 +373,7 @@ pub fn transform_request<T: TransformationOps>(
             ops.remove_request_header(key);
             continue;
         }
-        let rendered = match render(env, &ctx, value, parsed_body_as_json) {
+        let rendered = match render(env, &ctx, value, value, parsed_body_as_json) {
             Ok(str) => Some(str),
             Err(err) => {
                 if let Some(e) = err.downcast_ref::<TransformationError>() {
@@ -384,7 +403,7 @@ pub fn transform_request<T: TransformationOps>(
         if value.is_empty() {
             continue;
         }
-        let rendered = match render(env, &ctx, value, parsed_body_as_json) {
+        let rendered = match render(env, &ctx, value, value, parsed_body_as_json) {
             Ok(str) => Some(str),
             Err(err) => {
                 if let Some(e) = err.downcast_ref::<TransformationError>() {
@@ -422,12 +441,12 @@ pub fn transform_request<T: TransformationOps>(
 /// On body parsing as json error, we return error immediately so we can send a
 /// 400 response back
 pub fn transform_response<T: TransformationOps>(
+    env: &Environment<'static>,
     transform: &LocalTransform,
     request_headers_map: &HashMap<String, String>,
     response_headers_map: &HashMap<String, String>,
     mut ops: T,
 ) -> Result<()> {
-    let env = &*ENV;
     let mut errors = Vec::new();
 
     let mut m = BTreeMap::new();
@@ -482,7 +501,13 @@ pub fn transform_response<T: TransformationOps>(
             // than the content length. This is to avoid having to iterate through the buffer to
             // calculate the size.
             ops.drain_response_body(u64::MAX.try_into().unwrap());
-            let rendered = match render(env, &ctx, &body_transform.value, parsed_body_as_json) {
+            let rendered = match render(
+                env,
+                &ctx,
+                RESPONSE_BODY_TEMPLATE_LOOKUP_KEY,
+                &body_transform.value,
+                parsed_body_as_json,
+            ) {
                 Ok(str) => Some(str),
                 Err(e) => {
                     errors.push(e);
@@ -514,7 +539,7 @@ pub fn transform_response<T: TransformationOps>(
             ops.remove_response_header(key);
             continue;
         }
-        let rendered = match render(env, &ctx, value, parsed_body_as_json) {
+        let rendered = match render(env, &ctx, value, value, parsed_body_as_json) {
             Ok(str) => Some(str),
             Err(err) => {
                 if let Some(e) = err.downcast_ref::<TransformationError>() {
@@ -544,7 +569,7 @@ pub fn transform_response<T: TransformationOps>(
         if value.is_empty() {
             continue;
         }
-        let rendered = match render(env, &ctx, value, parsed_body_as_json) {
+        let rendered = match render(env, &ctx, value, value, parsed_body_as_json) {
             Ok(str) => Some(str),
             Err(err) => {
                 if let Some(e) = err.downcast_ref::<TransformationError>() {
@@ -573,4 +598,49 @@ pub fn transform_response<T: TransformationOps>(
     }
 
     combine_errors("transform_response()", errors)
+}
+
+pub fn create_env_with_templates(
+    config: &LocalTransformationConfig,
+) -> Result<Environment<'static>> {
+    let mut env = new_jinja_env();
+    if let Some(request) = &config.request {
+        for pair in &request.add {
+            if pair.value.is_empty() {
+                continue;
+            }
+            env.add_template_owned(pair.value.clone(), pair.value.clone())?;
+        }
+        for pair in &request.set {
+            if pair.value.is_empty() {
+                continue;
+            }
+            env.add_template_owned(pair.value.clone(), pair.value.clone())?;
+        }
+        if let Some(body) = &request.body {
+            if !body.value.is_empty() {
+                env.add_template_owned(REQUEST_BODY_TEMPLATE_LOOKUP_KEY, body.value.clone())?;
+            }
+        }
+    }
+    if let Some(response) = &config.response {
+        for pair in &response.add {
+            if pair.value.is_empty() {
+                continue;
+            }
+            env.add_template_owned(pair.value.clone(), pair.value.clone())?;
+        }
+        for pair in &response.set {
+            if pair.value.is_empty() {
+                continue;
+            }
+            env.add_template_owned(pair.value.clone(), pair.value.clone())?;
+        }
+        if let Some(body) = &response.body {
+            if !body.value.is_empty() {
+                env.add_template_owned(RESPONSE_BODY_TEMPLATE_LOOKUP_KEY, body.value.clone())?;
+            }
+        }
+    }
+    Ok(env)
 }

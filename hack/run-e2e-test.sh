@@ -673,6 +673,10 @@ main() {
             log_info "Running 'make setup'..."
             make setup
             echo ""
+        else
+            log_info "Packaging charts (required for tests)..."
+            make package-kgateway-charts package-agentgateway-charts
+            echo ""
         fi
     fi
 
@@ -689,16 +693,12 @@ main() {
     # Escape $ for make/shell
     local escaped_pattern="${run_pattern//\$/\$\$}"
 
-    # Set default version for tests
-    local test_version="${VERSION:-1.0.0-ci1}"
-
     # If dry-run mode, just print the command and exit
     if [[ "$dry_run" == "true" ]]; then
         echo ""
         log_info "Dry-run mode: printing command without executing"
         echo ""
         echo "make go-test \\"
-        echo "    VERSION=\"${test_version}\" \\"
         echo "    GO_TEST_USER_ARGS=\"-failfast -run '$escaped_pattern'\" \\"
         echo "    TEST_PKG=\"${test_pkg}\" TEST_TAG=e2e"
         echo ""
@@ -728,7 +728,6 @@ main() {
     set +e
     set -x
     make go-test \
-        VERSION="${test_version}" \
         "GO_TEST_USER_ARGS=-failfast -run '$escaped_pattern'" \
         TEST_PKG="${test_pkg}" TEST_TAG=e2e 2>&1 | tee "$test_output_file"
     test_exit_code=${PIPESTATUS[0]}

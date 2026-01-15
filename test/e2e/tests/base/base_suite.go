@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	"istio.io/istio/pkg/maps"
 	"istio.io/istio/pkg/test/util/assert"
@@ -407,8 +408,95 @@ func (s *BaseTestingSuite) GetKubectlOutput(command ...string) string {
 	return out
 }
 
+// prePullImages extracts container images from the test case manifests and pre-pulls them
+// with a long timeout to avoid flakiness due to slow image pulls or rate limiting.
+func (s *BaseTestingSuite) prePullImages(testCase *TestCase) {
+	// First load the manifest resources so we can extract images
+	s.loadManifestResources(testCase)
+
+	// Extract unique images from pods and deployments
+	images := make(map[string]struct{})
+	for _, obj := range testCase.manifestResources {
+		if pod, ok := obj.(*corev1.Pod); ok {
+			for _, container := range pod.Spec.Containers {
+				images[container.Image] = struct{}{}
+			}
+			for _, container := range pod.Spec.InitContainers {
+				images[container.Image] = struct{}{}
+			}
+		} else if deployment, ok := obj.(*appsv1.Deployment); ok {
+			for _, container := range deployment.Spec.Template.Spec.Containers {
+				images[container.Image] = struct{}{}
+			}
+			for _, container := range deployment.Spec.Template.Spec.InitContainers {
+				images[container.Image] = struct{}{}
+			}
+		}
+	}
+
+	if len(images) == 0 {
+		return
+	}
+
+	// Create temporary pods to pull images
+	for image := range images {
+		s.pullImage(image)
+	}
+}
+
+// pullImage creates a temporary pod to pull the given image with a long timeout.
+func (s *BaseTestingSuite) pullImage(image string) {
+	// Create a unique name for the puller pod based on image name
+	// Replace invalid characters for kubernetes names
+	safeName := strings.ReplaceAll(image, "/", "-")
+	safeName = strings.ReplaceAll(safeName, ":", "-")
+	safeName = strings.ReplaceAll(safeName, ".", "-")
+	if len(safeName) > 50 {
+		safeName = safeName[:50]
+	}
+	podName := fmt.Sprintf("image-puller-%s", safeName)
+
+	pullerPod := fmt.Sprintf(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: %s
+  namespace: default
+spec:
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 0
+  containers:
+  - name: puller
+    image: %s
+    command: ["true"]
+`, podName, image)
+
+	// Apply the puller pod
+	err := s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(pullerPod))
+	if err != nil {
+		s.T().Logf("Warning: failed to create image puller pod for %s: %v", image, err)
+		return
+	}
+
+	// Wait for the pod to complete (image pulled) with a long timeout (5 minutes)
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		pod, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().Pods("default").Get(s.Ctx, podName, metav1.GetOptions{})
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+		// Pod should be Succeeded (completed) or Running (image pulled, command ran)
+		g.Expect(pod.Status.Phase).To(gomega.BeElementOf(corev1.PodSucceeded, corev1.PodRunning, corev1.PodFailed))
+	}).WithTimeout(5*time.Minute).WithPolling(2*time.Second).Should(gomega.Succeed(), "waiting for image %s to be pulled", image)
+
+	// Clean up the puller pod
+	_ = s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "delete", "pod", podName, "-n", "default", "--ignore-not-found")
+}
+
 // ApplyManifests applies the manifests and waits until the resources are created and ready.
 func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
+	// Pre-pull images to avoid flakiness from slow image pulls or rate
+	// limiting. Any remaining flakes will be more obvious as to the root
+	// cause.
+	s.prePullImages(testCase)
+
 	// apply the manifests
 	err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", testCase.Manifests...)
 	s.Require().NoError(err, "manifests %v", testCase.Manifests)

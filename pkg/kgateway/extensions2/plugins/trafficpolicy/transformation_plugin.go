@@ -44,7 +44,7 @@ func (t *transformationIR) Validate() error {
 
 // constructTransformation constructs the transformation policy IR from the policy specification.
 func constructTransformation(in *kgateway.TrafficPolicy, out *trafficPolicySpecIr) {
-	if in.Spec.Transformation == nil && !useRustformations {
+	if in.Spec.Transformation == nil || useRustformations {
 		return
 	}
 	transformation := toTransformFilterConfig(in.Spec.Transformation)

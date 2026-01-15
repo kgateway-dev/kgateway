@@ -72,6 +72,7 @@ func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 		curl.WithArgs([]string{"-i"}),
 		curl.WithConnectionTimeout(10),
 		curl.WithRetries(3, 0, 10),
+		curl.WithRetryConnectionRefused(true),
 	}
 
 	firstResp, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(s.Ctx, testdefaults.CurlPodExecOpt, firstCurlOpts...)
@@ -92,6 +93,7 @@ func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 			curl.WithHeader("Cookie", cookie),
 			curl.WithConnectionTimeout(10),
 			curl.WithRetries(5, 0, 10),
+			curl.WithRetryConnectionRefused(true),
 		}
 	} else {
 		headerValue := s.extractSessionHeaderFromResponse(firstResp.StdOut)
@@ -104,6 +106,7 @@ func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 			curl.WithHeader("session-a", headerValue),
 			curl.WithConnectionTimeout(10),
 			curl.WithRetries(3, 0, 10),
+			curl.WithRetryConnectionRefused(true),
 		}
 	}
 

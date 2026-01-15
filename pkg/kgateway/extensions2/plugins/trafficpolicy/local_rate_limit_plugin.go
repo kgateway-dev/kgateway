@@ -76,25 +76,32 @@ func toLocalRateLimitFilterConfig(t *kgateway.LocalRateLimitPolicy) *localrateli
 		}
 	}
 
+	filterEnabled := uint32(100)
+	if t.PercentEnabled != nil {
+		filterEnabled = uint32(*t.PercentEnabled) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
+
+	filterEnforced := uint32(100)
+	if t.PercentEnforced != nil {
+		filterEnforced = uint32(*t.PercentEnforced) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
+
 	var lrl *localratelimitv3.LocalRateLimit = &localratelimitv3.LocalRateLimit{
 		StatPrefix:  localRateLimitStatPrefix,
 		TokenBucket: tokenBucket,
-		// By default filter is enabled for 0% of the requests. We enable it for all requests.
-		// TODO: Make this configurable in the rate limit policy API.
+		// By default filter is enabled for 0% of the requests.
 		FilterEnabled: &envoycorev3.RuntimeFractionalPercent{
 			RuntimeKey: localRatelimitFilterEnabledRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{
-				Numerator:   100,
+				Numerator:   filterEnabled,
 				Denominator: typev3.FractionalPercent_HUNDRED,
 			},
 		},
 		// By default filter is enforced for 0% of the requests (out of the enabled fraction).
-		// We enable it for all requests.
-		// TODO: Make this configurable in the rate limit policy API.
 		FilterEnforced: &envoycorev3.RuntimeFractionalPercent{
 			RuntimeKey: localRatelimitFilterEnforcedRuntimeKey,
 			DefaultValue: &typev3.FractionalPercent{
-				Numerator:   100,
+				Numerator:   filterEnforced,
 				Denominator: typev3.FractionalPercent_HUNDRED,
 			},
 		},

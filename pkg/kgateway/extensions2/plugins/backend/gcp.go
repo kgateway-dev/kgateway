@@ -18,7 +18,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 const (
@@ -160,11 +159,6 @@ func buildGcpIr(in *kgateway.GcpBackend) (*GcpIr, error) {
 		transportSocket:   transportSocket,
 		audienceConfigAny: audienceConfigAny,
 	}, nil
-}
-
-// processEndpointsGcp processes the endpoints for the GCP backend.
-func processEndpointsGcp(_ *kgateway.GcpBackend) *ir.EndpointsForBackend {
-	return nil
 }
 
 // getGcpAuthnCluster returns the GCP metadata cluster configuration.

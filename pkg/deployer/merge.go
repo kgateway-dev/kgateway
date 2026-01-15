@@ -40,7 +40,6 @@ func DeepMergeGatewayParameters(dst, src *kgateway.GatewayParameters) {
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
 	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
 	dstKube.OmitDefaultSecurityContext = MergePointers(dstKube.GetOmitDefaultSecurityContext(), srcKube.GetOmitDefaultSecurityContext())
-	dstKube.Agentgateway = deepMergeAgentgateway(dstKube.GetAgentgateway(), srcKube.GetAgentgateway())
 }
 
 // MergePointers will decide whether to use dst or src without dereferencing or recursing
@@ -717,26 +716,6 @@ func deepMergeDeployment(dst, src *kgateway.ProxyDeployment) *kgateway.ProxyDepl
 
 	dst.Replicas = MergePointers(dst.GetReplicas(), src.GetReplicas())
 	dst.Strategy = MergePointers(dst.Strategy, src.Strategy)
-
-	return dst
-}
-
-func deepMergeAgentgateway(dst, src *kgateway.Agentgateway) *kgateway.Agentgateway {
-	// nil src override means just use dst
-	if src == nil {
-		return dst
-	}
-
-	if dst == nil {
-		return src
-	}
-
-	dst.LogLevel = MergePointers(dst.GetLogLevel(), src.GetLogLevel())
-	dst.Image = DeepMergeImage(dst.GetImage(), src.GetImage())
-	dst.SecurityContext = DeepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
-	dst.Resources = DeepMergeResourceRequirements(dst.GetResources(), src.GetResources())
-	dst.Env = DeepMergeSlices(dst.GetEnv(), src.GetEnv())
-	dst.ExtraVolumeMounts = DeepMergeSlices(dst.ExtraVolumeMounts, src.ExtraVolumeMounts)
 
 	return dst
 }

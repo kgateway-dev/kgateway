@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
+	"sigs.k8s.io/gateway-api-inference-extension/pkg/epp/metadata"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -50,7 +51,7 @@ func processPoolBackendObjIR(
 	out.LbPolicy = envoyclusterv3.Cluster_ROUND_ROBIN
 	out.LbSubsetConfig = &envoyclusterv3.Cluster_LbSubsetConfig{
 		SubsetSelectors: []*envoyclusterv3.Cluster_LbSubsetConfig_LbSubsetSelector{{
-			Keys: []string{dstEndpointKey},
+			Keys: []string{metadata.DestinationEndpointKey},
 		}},
 		FallbackPolicy: envoyclusterv3.Cluster_LbSubsetConfig_ANY_ENDPOINT,
 	}
@@ -66,7 +67,7 @@ func processPoolBackendObjIR(
 
 		// Build the subset metadata struct used by the EPP for endpoint selection
 		mdStruct, err := structpb.NewStruct(map[string]any{
-			dstEndpointKey: addr,
+			metadata.DestinationEndpointKey: addr,
 		})
 		if err != nil {
 			logger.Error("failed to build endpoint metadata for endpoint",
@@ -93,7 +94,7 @@ func processPoolBackendObjIR(
 			LoadBalancingWeight: wrapperspb.UInt32(1),
 			Metadata: &envoycorev3.Metadata{
 				FilterMetadata: map[string]*structpb.Struct{
-					envoyLbNamespace: mdStruct,
+					metadata.DestinationEndpointNamespace: mdStruct,
 				},
 			},
 		}

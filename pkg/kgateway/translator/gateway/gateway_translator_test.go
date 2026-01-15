@@ -531,6 +531,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with local rate limiting configurable percentage", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/local-rate-limit-configurable-percentage.yaml",
+			outputFile: "traffic-policy/local-rate-limit-configurable-percentage.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with local and global rate limiting combined", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/local-and-global-combined",

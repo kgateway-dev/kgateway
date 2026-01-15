@@ -1,25 +1,4 @@
 ---
-# Source: kgateway/templates/poddisruptionbudget.yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: test-release-kgateway
-  namespace: default
-  labels:
-    helm.sh/chart: kgateway-v0.0.1
-    kgateway: kgateway
-    app.kubernetes.io/name: kgateway
-    app.kubernetes.io/instance: test-release
-    app.kubernetes.io/version: "v0.0.2"
-    app.kubernetes.io/managed-by: Helm
-spec:
-  selector:
-    matchLabels:
-      kgateway: kgateway
-      app.kubernetes.io/name: kgateway
-      app.kubernetes.io/instance: test-release
-  minAvailable: 1
----
 # Source: kgateway/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -379,3 +358,58 @@ spec:
                   fieldPath: metadata.namespace
           resources:
             {}
+---
+# Source: kgateway/templates/horizontalpodautoscaler.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: test-release-kgateway
+  namespace: default
+  labels:
+    helm.sh/chart: kgateway-v0.0.1
+    kgateway: kgateway
+    app.kubernetes.io/name: kgateway
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: "v0.0.2"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: test-release-kgateway
+  maxReplicas: 5
+  metrics:
+  - resource:
+      name: cpu
+      target:
+        averageUtilization: 80
+        type: Utilization
+    type: Resource
+  minReplicas: 1
+---
+# Source: kgateway/templates/verticalpodautoscaler.yaml
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: test-release-kgateway
+  namespace: default
+  labels:
+    helm.sh/chart: kgateway-v0.0.1
+    kgateway: kgateway
+    app.kubernetes.io/name: kgateway
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: "v0.0.2"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: test-release-kgateway
+  resourcePolicy:
+    containerPolicies:
+    - containerName: '*'
+      minAllowed:
+        cpu: 100m
+        memory: 128Mi
+  updatePolicy:
+    updateMode: Auto

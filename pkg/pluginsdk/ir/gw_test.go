@@ -57,6 +57,7 @@ func TestPolicyApplyOrderedGroupKinds(t *testing.T) {
 
 // Mock PolicyIR implementation for testing
 type mockPolicyIR struct {
+	// +noKrtEquals
 	time   time.Time
 	equals bool
 }

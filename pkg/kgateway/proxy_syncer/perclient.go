@@ -16,7 +16,9 @@ import (
 )
 
 type clustersWithErrors struct {
-	clusters            envoycache.Resources
+	// +noKrtEquals
+	clusters envoycache.Resources
+	// +noKrtEquals
 	erroredClusters     []string
 	erroredClustersHash uint64
 	clustersHash        uint64
@@ -35,7 +37,7 @@ func (c clustersWithErrors) ResourceName() string {
 var _ krt.Equaler[clustersWithErrors] = new(clustersWithErrors)
 
 func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
-	return c.clustersHash == k.clustersHash && c.erroredClustersHash == k.erroredClustersHash
+	return c.clustersHash == k.clustersHash && c.erroredClustersHash == k.erroredClustersHash && c.resourceName == k.resourceName
 }
 
 func (c endpointsWithUccName) ResourceName() string {
@@ -45,7 +47,7 @@ func (c endpointsWithUccName) ResourceName() string {
 var _ krt.Equaler[endpointsWithUccName] = new(endpointsWithUccName)
 
 func (c endpointsWithUccName) Equals(k endpointsWithUccName) bool {
-	return c.endpoints.Version == k.endpoints.Version
+	return c.endpoints.Version == k.endpoints.Version && c.resourceName == k.resourceName
 }
 
 func snapshotPerClient(

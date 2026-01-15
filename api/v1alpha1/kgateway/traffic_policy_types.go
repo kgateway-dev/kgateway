@@ -289,6 +289,18 @@ type LocalRateLimitPolicy struct {
 	// It defines the parameters for controlling the rate at which requests are allowed.
 	// +optional
 	TokenBucket *TokenBucket `json:"tokenBucket,omitempty"`
+
+	// PercentEnabled specifies the percentage of requests for which the rate limiter is enabled.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	PercentEnabled *int32 `json:"percentEnabled,omitempty"`
+
+	// PercentEnforced specifies the percentage of requests for which the rate limiter is enforced.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	PercentEnforced *int32 `json:"percentEnforced,omitempty"`
 }
 
 // TokenBucket defines the configuration for a token bucket rate-limiting mechanism.

@@ -39,7 +39,8 @@ type backendIr struct {
 	staticIr *StaticIr
 	dfpIr    *DfpIr
 	gcpIr    *GcpIr
-	errors   []error
+	// +noKrtEquals
+	errors []error
 }
 
 func (u *backendIr) Equals(other any) bool {
@@ -101,17 +102,13 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 
 		return &backend
 	})
-	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.Backend) *ir.EndpointsForBackend {
-		return processEndpoints(i)
-	})
 	return sdk.Plugin{
 		ContributesBackends: map[schema.GroupKind]sdk.BackendPlugin{
 			gk: {
 				BackendInit: ir.BackendInit{
 					InitEnvoyBackend: processBackendForEnvoy,
 				},
-				Endpoints: endpoints,
-				Backends:  bcol,
+				Backends: bcol,
 			},
 		},
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
@@ -260,19 +257,6 @@ func hostname(in *kgateway.Backend) string {
 		return ""
 	}
 	return in.Spec.Static.Hosts[0].Host
-}
-
-func processEndpoints(be *kgateway.Backend) *ir.EndpointsForBackend {
-	spec := be.Spec
-	switch {
-	case spec.Static != nil:
-		return processEndpointsStatic(spec.Static)
-	case spec.Aws != nil:
-		return processEndpointsAws(spec.Aws)
-	case spec.Gcp != nil:
-		return processEndpointsGcp(spec.Gcp)
-	}
-	return nil
 }
 
 type backendPlugin struct {
