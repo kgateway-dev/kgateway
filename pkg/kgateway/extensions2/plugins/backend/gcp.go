@@ -37,26 +37,28 @@ type GcpIr struct {
 
 // Equals checks if two GcpIr objects are equal.
 func (u *GcpIr) Equals(other any) bool {
+	// Handle nil receiver case - if receiver is nil, other must also be nil or (*GcpIr)(nil)
+	if u == nil {
+		return other == nil
+	}
+	// If receiver is not nil, other must be a *GcpIr
 	otherGcp, ok := other.(*GcpIr)
 	if !ok {
 		return false
 	}
-	if u == nil && otherGcp != nil {
+	// If other is nil, they're not equal (since u is not nil)
+	if otherGcp == nil {
 		return false
 	}
-	if u != nil {
-		if otherGcp == nil {
-			return false
-		}
-		if u.hostname != otherGcp.hostname {
-			return false
-		}
-		if !proto.Equal(u.transportSocket, otherGcp.transportSocket) {
-			return false
-		}
-		if !proto.Equal(u.audienceConfigAny, otherGcp.audienceConfigAny) {
-			return false
-		}
+	// Both are non-nil, compare fields
+	if u.hostname != otherGcp.hostname {
+		return false
+	}
+	if !proto.Equal(u.transportSocket, otherGcp.transportSocket) {
+		return false
+	}
+	if !proto.Equal(u.audienceConfigAny, otherGcp.audienceConfigAny) {
+		return false
 	}
 	return true
 }
