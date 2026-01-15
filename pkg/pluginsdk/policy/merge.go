@@ -8,10 +8,12 @@ import (
 	"slices"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 var ErrUnsupportedMergeStrategy = errors.New("unsupported merge strategy")
+var logger = logging.New("merge")
 
 // MergeStrategy defines how two policies should be merged
 type MergeStrategy string

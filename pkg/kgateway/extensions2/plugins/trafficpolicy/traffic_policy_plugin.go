@@ -19,6 +19,7 @@ import (
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -251,6 +252,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
 	if useRustformations {
 		logger.Info("transformation is using Rust Dynamic Module.")
+	} else {
+		logger.Warn("class transformation using envoy-gloo is being deprecated in v2.2 and will be removed in v2.3")
 	}
 
 	cli := kclient.NewFilteredDelayed[*kgateway.TrafficPolicy](

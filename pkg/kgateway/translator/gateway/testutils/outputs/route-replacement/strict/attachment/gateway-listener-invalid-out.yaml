@@ -160,8 +160,8 @@ Statuses:
         conditions:
         - lastTransitionTime: null
           message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 1:21) unexpected ''}'''
+            Failed to create pre-route filter config: Failed to initialize per-route
+            dynamic module'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -218,8 +218,8 @@ Statuses:
         conditions:
         - lastTransitionTime: null
           message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 1:21) unexpected ''}'''
+            Failed to create pre-route filter config: Failed to initialize per-route
+            dynamic module'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -272,8 +272,8 @@ Statuses:
         conditions:
         - lastTransitionTime: null
           message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 1:21) unexpected ''}'''
+            Failed to create pre-route filter config: Failed to initialize per-route
+            dynamic module'
           reason: Invalid
           status: "False"
           type: Accepted
