@@ -1,0 +1,53 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gcp-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+      - path:
+          type: Exact
+          value: /gcp
+      backendRefs:
+        - name: gcp-backend
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: gcp-backend
+  namespace: default
+spec:
+  type: GCP
+  gcp:
+    host: example.googleapis.com
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: gcp-backend-with-audience
+  namespace: default
+spec:
+  type: GCP
+  gcp:
+    host: example.googleapis.com
+    audience: "https://custom-audience.googleapis.com"
+

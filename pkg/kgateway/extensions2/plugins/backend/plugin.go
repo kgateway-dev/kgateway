@@ -9,6 +9,7 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,6 +38,7 @@ type backendIr struct {
 	awsIr    *AwsIr
 	staticIr *StaticIr
 	dfpIr    *DfpIr
+	gcpIr    *GcpIr
 	errors   []error
 }
 
@@ -55,6 +57,10 @@ func (u *backendIr) Equals(other any) bool {
 	}
 	// DFP
 	if !u.dfpIr.Equals(otherBackend.dfpIr) {
+		return false
+	}
+	// GCP
+	if !u.gcpIr.Equals(otherBackend.gcpIr) {
 		return false
 	}
 	return true
@@ -191,6 +197,12 @@ func buildTranslateFunc(
 				lambdaTransportSocket: lambdaTransportSocket,
 				lambdaFilters:         lambdaFilters,
 			}
+		case i.Spec.Gcp != nil:
+			gcpIr, err := buildGcpIr(i.Spec.Gcp)
+			if err != nil {
+				beIr.errors = append(beIr.errors, err)
+			}
+			beIr.gcpIr = gcpIr
 		}
 		return &beIr
 	}
@@ -209,7 +221,6 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	}
 
 	// TODO: propagated error to CRD #11558.
-	// TODO(tim): do we need to do anything here for AI backends?
 	spec := be.Spec
 	switch {
 	case spec.Static != nil:
@@ -221,6 +232,11 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 		}
 	case spec.DynamicForwardProxy != nil:
 		processDynamicForwardProxy(beIr.dfpIr, out)
+	case spec.Gcp != nil:
+		if err := processGcp(beIr.gcpIr, out); err != nil {
+			logger.Error("failed to process gcp backend", "error", err)
+			beIr.errors = append(beIr.errors, err)
+		}
 	}
 	return nil
 }
@@ -253,6 +269,8 @@ func processEndpoints(be *kgateway.Backend) *ir.EndpointsForBackend {
 		return processEndpointsStatic(spec.Static)
 	case spec.Aws != nil:
 		return processEndpointsAws(spec.Aws)
+	case spec.Gcp != nil:
+		return processEndpointsGcp(spec.Gcp)
 	}
 	return nil
 }
@@ -260,6 +278,7 @@ func processEndpoints(be *kgateway.Backend) *ir.EndpointsForBackend {
 type backendPlugin struct {
 	ir.UnimplementedProxyTranslationPass
 	needsDfpFilter map[string]bool
+	needsGcpAuthn  map[string]bool
 }
 
 var _ ir.ProxyTranslationPass = &backendPlugin{}
@@ -281,6 +300,24 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 		p.needsDfpFilter[pCtx.FilterChainName] = true
 	}
 
+	if backend.Spec.Gcp != nil {
+		if p.needsGcpAuthn == nil {
+			p.needsGcpAuthn = make(map[string]bool)
+		}
+		p.needsGcpAuthn[pCtx.FilterChainName] = true
+
+		// Set host rewrite for GCP backends (only if not already set by another policy)
+		if out.GetRoute() != nil {
+			routeAction := out.GetRoute()
+			// Set auto host rewrite if not already configured
+			if routeAction.GetHostRewriteSpecifier() == nil {
+				routeAction.HostRewriteSpecifier = &envoyroutev3.RouteAction_AutoHostRewrite{
+					AutoHostRewrite: &wrapperspb.BoolValue{Value: true},
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -291,9 +328,15 @@ func (p *backendPlugin) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterChainCo
 	result := []filters.StagedHttpFilter{}
 
 	var errs []error
-	if p.needsDfpFilter[fc.FilterChainName] {
+	if p.needsDfpFilter != nil && p.needsDfpFilter[fc.FilterChainName] {
 		pluginStage := filters.DuringStage(filters.OutAuthStage)
 		f := filters.MustNewStagedFilter("envoy.filters.http.dynamic_forward_proxy", dfpFilterConfig, pluginStage)
+		result = append(result, f)
+	}
+	if p.needsGcpAuthn != nil && p.needsGcpAuthn[fc.FilterChainName] {
+		// GCP authn filter should be before RouteStage (similar to Gloo v1)
+		pluginStage := filters.BeforeStage(filters.RouteStage)
+		f := filters.MustNewStagedFilter(gcpAuthnFilterName, getGcpAuthnFilterConfig(), pluginStage)
 		result = append(result, f)
 	}
 	return result, errors.Join(errs...)
@@ -301,5 +344,10 @@ func (p *backendPlugin) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterChainCo
 
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *backendPlugin) ResourcesToAdd() ir.Resources {
-	return ir.Resources{}
+	resources := ir.Resources{}
+	// Add GCP metadata cluster if any GCP backends are present
+	if len(p.needsGcpAuthn) > 0 {
+		resources.Clusters = []*envoyclusterv3.Cluster{getGcpAuthnCluster()}
+	}
+	return resources
 }
