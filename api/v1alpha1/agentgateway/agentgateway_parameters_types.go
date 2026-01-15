@@ -264,26 +264,51 @@ type KubernetesResourceOverlay struct {
 	// Lists with "merge keys" (like `containers` which merges on `name`, or `tolerations` which merges on `key`)
 	// will append your items to the generated list, or update existing items if keys match.
 	//
-	// **3. Deleting List Items ($patch: delete):**
-	// To remove an item from a generated list (e.g., removing a default sidecar), you must use
-	// the special `$patch: delete` directive.
-	//
-	//	spec:
-	//	  containers:
-	//	    - name: agentgateway
-	//	      # Delete the securityContext using $patch: delete
-	//	      securityContext:
-	//	        $patch: delete
-	//
-	// **4. Deleting/Clearing Map Fields (null):**
-	// To remove a map field or a scalar entirely, set its value to `null`.
+	// **3. Deleting Fields or List Items ($patch: delete):**
+	// To remove a field or list item from the generated resource, use the
+	// `$patch: delete` directive. This works for both map fields and list items,
+	// and is the recommended approach because it works with both client-side
+	// and server-side apply.
 	//
 	//	spec:
 	//	  template:
 	//	    spec:
-	//	      nodeSelector: null  # Removes default nodeSelector
+	//	      # Delete pod-level securityContext
+	//	      securityContext:
+	//	        $patch: delete
+	//	      # Delete nodeSelector
+	//	      nodeSelector:
+	//	        $patch: delete
+	//	      containers:
+	//	        - name: agentgateway
+	//	          # Delete container-level securityContext
+	//	          securityContext:
+	//	            $patch: delete
 	//
-	// **5. Replacing Lists Entirely ($patch: replace):**
+	// **4. Null Values (server-side apply only):**
+	// Setting a field to `null` can also remove it, but this ONLY works with
+	// `kubectl apply --server-side` or equivalent. With regular client-side
+	// `kubectl apply`, null values are stripped by kubectl before reaching
+	// the API server, so the deletion won't occur. Prefer `$patch: delete`
+	// for consistent behavior across both apply modes.
+	//
+	//	spec:
+	//	  template:
+	//	    spec:
+	//	      nodeSelector: null  # Removes nodeSelector (server-side apply only!)
+	//
+	// **5. Replacing Maps Entirely ($patch: replace):**
+	// To replace an entire map with your values (instead of merging), use `$patch: replace`.
+	// This removes all existing keys and replaces them with only your specified keys.
+	//
+	//	spec:
+	//	  template:
+	//	    spec:
+	//	      nodeSelector:
+	//	        $patch: replace
+	//	        custom-key: custom-value
+	//
+	// **6. Replacing Lists Entirely ($patch: replace):**
 	// If you want to strictly define a list and ignore all generated defaults, use `$patch: replace`.
 	//
 	//	service:

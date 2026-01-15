@@ -144,6 +144,7 @@ spec:
             port: 15021
           periodSeconds: 10
         resources: {}
+        securityContext: {}
         startupProbe:
           failureThreshold: 60
           httpGet:

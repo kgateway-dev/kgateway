@@ -44,12 +44,40 @@ type DeployerTester struct {
 	WaypointClassName string
 }
 
-// NoSecurityContextValidator returns a validation function that ensures no securityContext appears in output
+// NoSecurityContextValidator returns a validation function that ensures no securityContext appears in output.
+// Use this for null-based deletion with server-side apply, which completely removes the field.
 func NoSecurityContextValidator() func(t *testing.T, outputYaml string) {
 	return func(t *testing.T, outputYaml string) {
 		t.Helper()
 		assert.NotContains(t, outputYaml, "securityContext:",
 			"output YAML should not contain securityContext when omitDefaultSecurityContext is true")
+	}
+}
+
+// EmptySecurityContextValidator returns a validation function that allows
+// securityContext: {} but ensures no actual security values are configured.
+// Use this for $patch: delete, which sets securityContext to empty struct.
+// OpenShift treats an empty securityContext the same as a nonexistent one --
+// the SCC (by default, `restricted-v2`) will fill in the securityContext.
+func EmptySecurityContextValidator() func(t *testing.T, outputYaml string) {
+	return func(t *testing.T, outputYaml string) {
+		t.Helper()
+		// These are actual security values that should NOT be present when using $patch: delete
+		forbiddenValues := []string{
+			"runAsUser:",
+			"runAsGroup:",
+			"runAsNonRoot:",
+			"allowPrivilegeEscalation:",
+			"capabilities:",
+			"readOnlyRootFilesystem:",
+			"privileged:",
+			"fsGroup:",
+			"supplementalGroups:",
+		}
+		for _, val := range forbiddenValues {
+			assert.NotContains(t, outputYaml, val,
+				"output YAML should not contain security values when $patch: delete is used, found: %s", val)
+		}
 	}
 }
 
