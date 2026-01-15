@@ -1,5 +1,26 @@
 package deployer
 
+// This test suite validates helm chart rendering and post-processing with
+// overlays (strategic-merge-patch) for managed Gateway deployments.
+//
+// # Fake Client and Server-Side Apply Semantics
+//
+// The fake client used in these tests (no need for envtest, which is slower
+// and still not as thorough as an e2e test) preserves null values in CRD
+// fields marked with x-kubernetes-preserve-unknown-fields, mimicking the
+// behavior of `kubectl apply --server-side`. This differs from regular
+// client-side `kubectl apply`, which strips null values before sending them to
+// the API server.
+//
+// This means tests here accurately reflect what happens when users apply
+// AgentgatewayParameters with `kubectl apply --server-side`, helm 4 in default
+// `--server-side` mode, Argo CD with ServerSideApply set to true, etc. If a
+// user uses regular `kubectl apply` with null values in overlay fields, the
+// nulls will be stripped and the strategic merge patch won't see them. That's
+// why our API docs say to prefer using `$patch: delete` instead of null values
+// when removing fields. See the API documentation for
+// KubernetesResourceOverlay.Spec for details.
+
 import (
 	"os"
 	"path/filepath"
@@ -102,14 +123,16 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "agentgateway",
 		},
 		{
-			Name:      "agentgateway OmitDefaultSecurityContext true AGWP via GWC",
+			// Uses $patch: delete for pod-level and null for container-level securityContext
+			Name:      "agentgateway omit securityContext via $patch:delete and null AGWP via GWC",
 			InputFile: "agentgateway-omitdefaultsecuritycontext",
-			Validate:  NoSecurityContextValidator(),
+			Validate:  EmptySecurityContextValidator(),
 		},
 		{
-			Name:      "agentgateway OmitDefaultSecurityContext true AGWP via GW",
+			// Uses null for pod-level and $patch: delete for container-level securityContext
+			Name:      "agentgateway omit securityContext via null and $patch:delete AGWP via GW",
 			InputFile: "agentgateway-omitdefaultsecuritycontext-ref-gwp-on-gw",
-			Validate:  NoSecurityContextValidator(),
+			Validate:  EmptySecurityContextValidator(),
 		},
 		{
 			Name:      "agentgateway-infrastructure with AgentgatewayParameters",
