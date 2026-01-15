@@ -294,11 +294,6 @@ func configureLambdaEndpoint(in *kgateway.AwsBackend) (*lambdaEndpointConfig, er
 	return config, nil
 }
 
-// processEndpointsAws processes the endpoints for the aws backend.
-func processEndpointsAws(_ *kgateway.AwsBackend) *ir.EndpointsForBackend {
-	return nil
-}
-
 // staticSecretDerivation is a helper struct to store the decoded secret values
 // from an AWS Kubernetes Secret reference.
 type staticSecretDerivation struct {

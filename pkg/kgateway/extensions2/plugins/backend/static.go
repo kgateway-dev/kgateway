@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
@@ -115,8 +114,4 @@ func processStatic(ir *StaticIr, out *envoyclusterv3.Cluster) {
 		out.LoadAssignment = proto.Clone(ir.loadAssignment).(*envoyendpointv3.ClusterLoadAssignment)
 		out.LoadAssignment.ClusterName = out.GetName()
 	}
-}
-
-func processEndpointsStatic(_ *kgateway.StaticBackend) *ir.EndpointsForBackend {
-	return nil
 }
