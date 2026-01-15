@@ -171,6 +171,5 @@ spec:
   transformation:
     response:
       set:
-      add:
       - name: origin
         value: svc2           

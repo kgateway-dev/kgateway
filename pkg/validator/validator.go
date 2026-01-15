@@ -12,9 +12,9 @@ import (
 
 var (
 	defaultEnvoyPath = "/usr/local/bin/envoy"
-	// TODO(tim): avoid hardcoding the envoy image version in multiple places.
-	//	defaultEnvoyImage = "quay.io/solo-io/envoy-gloo:1.36.4-patch1"
-	// NOTE: this can be a chicken and an egg problem if we need a fix in the rustformation module to
+	// NOTE: We cannot use vanilla upstream image here because it won't have the rustformation dynamic
+	//       modules bundled into the image and some strict validation test on transformation will not work.
+	//       This can be a chicken and an egg problem if we need a fix in the rustformation module to
 	//       fix the validation test. We will need to merge the fix PR first and wait for the image to
 	//       be updated and then maybe update the golden files
 	//       Also probably need to change this version when backporting or creating a new release
