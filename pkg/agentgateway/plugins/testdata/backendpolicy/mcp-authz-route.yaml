@@ -56,8 +56,10 @@ output:
 status:
   ancestors:
   - ancestorRef:
-      group: agentgateway.dev
-      name: StatusSummary
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      name: test
+      namespace: default
     conditions:
     - lastTransitionTime: fake
       message: Policy accepted
@@ -65,8 +67,8 @@ status:
       status: "True"
       type: Accepted
     - lastTransitionTime: fake
-      message: 'Policy is not attached: HTTPRoute default/test not found'
-      reason: Pending
-      status: "False"
+      message: Attached to all targets
+      reason: Attached
+      status: "True"
       type: Attached
     controllerName: agentgateway.dev/agentgateway
