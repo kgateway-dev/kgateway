@@ -2,21 +2,18 @@ package backend
 
 import (
 	"fmt"
-	"os"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	gcp_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gcp_authn/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
-	translatorutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
@@ -25,21 +22,11 @@ const (
 	gcpAuthnFilterName = "envoy.filters.http.gcp_authn"
 	// gcpAuthnClusterName is the name of the GCP metadata cluster.
 	gcpAuthnClusterName = "gcp_authn"
-	// metadataEnvVar is the environment variable to override the metadata server address (for testing).
-	metadataEnvVar = "TEST_ONLY_METADATA_SERVER_ADDRESS"
 	// googleMetadataAddress is the default GCP metadata server address.
 	googleMetadataAddress = "metadata.google.internal"
 	// gcpBackendPort is the port used for GCP backends (always HTTPS).
 	gcpBackendPort = uint32(443)
 )
-
-// metadataAddress returns the metadata server address, with optional override via env var.
-func metadataAddress() string {
-	if alternateAddress := os.Getenv(metadataEnvVar); alternateAddress != "" {
-		return alternateAddress
-	}
-	return googleMetadataAddress
-}
 
 // GcpIr is the internal representation of a GCP backend.
 type GcpIr struct {
@@ -83,7 +70,6 @@ func processGcp(ir *GcpIr, out *envoyclusterv3.Cluster) error {
 	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
 		Type: envoyclusterv3.Cluster_STRICT_DNS,
 	}
-	out.DnsLookupFamily = envoyclusterv3.Cluster_V4_ONLY
 
 	if ir.transportSocket != nil {
 		out.TransportSocket = ir.transportSocket
@@ -98,25 +84,6 @@ func processGcp(ir *GcpIr, out *envoyclusterv3.Cluster) error {
 			out.Metadata.TypedFilterMetadata = make(map[string]*anypb.Any)
 		}
 		out.Metadata.TypedFilterMetadata[gcpAuthnFilterName] = ir.audienceConfigAny
-	}
-
-	// Configure HTTP/2 protocol options
-	// TODO: is this needed?
-	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
-		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
-			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
-				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-					Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{},
-				},
-			},
-		}
-		opts.CommonHttpProtocolOptions = &envoycorev3.HttpProtocolOptions{
-			IdleTimeout: &durationpb.Duration{
-				Seconds: 30,
-			},
-		}
-	}); err != nil {
-		return fmt.Errorf("failed to mutate http options: %v", err)
 	}
 
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, ir.hostname, gcpBackendPort)
@@ -181,7 +148,7 @@ func getGcpAuthnCluster() *envoyclusterv3.Cluster {
 									Address: &envoycorev3.Address{
 										Address: &envoycorev3.Address_SocketAddress{
 											SocketAddress: &envoycorev3.SocketAddress{
-												Address: metadataAddress(),
+												Address: googleMetadataAddress,
 												PortSpecifier: &envoycorev3.SocketAddress_PortValue{
 													PortValue: 80,
 												},

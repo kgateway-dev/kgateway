@@ -157,7 +157,6 @@ func TestProcessGcp(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, cluster.ClusterDiscoveryType)
 			assert.Equal(t, envoyclusterv3.Cluster_STRICT_DNS, cluster.ClusterDiscoveryType.(*envoyclusterv3.Cluster_Type).Type)
-			assert.Equal(t, envoyclusterv3.Cluster_V4_ONLY, cluster.DnsLookupFamily)
 			assert.NotNil(t, cluster.LoadAssignment)
 		})
 	}
