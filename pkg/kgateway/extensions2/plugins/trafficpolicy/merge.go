@@ -265,7 +265,6 @@ func mergeRustformation(
 	mergeOrigins ir.MergeOrigins,
 	tpOpts TrafficPolicyMergeOpts,
 ) {
-	logger.Info("andy: mergeRusformation")
 	if tpOpts.Transformation != "" {
 		// this is merging 2 policies at the same hierarchical level (no parent->child relationship),
 		// so use tpOpts since it overrides the default merge strategy
@@ -310,14 +309,11 @@ func mergeRustformation(
 
 		var anyMsg *anypb.Any
 		if p1Json == nil {
-			logger.Info("andy: p1json null")
 			anyMsg, err = utils.JsonToAny(p2Json)
 		} else if p2Json == nil {
-			logger.Info("andy: p2json null")
 			return
 		} else {
 			if opts.Strategy == policy.OverridableDeepMerge {
-				logger.Info("andy: overridedeepmerge", "p1", p1Json, "p2", p2Json)
 				err = mergeRustformationJsonInPlace(p1Json, p2Json)
 				if err != nil {
 					logger.Error("failed to merge json", "error", err.Error())
@@ -325,7 +321,6 @@ func mergeRustformation(
 				}
 				anyMsg, err = utils.JsonToAny(p1Json)
 			} else {
-				logger.Info("andy: augmentedeepmerge", "p2", p2Json, "p1", p1Json)
 				err = mergeRustformationJsonInPlace(p2Json, p1Json)
 				if err != nil {
 					logger.Error("failed to merge json", "error", err.Error())
