@@ -2,6 +2,7 @@ package backendconfigpolicy
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -16,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	translatormetrics "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -124,10 +126,12 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
 
 	policyStatusMarker, backendConfigPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, b *kgateway.BackendConfigPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+		finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(b.Name, b.Namespace, "BackendConfigPolicy")
 		policyIR, errs := translate(commoncol, krtctx, b)
 		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			errs = append(errs, err)
 		}
+		finishMetrics(errors.Join(errs...))
 
 		// Create status marker if existing status has kgateway controller
 		var statusMarker *krtcollections.StatusMarker

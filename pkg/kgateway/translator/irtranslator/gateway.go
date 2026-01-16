@@ -23,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+	translatormetrics "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 )
 
 var logger = logging.New("translator/ir")
@@ -225,7 +226,9 @@ func (t *Translator) runListenerPlugins(
 					Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
 				},
 			}
+			finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(pol.PolicyRef.Name, pol.PolicyRef.Namespace, pass.Name)
 			pass.ApplyListenerPlugin(pctx, out)
+			finishMetrics(nil)
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, mergeOrigins, pols...)

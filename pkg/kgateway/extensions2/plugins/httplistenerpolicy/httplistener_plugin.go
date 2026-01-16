@@ -2,6 +2,7 @@ package httplistenerpolicy
 
 import (
 	"context"
+	"errors"
 
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
+	translatormetrics "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -33,6 +35,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	gk := wellknown.HTTPListenerPolicyGVK.GroupKind()
 
 	policyStatusMarker, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *kgateway.HTTPListenerPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+		finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(i.Name, i.Namespace, "HTTPListenerPolicy")
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -55,6 +58,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		}
 		polIr, errs := listenerpolicy.NewListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &spec, objSrc)
 		polIr.NoOrigin = true
+		finishMetrics(errors.Join(errs...))
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,

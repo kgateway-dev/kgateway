@@ -90,6 +90,40 @@ func CollectTranslationMetrics(labels TranslatorMetricLabels) func(error) {
 	}
 }
 
+// CollectPolicyTranslationMetrics collects metrics for a single policy translation.
+// Use this when translating individual policies (e.g., in KRT collections).
+// Unlike CollectTranslationMetrics, this doesn't track running translations since
+// policy translations are typically very fast.
+func CollectPolicyTranslationMetrics(name, namespace, translatorName string) func(error) {
+	if !metrics.Active() {
+		return func(err error) {}
+	}
+
+	start := time.Now()
+
+	return func(err error) {
+		duration := time.Since(start)
+
+		translationDuration.Observe(duration.Seconds(),
+			metrics.Label{Name: nameLabel, Value: name},
+			metrics.Label{Name: namespaceLabel, Value: namespace},
+			metrics.Label{Name: translatorNameLabel, Value: translatorName},
+		)
+
+		result := "success"
+		if err != nil {
+			result = "error"
+		}
+
+		translationsTotal.Inc(
+			metrics.Label{Name: nameLabel, Value: name},
+			metrics.Label{Name: namespaceLabel, Value: namespace},
+			metrics.Label{Name: translatorNameLabel, Value: translatorName},
+			metrics.Label{Name: resultLabel, Value: result},
+		)
+	}
+}
+
 // ResetMetrics resets the metrics from this package.
 // This is provided for testing purposes only.
 func ResetMetrics() {

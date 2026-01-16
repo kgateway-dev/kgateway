@@ -2,6 +2,7 @@ package listenerpolicy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"time"
@@ -19,13 +20,14 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	translatormetrics "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -145,7 +147,7 @@ func patchPolicyStatusFn(
 			ObjectMeta: sdk.CloneObjectMetaForStatus(cur.ObjectMeta),
 			Status:     policyStatus,
 		}); err != nil {
-			if errors.IsConflict(err) {
+			if k8serrors.IsConflict(err) {
 				logger.Debug("error updating stale status", "ref", nn, "error", err)
 				return nil // let the conflicting Status update trigger a KRT event to requeue the updated object
 			}
@@ -202,6 +204,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	gk := kgwwellknown.ListenerPolicyGVK.GroupKind()
 
 	policyStatusMarker, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *kgateway.ListenerPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+		finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(i.Name, i.Namespace, "ListenerPolicy")
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -219,6 +222,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		}
 
 		polIr, errs := NewListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &i.Spec, objSrc)
+		finishMetrics(errors.Join(errs...))
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,

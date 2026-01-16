@@ -2,6 +2,7 @@ package directresponse
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	translatormetrics "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -55,6 +57,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 	gk := wellknown.DirectResponseGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.DirectResponse) *ir.PolicyWrapper {
+		finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(i.Name, i.Namespace, "DirectResponse")
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     gk.Group,
@@ -66,6 +69,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			PolicyIR: &directResponse{ct: i.CreationTimestamp.Time, spec: i.Spec},
 			// no target refs for direct response
 		}
+		finishMetrics(errors.Join(pol.Errors...))
 		return pol
 	})
 

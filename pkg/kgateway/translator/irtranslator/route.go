@@ -25,6 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+	translatormetrics "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 )
 
 type httpRouteConfigurationTranslator struct {
@@ -91,12 +92,14 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 				errs = append(errs, pol.Errors...)
 				continue
 			}
+			finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(pol.PolicyRef.Name, pol.PolicyRef.Namespace, pass.Name)
 			pass.ApplyRouteConfigPlugin(&ir.RouteConfigContext{
 				FilterChainName:   h.fc.FilterChainName,
 				TypedFilterConfig: typedPerFilterConfigRoute,
 				Policy:            pol.PolicyIr,
 				GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			}, cfg)
+			finishMetrics(nil)
 		}
 		cfg.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, cfg.GetMetadata())
 		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
@@ -364,7 +367,9 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 				FilterChainName:   h.fc.FilterChainName,
 				GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			}
+			finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(pol.PolicyRef.Name, pol.PolicyRef.Namespace, pass.Name)
 			pass.ApplyVhostPlugin(pctx, out)
+			finishMetrics(nil)
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
@@ -432,7 +437,9 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			}
 
 			pctx.Policy = pol.PolicyIr
+			finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(pol.PolicyRef.Name, pol.PolicyRef.Namespace, pass.Name)
 			err := pass.ApplyForRoute(pctx, out)
+			finishMetrics(err)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -467,7 +474,9 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 		policies, _ := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			// Policy on extension ref
+			finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(pol.PolicyRef.Name, pol.PolicyRef.Namespace, pass.Name)
 			err := pass.ApplyForRouteBackend(pol.PolicyIr, pCtx)
+			finishMetrics(err)
 			if err != nil {
 				errs = append(errs, err)
 			}

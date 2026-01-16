@@ -25,7 +25,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
+	translatormetrics "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 )
 
 const clusterConnectionTimeout = time.Second * 5
@@ -134,7 +136,9 @@ func (t *BackendTranslator) runPolicies(
 				errs = append(errs, polAttachment.Errors...)
 				continue
 			}
+			finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(polAttachment.PolicyRef.Name, polAttachment.PolicyRef.Namespace, policyPlugin.Name)
 			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, *backend, out)
+			finishMetrics(nil)
 		}
 	}
 

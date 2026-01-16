@@ -22,6 +22,7 @@ import (
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
+	translatormetrics "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -84,7 +85,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	translate := buildTranslateFunc(commoncol.ConfigMaps.Collection(), commoncol.Secrets)
 
 	policyStatusMarker, tlsPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+		finishMetrics := translatormetrics.CollectPolicyTranslationMetrics(i.Name, i.Namespace, "BackendTLSPolicy")
 		tlsPolicyIR, err := translate(krtctx, i)
+		finishMetrics(err)
 
 		// Create status marker if existing status has kgateway controller
 		var statusMarker *krtcollections.StatusMarker
