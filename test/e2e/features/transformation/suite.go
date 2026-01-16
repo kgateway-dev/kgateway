@@ -704,6 +704,9 @@ func (s *testingSuite) SetupSuite() {
 func (s *testingSuite) TestGatewayWithTransformedRoute() {
 	s.SetRustformationInController(false)
 	s.assertTestResourceStatus()
+	testutils.Cleanup(s.T(), func() {
+		s.SetRustformationInController(true)
+	})
 
 	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
 		s.Ctx,
@@ -727,10 +730,10 @@ func (s *testingSuite) SetRustformationInController(enabled bool) {
 
 	rustFormationsEnvVar := corev1.EnvVar{
 		Name:  "KGW_USE_RUST_FORMATIONS",
-		Value: "true",
+		Value: "false",
 	}
 	controllerDeployModified := controllerDeploymentOriginal.DeepCopy()
-	if enabled {
+	if !enabled {
 		// add the environment variable RUSTFORMATIONS to the modified controller deployment
 		controllerDeployModified.Spec.Template.Spec.Containers[0].Env = append(
 			controllerDeployModified.Spec.Template.Spec.Containers[0].Env,
@@ -747,7 +750,7 @@ func (s *testingSuite) SetRustformationInController(enabled bool) {
 	err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, controllerDeployModified, client.MergeFrom(controllerDeploymentOriginal))
 	s.Assert().NoError(err, "patching controller deployment")
 
-	if enabled {
+	if !enabled {
 		// wait for the changes to be reflected in pod
 		s.TestInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
 			s.Ctx,
@@ -775,10 +778,6 @@ func (s *testingSuite) SetRustformationInController(enabled bool) {
 func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 	s.SetRustformationInController(true)
 	s.assertTestResourceStatus()
-
-	testutils.Cleanup(s.T(), func() {
-		s.SetRustformationInController(false)
-	})
 
 	// wait for pods to be running again, since controller deployment was patched
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{

@@ -24,9 +24,15 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: transformation
+          name: dynamic_modules/simple_mutations
           typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -58,9 +64,15 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: transformation
+          name: dynamic_modules/simple_mutations
           typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -92,9 +104,15 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: transformation
+          name: dynamic_modules/simple_mutations
           typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -167,14 +185,15 @@ Routes:
         - gateway.kgateway.dev/TrafficPolicy/gwtest/gateway-wide-invalid-policy
   name: https
   typedPerFilterConfig:
-    transformation:
-      '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-      transformations:
-      - requestMatch:
-          requestTransformation:
-            transformationTemplate:
-              body:
-                text: '{{ invalid_gateway_template }'
+    dynamic_modules/simple_mutations:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
+          }"}}}'
+      perRouteConfigName: http_simple_mutations
   virtualHosts:
   - domains:
     - www.example.com
@@ -194,14 +213,15 @@ Routes:
         - gateway.kgateway.dev/TrafficPolicy/gwtest/gateway-wide-invalid-policy
   name: listener~8080
   typedPerFilterConfig:
-    transformation:
-      '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-      transformations:
-      - requestMatch:
-          requestTransformation:
-            transformationTemplate:
-              body:
-                text: '{{ invalid_gateway_template }'
+    dynamic_modules/simple_mutations:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
+          }"}}}'
+      perRouteConfigName: http_simple_mutations
   virtualHosts:
   - domains:
     - www.example.com
@@ -221,14 +241,15 @@ Routes:
         - gateway.kgateway.dev/TrafficPolicy/gwtest/gateway-wide-invalid-policy
   name: listener~9090
   typedPerFilterConfig:
-    transformation:
-      '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-      transformations:
-      - requestMatch:
-          requestTransformation:
-            transformationTemplate:
-              body:
-                text: '{{ invalid_gateway_template }'
+    dynamic_modules/simple_mutations:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
+          }"}}}'
+      perRouteConfigName: http_simple_mutations
   virtualHosts:
   - domains:
     - www.example.com

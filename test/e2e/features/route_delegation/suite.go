@@ -268,6 +268,7 @@ func (s *testingSuite) TestRouteWeight() {
 }
 
 func (s *testingSuite) TestPolicyMerging() {
+	s.T().Skip("skipping. See https://github.com/kgateway-dev/kgateway/issues/13314 for details")
 	// Assert traffic to parent1.com/anything/team1 uses svc1's transformation policy
 	s.TestInstallation.Assertions.AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{

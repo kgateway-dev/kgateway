@@ -12,8 +12,13 @@ import (
 
 var (
 	defaultEnvoyPath = "/usr/local/bin/envoy"
-	// TODO(tim): avoid hardcoding the envoy image version in multiple places.
-	defaultEnvoyImage = "quay.io/solo-io/envoy-gloo:1.36.3-patch1"
+	// NOTE: We cannot use vanilla upstream image here because it won't have the rustformation dynamic
+	//       modules bundled into the image and some strict validation test on transformation will not work.
+	//       This can be a chicken and an egg problem if we need a fix in the rustformation module to
+	//       fix the validation test. We will need to merge the fix PR first and wait for the image to
+	//       be updated and then maybe update the golden files
+	//       Also probably need to change this version when backporting or creating a new release
+	defaultEnvoyImage = "ghcr.io/kgateway-dev/envoy-wrapper:v2.3.0-main"
 )
 
 // ErrInvalidXDS is returned when Envoy rejects the supplied JSON.
@@ -43,6 +48,7 @@ func NewBinary(path ...string) Validator {
 
 func (b *binaryValidator) Validate(ctx context.Context, json string) error {
 	cmd := exec.CommandContext(ctx, b.path, "--mode", "validate", "--config-path", "/dev/fd/0", "-l", "critical", "--log-format", "%v") //nolint:gosec // G204: envoy binary with controlled args for config validation
+	cmd.Env = append(cmd.Env, "ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib")
 	cmd.Stdin = strings.NewReader(json)
 	var e bytes.Buffer
 	cmd.Stderr = &e
@@ -79,7 +85,7 @@ func (d *dockerValidator) Validate(ctx context.Context, json string) error {
 		"docker", "run",
 		"--rm",
 		"-i",
-		"--platform", "linux/amd64",
+		"--entrypoint", "/usr/local/bin/envoy",
 		d.img,
 		"--mode",
 		"validate",

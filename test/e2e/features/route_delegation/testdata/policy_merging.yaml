@@ -122,7 +122,7 @@ spec:
     name: parent1
   transformation:
     response:
-      add:
+      set:
       - name: origin
         value: parent1
 ---
@@ -138,7 +138,7 @@ spec:
     name: parent2
   transformation:
     response:
-      add:
+      set:
       - name: origin
         value: parent2
 ---
@@ -154,7 +154,7 @@ spec:
     name: svc1
   transformation:
     response:
-      add:
+      set:
       - name: origin
         value: svc1              
 ---
@@ -170,6 +170,6 @@ spec:
     name: svc2
   transformation:
     response:
-      add:
+      set:
       - name: origin
         value: svc2           

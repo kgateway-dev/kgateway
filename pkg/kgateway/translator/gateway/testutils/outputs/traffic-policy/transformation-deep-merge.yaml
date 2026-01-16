@@ -24,9 +24,15 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: transformation
+          name: dynamic_modules/simple_mutations
           typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -57,39 +63,14 @@ Routes:
         - gateway.kgateway.dev/TrafficPolicy/default/gateway-attachment-2
   name: listener~8080
   typedPerFilterConfig:
-    transformation:
-      '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-      transformations:
-      - requestMatch:
-          requestTransformation:
-            transformationTemplate:
-              headers:
-                source:
-                  text: gateway-attachment-2
-              parseBodyBehavior: DontParse
-              passthrough: {}
-          responseTransformation:
-            transformationTemplate:
-              headers:
-                source:
-                  text: gateway-attachment-2
-              parseBodyBehavior: DontParse
-              passthrough: {}
-      - requestMatch:
-          requestTransformation:
-            transformationTemplate:
-              headers:
-                source:
-                  text: gateway-attachment-1
-              parseBodyBehavior: DontParse
-              passthrough: {}
-          responseTransformation:
-            transformationTemplate:
-              headers:
-                source:
-                  text: gateway-attachment-1
-              parseBodyBehavior: DontParse
-              passthrough: {}
+    dynamic_modules/simple_mutations:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"set":[{"name":"source","value":"gateway-attachment-1"},{"name":"source","value":"gateway-attachment-2"}]},"response":{"set":[{"name":"source","value":"gateway-attachment-1"},{"name":"source","value":"gateway-attachment-2"}]}}'
+      perRouteConfigName: http_simple_mutations
   virtualHosts:
   - domains:
     - test.com
@@ -114,39 +95,14 @@ Routes:
         cluster: kube_default_test_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              requestTransformation:
-                transformationTemplate:
-                  headers:
-                    source:
-                      text: route-attachment-1
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
-              responseTransformation:
-                transformationTemplate:
-                  headers:
-                    source:
-                      text: route-attachment-1
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
-          - requestMatch:
-              requestTransformation:
-                transformationTemplate:
-                  headers:
-                    source:
-                      text: route-attachment-2
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
-              responseTransformation:
-                transformationTemplate:
-                  headers:
-                    source:
-                      text: route-attachment-2
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"set":[{"name":"source","value":"route-attachment-2"},{"name":"source","value":"route-attachment-1"}]},"response":{"set":[{"name":"source","value":"route-attachment-2"},{"name":"source","value":"route-attachment-1"}]}}'
+          perRouteConfigName: http_simple_mutations
     - match:
         pathSeparatedPrefix: /route-1
       name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0
@@ -160,39 +116,14 @@ Routes:
         cluster: kube_default_test_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     typedPerFilterConfig:
-      transformation:
-        '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-        transformations:
-        - requestMatch:
-            requestTransformation:
-              transformationTemplate:
-                headers:
-                  source:
-                    text: listener-attachment-2
-                parseBodyBehavior: DontParse
-                passthrough: {}
-            responseTransformation:
-              transformationTemplate:
-                headers:
-                  source:
-                    text: listener-attachment-2
-                parseBodyBehavior: DontParse
-                passthrough: {}
-        - requestMatch:
-            requestTransformation:
-              transformationTemplate:
-                headers:
-                  source:
-                    text: listener-attachment-1
-                parseBodyBehavior: DontParse
-                passthrough: {}
-            responseTransformation:
-              transformationTemplate:
-                headers:
-                  source:
-                    text: listener-attachment-1
-                parseBodyBehavior: DontParse
-                passthrough: {}
+      dynamic_modules/simple_mutations:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+        dynamicModuleConfig:
+          name: rust_module
+        filterConfig:
+          '@type': type.googleapis.com/google.protobuf.StringValue
+          value: '{"request":{"set":[{"name":"source","value":"listener-attachment-1"},{"name":"source","value":"listener-attachment-2"}]},"response":{"set":[{"name":"source","value":"listener-attachment-1"},{"name":"source","value":"listener-attachment-2"}]}}'
+        perRouteConfigName: http_simple_mutations
 Statuses:
   gateways:
     default/test:
