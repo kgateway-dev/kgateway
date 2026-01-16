@@ -2818,6 +2818,44 @@ spec:
                         - message: Must have port for Service reference
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
+                      metadataContext:
+                        additionalProperties:
+                          additionalProperties:
+                            description: CELExpression represents a Common Expression
+                              Language (CEL) expression.
+                            maxLength: 16384
+                            minLength: 1
+                            type: string
+                          type: object
+                        description: |-
+                          metadataContext specifies metadata to be sent *to* an external processing server.
+                          This maps to the `metadata_context.filter_metadata` field of the request, and allows dynamic CEL expressions.
+                        maxProperties: 64
+                        type: object
+                      requestAttributes:
+                        additionalProperties:
+                          description: CELExpression represents a Common Expression
+                            Language (CEL) expression.
+                          maxLength: 16384
+                          minLength: 1
+                          type: string
+                        description: |-
+                          requestAttributes specifies request_attributes to be sent *to* the external processing server.
+                          This maps to the `ProcessingRequest.attributes` field of the request, and allows dynamic CEL expressions.
+                        maxProperties: 64
+                        type: object
+                      responseAttributes:
+                        additionalProperties:
+                          description: CELExpression represents a Common Expression
+                            Language (CEL) expression.
+                          maxLength: 16384
+                          minLength: 1
+                          type: string
+                        description: |-
+                          responseAttributes specifies response_attributes to be sent *to* the external processing server.
+                          This maps to the `ProcessingRequest.attributes` field of the request, and allows dynamic CEL expressions.
+                        maxProperties: 64
+                        type: object
                     required:
                     - backendRef
                     type: object

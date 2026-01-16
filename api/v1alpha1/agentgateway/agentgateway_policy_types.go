@@ -1018,6 +1018,27 @@ type ExtProc struct {
 	// Supported types: Service and Backend.
 	// +required
 	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
+
+	// requestAttributes specifies request_attributes to be sent *to* the external processing server.
+	// This maps to the `ProcessingRequest.attributes` field of the request, and allows dynamic CEL expressions.
+	//
+	// +optional
+	// +kubebuilder:validation:MaxProperties=64
+	RequestAttributes map[string]shared.CELExpression `json:"requestAttributes,omitempty"`
+
+	// responseAttributes specifies response_attributes to be sent *to* the external processing server.
+	// This maps to the `ProcessingRequest.attributes` field of the request, and allows dynamic CEL expressions.
+	//
+	// +optional
+	// +kubebuilder:validation:MaxProperties=64
+	ResponseAttributes map[string]shared.CELExpression `json:"responseAttributes,omitempty"`
+
+	// metadataContext specifies metadata to be sent *to* an external processing server.
+	// This maps to the `metadata_context.filter_metadata` field of the request, and allows dynamic CEL expressions.
+	//
+	// +optional
+	// +kubebuilder:validation:MaxProperties=64
+	MetadataContext map[string]map[string]shared.CELExpression `json:"metadataContext,omitempty"`
 }
 
 // +kubebuilder:validation:ExactlyOneOf=grpc;http

@@ -1020,7 +1020,18 @@ func processExtProcPolicy(
 	spec := &api.TrafficPolicySpec_ExtProc{
 		Target: be,
 		// always use FAIL_CLOSED to prevent silent data loss when ExtProc is unavailable.
-		FailureMode: api.TrafficPolicySpec_ExtProc_FAIL_CLOSED,
+		FailureMode:        api.TrafficPolicySpec_ExtProc_FAIL_CLOSED,
+		RequestAttributes:  castMap(extProc.RequestAttributes),
+		ResponseAttributes: castMap(extProc.ResponseAttributes),
+	}
+
+	if len(extProc.MetadataContext) > 0 {
+		spec.MetadataContext = make(map[string]*api.TrafficPolicySpec_ExtProc_NamespacedMetadataContext, len(extProc.MetadataContext))
+		for meta, ctx := range extProc.MetadataContext {
+			spec.MetadataContext[meta] = &api.TrafficPolicySpec_ExtProc_NamespacedMetadataContext{
+				Context: castMap(ctx),
+			}
+		}
 	}
 
 	extprocPolicy := &api.Policy{
