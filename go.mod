@@ -462,5 +462,3 @@ tool (
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kind
 )
-
-replace github.com/agentgateway/agentgateway => ../agentgateway
