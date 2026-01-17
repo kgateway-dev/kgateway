@@ -108,19 +108,19 @@ func (s *testingSuite) TestA2AHelloWorld() {
 }
 
 func (s *testingSuite) waitA2AEnvironmentReady() {
-	s.TestInstallation.Assertions.EventuallyPodsRunning(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(
 		s.Ctx, namespace,
 		metav1.ListOptions{LabelSelector: "app=a2a-helloworld"},
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx, gatewayName, namespace,
 		gwv1.GatewayConditionProgrammed, metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyPodsRunning(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(
 		s.Ctx, namespace,
 		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=" + gatewayName},
 	)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx, "a2a-route", namespace,
 		gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)

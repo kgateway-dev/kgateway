@@ -42,7 +42,7 @@ func (s *testingSuite) TestValidListenerSet() {
 
 	// Gateway Listener
 	// The route attached to the gateway should work on the listener defined on the gateway
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -53,7 +53,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		expectOK)
 
 	// The route attached to the listener set should NOT work on the listener defined on the gateway
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -65,7 +65,7 @@ func (s *testingSuite) TestValidListenerSet() {
 
 	// Listener Set Listeners
 	// The route attached to the gateway should NOT work on the listener defined on the listener set
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -76,7 +76,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		expectNotFound)
 
 	// The route attached to the listener set should work on the listener defined on the listener set
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -87,7 +87,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		expectOK)
 
 	// The route attached to the listener set should not work on the section it did not target
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -98,7 +98,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		expectNotFound)
 
 	// The route attached to the gateway should NOT work on the listener defined on the listener set
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -109,7 +109,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		expectNotFound)
 
 	// The route attached to the listener set should work on the listener defined on the listener set
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -120,7 +120,7 @@ func (s *testingSuite) TestValidListenerSet() {
 		expectOK)
 
 	// The route attached to the listener set should work on the section it targets
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -135,7 +135,7 @@ func (s *testingSuite) TestInvalidListenerSetNotAllowed() {
 	s.expectInvalidListenerSetNotAllowed(invalidListenerSetNotAllowed)
 
 	// The route attached to the gateway should work on the listener defined on the gateway
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -146,7 +146,7 @@ func (s *testingSuite) TestInvalidListenerSetNotAllowed() {
 		expectOK)
 
 	// The listener defined on the invalid listenerset should not work
-	s.TestInstallation.Assertions.AssertEventualCurlError(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -161,7 +161,7 @@ func (s *testingSuite) TestInvalidListenerSetNonExistingGW() {
 	s.expectInvalidListenerSetUnknown(invalidListenerSetNonExistingGW)
 
 	// The route attached to the gateway should work on the listener defined on the gateway
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -172,7 +172,7 @@ func (s *testingSuite) TestInvalidListenerSetNonExistingGW() {
 		expectOK)
 
 	// The listener defined on the invalid listenerset should not work
-	s.TestInstallation.Assertions.AssertEventualCurlError(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -189,7 +189,7 @@ func (s *testingSuite) TestConflictedListenerSet() {
 	s.expectConflictedListenerSetConflicted(conflictedListenerSet)
 
 	// The first listener with hostname conflict should work based on listener precedence
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -200,7 +200,7 @@ func (s *testingSuite) TestConflictedListenerSet() {
 		expectOK)
 
 	// The other listener with hostname conflict should not work based on listener precedence
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -211,7 +211,7 @@ func (s *testingSuite) TestConflictedListenerSet() {
 		expectNotFound)
 
 	// The first listener with protocol conflict should work based on listener precedence
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -222,7 +222,7 @@ func (s *testingSuite) TestConflictedListenerSet() {
 		expectOK)
 
 	// The other listener with protocol conflict should not work based on listener precedence
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -233,7 +233,7 @@ func (s *testingSuite) TestConflictedListenerSet() {
 		expectNotFound)
 
 	// The listener without any conflict defined on the listenerset should work
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -246,7 +246,7 @@ func (s *testingSuite) TestConflictedListenerSet() {
 
 func (s *testingSuite) TestPolicies() {
 	// The policy defined on the Gateway should apply to the Gateway listeners
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -257,7 +257,7 @@ func (s *testingSuite) TestPolicies() {
 		expectOKWithCustomHeader("policy", "gateway"))
 
 	// The policy defined on the Gateway should apply to the Gateway section it targets
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -268,7 +268,7 @@ func (s *testingSuite) TestPolicies() {
 		expectOKWithCustomHeader("policy", "gateway-section"))
 
 	// The policy defined on the Listener Set should apply to the Listener Set listeners
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -279,7 +279,7 @@ func (s *testingSuite) TestPolicies() {
 		expectOKWithCustomHeader("policy", "listener-set"))
 
 	// The policy defined on the Listener Set should apply to the Listener Set section it targets
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -291,7 +291,7 @@ func (s *testingSuite) TestPolicies() {
 
 	// TODO: Update this when we decide if policies should not be inherited
 	// The policy defined on the Gateway should apply to the Listener Set listeners
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -303,9 +303,9 @@ func (s *testingSuite) TestPolicies() {
 }
 
 func (s *testingSuite) expectValidListenerSetAccepted(obj client.Object) {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionTrue)
 
-	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
+	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwxv1a1.ListenerSetStatus{
 			Conditions: []metav1.Condition{
 				{
@@ -379,9 +379,9 @@ func (s *testingSuite) expectValidListenerSetAccepted(obj client.Object) {
 }
 
 func (s *testingSuite) expectInvalidListenerSetNotAllowed(obj client.Object) {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionFalse)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionFalse)
 
-	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
+	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwxv1a1.ListenerSetStatus{
 			Conditions: []metav1.Condition{
 				{
@@ -399,9 +399,9 @@ func (s *testingSuite) expectInvalidListenerSetNotAllowed(obj client.Object) {
 }
 
 func (s *testingSuite) expectInvalidListenerSetUnknown(obj client.Object) {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionFalse)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionFalse)
 
-	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
+	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwxv1a1.ListenerSetStatus{
 			Conditions: []metav1.Condition{
 				{
@@ -417,7 +417,7 @@ func (s *testingSuite) expectInvalidListenerSetUnknown(obj client.Object) {
 }
 
 func (s *testingSuite) expectGatewayAccepted(obj client.Object) {
-	s.TestInstallation.Assertions.EventuallyGatewayStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwv1.GatewayStatus{
 			Conditions: []metav1.Condition{
 				{
@@ -490,9 +490,9 @@ func (s *testingSuite) expectGatewayAccepted(obj client.Object) {
 }
 
 func (s *testingSuite) expectConflictedListenerSetConflicted(obj client.Object) {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, proxyObjectMeta.Name, proxyObjectMeta.Namespace, listener.GatewayConditionAttachedListenerSets, metav1.ConditionTrue)
 
-	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
+	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerSetStatus(s.Ctx, obj.GetName(), obj.GetNamespace(),
 		gwxv1a1.ListenerSetStatus{
 			Conditions: []metav1.Condition{
 				{

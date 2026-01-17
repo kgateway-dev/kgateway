@@ -282,7 +282,7 @@ func (s *testingSuite) TestVerifyCertificateHash() {
 // assertEventualCurlResponse is a helper that wraps AssertEventualCurlResponse with common test settings
 func (s *testingSuite) assertEventualCurlResponse(opts ...curl.Option) {
 	curlOpts := append(commonCurlOpts(), opts...)
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		curlOpts,
@@ -297,7 +297,7 @@ func (s *testingSuite) assertEventualCurlResponse(opts ...curl.Option) {
 // assertEventualCurlError is a helper that wraps AssertEventualCurlError with common test settings
 func (s *testingSuite) assertEventualCurlError(opts ...curl.Option) {
 	curlOpts := append(commonCurlOpts(), opts...)
-	s.TestInstallation.Assertions.AssertEventualCurlError(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		curlOpts,
@@ -309,7 +309,7 @@ func (s *testingSuite) assertEventualCurlError(opts ...curl.Option) {
 // assertEventualCurlResponseForMTLS is a helper for the mTLS listener (port 8443)
 func (s *testingSuite) assertEventualCurlResponseForMTLS(hostname string, port int, opts ...curl.Option) {
 	curlOpts := append(commonCurlOptsForMTLS(hostname, port), opts...)
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		curlOpts,
@@ -324,7 +324,7 @@ func (s *testingSuite) assertEventualCurlResponseForMTLS(hostname string, port i
 // assertEventualCurlErrorForMTLS is a helper for the mTLS listener (port 8443)
 func (s *testingSuite) assertEventualCurlErrorForMTLS(hostname string, port int, opts ...curl.Option) {
 	curlOpts := append(commonCurlOptsForMTLS(hostname, port), opts...)
-	s.TestInstallation.Assertions.AssertEventualCurlError(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		curlOpts,
@@ -338,7 +338,7 @@ func (s *testingSuite) TestFrontendTLSConfig() {
 		// Should fail without client cert on port 8445 (per-port config with AllowValidOnly)
 		// Use error code 16 (CURLE_SSL_CACERT_BADFILE) which is what we get when client cert is required
 		curlOpts := append(commonCurlOpts(), curl.WithPort(8445))
-		s.TestInstallation.Assertions.AssertEventualCurlError(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			curlOpts,
@@ -382,7 +382,7 @@ func (s *testingSuite) TestMultipleCACertificates() {
 		// Client cert signed by ca-cert should be accepted
 		curlOpts := append(commonCurlOptsForMTLS(wildcardHostname, 8446),
 			curl.WithClientCert(commonClientCertPath, commonClientKeyPath))
-		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			curlOpts,
@@ -399,7 +399,7 @@ func (s *testingSuite) TestMultipleCACertificates() {
 		// Client cert signed by ca-cert-2 should be accepted
 		curlOpts := append(commonCurlOptsForMTLS(wildcardHostname, 8446),
 			curl.WithClientCert(commonClientCertPath, commonClientKeyPath))
-		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			curlOpts,
@@ -415,7 +415,7 @@ func (s *testingSuite) TestMultipleCACertificates() {
 		// Port 8446 requires client cert (AllowValidOnly mode) for wildcard domain *.example.com
 		// Connection without client cert should fail
 		curlOpts := commonCurlOptsForMTLS(wildcardHostname, 8446)
-		s.TestInstallation.Assertions.AssertEventualCurlError(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			curlOpts,
@@ -447,7 +447,7 @@ func (s *testingSuite) TestVerifySubjectAltNames() {
 	s.Run("verify-subject-alt-names with non-matching SAN should fail", func() {
 		// Port 8447 requires "mtls.example.com" in client cert SAN
 		// client-non-matching-san.crt has "DNS:mtls-alt.example.com" SAN - should fail
-		s.TestInstallation.Assertions.AssertEventualCurlError(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			append(curlOpts8447, curl.WithClientCert(nonMatchingSanCertPath, nonMatchingSanKeyPath)),

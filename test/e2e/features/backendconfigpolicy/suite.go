@@ -107,13 +107,13 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	}
 
 	// wait for common resources for all tests
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=gw",
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
 }
@@ -128,18 +128,18 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 	}
 	for _, manifest := range manifests {
 		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
-		s.testInstallation.Assertions.ExpectObjectDeleted(manifest, err, output)
+		s.testInstallation.AssertionsT(s.T()).ExpectObjectDeleted(manifest, err, output)
 	}
 }
 
 func (s *testingSuite) TestBackendConfigPolicy() {
 	// make sure pods are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
 
 	// Should have a successful response
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -154,8 +154,8 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 	)
 
 	// envoy config should reflect the backend config policy
-	s.testInstallation.Assertions.AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
-		s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
+		s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			clusters, err := adminClient.GetDynamicClusters(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get dynamic clusters from config dump")
 			g.Expect(clusters).NotTo(gomega.BeEmpty())
@@ -225,7 +225,7 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 }
 
 func (s *testingSuite) TestBackendConfigPolicyTLSInsecureSkipVerify() {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -241,7 +241,7 @@ func (s *testingSuite) TestBackendConfigPolicyTLSInsecureSkipVerify() {
 }
 
 func (s *testingSuite) TestBackendConfigPolicySimpleTLS() {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -258,7 +258,7 @@ func (s *testingSuite) TestBackendConfigPolicySimpleTLS() {
 
 func (s *testingSuite) TestBackendConfigPolicyTLSSystemCA() {
 	// self-signed upstream should fail when using system CA certificates
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -279,14 +279,14 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 	// many backends are rejected. We use the 'stats' API in Envoy to verify
 	// that rejection functions as expected.
 
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, httpbinDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, httpbinDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=httpbin",
 	})
 
@@ -301,7 +301,7 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 			expectedStatusCode = 200
 		}
 		path := fmt.Sprintf("/status/%v", expectedStatusCode)
-		s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.ctx,
 			testdefaults.CurlPodExecOpt,
 			[]curl.Option{
@@ -323,8 +323,8 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 
 	// Check envoy stats to verify that outlier detection has ejected
 	// floor(0.51 * |replicas|) = floor(1.02) = 1 backends.
-	s.testInstallation.Assertions.AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
-		s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
+		s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			metricPrefix := "cluster.kube_default_httpbin_8080"
 			out, err := adminClient.GetStats(ctx, map[string]string{
 				// see https://www.envoyproxy.io/docs/envoy/latest/operations/admin#get--stats
@@ -380,7 +380,7 @@ func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
 
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.BackendConfigPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,
@@ -416,7 +416,7 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controller
 
 func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.BackendConfigPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,

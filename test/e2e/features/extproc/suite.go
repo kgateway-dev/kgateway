@@ -58,7 +58,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 	// Test that ExtProc is applied to all routes through the Gateway
 	// First route - should have ExtProc applied
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -80,7 +80,7 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		})
 
 	// Second route rule0 - should also have ExtProc applied
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -103,7 +103,7 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		})
 
 	// Second route rule1 - should not have ExtProc applied since it has a disable policy applied
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -129,7 +129,7 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 // TestExtProcWithHTTPRouteTargetRef tests ExtProc with targetRef to HTTPRoute
 func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 	// Test route with ExtProc - should have header modified
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -152,7 +152,7 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 		})
 
 	// Test route without ExtProc - should not have header modified
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -179,7 +179,7 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 	// TODO: Should header-based routing work?
 
 	// Test route with ExtProc and matching header - should have header modified
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -202,7 +202,7 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 		})
 
 	// Test second rule - should not have header modified
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -227,7 +227,7 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 // TestExtProcWithBackendFilter tests backend-level ExtProc filtering
 func (s *testingSuite) TestExtProcWithBackendFilter() {
 	// Test path with ExtProc enabled
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -249,7 +249,7 @@ func (s *testingSuite) TestExtProcWithBackendFilter() {
 		})
 
 	// Test path without ExtProc
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{

@@ -44,10 +44,10 @@ func TestKgatewayWaypoint(t *testing.T) {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {
-			testInstallation.PreFailHandler(ctx)
+			testInstallation.PreFailHandler(ctx, t)
 		}
 
-		testInstallation.UninstallKgateway(ctx)
+		testInstallation.UninstallKgateway(ctx, t)
 		testInstallation.UninstallIstio()
 	})
 
@@ -69,7 +69,7 @@ func TestKgatewayWaypoint(t *testing.T) {
 	}
 
 	// Install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx)
+	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	WaypointSuiteRunner().Run(ctx, t, testInstallation)
 }

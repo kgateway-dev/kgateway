@@ -39,15 +39,15 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) checkPodsRunning() {
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 			LabelSelector: testdefaults.CurlPodLabelSelector,
 		})
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		testdefaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
 			LabelSelector: testdefaults.HttpbinLabelSelector,
 		})
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 		})
@@ -116,7 +116,7 @@ func (s *testingSuite) assertHeaders(port int,
 	requestHeadersJSON, err := json.Marshal(map[string]any{"headers": requestHeaders})
 	s.Require().NoError(err, "unable to marshal request headers to JSON")
 
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		allOptions,

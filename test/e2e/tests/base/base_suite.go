@@ -380,7 +380,7 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 
 func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 	if s.T().Failed() && !testutils.ShouldSkipBugReport() {
-		s.TestInstallation.PerTestPreFailHandler(s.Ctx, testName)
+		s.TestInstallation.PerTestPreFailHandler(s.Ctx, s.T(), testName)
 	}
 
 	// Delete test-specific manifests
@@ -403,7 +403,7 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 
 func (s *BaseTestingSuite) GetKubectlOutput(command ...string) string {
 	out, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, command...)
-	s.TestInstallation.Assertions.Require.NoError(err)
+	s.TestInstallation.AssertionsT(s.T()).Require.NoError(err)
 
 	return out
 }
@@ -479,7 +479,7 @@ spec:
 	}
 
 	// Wait for the pod to complete (image pulled) with a long timeout (5 minutes)
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		pod, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().Pods("default").Get(s.Ctx, podName, metav1.GetOptions{})
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		// Pod should be Succeeded (completed) or Running (image pulled, command ran)
@@ -514,9 +514,9 @@ func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
 	// because in order to determine what dynamic resources are expected, certain resources (e.g. Gateways and
 	// GatewayParameters) must already exist on the cluster.
 	s.loadManifestResources(testCase)
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.manifestResources...)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, testCase.manifestResources...)
 	s.loadDynamicResources(testCase)
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.dynamicResources...)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, testCase.dynamicResources...)
 
 	// wait until pods are ready; this assumes that pods use a well-known label
 	// app.kubernetes.io/name=<name>
@@ -532,7 +532,7 @@ func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
 		} else {
 			continue
 		}
-		s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, ns, metav1.ListOptions{
+		s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, ns, metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, name),
 			// Provide a longer timeout as the pod needs to be pulled and pass HCs
 		}, time.Second*60, time.Millisecond*500)

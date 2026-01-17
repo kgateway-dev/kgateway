@@ -57,7 +57,7 @@ func (s *testingSuite) TestNoCompressionWithoutAcceptEncoding() {
 }
 
 func (s *testingSuite) assertHeaders(path string, reqHeaders map[string]string, expectedHeaders map[string]any, notExpectedHeaders []string) {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -80,7 +80,7 @@ func (s *testingSuite) assertHeaders(path string, reqHeaders map[string]string, 
 func (s *testingSuite) TestRequestDecompression() {
 	// first get a gzip file; the easiest way to do this is to GET a compressed response
 	// and write it to a file
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -99,7 +99,7 @@ func (s *testingSuite) TestRequestDecompression() {
 
 	// Now for the test, post the gzipped body
 	// we post to /json because the policy is set there..
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -118,11 +118,11 @@ func (s *testingSuite) TestRequestDecompression() {
 	)
 
 	// Verify decompressor filter emitted metrics indicating it handled the request via Envoy admin API
-	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.Ctx,
 		proxyObjectMeta,
 		func(ctx context.Context, adminClient *admincli.Client) {
-			s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+			s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 				metricSuffix := ".decompressor.gzip.request.decompressed"
 				out, err := adminClient.GetStats(ctx, map[string]string{
 					"format": "json",

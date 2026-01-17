@@ -687,7 +687,7 @@ spec:
 		ctx := context.Background()
 		ti.UninstallKgatewayCRDs(ctx)
 	})
-	ti.InstallKgatewayCRDsFromLocalChart(ctx)
+	ti.InstallKgatewayCRDsFromLocalChart(ctx, t)
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
