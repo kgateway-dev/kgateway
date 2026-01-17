@@ -685,7 +685,7 @@ spec:
 
 	testutils.Cleanup(t, func() {
 		ctx := context.Background()
-		ti.UninstallKgatewayCRDs(ctx)
+		ti.UninstallKgatewayCRDs(ctx, t)
 	})
 	ti.InstallKgatewayCRDsFromLocalChart(ctx, t)
 

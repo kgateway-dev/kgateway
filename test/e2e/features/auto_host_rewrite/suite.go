@@ -62,6 +62,7 @@ func (s *testingSuite) SetupSuite() {
 		LabelSelector: defaults.WellKnownAppLabel + "=" + proxyObjectMeta.GetName(),
 	})
 }
+
 func (s *testingSuite) TearDownSuite() {
 	if testutils.ShouldSkipCleanup(s.T()) {
 		return

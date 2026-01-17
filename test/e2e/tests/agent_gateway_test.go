@@ -53,7 +53,7 @@ func TestAgentgatewayIntegration(t *testing.T) {
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	common.SetupBaseConfig(ctx, t, testInstallation, filepath.Join("manifests", "agent-gateway-base.yaml"))
-	common.SetupBaseGateway(ctx, t, testInstallation, types.NamespacedName{
+	common.SetupBaseGateway(ctx, testInstallation, types.NamespacedName{
 		Namespace: "agentgateway-base",
 		Name:      "gateway",
 	})

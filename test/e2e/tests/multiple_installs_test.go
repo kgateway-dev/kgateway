@@ -54,10 +54,10 @@ func TestMultipleInstalls(t *testing.T) {
 			if t.Failed() {
 				install.testInstallation.PreFailHandler(ctx, t)
 			}
-			install.testInstallation.UninstallKgatewayCore(ctx)
-			cleanupPerInstall(ctx, install.testInstallation)
+			install.testInstallation.UninstallKgatewayCore(ctx, t)
+			cleanupPerInstall(ctx, install.testInstallation, t)
 		}
-		installs[0].testInstallation.UninstallKgatewayCRDs(ctx)
+		installs[0].testInstallation.UninstallKgatewayCRDs(ctx, t)
 	})
 
 	// Install all kgateway instances first
@@ -66,8 +66,8 @@ func TestMultipleInstalls(t *testing.T) {
 			install.testInstallation.InstallKgatewayCRDsFromLocalChart(ctx, t)
 		}
 		// Install kgateway
-		install.testInstallation.InstallKgatewayCoreFromLocalChart(ctx)
-		applyPerInstall(ctx, install.testInstallation)
+		install.testInstallation.InstallKgatewayCoreFromLocalChart(ctx, t)
+		applyPerInstall(ctx, install.testInstallation, t)
 	}
 
 	// Test each kgateway instance
@@ -84,7 +84,7 @@ func multipleInstallsSuiteRunner(namespace string) e2e.SuiteRunner {
 	return runner
 }
 
-func applyPerInstall(ctx context.Context, ti *e2e.TestInstallation) {
+func applyPerInstall(ctx context.Context, ti *e2e.TestInstallation, t *testing.T) {
 	namespace := ti.Metadata.InstallNamespace
 
 	err := ti.Actions.Kubectl().ApplyFile(ctx, multiinstall.BasicManifest, "-n", namespace)
@@ -98,7 +98,7 @@ func applyPerInstall(ctx context.Context, ti *e2e.TestInstallation) {
 	ti.AssertionsT(t).EventuallyObjectsExist(ctx, defaults.CurlPod)
 }
 
-func cleanupPerInstall(ctx context.Context, ti *e2e.TestInstallation) {
+func cleanupPerInstall(ctx context.Context, ti *e2e.TestInstallation, t *testing.T) {
 	namespace := ti.Metadata.InstallNamespace
 
 	err := ti.Actions.Kubectl().DeleteFileSafe(ctx, multiinstall.BasicManifest, "-n", namespace)

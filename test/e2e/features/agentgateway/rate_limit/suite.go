@@ -87,19 +87,19 @@ func (s *testingSuite) SetupSuite() {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err, "can apply "+manifest)
 	}
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, s.commonResources...)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.commonResources...)
 
 	// make sure pods are running
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=backend-0,version=v1",
 	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, rateLimitDeployment.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, rateLimitDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=ratelimit",
 	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 }
@@ -113,19 +113,19 @@ func (s *testingSuite) TearDownSuite() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 		s.Require().NoError(err, "can delete "+manifest)
 	}
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, s.commonResources...)
+	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.commonResources...)
 
 	// make sure pods are gone
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=backend-0,version=v1",
 	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, rateLimitDeployment.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, rateLimitDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=ratelimit",
 	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 }
