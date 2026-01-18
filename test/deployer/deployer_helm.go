@@ -243,7 +243,6 @@ func (dt DeployerTester) RunHelmChartTest(
 
 // Remove things that change often but are not relevant to the tests
 func sanitizeOutput(got []byte) []byte {
-
 	old := fmt.Sprintf("%s/%s:%v", pkgdeployer.AgentgatewayRegistry, pkgdeployer.AgentgatewayImage, pkgdeployer.AgentgatewayDefaultTag)
 	now := fmt.Sprintf("%s/%s:99.99.99", pkgdeployer.AgentgatewayRegistry, pkgdeployer.AgentgatewayImage)
 
