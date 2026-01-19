@@ -429,7 +429,22 @@ func ListenerSetCollection(
 				originalStatus := slices.Map(status.Listeners, convertListenerSetStatusToStandardStatus)
 				hostnames, tlsInfo, updatedStatus, programmed := BuildListener(ctx, secrets, configMaps, grants, namespaces,
 					obj, originalStatus, parentGwObj.Spec, standardListener, i, portErr)
-				status.Listeners = slices.Map(updatedStatus, convertStandardStatusToListenerSetStatus(l))
+				j := 0
+				status.Listeners = slices.Map(updatedStatus, func(e gwv1.ListenerStatus) gatewayx.ListenerEntryStatus {
+					port := gatewayx.PortNumber(0)
+					if j < len(ls.Listeners) {
+						l := ls.Listeners[j]
+						port, _ = kubeutils.DetectListenerPortNumber(l.Protocol, l.Port)
+					}
+					j++
+					return gatewayx.ListenerEntryStatus{
+						Name:           e.Name,
+						Port:           port,
+						SupportedKinds: e.SupportedKinds,
+						AttachedRoutes: e.AttachedRoutes,
+						Conditions:     e.Conditions,
+					}
+				})
 
 				if controllerName == constants.ManagedGatewayMeshController || controllerName == constants.ManagedGatewayEastWestController {
 					// Waypoint doesn't actually convert the routes to VirtualServices
@@ -534,18 +549,6 @@ func NamespaceAcceptedByAllowListeners(localNamespace string, parent *gwv1.Gatew
 func convertListenerSetToListener(l gatewayx.ListenerEntry) gwv1.Listener {
 	// For now, structs are identical enough Go can cast them. I doubt this will hold up forever, but we can adjust as needed.
 	return gwv1.Listener(l)
-}
-
-func convertStandardStatusToListenerSetStatus(l gatewayx.ListenerEntry) func(e gwv1.ListenerStatus) gatewayx.ListenerEntryStatus {
-	return func(e gwv1.ListenerStatus) gatewayx.ListenerEntryStatus {
-		return gatewayx.ListenerEntryStatus{
-			Name:           e.Name,
-			Port:           l.Port,
-			SupportedKinds: e.SupportedKinds,
-			AttachedRoutes: e.AttachedRoutes,
-			Conditions:     e.Conditions,
-		}
-	}
 }
 
 func convertListenerSetStatusToStandardStatus(e gatewayx.ListenerEntryStatus) gwv1.ListenerStatus {
