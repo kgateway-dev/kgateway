@@ -138,7 +138,7 @@ spec:
           value: https://foo:443
         - name: TRUST_DOMAIN
           value: not.cluster.local
-        image: cr.agentgateway.dev/agentgateway:0.11.1
+        image: cr.agentgateway.dev/agentgateway:99.99.99
         name: agentgateway
         ports:
         - containerPort: 15020

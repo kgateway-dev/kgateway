@@ -164,7 +164,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.serviceAccountName
-        image: cr.agentgateway.dev/agentgateway:0.11.1
+        image: cr.agentgateway.dev/agentgateway:99.99.99
         name: agentgateway
         ports:
         - containerPort: 15020

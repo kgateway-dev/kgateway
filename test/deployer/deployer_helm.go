@@ -1,7 +1,9 @@
 package deployer
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -206,6 +208,8 @@ func (dt DeployerTester) RunHelmChartTest(
 	got, err := objectsToYAML(deployObjs)
 	assert.NoError(t, err, "error converting objects to YAML")
 
+	got = sanitizeOutput(got)
+
 	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
 		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
 		err = os.WriteFile(outputFile, got, 0o644) //nolint:gosec // G306: Golden test file can be readable
@@ -235,6 +239,15 @@ func (dt DeployerTester) RunHelmChartTest(
 	if tt.Validate != nil {
 		tt.Validate(t, string(data))
 	}
+}
+
+// Remove things that change often but are not relevant to the tests
+func sanitizeOutput(got []byte) []byte {
+
+	old := fmt.Sprintf("%s/%s:%v", pkgdeployer.AgentgatewayRegistry, pkgdeployer.AgentgatewayImage, pkgdeployer.AgentgatewayDefaultTag)
+	now := fmt.Sprintf("%s/%s:99.99.99", pkgdeployer.AgentgatewayRegistry, pkgdeployer.AgentgatewayImage)
+
+	return bytes.Replace(got, []byte(old), []byte(now), -1)
 }
 
 // objectsToYAML converts a slice of client.Object to YAML bytes, separated by "---"

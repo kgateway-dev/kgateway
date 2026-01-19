@@ -136,7 +136,7 @@ spec:
           value: $(GATEWAY)
         - name: TEST_OF_AVOIDING_VARIABLE_EXPANSION
           value: $$(GATEWAY)
-        image: cr.agentgateway.dev/agentgateway:0.11.1
+        image: cr.agentgateway.dev/agentgateway:99.99.99
         name: agentgateway
         ports:
         - containerPort: 15020
