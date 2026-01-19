@@ -1,0 +1,210 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: agentgateway
+spec:
+  controllerName: agentgateway.dev/agentgateway
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: default
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - protocol: HTTP
+      port: 80
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - protocol: HTTP
+      port: 8081
+      name: http-2
+      allowedRoutes:
+        namespaces:
+          from: Same
+  allowedListeners:
+    namespaces:
+      from: All
+---
+apiVersion: gateway.networking.x-k8s.io/v1alpha1
+kind: XListenerSet
+metadata:
+  name: valid-ls
+  namespace: default
+spec:
+  parentRef:
+    kind: Gateway
+    group: gateway.networking.k8s.io
+    name: gw
+    namespace: default
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 90
+    allowedRoutes:
+        namespaces:
+          from: All
+  - name: http-2
+    protocol: HTTP
+    port: 8091
+    allowedRoutes:
+        namespaces:
+          from: All
+---
+# Output
+output:
+- gateway:
+    Name: gw
+    Namespace: default
+  resource:
+    bind:
+      key: 80/default/gw
+      port: 80
+- gateway:
+    Name: gw
+    Namespace: default
+  resource:
+    bind:
+      key: 8081/default/gw
+      port: 8081
+- gateway:
+    Name: gw
+    Namespace: default
+  resource:
+    bind:
+      key: 8091/default/gw
+      port: 8091
+- gateway:
+    Name: gw
+    Namespace: default
+  resource:
+    bind:
+      key: 90/default/gw
+      port: 90
+- gateway:
+    Name: gw
+    Namespace: default
+  resource:
+    listener:
+      bindKey: 80/default/gw
+      key: default/gw.http
+      name:
+        gatewayName: gw
+        gatewayNamespace: default
+        listenerName: http
+      protocol: HTTP
+- gateway:
+    Name: gw
+    Namespace: default
+  resource:
+    listener:
+      bindKey: 8081/default/gw
+      key: default/gw.http-2
+      name:
+        gatewayName: gw
+        gatewayNamespace: default
+        listenerName: http-2
+      protocol: HTTP
+- gateway:
+    Name: gw
+    Namespace: default
+  resource:
+    listener:
+      bindKey: 90/default/gw
+      key: default/valid-ls.http
+      name:
+        gatewayName: gw
+        gatewayNamespace: default
+        listenerName: http
+      protocol: HTTP
+- gateway:
+    Name: gw
+    Namespace: default
+  resource:
+    listener:
+      bindKey: 8091/default/gw
+      key: default/valid-ls.http-2
+      name:
+        gatewayName: gw
+        gatewayNamespace: default
+        listenerName: http-2
+      protocol: HTTP
+status:
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: Gateway
+  metadata:
+    name: gw
+    namespace: default
+  spec: null
+  status:
+    conditions:
+    - lastTransitionTime: fake
+      message: ""
+      reason: Accepted
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: fake
+      message: Successfully programmed Gateway
+      reason: Programmed
+      status: "True"
+      type: Programmed
+    listeners:
+    - attachedRoutes: 0
+      conditions:
+      - lastTransitionTime: fake
+        message: No errors found
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: fake
+        message: No errors found
+        reason: NoConflicts
+        status: "False"
+        type: Conflicted
+      - lastTransitionTime: fake
+        message: No errors found
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      - lastTransitionTime: fake
+        message: No errors found
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      name: http
+      supportedKinds:
+      - group: gateway.networking.k8s.io
+        kind: HTTPRoute
+      - group: gateway.networking.k8s.io
+        kind: GRPCRoute
+    - attachedRoutes: 0
+      conditions:
+      - lastTransitionTime: fake
+        message: No errors found
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: fake
+        message: No errors found
+        reason: NoConflicts
+        status: "False"
+        type: Conflicted
+      - lastTransitionTime: fake
+        message: No errors found
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      - lastTransitionTime: fake
+        message: No errors found
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      name: http-2
+      supportedKinds:
+      - group: gateway.networking.k8s.io
+        kind: HTTPRoute
+      - group: gateway.networking.k8s.io
+        kind: GRPCRoute
