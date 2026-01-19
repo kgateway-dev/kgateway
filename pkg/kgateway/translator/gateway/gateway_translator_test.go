@@ -1783,6 +1783,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("listener set with TLS listener with TLS extension options", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-options.yaml",
+			outputFile: "listener-sets/tls-options.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy RateLimit Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/rate-limit-full-config.yaml",
