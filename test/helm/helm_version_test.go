@@ -174,6 +174,12 @@ func TestHelmChartTemplate(t *testing.T) {
             memory: 128Mi
 `,
 		},
+		{
+			name: "priority-class-name",
+			valuesYAML: `controller:
+  priorityClassName: system-cluster-critical
+`,
+		},
 	}
 
 	for _, chart := range charts {

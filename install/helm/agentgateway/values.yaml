@@ -45,6 +45,8 @@ affinity: {}
 controller:
   # -- Set the number of controller pod replicas.
   replicaCount: 1
+  # -- Set the priority class name for the controller pod.
+  priorityClassName: ""
   # -- Set the log level for the controller.
   logLevel: info
   # -- Configure the controller container image.
