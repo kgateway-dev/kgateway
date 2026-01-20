@@ -737,6 +737,9 @@ release: ## Create a release using goreleaser
 release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG optional)
 	./hack/generate-release-notes.sh -p $(PREVIOUS_TAG) -c $(or $(CURRENT_TAG),HEAD)
 
+.PHONY: release-envoy-wrapper
+release-envoy-wrapper: ## Create a envoy-wrapper release using goreleaser
+	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) go tool -modfile=tools/go.mod goreleaser release $(GORELEASER_ARGS) -f envoy-wrapper-goreleaser.yaml --timeout $(GORELEASER_TIMEOUT)
 #----------------------------------------------------------------------------------
 # MARK: Development
 #----------------------------------------------------------------------------------

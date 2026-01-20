@@ -22,6 +22,7 @@ on:
   pull_request:
     branches:
       - main
+      - 'v[0-9]*.[0-9]*.x'
 
 env:
   # this uses the `github.repository_owner` to support releases from forks (useful for testing).
@@ -174,6 +175,16 @@ jobs:
         with:
           name: release-notes
           path: _output
+
+      - name: Run goreleaser for envoy-wrapper
+        run: make release-envoy-wrapper
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.setup.outputs.version }}
+          IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
+          GORELEASER_ARGS: ${{ needs.setup.outputs.goreleaser_args }}
+          GORELEASER_CURRENT_TAG: ${{ needs.setup.outputs.version }}
+          GORELEASER_DISABLE_RELEASE: ${{ env.GORELEASER_DISABLE_RELEASE }}
 
       - name: Run goreleaser
         run: make release
