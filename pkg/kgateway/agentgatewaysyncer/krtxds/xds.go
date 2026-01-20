@@ -65,7 +65,7 @@ type CollectionRegistration struct {
 	HasSynced func() bool
 }
 
-type Registration func(map[string]CollectionGenerator, chan *PushRequest) CollectionRegistration
+type Registration func(*DiscoveryServer) CollectionRegistration
 
 func TypeName[T proto.Message]() string {
 	ft := new(T)
@@ -109,7 +109,7 @@ func getKey[T any](t T) string {
 }
 
 func PerGatewayCollection[T IntoProto[TT], TT proto.Message](collection krt.Collection[T], extract func(o T) types.NamespacedName, krtopts krtutil.KrtOptions) Registration {
-	return func(m map[string]CollectionGenerator, pushChannel chan *PushRequest) CollectionRegistration {
+	return func(s *DiscoveryServer) CollectionRegistration {
 		nc := krt.NewCollection(collection, func(ctx krt.HandlerContext, i T) *DiscoveryResource {
 			var forGateway *types.NamespacedName
 			if extract != nil {
@@ -129,15 +129,13 @@ func PerGatewayCollection[T IntoProto[TT], TT proto.Message](collection krt.Coll
 		}, krtopts.ToOptions(fmt.Sprintf("XDS/%s", TypeName[TT]()))...)
 
 		t := TypeName[TT]()
-		m[t] = CollectionGenerator{
+		s.Collections[t] = CollectionGenerator{
 			PerGateway: extract != nil,
 			Col:        nc,
 		}
+		synced := atomic.NewBool(false)
 		start := func(stop <-chan struct{}) {
-			if !nc.WaitUntilSynced(stop) {
-				return
-			}
-			nc.RegisterBatch(func(o []krt.Event[DiscoveryResource]) {
+			handler := nc.RegisterBatch(func(o []krt.Event[DiscoveryResource]) {
 				un := make(sets.String, len(o))
 				for _, oo := range o {
 					un.Insert(oo.Latest().Name)
@@ -147,15 +145,17 @@ func PerGatewayCollection[T IntoProto[TT], TT proto.Message](collection krt.Coll
 						TypeUrl(t): un,
 					},
 				}
-				pushChannel <- &pr
+				s.InboundUpdates.Inc()
+				s.pushChannel <- &pr
 			}, true)
-		}
-		synced := func() bool {
-			return nc.HasSynced()
+			go func() {
+				handler.WaitUntilSynced(stop)
+				synced.Store(true)
+			}()
 		}
 		return CollectionRegistration{
 			Start:     start,
-			HasSynced: synced,
+			HasSynced: synced.Load,
 		}
 	}
 }
@@ -202,7 +202,7 @@ func NewDiscoveryServer(debugger *krt.DebugHandler, nackPublisher *nack.Publishe
 	}
 
 	for _, r := range reg {
-		out.registrations = append(out.registrations, r(out.Collections, out.pushChannel))
+		out.registrations = append(out.registrations, r(out))
 	}
 
 	return out
@@ -908,11 +908,21 @@ func (s *DiscoveryServer) Shutdown() {
 	s.pushQueue.ShutDown()
 }
 
+// EnsureSynced waits until all pending debounce events have been processed.
+// This is useful in tests to ensure that no spurious pushes will occur after
+// connecting a client.
+func (s *DiscoveryServer) EnsureSynced() {
+	target := s.InboundUpdates.Load()
+	for s.CommittedUpdates.Load() < target {
+		time.Sleep(time.Millisecond)
+	}
+}
+
 func (s *DiscoveryServer) Start(stopCh <-chan struct{}) {
 	go s.handleUpdates(stopCh)
 	go s.sendPushes(stopCh)
 	for _, reg := range s.registrations {
-		go reg.Start(stopCh)
+		reg.Start(stopCh)
 	}
 }
 
