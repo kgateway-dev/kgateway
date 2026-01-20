@@ -145,6 +145,24 @@ spec:
                               more information.\n\nNote: the keys and values cannot
                               be empty, but they are not otherwise validated."
                             type: object
+                          dnsResolver:
+                            description: |-
+                              DNS resolver configuration for Envoy's CARES DNS resolver.
+                              This configuration applies to all clusters and affects DNS query behavior.
+                              See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto
+                              for more information.
+                            properties:
+                              udpMaxQueries:
+                                description: |-
+                                  Maximum number of UDP queries to be issued on a single UDP channel.
+                                  This helps prevent DNS query pinning to a single resolver, addressing
+                                  the issue described in https://github.com/istio/istio/issues/53577.
+                                  Defaults to 100 if not specified.
+                                  See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto#extensions-network-dns-resolver-cares-v3-caresdnsresolverconfig
+                                format: int32
+                                minimum: 1
+                                type: integer
+                            type: object
                           logLevel:
                             description: |-
                               Envoy log level. Options include "trace", "debug", "info", "warn", "error",

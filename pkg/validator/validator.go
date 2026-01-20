@@ -66,33 +66,67 @@ func (b *binaryValidator) Validate(ctx context.Context, json string) error {
 }
 
 type dockerValidator struct {
-	img string
+	img      string
+	etcEnvoy string
+}
+
+type DockerValidatorOptions func(*dockerValidator)
+
+func Image(img string) func(*dockerValidator) {
+	return func(d *dockerValidator) {
+		d.img = img
+	}
+}
+
+func EtcEnvoyVolume(etcEnvoy string) func(*dockerValidator) {
+	return func(d *dockerValidator) {
+		d.etcEnvoy = etcEnvoy
+	}
 }
 
 var _ Validator = &dockerValidator{}
 
 // NewDocker creates a new docker validator. If img is empty, the default image is used.
-func NewDocker(img ...string) Validator {
-	if len(img) == 0 {
-		img = []string{defaultEnvoyImage}
+func NewDocker(opts ...DockerValidatorOptions) Validator {
+	ret := &dockerValidator{
+		img: defaultEnvoyImage,
 	}
-	return &dockerValidator{img: img[0]}
+
+	for _, opt := range opts {
+		opt(ret)
+	}
+
+	return ret
 }
 
-func (d *dockerValidator) Validate(ctx context.Context, json string) error {
-	cmd := exec.CommandContext( //nolint:gosec // G204: docker command with controlled args for config validation
-		ctx,
-		"docker", "run",
+func (d *dockerValidator) args() []string {
+	args := []string{
+		"run",
 		"--rm",
 		"-i",
+	}
+	if d.etcEnvoy != "" {
+		args = append(args, "-v", fmt.Sprintf("%s:/etc/envoy/:ro", d.etcEnvoy))
+	}
+	args = append(args,
 		"--entrypoint", "/usr/local/bin/envoy",
 		d.img,
 		"--mode",
 		"validate",
+		"--service-node", "dummy-node",
 		"--config-path", "/dev/fd/0",
 		"-l", "critical",
 		"--log-format", "%v",
 	)
+	return args
+}
+
+func (d *dockerValidator) Validate(ctx context.Context, json string) error {
+
+	cmd := exec.CommandContext( //nolint:gosec // G204: docker command with controlled args for config validation
+		ctx,
+		"docker", d.args()...)
+
 	cmd.Stdin = strings.NewReader(json)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

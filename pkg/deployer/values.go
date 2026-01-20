@@ -83,6 +83,9 @@ type HelmGateway struct {
 	Env               []corev1.EnvVar              `json:"env,omitempty"`
 	ExtraVolumeMounts []corev1.VolumeMount         `json:"extraVolumeMounts,omitempty"`
 
+	// dns resolver values
+	DnsResolver *HelmDnsResolver `json:"dnsResolver,omitempty"`
+
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`
 
@@ -138,6 +141,11 @@ type HelmXds struct {
 type HelmXdsTls struct {
 	Enabled *bool   `json:"enabled,omitempty"`
 	CaCert  *string `json:"caCert,omitempty"`
+}
+
+type HelmDnsResolver struct {
+	UdpMaxQueries          *int32 `json:"udpMaxQueries,omitempty"`
+	ReinitChannelOnTimeout *bool  `json:"reinitChannelOnTimeout,omitempty"`
 }
 
 type HelmIstio struct {

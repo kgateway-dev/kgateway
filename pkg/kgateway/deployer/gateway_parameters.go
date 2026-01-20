@@ -512,6 +512,15 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 		return nil, err
 	}
 	gateway.ComponentLogLevel = &compLogLevelStr
+
+	// Extract DNS resolver configuration
+	dnsResolverConfig := envoyContainerConfig.GetBootstrap().GetDnsResolver()
+	if dnsResolverConfig != nil {
+		gateway.DnsResolver = &deployer.HelmDnsResolver{
+			UdpMaxQueries: dnsResolverConfig.GetUdpMaxQueries(),
+		}
+	}
+
 	gateway.Resources = envoyContainerConfig.GetResources()
 	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
 	gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())
