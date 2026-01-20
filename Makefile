@@ -57,7 +57,6 @@ export ENVOY_IMAGE_ARM64 ?= envoyproxy/envoy:v1.36.4
 # control plane
 export ENVOY_WRAPPER_IMAGE ?= ghcr.io/kgateway-dev/envoy-wrapper:$(VERSION)
 
-export RUST_BUILD_ARCH ?= x86_64 # override this to aarch64 for local arm build
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
 
@@ -74,6 +73,12 @@ else
 	ifneq ($(GOARCH), arm64)
 		GOARCH := amd64
 	endif
+endif
+
+ifeq ($(GOARCH), arm64)
+	RUST_BUILD_ARCH := aarch64
+else
+	RUST_BUILD_ARCH := x86_64
 endif
 
 PLATFORM := --platform=linux/$(GOARCH)
