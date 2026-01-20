@@ -95,8 +95,7 @@ dockers:
     goos: linux
     goarch: arm64
     build_flag_templates:
-# don't add --pull here because we want to use the local envoy-wrapper image we just built
-#      - "--pull"
+      - "--pull"
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
@@ -107,8 +106,7 @@ dockers:
     goos: linux
     goarch: amd64
     build_flag_templates:
-# don't add --pull here because we want to use the local envoy-wrapper image we just built
-#      - "--pull"
+      - "--pull"
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
