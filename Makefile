@@ -44,18 +44,6 @@ export VERSION
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-# Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-# When we switch Rustformation to be used by default, we can set ENVOY_IMAGE=envoyproxy/envoy:v1.36.4
-# if we want to switch to use upstream vanilla envoy for the multi-arch arm build. For v2.2 release,
-# we plan to still use envoy-gloo for x86 build (so people can switch back to classic transformation if needed).
-# For arm build, we will use upstream envoy and cannot switch back to classic transformation.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.36.4-patch1
-# For now, this ENVOY_IMAGE_ARM64 is only used by goreleaser, not the make envoy-wrapper-docker target
-export ENVOY_IMAGE_ARM64 ?= envoyproxy/envoy:v1.36.4
-# This one is used to build the control plane image. This is because now rustformation is default, we need to 
-# have both the envoy binary and the rustfromation dynamic module binary to run strict validation mode from the 
-# control plane
-export ENVOY_WRAPPER_IMAGE ?= ghcr.io/kgateway-dev/envoy-wrapper:$(VERSION)
 
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
@@ -75,10 +63,28 @@ else
 	endif
 endif
 
+# Note: When bumping this version, update the version in pkg/validator/validator.go as well.
+# For v2.2, we use vanilla upstream envoy for arm build. This is used by goreleaser and the logic below to set
+# ENVOY_IMAGE properly when building envoy-wrapper-docker.
+# TODO: Consolidate to just upstream image in v2.3
+export ENVOY_IMAGE_ARM64 = envoyproxy/envoy:v1.36.4
+export ENVOY_IMAGE_X86 = quay.io/solo-io/envoy-gloo:1.36.4-patch1
+# This one is used to build the control plane image. This is because now rustformation is default, we need to 
+# have both the envoy binary and the rustfromation dynamic module binary to run strict validation mode from the 
+# control plane
+export ENVOY_WRAPPER_IMAGE ?= ghcr.io/kgateway-dev/envoy-wrapper:$(VERSION)
 ifeq ($(GOARCH), arm64)
 	RUST_BUILD_ARCH := aarch64
+    ifeq ($(ENVOY_IMAGE), )
+	    ENVOY_IMAGE := $(ENVOY_IMAGE_ARM64)
+	endif
 else
 	RUST_BUILD_ARCH := x86_64
+# For v2.2 release, we plan to still use envoy-gloo for x86 build (so people can switch back to
+# classic transformation if needed).
+    ifeq ($(ENVOY_IMAGE), )
+	    ENVOY_IMAGE := $(ENVOY_IMAGE_X86)
+	endif
 endif
 
 PLATFORM := --platform=linux/$(GOARCH)
