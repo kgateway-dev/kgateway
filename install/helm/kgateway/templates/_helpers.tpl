@@ -40,6 +40,9 @@ helm.sh/chart: {{ include "kgateway.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.commonLabels | default dict }}
+{{ toYaml . }}
+{{- end }}
 {{- end }}
 
 {{/*
