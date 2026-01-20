@@ -75,17 +75,20 @@ export ENVOY_IMAGE_X86 = quay.io/solo-io/envoy-gloo:1.36.4-patch1
 export ENVOY_WRAPPER_IMAGE ?= ghcr.io/kgateway-dev/envoy-wrapper:$(VERSION)
 ifeq ($(GOARCH), arm64)
 	RUST_BUILD_ARCH := aarch64
-    ifeq ($(ENVOY_IMAGE), )
-	    ENVOY_IMAGE := $(ENVOY_IMAGE_ARM64)
+	ifeq ($(ENVOY_IMAGE), )
+		ENVOY_IMAGE := $(ENVOY_IMAGE_ARM64)
+		export ENVOY_IMAGE
 	endif
 else
 	RUST_BUILD_ARCH := x86_64
 # For v2.2 release, we plan to still use envoy-gloo for x86 build (so people can switch back to
 # classic transformation if needed).
-    ifeq ($(ENVOY_IMAGE), )
-	    ENVOY_IMAGE := $(ENVOY_IMAGE_X86)
+	ifeq ($(ENVOY_IMAGE), )
+		ENVOY_IMAGE := $(ENVOY_IMAGE_X86)
+		export ENVOY_IMAGE
 	endif
 endif
+
 
 PLATFORM := --platform=linux/$(GOARCH)
 
