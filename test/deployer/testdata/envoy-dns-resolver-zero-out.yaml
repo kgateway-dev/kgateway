@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -187,11 +187,6 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
-    typed_dns_resolver_config:
-      name: envoy.network.dns_resolver.cares
-      typed_config:
-        "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
-        udp_max_queries: 100
     dynamic_resources:
       ads_config:
         transport_api_version: V3
@@ -219,7 +214,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -232,12 +227,11 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
 spec:
-  loadBalancerClass: service.k8s.aws/nlb
   ports:
   - name: listener-8080
     port: 8080
@@ -259,7 +253,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -279,7 +273,7 @@ spec:
       labels:
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
-        gateway.networking.k8s.io/gateway-class-name: kgateway
+        gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
         gateway.networking.k8s.io/gateway-name: gw
         kgateway: kube-gateway
     spec:

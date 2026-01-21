@@ -90,7 +90,10 @@ func EmptySecurityContextValidator() func(t *testing.T, outputYaml string) {
 // The exclude parameter allows skipping files that are tested elsewhere (e.g., TLS tests).
 func VerifyAllYAMLFilesReferenced(t *testing.T, testDataDir string, testCases []HelmTestCase, exclude ...string) {
 	t.Helper()
-
+	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
+		t.Log("Skipping reference validation because REFRESH_GOLDEN is set")
+		return
+	}
 	yamlFiles, err := filepath.Glob(filepath.Join(testDataDir, "*.yaml"))
 	require.NoError(t, err, "failed to list YAML files in %s", testDataDir)
 
@@ -116,9 +119,10 @@ func VerifyAllYAMLFilesReferenced(t *testing.T, testDataDir string, testCases []
 	}
 
 	require.Empty(t, unreferenced, "Found YAML files in %s without corresponding test cases: %v", testDataDir, unreferenced)
-} // VerifyAllYAMLFilesReferenced ensures every YAML file in testDataDir has a corresponding test case.
-// The exclude parameter allows skipping files that are tested elsewhere (e.g., TLS tests).
-func VerifyAllEnvoyBootstrapAreValid(t *testing.T, testDataDir string, testCases []HelmTestCase, exclude ...string) {
+}
+
+// VerifyAllEnvoyBootstrapAreValid ensures that envoy bootstrap configs are accepted by envoy.
+func VerifyAllEnvoyBootstrapAreValid(t *testing.T, testDataDir string) {
 	t.Helper()
 
 	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {

@@ -144,8 +144,7 @@ type HelmXdsTls struct {
 }
 
 type HelmDnsResolver struct {
-	UdpMaxQueries          *int32 `json:"udpMaxQueries,omitempty"`
-	ReinitChannelOnTimeout *bool  `json:"reinitChannelOnTimeout,omitempty"`
+	UdpMaxQueries *int32 `json:"udpMaxQueries,omitempty"`
 }
 
 type HelmIstio struct {

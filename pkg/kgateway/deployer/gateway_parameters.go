@@ -516,8 +516,12 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	// Extract DNS resolver configuration
 	dnsResolverConfig := envoyContainerConfig.GetBootstrap().GetDnsResolver()
 	if dnsResolverConfig != nil {
+		var udpMaxQueries *int32
+		if maybeMaxQ := ptr.Deref(dnsResolverConfig.GetUdpMaxQueries(), 0); maybeMaxQ > 0 {
+			udpMaxQueries = &maybeMaxQ
+		}
 		gateway.DnsResolver = &deployer.HelmDnsResolver{
-			UdpMaxQueries: dnsResolverConfig.GetUdpMaxQueries(),
+			UdpMaxQueries: udpMaxQueries,
 		}
 	}
 
