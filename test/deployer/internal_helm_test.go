@@ -425,9 +425,6 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 	VerifyAllEnvoyBootstrapAreValid(t, filepath.Join(dir, "testdata"))
 
 	for _, tt := range tests {
-		if tt.Name != "envoy dns resolver disable" {
-			continue
-		}
 		t.Run(tt.Name, func(t *testing.T) {
 			fakeClient := fake.NewClient(t, tester.GetObjects(t, tt, scheme, dir, crdDir)...)
 			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, fakeClient)
