@@ -83,7 +83,7 @@ type HelmGateway struct {
 	Env               []corev1.EnvVar              `json:"env,omitempty"`
 	ExtraVolumeMounts []corev1.VolumeMount         `json:"extraVolumeMounts,omitempty"`
 
-	// dns resolver values
+	// envoy bootstrap values
 	DnsResolver *HelmDnsResolver `json:"dnsResolver,omitempty"`
 
 	// xds values
