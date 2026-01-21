@@ -175,6 +175,12 @@ func TestHelmChartTemplate(t *testing.T) {
 `,
 		},
 		{
+			name: "priority-class-name",
+			valuesYAML: `controller:
+  priorityClassName: system-cluster-critical
+`,
+		},
+		{
 			name: "additional-labels",
 			valuesYAML: `commonLabels:
     extra-label-key: extra-label-value

@@ -738,7 +738,15 @@ CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.4.1
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs. HACK: Use SSA to avoid the issue with the CRD annotations being too long.
+ifeq ($(shell echo $(CONFORMANCE_VERSION) | grep -q '^v[0-9]' && echo yes),yes)
 	kubectl apply --server-side -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/$(CONFORMANCE_VERSION)/$(CONFORMANCE_CHANNEL)-install.yaml"
+else
+ifeq ($(CONFORMANCE_CHANNEL), standard)
+	kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(CONFORMANCE_VERSION)"
+else
+	kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
+endif
+endif
 
 # The version of the k8s gateway api inference extension CRDs to install.
 # Managed by `make bump-gie`.
@@ -746,7 +754,11 @@ GIE_CRD_VERSION ?= v1.1.0
 
 .PHONY: gie-crds
 gie-crds: ## Install the Gateway API Inference Extension CRDs
+ifeq ($(shell echo $(GIE_CRD_VERSION) | grep -q '^v[0-9]' && echo yes),yes)
 	kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/download/$(GIE_CRD_VERSION)/manifests.yaml"
+else
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd?ref=$(GIE_CRD_VERSION)"
+endif
 
 .PHONY: kind-metallb
 metallb: ## Install the MetalLB load balancer

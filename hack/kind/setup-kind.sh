@@ -60,7 +60,17 @@ function create_and_setup() {
   create_kind_cluster_or_skip
 
   # 5. Apply the Kubernetes Gateway API CRDs
-  kubectl apply --server-side -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/$CONFORMANCE_VERSION/$CONFORMANCE_CHANNEL-install.yaml"
+  # Use release URL for version tags (faster, avoiding 27s timeout), but use
+  # kustomize for commit SHAs -- this is needed to run conformance tests from
+  # main when either dependency references a pseudo-version instead of a
+  # release.
+  if [[ $CONFORMANCE_VERSION =~ ^v[0-9] ]]; then
+    kubectl apply --server-side -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/$CONFORMANCE_VERSION/$CONFORMANCE_CHANNEL-install.yaml"
+  elif [[ $CONFORMANCE_CHANNEL == "standard" ]]; then
+    kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$CONFORMANCE_VERSION"
+  else
+    kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
+  fi
 
   # 6. Apply the Kubernetes Gateway API Inference Extension CRDs
   make gie-crds

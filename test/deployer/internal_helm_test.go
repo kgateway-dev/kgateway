@@ -174,6 +174,17 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "loadbalancer-static-ip",
 		},
 		{
+			Name:      "gateway with loadBalancerClass",
+			InputFile: "loadbalancer-class",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "loadBalancerClass: service.k8s.aws/nlb",
+					"loadBalancerClass should be set on the Service")
+				assert.Contains(t, outputYaml, "type: LoadBalancer",
+					"Service type should be LoadBalancer")
+			},
+		},
+		{
 			Name:      "agentgateway-params-primary",
 			InputFile: "agentgateway-params-primary",
 		},

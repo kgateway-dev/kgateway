@@ -6695,6 +6695,14 @@ spec:
                           Additional labels to add to the Service object metadata.
                           If the same label is present on `Gateway.spec.infrastructure.labels`, the `Gateway` takes precedence.
                         type: object
+                      loadBalancerClass:
+                        description: |-
+                          LoadBalancerClass is the class of the load balancer implementation this Service belongs to.
+                          If specified, the value of this field must be a label-style identifier, with an optional prefix.
+                          This field can only be set when the Service type is 'LoadBalancer'. If not set, the default
+                          load balancer implementation is used. See
+                          https://kubernetes.io/docs/concepts/services-networking/service/#load-balancer-class
+                        type: string
                       ports:
                         description: |-
                           Additional configuration for the service ports.
