@@ -34,8 +34,7 @@ dockers:
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE_ARM64 }}"
       - "--build-arg=RUST_BUILD_ARCH=aarch64"
       - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
-      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64"
-      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64,mode=max,ignore-error=true"
+      - "--cache-to=type=local,dest=/tmp/goreleaser-cache,mode=max"
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
       - internal/envoyinit
