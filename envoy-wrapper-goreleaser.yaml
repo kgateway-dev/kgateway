@@ -3,7 +3,19 @@ before:
   hooks:
     - go mod tidy
     - go mod download
+    - cargo install --locked cargo-zigbuild
 builds:
+  - id: rustformation
+    dir: internal/envoyinit
+    builder: rust
+    command: build
+    targets:
+      - x86_64-unknown-linux-gnu
+      - aarch64-unknown-linux-gnu
+    flags:
+       - --release
+       - --workspace
+       - --package=rustformations
   - id: envoyinit
     main: ./cmd/envoyinit
     binary: envoyinit-linux-{{ .Arch }}

@@ -1144,21 +1144,21 @@ pub struct EnvoyHttpFilterImpl {
 }
 
 impl EnvoyHttpFilter for EnvoyHttpFilterImpl {
-  fn get_request_header_value(&self, key: &str) -> Option<EnvoyBuffer> {
+  fn get_request_header_value(&self, key: &str) -> Option<EnvoyBuffer<'_>> {
     self.get_header_value_impl(
       key,
       abi::envoy_dynamic_module_callback_http_get_request_header,
     )
   }
 
-  fn get_request_header_values(&self, key: &str) -> Vec<EnvoyBuffer> {
+  fn get_request_header_values(&self, key: &str) -> Vec<EnvoyBuffer<'_>> {
     self.get_header_values_impl(
       key,
       abi::envoy_dynamic_module_callback_http_get_request_header,
     )
   }
 
-  fn get_request_headers(&self) -> Vec<(EnvoyBuffer, EnvoyBuffer)> {
+  fn get_request_headers(&self) -> Vec<(EnvoyBuffer<'_>, EnvoyBuffer<'_>)> {
     self.get_headers_impl(
       abi::envoy_dynamic_module_callback_http_get_request_headers_count,
       abi::envoy_dynamic_module_callback_http_get_request_headers,
@@ -1197,21 +1197,21 @@ impl EnvoyHttpFilter for EnvoyHttpFilterImpl {
     }
   }
 
-  fn get_request_trailer_value(&self, key: &str) -> Option<EnvoyBuffer> {
+  fn get_request_trailer_value(&self, key: &str) -> Option<EnvoyBuffer<'_>> {
     self.get_header_value_impl(
       key,
       abi::envoy_dynamic_module_callback_http_get_request_trailer,
     )
   }
 
-  fn get_request_trailer_values(&self, key: &str) -> Vec<EnvoyBuffer> {
+  fn get_request_trailer_values(&self, key: &str) -> Vec<EnvoyBuffer<'_>> {
     self.get_header_values_impl(
       key,
       abi::envoy_dynamic_module_callback_http_get_request_trailer,
     )
   }
 
-  fn get_request_trailers(&self) -> Vec<(EnvoyBuffer, EnvoyBuffer)> {
+  fn get_request_trailers(&self) -> Vec<(EnvoyBuffer<'_>, EnvoyBuffer<'_>)> {
     self.get_headers_impl(
       abi::envoy_dynamic_module_callback_http_get_request_trailers_count,
       abi::envoy_dynamic_module_callback_http_get_request_trailers,
@@ -1234,21 +1234,21 @@ impl EnvoyHttpFilter for EnvoyHttpFilterImpl {
     }
   }
 
-  fn get_response_header_value(&self, key: &str) -> Option<EnvoyBuffer> {
+  fn get_response_header_value(&self, key: &str) -> Option<EnvoyBuffer<'_>> {
     self.get_header_value_impl(
       key,
       abi::envoy_dynamic_module_callback_http_get_response_header,
     )
   }
 
-  fn get_response_header_values(&self, key: &str) -> Vec<EnvoyBuffer> {
+  fn get_response_header_values(&self, key: &str) -> Vec<EnvoyBuffer<'_>> {
     self.get_header_values_impl(
       key,
       abi::envoy_dynamic_module_callback_http_get_response_header,
     )
   }
 
-  fn get_response_headers(&self) -> Vec<(EnvoyBuffer, EnvoyBuffer)> {
+  fn get_response_headers(&self) -> Vec<(EnvoyBuffer<'_>, EnvoyBuffer<'_>)> {
     self.get_headers_impl(
       abi::envoy_dynamic_module_callback_http_get_response_headers_count,
       abi::envoy_dynamic_module_callback_http_get_response_headers,
@@ -1287,21 +1287,21 @@ impl EnvoyHttpFilter for EnvoyHttpFilterImpl {
     }
   }
 
-  fn get_response_trailer_value(&self, key: &str) -> Option<EnvoyBuffer> {
+  fn get_response_trailer_value(&self, key: &str) -> Option<EnvoyBuffer<'_>> {
     self.get_header_value_impl(
       key,
       abi::envoy_dynamic_module_callback_http_get_response_trailer,
     )
   }
 
-  fn get_response_trailer_values(&self, key: &str) -> Vec<EnvoyBuffer> {
+  fn get_response_trailer_values(&self, key: &str) -> Vec<EnvoyBuffer<'_>> {
     self.get_header_values_impl(
       key,
       abi::envoy_dynamic_module_callback_http_get_response_trailer,
     )
   }
 
-  fn get_response_trailers(&self) -> Vec<(EnvoyBuffer, EnvoyBuffer)> {
+  fn get_response_trailers(&self) -> Vec<(EnvoyBuffer<'_>, EnvoyBuffer<'_>)> {
     self.get_headers_impl(
       abi::envoy_dynamic_module_callback_http_get_response_trailers_count,
       abi::envoy_dynamic_module_callback_http_get_response_trailers,
@@ -1453,7 +1453,7 @@ impl EnvoyHttpFilter for EnvoyHttpFilterImpl {
     source: abi::envoy_dynamic_module_type_metadata_source,
     namespace: &str,
     key: &str,
-  ) -> Option<EnvoyBuffer> {
+  ) -> Option<EnvoyBuffer<'_>> {
     let namespace_ptr = namespace.as_ptr();
     let namespace_size = namespace.len();
     let key_ptr = key.as_ptr();
@@ -1499,7 +1499,7 @@ impl EnvoyHttpFilter for EnvoyHttpFilterImpl {
     }
   }
 
-  fn get_filter_state_bytes(&self, key: &[u8]) -> Option<EnvoyBuffer> {
+  fn get_filter_state_bytes(&self, key: &[u8]) -> Option<EnvoyBuffer<'_>> {
     let key_ptr = key.as_ptr();
     let key_size = key.len();
     let mut result_ptr: *const u8 = std::ptr::null();
@@ -1536,7 +1536,7 @@ impl EnvoyHttpFilter for EnvoyHttpFilterImpl {
     }
   }
 
-  fn get_received_request_body(&mut self) -> Option<Vec<EnvoyMutBuffer>> {
+  fn get_received_request_body(&mut self) -> Option<Vec<EnvoyMutBuffer<'_>>> {
     let mut size: usize = 0;
     let ok = unsafe {
       abi::envoy_dynamic_module_callback_http_get_received_request_body_vector_size(
@@ -1626,7 +1626,7 @@ impl EnvoyHttpFilter for EnvoyHttpFilterImpl {
     }
   }
 
-  fn get_received_response_body(&mut self) -> Option<Vec<EnvoyMutBuffer>> {
+  fn get_received_response_body(&mut self) -> Option<Vec<EnvoyMutBuffer<'_>>> {
     let mut size: usize = 0;
     let ok = unsafe {
       abi::envoy_dynamic_module_callback_http_get_received_response_body_vector_size(
@@ -1779,7 +1779,7 @@ impl EnvoyHttpFilter for EnvoyHttpFilterImpl {
   fn get_attribute_string(
     &self,
     attribute_id: abi::envoy_dynamic_module_type_attribute_id,
-  ) -> Option<EnvoyBuffer> {
+  ) -> Option<EnvoyBuffer<'_>> {
     let mut result_ptr: *const u8 = std::ptr::null();
     let mut result_size: usize = 0;
     let success = unsafe {
@@ -2076,7 +2076,7 @@ impl EnvoyHttpFilterImpl {
       filter_envoy_ptr: abi::envoy_dynamic_module_type_http_filter_envoy_ptr,
       result_buffer_ptr: *mut abi::envoy_dynamic_module_type_http_header,
     ) -> bool,
-  ) -> Vec<(EnvoyBuffer, EnvoyBuffer)> {
+  ) -> Vec<(EnvoyBuffer<'_>, EnvoyBuffer<'_>)> {
     let count = unsafe { count_callback(self.raw_ptr) };
     let mut headers: Vec<(EnvoyBuffer, EnvoyBuffer)> = Vec::with_capacity(count);
     let success = unsafe {
@@ -2107,7 +2107,7 @@ impl EnvoyHttpFilterImpl {
       result_buffer_length_ptr: *mut usize,
       index: usize,
     ) -> usize,
-  ) -> Option<EnvoyBuffer> {
+  ) -> Option<EnvoyBuffer<'_>> {
     let key_ptr = key.as_ptr();
     let key_size = key.len();
 
@@ -2146,7 +2146,7 @@ impl EnvoyHttpFilterImpl {
       result_buffer_length_ptr: *mut usize,
       index: usize,
     ) -> usize,
-  ) -> Vec<EnvoyBuffer> {
+  ) -> Vec<EnvoyBuffer<'_>> {
     let key_ptr = key.as_ptr();
     let key_size = key.len();
     let mut result_ptr: *const u8 = std::ptr::null();
