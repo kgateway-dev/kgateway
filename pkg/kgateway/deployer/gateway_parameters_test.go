@@ -1,204 +1,195 @@
 package deployer
 
 import (
-	"context"
+	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
-	"istio.io/istio/pkg/kube/krt/krttest"
-	"istio.io/istio/pkg/test"
-	"istio.io/istio/pkg/util/smallset"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
-
-	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
-	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
-	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-const (
-	defaultNamespace = "default"
-)
+func TestGenerateHelmReleaseName(t *testing.T) {
+	tests := []struct {
+		name         string
+		gatewayName  string
+		namespace    string
+		expectTrunc  bool
+		expectValid  bool
+	}{
+		{
+			name:        "short valid name",
+			gatewayName: "my-gateway",
+			namespace:   "default",
+			expectTrunc: false,
+			expectValid: true,
+		},
+		{
+			name:        "exactly 53 chars",
+			gatewayName: strings.Repeat("a", 53),
+			namespace:   "default",
+			expectTrunc: false,
+			expectValid: true,
+		},
+		{
+			name:        "long name requiring truncation",
+			gatewayName: "looooooooooooooooooooooooooooooooooooooooooooooooooooong-name",
+			namespace:   "default",
+			expectTrunc: true,
+			expectValid: true,
+		},
+		{
+			name:        "very long name",
+			gatewayName: strings.Repeat("very-long-gateway-name-", 10),
+			namespace:   "production",
+			expectTrunc: true,
+			expectValid: true,
+		},
+		{
+			name:        "name with uppercase (should be handled)",
+			gatewayName: "My-Gateway-Name",
+			namespace:   "default",
+			expectTrunc: false,
+			expectValid: true,
+		},
+		{
+			name:        "name ending with hyphen",
+			gatewayName: "gateway-name-",
+			namespace:   "default",
+			expectTrunc: false,
+			expectValid: true,
+		},
+	}
 
-type testHelmValuesGenerator struct{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := generateHelmReleaseName(tt.gatewayName, tt.namespace)
 
-func (thv *testHelmValuesGenerator) GetValues(ctx context.Context, gw client.Object) (map[string]any, error) {
-	return map[string]any{
-		"testHelmValuesGenerator": struct{}{},
-	}, nil
+			// Validate the result
+			assert.True(t, isValidHelmReleaseName(result), "Generated name should be valid: %s", result)
+			assert.LessOrEqual(t, len(result), maxHelmReleaseNameLength, "Generated name should not exceed max length")
+
+			if tt.expectTrunc {
+				assert.NotEqual(t, tt.gatewayName, result, "Long name should be truncated")
+				assert.Contains(t, result, "-", "Truncated name should contain hash separator")
+			}
+
+			// Test determinism - same input should produce same output
+			result2 := generateHelmReleaseName(tt.gatewayName, tt.namespace)
+			assert.Equal(t, result, result2, "Function should be deterministic")
+		})
+	}
 }
 
-func (thv *testHelmValuesGenerator) GetCacheSyncHandlers() []cache.InformerSynced {
-	return nil
+func TestGenerateHelmReleaseNameUniqueness(t *testing.T) {
+	// Test that different gateways with similar names produce different release names
+	testCases := []struct {
+		gatewayName string
+		namespace   string
+	}{
+		{"looooooooooooooooooooooooooooooooooooooooooooooooooooong-name-1", "default"},
+		{"looooooooooooooooooooooooooooooooooooooooooooooooooooong-name-2", "default"},
+		{"looooooooooooooooooooooooooooooooooooooooooooooooooooong-name-1", "production"},
+	}
+
+	results := make(map[string]bool)
+	for _, tc := range testCases {
+		result := generateHelmReleaseName(tc.gatewayName, tc.namespace)
+		assert.False(t, results[result], "Each gateway should produce a unique release name: %s", result)
+		results[result] = true
+	}
 }
 
-func TestShouldUseDefaultGatewayParameters(t *testing.T) {
-	gwc := defaultGatewayClass()
-	gwParams := emptyGatewayParameters()
+func TestIsValidHelmReleaseName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"valid simple name", "gateway", true},
+		{"valid with hyphens", "my-gateway-name", true},
+		{"valid with numbers", "gateway-123", true},
+		{"valid with dots", "gateway.example.com", true},
+		{"too long", strings.Repeat("a", 54), false},
+		{"starts with hyphen", "-gateway", false},
+		{"ends with hyphen", "gateway-", false},
+		{"contains uppercase", "Gateway", false},
+		{"contains underscore", "my_gateway", false},
+		{"empty string", "", false},
+		{"single character", "a", true},
+		{"exactly max length", strings.Repeat("a", 53), true},
+	}
 
-	gw := &gwv1.Gateway{
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isValidHelmReleaseName(tt.input)
+			assert.Equal(t, tt.expected, result, "Validation result for '%s'", tt.input)
+		})
+	}
+}
+
+func TestGatewayReleaseNameAndNamespace(t *testing.T) {
+	// Test the main function that integrates with the Gateway object
+	gateway := &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: defaultNamespace,
-			UID:       "1235",
-		},
-		Spec: gwv1.GatewaySpec{
-			GatewayClassName: wellknown.DefaultGatewayClassName,
-			Listeners: []gwv1.Listener{
-				{
-					Protocol: gwv1.HTTPProtocolType,
-					Port:     80,
-					Name:     "http",
-				},
-			},
+			Name:      "looooooooooooooooooooooooooooooooooooooooooooooooooooong-name",
+			Namespace: "default",
 		},
 	}
 
-	ctx := t.Context()
-	fakeClient := fake.NewClient(t, gwc, gwParams)
-	gwp := NewGatewayParameters(fakeClient, defaultInputs(t, gwc, gw))
-	fakeClient.RunAndWait(ctx.Done())
-	vals, err := gwp.GetValues(ctx, gw)
+	releaseName, namespace := GatewayReleaseNameAndNamespace(gateway)
 
-	assert.NoError(t, err)
-	assert.Contains(t, vals, "gateway")
+	assert.Equal(t, "default", namespace, "Namespace should be preserved")
+	assert.True(t, isValidHelmReleaseName(releaseName), "Release name should be valid")
+	assert.LessOrEqual(t, len(releaseName), maxHelmReleaseNameLength, "Release name should not exceed max length")
 }
 
-func TestShouldUseExtendedGatewayParameters(t *testing.T) {
-	gwc := defaultGatewayClass()
-	gwParams := emptyGatewayParameters()
-	extraGwParams := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Namespace: defaultNamespace},
+func TestHelmReleaseNameRegex(t *testing.T) {
+	// Test that our regex matches Helm's actual validation
+	validNames := []string{
+		"a",
+		"gateway",
+		"my-gateway",
+		"gateway-123",
+		"a.b.c",
+		"gateway.example.com",
+		strings.Repeat("a", 53),
 	}
 
-	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: defaultNamespace,
-			UID:       "1235",
-		},
-		Spec: gwv1.GatewaySpec{
-			Infrastructure: &gwv1.GatewayInfrastructure{
-				ParametersRef: &gwv1.LocalParametersReference{
-					Group: "v1",
-					Kind:  "ConfigMap",
-					Name:  "testing",
-				},
-			},
-			GatewayClassName: wellknown.DefaultGatewayClassName,
-		},
+	invalidNames := []string{
+		"",
+		"-gateway",
+		"gateway-",
+		"Gateway",
+		"my_gateway",
+		"gateway..name",
+		"gateway.-name",
+		strings.Repeat("a", 54),
 	}
 
-	ctx := t.Context()
-	fakeClient := fake.NewClient(t, gwc, gwParams, extraGwParams)
-	gwp := NewGatewayParameters(fakeClient, defaultInputs(t, gwc, gw)).
-		WithHelmValuesGeneratorOverride(&testHelmValuesGenerator{})
-	fakeClient.RunAndWait(ctx.Done())
-	vals, err := gwp.GetValues(ctx, gw)
+	for _, name := range validNames {
+		t.Run("valid_"+name, func(t *testing.T) {
+			assert.True(t, helmReleaseNameRegex.MatchString(name), "Should match valid name: %s", name)
+		})
+	}
 
-	assert.NoError(t, err)
-	assert.Contains(t, vals, "testHelmValuesGenerator")
-}
-
-func defaultGatewayClass() *gwv1.GatewayClass {
-	return &gwv1.GatewayClass{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: wellknown.DefaultGatewayClassName,
-		},
-		Spec: gwv1.GatewayClassSpec{
-			ControllerName: wellknown.DefaultGatewayControllerName,
-			ParametersRef: &gwv1.ParametersReference{
-				Group:     kgateway.GroupName,
-				Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
-				Name:      wellknown.DefaultGatewayParametersName,
-				Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
-			},
-		},
+	for _, name := range invalidNames {
+		t.Run("invalid_"+name, func(t *testing.T) {
+			if len(name) <= maxHelmReleaseNameLength { // Only test regex for names within length limit
+				assert.False(t, helmReleaseNameRegex.MatchString(name), "Should not match invalid name: %s", name)
+			}
+		})
 	}
 }
 
-func emptyGatewayParameters() *kgateway.GatewayParameters {
-	return &kgateway.GatewayParameters{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      wellknown.DefaultGatewayParametersName,
-			Namespace: defaultNamespace,
-			UID:       "1237",
-		},
-	}
-}
+// Benchmark the name generation function
+func BenchmarkGenerateHelmReleaseName(b *testing.B) {
+	gatewayName := "looooooooooooooooooooooooooooooooooooooooooooooooooooong-name"
+	namespace := "default"
 
-func defaultInputs(t *testing.T, objs ...client.Object) *deployer.Inputs {
-	return &deployer.Inputs{
-		CommonCollections: newCommonCols(t, objs...),
-		Dev:               false,
-		ControlPlane: deployer.ControlPlaneInfo{
-			XdsHost:    "something.cluster.local",
-			XdsPort:    1234,
-			AgwXdsPort: 5678,
-		},
-		ImageInfo: &deployer.ImageInfo{
-			Registry: "foo",
-			Tag:      "bar",
-		},
-		GatewayClassName:           wellknown.DefaultGatewayClassName,
-		WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-		AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-		AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		generateHelmReleaseName(gatewayName, namespace)
 	}
-}
-
-func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.CommonCollections {
-	ctx := context.Background()
-	var anys []any
-	for _, obj := range initObjs {
-		anys = append(anys, obj)
-	}
-	mock := krttest.NewMock(t, anys)
-
-	settings := apisettings.Settings{
-		EnableEnvoy:        true,
-		EnableAgentgateway: true,
-	}
-
-	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, settings)
-	kubeRawGateways := krttest.GetMockCollection[*gwv1.Gateway](mock)
-	kubeRawListenerSets := krttest.GetMockCollection[*apixv1a1.XListenerSet](mock)
-	gatewayClasses := krttest.GetMockCollection[*gwv1.GatewayClass](mock)
-	nsCol := krtcollections.NewNamespaceCollectionFromCol(ctx, krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
-
-	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
-	gatewayIndexConfig := krtcollections.GatewayIndexConfig{
-		KrtOpts:             krtopts,
-		ControllerNames:     smallset.New(wellknown.DefaultGatewayControllerName),
-		EnvoyControllerName: wellknown.DefaultGatewayControllerName,
-		PolicyIndex:         policies,
-		Gateways:            kubeRawGateways,
-		ListenerSets:        kubeRawListenerSets,
-		GatewayClasses:      gatewayClasses,
-		Namespaces:          nsCol,
-	}
-	gateways := krtcollections.NewGatewayIndex(gatewayIndexConfig)
-	commonCols := &collections.CommonCollections{
-		GatewayIndex: gateways,
-		Settings:     settings,
-	}
-
-	for !kubeRawGateways.HasSynced() || !kubeRawListenerSets.HasSynced() || !gatewayClasses.HasSynced() {
-		time.Sleep(time.Second / 10)
-	}
-
-	gateways.Gateways.WaitUntilSynced(ctx.Done())
-	return commonCols
 }

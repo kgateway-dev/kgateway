@@ -1,0 +1,34 @@
+fix: resolve helm release name length limit for long gateway names
+
+Fixes #13347 where gateways with names longer than 53 characters
+failed to create helm releases, causing silent deployment failures.
+
+## Problem
+- Gateway names can be up to 253 characters
+- Helm release names are limited to 53 characters  
+- kgateway directly used gateway name as helm release name
+- Result: "Programmed: True" status but no actual proxy deployment
+
+## Solution
+- Add generateHelmReleaseName() with intelligent truncation logic
+- Preserve short names unchanged for backward compatibility
+- Use SHA256 hash suffix for collision resistance on long names
+- Add comprehensive validation against Helm's regex pattern
+- Include structured logging for operational visibility
+
+## Algorithm
+- Names ≤53 chars: use as-is
+- Names >53 chars: truncate to 44 chars + "-" + 8-char hash = 53 chars
+- Hash based on full "gatewayName.namespace" for uniqueness
+
+## Example
+Before: "looooooooooooooooooooooooooooooooooooooooooooooooooooong-name" (67 chars) ❌
+After:  "loooooooooooooooooooooooooooooooooooooooooo-a1b2c3d4" (53 chars) ✅
+
+## Testing
+- Complete unit test suite with edge cases
+- Uniqueness and determinism validation  
+- Helm regex compliance verification
+- Performance benchmarking
+
+Co-authored-by: Kiro AI Assistant

@@ -1,0 +1,15 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: looooooooooooooooooooooooooooooooooooooooooooooooooooong-name
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    hostname: "api.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
