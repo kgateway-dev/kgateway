@@ -312,12 +312,12 @@ func (p *backendPlugin) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterChainCo
 	result := []filters.StagedHttpFilter{}
 
 	var errs []error
-	if p.needsDfpFilter != nil && p.needsDfpFilter[fc.FilterChainName] {
+	if p.needsDfpFilter[fc.FilterChainName] {
 		pluginStage := filters.DuringStage(filters.OutAuthStage)
 		f := filters.MustNewStagedFilter("envoy.filters.http.dynamic_forward_proxy", dfpFilterConfig, pluginStage)
 		result = append(result, f)
 	}
-	if p.needsGcpAuthn != nil && p.needsGcpAuthn[fc.FilterChainName] {
+	if p.needsGcpAuthn[fc.FilterChainName] {
 		// GCP authn filter should be before RouteStage (similar to Gloo v1)
 		pluginStage := filters.BeforeStage(filters.RouteStage)
 		f := filters.MustNewStagedFilter(gcpAuthnFilterName, getGcpAuthnFilterConfig(), pluginStage)
