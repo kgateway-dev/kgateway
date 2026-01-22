@@ -11,6 +11,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -44,12 +45,26 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	krtctx krt.HandlerContext,
 	policyCR *kgateway.TrafficPolicy,
 ) (*TrafficPolicy, []error) {
+	var errors []error
+	
+	// Collect translation metrics
+	collectMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
+		Name:       policyCR.Name,
+		Namespace:  policyCR.Namespace,
+		Translator: "TrafficPolicy",
+	})
+	defer func() {
+		var err error
+		if len(errors) > 0 {
+			err = errors[0]
+		}
+		collectMetrics(err)
+	}()
+	
 	policyIr := TrafficPolicy{
 		ct: policyCR.CreationTimestamp.Time,
 	}
 	outSpec := trafficPolicySpecIr{}
-
-	var errors []error
 
 	// Construct transformation specific IR
 	constructTransformation(policyCR, &outSpec)
