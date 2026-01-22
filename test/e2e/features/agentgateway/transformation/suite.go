@@ -32,16 +32,21 @@ type testingSuite struct {
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	// Define the setup TestCase for common resources
 	setupTestCase := base.TestCase{
-		Manifests: []string{
-			transformForHeadersManifest,
-			transformForBodyManifest,
-			gatewayAttachedTransformManifest,
-			grpcTransformationManifest,
-		},
+		Manifests: []string{},
 	}
 
-	// everything is applied during setup; there are no additional test-specific manifests
-	testCases := map[string]*base.TestCase{}
+	testCases := map[string]*base.TestCase{
+		"TestGatewayWithTransformedHTTPRoute": {
+			Manifests: []string{
+				transformForHeadersManifest,
+				transformForBodyManifest,
+				gatewayAttachedTransformManifest,
+			},
+		},
+		"TestGatewayWithTransformedGRPCRoute": {
+			Manifests: []string{grpcTransformationManifest},
+		},
+	}
 
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setupTestCase, testCases),
