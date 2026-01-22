@@ -61,7 +61,7 @@ dockers:
       - "--pull"
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
-      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE_ARM64 }}"
   - image_templates:
       - &controller_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
@@ -72,7 +72,7 @@ dockers:
       - "--pull"
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
-      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE_AMD64 }}"
   - image_templates:
       - &agentgateway_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AGENTGATEWAY_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
@@ -126,7 +126,7 @@ dockers:
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
-      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE_ARM64 }}"
       - "--build-arg=RUST_BUILD_ARCH=aarch64"
       - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64"
@@ -145,7 +145,7 @@ dockers:
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
-      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE_AMD64 }}"
       - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64,mode=max,ignore-error=true"

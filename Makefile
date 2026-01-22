@@ -44,14 +44,7 @@ export VERSION
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-# Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-# When we switch Rustformation to be used by default, we can set ENVOY_IMAGE=envoyproxy/envoy:v1.36.4
-# if we want to switch to use upstream vanilla envoy for the multi-arch arm build. For v2.2 release,
-# we plan to still use envoy-gloo for x86 build (so people can switch back to classic transformation if needed).
-# For arm build, we will use upstream envoy and cannot switch back to classic transformation.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.36.4-patch1
 
-export RUST_BUILD_ARCH ?= x86_64 # override this to aarch64 for local arm build
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
 
@@ -69,6 +62,32 @@ else
 		GOARCH := amd64
 	endif
 endif
+
+# Note: When bumping this version, update the version in pkg/validator/validator.go as well.
+# For v2.2, we use vanilla upstream envoy for arm build and envoy-gloo for x86 build. These are used by goreleaser 
+# directly when building the images for the respective architecture.
+# TODO: Consolidate to just upstream image in v2.3
+export ENVOY_IMAGE_ARM64 = envoyproxy/envoy:v1.36.4
+export ENVOY_IMAGE_AMD64 = quay.io/solo-io/envoy-gloo:1.36.4-patch1
+
+# ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image 
+# to use base on GOARCH. This doesn't affect goreleaser
+ifeq ($(GOARCH), arm64)
+	RUST_BUILD_ARCH := aarch64
+	ifeq ($(ENVOY_IMAGE), )
+		ENVOY_IMAGE := $(ENVOY_IMAGE_ARM64)
+		export ENVOY_IMAGE
+	endif
+else
+	RUST_BUILD_ARCH := x86_64
+# For v2.2 release, we plan to still use envoy-gloo for x86 build (so people can switch back to
+# classic transformation if needed).
+	ifeq ($(ENVOY_IMAGE), )
+		ENVOY_IMAGE := $(ENVOY_IMAGE_AMD64)
+		export ENVOY_IMAGE
+	endif
+endif
+
 
 PLATFORM := --platform=linux/$(GOARCH)
 
