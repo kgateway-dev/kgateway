@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements
+    gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     kgateway: kube-gateway
   name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
 ---
@@ -215,7 +215,7 @@ metadata:
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements
+    gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     kgateway: kube-gateway
   name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
 ---
@@ -228,7 +228,7 @@ metadata:
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements
+    gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     kgateway: kube-gateway
   name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
 spec:
@@ -240,7 +240,7 @@ spec:
   selector:
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
-    gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements
+    gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
   type: LoadBalancer
 status:
   loadBalancer: {}
@@ -254,7 +254,7 @@ metadata:
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements
+    gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     kgateway: kube-gateway
   name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
 spec:
@@ -262,7 +262,7 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
       app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
-      gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements
+      gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
   strategy: {}
   template:
     metadata:
@@ -275,7 +275,7 @@ spec:
         app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
         app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
         gateway.networking.k8s.io/gateway-class-name: kgateway
-        gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements
+        gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
         kgateway: kube-gateway
     spec:
       containers:

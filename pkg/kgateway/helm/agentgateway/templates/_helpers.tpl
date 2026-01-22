@@ -22,7 +22,7 @@ Generate a unique name for the gateway that is RFC1123 label compliant (<64 char
 
 {{/*
 Create a default fully qualified app name.
-Use safeLabelValue because some Kubernetes name fields are limited to this (by the DNS naming spec).
+Use safeLabelValue because some Kubernetes name fields are limited to 63 chars (by the DNS naming spec).
 */}}
 {{- define "kgateway.gateway.fullname" -}}
 {{- include "kgateway.gateway.safeLabelValue" (default .Values.agentgateway.name) }}

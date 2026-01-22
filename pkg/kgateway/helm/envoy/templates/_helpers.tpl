@@ -32,7 +32,7 @@ Expand the name of the chart.
 
 {{/*
 Create a default fully qualified app name.
-Use safeLabelValue because some Kubernetes name fields are limited to this (by the DNS naming spec).
+Use safeLabelValue because some Kubernetes name fields are limited to 63 chars (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "kgateway.gateway.fullname" -}}
@@ -71,7 +71,7 @@ Selector labels
 {{- define "kgateway.gateway.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "kgateway.gateway.name" . }}
 app.kubernetes.io/instance: {{ include "kgateway.gateway.name" . }}
-gateway.networking.k8s.io/gateway-name: {{ .Values.gateway.gatewayName }}
+gateway.networking.k8s.io/gateway-name: {{ include "kgateway.gateway.name" . }}
 {{- end }}
 
 {{/*
