@@ -388,6 +388,14 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"waypoint should have port 15008 for HBONE")
 			},
 		},
+		{
+			Name:      "gateway with name exactly 63 characters",
+			InputFile: "long-gateway-name-exactly-63-chars",
+		},
+		{
+			Name:      "gateway with name over 63 characters",
+			InputFile: "long-gateway-name-over-63-chars",
+		},
 	}
 
 	tester := DeployerTester{

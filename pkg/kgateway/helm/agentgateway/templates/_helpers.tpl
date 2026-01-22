@@ -5,18 +5,9 @@ Expand the name of the chart.
 {{- .Values.agentgateway.name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{/*
-Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
-{{- define "kgateway.gateway.fullname" -}}
-{{- .Values.agentgateway.name | trunc 63 | trimSuffix "-" }}
-{{- end }}
 
 {{/*
-Generate a safe label value for gateway name.
-If name > 63 chars, truncate to 50 chars and append a 12-char hash suffix.
+Generate a unique name for the gateway that is RFC1123 label compliant (<64 chars)
 */}}
 {{- define "kgateway.gateway.safeLabelValue" -}}
 {{- $name := . -}}
@@ -27,6 +18,16 @@ If name > 63 chars, truncate to 50 chars and append a 12-char hash suffix.
 {{- $name -}}
 {{- end -}}
 {{- end -}}
+
+
+{{/*
+Create a default fully qualified app name.
+Use safeLabelValue because some Kubernetes name fields are limited to this (by the DNS naming spec).
+*/}}
+{{- define "kgateway.gateway.fullname" -}}
+{{- include "kgateway.gateway.safeLabelValue" (default .Values.agentgateway.name) }}
+
+{{- end }}
 
 {{/*
 Selector labels

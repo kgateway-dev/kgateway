@@ -161,11 +161,9 @@ func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.
 }
 
 func GatewayReleaseNameAndNamespace(obj client.Object) (string, string) {
-	// 'helm install' create a Helm Release. We never use that. We basically
-	// say 'helm template' and post-process with overlays. Use the same release
-	// name every time to avoid using a 54+ character name that would be too
-	// long.
-	return "this-never-becomes-a-helm-release", obj.GetNamespace()
+	// A helm release is never installed, only a template is generated, so the name doesn't matter
+	// Use a hard-coded name to avoid going over the 53 character name limit
+	return "release-name-placeholder", obj.GetNamespace()
 }
 
 func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer.HelmValuesGenerator, error) {
@@ -440,6 +438,11 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 		Gateway: gtw,
 	}
 
+	// Validate that required naming fields are set for chart rendering
+	if err := validateGatewayNaming(gtw); err != nil {
+		return nil, fmt.Errorf("gateway naming validation failed: %w", err)
+	}
+
 	// Inject xDS CA certificate into Helm values if TLS is enabled
 	if k.inputs.ControlPlane.XdsTLS {
 		if err := injectXdsCACertificate(k.inputs.ControlPlane.XdsTlsCaPath, vals); err != nil {
@@ -558,4 +561,24 @@ func translateInfraMeta[K ~string, V ~string](meta map[K]V) map[string]string {
 		infra[string(k)] = string(v)
 	}
 	return infra
+}
+
+// validateGatewayNaming ensures that required naming fields are set for chart rendering
+func validateGatewayNaming(gtw *deployer.HelmGateway) error {
+	// At least one of gateway.name or gateway.nameOverride must be set to determine
+	hasName := gtw.Name != nil && *gtw.Name != ""
+	hasNameOverride := gtw.NameOverride != nil && *gtw.NameOverride != ""
+
+	if !hasName && !hasNameOverride {
+		return errors.New("at least one of gateway.name or gateway.nameOverride must be set")
+	}
+
+	// At least one of gateway.fullnameOverride or gateway.nameOverride must be set
+	hasFullnameOverride := gtw.FullnameOverride != nil && *gtw.FullnameOverride != ""
+
+	if !hasFullnameOverride && !hasNameOverride {
+		return errors.New("at least one of gateway.fullnameOverride or gateway.nameOverride must be set")
+	}
+
+	return nil
 }
