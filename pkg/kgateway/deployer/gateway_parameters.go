@@ -438,11 +438,6 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 		Gateway: gtw,
 	}
 
-	// Validate that required naming fields are set for chart rendering
-	if err := validateGatewayNaming(gtw); err != nil {
-		return nil, fmt.Errorf("gateway naming validation failed: %w", err)
-	}
-
 	// Inject xDS CA certificate into Helm values if TLS is enabled
 	if k.inputs.ControlPlane.XdsTLS {
 		if err := injectXdsCACertificate(k.inputs.ControlPlane.XdsTlsCaPath, vals); err != nil {
@@ -561,24 +556,4 @@ func translateInfraMeta[K ~string, V ~string](meta map[K]V) map[string]string {
 		infra[string(k)] = string(v)
 	}
 	return infra
-}
-
-// validateGatewayNaming ensures that required naming fields are set for chart rendering
-func validateGatewayNaming(gtw *deployer.HelmGateway) error {
-	// At least one of gateway.name or gateway.nameOverride must be set to determine
-	hasName := gtw.Name != nil && *gtw.Name != ""
-	hasNameOverride := gtw.NameOverride != nil && *gtw.NameOverride != ""
-
-	if !hasName && !hasNameOverride {
-		return errors.New("at least one of gateway.name or gateway.nameOverride must be set")
-	}
-
-	// At least one of gateway.fullnameOverride or gateway.nameOverride must be set
-	hasFullnameOverride := gtw.FullnameOverride != nil && *gtw.FullnameOverride != ""
-
-	if !hasFullnameOverride && !hasNameOverride {
-		return errors.New("at least one of gateway.fullnameOverride or gateway.nameOverride must be set")
-	}
-
-	return nil
 }
