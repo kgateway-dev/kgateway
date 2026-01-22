@@ -779,10 +779,7 @@ setup-base: kind-create gw-api-crds gie-crds metallb ## Setup the base infrastru
 setup: setup-base kind-build-and-load package-kgateway-charts package-agentgateway-charts dummy-idp-docker kind-load-dummy-idp  ## Setup the complete infrastructure (base setup plus images and charts)
 
 .PHONY: run
-run: setup deploy-kgateway  ## Set up complete development environment
-
-.PHONY: run-agentgateway
-run-agentgateway: setup deploy-agentgateway  ## Set up complete development environment
+run: setup deploy-kgateway deploy-agentgateway ## Set up complete development environment
 
 .PHONY: undeploy
 undeploy: undeploy-kgateway undeploy-kgateway-crds ## Undeploy the application from the cluster

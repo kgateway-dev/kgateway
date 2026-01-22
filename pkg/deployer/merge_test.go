@@ -337,6 +337,99 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "should merge service loadBalancerClass from src",
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Service: &kgateway.Service{
+							Type: ptr.To(corev1.ServiceTypeLoadBalancer),
+						},
+					},
+				},
+			},
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Service: &kgateway.Service{
+							LoadBalancerClass: ptr.To("service.k8s.aws/nlb"),
+						},
+					},
+				},
+			},
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Service: &kgateway.Service{
+							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
+							LoadBalancerClass: ptr.To("service.k8s.aws/nlb"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "should override service loadBalancerClass from src",
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Service: &kgateway.Service{
+							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
+							LoadBalancerClass: ptr.To("default-class"),
+						},
+					},
+				},
+			},
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Service: &kgateway.Service{
+							LoadBalancerClass: ptr.To("service.k8s.aws/nlb"),
+						},
+					},
+				},
+			},
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Service: &kgateway.Service{
+							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
+							LoadBalancerClass: ptr.To("service.k8s.aws/nlb"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "should not override service loadBalancerClass if src is nil",
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Service: &kgateway.Service{
+							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
+							LoadBalancerClass: ptr.To("default-class"),
+						},
+					},
+				},
+			},
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Service: &kgateway.Service{},
+					},
+				},
+			},
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Service: &kgateway.Service{
+							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
+							LoadBalancerClass: ptr.To("default-class"),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

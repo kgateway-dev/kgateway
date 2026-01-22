@@ -122,6 +122,7 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 	var extraAnnotations map[string]string
 	var extraLabels map[string]string
 	var externalTrafficPolicy *string
+	var loadBalancerClass *string
 
 	if svcConfig != nil {
 		if svcConfig.GetType() != nil {
@@ -131,6 +132,7 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 		extraAnnotations = svcConfig.GetExtraAnnotations()
 		extraLabels = svcConfig.GetExtraLabels()
 		externalTrafficPolicy = svcConfig.GetExternalTrafficPolicy()
+		loadBalancerClass = svcConfig.GetLoadBalancerClass()
 	}
 
 	return &HelmService{
@@ -139,6 +141,7 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 		ExtraAnnotations:      extraAnnotations,
 		ExtraLabels:           extraLabels,
 		ExternalTrafficPolicy: externalTrafficPolicy,
+		LoadBalancerClass:     loadBalancerClass,
 	}
 }
 

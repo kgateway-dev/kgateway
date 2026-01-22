@@ -190,6 +190,9 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 				EnvoyContainer: &kgateway.EnvoyContainer{
 					Bootstrap: &kgateway.EnvoyBootstrap{
 						LogLevel: ptr.To("info"),
+						DnsResolver: &kgateway.DnsResolver{
+							UdpMaxQueries: ptr.To(int32(100)),
+						},
 					},
 					Image: &kgateway.Image{
 						Registry:   ptr.To(imageInfo.Registry),

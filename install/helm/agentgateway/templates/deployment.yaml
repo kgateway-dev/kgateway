@@ -31,6 +31,9 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.controller.priorityClassName }}
+      priorityClassName: {{ .Values.controller.priorityClassName | quote }}
+      {{- end }}
       serviceAccountName: {{ include "agentgateway.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:

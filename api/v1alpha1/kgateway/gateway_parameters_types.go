@@ -353,6 +353,27 @@ type EnvoyBootstrap struct {
 	//
 	// +optional
 	ComponentLogLevels map[string]string `json:"componentLogLevels,omitempty"`
+
+	// DNS resolver configuration for Envoy's CARES DNS resolver.
+	// This configuration applies to all clusters and affects DNS query behavior.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto
+	// for more information.
+	//
+	// +optional
+	DnsResolver *DnsResolver `json:"dnsResolver,omitempty"`
+}
+
+// DnsResolver configures the CARES DNS resolver for Envoy.
+type DnsResolver struct {
+	// Maximum number of UDP queries to be issued on a single UDP channel.
+	// This helps prevent DNS query pinning to a single resolver, addressing
+	// the issue described in https://github.com/istio/istio/issues/53577.
+	// Defaults to 100 if not specified. Set to 0 to disable this limit.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto#extensions-network-dns-resolver-cares-v3-caresdnsresolverconfig
+	//
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	UdpMaxQueries *int32 `json:"udpMaxQueries,omitempty"`
 }
 
 func (in *EnvoyBootstrap) GetLogLevel() *string {
@@ -367,6 +388,20 @@ func (in *EnvoyBootstrap) GetComponentLogLevels() map[string]string {
 		return nil
 	}
 	return in.ComponentLogLevels
+}
+
+func (in *EnvoyBootstrap) GetDnsResolver() *DnsResolver {
+	if in == nil {
+		return nil
+	}
+	return in.DnsResolver
+}
+
+func (in *DnsResolver) GetUdpMaxQueries() *int32 {
+	if in == nil {
+		return nil
+	}
+	return in.UdpMaxQueries
 }
 
 // SdsContainer configures the container running SDS sidecar.

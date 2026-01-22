@@ -1,6 +1,9 @@
 # -- Set a list of image pull secrets for Kubernetes to use when pulling container images from your own private registry instead of the default agentgateway registry.
 imagePullSecrets: []
 
+# -- Additional labels to add to all resources created by the Helm chart.
+commonLabels: {}
+
 # -- Add a name to the default Helm base release, which is 'agentgateway'. If you set 'nameOverride: "foo", the name of the resources that the Helm release creates become 'agentgateway-foo', such as the deployment, service, and service account for the agentgateway control plane in the agentgateway-system namespace.
 nameOverride: ""
 
@@ -45,6 +48,8 @@ affinity: {}
 controller:
   # -- Set the number of controller pod replicas.
   replicaCount: 1
+  # -- Set the priority class name for the controller pod.
+  priorityClassName: ""
   # -- Set the log level for the controller.
   logLevel: info
   # -- Configure the controller container image.

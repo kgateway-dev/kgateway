@@ -265,6 +265,16 @@ data:
                         address: 127.0.0.1
                         port_value: 8234
         {{- end }}{{/* if $gateway.istio.enabled */}}
+    {{- $dnsResolver := $gateway.dnsResolver }}
+    {{- if $dnsResolver }}
+    typed_dns_resolver_config:
+      name: envoy.network.dns_resolver.cares
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
+      {{- if $dnsResolver.udpMaxQueries }}
+        udp_max_queries: {{ $dnsResolver.udpMaxQueries }}
+      {{- end }}
+    {{- end }}
     dynamic_resources:
       ads_config:
         transport_api_version: V3
