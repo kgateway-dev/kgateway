@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
@@ -100,10 +101,7 @@ func buildGcpIr(in *kgateway.GcpBackend) (*GcpIr, error) {
 	}
 
 	// Build audience config (defaults to https://{host} if not specified)
-	audienceURL := fmt.Sprintf("https://%s", hostname)
-	if in.Audience != nil && *in.Audience != "" {
-		audienceURL = *in.Audience
-	}
+	audienceURL := ptr.Deref(in.Audience, fmt.Sprintf("https://%s", hostname))
 	audienceConfig := &gcp_auth.Audience{
 		Url: audienceURL,
 	}
