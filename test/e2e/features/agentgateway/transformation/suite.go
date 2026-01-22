@@ -6,16 +6,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/grpcurl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
@@ -187,30 +183,21 @@ func (s *testingSuite) TestGatewayWithTransformedGRPCRoute() {
 	const (
 		expectedHostname        = "example.com"
 		gatewayPort             = 80
-		expectedResponseMetaKVP = "x-grpc-response: from-grpc"
+		expectedResponseMetaKey = "x-grpc-response"
+		expectedResponseMetaVal = "from-grpc"
 	)
-	grpcurlOptions := []grpcurl.Option{
-		grpcurl.WithAddress(kubeutils.ServiceFQDN(gateway.ObjectMeta)),
-		grpcurl.WithPort(gatewayPort),
-		grpcurl.WithAuthority(expectedHostname),
-		grpcurl.WithPlaintext(),
-		grpcurl.WithVerbose(),
-		// "list" triggers server reflection; our GRPCRoute explicitly matches reflection traffic.
-		grpcurl.WithSymbol("list"),
-	}
 
-	stdout, stderr := s.TestInstallation.Assertions.AssertEventualGrpcurlSuccess(
-		s.Ctx,
-		s.execOpts(),
-		grpcurlOptions,
+	// Use a native gRPC client from the test runner to exercise the gRPC dataplane and
+	// assert transformation is applied: the policy adds response metadata `x-grpc-response: from-grpc`.
+	// This avoids needing the grpcurl client pod in the cluster.
+	common.BaseGateway.GrpcReflectionAssertResponseMetadata(
+		s.T(),
+		gatewayPort,
+		expectedHostname,
+		expectedResponseMetaKey,
+		expectedResponseMetaVal,
 		timeout,
 	)
-	s.T().Logf("AssertEventualGrpcurlSuccess stdout:\n%s", stdout)
-	s.T().Logf("AssertEventualGrpcurlSuccess stderr:\n%s", stderr)
-
-	// Still assert transformation is applied: the policy adds response metadata `x-grpc-response: from-grpc`.
-	combinedLower := strings.ToLower(stdout + "\n" + stderr)
-	s.Require().Contains(combinedLower, expectedResponseMetaKVP, "expected grpc response metadata transformation to be applied")
 
 	// Assert the HTTPRoute response does *not* include the `x-grpc-response` header, while the GRPCRoute does.
 	common.BaseGateway.Send(
@@ -223,12 +210,4 @@ func (s *testingSuite) TestGatewayWithTransformedGRPCRoute() {
 		},
 		curl.WithHostHeader(expectedHostname),
 	)
-}
-
-func (s *testingSuite) execOpts() kubectl.PodExecOptions {
-	return kubectl.PodExecOptions{
-		Name:      "grpcurl-client",
-		Namespace: namespace,
-		Container: "grpcurl",
-	}
 }

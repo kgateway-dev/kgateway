@@ -106,18 +106,3 @@ spec:
       appProtocol: kubernetes.io/h2c
   selector:
     app.kubernetes.io/name: grpc-echo
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: grpcurl-client
-  namespace: agentgateway-base
-  labels:
-    app.kubernetes.io/name: grpc-echo
-spec:
-  containers:
-    - name: grpcurl
-      image: docker.io/fullstorydev/grpcurl:v1.8.7-alpine
-      command:
-        - sleep
-        - "infinity"
