@@ -102,16 +102,6 @@ func TestBuildGcpIr(t *testing.T) {
 			expectedAudience: "https://custom-audience.com",
 			wantError:        false,
 		},
-		{
-			name: "GCP backend with empty audience uses default",
-			input: &kgateway.GcpBackend{
-				Host:     "example.com",
-				Audience: stringPtr(""),
-			},
-			expectedHost:     "example.com",
-			expectedAudience: "https://example.com",
-			wantError:        false,
-		},
 	}
 
 	for _, tt := range tests {

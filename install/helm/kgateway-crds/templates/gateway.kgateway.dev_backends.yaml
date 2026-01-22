@@ -183,7 +183,7 @@ spec:
                       Audience is the GCP service account audience URL.
                       When omitted, defaults to "https://{host}".
                       This is used by the GCP authn filter to request the appropriate token.
-                    pattern: ^https://[-a-zA-Z0-9@:%.+~#?&/=]+$
+                    minLength: 1
                     type: string
                   host:
                     description: |-

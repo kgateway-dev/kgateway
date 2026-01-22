@@ -235,7 +235,7 @@ type GcpBackend struct {
 	// When omitted, defaults to "https://{host}".
 	// This is used by the GCP authn filter to request the appropriate token.
 	// +optional
-	// +kubebuilder:validation:Pattern="^https://[-a-zA-Z0-9@:%.+~#?&/=]+$"
+	// +kubebuilder:validation:MinLength=1
 	Audience *string `json:"audience,omitempty"`
 }
 
