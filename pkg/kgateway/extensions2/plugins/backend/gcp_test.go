@@ -26,7 +26,7 @@ func TestGcpIrEquals(t *testing.T) {
 	tests := []struct {
 		name     string
 		ir1      *GcpIr
-		ir2      any
+		ir2      *GcpIr
 		expected bool
 	}{
 		{

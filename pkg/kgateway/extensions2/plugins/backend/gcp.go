@@ -36,28 +36,17 @@ type GcpIr struct {
 }
 
 // Equals checks if two GcpIr objects are equal.
-func (u *GcpIr) Equals(other any) bool {
-	// Handle nil receiver case - if receiver is nil, other must also be nil or (*GcpIr)(nil)
-	if u == nil {
-		return other == nil
+func (u *GcpIr) Equals(other *GcpIr) bool {
+	if u == nil || other == nil {
+		return u == nil && other == nil
 	}
-	// If receiver is not nil, other must be a *GcpIr
-	otherGcp, ok := other.(*GcpIr)
-	if !ok {
+	if u.hostname != other.hostname {
 		return false
 	}
-	// If other is nil, they're not equal (since u is not nil)
-	if otherGcp == nil {
+	if !proto.Equal(u.transportSocket, other.transportSocket) {
 		return false
 	}
-	// Both are non-nil, compare fields
-	if u.hostname != otherGcp.hostname {
-		return false
-	}
-	if !proto.Equal(u.transportSocket, otherGcp.transportSocket) {
-		return false
-	}
-	if !proto.Equal(u.audienceConfigAny, otherGcp.audienceConfigAny) {
+	if !proto.Equal(u.audienceConfigAny, other.audienceConfigAny) {
 		return false
 	}
 	return true
