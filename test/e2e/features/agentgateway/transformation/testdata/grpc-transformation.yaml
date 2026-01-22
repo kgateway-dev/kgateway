@@ -36,20 +36,39 @@ spec:
         - name: backend
           port: 80
 ---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: example-agw-policy-for-grpc
+  namespace: agentgateway-base
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: GRPCRoute
+      name: example-route
+  traffic:
+    transformation:
+      response:
+        set:
+          - name: x-grpc-response
+            value: "'from-grpc'"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grpc-echo
   namespace: agentgateway-base
+  labels:
+    app.kubernetes.io/name: grpc-echo
 spec:
   selector:
     matchLabels:
-      app: grpc-echo
+      app.kubernetes.io/name: grpc-echo
   replicas: 1
   template:
     metadata:
       labels:
-        app: grpc-echo
+        app.kubernetes.io/name: grpc-echo
     spec:
       containers:
         - name: grpc-echo
@@ -76,6 +95,8 @@ kind: Service
 metadata:
   name: grpc-echo-svc
   namespace: agentgateway-base
+  labels:
+    app.kubernetes.io/name: grpc-echo
 spec:
   type: ClusterIP
   ports:
@@ -84,13 +105,15 @@ spec:
       targetPort: 9000
       appProtocol: kubernetes.io/h2c
   selector:
-    app: grpc-echo
+    app.kubernetes.io/name: grpc-echo
 ---
 apiVersion: v1
 kind: Pod
 metadata:
   name: grpcurl-client
   namespace: agentgateway-base
+  labels:
+    app.kubernetes.io/name: grpc-echo
 spec:
   containers:
     - name: grpcurl
@@ -98,20 +121,3 @@ spec:
       command:
         - sleep
         - "infinity"
----
-apiVersion: agentgateway.dev/v1alpha1
-kind: AgentgatewayPolicy
-metadata:
-  name: example-agw-policy-for-grpc
-  namespace: agentgateway-base
-spec:
-  targetRefs:
-    - group: gateway.networking.k8s.io
-      kind: GRPCRoute
-      name: example-route
-  traffic:
-    transformation:
-      response:
-        set:
-          - name: x-grpc-response
-            value: "'from-grpc'"
