@@ -1,25 +1,3 @@
-kind: AgentgatewayParameters
-apiVersion: agentgateway.dev/v1alpha1
-metadata:
-  name: params
-spec:
-  logging:
-    level: trace
-  image:
-    tag: v0.6.0-394-g60dae1b53
----
-kind: GatewayClass
-apiVersion: gateway.networking.k8s.io/v1
-metadata:
-  name: agentgateway
-spec:
-  controllerName: agentgateway.dev/agentgateway
-  parametersRef:
-    group: agentgateway.dev
-    kind: AgentgatewayParameters
-    name: params
-    namespace: default
----
 # grpcurl -plaintext -authority example.com -vv gateway:80 yages.Echo/Ping
 # should have `x-grpc-response: from-grpc` header
 apiVersion: gateway.networking.k8s.io/v1
