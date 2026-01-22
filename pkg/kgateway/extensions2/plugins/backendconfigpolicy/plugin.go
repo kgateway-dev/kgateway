@@ -28,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 )
 
 const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
@@ -242,6 +243,21 @@ func translate(
 	pol *kgateway.BackendConfigPolicy,
 ) (*BackendConfigPolicyIR, []error) {
 	var errs []error
+	
+	// Collect translation metrics
+	collectMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
+		Name:       pol.Name,
+		Namespace:  pol.Namespace,
+		Translator: "BackendConfigPolicy",
+	})
+	defer func() {
+		var err error
+		if len(errs) > 0 {
+			err = errs[0]
+		}
+		collectMetrics(err)
+	}()
+	
 	ir := BackendConfigPolicyIR{
 		ct: pol.CreationTimestamp.Time,
 	}
