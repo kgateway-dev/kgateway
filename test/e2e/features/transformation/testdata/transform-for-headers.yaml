@@ -36,7 +36,6 @@ spec:
           value: " foobar "
         - name: x-client
           value: '{% if substring(request_header("User-Agent"), 0, 4) == "curl" %}text{% endif %}'
-#          value: '{{ substring(request_header("user-agent"), 0, 4) }}'
       remove:
         - "x-remove-me"
       add:
