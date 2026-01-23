@@ -945,6 +945,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("GCP backend", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backends/gcp_backend.yaml",
+			outputFile: "backends/gcp_backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("DFP Backend with TLS", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "dfp/tls.yaml",

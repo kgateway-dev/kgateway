@@ -11,28 +11,32 @@ Data-plane related macros:
 
 
 {{/*
+Generate a unique name for the gateway that is RFC1123 label compliant (<64 chars)
+*/}}
+{{- define "kgateway.gateway.safeLabelValue" -}}
+{{- $name := . -}}
+{{- if gt (len $name) 63 -}}
+{{- $hash := $name | sha256sum | trunc 12 -}}
+{{- printf "%s-%s" ($name | trunc 50 | trimSuffix "-") $hash -}}
+{{- else -}}
+{{- $name -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Expand the name of the chart.
 */}}
 {{- define "kgateway.gateway.name" -}}
-{{- if .Values.gateway.name }}
-{{- .Values.gateway.name | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- default .Chart.Name .Values.gateway.nameOverride | trunc 63 | trimSuffix "-" }}
-{{- end }}
+{{ include "kgateway.gateway.safeLabelValue" (default .Values.gateway.nameOverride .Values.gateway.name) }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+Use safeLabelValue because some Kubernetes name fields are limited to 63 chars (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "kgateway.gateway.fullname" -}}
-{{- if .Values.gateway.fullnameOverride }}
-{{- .Values.gateway.fullnameOverride | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- $name := default .Release.Name .Values.gateway.nameOverride }}
-{{- .Release.Name | trunc 63 | trimSuffix "-" }}
-{{- end }}
+{{ include "kgateway.gateway.safeLabelValue" (default .Values.gateway.nameOverride .Values.gateway.fullnameOverride) }}
 {{- end }}
 
 {{/*
@@ -66,8 +70,15 @@ Selector labels
 */}}
 {{- define "kgateway.gateway.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "kgateway.gateway.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
+app.kubernetes.io/instance: {{ include "kgateway.gateway.name" . }}
+gateway.networking.k8s.io/gateway-name: {{ include "kgateway.gateway.name" . }}
+{{- end }}
+
+{{/*
+Gateway name annotation - always contains the full gateway name
+*/}}
+{{- define "kgateway.gateway.gatewayNameAnnotation" -}}
+gateway.kgateway.dev/gateway-full-name: {{ .Values.gateway.gatewayName }}
 {{- end }}
 
 {{/*

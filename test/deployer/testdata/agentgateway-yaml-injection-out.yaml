@@ -103,6 +103,7 @@ spec:
         foo: |-
           bar
           attack
+        gateway.kgateway.dev/gateway-full-name: gw
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
