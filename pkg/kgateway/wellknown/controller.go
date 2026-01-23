@@ -28,7 +28,7 @@ const (
 	GatewayNameLabel = "gateway.networking.k8s.io/gateway-name"
 	// GatewayNameAnnotation is an annotation on GW pods containing the full gateway name.
 	// This is used when the gateway name exceeds the 63-char label value limit.
-	GatewayNameAnnotation = "gateway.kgateway.dev/gateway-name"
+	GatewayNameAnnotation = "gateway.kgateway.dev/gateway-full-name"
 	// GatewayClassNameLabel is a label on GW pods to indicate the name of the GatewayClass
 	// they are associated with.
 	GatewayClassNameLabel = "gateway.networking.k8s.io/gateway-class-name"

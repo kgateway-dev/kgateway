@@ -1,10 +1,3 @@
-{{/*
-Expand the name of the chart.
-*/}}
-{{- define "kgateway.gateway.name" -}}
-{{- .Values.agentgateway.name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
 
 {{/*
 Generate a unique name for the gateway that is RFC1123 label compliant (<64 chars)
@@ -19,6 +12,13 @@ Generate a unique name for the gateway that is RFC1123 label compliant (<64 char
 {{- end -}}
 {{- end -}}
 
+{{/*
+Create a default fully qualified app name.
+Use safeLabelValue because some Kubernetes name fields are limited to 63 chars (by the DNS naming spec).
+*/}}
+{{- define "kgateway.gateway.name" -}}
+{{- include "kgateway.gateway.safeLabelValue" (default .Values.agentgateway.name) }}
+{{- end }}
 
 {{/*
 Create a default fully qualified app name.
@@ -34,8 +34,8 @@ Selector labels
 */}}
 {{- define "kgateway.gateway.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "kgateway.gateway.name" . }}
-app.kubernetes.io/instance: {{ include "kgateway.gateway.safeLabelValue" .Values.agentgateway.name }}
-gateway.networking.k8s.io/gateway-name: {{ include "kgateway.gateway.safeLabelValue" .Values.agentgateway.name }}
+app.kubernetes.io/instance: {{ include "kgateway.gateway.fullname" . }}
+gateway.networking.k8s.io/gateway-name: {{ include "kgateway.gateway.fullname" . }}
 {{- end }}
 
 {{/*
