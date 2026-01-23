@@ -59,8 +59,8 @@ fn lookup_header(headers: Option<minijinja::Value>, key: &str) -> String {
         return String::default();
     };
 
-    // TODO: can this be cached at a per request/response context somehow? 
-    //       This is called inside a custom function registered to minijina and 
+    // TODO: can this be cached at a per request/response context somehow?
+    //       This is called inside a custom function registered to minijina and
     //       we only get the State object which can only contain minijina::Value
     //       when we get called.
     let Some(header_map) = <HashMap<String, String>>::deserialize(headers.clone()).ok() else {
