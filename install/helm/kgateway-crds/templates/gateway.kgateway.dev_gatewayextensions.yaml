@@ -1130,6 +1130,24 @@ spec:
                     description: Cookies specifies the configuration for the OAuth2
                       cookies.
                     properties:
+                      disableAccessTokenSetCookie:
+                        description: |-
+                          DisableAccessTokenSetCookie specifies whether to disable setting the access token cookie.
+                          This can be used when the access token is too large to fit in a cookie. When true, the
+                          set-cookie response header for the access token will be omitted.
+                        type: boolean
+                      disableIDTokenSetCookie:
+                        description: |-
+                          DisableIDTokenSetCookie specifies whether to disable setting the ID token cookie.
+                          This can be used when the ID token is too large to fit in a cookie. When true, the
+                          set-cookie response header for the ID token will be omitted.
+                        type: boolean
+                      disableRefreshTokenSetCookie:
+                        description: |-
+                          DisableRefreshTokenSetCookie specifies whether to disable setting the refresh token cookie.
+                          This can be used when the refresh token is too large to fit in a cookie. When true, the
+                          set-cookie response header for the refresh token will be omitted.
+                        type: boolean
                       domain:
                         description: |-
                           CookieDomain specifies the domain to set on the access and ID token cookies.

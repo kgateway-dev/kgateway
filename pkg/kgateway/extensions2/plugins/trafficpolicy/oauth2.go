@@ -287,6 +287,12 @@ func buildOAuth2ProviderConfig(
 		}
 	}
 
+	if in.Cookies != nil {
+		cfg.Config.DisableAccessTokenSetCookie = ptr.Deref(in.Cookies.DisableAccessTokenSetCookie, false)
+		cfg.Config.DisableIdTokenSetCookie = ptr.Deref(in.Cookies.DisableIDTokenSetCookie, false)
+		cfg.Config.DisableRefreshTokenSetCookie = ptr.Deref(in.Cookies.DisableRefreshTokenSetCookie, false)
+	}
+
 	if in.DenyRedirect != nil {
 		matcher, err := pluginsdkutils.ToEnvoyHeaderMatchers(in.DenyRedirect.Headers)
 		if err != nil {
