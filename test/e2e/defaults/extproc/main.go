@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
@@ -16,7 +17,6 @@ import (
 
 	core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	service_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
-	"github.com/solo-io/go-utils/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -43,7 +43,7 @@ type server struct{}
 type healthServer struct{}
 
 func (s *healthServer) Check(ctx context.Context, in *grpc_health_v1.HealthCheckRequest) (*grpc_health_v1.HealthCheckResponse, error) {
-	log.Printf("Handling grpc Check request: + %s", in.String())
+	slog.Info("handling grpc Check request", "request", in.String())
 	return &grpc_health_v1.HealthCheckResponse{Status: grpc_health_v1.HealthCheckResponse_SERVING}, nil
 }
 
@@ -60,12 +60,12 @@ func (s *healthServer) List(ctx context.Context, in *grpc_health_v1.HealthListRe
 }
 
 func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer) error {
-	log.Printf("Process")
+	slog.Info("process")
 	ctx := srv.Context()
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("context done")
+			slog.Info("context done")
 			return ctx.Err()
 		default:
 		}
@@ -83,7 +83,7 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 		resp := &service_ext_proc_v3.ProcessingResponse{}
 		switch v := req.Request.(type) {
 		case *service_ext_proc_v3.ProcessingRequest_RequestHeaders:
-			log.Printf("Got RequestHeaders")
+			slog.Info("got RequestHeaders")
 
 			h := req.Request.(*service_ext_proc_v3.ProcessingRequest_RequestHeaders)
 			headersResp, err := getHeadersResponseFromInstructions(h.RequestHeaders)
@@ -97,7 +97,7 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 			}
 
 		case *service_ext_proc_v3.ProcessingRequest_RequestBody:
-			log.Printf("Got RequestBody - forwarding")
+			slog.Info("got RequestBody - forwarding")
 
 			h := req.Request.(*service_ext_proc_v3.ProcessingRequest_RequestBody)
 
@@ -118,11 +118,11 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 				},
 			}
 		case *service_ext_proc_v3.ProcessingRequest_RequestTrailers:
-			log.Printf("Got RequestTrailers (not currently handled)")
+			slog.Info("got RequestTrailers (not currently handled)")
 			resp.Response = &service_ext_proc_v3.ProcessingResponse_RequestTrailers{}
 
 		case *service_ext_proc_v3.ProcessingRequest_ResponseHeaders:
-			log.Printf("Got ResponseHeaders")
+			slog.Info("got ResponseHeaders")
 
 			h := req.Request.(*service_ext_proc_v3.ProcessingRequest_ResponseHeaders)
 			headersResp, err := getHeadersResponseFromInstructions(h.ResponseHeaders)
@@ -136,7 +136,7 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 			}
 
 		case *service_ext_proc_v3.ProcessingRequest_ResponseBody:
-			log.Printf("Got ResponseBody - forwarding")
+			slog.Info("got ResponseBody - forwarding")
 
 			h := req.Request.(*service_ext_proc_v3.ProcessingRequest_ResponseBody)
 
@@ -158,19 +158,19 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 			}
 
 		case *service_ext_proc_v3.ProcessingRequest_ResponseTrailers:
-			log.Printf("Got ResponseTrailers (not currently handled)")
+			slog.Info("got ResponseTrailers (not currently handled)")
 			resp.Response = &service_ext_proc_v3.ProcessingResponse_ResponseTrailers{}
 
 		default:
-			log.Printf("Unknown Request type %v", v)
+			slog.Info("unknown request type", "request type", v)
 		}
 
 		// At this point we believe we have created a valid response...
 		// note that this is sometimes not the case
 		// anyways for now just send it
-		log.Printf("Sending ProcessingResponse")
+		slog.Info("sending ProcessingResponse")
 		if err := srv.Send(resp); err != nil {
-			log.Printf("send error %v", err)
+			slog.Info("send error", "error", err)
 			return err
 		}
 
@@ -183,7 +183,8 @@ func main() {
 
 	lis, err := net.Listen("tcp", *grpcport)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		slog.Error("failed to listen", "error", err)
+		os.Exit(1)
 	}
 
 	sopts := []grpc.ServerOption{grpc.MaxConcurrentStreams(1000)}
@@ -193,20 +194,21 @@ func main() {
 
 	grpc_health_v1.RegisterHealthServer(s, &healthServer{})
 
-	log.Printf("Starting gRPC server on port %s", *grpcport)
+	slog.Info("starting gRPC server", "port", *grpcport)
 
 	var gracefulStop = make(chan os.Signal, 1)
 	signal.Notify(gracefulStop, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		sig := <-gracefulStop
-		log.Printf("caught sig: %+v", sig)
+		slog.Info("caught sig", "sig", sig)
 		time.Sleep(time.Second)
-		log.Printf("Graceful stop completed")
+		slog.Info("graceful stop completed")
 		os.Exit(0)
 	}()
 	err = s.Serve(lis)
 	if err != nil {
-		log.Fatalf("killing server with %v", err)
+		slog.Error("killing server", "error", err)
+		os.Exit(1)
 	}
 }
 
@@ -230,7 +232,7 @@ func getHeadersResponseFromInstructions(in *service_ext_proc_v3.HttpHeaders) (*s
 	var instructions *Instructions
 	err := json.Unmarshal([]byte(instructionString), &instructions)
 	if err != nil {
-		log.Printf("Error unmarshalling instructions: %v", err)
+		slog.Info("error unmarshalling instructions", "error", err)
 		return nil, err
 	}
 
