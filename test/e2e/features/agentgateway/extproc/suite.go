@@ -35,7 +35,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 			defaults.CurlPodManifest,
 			gatewayManifest,
 			backendWithServiceManifest,
-			extProcWithServiceManifest,
+			defaults.ExtProcManifest,
 		},
 	}
 
@@ -215,7 +215,7 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 }
 
 // The instructions format that the example extproc service understands.
-// See the `basic-sink` example in https://github.com/solo-io/ext-proc-examples
+// See test/e2e/defaults/extproc/README.md for more details.
 type instructions struct {
 	// Header key/value pairs to add to the request or response.
 	AddHeaders map[string]string `json:"addHeaders"`
