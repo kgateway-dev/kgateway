@@ -189,6 +189,9 @@ Listeners:
                 stringMatch:
                   safeRegex:
                     regex: ^baz-.*
+              disableAccessTokenSetCookie: true
+              disableIdTokenSetCookie: true
+              disableRefreshTokenSetCookie: true
               forwardBearerToken: true
               redirectPathMatcher:
                 path:
