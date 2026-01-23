@@ -22,6 +22,7 @@ output:
       namespace: default
     target:
       route:
+        kind: HTTPRoute
         name: missing
         namespace: default
     traffic:

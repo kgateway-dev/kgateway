@@ -81,6 +81,7 @@ output:
       namespace: default
     target:
       route:
+        kind: HTTPRoute
         name: test
         namespace: default
     traffic:
@@ -138,6 +139,7 @@ output:
       namespace: default
     target:
       route:
+        kind: HTTPRoute
         name: test
         namespace: default
 status:
