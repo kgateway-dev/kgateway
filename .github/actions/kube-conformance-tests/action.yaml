@@ -95,7 +95,7 @@ runs:
         helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
           --create-namespace \
           ${EXPERIMENTAL_FLAG} \
-          --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
+          --set image.tag=${VERSION} --set image.registry=${IMAGE_REGISTRY} \
           ${ADDITIONAL_VALUES}
       else
         # TODO(tim): this will require changes once the new helm chart is integrated

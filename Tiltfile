@@ -14,13 +14,16 @@ if str(local("command -v " + kubectl_cmd + " || true", quiet = True)) == "":
 if str(local("command -v " + helm_cmd + " || true", quiet = True)) == "":
     fail("Required command '" + helm_cmd + "' not found in PATH")
 
+# Get IMAGE_REGISTRY from environment variable with fallback to default
+image_registry = str(local("echo ${IMAGE_REGISTRY:-ghcr.io/kgateway-dev}", quiet = True)).strip()
+
 settings = {
     "helm_installation_name": "kgateway",
     "helm_installation_namespace": "kgateway-system",
     "helm_values_files": ["./test/e2e/tests/manifests/common-recommendations.yaml"],
     "helm_flags": {
         "image.pullPolicy": "Never",
-        "image.registry": "ghcr.io/kgateway-dev",
+        "image.registry": image_registry,
         "image.tag": image_tag,
         "controller.extraEnv.KGW_DISABLE_LEADER_ELECTION": "true",
     },
@@ -192,6 +195,14 @@ def enable_provider(provider):
     provider["port_forwards"] = get_port_forwards(provider)
     provider["links"] = get_links(provider)
     provider["binary_name"] = provider.get("binary_name").replace("$ARCH", arch)
+    
+    # Dynamically construct image name using IMAGE_REGISTRY environment variable
+    # This replaces any hardcoded registry in the provider configuration
+    original_image = provider.get("image")
+    if "/" in original_image:
+        # Extract the image name part (everything after the last /)
+        image_name = original_image.split("/")[-1]
+        provider["image"] = image_registry + "/" + image_name
 
     build_go_binary(provider)
     build_docker_image(
