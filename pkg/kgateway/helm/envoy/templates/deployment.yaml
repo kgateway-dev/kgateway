@@ -28,12 +28,11 @@ spec:
       {{- if $statsConfig.enabled }}
         {{- $promAnnotations = dict "prometheus.io/path" "/metrics" "prometheus.io/port" "9091" "prometheus.io/scrape" "true" }}
       {{- end}}
-      {{- $gwNameAnnotation := dict "gateway.kgateway.dev/gateway-name" .Values.gateway.gatewayName }}
       {{- toYaml (merge
           (deepCopy ($gateway.gatewayAnnotations | default dict))
           ($gateway.extraPodAnnotations | default dict)
           $promAnnotations
-          $gwNameAnnotation
+          (include "kgateway.gateway.gatewayNameAnnotation" . | fromYaml)
        ) | nindent 8 }}
       labels:
         {{- toYaml (merge

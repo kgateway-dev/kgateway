@@ -23,12 +23,11 @@ spec:
       annotations:
       {{- /* Add configmap checksum to trigger rollout when config changes */}}
       {{- $configChecksum := dict "checksum/config" (include (print $.Template.BasePath "/configmap.yaml") . | sha256sum) }}
-      {{- $gwNameAnnotation := dict "gateway.kgateway.dev/gateway-name" .Values.agentgateway.name }}
       {{- toYaml (merge
           $configChecksum
           (deepCopy ($gateway.gatewayAnnotations | default dict))
           $promAnnotations
-          $gwNameAnnotation
+          (include "kgateway.gateway.gatewayNameAnnotation" . | fromYaml)
        ) | nindent 8 }}
       labels:
         {{- toYaml (merge
