@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -20,7 +19,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
-	testruntime "github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -36,9 +34,6 @@ var (
 	gwName        = "test-waypoint"
 
 	readyTimeout = 2 * time.Minute
-
-	// the min istio version required to run the waypoint tests
-	minIstioVersion = semver.MustParse("1.25.1")
 )
 
 type testingSuite struct {
@@ -70,10 +65,6 @@ func NewIngressTestingSuite(ctx context.Context, testInst *e2e.TestInstallation)
 // * Deploy server (Services, Pods) - `svc-a`, `svc-b`
 // * Deploy client (Pods) - `client-a`
 func (s *testingSuite) SetupSuite() {
-	if s.skipSuite() {
-		return
-	}
-
 	// must apply the ns first
 	err := s.testInstallation.ClusterContext.Cli.ApplyFilePath(s.ctx, nsYAML)
 	if err != nil {
@@ -134,18 +125,12 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TearDownSuite() {
-	if s.skipSuite() || testutils.ShouldSkipCleanup(s.T()) {
+	if testutils.ShouldSkipCleanup(s.T()) {
 		return
 	}
 	err := s.testInstallation.ClusterContext.Cli.DeleteFilePath(s.ctx, commonYAML, "-n", testNamespace)
 	if err != nil {
 		s.Error(err)
-	}
-}
-
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	if s.skipSuite() {
-		s.T().Skip("Skipping all tests in suite due to istio version requirements")
 	}
 }
 
@@ -230,25 +215,4 @@ func (s *testingSuite) applyOrFail(fileName string, namespace string) {
 
 func (s *testingSuite) setNamespaceWaypointOrFail(ns string) {
 	s.useWaypointLabelForTest("ns", ns, "")
-}
-
-func (s *testingSuite) skipSuite() bool {
-	istioVersion, ok := os.LookupEnv(testruntime.IstioVersionEnv)
-	if !ok {
-		s.Require().FailNow("required environment variable not set",
-			"envVar",
-			testruntime.IstioVersionEnv)
-	}
-
-	istioVersionSemver, err := semver.NewVersion(istioVersion)
-	if err != nil {
-		s.Require().FailNow("failed to parse istio version as semver",
-			"istioVersion", istioVersion,
-			"error", err)
-	}
-
-	if istioVersionSemver.LessThan(minIstioVersion) {
-		return true
-	}
-	return false
 }
