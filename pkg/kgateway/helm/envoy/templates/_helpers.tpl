@@ -78,7 +78,7 @@ gateway.networking.k8s.io/gateway-name: {{ include "kgateway.gateway.name" . }}
 Gateway name annotation - always contains the full gateway name
 */}}
 {{- define "kgateway.gateway.gatewayNameAnnotation" -}}
-gateway.kgateway.dev/gateway-name: {{ .Values.gateway.gatewayName }}
+gateway.kgateway.dev/gateway-full-name: {{ .Values.gateway.gatewayName }}
 {{- end }}
 
 {{/*

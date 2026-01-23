@@ -272,7 +272,7 @@ spec:
   template:
     metadata:
       annotations:
-        gateway.kgateway.dev/gateway-name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
+        gateway.kgateway.dev/gateway-full-name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
