@@ -596,7 +596,7 @@ kind-load-dummy-idp:
 # extproc-server (used in e2e tests)
 #----------------------------------------------------------------------------------
 
-EXTPROC_SERVER_DIR=test/e2e/features/agentgateway/extproc/example
+EXTPROC_SERVER_DIR=test/e2e/defaults/extproc
 EXTPROC_SERVER_OUTPUT_DIR=$(OUTPUT_DIR)/$(EXTPROC_SERVER_DIR)
 export EXTPROC_SERVER_IMAGE_REPO ?= extproc-server
 EXTPROC_SERVER_VERSION=0.0.1
