@@ -12,7 +12,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
+	"google.golang.org/grpc/reflection/grpc_reflection_v1"
 	"istio.io/istio/pkg/test/util/retry"
 )
 
@@ -41,19 +41,17 @@ func (g *Gateway) GrpcReflectionAssertResponseMetadata(
 		ctx, cancel := context.WithTimeout(context.Background(), tmo)
 		defer cancel()
 
-		conn, err := grpc.DialContext(
-			ctx,
+		conn, err := grpc.NewClient(
 			addr,
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithAuthority(authority),
-			grpc.WithBlock(),
 		)
 		if err != nil {
-			return fmt.Errorf("grpc dial %q failed: %w", addr, err)
+			return fmt.Errorf("grpc client create %q failed: %w", addr, err)
 		}
 		defer conn.Close()
 
-		client := grpc_reflection_v1alpha.NewServerReflectionClient(conn)
+		client := grpc_reflection_v1.NewServerReflectionClient(conn)
 		stream, err := client.ServerReflectionInfo(ctx)
 		if err != nil {
 			return fmt.Errorf("open ServerReflectionInfo stream failed: %w", err)
@@ -61,8 +59,8 @@ func (g *Gateway) GrpcReflectionAssertResponseMetadata(
 
 		// Ask for a minimal response to force headers/metadata to be returned.
 		// This is equivalent to the "grpcurl list" / reflection path most tests use.
-		err = stream.Send(&grpc_reflection_v1alpha.ServerReflectionRequest{
-			MessageRequest: &grpc_reflection_v1alpha.ServerReflectionRequest_ListServices{
+		err = stream.Send(&grpc_reflection_v1.ServerReflectionRequest{
+			MessageRequest: &grpc_reflection_v1.ServerReflectionRequest_ListServices{
 				ListServices: "",
 			},
 		})
