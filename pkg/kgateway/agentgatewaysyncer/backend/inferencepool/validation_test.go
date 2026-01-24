@@ -127,10 +127,14 @@ func TestValidatePool(t *testing.T) {
 				"validatePool() returned %d errors: %v", len(errs), errs)
 
 			// Assert on the error strings
-			for i, wantMsg := range tc.wantErrMsgs {
-				if i < len(errs) {
-					assert.Equal(t, wantMsg, errs[i].Error(),
-						"error message mismatch at index %d", i)
+			if tc.wantErrMsgs != nil {
+				assert.Len(t, errs, len(tc.wantErrMsgs),
+					"number of errors should match expected error messages")
+				for i, wantMsg := range tc.wantErrMsgs {
+					if i < len(errs) {
+						assert.Equal(t, wantMsg, errs[i].Error(),
+							"error message mismatch at index %d", i)
+					}
 				}
 			}
 		})
