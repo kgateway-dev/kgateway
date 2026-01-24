@@ -18,60 +18,68 @@ import (
 
 func TestValidatePool(t *testing.T) {
 	tests := []struct {
-		name       string
-		modifyPool func(p *inf.InferencePool)
-		svc        *corev1.Service
-		wantErrs   int
+		name        string
+		modifyPool  func(p *inf.InferencePool)
+		svc         *corev1.Service
+		wantErrs    int
+		wantErrMsgs []string
 	}{
 		{
 			name: "unsupported Group",
 			modifyPool: func(p *inf.InferencePool) {
 				p.Spec.EndpointPickerRef.Group = ptr.To(inf.Group("foo.example.com"))
 			},
-			svc:      makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
-			wantErrs: 1,
+			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			wantErrs:    1,
+			wantErrMsgs: []string{`invalid extensionRef: only core API group supported, got "foo.example.com"`},
 		},
 		{
 			name: "unsupported Kind",
 			modifyPool: func(p *inf.InferencePool) {
 				p.Spec.EndpointPickerRef.Kind = inf.Kind(wellknown.ConfigMapGVK.Kind)
 			},
-			svc:      makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
-			wantErrs: 1,
+			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			wantErrs:    1,
+			wantErrMsgs: []string{`invalid extensionRef: Kind "Service" is not supported (only Service)`},
 		},
 		{
 			name: "port unspecified",
 			modifyPool: func(p *inf.InferencePool) {
 				p.Spec.EndpointPickerRef.Port = nil
 			},
-			svc:      nil,
-			wantErrs: 1,
+			svc:         nil,
+			wantErrs:    1,
+			wantErrMsgs: []string{"invalid extensionRef port must be specified"},
 		},
 		{
 			name: "service not found",
 			modifyPool: func(p *inf.InferencePool) {
 				p.Spec.EndpointPickerRef.Name = inf.ObjectName("missing-svc")
 			},
-			svc:      nil,
-			wantErrs: 1,
+			svc:         nil,
+			wantErrs:    1,
+			wantErrMsgs: []string{"invalid extensionRef: Service default/missing-svc not found"},
 		},
 		{
-			name:       "happy path",
-			modifyPool: func(_ *inf.InferencePool) {},
-			svc:        makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
-			wantErrs:   0,
+			name:        "happy path",
+			modifyPool:  func(_ *inf.InferencePool) {},
+			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			wantErrs:    0,
+			wantErrMsgs: nil,
 		},
 		{
-			name:       "ExternalName service rejected",
-			modifyPool: func(_ *inf.InferencePool) {},
-			svc:        makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeExternalName),
-			wantErrs:   1,
+			name:        "ExternalName service rejected",
+			modifyPool:  func(_ *inf.InferencePool) {},
+			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeExternalName),
+			wantErrs:    1,
+			wantErrMsgs: []string{"invalid extensionRef: must use any Service type other than ExternalName"},
 		},
 		{
-			name:       "UDP port not accepted",
-			modifyPool: func(_ *inf.InferencePool) {},
-			svc:        makeSvc(corev1.ProtocolUDP, corev1.ServiceTypeClusterIP),
-			wantErrs:   1,
+			name:        "UDP port not accepted",
+			modifyPool:  func(_ *inf.InferencePool) {},
+			svc:         makeSvc(corev1.ProtocolUDP, corev1.ServiceTypeClusterIP),
+			wantErrs:    1,
+			wantErrMsgs: []string{"TCP port 80 not found on Service default/test-svc"},
 		},
 	}
 
@@ -117,6 +125,14 @@ func TestValidatePool(t *testing.T) {
 			errs := validatePool(pool, svcCol)
 			assert.Lenf(t, errs, tc.wantErrs,
 				"validatePool() returned %d errors: %v", len(errs), errs)
+
+			// Assert on the error strings
+			for i, wantMsg := range tc.wantErrMsgs {
+				if i < len(errs) {
+					assert.Equal(t, wantMsg, errs[i].Error(),
+						"error message mismatch at index %d", i)
+				}
+			}
 		})
 	}
 }
