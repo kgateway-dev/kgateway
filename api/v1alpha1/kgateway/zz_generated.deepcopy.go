@@ -1553,6 +1553,17 @@ func (in *ExtProcProvider) DeepCopyInto(out *ExtProcProvider) {
 		*out = new(ProcessingMode)
 		**out = **in
 	}
+	if in.AllowedProcessingModeOverrides != nil {
+		in, out := &in.AllowedProcessingModeOverrides, &out.AllowedProcessingModeOverrides
+		*out = make([]*ProcessingMode, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(ProcessingMode)
+				**out = **in
+			}
+		}
+	}
 	if in.MessageTimeout != nil {
 		in, out := &in.MessageTimeout, &out.MessageTimeout
 		*out = new(v1.Duration)

@@ -479,6 +479,79 @@ spec:
               extProc:
                 description: ExtProc configuration for ExtProc extension type.
                 properties:
+                  allowProcessingModeOverride:
+                    default: false
+                    description: |-
+                      AllowProcessingModeOverride determines if the processing mode can be overridden.
+                      Defaults to false, meaning the processing mode cannot be overridden.
+                    type: boolean
+                  allowedProcessingModeOverrides:
+                    description: AllowedProcessingModeOverrides specifies which processing
+                      modes are allowed to override the default.
+                    items:
+                      description: ProcessingMode defines how the filter should interact
+                        with the request/response streams
+                      properties:
+                        requestBodyMode:
+                          default: NONE
+                          description: RequestBodyMode determines how to handle the
+                            request body
+                          enum:
+                          - NONE
+                          - STREAMED
+                          - BUFFERED
+                          - BUFFERED_PARTIAL
+                          - FULL_DUPLEX_STREAMED
+                          type: string
+                        requestHeaderMode:
+                          default: SEND
+                          description: RequestHeaderMode determines how to handle
+                            the request headers
+                          enum:
+                          - DEFAULT
+                          - SEND
+                          - SKIP
+                          type: string
+                        requestTrailerMode:
+                          default: SKIP
+                          description: RequestTrailerMode determines how to handle
+                            the request trailers
+                          enum:
+                          - DEFAULT
+                          - SEND
+                          - SKIP
+                          type: string
+                        responseBodyMode:
+                          default: NONE
+                          description: ResponseBodyMode determines how to handle the
+                            response body
+                          enum:
+                          - NONE
+                          - STREAMED
+                          - BUFFERED
+                          - BUFFERED_PARTIAL
+                          - FULL_DUPLEX_STREAMED
+                          type: string
+                        responseHeaderMode:
+                          default: SEND
+                          description: ResponseHeaderMode determines how to handle
+                            the response headers
+                          enum:
+                          - DEFAULT
+                          - SEND
+                          - SKIP
+                          type: string
+                        responseTrailerMode:
+                          default: SKIP
+                          description: ResponseTrailerMode determines how to handle
+                            the response trailers
+                          enum:
+                          - DEFAULT
+                          - SEND
+                          - SKIP
+                          type: string
+                      type: object
+                    type: array
                   failOpen:
                     default: true
                     description: |-

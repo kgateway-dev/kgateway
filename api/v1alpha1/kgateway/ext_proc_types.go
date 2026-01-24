@@ -22,6 +22,16 @@ type ExtProcProvider struct {
 	// +optional
 	ProcessingMode *ProcessingMode `json:"processingMode,omitempty"`
 
+	// AllowProcessingModeOverride determines if the processing mode can be overridden.
+	// Defaults to false, meaning the processing mode cannot be overridden.
+	// +optional
+	// +kubebuilder:default=false
+	AllowProcessingModeOverride bool `json:"allowProcessingModeOverride,omitempty"`
+
+	// AllowedProcessingModeOverrides specifies which processing modes are allowed to override the default.
+	// +optional
+	AllowedProcessingModeOverrides []*ProcessingMode `json:"allowedProcessingModeOverrides,omitempty"`
+
 	// MessageTimeout is the timeout for each message sent to the external processing server.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
