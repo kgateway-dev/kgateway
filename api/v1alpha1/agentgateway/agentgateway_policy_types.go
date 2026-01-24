@@ -816,7 +816,6 @@ type AwsAuth struct {
 	SecretRef corev1.LocalObjectReference `json:"secretRef"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;managedIdentity
 type AzureAuth struct {
 	// SecretRef references a Kubernetes Secret containing the Azure credentials.
 	// The Secret must have keys "clientId", "tenantId", and "clientSecret".
