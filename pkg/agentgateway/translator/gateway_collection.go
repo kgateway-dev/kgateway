@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/istio/pilot/pkg/util/protoconv"
@@ -378,6 +379,18 @@ func ListenerSetCollection(
 	krt.StatusCollection[*gatewayx.XListenerSet, gatewayx.ListenerSetStatus],
 	krt.Collection[ListenerSet],
 ) {
+	listenerSetParentIndex := krt.NewIndex(listenerSets, "listenerSetParent", func(o *gatewayx.XListenerSet) []types.NamespacedName {
+		p := o.Spec.ParentRef
+		if NormalizeReference(p.Group, p.Kind, wellknown.GatewayGVK) != wellknown.GatewayGVK {
+			return nil
+		}
+		pns := string(ptr.OrDefault(p.Namespace, gatewayx.Namespace(o.Namespace)))
+		return []types.NamespacedName{{
+			Namespace: pns,
+			Name:      string(p.Name),
+		}}
+	})
+
 	return krt.NewStatusManyCollection(listenerSets,
 		func(ctx krt.HandlerContext, obj *gatewayx.XListenerSet) (*gatewayx.ListenerSetStatus, []ListenerSet) {
 			result := []ListenerSet{}
@@ -408,9 +421,10 @@ func ListenerSetCollection(
 
 			controllerName := class.Controller
 
-			if !NamespaceAcceptedByAllowListeners(obj.Namespace, parentGwObj, func(s string) *corev1.Namespace {
+			lookupNamespace := func(s string) *corev1.Namespace {
 				return ptr.Flatten(krt.FetchOne(ctx, namespaces, krt.FilterKey(s)))
-			}) {
+			}
+			if !NamespaceAcceptedByAllowListeners(obj.Namespace, parentGwObj, lookupNamespace) {
 				//reportNotAllowedListenerSet(status, obj)
 				return status, nil
 			}
@@ -459,6 +473,48 @@ func ListenerSetCollection(
 					ParentInfo:    pri,
 				}
 				result = append(result, res)
+			}
+
+			parentKey := types.NamespacedName{Namespace: parentGwObj.Namespace, Name: parentGwObj.Name}
+			allListenerSets := krt.Fetch(ctx, listenerSets, krt.FilterIndex(listenerSetParentIndex, parentKey))
+			cands := buildCandidatesForGateway(parentGwObj, allListenerSets, obj, lookupNamespace)
+			conflicts := detectConflicts(cands)
+			statusIdxByName := map[string]int{}
+			for i, l := range status.Listeners {
+				statusIdxByName[string(l.Name)] = i
+			}
+			resultIdxByName := map[string]int{}
+			for i, r := range result {
+				resultIdxByName[string(r.ParentInfo.SectionName)] = i
+			}
+			for _, c := range cands {
+				if !c.isCurrentLS {
+					continue
+				}
+				ci, ok := conflicts[c.key]
+				if !ok {
+					continue
+				}
+				if idx, ok := statusIdxByName[c.listenerName]; ok {
+					status.Listeners[idx].Conditions = applyConflictToListenerEntryConditions(
+						obj.Generation,
+						status.Listeners[idx].Conditions,
+						ci,
+						obj.Namespace,
+					)
+				} else if c.currentIdx < len(status.Listeners) {
+					status.Listeners[c.currentIdx].Conditions = applyConflictToListenerEntryConditions(
+						obj.Generation,
+						status.Listeners[c.currentIdx].Conditions,
+						ci,
+						obj.Namespace,
+					)
+				}
+				if idx, ok := resultIdxByName[c.listenerName]; ok {
+					result[idx].Valid = false
+				} else if c.currentIdx < len(result) {
+					result[c.currentIdx].Valid = false
+				}
 			}
 
 			reportListenerSetStatus(obj, status)
@@ -563,11 +619,28 @@ func reportListenerSetStatus(
 ) {
 	//internal, _, _, _, warnings, allUsable := r.ResolveGatewayInstances(parentGwObj.Namespace, gatewayServices, servers)
 
-	// Setup initial conditions to the success state. If we encounter errors, we will update this.
-	// We have two status
+	invalidListeners := make([]string, 0)
+	invalidMessages := make([]string, 0)
+	for _, l := range gs.Listeners {
+		for _, c := range l.Conditions {
+			if c.Type != string(gatewayx.ListenerEntryConditionProgrammed) {
+				continue
+			}
+			// We treat Programmed=False as the signal for an invalid listener entry.
+			// Conflict handling sets Programmed=False for invalid/conflicted listeners.
+			if c.Status == metav1.ConditionFalse {
+				invalidListeners = append(invalidListeners, string(l.Name))
+				if c.Message != "" {
+					invalidMessages = append(invalidMessages, fmt.Sprintf("%s: %s", l.Name, c.Message))
+				}
+			}
+			break
+		}
+	}
+
 	// Accepted: is the configuration valid. We only have errors in listeners, and the status is not supposed to
-	// be tied to listeners, so this is always accepted
-	// Programmed: is the data plane "ready" (note: eventually consistent)
+	// be tied to listeners, so this is accepted unless all listeners are invalid.
+	// Programmed: is the data plane "ready" (note: eventually consistent).
 	gatewayConditions := map[string]*Condition{
 		string(gwv1.GatewayConditionAccepted): {
 			Reason:  string(gwv1.GatewayReasonAccepted),
@@ -577,6 +650,20 @@ func reportListenerSetStatus(
 			Reason:  string(gwv1.GatewayReasonProgrammed),
 			Message: "Resource programmed",
 		},
+	}
+
+	if len(gs.Listeners) > 0 && len(invalidListeners) == len(gs.Listeners) {
+		message := fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidMessages, "; "))
+		if len(invalidMessages) == 0 {
+			message = fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidListeners, ", "))
+		}
+
+		gatewayConditions[string(gwv1.GatewayConditionAccepted)].Status = metav1.ConditionFalse
+		gatewayConditions[string(gwv1.GatewayConditionAccepted)].Reason = string(gatewayx.ListenerSetReasonListenersNotValid)
+		gatewayConditions[string(gwv1.GatewayConditionAccepted)].Message = message
+		gatewayConditions[string(gwv1.GatewayConditionProgrammed)].Status = metav1.ConditionFalse
+		gatewayConditions[string(gwv1.GatewayConditionProgrammed)].Reason = string(gatewayx.ListenerSetReasonListenersNotValid)
+		gatewayConditions[string(gwv1.GatewayConditionProgrammed)].Message = message
 	}
 
 	//setProgrammedCondition(gatewayConditions, internal, gatewayServices, warnings, allUsable)
