@@ -131,6 +131,7 @@ mod-download:  ## Download the dependencies
 mod-tidy-nested:  ## Tidy go mod files in nested modules
 	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
 	@echo "Tidying tools..." && cd tools && go mod tidy
+	@echo "Tidying test/e2e/defaults/extproc..." && cd test/e2e/defaults/extproc && go mod tidy
 
 .PHONY: mod-tidy
 mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
