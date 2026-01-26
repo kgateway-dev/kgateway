@@ -1019,15 +1019,17 @@ type ExtProc struct {
 	// +required
 	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 
-	// requestAttributes specifies request_attributes to be sent *to* the external processing server.
-	// This maps to the `ProcessingRequest.attributes` field of the request, and allows dynamic CEL expressions.
+	// requestAttributes maps to the `ProcessingRequest.attributes` field of the request sent *to* the external processing server.
+	// These attributes are sent when processing the client's HTTP request.
+	// It allows dynamic CEL expressions.
 	//
 	// +optional
 	// +kubebuilder:validation:MaxProperties=64
 	RequestAttributes map[string]shared.CELExpression `json:"requestAttributes,omitempty"`
 
-	// responseAttributes specifies response_attributes to be sent *to* the external processing server.
-	// This maps to the `ProcessingRequest.attributes` field of the request, and allows dynamic CEL expressions.
+	// responseAttributes maps to the `ProcessingRequest.attributes` field of the request sent *to* the external processing server.
+	// These attributes are sent when processing the upstream's HTTP response.
+	// It allows dynamic CEL expressions.
 	//
 	// +optional
 	// +kubebuilder:validation:MaxProperties=64
