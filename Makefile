@@ -663,12 +663,18 @@ package-agentgateway-crd-chart: ## Package the agentgateway crd chart
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_AGW_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
 
+# VERSION_NO_V strips the leading 'v' from VERSION (e.g., v2.0.0 -> 2.0.0)
+VERSION_NO_V := $(patsubst v%,%,$(VERSION))
+CHART_NAMES := kgateway kgateway-crds agentgateway agentgateway-crds
+
 .PHONY: release-charts
-release-charts: package-kgateway-charts package-agentgateway-charts ## Release the kgateway and agentgateway charts
-	$(HELM) push $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
-	$(HELM) push $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
-	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
-	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+release-charts: ## Release the kgateway and agentgateway charts (publishes both vX.Y.Z and X.Y.Z tags)
+	@for v in $(VERSION) $(VERSION_NO_V); do \
+		$(MAKE) package-kgateway-charts package-agentgateway-charts VERSION=$$v; \
+		for chart in $(CHART_NAMES); do \
+			$(HELM) push $(TEST_ASSET_DIR)/$$chart-$$v.tgz oci://$(IMAGE_REGISTRY)/charts; \
+		done; \
+	done
 
 .PHONY: deploy-kgateway-crd-chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
