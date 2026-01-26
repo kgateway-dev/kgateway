@@ -245,11 +245,27 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 	finalLsStatus := gwxv1a1.ListenerSetStatus{}
 	finalLsStatus.Conditions = finalConditions
 	fl := make([]gwxv1a1.ListenerEntryStatus, 0, len(finalListeners))
-	for i, f := range finalListeners {
-		listener := ls.Spec.Listeners[i]
-		port, err := kubeutils.DetectListenerPortNumber(listener.Protocol, listener.Port)
-		if err != nil {
-			// Set a random value until upstream to allows 0 for implementations that do not support dynamic port assignment
+	for _, f := range finalListeners {
+		// Find the corresponding listener in the spec by name instead of using index
+		var specListener *gwxv1a1.ListenerEntry
+		for _, listener := range ls.Spec.Listeners {
+			if listener.Name == f.Name {
+				specListener = &listener
+				break
+			}
+		}
+		
+		var port gwxv1a1.PortNumber
+		if specListener != nil {
+			detectedPort, err := kubeutils.DetectListenerPortNumber(specListener.Protocol, specListener.Port)
+			if err != nil {
+				// Set a random value until upstream to allows 0 for implementations that do not support dynamic port assignment
+				port = 65535
+			} else {
+				port = detectedPort
+			}
+		} else {
+			// Fallback if listener not found in spec (shouldn't happen in normal cases)
 			port = 65535
 		}
 
