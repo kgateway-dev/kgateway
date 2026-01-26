@@ -73,7 +73,7 @@ func translateFrontendTracing(ctx PolicyCtx, policy *agentgateway.AgentgatewayPo
 		return nil, nil
 	}
 
-	provider, err := buildBackendRef(ctx, tracing.BackendRef, policy.Namespace)
+	provider, err := buildBackendRefWithDerivedBackend(ctx, tracing.URI, tracing.BackendRef, policy.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to translate tracing backend ref: %v", err)
 	}

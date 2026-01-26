@@ -1,0 +1,87 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+  namespace: default
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: agw
+  namespace: default
+spec:
+  targetRefs:
+    - kind: Gateway
+      name: test
+      group: gateway.networking.k8s.io
+  frontend:
+    tracing:
+      uri: https://my-otel.some-other-ns:4317
+      protocol: HTTP
+      clientSampling: "true"
+      randomSampling: "true"
+      resources:
+        - name: service.name
+          expression: "agent-gateway"
+      attributes:
+        remove:
+          - response.code
+        add:
+          - expression: 'request.headers["user-agent"]'
+            name: http.useragent
+
+---
+# Output
+output:
+- Policy:
+    frontend:
+      tracing:
+        attributes:
+        - name: http.useragent
+          value: request.headers["user-agent"]
+        clientSampling: "true"
+        providerBackend:
+          port: 4317
+          service:
+            hostname: my-otel.some-other-ns
+            namespace: default
+        randomSampling: "true"
+        remove:
+        - response.code
+        resources:
+        - name: service.name
+          value: agent-gateway
+    key: frontend/default/agw:frontend-tracing:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
+    target:
+      gateway:
+        name: test
+        namespace: default
+status:
+  ancestors:
+  - ancestorRef:
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      name: test
+      namespace: default
+    conditions:
+    - lastTransitionTime: fake
+      message: Policy accepted
+      reason: Valid
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: fake
+      message: Attached to all targets
+      reason: Attached
+      status: "True"
+      type: Attached
+    controllerName: agentgateway.dev/agentgateway

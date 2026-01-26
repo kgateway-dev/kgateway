@@ -2123,15 +2123,30 @@ spec:
                                                   least 5m.
                                                 rule: duration(self) >= duration('5m')
                                             jwksPath:
-                                              description: Path to IdP jwks endpoint,
-                                                relative to the root, commonly ".well-known/jwks.json".
+                                              description: |-
+                                                Path to IdP jwks endpoint, relative to the root, commonly ".well-known/jwks.json".
+                                                Must be specified with backendRef.
+                                                Will be ignored if uri is set.
                                               maxLength: 2000
                                               minLength: 1
                                               type: string
-                                          required:
-                                          - backendRef
-                                          - jwksPath
+                                            uri:
+                                              description: |-
+                                                URI to IdP jwks endpoint.
+                                                Cannot be specified together with backendRef.
+                                              maxLength: 2000
+                                              minLength: 1
+                                              type: string
                                           type: object
+                                          x-kubernetes-validations:
+                                          - message: jwksPath must be set if backendRef
+                                              is specified
+                                            rule: 'has(self.backendRef) ? has(self.jwksPath)
+                                              : true'
+                                          - message: exactly one of the fields in
+                                              [backendRef uri] must be set
+                                            rule: '[has(self.backendRef),has(self.uri)].filter(x,x==true).size()
+                                              == 1'
                                         mode:
                                           description: validation mode for JWT authentication.
                                           enum:
@@ -3590,15 +3605,28 @@ spec:
                                 - message: cacheDuration must be at least 5m.
                                   rule: duration(self) >= duration('5m')
                               jwksPath:
-                                description: Path to IdP jwks endpoint, relative to
-                                  the root, commonly ".well-known/jwks.json".
+                                description: |-
+                                  Path to IdP jwks endpoint, relative to the root, commonly ".well-known/jwks.json".
+                                  Must be specified with backendRef.
+                                  Will be ignored if uri is set.
                                 maxLength: 2000
                                 minLength: 1
                                 type: string
-                            required:
-                            - backendRef
-                            - jwksPath
+                              uri:
+                                description: |-
+                                  URI to IdP jwks endpoint.
+                                  Cannot be specified together with backendRef.
+                                maxLength: 2000
+                                minLength: 1
+                                type: string
                             type: object
+                            x-kubernetes-validations:
+                            - message: jwksPath must be set if backendRef is specified
+                              rule: 'has(self.backendRef) ? has(self.jwksPath) : true'
+                            - message: exactly one of the fields in [backendRef uri]
+                                must be set
+                              rule: '[has(self.backendRef),has(self.uri)].filter(x,x==true).size()
+                                == 1'
                           mode:
                             description: validation mode for JWT authentication.
                             enum:

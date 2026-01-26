@@ -136,6 +136,11 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 				RootCAs:    caFromConfigMap(t, mockCtx),
 			},
 		},
+		{
+			name:        "uri is set instead of a backendRef",
+			ctx:         setup(t, []string{getTestFile("gw-with-uri.yaml")}),
+			expectedUrl: "https://example.com:8443/org-one/keys/.well-known/jwks.json",
+		},
 	}
 
 	for _, tt := range tests {

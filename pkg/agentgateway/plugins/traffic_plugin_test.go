@@ -3,6 +3,7 @@ package plugins_test
 import (
 	"crypto/tls"
 	"fmt"
+	"strings"
 	"testing"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -32,7 +33,14 @@ func (f *jwksUrlFactoryForTesting) BuildJwksUrlAndTlsConfig(krtctx krt.HandlerCo
 		fqdn = host
 	}
 
-	return fmt.Sprintf("http://%s/%s", fqdn, remoteProvider.JwksPath), nil, nil
+	var path string
+	if remoteProvider.JwksPath != nil {
+		path = strings.TrimPrefix(*remoteProvider.JwksPath, "/")
+	} else {
+		path = ""
+	}
+
+	return fmt.Sprintf("http://%s/%s", fqdn, path), nil, nil
 }
 
 func init() {

@@ -182,7 +182,7 @@ spec:
       keepalive:
         retries: 0
 ---
-_err: 'backendRef: Required'
+_err: 'exactly one of the fields in [backendRef uri] must be set'
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:

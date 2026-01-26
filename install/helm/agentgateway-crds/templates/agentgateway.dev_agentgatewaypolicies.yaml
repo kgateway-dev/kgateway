@@ -1247,15 +1247,28 @@ spec:
                                 - message: cacheDuration must be at least 5m.
                                   rule: duration(self) >= duration('5m')
                               jwksPath:
-                                description: Path to IdP jwks endpoint, relative to
-                                  the root, commonly ".well-known/jwks.json".
+                                description: |-
+                                  Path to IdP jwks endpoint, relative to the root, commonly ".well-known/jwks.json".
+                                  Must be specified with backendRef.
+                                  Will be ignored if uri is set.
                                 maxLength: 2000
                                 minLength: 1
                                 type: string
-                            required:
-                            - backendRef
-                            - jwksPath
+                              uri:
+                                description: |-
+                                  URI to IdP jwks endpoint.
+                                  Cannot be specified together with backendRef.
+                                maxLength: 2000
+                                minLength: 1
+                                type: string
                             type: object
+                            x-kubernetes-validations:
+                            - message: jwksPath must be set if backendRef is specified
+                              rule: 'has(self.backendRef) ? has(self.jwksPath) : true'
+                            - message: exactly one of the fields in [backendRef uri]
+                                must be set
+                              rule: '[has(self.backendRef),has(self.uri)].filter(x,x==true).size()
+                                == 1'
                           mode:
                             description: validation mode for JWT authentication.
                             enum:
@@ -1896,9 +1909,15 @@ spec:
                           - name
                           type: object
                         type: array
-                    required:
-                    - backendRef
+                      uri:
+                        description: uri of the OTLP server.
+                        type: string
                     type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of the fields in [backendRef uri] must
+                        be set
+                      rule: '[has(self.backendRef),has(self.uri)].filter(x,x==true).size()
+                        == 1'
                 type: object
               targetRefs:
                 description: targetRefs specifies the target resources by reference
@@ -2735,10 +2754,16 @@ spec:
                             maxProperties: 64
                             type: object
                         type: object
-                    required:
-                    - backendRef
+                      uri:
+                        description: uri specifies the URI to use for the External
+                          Authorization server.
+                        type: string
                     type: object
                     x-kubernetes-validations:
+                    - message: exactly one of the fields in [backendRef uri] must
+                        be set
+                      rule: '[has(self.backendRef),has(self.uri)].filter(x,x==true).size()
+                        == 1'
                     - message: exactly one of the fields in [grpc http] must be set
                       rule: '[has(self.grpc),has(self.http)].filter(x,x==true).size()
                         == 1'
@@ -2818,9 +2843,16 @@ spec:
                         - message: Must have port for Service reference
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
-                    required:
-                    - backendRef
+                      uri:
+                        description: uri specifies the URI to use for the External
+                          Processor server.
+                        type: string
                     type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of the fields in [backendRef uri] must
+                        be set
+                      rule: '[has(self.backendRef),has(self.uri)].filter(x,x==true).size()
+                        == 1'
                   headerModifiers:
                     description: headerModifiers defines the policy to modify request
                       and response headers.
@@ -3238,15 +3270,30 @@ spec:
                                       - message: cacheDuration must be at least 5m.
                                         rule: duration(self) >= duration('5m')
                                     jwksPath:
-                                      description: Path to IdP jwks endpoint, relative
-                                        to the root, commonly ".well-known/jwks.json".
+                                      description: |-
+                                        Path to IdP jwks endpoint, relative to the root, commonly ".well-known/jwks.json".
+                                        Must be specified with backendRef.
+                                        Will be ignored if uri is set.
                                       maxLength: 2000
                                       minLength: 1
                                       type: string
-                                  required:
-                                  - backendRef
-                                  - jwksPath
+                                    uri:
+                                      description: |-
+                                        URI to IdP jwks endpoint.
+                                        Cannot be specified together with backendRef.
+                                      maxLength: 2000
+                                      minLength: 1
+                                      type: string
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: jwksPath must be set if backendRef is
+                                      specified
+                                    rule: 'has(self.backendRef) ? has(self.jwksPath)
+                                      : true'
+                                  - message: exactly one of the fields in [backendRef
+                                      uri] must be set
+                                    rule: '[has(self.backendRef),has(self.uri)].filter(x,x==true).size()
+                                      == 1'
                               type: object
                               x-kubernetes-validations:
                               - message: exactly one of the fields in [remote inline]
@@ -3416,11 +3463,18 @@ spec:
                             maxLength: 256
                             minLength: 1
                             type: string
+                          uri:
+                            description: uri of the Rate Limit server.
+                            type: string
                         required:
-                        - backendRef
                         - descriptors
                         - domain
                         type: object
+                        x-kubernetes-validations:
+                        - message: exactly one of the fields in [backendRef uri] must
+                            be set
+                          rule: '[has(self.backendRef),has(self.uri)].filter(x,x==true).size()
+                            == 1'
                       local:
                         description: Local defines a local rate limiting policy.
                         items:

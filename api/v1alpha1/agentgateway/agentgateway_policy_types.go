@@ -581,12 +581,16 @@ type JWKS struct {
 	Inline *string `json:"inline,omitempty"`
 }
 
+// +kubebuilder:validation:ExactlyOneOf=backendRef;uri
+// +kubebuilder:validation:XValidation:rule="has(self.backendRef) ? has(self.jwksPath) : true",message="jwksPath must be set if backendRef is specified"
 type RemoteJWKS struct {
 	// Path to IdP jwks endpoint, relative to the root, commonly ".well-known/jwks.json".
-	// +required
+	// Must be specified with backendRef.
+	// Will be ignored if uri is set.
+	// +optional
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2000
-	JwksPath string `json:"jwksPath"`
+	JwksPath *string `json:"jwksPath,omitempty"`
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('5m')",message="cacheDuration must be at least 5m."
@@ -595,8 +599,14 @@ type RemoteJWKS struct {
 	// backendRef references the remote JWKS server to reach.
 	// Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
 	// can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
-	// +required
-	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
+	// +optional
+	BackendRef *gwv1.BackendObjectReference `json:"backendRef,omitempty"`
+	// URI to IdP jwks endpoint.
+	// Cannot be specified together with backendRef.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=2000
+	URI *string `json:"uri,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Strict;Optional
@@ -1013,20 +1023,29 @@ type HeaderTransformation struct {
 	Value shared.CELExpression `json:"value"`
 }
 
+// +kubebuilder:validation:ExactlyOneOf=backendRef;uri
 type ExtProc struct {
 	// backendRef references the External Processor server to reach.
 	// Supported types: Service and Backend.
-	// +required
-	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
+	// +optional
+	BackendRef *gwv1.BackendObjectReference `json:"backendRef,omitempty"`
+	// uri specifies the URI to use for the External Processor server.
+	// +optional
+	URI *string `json:"uri,omitempty"`
 }
 
+// +kubebuilder:validation:ExactlyOneOf=backendRef;uri
 // +kubebuilder:validation:ExactlyOneOf=grpc;http
 type ExtAuth struct {
 	// backendRef references the External Authorization server to reach.
 	//
 	// Supported types: Service and Backend.
-	// +required
-	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
+	// +optional
+	BackendRef *gwv1.BackendObjectReference `json:"backendRef,omitempty"`
+
+	// uri specifies the URI to use for the External Authorization server.
+	// +optional
+	URI *string `json:"uri,omitempty"`
 
 	// grpc specifies that the gRPC External Authorization
 	// [protocol](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/auth/v3/external_auth.proto) should be used.
@@ -1126,11 +1145,16 @@ type RateLimits struct {
 	Global *GlobalRateLimit `json:"global,omitempty"`
 }
 
+// +kubebuilder:validation:ExactlyOneOf=backendRef;uri
 type GlobalRateLimit struct {
 	// backendRef references the Rate Limit server to reach.
 	// Supported types: Service and Backend.
-	// +required
-	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
+	// +optional
+	BackendRef *gwv1.BackendObjectReference `json:"backendRef"`
+
+	// uri of the Rate Limit server.
+	// +optional
+	URI *string `json:"uri,omitempty"`
 
 	// domain specifies the domain under which this limit should apply.
 	// This is an arbitrary string that enables a rate limit server to distinguish between different applications.
@@ -1302,11 +1326,15 @@ const (
 	TracingProtocolGrpc TracingProtocol = "GRPC"
 )
 
+// +kubebuilder:validation:ExactlyOneOf=backendRef;uri
 type Tracing struct {
 	// backendRef references the OTLP server to reach.
 	// Supported types: Service and AgentgatewayBackend.
-	// +required
-	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
+	// +optional
+	BackendRef *gwv1.BackendObjectReference `json:"backendRef"`
+	// uri of the OTLP server.
+	// +optional
+	URI *string `json:"uri,omitempty"`
 	// protocol specifies the OTLP protocol variant to use.
 	// +kubebuilder:default=HTTP
 	// +kubebuilder:validation:Enum=HTTP;GRPC

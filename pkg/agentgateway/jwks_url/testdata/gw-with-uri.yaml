@@ -1,0 +1,19 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: gw-policy
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: super-gateway
+  traffic:
+    jwtAuthentication:
+      mode: Strict
+      providers:
+      - issuer: https://kgateway.dev
+        jwks:
+          remote:
+            uri: https://example.com:8443/org-one/keys/.well-known/jwks.json
+            cacheDuration: 5m

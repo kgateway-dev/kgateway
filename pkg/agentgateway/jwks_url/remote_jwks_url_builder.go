@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -73,12 +74,27 @@ func NewJwksUrlFactory(cfgmaps krt.Collection[*corev1.ConfigMap],
 }
 
 func (f *defaultJwksUrlFactory) BuildJwksUrlAndTlsConfig(krtctx krt.HandlerContext, policyName, defaultNS string, remoteProvider *agentgateway.RemoteJWKS) (string, *tls.Config, error) {
+	// If the URI is set, return it
+	if len(ptr.OrEmpty(remoteProvider.URI)) > 0 {
+		// Validate the URI
+		_, err := url.Parse(*remoteProvider.URI)
+		if err != nil {
+			return "", nil, fmt.Errorf("invalid URI: %w", err)
+		}
+		return *remoteProvider.URI, nil, nil
+	}
+
 	ref := remoteProvider.BackendRef
 
 	refName := string(ref.Name)
 	refNamespace := string(ptr.OrDefault(ref.Namespace, gwv1.Namespace(defaultNS)))
 
-	path := strings.TrimPrefix(remoteProvider.JwksPath, "/")
+	var path string
+	if remoteProvider.JwksPath != nil {
+		path = strings.TrimPrefix(*remoteProvider.JwksPath, "/")
+	} else {
+		path = ""
+	}
 
 	switch string(*ref.Kind) {
 	case wellknown.AgentgatewayBackendGVK.Kind:

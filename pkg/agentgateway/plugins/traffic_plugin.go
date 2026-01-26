@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -940,7 +941,7 @@ func processExtAuthPolicy(
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
 	var backendErr error
-	be, err := buildBackendRef(ctx, extAuth.BackendRef, policy.Namespace)
+	be, err := buildBackendRefWithDerivedBackend(ctx, extAuth.URI, extAuth.BackendRef, policy.Namespace)
 	if err != nil {
 		backendErr = fmt.Errorf("failed to build extAuth: %v", err)
 	}
@@ -1012,7 +1013,7 @@ func processExtProcPolicy(
 	policy types.NamespacedName,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
-	be, err := buildBackendRef(ctx, extProc.BackendRef, policy.Namespace)
+	be, err := buildBackendRefWithDerivedBackend(ctx, extProc.URI, extProc.BackendRef, policy.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build extProc: %v", err)
 	}
@@ -1208,7 +1209,7 @@ func processGlobalRateLimitPolicy(
 	policy types.NamespacedName,
 	policyTarget *api.PolicyTarget,
 ) (*AgwPolicy, error) {
-	be, err := buildBackendRef(ctx, grl.BackendRef, policy.Namespace)
+	be, err := buildBackendRefWithDerivedBackend(ctx, grl.URI, grl.BackendRef, policy.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build global rate limit: %v", err)
 	}
@@ -1260,6 +1261,18 @@ func processRateLimitDescriptor(descriptor agentgateway.RateLimitDescriptor) *ap
 		Entries: entries,
 		Type:    rlType,
 	}
+}
+
+func buildBackendRefWithDerivedBackend(ctx PolicyCtx, uri *string, backendObjRef *gwv1.BackendObjectReference, defaultNS string) (*api.BackendReference, error) {
+	if len(ptr.OrEmpty(uri)) > 0 && backendObjRef != nil {
+		return nil, fmt.Errorf("uri and backendRef cannot be specified together")
+	}
+	if len(ptr.OrEmpty(uri)) > 0 {
+		// Create a BackendRef with inlined static service from the URI
+		return buildStaticBackendRefFromURI(*uri, defaultNS)
+	}
+
+	return buildBackendRef(ctx, *backendObjRef, defaultNS)
 }
 
 func buildBackendRef(ctx PolicyCtx, ref gwv1.BackendObjectReference, defaultNS string) (*api.BackendReference, error) {
@@ -1333,6 +1346,49 @@ func buildBackendRef(ctx PolicyCtx, ref gwv1.BackendObjectReference, defaultNS s
 	default:
 		return nil, fmt.Errorf("unsupported backend %v", gk)
 	}
+}
+
+// buildStaticBackendRefFromURI parses a URI and creates a BackendReference to a static service
+func buildStaticBackendRefFromURI(uriStr string, ns string) (*api.BackendReference, error) {
+	parsedURL, err := url.Parse(uriStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid URI: %w", err)
+	}
+
+	if parsedURL.Hostname() == "" {
+		return nil, fmt.Errorf("URI must contain a hostname")
+	}
+
+	var port uint32
+	if parsedURL.Port() != "" {
+		portNum, err := strconv.ParseUint(parsedURL.Port(), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid port in URI: %w", err)
+		}
+		port = uint32(portNum)
+	} else {
+		switch parsedURL.Scheme {
+		case "https":
+			port = 443
+		case "http":
+			port = 80
+		default:
+			return nil, fmt.Errorf("couldn't determine port for scheme: %s", parsedURL.Scheme)
+		}
+	}
+
+	// Create a backend reference to the derived static service.
+	backendRef := &api.BackendReference{
+		Kind: &api.BackendReference_Service_{
+			Service: &api.BackendReference_Service{
+				Hostname:  parsedURL.Hostname(),
+				Namespace: ns,
+			},
+		},
+		Port: uint32(port),
+	}
+
+	return backendRef, nil
 }
 
 func toJSONValue(j apiextensionsv1.JSON) (string, error) {
