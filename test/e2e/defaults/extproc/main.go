@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var (
@@ -83,13 +84,17 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 		resp := &service_ext_proc_v3.ProcessingResponse{}
 		switch v := req.Request.(type) {
 		case *service_ext_proc_v3.ProcessingRequest_RequestHeaders:
-			slog.Info("got RequestHeaders")
+			slog.Info("got RequestHeaders",
+				"attributes", len(req.GetAttributes()),
+				"hasMetadata", req.GetMetadataContext() != nil)
 
 			h := req.Request.(*service_ext_proc_v3.ProcessingRequest_RequestHeaders)
 			headersResp, err := getHeadersResponseFromInstructions(h.RequestHeaders)
 			if err != nil {
 				return err
 			}
+			echoMetadataCtx(headersResp, req.GetMetadataContext())
+			echoAttributes(headersResp, req.GetAttributes(), "x-req-attr-")
 			resp = &service_ext_proc_v3.ProcessingResponse{
 				Response: &service_ext_proc_v3.ProcessingResponse_RequestHeaders{
 					RequestHeaders: headersResp,
@@ -122,13 +127,17 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 			resp.Response = &service_ext_proc_v3.ProcessingResponse_RequestTrailers{}
 
 		case *service_ext_proc_v3.ProcessingRequest_ResponseHeaders:
-			slog.Info("got ResponseHeaders")
+			slog.Info("got ResponseHeaders",
+				"attributes", len(req.GetAttributes()),
+				"hasMetadata", req.GetMetadataContext() != nil)
 
 			h := req.Request.(*service_ext_proc_v3.ProcessingRequest_ResponseHeaders)
 			headersResp, err := getHeadersResponseFromInstructions(h.ResponseHeaders)
 			if err != nil {
 				return err
 			}
+			echoMetadataCtx(headersResp, req.GetMetadataContext())
+			echoAttributes(headersResp, req.GetAttributes(), "x-resp-attr-")
 			resp = &service_ext_proc_v3.ProcessingResponse{
 				Response: &service_ext_proc_v3.ProcessingResponse_ResponseHeaders{
 					ResponseHeaders: headersResp,
@@ -219,6 +228,46 @@ func getInstructionsFromHeaders(in *service_ext_proc_v3.HttpHeaders) string {
 		}
 	}
 	return ""
+}
+
+func echoMetadataCtx(resp *service_ext_proc_v3.HeadersResponse, md *core_v3.Metadata) {
+	if md == nil {
+		return
+	}
+	for ns, v := range md.FilterMetadata {
+		value, _ := json.Marshal(v.AsMap())
+
+		if resp.Response == nil {
+			resp.Response = &service_ext_proc_v3.CommonResponse{}
+		}
+		if resp.Response.HeaderMutation == nil {
+			resp.Response.HeaderMutation = &service_ext_proc_v3.HeaderMutation{}
+		}
+		resp.Response.HeaderMutation.SetHeaders = append(resp.Response.HeaderMutation.SetHeaders, &core_v3.HeaderValueOption{
+			Header: &core_v3.HeaderValue{Key: "x-meta-" + ns, RawValue: value},
+		})
+	}
+}
+
+func echoAttributes(resp *service_ext_proc_v3.HeadersResponse, attrs map[string]*structpb.Struct, prefix string) {
+	for _, v := range attrs {
+		if v == nil {
+			continue
+		}
+		for fieldName, fieldValue := range v.AsMap() {
+			value, _ := json.Marshal(fieldValue)
+
+			if resp.Response == nil {
+				resp.Response = &service_ext_proc_v3.CommonResponse{}
+			}
+			if resp.Response.HeaderMutation == nil {
+				resp.Response.HeaderMutation = &service_ext_proc_v3.HeaderMutation{}
+			}
+			resp.Response.HeaderMutation.SetHeaders = append(resp.Response.HeaderMutation.SetHeaders, &core_v3.HeaderValueOption{
+				Header: &core_v3.HeaderValue{Key: prefix + fieldName, RawValue: value},
+			})
+		}
+	}
 }
 
 func getHeadersResponseFromInstructions(in *service_ext_proc_v3.HttpHeaders) (*service_ext_proc_v3.HeadersResponse, error) {

@@ -128,6 +128,52 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 				),
 			},
 		},
+		{
+			name: "request attributes are echoed as headers",
+			opts: []curl.Option{
+				curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
+				curl.VerboseOutput(),
+				curl.WithHostHeader("www.example.com"),
+				curl.WithPath("/myapp"),
+				curl.WithPort(8080),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body: gomega.WithTransform(transforms.WithJsonBody(),
+					gomega.And(
+						gomega.HaveKeyWithValue("headers",
+							gomega.HaveKeyWithValue("X-Req-Attr-Envoy.filters.http.ext_proc",
+								gomega.ContainElement(
+									gomega.And(
+										gomega.ContainSubstring("request_path"),
+										gomega.ContainSubstring("/myapp"),
+										gomega.ContainSubstring("source_address"),
+									)))),
+					),
+				),
+			},
+		},
+		{
+			name: "metadata context is echoed as headers",
+			opts: []curl.Option{
+				curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
+				curl.VerboseOutput(),
+				curl.WithHostHeader("www.example.com"),
+				curl.WithPath("/"),
+				curl.WithPort(8080),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body: gomega.WithTransform(transforms.WithJsonBody(),
+					gomega.And(
+						gomega.HaveKeyWithValue("headers",
+							gomega.HaveKeyWithValue("X-Meta-Example_ns",
+								gomega.ContainElement(
+									gomega.ContainSubstring("source_ip")))),
+					),
+				),
+			},
+		},
 	}
 	for _, tc := range testCases {
 		s.TestInstallation.Assertions.AssertEventualCurlResponse(
