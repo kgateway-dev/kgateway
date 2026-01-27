@@ -25,6 +25,12 @@ Here are the differences between [minijinja](https://github.com/mitsuhiko/miniji
 | Body buffering | The C++ Transformation filter buffers the data inside it's own structure and does it's own buffer limit detection using Envoy's decoder buffer limit setting | Rely on Envoy to do the buffering before we process the entire body | |
 | Adding Multiple Headers with the same name |   |   | The kgateway  transformation API defines the list of header as a map. So, you cannot add the same header more than once even though the backend supports it. This behavior is the same in kgateway for both the classic and rust transformation as this is an API limit but just want to point this out. |
 
+## Strict Mode Validation
+
+Strict Mode Validation is not supported yet with Rustformation. This is due to build complexity to include the dynamic module in the control plane image. This will be addressed in future updates.
+
+If Strict Mode Validation is needed, see the [Classic Transformation Deprecation](#classic-transformation-deprecation) section below to switch back to Classic Transformation on x86 architecture.
+
 ## Initial arm64 support
 
 Starting from v2.2.0, we supports building on arm64 architecture and uses Envoy arm64 binary directly from upstream Envoy container.
