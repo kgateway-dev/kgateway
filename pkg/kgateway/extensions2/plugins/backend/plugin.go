@@ -291,15 +291,20 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 		p.needsGcpAuthn[pCtx.FilterChainName] = true
 
 		// Set host rewrite for GCP backends (only if not already set by another policy)
-		if out.GetRoute() != nil {
-			routeAction := out.GetRoute()
-			// Set auto host rewrite if not already configured
-			if routeAction.GetHostRewriteSpecifier() == nil {
-				routeAction.HostRewriteSpecifier = &envoyroutev3.RouteAction_AutoHostRewrite{
-					AutoHostRewrite: &wrapperspb.BoolValue{Value: true},
-				}
+		routeAction := out.GetRoute()
+		if routeAction == nil {
+			routeAction = &envoyroutev3.RouteAction{}
+			out.Action = &envoyroutev3.Route_Route{
+				Route: routeAction,
 			}
 		}
+		// Set auto host rewrite if not already configured
+		if routeAction.GetHostRewriteSpecifier() == nil {
+			routeAction.HostRewriteSpecifier = &envoyroutev3.RouteAction_AutoHostRewrite{
+				AutoHostRewrite: &wrapperspb.BoolValue{Value: true},
+			}
+		}
+
 	}
 
 	return nil
@@ -318,7 +323,6 @@ func (p *backendPlugin) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterChainCo
 		result = append(result, f)
 	}
 	if p.needsGcpAuthn[fc.FilterChainName] {
-		// GCP authn filter should be before RouteStage (similar to Gloo v1)
 		pluginStage := filters.BeforeStage(filters.RouteStage)
 		f := filters.MustNewStagedFilter(gcpAuthnFilterName, getGcpAuthnFilterConfig(), pluginStage)
 		result = append(result, f)
