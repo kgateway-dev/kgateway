@@ -18,7 +18,7 @@ import (
 
 func TestValidatePool(t *testing.T) {
 	tests := []struct {
-	name        string
+		name        string
 		modifyPool  func(p *inf.InferencePool)
 		svc         *corev1.Service
 		wantErrMsgs []string
