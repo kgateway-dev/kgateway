@@ -29,6 +29,10 @@ type ExtProcProvider struct {
 	AllowProcessingModeOverride bool `json:"allowProcessingModeOverride,omitempty"`
 
 	// AllowedProcessingModeOverrides specifies which processing modes are allowed to override the default.
+	// Empty or unspecified means all overrides are allowed (if AllowProcessingModeOverride is true).
+	// This is an allowlist; any processing mode in this list will allow the override to the specified mode.
+	// If AllowProcessingModeOverride is false, this field is ignored.
+	// See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#envoy-v3-api-field-extensions-filters-http-ext-proc-v3-externalprocessor-allowed-override-modes
 	// +optional
 	AllowedProcessingModeOverrides []*ProcessingMode `json:"allowedProcessingModeOverrides,omitempty"`
 
