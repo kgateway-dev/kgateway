@@ -16,8 +16,8 @@ concurrency:
 
 jobs:
   gw_api_conformance_tests:
-    name: K8s Gw Api Conformance Tests (${{ matrix.test-type }}, ${{ matrix.gateway-api-channel }})
-    runs-on: ubuntu-22.04
+    name: K8s Gw Api Conformance Tests (${{ matrix.test-type }}, ${{ matrix.gateway-api-channel }}, ${{ matrix.arch }})
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
     strategy:
@@ -25,6 +25,7 @@ jobs:
       matrix:
         gateway-api-channel: [ 'experimental', 'standard' ]
         test-type: [ gateway-api, agentgateway ]
+        arch: [ 'amd64', 'arm64' ]
     steps:
     - uses: actions/checkout@v4
     - name: Dotenv Action
