@@ -34,6 +34,8 @@ spec:
           value: "pseudo-not-rejected!"
         - name: "x-space-test"
           value: " foobar "
+        - name: x-client
+          value: '{% if substring(request_header("User-Agent"), 0, 4) == "curl" %}text{% endif %}'
       remove:
         - "x-remove-me"
       add:
@@ -43,9 +45,9 @@ spec:
       set:
 # in response header context, header() refers to response headers and request_header() refer to request headers
         - name: x-foo-response
-          value: "{%- if request_header(\"x-add-bar\") != \"\" -%}supersuper{{request_header(\"x-add-bar\")}}{% else %}notsuper{% endif %}"
+          value: "{%- if request_header(\"x-aDd-bar\") != \"\" -%}supersuper{{request_header(\"x-add-baR\")}}{% else %}notsuper{% endif %}"
         - name: x-foo-response-status
-          value: "{{header(\":status\")}}"
+          value: "{{header(\":StaTus\")}}"
         - name: "x-space-test"
           value: " foobar "
       remove:
