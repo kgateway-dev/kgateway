@@ -76,7 +76,7 @@ func (s *testingSuite) SetupSuite() {
 	}
 
 	// make sure gateway gets accepted
-	s.testInstallation.Assertions.EventuallyGatewayCondition(
+	s.testInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.ctx,
 		gwName,
 		testNamespace,
@@ -99,7 +99,7 @@ func (s *testingSuite) SetupSuite() {
 		listOpts := metav1.ListOptions{
 			LabelSelector: app.lbl + "=" + app.val,
 		}
-		s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testNamespace, listOpts, readyTimeout)
+		s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testNamespace, listOpts, readyTimeout)
 	}
 
 	for _, app := range wantApps {
@@ -165,7 +165,7 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 	s.Assert().NoError(err, "patching controller deployment")
 
 	// wait for the changes to be reflected in pod
-	s.testInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodContainerContainsEnvVar(
 		s.ctx,
 		controllerNamespace,
 		metav1.ListOptions{
@@ -182,7 +182,7 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 		s.Require().NoError(err)
 
 		// make sure the env var is removed
-		s.testInstallation.Assertions.EventuallyPodContainerDoesNotContainEnvVar(
+		s.testInstallation.AssertionsT(s.T()).EventuallyPodContainerDoesNotContainEnvVar(
 			s.ctx,
 			controllerNamespace,
 			metav1.ListOptions{
@@ -194,7 +194,7 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 	})
 
 	// wait for pods to be running again, since controller deployment was patched
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, controllerNamespace, metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, controllerNamespace, metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
 	})
 }

@@ -54,7 +54,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestRoutePolicy() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-example-insecure",
 		namespace,
@@ -64,7 +64,7 @@ func (s *testingSuite) TestRoutePolicy() {
 	// verify insecure route works
 	s.assertResponseWithoutAuth("insecureroute.com", http.StatusOK)
 
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure",
 		namespace,
@@ -81,7 +81,7 @@ func (s *testingSuite) TestRoutePolicy() {
 }
 
 func (s *testingSuite) TestGatewayPolicy() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
 		namespace,

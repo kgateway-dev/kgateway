@@ -38,14 +38,14 @@ func TestListenerSet(t *testing.T) {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {
-			testInstallation.PreFailHandler(ctx)
+			testInstallation.PreFailHandler(ctx, t)
 		}
 
-		testInstallation.UninstallKgateway(ctx)
+		testInstallation.UninstallKgateway(ctx, t)
 	})
 
 	// Install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx)
+	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	ListenerSetSuiteRunner().Run(ctx, t, testInstallation)
 }

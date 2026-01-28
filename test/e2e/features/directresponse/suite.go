@@ -52,18 +52,18 @@ func (s *testingSuite) SetupSuite() {
 	s.NoError(err, "can apply gateway manifest")
 
 	// Check that istio injection is successful and httpbin is running
-	s.ti.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
+	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, httpbinDeployment)
 	// httpbin can take a while to start up with Istio sidecar
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.GetNamespace(), metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, httpbinDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=httpbin",
 	})
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=curl",
 	})
 
 	// Wait for the gateway and proxy to be ready
-	s.ti.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=gw",
 	})
 
@@ -86,7 +86,7 @@ func (s *testingSuite) TearDownSuite() {
 	s.NoError(err, "can delete setup manifest")
 	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
 	s.NoError(err, "can delete curl pod manifest")
-	s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, httpbinDeployment)
+	s.ti.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, httpbinDeployment)
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
@@ -111,15 +111,15 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 
 	for _, manifest := range manifests {
 		output, err := s.ti.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
-		s.ti.Assertions.ExpectObjectDeleted(manifest, err, output)
+		s.ti.AssertionsT(s.T()).ExpectObjectDeleted(manifest, err, output)
 	}
 
-	s.ti.Assertions.EventuallyObjectTypesNotExist(s.ctx, &gwv1.HTTPRouteList{}, &kgateway.DirectResponseList{})
+	s.ti.AssertionsT(s.T()).EventuallyObjectTypesNotExist(s.ctx, &gwv1.HTTPRouteList{}, &kgateway.DirectResponseList{})
 }
 
 func (s *testingSuite) TestBasicDirectResponse() {
 	// verify that a direct response route works as expected
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -137,7 +137,7 @@ func (s *testingSuite) TestBasicDirectResponse() {
 
 func (s *testingSuite) TestDelegation() {
 	// verify the regular child route works as expected.
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -153,7 +153,7 @@ func (s *testingSuite) TestDelegation() {
 	)
 
 	// verify the parent's DR works as expected.
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -169,7 +169,7 @@ func (s *testingSuite) TestDelegation() {
 	)
 
 	// verify that the child's DR works as expected.
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -191,7 +191,7 @@ func (s *testingSuite) TestDelegation() {
 // func (s *testingSuite) TestInvalidDelegationConflictingFilters() {
 // 	// the parent httproute both 1) specifies a direct response and 2) delegates to another httproute which routes to a service.
 // 	// since these route actions are conflicting, we should get a 500 here
-// 	s.ti.Assertions.AssertEventualCurlResponse(
+// 	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 // 		s.ctx,
 // 		defaults.CurlPodExecOpt,
 // 		[]curl.Option{
@@ -206,7 +206,7 @@ func (s *testingSuite) TestDelegation() {
 // 	)
 
 // 	// the parent should show an error in its status
-// 	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, gwRouteMeta.Name, gwRouteMeta.Namespace,
+// 	s.ti.AssertionsT(s.T()).EventuallyHTTPRouteStatusContainsReason(s.ctx, gwRouteMeta.Name, gwRouteMeta.Namespace,
 // 		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
 // }
 
@@ -217,7 +217,7 @@ func (s *testingSuite) TestDelegation() {
 // 	// the route specifies both a request redirect and a direct response, which is invalid.
 // 	// verify the route was replaced with a 500 direct response due to the
 // 	// invalid configuration.
-// 	s.ti.Assertions.AssertEventualCurlResponse(
+// 	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 // 		s.ctx,
 // 		defaults.CurlPodExecOpt,
 // 		[]curl.Option{
@@ -230,6 +230,6 @@ func (s *testingSuite) TestDelegation() {
 // 		},
 // 		time.Minute,
 // 	)
-// 	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, httpbinMeta.Name, httpbinMeta.Namespace,
+// 	s.ti.AssertionsT(s.T()).EventuallyHTTPRouteStatusContainsReason(s.ctx, httpbinMeta.Name, httpbinMeta.Namespace,
 // 		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
 // }

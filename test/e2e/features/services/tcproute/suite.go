@@ -191,7 +191,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 					s.deleteManifests(crossNsNoRefGrantBackendNsManifest)
 				}
 
-				s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: tc.gtwNs}})
+				s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: tc.gtwNs}})
 			})
 
 			// Setup environment for ReferenceGrant test cases
@@ -230,17 +230,17 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 
 			// Assert TCPRoute conditions
 			for _, tcpRouteName := range tc.tcpRouteNames {
-				s.TestInstallation.Assertions.EventuallyTCPRouteCondition(s.Ctx, tcpRouteName, tc.gtwNs, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
-				s.TestInstallation.Assertions.EventuallyTCPRouteCondition(s.Ctx, tcpRouteName, tc.gtwNs, gwv1.RouteConditionResolvedRefs, expected, timeout)
+				s.TestInstallation.AssertionsT(s.T()).EventuallyTCPRouteCondition(s.Ctx, tcpRouteName, tc.gtwNs, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+				s.TestInstallation.AssertionsT(s.T()).EventuallyTCPRouteCondition(s.Ctx, tcpRouteName, tc.gtwNs, gwv1.RouteConditionResolvedRefs, expected, timeout)
 			}
 
 			// Assert gateway programmed condition
-			s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, tc.gtwName, tc.gtwNs, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
+			s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, tc.gtwName, tc.gtwNs, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
 
 			// Assert listener attached routes
 			for i, listenerName := range tc.listenerNames {
 				expectedRouteCount := tc.expectedRouteCounts[i]
-				s.TestInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(s.Ctx, tc.gtwName, tc.gtwNs, listenerName, expectedRouteCount, timeout)
+				s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayListenerAttachedRoutes(s.Ctx, tc.gtwName, tc.gtwNs, listenerName, expectedRouteCount, timeout)
 			}
 
 			// Assert expected responses
@@ -256,14 +256,14 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 				}
 
 				if tc.expectedErrorCode != 0 {
-					s.TestInstallation.Assertions.AssertEventualCurlError(
+					s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 						s.Ctx,
 						s.execOpts(tc.gtwNs),
 						curlOpts,
 						tc.expectedErrorCode,
 						timeout)
 				} else {
-					s.TestInstallation.Assertions.AssertEventualCurlResponse(
+					s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 						s.Ctx,
 						s.execOpts(tc.gtwNs),
 						curlOpts,
@@ -283,10 +283,10 @@ func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManif
 	}
 
 	s.applyManifests(gtwNs, gtwManifest)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, gtwName, gtwNs, gwv1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, gtwName, gtwNs, gwv1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
 
 	s.applyManifests(gtwNs, svcManifest)
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, proxySvc, proxyDeploy)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, proxySvc, proxyDeploy)
 }
 
 func (s *testingSuite) applyManifests(ns string, manifests ...string) {

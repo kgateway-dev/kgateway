@@ -79,16 +79,16 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 		vllmDeployName:          testNS,
 		vllmDeployName + "-epp": testNS,
 		"curl":                  "curl"} {
-		s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, v, metav1.ListOptions{
+		s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, v, metav1.ListOptions{
 			LabelSelector: "app=" + k,
 		}, podRunTimeout)
 	}
 
 	// Assert gateway service and deployment are created
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gtwService, gtwDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, gtwService, gtwDeployment)
 
 	// Assert gateway programmed condition
-	s.testInstallation.Assertions.EventuallyGatewayCondition(
+	s.testInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.ctx,
 		gtwObjectMeta.Name,
 		gtwObjectMeta.Namespace,
@@ -99,7 +99,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 
 	conditions := []gwv1.RouteConditionType{gwv1.RouteConditionAccepted, gwv1.RouteConditionResolvedRefs}
 	for _, c := range conditions {
-		s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.testInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 			s.ctx,
 			testRouteName,
 			testNS,
@@ -108,7 +108,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 		)
 	}
 
-	s.testInstallation.Assertions.EventuallyInferencePoolCondition(
+	s.testInstallation.AssertionsT(s.T()).EventuallyInferencePoolCondition(
 		s.ctx,
 		vllmDeployName,
 		testNS,
@@ -116,7 +116,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 		metav1.ConditionTrue,
 	)
 
-	s.testInstallation.Assertions.EventuallyInferencePoolCondition(
+	s.testInstallation.AssertionsT(s.T()).EventuallyInferencePoolCondition(
 		s.ctx,
 		vllmDeployName,
 		testNS,
@@ -171,7 +171,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 			)
 
 			// Assert expected curl response
-			s.testInstallation.Assertions.AssertEventualCurlResponse(
+			s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 				s.ctx,
 				defaults.CurlPodExecOpt,
 				[]curl.Option{

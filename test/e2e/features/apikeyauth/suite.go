@@ -32,7 +32,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // TestAPIKeyAuthWithHTTPRouteLevelPolicy tests API key authentication with TrafficPolicy applied at HTTPRoute level
 func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 	// Verify HTTPRoute is accepted before running the test
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	statusReqCurlOpts := []curl.Option{
 		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -42,7 +42,7 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 	}
 	// missing API key, should fail
 	s.T().Log("The /status route has API key auth applied at HTTPRoute level, should fail when API key is missing")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusReqCurlOpts,
@@ -51,7 +51,7 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 	// has valid API key, should succeed
 	s.T().Log("The /status route has API key auth applied at HTTPRoute level, should succeed when valid API key is present")
 	statusWithAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithAPIKeyCurlOpts,
@@ -60,7 +60,7 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 	// has valid API key with Bearer prefix in Authorization header, should succeed
 	s.T().Log("The /status route has API key auth applied at HTTPRoute level, should succeed when valid API key is present with Bearer prefix in Authorization header")
 	statusWithBearerAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("Authorization", "Bearer k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithBearerAPIKeyCurlOpts,
@@ -75,7 +75,7 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 	}
 	// missing API key, should fail
 	s.T().Log("The /get route has API key auth applied at HTTPRoute level, should fail when API key is missing")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqCurlOpts,
@@ -84,7 +84,7 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 	// has valid API key, should succeed
 	s.T().Log("The /get route has API key auth applied at HTTPRoute level, should succeed when valid API key is present")
 	getWithAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithAPIKeyCurlOpts,
@@ -93,7 +93,7 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 	// has valid API key with Bearer prefix in Authorization header, should succeed
 	s.T().Log("The /get route has API key auth applied at HTTPRoute level, should succeed when valid API key is present with Bearer prefix in Authorization header")
 	getWithBearerAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithBearerAPIKeyCurlOpts,
@@ -102,7 +102,7 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 	// has valid API key with Bearer prefix using different key, should succeed
 	s.T().Log("The /get route has API key auth applied at HTTPRoute level, should succeed when valid API key (k-456) is present with Bearer prefix in Authorization header")
 	getWithBearerAPIKey2CurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer k-456"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithBearerAPIKey2CurlOpts,
@@ -111,7 +111,7 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 	// has invalid API key with Bearer prefix in Authorization header, should fail
 	s.T().Log("The /get route has API key auth applied at HTTPRoute level, should fail when invalid API key is present with Bearer prefix in Authorization header")
 	getWithInvalidBearerAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer invalid-key"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithInvalidBearerAPIKeyCurlOpts,
@@ -122,7 +122,7 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 // TestAPIKeyAuthWithRouteLevelPolicy tests API key authentication with TrafficPolicy applied at route level (sectionName)
 func (s *testingSuite) TestAPIKeyAuthWithRouteLevelPolicy() {
 	// Verify HTTPRoute is accepted before running the test
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	statusReqCurlOpts := []curl.Option{
 		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -132,7 +132,7 @@ func (s *testingSuite) TestAPIKeyAuthWithRouteLevelPolicy() {
 	}
 	// missing API key, no API key auth on route, should succeed
 	s.T().Log("The /status route has no API key auth policy")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusReqCurlOpts,
@@ -147,7 +147,7 @@ func (s *testingSuite) TestAPIKeyAuthWithRouteLevelPolicy() {
 	}
 	// missing API key, should fail
 	s.T().Log("The /get route has an API key auth policy applied at the route level, should fail when API key is missing")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqCurlOpts,
@@ -156,7 +156,7 @@ func (s *testingSuite) TestAPIKeyAuthWithRouteLevelPolicy() {
 	// has valid API key, should succeed
 	s.T().Log("The /get route has an API key auth policy applied at the route level, should succeed when valid API key is present")
 	getWithAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithAPIKeyCurlOpts,
@@ -165,7 +165,7 @@ func (s *testingSuite) TestAPIKeyAuthWithRouteLevelPolicy() {
 	// has invalid API key, should fail
 	s.T().Log("The /get route has an API key auth policy applied at the route level, should fail when invalid API key is present")
 	getWithInvalidAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "invalid-key"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithInvalidAPIKeyCurlOpts,
@@ -176,7 +176,7 @@ func (s *testingSuite) TestAPIKeyAuthWithRouteLevelPolicy() {
 // TestAPIKeyAuthWithQueryParameter tests API key authentication using query parameter as the key source
 func (s *testingSuite) TestAPIKeyAuthWithQueryParameter() {
 	// Verify HTTPRoute is accepted before running the test
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-query", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-query", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	statusReqCurlOpts := []curl.Option{
 		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -186,7 +186,7 @@ func (s *testingSuite) TestAPIKeyAuthWithQueryParameter() {
 	}
 	// missing API key, should fail
 	s.T().Log("The /status route has API key auth with query parameter, should fail when API key is missing")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusReqCurlOpts,
@@ -195,7 +195,7 @@ func (s *testingSuite) TestAPIKeyAuthWithQueryParameter() {
 	// has valid API key in query parameter, should succeed
 	s.T().Log("The /status route has API key auth with query parameter, should succeed when valid API key is present in query")
 	statusWithAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithQueryParameters(map[string]string{"api-key": "k-123"}))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithAPIKeyCurlOpts,
@@ -210,7 +210,7 @@ func (s *testingSuite) TestAPIKeyAuthWithQueryParameter() {
 	}
 	// missing API key, should fail
 	s.T().Log("The /get route has API key auth with query parameter, should fail when API key is missing")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqCurlOpts,
@@ -219,7 +219,7 @@ func (s *testingSuite) TestAPIKeyAuthWithQueryParameter() {
 	// has valid API key in query parameter, should succeed
 	s.T().Log("The /get route has API key auth with query parameter, should succeed when valid API key is present in query")
 	getWithAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithQueryParameters(map[string]string{"api-key": "k-123"}))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithAPIKeyCurlOpts,
@@ -228,7 +228,7 @@ func (s *testingSuite) TestAPIKeyAuthWithQueryParameter() {
 	// has invalid API key in query parameter, should fail
 	s.T().Log("The /get route has API key auth with query parameter, should fail when invalid API key is present in query")
 	getWithInvalidAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithQueryParameters(map[string]string{"api-key": "invalid-key"}))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithInvalidAPIKeyCurlOpts,
@@ -239,7 +239,7 @@ func (s *testingSuite) TestAPIKeyAuthWithQueryParameter() {
 // TestAPIKeyAuthWithCookie tests API key authentication using cookie as the key source
 func (s *testingSuite) TestAPIKeyAuthWithCookie() {
 	// Verify HTTPRoute is accepted before running the test
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-cookie", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-cookie", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	statusReqCurlOpts := []curl.Option{
 		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -249,7 +249,7 @@ func (s *testingSuite) TestAPIKeyAuthWithCookie() {
 	}
 	// missing API key, should fail
 	s.T().Log("The /status route has API key auth with cookie, should fail when API key is missing")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusReqCurlOpts,
@@ -258,7 +258,7 @@ func (s *testingSuite) TestAPIKeyAuthWithCookie() {
 	// has valid API key in cookie, should succeed
 	s.T().Log("The /status route has API key auth with cookie, should succeed when valid API key is present in cookie")
 	statusWithAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithCookie("api-key=k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithAPIKeyCurlOpts,
@@ -273,7 +273,7 @@ func (s *testingSuite) TestAPIKeyAuthWithCookie() {
 	}
 	// missing API key, should fail
 	s.T().Log("The /get route has API key auth with cookie, should fail when API key is missing")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqCurlOpts,
@@ -282,7 +282,7 @@ func (s *testingSuite) TestAPIKeyAuthWithCookie() {
 	// has valid API key in cookie, should succeed
 	s.T().Log("The /get route has API key auth with cookie, should succeed when valid API key is present in cookie")
 	getWithAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithCookie("api-key=k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithAPIKeyCurlOpts,
@@ -291,7 +291,7 @@ func (s *testingSuite) TestAPIKeyAuthWithCookie() {
 	// has invalid API key in cookie, should fail
 	s.T().Log("The /get route has API key auth with cookie, should fail when invalid API key is present in cookie")
 	getWithInvalidAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithCookie("api-key=invalid-key"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithInvalidAPIKeyCurlOpts,
@@ -302,7 +302,7 @@ func (s *testingSuite) TestAPIKeyAuthWithCookie() {
 // TestAPIKeyAuthWithSecretUpdate tests that API key authentication correctly handles secret updates
 func (s *testingSuite) TestAPIKeyAuthWithSecretUpdate() {
 	// Verify HTTPRoute is accepted before running the test
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-secret-update", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-secret-update", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	statusReqCurlOpts := []curl.Option{
 		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -314,14 +314,14 @@ func (s *testingSuite) TestAPIKeyAuthWithSecretUpdate() {
 	// Step 1: Verify initial API keys work (k-123, k-456)
 	s.T().Log("Step 1: Verifying initial API keys (k-123, k-456) work")
 	statusWithK123 := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK123,
 		expectStatus200Success,
 	)
 	statusWithK456 := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK456,
@@ -357,7 +357,7 @@ stringData:
 	// The KRT framework should detect the secret change and trigger filter config regeneration
 	// Using Eventually to wait for the new keys to work, which confirms the update propagated
 	s.T().Log("Waiting for secret update to propagate...")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		append(statusReqCurlOpts, curl.WithHeader("api-key", "k-789")),
@@ -367,14 +367,14 @@ stringData:
 	// Step 3: Verify new keys work
 	s.T().Log("Step 3: Verifying new API keys (k-789, k-999) work")
 	statusWithK789 := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK789,
 		expectStatus200Success,
 	)
 	statusWithK999 := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-999"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK999,
@@ -384,14 +384,14 @@ stringData:
 	// Step 4: Verify old keys no longer work
 	s.T().Log("Step 4: Verifying old API keys (k-123, k-456) no longer work")
 	statusWithK123Old := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK123Old,
 		expectAPIKeyAuthDenied,
 	)
 	statusWithK456Old := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK456Old,
@@ -419,28 +419,28 @@ stringData:
 	// After Step 5 merge update, the secret has: client1 (k-123), client3 (k-789), client4 (k-999), client5 (k-111)
 	s.T().Log("Step 6: Verifying final API keys (k-123, k-789, k-999, k-111) works")
 	statusWithK123Final := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK123Final,
 		expectStatus200Success,
 	)
 	statusWithK789Final := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK789Final,
 		expectStatus200Success,
 	)
 	statusWithK999Final := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-999"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK999Final,
 		expectStatus200Success,
 	)
 	statusWithK111Final := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-111"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK111Final,
@@ -451,7 +451,7 @@ stringData:
 	// k-456 was removed in Step 2, so it should not work
 	s.T().Log("Step 7: Verifying removed API key (k-456) no longer work")
 	statusWithK456Removed := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithK456Removed,
@@ -464,7 +464,7 @@ stringData:
 // This verifies that the route-level policy takes precedence and uses its own secret.
 func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 	// Verify HTTPRoute is accepted before running the test
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-override", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-override", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	// Test route with route-level policy override - should use route-level secret (k-789, k-999)
 	getReqCurlOpts := []curl.Option{
@@ -475,7 +475,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 	}
 	// missing API key, should fail
 	s.T().Log("The /get route has route-level API key auth policy, should fail when API key is missing")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqCurlOpts,
@@ -484,7 +484,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 	// has valid API key from route-level secret, should succeed
 	s.T().Log("The /get route should succeed with valid API key from route-level secret (k-789)")
 	getWithRouteAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-789"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithRouteAPIKeyCurlOpts,
@@ -493,7 +493,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 	// has another valid API key from route-level secret, should succeed
 	s.T().Log("The /get route should succeed with another valid API key from route-level secret (k-999)")
 	getWithRouteAPIKey2CurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-999"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithRouteAPIKey2CurlOpts,
@@ -502,7 +502,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 	// has API key from gateway-level secret, should fail (route-level policy overrides)
 	s.T().Log("The /get route should fail with API key from gateway-level secret (k-123) - route-level policy overrides")
 	getWithGatewayAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithGatewayAPIKeyCurlOpts,
@@ -511,7 +511,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 	// has another API key from gateway-level secret, should fail
 	s.T().Log("The /get route should fail with another API key from gateway-level secret (k-456) - route-level policy overrides")
 	getWithGatewayAPIKey2CurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-456"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithGatewayAPIKey2CurlOpts,
@@ -527,7 +527,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 	}
 	// missing API key, should fail (gateway-level policy applies)
 	s.T().Log("The /status/200 route has no route-level policy, should require API key from gateway-level policy")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusReqCurlOpts,
@@ -536,7 +536,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 	// has valid API key from gateway-level secret, should succeed
 	s.T().Log("The /status/200 route should succeed with valid API key from gateway-level secret (k-123)")
 	statusWithGatewayAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithGatewayAPIKeyCurlOpts,
@@ -545,7 +545,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 	// has another valid API key from gateway-level secret, should succeed
 	s.T().Log("The /status/200 route should succeed with another valid API key from gateway-level secret (k-456)")
 	statusWithGatewayAPIKey2CurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithGatewayAPIKey2CurlOpts,
@@ -554,7 +554,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 	// has API key from route-level secret, should fail (only applies to /get route)
 	s.T().Log("The /status/200 route should fail with API key from route-level secret (k-789) - only gateway-level policy applies")
 	statusWithRouteAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithRouteAPIKeyCurlOpts,
@@ -566,7 +566,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 // This test verifies that API key auth can be disabled at route level to override gateway-level policy
 func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
 	// Verify HTTPRoute is accepted before running the test
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-disable", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-disable", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	// Test /status/200 route - has gateway-level policy, no route-level override
 	statusReqCurlOpts := []curl.Option{
@@ -577,7 +577,7 @@ func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
 	}
 	// missing API key, should fail (gateway-level policy applies)
 	s.T().Log("The /status/200 route has gateway-level API key auth, should fail without API key")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusReqCurlOpts,
@@ -586,7 +586,7 @@ func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
 	// has valid API key, should succeed
 	s.T().Log("The /status/200 route should succeed with valid API key from gateway-level policy")
 	statusWithAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusWithAPIKeyCurlOpts,
@@ -602,7 +602,7 @@ func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
 	}
 	// missing API key, should SUCCEED (disable field overrides gateway-level policy)
 	s.T().Log("The /get route has disable: {} at route level, should succeed without API key (NEW FEATURE)")
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqCurlOpts,
@@ -611,7 +611,7 @@ func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
 	// has API key, should still succeed (API key is ignored when disabled)
 	s.T().Log("The /get route with disable should succeed even with API key present")
 	getWithAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getWithAPIKeyCurlOpts,

@@ -75,7 +75,7 @@ func (s *testingSuite) TestHeadlessService() {
 
 func (s *testingSuite) assertSuccessfulResponse() {
 	for _, port := range []int{listenerHighPort, listenerLowPort} {
-		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			[]curl.Option{

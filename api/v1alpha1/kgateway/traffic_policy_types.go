@@ -206,6 +206,7 @@ type Transform struct {
 
 	// Add is a list of headers to add to the request and what that value should be set to.
 	// If there is already a header with these values then append the value as an extra entry.
+	// Add is not supported on arm64 build, see docs/guides/transformation.md for details
 	// +optional
 	// +listType=map
 	// +listMapKey=name
