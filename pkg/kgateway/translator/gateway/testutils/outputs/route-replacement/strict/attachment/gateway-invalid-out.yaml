@@ -109,8 +109,9 @@ Statuses:
         type: AttachedListenerSets
       - lastTransitionTime: null
         message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-          Failed to create pre-route filter config: Failed to initialize per-route
-          dynamic module'
+          Failed to load dynamic module: Failed to load dynamic module: /usr/local/lib/librust_module.so
+          : /usr/local/lib/librust_module.so: cannot open shared object file: No such
+          file or directory'
         reason: GatewayReplaced
         status: "False"
         type: Accepted
@@ -204,8 +205,9 @@ Statuses:
         conditions:
         - lastTransitionTime: null
           message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to create pre-route filter config: Failed to initialize per-route
-            dynamic module'
+            Failed to load dynamic module: Failed to load dynamic module: /usr/local/lib/librust_module.so
+            : /usr/local/lib/librust_module.so: cannot open shared object file: No
+            such file or directory'
           reason: Invalid
           status: "False"
           type: Accepted
