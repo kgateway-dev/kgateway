@@ -36,7 +36,6 @@ spec:
        ) | nindent 8 }}
       labels:
         {{- toYaml (merge
-          (dict "app.kubernetes.io/component" "gateway")
           (dict "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName)
           (include "kgateway.gateway.selectorLabels" . | fromYaml)
           (dict "kgateway" "kube-gateway")

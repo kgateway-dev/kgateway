@@ -25,7 +25,6 @@ spec:
         prometheus.io/port: {{ .Values.controller.service.ports.metrics | default 9092 | quote}}
         {{- toYaml .Values.podAnnotations | nindent 8 }}
       labels:
-        app.kubernetes.io/component: controller
         {{- include "agentgateway.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
