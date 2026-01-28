@@ -814,8 +814,9 @@ func buildRoutesPerHost(
 // Per-port configuration takes precedence over default configuration.
 // Returns nil if no FrontendTLSConfig is present or no validation is configured.
 // Returns an error if the FrontendTLSConfig contains an error from processing.
-// NOTE: Becauase a listener can be partially valid when there are multiple certificate references, this function can return both a validationIR and an error.
-// The validationIR can be used in the listener translation to build the TLS config, and the error can be used to write status
+// NOTE: Because a listener can be partially valid when there are multiple certificate references, this function can return both a
+// ClientCertificateValidationIR and an error.
+// The validationIR represents the validation configuration that could be successfully translated, and the error can be used to write status about the config that couldn't.
 func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.FrontendTLSConfigIR) (*ir.ClientCertificateValidationIR, error) {
 	if frontendTLSConfig == nil {
 		return nil, nil
@@ -841,7 +842,8 @@ func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.Fronte
 	return frontendTLSConfig.DefaultValidation, nil
 }
 
-// Can return config and an error
+// NOTE: Because a listener can be partially valid when there are multiple certificate references, this function can return both a ClientCertificateValidationIR
+// and an error. The IR respresents the TLS config that could be successfully translated, and the error can be used to write status about the config that couldn't.
 func translateTLSConfig(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -1096,7 +1098,7 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	switch {
 	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
 		reason = gwv1.ListenerReasonRefNotPermitted
-		message = err.Error() //"Reference not permitted by ReferenceGrant."
+		message = "Reference not permitted by ReferenceGrant."
 	case errors.Is(err, krtcollections.ErrMissingConfigMapReferenceGrant):
 		reason = gwv1.ListenerReasonRefNotPermitted
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate

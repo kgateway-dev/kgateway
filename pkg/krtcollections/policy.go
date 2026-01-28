@@ -559,13 +559,6 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		if gw.Spec.TLS != nil && gw.Spec.TLS.Frontend != nil {
 			frontendTLSConfig := getFrontendTLSConfig(gw.Spec.TLS.Frontend)
 			gwIR.FrontendTLSConfig = frontendTLSConfig
-			// if err != nil {
-			// 	gwIR.FrontendTLSConfig = &ir.FrontendTLSConfigIR{
-			// 		Err: err,
-			// 	}
-			// } else {
-			// 	gwIR.FrontendTLSConfig = frontendTLSConfig
-			// }
 		}
 
 		return gwIR

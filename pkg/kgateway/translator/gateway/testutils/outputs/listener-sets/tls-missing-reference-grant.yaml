@@ -337,8 +337,8 @@ Statuses:
     ls-1-ns/ls-1:
       conditions:
       - lastTransitionTime: null
-        message: 'Some listeners are not programmed: tls-ls1: cannot reference secret
-          ls-2-ns/https : missing reference grant'
+        message: 'Some listeners are not programmed: tls-ls1: Reference not permitted
+          by ReferenceGrant.'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -380,17 +380,17 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'cannot reference secret ls-2-ns/https : missing reference grant'
+          message: Reference not permitted by ReferenceGrant.
           reason: RefNotPermitted
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: 'cannot reference secret ls-2-ns/https : missing reference grant'
+          message: Reference not permitted by ReferenceGrant.
           reason: Invalid
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: 'cannot reference secret ls-2-ns/https : missing reference grant'
+          message: Reference not permitted by ReferenceGrant.
           reason: Invalid
           status: "False"
           type: Accepted
