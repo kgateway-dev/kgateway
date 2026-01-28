@@ -359,7 +359,6 @@ type FrontendTLSConfigIR struct {
 	PortErrors map[gwv1.PortNumber]error
 	// Default error encountered during construction of the FrontendTLSConfigIR, used in status reportings.
 	DefaultError error
-	Err error
 }
 
 // ClientCertificateValidationIR holds the client certificate validation configuration with references
