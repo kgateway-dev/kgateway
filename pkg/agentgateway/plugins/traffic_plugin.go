@@ -2,13 +2,17 @@ package plugins
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+
 	"strconv"
 	"strings"
 	"time"
+
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -17,6 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/controllers"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
@@ -36,6 +41,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -98,8 +104,10 @@ func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.AgentgatewayPolicyGVK.GroupKind(): {
-				Policies:       policyCol,
-				PolicyStatuses: convertStatusCollection(policyStatusCol),
+				Policies:          policyCol,
+				PolicyStatuses:    convertStatusCollection(policyStatusCol),
+				GetPolicyStatus:   getPolicyStatusFn(agw.AgentgatewayPolicyClient),
+				PatchPolicyStatus: patchPolicyStatusFn(agw.AgentgatewayPolicyClient),
 			},
 		},
 		ExtraHasSynced: func() bool {
@@ -1541,4 +1549,39 @@ func toStruct(rm json.RawMessage) (*structpb.Struct, error) {
 	}
 
 	return pbs, nil
+}
+
+func getPolicyStatusFn(
+	cl kclient.Client[*agentgateway.AgentgatewayPolicy],
+) pluginsdk.GetPolicyStatusFn {
+	return func(ctx context.Context, nn types.NamespacedName) (gwv1.PolicyStatus, error) {
+		res := cl.Get(nn.Name, nn.Namespace)
+		if res == nil {
+			return gwv1.PolicyStatus{}, errors.New("policy not found")
+		}
+		return res.Status, nil
+	}
+}
+
+func patchPolicyStatusFn(
+	cl kclient.Client[*agentgateway.AgentgatewayPolicy],
+) pluginsdk.PatchPolicyStatusFn {
+	return func(ctx context.Context, nn types.NamespacedName, policyStatus gwv1.PolicyStatus) error {
+		cur := cl.Get(nn.Name, nn.Namespace)
+		if cur == nil {
+			return errors.New("policy not found")
+		}
+
+		_, err := cl.UpdateStatus(&agentgateway.AgentgatewayPolicy{
+			ObjectMeta: pluginsdk.CloneObjectMetaForStatus(cur.ObjectMeta),
+			Status:     policyStatus,
+		})
+		if err != nil {
+			if k8serrors.IsConflict(err) {
+				return nil // let the conflicting Status update trigger a KRT event to requeue the updated object
+			}
+			return fmt.Errorf("error updating status for AgentgatewayPolicy %s: %w", nn.String(), err)
+		}
+		return nil
+	}
 }

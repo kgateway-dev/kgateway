@@ -58,8 +58,9 @@ type AgwCollections struct {
 	InferencePools krt.Collection[*inf.InferencePool]
 
 	// agentgateway resources
-	Backends             krt.Collection[*agentgateway.AgentgatewayBackend]
-	AgentgatewayPolicies krt.Collection[*agentgateway.AgentgatewayPolicy]
+	Backends                 krt.Collection[*agentgateway.AgentgatewayBackend]
+	AgentgatewayPolicies     krt.Collection[*agentgateway.AgentgatewayPolicy]
+	AgentgatewayPolicyClient kclient.Client[*agentgateway.AgentgatewayPolicy]
 
 	// ControllerName is the name of the Gateway controller.
 	ControllerName string
@@ -163,10 +164,14 @@ func NewAgwCollections(
 		// inference extensions need to be enabled so control plane has permissions to watch resource. Disable by default
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, commoncol.KrtOpts.ToOptions("disable/inferencepools")...),
 
-		// agentgateway-specific CRDs
-		AgentgatewayPolicies: krt.NewInformer[*agentgateway.AgentgatewayPolicy](commoncol.Client),
-		Backends:             krt.NewInformer[*agentgateway.AgentgatewayBackend](commoncol.Client),
+		AgentgatewayPolicyClient: kclient.NewFilteredDelayed[*agentgateway.AgentgatewayPolicy](
+			commoncol.Client,
+			wellknown.AgentgatewayPolicyGVR,
+			kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
+		),
+		Backends: krt.NewInformer[*agentgateway.AgentgatewayBackend](commoncol.Client),
 	}
+	agwCollections.AgentgatewayPolicies = krt.WrapClient(agwCollections.AgentgatewayPolicyClient, commoncol.KrtOpts.ToOptions("AgentgatewayPolicies")...)
 
 	if commoncol.Settings.EnableInferExt {
 		// inference extensions cluster watch permissions are controlled by enabling EnableInferExt

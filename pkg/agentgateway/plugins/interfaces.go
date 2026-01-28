@@ -13,14 +13,17 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 // AgwResourceStatusSyncHandler defines a function that handles status syncing for a specific resource type in AgentGateway
 type AgwResourceStatusSyncHandler func(ctx context.Context, client apiclient.Client, namespacedName types.NamespacedName, status any) error
 
 type PolicyPlugin struct {
-	Policies       krt.Collection[AgwPolicy]
-	PolicyStatuses krt.StatusCollection[controllers.Object, gwv1.PolicyStatus]
+	Policies          krt.Collection[AgwPolicy]
+	PolicyStatuses    krt.StatusCollection[controllers.Object, gwv1.PolicyStatus]
+	GetPolicyStatus   pluginsdk.GetPolicyStatusFn
+	PatchPolicyStatus pluginsdk.PatchPolicyStatusFn
 }
 
 // ApplyPolicies extracts all policies from the collection
