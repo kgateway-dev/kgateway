@@ -54,7 +54,6 @@ var (
 		"1.3": envoytlsv3.TlsParameters_TLSv1_3,
 	}
 
-	// Temporary home for constants for conformance testing that are not yet in a released version of Gateway API (https://github.com/kubernetes-sigs/gateway-api/blob/aa1ab6fd282dee4f74eeca803ec48b333297c637/apis/v1/gateway_types.go#L1606-L1614)
 	ErrInvalidCACertificateRef  = errors.New(string(ListenerReasonInvalidCACertificateRef))
 	ErrInvalidCACertificateKind = errors.New(string(ListenerReasonInvalidCACertificateKind))
 

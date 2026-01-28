@@ -825,8 +825,7 @@ func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.Fronte
 	// Check and return in order:
 	// 1. Per-port errors
 	// 2. Per-port validation
-	// 3. Default errors
-	// 4. Default validation
+	// 3. Default errors/validation
 	if frontendTLSConfig.PortErrors[port] != nil {
 		return frontendTLSConfig.PerPortValidation[port], frontendTLSConfig.PortErrors[port]
 	}
@@ -835,11 +834,8 @@ func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.Fronte
 		return perPortConfig, nil
 	}
 
-	if frontendTLSConfig.DefaultError != nil {
-		return frontendTLSConfig.DefaultValidation, frontendTLSConfig.DefaultError
-	}
+	return frontendTLSConfig.DefaultValidation, frontendTLSConfig.DefaultError
 
-	return frontendTLSConfig.DefaultValidation, nil
 }
 
 // NOTE: Because a listener can be partially valid when there are multiple certificate references, this function can return both a ClientCertificateValidationIR
@@ -1031,7 +1027,7 @@ func buildCaCertificateReference(
 
 // applyClientCertificateValidation applies the resolved client certificate validation configuration
 // to the TLS config by fetching CA certificates and setting validation parameters.
-// Returns a boolean indicating if the any client certificate validation was applied successfully and an error if any.
+// Returns a boolean indicating if any client certificate validation was applied successfully and an error if any errors were encountered.
 func applyClientCertificateValidation(
 	kctx krt.HandlerContext,
 	ctx context.Context,

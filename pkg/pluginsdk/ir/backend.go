@@ -354,10 +354,9 @@ type FrontendTLSConfigIR struct {
 	// PerPort client certificate validation configuration, keyed by port number
 	PerPortValidation map[gwv1.PortNumber]*ClientCertificateValidationIR
 
-	// Err contains any error encountered during construction of the FrontendTLSConfigIR, used in status reportings.
-	// Recorded per-port
+	// The per-port and default configs are independent, so store errors per port and default separately.
 	PortErrors map[gwv1.PortNumber]error
-	// Default error encountered during construction of the FrontendTLSConfigIR, used in status reportings.
+	// Error encountered during construction of the default client certificate validation configuration.
 	DefaultError error
 }
 
