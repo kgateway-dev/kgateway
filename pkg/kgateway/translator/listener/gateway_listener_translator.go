@@ -974,7 +974,7 @@ func buildCaCertificateReference(
 			caCertRef,
 		)
 		if err != nil {
-			// If its a missing reference grant error, return the more CA Certificate specific error
+			// If its a missing reference grant error, return the CA Certificate specific error
 			if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
 				return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, sslutils.ErrMissingCaCertificateRefGrant)
 			}
