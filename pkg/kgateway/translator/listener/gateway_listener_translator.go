@@ -744,7 +744,9 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		queries,
 		resolvedValidation,
 	)
+
 	if err != nil {
+		logger.Warn("failed to translate TLS config", "error", err)
 		reportTLSConfigError(err, hfc.listenerReporter)
 		return nil, err
 	}
@@ -792,20 +794,39 @@ func buildRoutesPerHost(
 	}
 }
 
+// SAHFIX
 // resolveFrontendTLSConfig resolves the FrontendTLSConfig for a specific port.
 // Per-port configuration takes precedence over default configuration.
 // Returns nil if no FrontendTLSConfig is present or no validation is configured.
 // Returns an error if the FrontendTLSConfig contains an error from processing.
+// NOTE: Becauase a listener can be partially valid when there are multiple certificate references, this function can return both a validationIR and an error.
+// The validationIR can be used in the listener translation to build the TLS config, and the error can be used to write status
 func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.FrontendTLSConfigIR) (*ir.ClientCertificateValidationIR, error) {
 	if frontendTLSConfig == nil {
 		return nil, nil
 	}
-	if frontendTLSConfig.Err != nil {
-		return nil, frontendTLSConfig.Err
+
+	// Check and return in order:
+	// 1. Per-port errors
+	// 2. Per-port validation
+	// 3. Default errors
+	// 4. Default validation
+	if frontendTLSConfig.PortErrors[port] != nil {
+		logger.Warn("failed to resolve frontend TLS config for port", "port", port, "error", frontendTLSConfig.PortErrors[port])
+		return nil, frontendTLSConfig.PortErrors[port]
 	}
+
 	if perPortConfig, ok := frontendTLSConfig.PerPortValidation[port]; ok {
+		logger.Warn("successfully resolved frontend TLS config for port", "port", port)
 		return perPortConfig, nil
 	}
+
+	if frontendTLSConfig.DefaultError != nil {
+		logger.Warn("failed to resolve frontend TLS config for default", "error", frontendTLSConfig.DefaultError)
+		return nil, frontendTLSConfig.DefaultError
+	}
+
+	logger.Warn("successfully resolved frontend TLS config for default")
 	return frontendTLSConfig.DefaultValidation, nil
 }
 
@@ -903,6 +924,11 @@ func translateTLSConfig(
 				return tlsConfig, nil
 			}
 			// If client certs are required (AllowValidOnly), fail the listener
+			logger.Warn("failed to fetch CA certificate for client validation, failing listener",
+				"listener", listener.Name,
+				"port", listener.Port,
+				"error", err,
+				"mode", "AllowValidOnly")
 			return nil, err
 		}
 	}
@@ -910,6 +936,7 @@ func translateTLSConfig(
 	return tlsConfig, nil
 }
 
+// SAHFIX
 // buildCaCertificateReference fetches and extracts a CA certificate from either a ConfigMap or Secret
 // referenced by the given ObjectReference. Returns the CA certificate data as a string.
 func buildCaCertificateReference(
@@ -980,6 +1007,7 @@ func buildCaCertificateReference(
 	}
 }
 
+// SAHFIX
 // applyClientCertificateValidation applies the resolved client certificate validation configuration
 // to the TLS config by fetching CA certificates and setting validation parameters.
 func applyClientCertificateValidation(
@@ -1042,36 +1070,67 @@ func applyClientCertificateValidation(
 func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) {
 	reason := gwv1.ListenerReasonInvalidCertificateRef
 	message := "Invalid certificate ref(s)."
+	acceptedReason := gwv1.ListenerReasonInvalid // TODO better default?
 
+	logger.Warn("reporting TLS config error", "error", err)
 	switch {
 	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
 		reason = gwv1.ListenerReasonRefNotPermitted
-		message = "Reference not permitted by ReferenceGrant."
+		message = err.Error() //"Reference not permitted by ReferenceGrant."
+	case errors.Is(err, krtcollections.ErrMissingConfigMapReferenceGrant):
+		reason = sslutils.ListenerReasonInvalidCACertificateRef
+		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
+		message = err.Error()
 	case errors.Is(err, sslutils.ErrInvalidTlsSecret):
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA):
+		message = err.Error()
+	case errors.Is(err, sslutils.ErrInvalidCACertificateRef):
+		reason = sslutils.ListenerReasonInvalidCACertificateRef
+		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
+		message = err.Error()
+	case errors.Is(err, sslutils.ErrInvalidCACertificateKind):
+		reason = sslutils.ListenerReasonInvalidCACertificateKind
+		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		message = err.Error()
 	}
 
 	var notFoundErr *krtcollections.NotFoundError
 	if errors.As(err, &notFoundErr) {
+		reason = sslutils.ListenerReasonInvalidCACertificateRef
+		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		resourceType := notFoundErr.NotFoundObj.Kind
 		if resourceType == "" {
 			resourceType = "Resource"
 		}
 		message = fmt.Sprintf(ResourceNotFoundMessageTemplate, resourceType, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 	}
+	// SAHFIX - for conformance : ListenerReasonInvalidCACertificateRef/
+	// check - ListenerReasonInvalidCACertificateKind
+	// ListenerReasonRefNotPermitted
 	listenerReporter.SetCondition(reports.ListenerCondition{
 		Type:    gwv1.ListenerConditionResolvedRefs,
 		Status:  metav1.ConditionFalse,
 		Reason:  reason,
 		Message: message,
 	})
+	logger.Warn("reporting listener programmed condition", "reason", gwv1.ListenerReasonInvalid, "message", message)
 	// listener with no ssl is invalid. We return nil so set programmed to false
 	listenerReporter.SetCondition(reports.ListenerCondition{
 		Type:    gwv1.ListenerConditionProgrammed,
 		Status:  metav1.ConditionFalse,
 		Reason:  gwv1.ListenerReasonInvalid,
+		Message: message,
+	})
+
+	// This condition (ListenerConditionAccepted) indicates that the listener is syntactically and
+	// semantically valid ... In general, a Listener will be marked as Accepted when the supplied
+	// configuration will generate at least some data plane configuration.
+	// Since we are reporting a tls error, we set the accepted condition to false.
+	listenerReporter.SetCondition(reports.ListenerCondition{
+		Type:    gwv1.ListenerConditionAccepted,
+		Status:  metav1.ConditionFalse,
+		Reason:  acceptedReason,
 		Message: message,
 	})
 }

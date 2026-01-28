@@ -117,6 +117,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("frontendtlsconfig with invalid ca certificate ref", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "frontendtlsconfig/cacert-invalid-ref.yaml",
+			outputFile: "frontendtlsconfig/cacert-invalid-ref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("http gateway with per connection buffer limit", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "gateway-per-conn-buf-lim/gateway.yaml",
