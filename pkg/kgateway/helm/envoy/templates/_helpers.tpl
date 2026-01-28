@@ -71,6 +71,7 @@ Selector labels
 {{- define "kgateway.gateway.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "kgateway.gateway.name" . }}
 app.kubernetes.io/instance: {{ include "kgateway.gateway.name" . }}
+app.kubernetes.io/component: gateway
 gateway.networking.k8s.io/gateway-name: {{ include "kgateway.gateway.name" . }}
 {{- end }}
 
