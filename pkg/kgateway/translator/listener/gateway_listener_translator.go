@@ -974,8 +974,9 @@ func buildCaCertificateReference(
 			caCertRef,
 		)
 		if err != nil {
-			if errors.Is(err, krtcollections.ErrMissingConfigMapReferenceGrant) {
-				return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, err)
+			// If its a missing reference grant error, return the more CA Certificate specific error
+			if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
+				return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, sslutils.ErrMissingCaCertificateRefGrant)
 			}
 			// If its not a missing reference grant error, return the invalid certificate ref error
 			return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, sslutils.ErrInvalidCACertificateRef)
@@ -1099,7 +1100,7 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
 		reason = gwv1.ListenerReasonRefNotPermitted
 		message = "Reference not permitted by ReferenceGrant."
-	case errors.Is(err, krtcollections.ErrMissingConfigMapReferenceGrant):
+	case errors.Is(err, sslutils.ErrMissingCaCertificateRefGrant):
 		reason = gwv1.ListenerReasonRefNotPermitted
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		message = err.Error()

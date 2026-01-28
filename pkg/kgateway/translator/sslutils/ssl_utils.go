@@ -65,6 +65,7 @@ var (
 	ErrInvalidCACertificateKindDetails = func(n, ns, kind string) error {
 		return fmt.Errorf("invalid ca.crt kind %s in %s/%s: %w", kind, ns, n, ErrInvalidCACertificateKind)
 	}
+	ErrMissingCaCertificateRefGrant = errors.New("missing CA certificate reference grant")
 )
 
 // ValidateTlsSecret and return a cleaned cert

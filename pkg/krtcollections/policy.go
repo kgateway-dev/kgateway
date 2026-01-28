@@ -40,10 +40,9 @@ import (
 )
 
 var (
-	ErrMissingReferenceGrant          = errors.New("missing reference grant")
-	ErrMissingConfigMapReferenceGrant = errors.New("missing ConfigMap reference grant")
-	ErrUnknownBackendKind             = errors.New("unknown backend kind")
-	ErrPolicyNotFound                 = errors.New("policy not found")
+	ErrMissingReferenceGrant = errors.New("missing reference grant")
+	ErrUnknownBackendKind    = errors.New("unknown backend kind")
+	ErrPolicyNotFound        = errors.New("policy not found")
 )
 
 type NotFoundError struct {
