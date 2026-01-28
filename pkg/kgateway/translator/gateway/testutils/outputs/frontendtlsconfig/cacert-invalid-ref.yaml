@@ -166,9 +166,10 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Some listeners are not programmed: listener-bad-certref: ConfigMap
-          default/ca-cert-missing not found.; listener-partially-valid: invalid ca.crt
-          kind Service in default/ca-cert-missing: InvalidCACertificateKind'
+        message: 'Some listeners are not programmed: listener-bad-certref: failed
+          to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef;
+          listener-partially-valid: invalid ca.crt kind Service in default/ca-cert-missing:
+          InvalidCACertificateKind'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -207,17 +208,20 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: ConfigMap default/ca-cert-missing not found.
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+            InvalidCACertificateRef'
           reason: InvalidCACertificateRef
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: ConfigMap default/ca-cert-missing not found.
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+            InvalidCACertificateRef'
           reason: Invalid
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: ConfigMap default/ca-cert-missing not found.
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+            InvalidCACertificateRef'
           reason: NoValidCACertificate
           status: "False"
           type: Accepted
@@ -233,17 +237,20 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: ConfigMap default/ca-cert-missing not found.
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+            InvalidCACertificateRef'
           reason: InvalidCACertificateRef
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: ConfigMap default/ca-cert-missing not found.
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+            InvalidCACertificateRef'
           reason: Invalid
           status: "True"
           type: Programmed
         - lastTransitionTime: null
-          message: ConfigMap default/ca-cert-missing not found.
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+            InvalidCACertificateRef'
           reason: NoValidCACertificate
           status: "True"
           type: Accepted

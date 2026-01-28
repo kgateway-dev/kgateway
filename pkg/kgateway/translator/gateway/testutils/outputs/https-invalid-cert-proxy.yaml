@@ -105,7 +105,7 @@ Statuses:
         conditions:
         - lastTransitionTime: null
           message: Secret default/missing-cert not found.
-          reason: InvalidCACertificateRef
+          reason: InvalidCertificateRef
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
@@ -115,7 +115,7 @@ Statuses:
           type: Programmed
         - lastTransitionTime: null
           message: Secret default/missing-cert not found.
-          reason: NoValidCACertificate
+          reason: Invalid
           status: "False"
           type: Accepted
         - lastTransitionTime: null

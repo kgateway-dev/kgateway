@@ -490,8 +490,11 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 				return nil
 			}
 		}
+
 		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
 		if err != nil {
+			// An error and a non-nil tlsCsonfig means that the listener is partially valid,
+			// and we should continue to translate the listener after writing the error to status
 			reportTLSConfigError(err, tc.listenerReporter, tlsConfig != nil)
 			if tlsConfig == nil {
 				return nil
@@ -746,6 +749,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 			return nil, err
 		}
 	}
+
 	tlsConfig, err := translateTLSConfig(
 		kctx,
 		ctx,
@@ -754,9 +758,9 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		queries,
 		resolvedValidation,
 	)
-
 	if err != nil {
-		logger.Warn("failed to translate TLS config", "error", err)
+		// An error and a non-nil tlsConfig means that the listener is partially valid,
+		// and we should continue to translate the listener after writing the error to status
 		reportTLSConfigError(err, hfc.listenerReporter, tlsConfig != nil)
 		if tlsConfig == nil {
 			return nil, err
@@ -823,21 +827,17 @@ func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.Fronte
 	// 3. Default errors
 	// 4. Default validation
 	if frontendTLSConfig.PortErrors[port] != nil {
-		logger.Warn("failed to resolve frontend TLS config for port", "port", port, "error", frontendTLSConfig.PortErrors[port])
 		return frontendTLSConfig.PerPortValidation[port], frontendTLSConfig.PortErrors[port]
 	}
 
 	if perPortConfig, ok := frontendTLSConfig.PerPortValidation[port]; ok {
-		logger.Warn("successfully resolved frontend TLS config for port", "port", port)
 		return perPortConfig, nil
 	}
 
 	if frontendTLSConfig.DefaultError != nil {
-		logger.Warn("failed to resolve frontend TLS config for default", "error", frontendTLSConfig.DefaultError)
 		return frontendTLSConfig.DefaultValidation, frontendTLSConfig.DefaultError
 	}
 
-	logger.Warn("successfully resolved frontend TLS config for default")
 	return frontendTLSConfig.DefaultValidation, nil
 }
 
@@ -972,7 +972,12 @@ func buildCaCertificateReference(
 			caCertRef,
 		)
 		if err != nil {
-			return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, err)
+			if errors.Is(err, krtcollections.ErrMissingConfigMapReferenceGrant) {
+				return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, err)
+			}
+			// If its not a missing reference grant error, return the invalid certificate ref error
+			return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, sslutils.ErrInvalidCACertificateRef)
+
 		}
 
 		// Extract CA certificate from ConfigMap
@@ -1088,7 +1093,6 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	message := "Invalid certificate ref(s)."
 	acceptedReason := gwv1.ListenerReasonInvalid
 
-	logger.Warn("reporting TLS config error", "error", err)
 	switch {
 	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
 		reason = gwv1.ListenerReasonRefNotPermitted
@@ -1113,8 +1117,6 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 
 	var notFoundErr *krtcollections.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		reason = sslutils.ListenerReasonInvalidCACertificateRef
-		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		resourceType := notFoundErr.NotFoundObj.Kind
 		if resourceType == "" {
 			resourceType = "Resource"
