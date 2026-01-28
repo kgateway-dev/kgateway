@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"os"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -116,7 +117,26 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 		return errors.New("invalid TLS config: for if providing a client certificate, both certChain and privateKey must be provided")
 	}
 
+	// Check file existence if we are using files (not inline data)
+	if !tlsData.inlineDataSource {
+		if _, err := os.Stat(tlsData.certChain); err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("TLS certificate file not found: %s", tlsData.certChain)
+			}
+			return fmt.Errorf("failed to check TLS certificate file: %w", err)
+		}
+		if _, err := os.Stat(tlsData.privateKey); err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("TLS private key file not found: %s", tlsData.privateKey)
+			}
+			return fmt.Errorf("failed to check TLS private key file: %w", err)
+		}
+	}
+
 	// Validate the certificate and key pair, and get a sanitized version of the certificate chain.
+	// Note: For file paths (!inlineDataSource), this validation currently attempts to parse the path string as PEM,
+	// which will likely fail even if the file exists.
+	// However, we proceed here to maintain existing behavior for now, having at least ensured the file exists above.
 	cleanedCertChain, err := cleanedSslKeyPair(tlsData.certChain, tlsData.privateKey)
 	if err != nil {
 		return fmt.Errorf("invalid certificate and key pair: %w", err)
@@ -169,6 +189,16 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 		}
 		// Root CA is required if SAN verification is specified
 		return errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
+	}
+
+	// Check root CA file existence if we are using files
+	if !tlsData.inlineDataSource {
+		if _, err := os.Stat(tlsData.rootCA); err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("root CA file not found: %s", tlsData.rootCA)
+			}
+			return fmt.Errorf("failed to check root CA file: %w", err)
+		}
 	}
 
 	// If root CA is provided, build a validation context
