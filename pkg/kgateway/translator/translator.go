@@ -14,7 +14,6 @@ import (
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -108,17 +107,6 @@ func (s *CombinedTranslator) HasSynced() bool {
 
 // buildProxy performs translation of a kube Gateway -> GatewayIR
 func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reporter.Reporter) *ir.GatewayIR {
-	var rErr error
-
-	finishMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
-		Name:       gw.Name,
-		Namespace:  gw.Namespace,
-		Translator: "CombinedTranslator",
-	})
-	defer func() {
-		finishMetrics(rErr)
-	}()
-
 	var gatewayTranslator sdk.KGwTranslator = s.gwtranslator
 	if s.extensions.ContributesGwTranslator != nil {
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
@@ -128,7 +116,6 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	}
 	proxy := gatewayTranslator.Translate(kctx, ctx, &gw, r)
 	if proxy == nil {
-		rErr = nil // proxy == nil is not necessarily an error, just means no proxy was created
 		return nil
 	}
 
