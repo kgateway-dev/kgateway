@@ -16,7 +16,7 @@ spec:
               group: ""
               namespace: default
       perPort:
-        - port: 8443
+        - port: 7443
           tls:
             validation:
               caCertificateRefs:
@@ -24,7 +24,7 @@ spec:
                   kind: ConfigMap
                   namespace: default
                   group: ""
-        - port: 9443
+        - port: 8443
           tls:
             validation:
               caCertificateRefs:
@@ -32,7 +32,7 @@ spec:
                   kind: Service
                   namespace: default
                   group: ""
-        - port: 7443
+        - port: 9443
           tls:
             validation:
               caCertificateRefs:
@@ -44,6 +44,15 @@ spec:
                   kind: ConfigMap
                   group: ""
                   namespace: default
+        - port: 10443
+          tls:
+            validation:
+              mode: AllowValidOnly
+              caCertificateRefs:
+                - name: ca-cert-2
+                  kind: ConfigMap
+                  namespace: ca-cert-2
+                  group: ""
   listeners:
   - name: https
     protocol: HTTPS
@@ -55,14 +64,6 @@ spec:
           kind: Secret
   - name: listener-bad-certref
     protocol: HTTPS
-    port: 8443
-    tls:
-      mode: Terminate
-      certificateRefs:
-        - name: https
-          kind: Secret
-  - name: listener-bad-certkind
-    protocol: HTTPS
     port: 7443
     tls:
       mode: Terminate
@@ -71,7 +72,7 @@ spec:
           kind: Secret
   - name: listener-partially-valid
     protocol: HTTPS
-    port: 9443
+    port: 8443
     tls:
       mode: Terminate
       certificateRefs:
@@ -80,6 +81,23 @@ spec:
   - name: http
     protocol: HTTP
     port: 80
+  - name: listener-bad-certkind
+    protocol: HTTPS
+    port: 9443
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: https
+          kind: Secret
+  - name: listener-missing-refgrant
+    protocol: HTTPS
+    port: 10443
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: https
+          kind: Secret
+
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -136,3 +154,35 @@ data:
     EHk+WI7OPFRYrj7mgl/n3ZSE/GT3Er/iz6KSBRiR3MO8oX0EpBIoAoliqzN3cmYX
     YViYxaXeR0p3dIhgHI9toNXc0At575ZPmjJchLdWzkjPdThy7VYKaK6yxicYVLI=
     -----END CERTIFICATE-----
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ca-cert-2
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: ca-cert-2
+  namespace: ca-cert-2
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDKzCCAhOgAwIBAgIUUe9RAlK3aQm6uAwK6EvlHIeRSTIwDQYJKoZIhvcNAQEL
+    BQAwJTEQMA4GA1UEAwwHVGVzdCBDQTERMA8GA1UECgwIVGVzdCBPcmcwHhcNMjUx
+    MjAzMTkyMDAwWhcNMjYxMjAzMTkyMDAwWjAlMRAwDgYDVQQDDAdUZXN0IENBMREw
+    DwYDVQQKDAhUZXN0IE9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+    ALKdLcHlW1pqctfu2PVNuuUSfX18QfnKsPZk6WHlpRpzPiudT90sleHYt/mIWzk2
+    +7Dx3DrjCnNj8bULkrYARp6c6dO5r4k8BBuzxE0we7RPoRVkBzIGkzK22Z2yz/cs
+    LIOqKgSVXbneqYyJBlVYaJYPZ3uJH1QTcG9bOslckNVYPDtZuD0PGG8JzieNITSY
+    smm5px68p/EVIr3OP5ecUMhCcEgWIo+992h5teIlOMpXpZb2Wm1ABpr8jaGJVgtO
+    vn67mzRc7PBl5iT6cdUnG99LUMIhj73cKy1W+9i3elF8w4SEW/7uMvNK0WwkFaFl
+    l8Hzi8yfsV3EC0WPRuqp3jcCAwEAAaNTMFEwHQYDVR0OBBYEFNZroy3SiFR+l3HI
+    tw+npPPl5M5mMB8GA1UdIwQYMBaAFNZroy3SiFR+l3HItw+npPPl5M5mMA8GA1Ud
+    EwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAIpnex0iW9jtbYJhfxzE4Wmm
+    fNG3n13wZae/brOnj69VkK6ZJ35Ogjv9eybJIaicYCpkQhaiA5X7BU6cAc90IWdv
+    b7tury8qT1zwbTxzxeGpvct6877OtcClk1BNb9OqdBdZncDg+WeS9ZkQm/aqEapA
+    QuJci70Ynkre0udQtenazF8njlvngaw3GJdQ6ogZ1m5W0PPVaAMC/Ie88eolH0x8
+    EHk+WI7OPFRYrj7mgl/n3ZSE/GT3Er/iz6KSBRiR3MO8oX0EpBIoAoliqzN3cmYX
+    YViYxaXeR0p3dIhgHI9toNXc0At575ZPmjJchLdWzkjPdThy7VYKaK6yxicYVLI=
+    -----END CERTIFICATE-----
+---
