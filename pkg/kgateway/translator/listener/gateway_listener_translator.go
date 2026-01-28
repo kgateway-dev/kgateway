@@ -483,13 +483,19 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 
 		resolvedValidation, err := resolveFrontendTLSConfig(tc.parents.listener.Port, frontendTLSConfig)
 		if err != nil {
-			reportTLSConfigError(err, tc.listenerReporter)
-			return nil
+			reportTLSConfigError(err, tc.listenerReporter, resolvedValidation != nil)
+			// An error and a non-nil validation means that the listener is partially valid,
+			// and we should continue to translate the listener after writing the error to status
+			if resolvedValidation == nil {
+				return nil
+			}
 		}
 		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
 		if err != nil {
-			reportTLSConfigError(err, tc.listenerReporter)
-			return nil
+			reportTLSConfigError(err, tc.listenerReporter, tlsConfig != nil)
+			if tlsConfig == nil {
+				return nil
+			}
 		}
 
 		if tlsConfig != nil && len(tlsConfig.AlpnProtocols) == 0 {
@@ -733,8 +739,12 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 
 	resolvedValidation, err := resolveFrontendTLSConfig(hfc.listener.Port, frontendTLSConfig)
 	if err != nil {
-		reportTLSConfigError(err, hfc.listenerReporter)
-		return nil, err
+		reportTLSConfigError(err, hfc.listenerReporter, resolvedValidation != nil)
+		// An error and a non-nil validation means that the listener is partially valid,
+		// and we should continue to translate the listener after writing the error to status
+		if resolvedValidation == nil {
+			return nil, err
+		}
 	}
 	tlsConfig, err := translateTLSConfig(
 		kctx,
@@ -747,8 +757,10 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 
 	if err != nil {
 		logger.Warn("failed to translate TLS config", "error", err)
-		reportTLSConfigError(err, hfc.listenerReporter)
-		return nil, err
+		reportTLSConfigError(err, hfc.listenerReporter, tlsConfig != nil)
+		if tlsConfig == nil {
+			return nil, err
+		}
 	}
 	sort.Slice(virtualHosts, func(i, j int) bool {
 		return virtualHosts[i].Name < virtualHosts[j].Name
@@ -794,7 +806,6 @@ func buildRoutesPerHost(
 	}
 }
 
-// SAHFIX
 // resolveFrontendTLSConfig resolves the FrontendTLSConfig for a specific port.
 // Per-port configuration takes precedence over default configuration.
 // Returns nil if no FrontendTLSConfig is present or no validation is configured.
@@ -813,7 +824,7 @@ func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.Fronte
 	// 4. Default validation
 	if frontendTLSConfig.PortErrors[port] != nil {
 		logger.Warn("failed to resolve frontend TLS config for port", "port", port, "error", frontendTLSConfig.PortErrors[port])
-		return nil, frontendTLSConfig.PortErrors[port]
+		return frontendTLSConfig.PerPortValidation[port], frontendTLSConfig.PortErrors[port]
 	}
 
 	if perPortConfig, ok := frontendTLSConfig.PerPortValidation[port]; ok {
@@ -823,13 +834,14 @@ func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.Fronte
 
 	if frontendTLSConfig.DefaultError != nil {
 		logger.Warn("failed to resolve frontend TLS config for default", "error", frontendTLSConfig.DefaultError)
-		return nil, frontendTLSConfig.DefaultError
+		return frontendTLSConfig.DefaultValidation, frontendTLSConfig.DefaultError
 	}
 
 	logger.Warn("successfully resolved frontend TLS config for default")
 	return frontendTLSConfig.DefaultValidation, nil
 }
 
+// Can return config and an error
 func translateTLSConfig(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -908,17 +920,20 @@ func translateTLSConfig(
 
 	// Apply client certificate validation if present
 	// Skip if CA cert refs are empty (no validation possible)
+	var caErr error
+	var generated bool
 	if hasTrustedCA {
 		// For AllowInsecureFallback mode, if CA cert fetching fails, skip validation rather than failing the listener
 		// This allows the listener to work without client certs even if the CA cert ConfigMap is missing
-		if err := applyClientCertificateValidation(kctx, ctx, queries, listener, resolvedValidation, tlsConfig); err != nil {
+		generated, caErr = applyClientCertificateValidation(kctx, ctx, queries, listener, resolvedValidation, tlsConfig)
+		if !generated {
 			// If client certs are not required (AllowInsecureFallback), log the error but don't fail the listener
 			// The listener will still work for connections without client certs
 			if !resolvedValidation.RequireClientCertificate {
 				logger.Warn("failed to fetch CA certificate for client validation, skipping validation",
 					"listener", listener.Name,
 					"port", listener.Port,
-					"error", err,
+					"error", caErr,
 					"mode", "AllowInsecureFallback")
 				// Don't set ClientCertificateValidation - listener will work without client cert validation
 				return tlsConfig, nil
@@ -927,16 +942,15 @@ func translateTLSConfig(
 			logger.Warn("failed to fetch CA certificate for client validation, failing listener",
 				"listener", listener.Name,
 				"port", listener.Port,
-				"error", err,
+				"error", caErr,
 				"mode", "AllowValidOnly")
-			return nil, err
+			return nil, caErr
 		}
 	}
 
-	return tlsConfig, nil
+	return tlsConfig, caErr
 }
 
-// SAHFIX
 // buildCaCertificateReference fetches and extracts a CA certificate from either a ConfigMap or Secret
 // referenced by the given ObjectReference. Returns the CA certificate data as a string.
 func buildCaCertificateReference(
@@ -1007,9 +1021,9 @@ func buildCaCertificateReference(
 	}
 }
 
-// SAHFIX
 // applyClientCertificateValidation applies the resolved client certificate validation configuration
 // to the TLS config by fetching CA certificates and setting validation parameters.
+// Returns a boolean indicating if the any client certificate validation was applied successfully and an error if any.
 func applyClientCertificateValidation(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -1017,9 +1031,9 @@ func applyClientCertificateValidation(
 	listener ir.Listener,
 	validationConfig *ir.ClientCertificateValidationIR,
 	tlsConfig *ir.TLSConfig,
-) error {
+) (bool, error) {
 	if validationConfig == nil {
-		return nil
+		return true, nil
 	}
 
 	// Fetch CA certificates from ConfigMaps or Secrets
@@ -1032,10 +1046,11 @@ func applyClientCertificateValidation(
 		case *gwxv1a1.XListenerSet:
 			parentGVK = wellknown.XListenerSetGVK
 		default:
-			return fmt.Errorf("unsupported parent type: %T", listener.Parent)
+			return false, fmt.Errorf("unsupported parent type: %T", listener.Parent)
 		}
 	}
 
+	var certErr error
 	for _, caCertRef := range validationConfig.CACertificateRefs {
 		caCertData, err := buildCaCertificateReference(
 			kctx,
@@ -1046,7 +1061,8 @@ func applyClientCertificateValidation(
 			listener.Parent.GetNamespace(),
 		)
 		if err != nil {
-			return err
+			certErr = errors.Join(certErr, err)
+			continue
 		}
 
 		caCertificates = append(caCertificates, []byte(caCertData))
@@ -1054,7 +1070,7 @@ func applyClientCertificateValidation(
 
 	// Only set ClientCertificateValidation if we successfully fetched at least one CA cert
 	if len(caCertificates) == 0 {
-		return fmt.Errorf("no CA certificates were successfully fetched")
+		return false, certErr
 	}
 
 	// Set client certificate validation in TLS config
@@ -1063,14 +1079,14 @@ func applyClientCertificateValidation(
 		RequireClientCertificate: validationConfig.RequireClientCertificate,
 	}
 
-	return nil
+	return true, certErr
 }
 
 // reportTLSConfigError reports TLS configuration errors by setting appropriate listener conditions.
-func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) {
+func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, partiallyValid bool) {
 	reason := gwv1.ListenerReasonInvalidCertificateRef
 	message := "Invalid certificate ref(s)."
-	acceptedReason := gwv1.ListenerReasonInvalid // TODO better default?
+	acceptedReason := gwv1.ListenerReasonInvalid
 
 	logger.Warn("reporting TLS config error", "error", err)
 	switch {
@@ -1078,7 +1094,7 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) 
 		reason = gwv1.ListenerReasonRefNotPermitted
 		message = err.Error() //"Reference not permitted by ReferenceGrant."
 	case errors.Is(err, krtcollections.ErrMissingConfigMapReferenceGrant):
-		reason = sslutils.ListenerReasonInvalidCACertificateRef
+		reason = gwv1.ListenerReasonRefNotPermitted
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrInvalidTlsSecret):
@@ -1105,31 +1121,30 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) 
 		}
 		message = fmt.Sprintf(ResourceNotFoundMessageTemplate, resourceType, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 	}
-	// SAHFIX - for conformance : ListenerReasonInvalidCACertificateRef/
-	// check - ListenerReasonInvalidCACertificateKind
-	// ListenerReasonRefNotPermitted
+
 	listenerReporter.SetCondition(reports.ListenerCondition{
 		Type:    gwv1.ListenerConditionResolvedRefs,
 		Status:  metav1.ConditionFalse,
 		Reason:  reason,
 		Message: message,
 	})
-	logger.Warn("reporting listener programmed condition", "reason", gwv1.ListenerReasonInvalid, "message", message)
-	// listener with no ssl is invalid. We return nil so set programmed to false
+
+	// Accepted and Programmed conditions are set to true if the listener is partially valid
+	acceptedProgrammedStatus := metav1.ConditionFalse
+	if partiallyValid {
+		acceptedProgrammedStatus = metav1.ConditionTrue
+	}
+
 	listenerReporter.SetCondition(reports.ListenerCondition{
 		Type:    gwv1.ListenerConditionProgrammed,
-		Status:  metav1.ConditionFalse,
+		Status:  acceptedProgrammedStatus,
 		Reason:  gwv1.ListenerReasonInvalid,
 		Message: message,
 	})
 
-	// This condition (ListenerConditionAccepted) indicates that the listener is syntactically and
-	// semantically valid ... In general, a Listener will be marked as Accepted when the supplied
-	// configuration will generate at least some data plane configuration.
-	// Since we are reporting a tls error, we set the accepted condition to false.
 	listenerReporter.SetCondition(reports.ListenerCondition{
 		Type:    gwv1.ListenerConditionAccepted,
-		Status:  metav1.ConditionFalse,
+		Status:  acceptedProgrammedStatus,
 		Reason:  acceptedReason,
 		Message: message,
 	})

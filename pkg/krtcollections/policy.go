@@ -1710,7 +1710,7 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSCo
 		validCARefs := make([]gwv1.ObjectReference, 0)
 		for _, ref := range frontendTLS.Default.Validation.CACertificateRefs {
 			if err := validateCAReferenceType(ref); err != nil {
-				result.DefaultError = err
+				result.DefaultError = errors.Join(result.DefaultError, err)
 			} else {
 				validCARefs = append(validCARefs, ref)
 			}
@@ -1732,7 +1732,7 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSCo
 			validCARefs := make([]gwv1.ObjectReference, 0)
 			for _, ref := range portConfig.TLS.Validation.CACertificateRefs {
 				if err := validateCAReferenceType(ref); err != nil {
-					result.PortErrors[portConfig.Port] = err
+					result.PortErrors[portConfig.Port] = errors.Join(result.PortErrors[portConfig.Port], err)
 				} else {
 					validCARefs = append(validCARefs, ref)
 				}

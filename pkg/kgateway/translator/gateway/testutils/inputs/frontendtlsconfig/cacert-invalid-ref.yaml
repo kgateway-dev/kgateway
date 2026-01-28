@@ -32,6 +32,18 @@ spec:
                   kind: Service
                   namespace: default
                   group: ""
+        - port: 7443
+          tls:
+            validation:
+              caCertificateRefs:
+                - name: ca-cert-missing
+                  kind: ConfigMap
+                  namespace: default
+                  group: ""
+                - name: ca-cert
+                  kind: ConfigMap
+                  group: ""
+                  namespace: default
   listeners:
   - name: https
     protocol: HTTPS
@@ -50,6 +62,14 @@ spec:
         - name: https
           kind: Secret
   - name: listener-bad-certkind
+    protocol: HTTPS
+    port: 7443
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: https
+          kind: Secret
+  - name: listener-partially-valid
     protocol: HTTPS
     port: 9443
     tls:

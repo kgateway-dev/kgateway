@@ -105,8 +105,8 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Some listeners are not programmed: https: Reference not permitted
-          by ReferenceGrant.'
+        message: 'Some listeners are not programmed: https: failed to fetch CA certificate
+          ConfigMap ca-cert/default: missing ConfigMap reference grant'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -119,19 +119,22 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Reference not permitted by ReferenceGrant.
+          message: 'failed to fetch CA certificate ConfigMap ca-cert/default: missing
+            ConfigMap reference grant'
           reason: RefNotPermitted
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: Reference not permitted by ReferenceGrant.
+          message: 'failed to fetch CA certificate ConfigMap ca-cert/default: missing
+            ConfigMap reference grant'
           reason: Invalid
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: Successfully accepted Listener
-          reason: Accepted
-          status: "True"
+          message: 'failed to fetch CA certificate ConfigMap ca-cert/default: missing
+            ConfigMap reference grant'
+          reason: NoValidCACertificate
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully verified that Listener has no conflicts
