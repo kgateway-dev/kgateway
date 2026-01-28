@@ -111,7 +111,7 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         if buffers.is_none() {
             // For LocalReply, the body is in the "received_response_body"
             buffers = self.envoy_filter.get_received_response_body();
-            if !buffers.is_none() {
+            if buffers.is_some() {
                 self.used_received_response_body = true;
             }
         }
