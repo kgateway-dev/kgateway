@@ -2,39 +2,24 @@ package stopwatch
 
 import (
 	"context"
-	"log"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
 
 var (
-	translationTime      = stats.Float64("io.kgateway/translation_time_sec", "how long the translator takes in seconds", "s")
-	translatorNameKey, _ = tag.NewKey("translator_name")
+	translationTime = metrics.NewHistogram(metrics.HistogramOpts{
+		Name:    "translation_time_seconds",
+		Help:    "how long the translator takes in seconds",
+		Buckets: []float64{0.01, 0.05, 0.1, 0.25, 0.5, 1, 5, 10, 60},
+	}, []string{"translator_name"})
 )
 
-func init() {
-	// Register views with OpenCensus
-	if err := view.Register(
-		&view.View{
-			Name:        "io.kgateway/translation_time_sec",
-			Measure:     translationTime,
-			Description: "how long the translator takes in seconds",
-			Aggregation: view.Distribution(0.01, 0.05, 0.1, 0.25, 0.5, 1, 5, 10, 60),
-			TagKeys:     []tag.Key{translatorNameKey},
-		},
-	); err != nil {
-		log.Fatalf("Failed to register views: %v", err)
-	}
-}
-
 func NewTranslatorStopWatch(translatorName string) StopWatch {
-	return NewStopWatch(translationTime, tag.Upsert(translatorNameKey, translatorName))
+	return NewStopWatch(translationTime, metrics.Label{Name: "translator_name", Value: translatorName})
 }
 
-// StopWatch is a stopwatch that records the duration of an operation and records an opencensus metric for the time between Start and Stop
+// StopWatch is a stopwatch that records the duration of an operation and records a prometheus metric for the time between Start and Stop
 type StopWatch interface {
 	Start()
 	Stop(ctx context.Context) time.Duration
@@ -42,16 +27,16 @@ type StopWatch interface {
 
 type stopwatch struct {
 	startTime time.Time
-	measure   *stats.Float64Measure
-	labels    []tag.Mutator
+	histogram metrics.Histogram
+	label     metrics.Label
 }
 
-// NewStopWatch creates a new StopWatch that records the duration of an operation and records an opencensus metric for the time between Start and Stop
-// The metric is recorded with the provided measurement and labels as a tag
-func NewStopWatch(measure *stats.Float64Measure, labels ...tag.Mutator) StopWatch {
+// NewStopWatch creates a new StopWatch that records the duration of an operation and records a prometheus metric for the time between Start and Stop
+// The metric is recorded with the provided histogram and label
+func NewStopWatch(histogram metrics.Histogram, label metrics.Label) StopWatch {
 	return &stopwatch{
-		measure: measure,
-		labels:  labels,
+		histogram: histogram,
+		label:     label,
 	}
 }
 
@@ -65,7 +50,6 @@ func (s *stopwatch) Start() {
 // metrics that rely on this stopwatch and redundant logging.
 func (s *stopwatch) Stop(ctx context.Context) time.Duration {
 	duration := time.Since(s.startTime)
-	tagCtx, _ := tag.New(ctx, s.labels...)
-	stats.Record(tagCtx, s.measure.M(duration.Seconds()))
+	s.histogram.Observe(duration.Seconds(), s.label)
 	return duration
 }
