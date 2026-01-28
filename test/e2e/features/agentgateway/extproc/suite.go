@@ -64,7 +64,7 @@ func (s *testingSuite) SetupSuite() {
 
 // TestExtProcWithGatewayTargetRef tests ExtProc with targetRef to Gateway using AgentgatewayPolicy
 func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		gateway.Name,
 		gateway.Namespace,
@@ -72,7 +72,7 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		metav1.ConditionTrue,
 		timeout,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		gateway.Name,
 		gateway.Namespace,
@@ -130,7 +130,7 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		},
 	}
 	for _, tc := range testCases {
-		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.Ctx,
 			defaults.CurlPodExecOpt,
 			tc.opts,
@@ -140,7 +140,7 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 
 // TestExtProcWithHTTPRouteTargetRef tests ExtProc with targetRef to HTTPRoute using AgentgatewayPolicy
 func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		gateway.Name,
 		gateway.Namespace,
@@ -148,7 +148,7 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 		metav1.ConditionTrue,
 		timeout,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		gateway.Name,
 		gateway.Namespace,
@@ -206,7 +206,7 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 		},
 	}
 	for _, tc := range testCases {
-		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.Ctx,
 			defaults.CurlPodExecOpt,
 			tc.opts,

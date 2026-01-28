@@ -53,7 +53,7 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithService() {
 		s.NoError(err, "can delete manifest")
 		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, serviceManifest)
 		s.NoError(err, "can delete manifest")
-		s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, proxyService, proxyDeployment)
+		s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, proxyService, proxyDeployment)
 	})
 
 	err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeWithServiceManifest)
@@ -63,15 +63,15 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithService() {
 	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, serviceManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, proxyService, proxyDeployment)
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, proxyService, proxyDeployment)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=gw",
 	})
 
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -91,12 +91,12 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithServiceAndWi
 		s.Assert().NoError(err, "can delete manifest")
 		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, serviceManifest)
 		s.Assert().NoError(err, "can delete manifest")
-		s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, proxyService, proxyDeployment)
+		s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, proxyService, proxyDeployment)
 
 		// Restore the TCPRoute CRD using the saved content
 		err = s.TestInstallation.Actions.Kubectl().Create(s.Ctx, []byte(tcpRouteCrdYaml))
 		s.NoError(err, "can apply TCPRoute CRD")
-		s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, &wellknown.TCPRouteCRD)
+		s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, &wellknown.TCPRouteCRD)
 	})
 
 	// Remove the TCPRoute CRD to assert HTTPRoute services still work.
@@ -110,15 +110,15 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithServiceAndWi
 	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, serviceManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, proxyService, proxyDeployment)
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, proxyService, proxyDeployment)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=gw",
 	})
 
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -133,7 +133,7 @@ func (s *testingSuite) TestClearStaleStatus() {
 		// routeMissingGwManifest only modify the route thus cleaning up routeWithServiceManifest is enough.
 		err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, routeWithGwManifest)
 		s.NoError(err, "can delete manifest")
-		s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, proxyService, proxyDeployment)
+		s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, proxyService, proxyDeployment)
 	})
 
 	err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeWithGwManifest)
@@ -165,7 +165,7 @@ func (s *testingSuite) TestClearStaleStatus() {
 
 func (s *testingSuite) addParentStatus(routeName, routeNamespace, gwName, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,
@@ -199,7 +199,7 @@ func (s *testingSuite) addParentStatus(routeName, routeNamespace, gwName, contro
 
 func (s *testingSuite) assertParentStatuses(parentName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,

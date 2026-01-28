@@ -75,6 +75,14 @@ func CreateTestInstallationForCluster(
 			WithClusterContext(clusterContext).
 			WithInstallContext(installContext),
 
+		// Create an assertions provider function that returns a new provider for each test
+		// This ensures each test gets its own properly scoped testing.T
+		AssertionsT: func(t *testing.T) *assertions.Provider {
+			return assertions.NewProvider(t).
+				WithClusterContext(clusterContext).
+				WithInstallContext(installContext)
+		},
+
 		// GeneratedFiles contains the unique location where files generated during the execution
 		// of tests against this installation will be stored
 		// By creating a unique location, per TestInstallation and per Cluster.Name we guarantee isolation
@@ -105,7 +113,12 @@ type TestInstallation struct {
 	Actions *actions.Provider
 
 	// Assertions is the entity that creates assertions that can be executed by the Operator
+	// DEPRECATED: Use AssertionsT instead (which is scoped to a specific test and not the root suite)
 	Assertions *assertions.Provider
+
+	// AssertionsT is a function that creates assertions for a specific test using the test-scoped testing.T
+	// This ensures that assertion failures are properly attributed to the correct test
+	AssertionsT func(*testing.T) *assertions.Provider
 
 	// GeneratedFiles is the collection of directories and files that this test installation _may_ create
 	GeneratedFiles GeneratedFiles
@@ -154,18 +167,18 @@ func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
 
 // InstallKgatewayFromLocalChart installs the controller and CRD chart based on the `ChartType` of the underlying
 // TestInstallation. By default `kgateway` will be installed but can be set to `agentgateway`
-func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
+func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context, t *testing.T) {
 	chartType := i.Metadata.GetChartType()
 	if chartType == "agentgateway" {
-		i.InstallAgentgatewayCRDsFromLocalChart(ctx)
-		i.InstallAgentgatewayCoreFromLocalChart(ctx)
+		i.InstallAgentgatewayCRDsFromLocalChart(ctx, t)
+		i.InstallAgentgatewayCoreFromLocalChart(ctx, t)
 	} else {
-		i.InstallKgatewayCRDsFromLocalChart(ctx)
-		i.InstallKgatewayCoreFromLocalChart(ctx)
+		i.InstallKgatewayCRDsFromLocalChart(ctx, t)
+		i.InstallKgatewayCoreFromLocalChart(ctx, t)
 	}
 }
 
-func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context) {
+func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context, t *testing.T) {
 	if testutils.ShouldSkipInstallAndTeardown() {
 		return
 	}
@@ -179,7 +192,7 @@ func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context
 
 	// install the CRD chart first
 	crdChartURI, err := helper.GetLocalChartPath(helmutils.CRDChartName, "")
-	i.Assertions.Require.NoError(err)
+	i.AssertionsT(t).Require.NoError(err)
 	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
 		helmutils.InstallOpts{
@@ -188,10 +201,10 @@ func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context
 			Namespace:       i.Metadata.InstallNamespace,
 			ChartUri:        crdChartURI,
 		})
-	i.Assertions.Require.NoError(err)
+	i.AssertionsT(t).Require.NoError(err)
 }
 
-func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context) {
+func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context, t *testing.T) {
 	if testutils.ShouldSkipInstallAndTeardown() {
 		return
 	}
@@ -205,7 +218,7 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 
 	// and then install the main chart
 	chartUri, err := helper.GetLocalChartPath(helmutils.ChartName, "")
-	i.Assertions.Require.NoError(err)
+	i.AssertionsT(t).Require.NoError(err)
 	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
 		helmutils.InstallOpts{
@@ -216,12 +229,12 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 			ChartUri:        chartUri,
 			ExtraArgs:       i.Metadata.ExtraHelmArgs,
 		})
-	i.Assertions.Require.NoError(err)
-	i.Assertions.EventuallyGatewayInstallSucceeded(ctx)
+	i.AssertionsT(t).Require.NoError(err)
+	i.AssertionsT(t).EventuallyGatewayInstallSucceeded(ctx)
 }
 
 // InstallAgentgatewayCRDsFromLocalChart installs the agentgateway CRD chart from the local filesystem
-func (i *TestInstallation) InstallAgentgatewayCRDsFromLocalChart(ctx context.Context) {
+func (i *TestInstallation) InstallAgentgatewayCRDsFromLocalChart(ctx context.Context, t *testing.T) {
 	if testutils.ShouldSkipInstallAndTeardown() {
 		return
 	}
@@ -235,7 +248,7 @@ func (i *TestInstallation) InstallAgentgatewayCRDsFromLocalChart(ctx context.Con
 
 	// install the CRD chart first
 	crdChartURI, err := helper.GetLocalChartPath(helmutils.AgentgatewayCRDChartName, "")
-	i.Assertions.Require.NoError(err)
+	i.AssertionsT(t).Require.NoError(err)
 	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
 		helmutils.InstallOpts{
@@ -244,11 +257,11 @@ func (i *TestInstallation) InstallAgentgatewayCRDsFromLocalChart(ctx context.Con
 			Namespace:       i.Metadata.InstallNamespace,
 			ChartUri:        crdChartURI,
 		})
-	i.Assertions.Require.NoError(err)
+	i.AssertionsT(t).Require.NoError(err)
 }
 
 // InstallAgentgatewayCoreFromLocalChart installs the agentgateway main chart from the local filesystem
-func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Context) {
+func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Context, t *testing.T) {
 	if testutils.ShouldSkipInstallAndTeardown() {
 		return
 	}
@@ -262,7 +275,7 @@ func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Con
 
 	// and then install the main chart
 	chartUri, err := helper.GetLocalChartPath(helmutils.AgentgatewayChartName, "")
-	i.Assertions.Require.NoError(err)
+	i.AssertionsT(t).Require.NoError(err)
 	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
 		helmutils.InstallOpts{
@@ -277,8 +290,8 @@ func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Con
 			ChartUri:    chartUri,
 			ExtraArgs:   i.Metadata.ExtraHelmArgs,
 		})
-	i.Assertions.Require.NoError(err)
-	i.Assertions.EventuallyGatewayInstallSucceeded(ctx)
+	i.AssertionsT(t).Require.NoError(err)
+	i.AssertionsT(t).EventuallyGatewayInstallSucceeded(ctx)
 }
 
 // TODO implement this when we add upgrade tests
@@ -288,18 +301,18 @@ func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Con
 // 	}
 // }
 
-func (i *TestInstallation) UninstallKgateway(ctx context.Context) {
+func (i *TestInstallation) UninstallKgateway(ctx context.Context, t *testing.T) {
 	chartType := i.Metadata.GetChartType()
 	if chartType == "agentgateway" {
-		i.UninstallAgentgatewayCore(ctx)
-		i.UninstallAgentgatewayCRDs(ctx)
+		i.UninstallAgentgatewayCore(ctx, t)
+		i.UninstallAgentgatewayCRDs(ctx, t)
 	} else {
-		i.UninstallKgatewayCore(ctx)
-		i.UninstallKgatewayCRDs(ctx)
+		i.UninstallKgatewayCore(ctx, t)
+		i.UninstallKgatewayCRDs(ctx, t)
 	}
 }
 
-func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
+func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context, t *testing.T) {
 	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
 		return
 	}
@@ -319,11 +332,11 @@ func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
 			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
 		},
 	)
-	i.Assertions.Require.NoError(err, "failed to uninstall main chart")
-	i.Assertions.EventuallyGatewayUninstallSucceeded(ctx)
+	i.AssertionsT(t).Require.NoError(err, "failed to uninstall main chart")
+	i.AssertionsT(t).EventuallyGatewayUninstallSucceeded(ctx)
 }
 
-func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context) {
+func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context, t *testing.T) {
 	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
 		return
 	}
@@ -343,11 +356,11 @@ func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context) {
 			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
 		},
 	)
-	i.Assertions.Require.NoError(err, "failed to uninstall CRD chart")
+	i.AssertionsT(t).Require.NoError(err, "failed to uninstall CRD chart")
 }
 
 // UninstallAgentgatewayCore uninstalls the agentgateway main chart
-func (i *TestInstallation) UninstallAgentgatewayCore(ctx context.Context) {
+func (i *TestInstallation) UninstallAgentgatewayCore(ctx context.Context, t *testing.T) {
 	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
 		return
 	}
@@ -367,12 +380,12 @@ func (i *TestInstallation) UninstallAgentgatewayCore(ctx context.Context) {
 			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
 		},
 	)
-	i.Assertions.Require.NoError(err, "failed to uninstall main chart")
-	i.Assertions.EventuallyGatewayUninstallSucceeded(ctx)
+	i.AssertionsT(t).Require.NoError(err, "failed to uninstall main chart")
+	i.AssertionsT(t).EventuallyGatewayUninstallSucceeded(ctx)
 }
 
 // UninstallAgentgatewayCRDs uninstalls the agentgateway CRD chart
-func (i *TestInstallation) UninstallAgentgatewayCRDs(ctx context.Context) {
+func (i *TestInstallation) UninstallAgentgatewayCRDs(ctx context.Context, t *testing.T) {
 	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
 		return
 	}
@@ -392,21 +405,21 @@ func (i *TestInstallation) UninstallAgentgatewayCRDs(ctx context.Context) {
 			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
 		},
 	)
-	i.Assertions.Require.NoError(err, "failed to uninstall CRD chart")
+	i.AssertionsT(t).Require.NoError(err, "failed to uninstall CRD chart")
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) PreFailHandler(ctx context.Context) {
-	i.preFailHandler(ctx, i.GeneratedFiles.FailureDir)
+func (i *TestInstallation) PreFailHandler(ctx context.Context, t *testing.T) {
+	i.preFailHandler(ctx, t, i.GeneratedFiles.FailureDir)
 }
 
 // PerTestPreFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) PerTestPreFailHandler(ctx context.Context, testName string) {
-	i.preFailHandler(ctx, filepath.Join(i.GeneratedFiles.FailureDir, testName))
+func (i *TestInstallation) PerTestPreFailHandler(ctx context.Context, t *testing.T, testName string) {
+	i.preFailHandler(ctx, t, filepath.Join(i.GeneratedFiles.FailureDir, testName))
 }
 
-// PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
-func (i *TestInstallation) preFailHandler(ctx context.Context, dir string) {
+// preFailHandler is the function that is invoked if a test in the given TestInstallation fails
+func (i *TestInstallation) preFailHandler(ctx context.Context, t *testing.T, dir string) {
 	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
 	// That way we can upload it in CI, or inspect it locally
 
@@ -415,12 +428,12 @@ func (i *TestInstallation) preFailHandler(ctx context.Context, dir string) {
 	// if multiple tests running in the same cluster from the same installation namespace
 	// fail.
 	if err != nil && !errors.Is(err, fs.ErrExist) {
-		i.Assertions.Require.NoError(err)
+		i.AssertionsT(t).Require.NoError(err, "failed to create failure directory")
 	}
 
 	// The kubernetes/e2e tests may use multiple namespaces, so we need to dump all of them
 	namespaces, err := i.Actions.Kubectl().Namespaces(ctx)
-	i.Assertions.Require.NoError(err)
+	i.AssertionsT(t).Require.NoError(err, "failed to get namespaces for failure dump")
 
 	// Dump the logs and state of the cluster
 	helpers.StandardKgatewayDumpOnFail(os.Stdout, i.Actions.Kubectl(), dir, namespaces)

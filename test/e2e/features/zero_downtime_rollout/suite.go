@@ -60,12 +60,12 @@ func NewTestingSuiteKgateway(ctx context.Context, testInst *e2e.TestInstallation
 
 func (s *testingSuiteKgateway) TestZeroDowntimeRollout() {
 	// Ensure the gateway pod is up and running.
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 			LabelSelector: defaults.WellKnownAppLabel + "=" + proxyObjectMeta.GetName(),
 		})
 
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -134,12 +134,12 @@ func NewTestingSuiteAgentgateway(ctx context.Context, testInst *e2e.TestInstalla
 
 func (s *testingSuiteAgentgateway) TestZeroDowntimeRolloutAgentgateway() {
 	// Ensure the agentgateway pod is up and running.
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		agentgatewayObjectMeta.GetNamespace(), metav1.ListOptions{
 			LabelSelector: defaults.WellKnownAppLabel + "=" + agentgatewayObjectMeta.GetName(),
 		})
 
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
