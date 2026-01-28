@@ -20,11 +20,15 @@ pub struct FilterConfig {
 
 struct EnvoyTransformationOps<'a> {
     envoy_filter: &'a mut dyn EnvoyHttpFilter,
+    used_received_response_body: bool,
 }
 
 impl<'a> EnvoyTransformationOps<'a> {
     fn new(envoy_filter: &'a mut dyn EnvoyHttpFilter) -> EnvoyTransformationOps<'a> {
-        EnvoyTransformationOps { envoy_filter }
+        EnvoyTransformationOps {
+            envoy_filter,
+            used_received_response_body: false,
+        }
     }
 }
 impl TransformationOps for EnvoyTransformationOps<'_> {
@@ -95,29 +99,47 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         self.envoy_filter.remove_response_header(key)
     }
     fn parse_response_json_body(&mut self) -> Result<JsonValue> {
-        let Some(buffers) = self.envoy_filter.get_buffered_response_body() else {
+        let body = self.get_response_body();
+        if body.is_empty() {
             return Ok(JsonValue::Null);
-        };
-        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
-        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
-        let body = chunks.concat();
+        }
         serde_json::from_slice(&body).context("failed to parse response body as json")
     }
     fn get_response_body(&mut self) -> Vec<u8> {
-        let Some(buffers) = self.envoy_filter.get_buffered_response_body() else {
-            return Vec::default();
-        };
+        let mut buffers = self.envoy_filter.get_buffered_response_body();
 
-        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
-        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
-        chunks.concat()
+        if buffers.is_none() {
+            // For LocalReply, the body is in the "received_response_body"
+            buffers = self.envoy_filter.get_received_response_body();
+            if !buffers.is_none() {
+                self.used_received_response_body = true;
+            }
+        }
+
+        match buffers {
+            None => Vec::default(),
+            Some(buffers) => {
+                // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
+                let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
+                chunks.concat()
+            }
+        }
     }
     fn drain_response_body(&mut self, number_of_bytes: usize) -> bool {
-        self.envoy_filter
-            .drain_buffered_response_body(number_of_bytes)
+        if self.used_received_response_body {
+            self.envoy_filter
+                .drain_received_response_body(number_of_bytes)
+        } else {
+            self.envoy_filter
+                .drain_buffered_response_body(number_of_bytes)
+        }
     }
     fn append_response_body(&mut self, data: &[u8]) -> bool {
-        self.envoy_filter.append_buffered_response_body(data)
+        if self.used_received_response_body {
+            self.envoy_filter.append_received_response_body(data)
+        } else {
+            self.envoy_filter.append_buffered_response_body(data)
+        }
     }
 }
 
