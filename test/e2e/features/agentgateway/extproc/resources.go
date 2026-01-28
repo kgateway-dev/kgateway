@@ -27,7 +27,6 @@ var (
 	gatewayManifest                  = getTestFile("gateway.yaml")
 	routeWithTargetReferenceManifest = getTestFile("httproute-targetref.yaml")
 	gatewayTargetReferenceManifest   = getTestFile("gateway-targetref.yaml")
-	extProcWithServiceManifest       = getTestFile("extproc-service.yaml")
 	backendWithServiceManifest       = getTestFile("backend-service.yaml")
 )
 

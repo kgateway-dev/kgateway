@@ -8,7 +8,7 @@ RUN go mod download
 COPY . .
 
 ARG TARGETOS TARGETARCH
-RUN GOOS=$TARGETOS GOARCH=$TARGETARCH make server
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH CGO_ENABLED=0 go build -a -o _output/server
 
 FROM alpine:3.17.6
 COPY --from=builder ./app/_output/server /server

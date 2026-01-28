@@ -84,10 +84,15 @@ type PerClientProcessor struct {
 
 func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	// If the ucc has a waypoint gateway class we will let it have an EDS cluster
+	// First try the annotation (for long gateway names > 63 chars), then fall back to the label
+	gwName := ucc.Labels[wellknown.GatewayNameAnnotation]
+	if gwName == "" {
+		gwName = ucc.Labels[wellknown.GatewayNameLabel]
+	}
 	gwKey := ir.ObjectSource{
 		Group:     wellknown.GatewayGVK.GroupKind().Group,
 		Kind:      wellknown.GatewayGVK.GroupKind().Kind,
-		Name:      ucc.Labels[wellknown.GatewayNameLabel],
+		Name:      gwName,
 		Namespace: ucc.Namespace,
 	}
 	gwir := krt.FetchOne(kctx, t.commonCols.GatewayIndex.Gateways, krt.FilterKey(gwKey.ResourceName()))

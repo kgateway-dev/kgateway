@@ -2,6 +2,7 @@ package krtcollections_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -11,6 +12,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -158,6 +160,57 @@ func TestPods(t *testing.T) {
 					corev1.LabelHostname:       "node",
 					"a":                        "b",
 				},
+			},
+		},
+		{
+			name: "long gateway name annotation is augmented into labels",
+			inputs: []any{
+				&corev1.Pod{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "ns",
+						Labels:    map[string]string{"a": "b"},
+						Annotations: map[string]string{
+							// This is a long gateway name that exceeds 63 chars
+							wellknown.GatewayNameAnnotation: strings.Repeat("a", 100) + "-gateway",
+						},
+					},
+					Spec: corev1.PodSpec{
+						NodeName: "node",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "1.2.3.4",
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node",
+						Labels: map[string]string{
+							corev1.LabelTopologyRegion: "region",
+							corev1.LabelTopologyZone:   "zone",
+						},
+					},
+				},
+			},
+			result: krtcollections.LocalityPod{
+				Named: krt.Named{
+					Name:      "name",
+					Namespace: "ns",
+				},
+				Locality: ir.PodLocality{
+					Region:  "region",
+					Zone:    "zone",
+					Subzone: "",
+				},
+				AugmentedLabels: map[string]string{
+					corev1.LabelTopologyRegion:      "region",
+					corev1.LabelTopologyZone:        "zone",
+					corev1.LabelHostname:            "node",
+					"a":                             "b",
+					wellknown.GatewayNameAnnotation: strings.Repeat("a", 100) + "-gateway",
+				},
+				Addresses: []string{"1.2.3.4"},
 			},
 		},
 	}

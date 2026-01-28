@@ -32,12 +32,8 @@ type DfpIr struct {
 }
 
 // Equals checks if two DfpIr objects are equal.
-func (u *DfpIr) Equals(other any) bool {
-	otherDfp, ok := other.(*DfpIr)
-	if !ok {
-		return false
-	}
-	return cmputils.CompareWithNils(u, otherDfp, func(a, b *DfpIr) bool {
+func (u *DfpIr) Equals(other *DfpIr) bool {
+	return cmputils.CompareWithNils(u, other, func(a, b *DfpIr) bool {
 		return proto.Equal(a.clusterTypeConfig, b.clusterTypeConfig) &&
 			proto.Equal(a.transportSocket, b.transportSocket)
 	})

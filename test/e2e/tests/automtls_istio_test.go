@@ -11,6 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
+	testruntime "github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -19,8 +20,8 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 	ctx := context.Background()
 
 	// Set Istio version if not already set
-	if os.Getenv("ISTIO_VERSION") == "" {
-		os.Setenv("ISTIO_VERSION", "1.25.1") // Using default istio version
+	if os.Getenv(testruntime.IstioVersionEnv) == "" {
+		os.Setenv(testruntime.IstioVersionEnv, "1.25.1") // Using default istio version
 	}
 
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "automtls-istio-test")

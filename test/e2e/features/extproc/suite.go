@@ -28,7 +28,11 @@ type testingSuite struct {
 
 var (
 	setup = base.TestCase{
-		Manifests: []string{setupManifest, testdefaults.CurlPodManifest},
+		Manifests: []string{
+			setupManifest,
+			testdefaults.CurlPodManifest,
+			testdefaults.ExtProcManifest,
+		},
 	}
 
 	testCases = map[string]*base.TestCase{
@@ -272,7 +276,7 @@ func (s *testingSuite) TestExtProcWithBackendFilter() {
 }
 
 // The instructions format that the example extproc service understands.
-// See the `basic-sink` example in https://github.com/solo-io/ext-proc-examples
+// See test/e2e/defaults/extproc/README.md for more details.
 type instructions struct {
 	// Header key/value pairs to add to the request or response.
 	AddHeaders map[string]string `json:"addHeaders"`

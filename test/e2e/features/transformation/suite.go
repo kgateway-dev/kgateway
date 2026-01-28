@@ -178,6 +178,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 			opts: []curl.Option{
 				curl.WithBody("hello"),
 				curl.WithHeader("cookie", "foo=bar"),
+				curl.WithHeader("User-Agent", "curl/8.18.0"),
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
@@ -208,6 +209,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 					// There should be a space at the beginning and end but
 					// there might be a side effect from the echo server where the header values are trimmed
 					"x-space-test": "foobar",
+					"x-client":     "text",
 
 					// REMOVE-ENVOY-1.37: Add header is no-op for arm build, so comment this out for now until after we upgrade to ENVOY-1.37
 					// "cookie":       []string{"foo=bar", "test=123"},

@@ -21,43 +21,6 @@ spec:
         name: ext-proc-grpc
         port: 4444
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ext-proc-grpc
-spec:
-  selector:
-    matchLabels:
-      app: ext-proc-grpc
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: ext-proc-grpc
-        app.kubernetes.io/name: ext-proc-grpc
-    spec:
-      containers:
-        - name: ext-proc-grpc
-          image: gcr.io/solo-test-236622/ext-proc-example-basic-sink:0.0.2
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 18080
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ext-proc-grpc
-  labels:
-    app: ext-proc-grpc
-spec:
-  ports:
-  - port: 4444
-    targetPort: 18080
-    protocol: TCP
-    appProtocol: kubernetes.io/h2c
-  selector:
-    app: ext-proc-grpc
----
 apiVersion: v1
 kind: Service
 metadata:

@@ -289,6 +289,7 @@ spec:
     metadata:
       annotations:
         ambient.istio.io/dns-capture: "false"
+        gateway.kgateway.dev/gateway-full-name: waypoint
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"

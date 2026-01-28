@@ -32,23 +32,16 @@ All fields are optional.
 
 ## Building and Publishing
 
-### 1. Navigate to this directory
+The extproc server image is built and loaded into the kind cluster automatically when running
 
 ```bash
-cd $(git rev-parse --show-toplevel)/test/e2e/features/agentgateway/extproc/example
+make e2e-test
 ```
 
-### 2. Build the Docker image
+To build/load only the extproc server, run
 
 ```bash
-export REPO="ghcr.io/kgateway-dev"
-export IMAGE="test-extproc-server"
-export IMAGE_VERSION="0.0.<version>"
-docker build -t $REPO/$IMAGE:$IMAGE_VERSION .
+make extproc-server-docker kind-load-extproc-server
 ```
 
-### 3. Update the version reference to the container in the test manifests
-
-It is located at `test/e2e/features/agentgateway/extproc/testdata/extproc-service.yaml`
-
-
+This will produce a container image `ghcr.io/kgateway-dev/extproc-server:0.0.1`
