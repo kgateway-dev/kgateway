@@ -38,8 +38,11 @@ BUILDX_BUILD ?= docker buildx build -q
 # Helper variable for escaping commas in Make functions
 comma := ,
 
-# A semver resembling 1.0.1-dev. Most calling GHA jobs customize this. Exported for use in goreleaser.yaml.
-VERSION ?= 1.0.1-dev
+# A 'v'-prefixed semver used only locally. Most calling GHA jobs customize
+# this. Exported for use in goreleaser.yaml. Because our docker images are
+# tagged with a 'v' prefix, we use the prefix here and strip the 'v' prefix
+# where actual semver is desired.
+VERSION ?= v1.0.1-dev
 export VERSION
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)

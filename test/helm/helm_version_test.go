@@ -196,7 +196,7 @@ func TestImageTagVPrefix(t *testing.T) {
 // extractImageLines extracts lines containing "image:" from the output for debugging
 func extractImageLines(output string) string {
 	var lines []string
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		if strings.Contains(line, "image:") {
 			lines = append(lines, strings.TrimSpace(line))
 		}
