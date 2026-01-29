@@ -1,8 +1,10 @@
 package agentgatewaysyncer
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -241,27 +243,6 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 	}
 }
 
-func mergePolicyAncestorStatuses(ourControllerName string, existing []gwv1.PolicyAncestorStatus, desired []gwv1.PolicyAncestorStatus) []gwv1.PolicyAncestorStatus {
-	out := make([]gwv1.PolicyAncestorStatus, 0, len(existing)+len(desired))
-
-	// Preserve any entries not owned by our controller.
-	for _, a := range existing {
-		if string(a.ControllerName) != ourControllerName {
-			out = append(out, a)
-		}
-	}
-
-	// Only add entries owned by our controller from the desired status.
-	// This ensures we can clear stale entries by publishing an empty desired list.
-	for _, a := range desired {
-		if string(a.ControllerName) == ourControllerName {
-			out = append(out, a)
-		}
-	}
-
-	return out
-}
-
 func (s *AgentGwStatusSyncer) NewStatusWorker(ctx context.Context) *status.WorkerPool {
 	return status.NewWorkerPool(ctx, s.SyncStatus, 100)
 }
@@ -293,18 +274,10 @@ func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource
 		// NOTE: This is especially important for Gateway.status.addresses (written by the gateway reconciler),
 		// and for Route status Parents (multi-controller field).
 		current := s.client.Get(obj.Name, obj.Namespace)
-		var zero O
-		if current == zero {
+		if controllers.IsNil(current) {
 			// Harmless race: status write after resource was deleted.
 			logger.Debug("resource not found, skipping status update")
 			return nil
-		}
-
-		// Prefer the latest resourceVersion to avoid avoidable conflicts.
-		// Conflicts are still handled (and expected), but using the latest RV reduces churn.
-		rv := obj.ResourceVersion
-		if crv := current.GetResourceVersion(); crv != "" {
-			rv = crv
 		}
 
 		mergedAny := any(status)
@@ -366,6 +339,13 @@ func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource
 			return nil
 		}
 
+		// Prefer the latest resourceVersion to avoid avoidable conflicts.
+		// Conflicts are still handled (and expected), but using the latest RV reduces churn.
+		rv := obj.ResourceVersion
+		if crv := current.GetResourceVersion(); crv != "" {
+			rv = crv
+		}
+
 		// Pass only the status and minimal part of ObjectMetadata to find the resource and validate it.
 		// Passing Spec is ignored by the API server but has costs.
 		// Passing ResourceVersion is important to ensure we are not writing stale data. The collection is responsible for
@@ -400,6 +380,37 @@ func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource
 	}
 }
 
+func mergePolicyAncestorStatuses(ourControllerName string, existing []gwv1.PolicyAncestorStatus, desired []gwv1.PolicyAncestorStatus) []gwv1.PolicyAncestorStatus {
+	out := make([]gwv1.PolicyAncestorStatus, 0, len(existing)+len(desired))
+
+	// Preserve any entries not owned by our controller.
+	for _, a := range existing {
+		if string(a.ControllerName) != ourControllerName {
+			out = append(out, a)
+		}
+	}
+
+	// Only add entries owned by our controller from the desired status.
+	// This ensures we can clear stale entries by publishing an empty desired list.
+	ours := make([]gwv1.PolicyAncestorStatus, 0, len(desired))
+	for _, a := range desired {
+		if string(a.ControllerName) == ourControllerName {
+			ours = append(ours, a)
+		}
+	}
+
+	// Ensure stable ordering of our entries so status doesn't flap due to map/set iteration upstream.
+	slices.SortFunc(ours, func(a, b gwv1.PolicyAncestorStatus) int {
+		if c := cmp.Compare(string(a.ControllerName), string(b.ControllerName)); c != 0 {
+			return c
+		}
+		return compareParentReference(a.AncestorRef, b.AncestorRef)
+	})
+
+	out = append(out, ours...)
+	return out
+}
+
 func mergeRouteParentStatuses(ourControllerName string, existing []gwv1.RouteParentStatus, desired []gwv1.RouteParentStatus) []gwv1.RouteParentStatus {
 	out := make([]gwv1.RouteParentStatus, 0, len(existing)+len(desired))
 
@@ -412,20 +423,107 @@ func mergeRouteParentStatuses(ourControllerName string, existing []gwv1.RoutePar
 
 	// Only add entries owned by our controller from the desired status.
 	// This ensures we can clear stale entries by publishing an empty desired list.
+	ours := make([]gwv1.RouteParentStatus, 0, len(desired))
 	for _, a := range desired {
 		if string(a.ControllerName) == ourControllerName {
-			out = append(out, a)
+			ours = append(ours, a)
 		}
 	}
 
+	// Ensure stable ordering of our entries so status doesn't flap due to map/set iteration upstream.
+	slices.SortFunc(ours, func(a, b gwv1.RouteParentStatus) int {
+		if c := cmp.Compare(string(a.ControllerName), string(b.ControllerName)); c != 0 {
+			return c
+		}
+		return compareParentReference(a.ParentRef, b.ParentRef)
+	})
+
+	out = append(out, ours...)
 	return out
 }
 
 func mergeGatewayAddresses(existing []gwv1.GatewayStatusAddress, desired []gwv1.GatewayStatusAddress) []gwv1.GatewayStatusAddress {
+	var out []gwv1.GatewayStatusAddress
 	if len(desired) > 0 {
-		return desired
+		out = append([]gwv1.GatewayStatusAddress(nil), desired...)
+	} else {
+		out = append([]gwv1.GatewayStatusAddress(nil), existing...)
 	}
-	return existing
+
+	// Ensure stable ordering so status doesn't flap due to upstream iteration order.
+	slices.SortFunc(out, func(a, b gwv1.GatewayStatusAddress) int {
+		if c := cmp.Compare(addressTypeOrDefault(a.Type), addressTypeOrDefault(b.Type)); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.Value, b.Value)
+	})
+
+	return out
+}
+
+func compareParentReference(a, b gwv1.ParentReference) int {
+	// ParentReference includes pointer fields with defaults. Canonicalize those defaults so nil vs explicitly-set
+	// default values don't introduce ordering churn.
+	if c := cmp.Compare(parentRefGroupOrDefault(a.Group), parentRefGroupOrDefault(b.Group)); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(parentRefKindOrDefault(a.Kind), parentRefKindOrDefault(b.Kind)); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(derefStringPtr(a.Namespace), derefStringPtr(b.Namespace)); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(string(a.Name), string(b.Name)); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(derefStringPtr(a.SectionName), derefStringPtr(b.SectionName)); c != 0 {
+		return c
+	}
+	return comparePortNumberPtr(a.Port, b.Port)
+}
+
+func parentRefGroupOrDefault(g *gwv1.Group) string {
+	if g == nil {
+		// ParentReference.Group default.
+		return "gateway.networking.k8s.io"
+	}
+	return string(*g)
+}
+
+func parentRefKindOrDefault(k *gwv1.Kind) string {
+	if k == nil {
+		// ParentReference.Kind default.
+		return "Gateway"
+	}
+	return string(*k)
+}
+
+func derefStringPtr[S ~string](p *S) string {
+	if p == nil {
+		return ""
+	}
+	return string(*p)
+}
+
+func comparePortNumberPtr(a, b *gwv1.PortNumber) int {
+	switch {
+	case a == nil && b == nil:
+		return 0
+	case a == nil:
+		return -1
+	case b == nil:
+		return 1
+	default:
+		return cmp.Compare(int(*a), int(*b))
+	}
+}
+
+func addressTypeOrDefault(t *gwv1.AddressType) string {
+	if t == nil {
+		// GatewayStatusAddress.Type default.
+		return "IPAddress"
+	}
+	return string(*t)
 }
 
 // NeedLeaderElection returns true to ensure that the AgentGwStatusSyncer runs only on the leader
