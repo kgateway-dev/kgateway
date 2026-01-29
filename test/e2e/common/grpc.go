@@ -12,7 +12,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/reflection/grpc_reflection_v1"
+	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"istio.io/istio/pkg/test/util/retry"
 )
 
@@ -51,7 +51,7 @@ func (g *Gateway) GrpcReflectionAssertResponseMetadata(
 		}
 		defer conn.Close()
 
-		client := grpc_reflection_v1.NewServerReflectionClient(conn)
+		client := grpc_reflection_v1alpha.NewServerReflectionClient(conn)
 		stream, err := client.ServerReflectionInfo(ctx)
 		if err != nil {
 			return fmt.Errorf("open ServerReflectionInfo stream failed: %w", err)
@@ -59,8 +59,8 @@ func (g *Gateway) GrpcReflectionAssertResponseMetadata(
 
 		// Ask for a minimal response to force headers/metadata to be returned.
 		// This is equivalent to the "grpcurl list" / reflection path most tests use.
-		err = stream.Send(&grpc_reflection_v1.ServerReflectionRequest{
-			MessageRequest: &grpc_reflection_v1.ServerReflectionRequest_ListServices{
+		err = stream.Send(&grpc_reflection_v1alpha.ServerReflectionRequest{
+			MessageRequest: &grpc_reflection_v1alpha.ServerReflectionRequest_ListServices{
 				ListServices: "",
 			},
 		})
