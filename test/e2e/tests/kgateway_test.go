@@ -41,11 +41,11 @@ func TestKgateway(t *testing.T) {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 
-		testInstallation.UninstallKgateway(ctx)
+		testInstallation.UninstallKgateway(ctx, t)
 	})
 
 	// Install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx)
+	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	KubeGatewaySuiteRunner().Run(ctx, t, testInstallation)
 }

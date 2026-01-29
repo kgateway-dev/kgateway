@@ -18,6 +18,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+// Temporary home for constants for conformance testing that are not yet in a released version of Gateway API (https://github.com/kubernetes-sigs/gateway-api/blob/aa1ab6fd282dee4f74eeca803ec48b333297c637/apis/v1/gateway_types.go#L1606-L1614)
+const (
+	ListenerReasonInvalidCACertificateRef  gwv1.ListenerConditionReason = "InvalidCACertificateRef"
+	ListenerReasonInvalidCACertificateKind gwv1.ListenerConditionReason = "InvalidCACertificateKind"
+	ListenerReasonNoValidCACertificate     gwv1.ListenerConditionReason = "NoValidCACertificate"
+)
+
 var (
 	ErrInvalidTlsSecret = errors.New("invalid TLS secret")
 
@@ -46,6 +53,18 @@ var (
 		"1.2": envoytlsv3.TlsParameters_TLSv1_2,
 		"1.3": envoytlsv3.TlsParameters_TLSv1_3,
 	}
+
+	ErrInvalidCACertificateRef  = errors.New(string(ListenerReasonInvalidCACertificateRef))
+	ErrInvalidCACertificateKind = errors.New(string(ListenerReasonInvalidCACertificateKind))
+
+	ErrInvalidCACertificateRefDetails = func(n, ns string) error {
+		return fmt.Errorf("invalid ca.crt in ConfigMap %s/%s: %w", ns, n, ErrInvalidCACertificateRef)
+	}
+
+	ErrInvalidCACertificateKindDetails = func(n, ns, kind string) error {
+		return fmt.Errorf("invalid ca.crt kind %s in %s/%s: %w", kind, ns, n, ErrInvalidCACertificateKind)
+	}
+	ErrMissingCaCertificateRefGrant = errors.New("missing CA certificate reference grant")
 )
 
 // ValidateTlsSecret and return a cleaned cert

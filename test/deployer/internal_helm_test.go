@@ -353,6 +353,270 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"HPA should have CPU utilization target from overlay spec")
 			},
 		},
+		// Envoy (kgateway) overlay test cases
+		{
+			Name:      "envoy with PodDisruptionBudget overlay",
+			InputFile: "envoy-pdb-overlay",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "kind: PodDisruptionBudget",
+					"PDB should be created when podDisruptionBudget overlay is specified")
+				assert.Contains(t, outputYaml, "pdb-label: from-overlay",
+					"PDB should have label from overlay")
+				assert.Contains(t, outputYaml, "pdb-annotation: from-overlay",
+					"PDB should have annotation from overlay")
+				assert.Contains(t, outputYaml, "minAvailable: 1",
+					"PDB should have minAvailable from overlay spec")
+			},
+		},
+		{
+			Name:      "envoy with HorizontalPodAutoscaler overlay",
+			InputFile: "envoy-hpa-overlay",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "kind: HorizontalPodAutoscaler",
+					"HPA should be created when horizontalPodAutoscaler overlay is specified")
+				assert.Contains(t, outputYaml, "hpa-label: from-overlay",
+					"HPA should have label from overlay")
+				assert.Contains(t, outputYaml, "hpa-annotation: from-overlay",
+					"HPA should have annotation from overlay")
+				assert.Contains(t, outputYaml, "minReplicas: 2",
+					"HPA should have minReplicas from overlay spec")
+				assert.Contains(t, outputYaml, "maxReplicas: 10",
+					"HPA should have maxReplicas from overlay spec")
+				assert.Contains(t, outputYaml, "averageUtilization: 80",
+					"HPA should have CPU utilization target from overlay spec")
+			},
+		},
+		{
+			Name:      "envoy with VerticalPodAutoscaler overlay",
+			InputFile: "envoy-vpa-overlay",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "kind: VerticalPodAutoscaler",
+					"VPA should be created when verticalPodAutoscaler overlay is specified")
+				assert.Contains(t, outputYaml, "vpa-label: from-overlay",
+					"VPA should have label from overlay")
+				assert.Contains(t, outputYaml, "vpa-annotation: from-overlay",
+					"VPA should have annotation from overlay")
+				assert.Contains(t, outputYaml, "updateMode: Auto",
+					"VPA should have updateMode from overlay spec")
+				assert.Contains(t, outputYaml, "containerName: envoy",
+					"VPA should have containerName from overlay spec")
+			},
+		},
+		{
+			Name:      "envoy strategic-merge-patch tests",
+			InputFile: "envoy-strategic-merge-patch",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				// Deployment overlay metadata applied
+				assert.Contains(t, outputYaml, "deployment-overlay-annotation: from-overlay",
+					"deployment annotation from overlay should be present")
+				assert.Contains(t, outputYaml, "deployment-overlay-label1: from-overlay",
+					"deployment label from overlay should be present")
+
+				// Service overlay metadata applied
+				assert.Contains(t, outputYaml, "service-overlay-annotation: from-overlay",
+					"service annotation from overlay should be present")
+
+				// ServiceAccount overlay metadata applied
+				assert.Contains(t, outputYaml, "sa-overlay-annotation: from-overlay",
+					"serviceaccount annotation from overlay should be present")
+				assert.Contains(t, outputYaml, "sa-overlay-label: from-overlay",
+					"serviceaccount label from overlay should be present")
+
+				// $patch: replace on volumes - only custom-config volume in volumes list
+				assert.Contains(t, outputYaml, "name: my-custom-config",
+					"custom configmap from $patch: replace should be present")
+			},
+		},
+		{
+			Name:      "envoy both GWC and GW have overlays",
+			InputFile: "envoy-both-gwc-and-gw-have-overlays",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				// GWC annotations/labels should be present
+				assert.Contains(t, outputYaml, "gwc-annotation: from-gatewayclass",
+					"GWC annotation should be present")
+				assert.Contains(t, outputYaml, "gwc-label: from-gatewayclass",
+					"GWC label should be present")
+
+				// GW annotations/labels should be present
+				assert.Contains(t, outputYaml, "gw-annotation: from-gateway",
+					"GW annotation should be present")
+				assert.Contains(t, outputYaml, "gw-label: from-gateway",
+					"GW label should be present")
+
+				// Shared annotation/label should be from Gateway (applied second, overrides GWC)
+				assert.Contains(t, outputYaml, "shared-annotation: from-gateway",
+					"shared annotation should be from Gateway (overrides GWC)")
+				assert.Contains(t, outputYaml, "shared-label: from-gateway",
+					"shared label should be from Gateway (overrides GWC)")
+
+				// PDB from GWC should be present
+				assert.Contains(t, outputYaml, "kind: PodDisruptionBudget",
+					"PDB from GWC should be created")
+				assert.Contains(t, outputYaml, "pdb-source: gatewayclass",
+					"PDB should have label from GWC overlay")
+
+				// HPA from GW should be present
+				assert.Contains(t, outputYaml, "kind: HorizontalPodAutoscaler",
+					"HPA from GW should be created")
+				assert.Contains(t, outputYaml, "hpa-source: gateway",
+					"HPA should have label from GW overlay")
+			},
+		},
+		{
+			Name:      "envoy with PDB and autoscalers (HPA, VPA)",
+			InputFile: "envoy-all-autoscalers",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "kind: PodDisruptionBudget",
+					"PDB should be created")
+				assert.Contains(t, outputYaml, "kind: HorizontalPodAutoscaler",
+					"HPA should be created")
+				assert.Contains(t, outputYaml, "kind: VerticalPodAutoscaler",
+					"VPA should be created")
+				assert.Contains(t, outputYaml, "resource-type: pdb",
+					"PDB should have resource-type label")
+				assert.Contains(t, outputYaml, "resource-type: hpa",
+					"HPA should have resource-type label")
+				assert.Contains(t, outputYaml, "resource-type: vpa",
+					"VPA should have resource-type label")
+			},
+		},
+		{
+			// This test proves the documented overlay ordering:
+			// 1. GatewayClass overlay is applied first
+			// 2. Gateway overlay is applied second (overrides GatewayClass values)
+			// Both metadata (labels/annotations) and spec fields demonstrate this ordering.
+			Name:      "envoy overlay ordering - GWC first then GW",
+			InputFile: "envoy-overlay-ordering",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+
+				// Test 1: Metadata ordering
+				// The shared "overlay-source" label/annotation should be "from-gateway" (GW wins)
+				assert.Contains(t, outputYaml, "overlay-source: from-gateway",
+					"shared label/annotation should be from Gateway (applied second, overrides GWC)")
+				assert.NotContains(t, outputYaml, "overlay-source: from-gatewayclass",
+					"GatewayClass value should be overridden by Gateway")
+
+				// Both GWC-only and GW-only values should be present (merged)
+				assert.Contains(t, outputYaml, "gwc-only-annotation: present",
+					"GWC-only annotation should be preserved")
+				assert.Contains(t, outputYaml, "gwc-only-label: present",
+					"GWC-only label should be preserved")
+				assert.Contains(t, outputYaml, "gw-only-annotation: present",
+					"GW-only annotation should be present")
+				assert.Contains(t, outputYaml, "gw-only-label: present",
+					"GW-only label should be present")
+
+				// Test 2: Spec ordering
+				// GWC sets terminationGracePeriodSeconds: 29
+				// GW sets terminationGracePeriodSeconds: 59
+				// GW should win (applied second)
+				assert.Contains(t, outputYaml, "terminationGracePeriodSeconds: 59",
+					"terminationGracePeriodSeconds should be 59 from Gateway (overrides GWC's 29)")
+				assert.NotContains(t, outputYaml, "terminationGracePeriodSeconds: 29",
+					"GWC's terminationGracePeriodSeconds: 29 should be overridden")
+
+				// Service overlay ordering - GW should win
+				assert.Contains(t, outputYaml, "overlay-source: from-gateway",
+					"service annotation should be from Gateway")
+			},
+		},
+		{
+			// This test demonstrates:
+			// 1. Configs vs Overlays precedence: overlays are applied AFTER configs
+			//    - GWC config: replicas: 2
+			//    - GWC overlay: replicas: 5
+			//    - Result: replicas: 5 (overlay wins)
+			// 2. GatewayClass GWP vs Gateway GWP merging:
+			//    - GWC config: service.type: ClusterIP
+			//    - GW config: service.type: LoadBalancer
+			//    - Result: LoadBalancer (Gateway GWP wins)
+			// 3. Overlay merging between GWC and GW:
+			//    - shared-annotation: GW wins with "from-gateway"
+			//    - unique annotations from both are preserved
+			Name:      "envoy configs applied first then overlays on top",
+			InputFile: "envoy-configs-and-overlays",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+
+				// 1. Overlays override configs within the same GWP
+				// GWC config sets replicas: 2, GWC overlay sets replicas: 5
+				assert.Contains(t, outputYaml, "replicas: 5",
+					"overlay replicas: 5 should override config replicas: 2")
+				assert.NotContains(t, outputYaml, "replicas: 2",
+					"config replicas: 2 should be overridden by overlay")
+
+				// 2. Gateway GWP configs override GatewayClass GWP configs
+				// GWC config: ClusterIP, GW config: LoadBalancer
+				assert.Contains(t, outputYaml, "type: LoadBalancer",
+					"Gateway GWP service.type should override GatewayClass GWP")
+
+				// 3a. Deployment overlay merging - shared annotations: GW wins
+				assert.Contains(t, outputYaml, "shared-annotation: from-gateway",
+					"Gateway overlay should win for shared-annotation")
+				assert.NotContains(t, outputYaml, "shared-annotation: from-gatewayclass",
+					"GatewayClass value for shared-annotation should be overridden")
+
+				// 3b. Deployment overlay merging - unique annotations preserved
+				assert.Contains(t, outputYaml, "gwc-only-annotation: from-gatewayclass",
+					"GatewayClass-only annotation should be preserved")
+				assert.Contains(t, outputYaml, "gw-only-annotation: from-gateway",
+					"Gateway-only annotation should be present")
+
+				// 3c. Same for labels
+				assert.Contains(t, outputYaml, "shared-label: from-gateway",
+					"Gateway overlay should win for shared-label")
+				assert.Contains(t, outputYaml, "gwc-only-label: from-gatewayclass",
+					"GatewayClass-only label should be preserved")
+				assert.Contains(t, outputYaml, "gw-only-label: from-gateway",
+					"Gateway-only label should be present")
+
+				// 4. Service overlay merging
+				assert.Contains(t, outputYaml, "shared-service-annotation: from-gateway",
+					"Gateway service overlay should win for shared annotation")
+				assert.Contains(t, outputYaml, "gwc-service-annotation: from-gatewayclass",
+					"GatewayClass service annotation should be preserved")
+				assert.Contains(t, outputYaml, "gw-service-annotation: from-gateway",
+					"Gateway service annotation should be present")
+			},
+		},
+		{
+			// This test demonstrates the recommended approach for adding sidecars:
+			// - Use sdsContainer for TLS certificate handling (built-in SDS, requires Istio)
+			// - Use deploymentOverlay for other custom sidecars
+			Name:                        "envoy with SDS container and custom sidecar via overlay",
+			InputFile:                   "envoy-sds-and-custom-sidecar",
+			HelmValuesGeneratorOverride: istioOverride,
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+
+				// SDS container should be present with custom image (requires Istio enabled)
+				assert.Contains(t, outputYaml, "name: sds",
+					"SDS container should be present when Istio is enabled")
+				assert.Contains(t, outputYaml, "ghcr.io/kgateway-dev/sds:v1.0.0",
+					"SDS container should use custom image")
+
+				// Custom sidecar added via overlay should be present
+				assert.Contains(t, outputYaml, "name: my-sidecar",
+					"custom sidecar from overlay should be present")
+				assert.Contains(t, outputYaml, "image: my-sidecar:latest",
+					"custom sidecar should use specified image")
+
+				// Main proxy container should still be present
+				assert.Contains(t, outputYaml, "name: kgateway-proxy",
+					"main proxy container should be present")
+
+				// Istio proxy container should also be present
+				assert.Contains(t, outputYaml, "name: istio-proxy",
+					"istio-proxy container should be present when Istio is enabled")
+			},
+		},
 		// TLS test cases
 		{
 			Name:                        "basic gateway with TLS enabled",

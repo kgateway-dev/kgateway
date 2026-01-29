@@ -1,0 +1,68 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Test SDS container and custom sidecar via overlay.
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: gw-params
+    namespace: default
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gw-params
+  namespace: default
+spec:
+  kube:
+    # Use the built-in SDS container for TLS certificate handling (requires Istio enabled)
+    sdsContainer:
+      image:
+        repository: ghcr.io/kgateway-dev/sds
+        tag: v1.0.0
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+    # Istio integration settings (required for SDS container)
+    istio:
+      istioProxyContainer:
+        image:
+          repository: docker.io/istio/proxyv2
+          tag: 1.22.0
+        istioDiscoveryAddress: istiod.istio-system.svc:15012
+        istioMetaMeshId: cluster.local
+        istioMetaClusterId: Kubernetes
+    # Add a custom sidecar via deployment overlay
+    deploymentOverlay:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: my-sidecar
+                image: my-sidecar:latest
+                resources:
+                  requests:
+                    cpu: 10m
+                    memory: 32Mi
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same

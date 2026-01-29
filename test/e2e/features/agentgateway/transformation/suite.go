@@ -49,7 +49,7 @@ func (s *testingSuite) SetupSuite() {
 
 func (s *testingSuite) TestGatewayWithTransformedRoute() {
 	// Wait for the agent gateway to be ready
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		gateway.Name,
 		gateway.Namespace,
@@ -57,7 +57,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 		metav1.ConditionTrue,
 		timeout,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		gateway.Name,
 		gateway.Namespace,

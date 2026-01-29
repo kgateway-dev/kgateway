@@ -56,7 +56,7 @@ const (
 
 func (s *testingSuite) TestGRPCRoute() {
 	// Wait for Gateway to be accepted
-	s.testInstallation.Assertions.EventuallyGatewayCondition(
+	s.testInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.ctx,
 		gatewayName,
 		testNamespace,
@@ -66,7 +66,7 @@ func (s *testingSuite) TestGRPCRoute() {
 	)
 
 	// Wait for Gateway to be programmed
-	s.testInstallation.Assertions.EventuallyGatewayCondition(
+	s.testInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.ctx,
 		gatewayName,
 		testNamespace,
@@ -76,18 +76,18 @@ func (s *testingSuite) TestGRPCRoute() {
 	)
 
 	// Wait for backend Deployment and Service to be ready
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, grpcEchoDeployment, grpcEchoService)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, grpcEchoDeployment, grpcEchoService)
 
 	// Wait for Deployment to be ready
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testNamespace, metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testNamespace, metav1.ListOptions{
 		LabelSelector: "app=grpc-echo",
 	})
 
 	// Wait for GRPCRoute to be accepted
-	s.testInstallation.Assertions.EventuallyGRPCRouteCondition(s.ctx, grpcRouteName, testNamespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+	s.testInstallation.AssertionsT(s.T()).EventuallyGRPCRouteCondition(s.ctx, grpcRouteName, testNamespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
 
 	// Wait for GRPCRoute to have resolved references
-	s.testInstallation.Assertions.EventuallyGRPCRouteCondition(s.ctx, grpcRouteName, testNamespace, gwv1.RouteConditionResolvedRefs, metav1.ConditionTrue, timeout)
+	s.testInstallation.AssertionsT(s.T()).EventuallyGRPCRouteCondition(s.ctx, grpcRouteName, testNamespace, gwv1.RouteConditionResolvedRefs, metav1.ConditionTrue, timeout)
 
 	grpcurlOptions := []grpcurl.Option{
 		grpcurl.WithAddress(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -98,7 +98,7 @@ func (s *testingSuite) TestGRPCRoute() {
 	}
 
 	// Assert that the grpcurl command succeeds and the JSON output matches the expected response.
-	stdout, stderr := s.testInstallation.Assertions.AssertEventualGrpcurlJsonResponseMatches(
+	stdout, stderr := s.testInstallation.AssertionsT(s.T()).AssertEventualGrpcurlJsonResponseMatches(
 		s.ctx,
 		s.execOpts(),
 		grpcurlOptions,
