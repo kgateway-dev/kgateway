@@ -680,6 +680,23 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 			},
 			req: &testmatchers.HttpRequest{},
 		},
+		{
+			// test 18
+			name:      "body transform for local reply no body()",
+			routeName: "route-for-body-local-reply",
+			url:       "/foobar",
+			opts: []curl.Option{
+				curl.WithBody(strings.Repeat("x", 1500)),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusRequestEntityTooLarge,
+				Headers: map[string]any{
+					"content-length": "6",
+				},
+				Body: "foobar",
+			},
+			req: &testmatchers.HttpRequest{},
+		},
 	}
 
 	// If no indices are provided, return the full original slice.
