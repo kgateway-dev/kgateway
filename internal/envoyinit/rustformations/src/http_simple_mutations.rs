@@ -27,7 +27,7 @@ impl<'a> EnvoyTransformationOps<'a> {
     fn new(envoy_filter: &'a mut dyn EnvoyHttpFilter) -> EnvoyTransformationOps<'a> {
         EnvoyTransformationOps {
             envoy_filter,
-            used_received_response_body: None
+            used_received_response_body: None,
         }
     }
 }
@@ -144,19 +144,19 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
             // the body() inja function is used in the transformation
             // so, detect it here again if not set.
             self.used_received_response_body = Some(false);
-            if self.envoy_filter.get_buffered_response_body().is_none() &&
-               self.envoy_filter.get_received_response_body().is_some()
+            if self.envoy_filter.get_buffered_response_body().is_none()
+                && self.envoy_filter.get_received_response_body().is_some()
             {
                 self.used_received_response_body = Some(true);
             }
         }
 
         if self.used_received_response_body.unwrap_or(false) {
-                self.envoy_filter
-                    .drain_received_response_body(number_of_bytes)
+            self.envoy_filter
+                .drain_received_response_body(number_of_bytes)
         } else {
-                self.envoy_filter
-                    .drain_buffered_response_body(number_of_bytes)
+            self.envoy_filter
+                .drain_buffered_response_body(number_of_bytes)
         }
     }
     fn append_response_body(&mut self, data: &[u8]) -> bool {
