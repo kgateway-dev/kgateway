@@ -60,14 +60,14 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // We need manual control because chart installations must happen before applying test manifests
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	// Ensure httpbin pods are ready first
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		httpbinObjectMeta.GetNamespace(),
 		metav1.ListOptions{
 			LabelSelector: defaults.WellKnownAppLabel + "=" + httpbinObjectMeta.GetName(),
 		})
 
 	// Ensure curl pod is ready (setup manifests are applied in SetupSuite)
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		defaults.CurlPod.GetNamespace(),
 		metav1.ListOptions{
 			LabelSelector: defaults.CurlPodLabelSelector,
@@ -142,7 +142,7 @@ func (s *testingSuite) deleteGatewayManifests(envoyGwMeta, agwGwMeta metav1.Obje
 	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, agwGw)
 
 	// Wait for all resources to be deleted
-	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx,
 		envoyGw, envoyRoute, envoyDeployment, envoyService, envoyServiceAccount,
 		agwGw, agwRoute, agwDeployment, agwService, agwServiceAccount,
 	)
@@ -162,24 +162,24 @@ func (s *testingSuite) TestEnvoyOnly() {
 	defer s.deleteGatewayManifests(envoyGwEnvoyOnlyMeta, agwGwEnvoyOnlyMeta)
 
 	// Assert that Envoy Gateway gets provisioned
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx,
 		&appsv1.Deployment{ObjectMeta: envoyGwEnvoyOnlyMeta},
 		&corev1.Service{ObjectMeta: envoyGwEnvoyOnlyMeta},
 		&corev1.ServiceAccount{ObjectMeta: envoyGwEnvoyOnlyMeta},
 	)
 
 	// Assert that Envoy Gateway becomes ready
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, envoyGwEnvoyOnlyMeta, gomega.Equal(1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, envoyGwEnvoyOnlyMeta, gomega.Equal(1))
 
 	// Assert that Envoy Gateway status is Accepted and Programmed
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		envoyGwEnvoyOnlyMeta.Name,
 		envoyGwEnvoyOnlyMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		envoyGwEnvoyOnlyMeta.Name,
 		envoyGwEnvoyOnlyMeta.Namespace,
@@ -188,7 +188,7 @@ func (s *testingSuite) TestEnvoyOnly() {
 	)
 
 	// Verify Envoy HTTPRoute status is updated
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: envoyRouteEnvoyOnlyMeta.GetNamespace(),
@@ -203,14 +203,14 @@ func (s *testingSuite) TestEnvoyOnly() {
 		Should(gomega.Succeed())
 
 	// Wait for Envoy proxy pods to be running before making curl requests
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		envoyGwEnvoyOnlyMeta.GetNamespace(),
 		metav1.ListOptions{
 			LabelSelector: defaults.WellKnownAppLabel + "=" + envoyGwEnvoyOnlyMeta.GetName(),
 		})
 
 	// Verify traffic works through Envoy Gateway
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -223,7 +223,7 @@ func (s *testingSuite) TestEnvoyOnly() {
 		})
 
 	// Assert that Agentgateway Gateway is NOT provisioned
-	s.TestInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Consistently(func(g gomega.Gomega) {
 		agwDeployment := &appsv1.Deployment{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: agwGwEnvoyOnlyMeta.Namespace,
@@ -240,7 +240,7 @@ func (s *testingSuite) TestEnvoyOnly() {
 	}, "10s", "1s").Should(gomega.Succeed())
 
 	// Verify Agentgateway Gateway status is NOT updated to Accepted
-	s.TestInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Consistently(func(g gomega.Gomega) {
 		agwGw := &gwv1.Gateway{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: agwGwEnvoyOnlyMeta.Namespace,
@@ -276,24 +276,24 @@ func (s *testingSuite) TestAgentgatewayOnly() {
 	defer s.deleteGatewayManifests(envoyGwAgwOnlyMeta, agwGwAgwOnlyMeta)
 
 	// Assert that Agentgateway Gateway gets provisioned
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx,
 		&appsv1.Deployment{ObjectMeta: agwGwAgwOnlyMeta},
 		&corev1.Service{ObjectMeta: agwGwAgwOnlyMeta},
 		&corev1.ServiceAccount{ObjectMeta: agwGwAgwOnlyMeta},
 	)
 
 	// Assert that Agentgateway Gateway becomes ready
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, agwGwAgwOnlyMeta, gomega.Equal(1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, agwGwAgwOnlyMeta, gomega.Equal(1))
 
 	// Assert that Agentgateway Gateway status is Accepted and Programmed
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		agwGwAgwOnlyMeta.Name,
 		agwGwAgwOnlyMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		agwGwAgwOnlyMeta.Name,
 		agwGwAgwOnlyMeta.Namespace,
@@ -302,7 +302,7 @@ func (s *testingSuite) TestAgentgatewayOnly() {
 	)
 
 	// Verify Agentgateway HTTPRoute status is updated
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: agwRouteAgwOnlyMeta.GetNamespace(),
@@ -317,14 +317,14 @@ func (s *testingSuite) TestAgentgatewayOnly() {
 		Should(gomega.Succeed())
 
 	// Wait for Agentgateway proxy pods to be running before making curl requests
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		agwGwAgwOnlyMeta.GetNamespace(),
 		metav1.ListOptions{
 			LabelSelector: defaults.WellKnownAppLabel + "=" + agwGwAgwOnlyMeta.GetName(),
 		})
 
 	// Verify traffic works through Agentgateway Gateway
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -337,7 +337,7 @@ func (s *testingSuite) TestAgentgatewayOnly() {
 		})
 
 	// Assert that Envoy Gateway is NOT provisioned
-	s.TestInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Consistently(func(g gomega.Gomega) {
 		envoyDeployment := &appsv1.Deployment{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: envoyGwAgwOnlyMeta.Namespace,
@@ -354,7 +354,7 @@ func (s *testingSuite) TestAgentgatewayOnly() {
 	}, "10s", "1s").Should(gomega.Succeed())
 
 	// Verify Envoy Gateway status is NOT updated to Accepted
-	s.TestInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Consistently(func(g gomega.Gomega) {
 		envoyGw := &gwv1.Gateway{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: envoyGwAgwOnlyMeta.Namespace,
@@ -393,7 +393,7 @@ func (s *testingSuite) TestBothEnabled() {
 	defer s.deleteGatewayManifests(envoyGwBothEnabledMeta, agwGwBothEnabledMeta)
 
 	// Assert that both Gateways get provisioned
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx,
 		&appsv1.Deployment{ObjectMeta: envoyGwBothEnabledMeta},
 		&corev1.Service{ObjectMeta: envoyGwBothEnabledMeta},
 		&corev1.ServiceAccount{ObjectMeta: envoyGwBothEnabledMeta},
@@ -403,18 +403,18 @@ func (s *testingSuite) TestBothEnabled() {
 	)
 
 	// Assert that both Gateways become ready
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, envoyGwBothEnabledMeta, gomega.Equal(1))
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, agwGwBothEnabledMeta, gomega.Equal(1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, envoyGwBothEnabledMeta, gomega.Equal(1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, agwGwBothEnabledMeta, gomega.Equal(1))
 
 	// Assert that Envoy Gateway status is Accepted and Programmed
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		envoyGwBothEnabledMeta.Name,
 		envoyGwBothEnabledMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		envoyGwBothEnabledMeta.Name,
 		envoyGwBothEnabledMeta.Namespace,
@@ -423,14 +423,14 @@ func (s *testingSuite) TestBothEnabled() {
 	)
 
 	// Assert that Agentgateway Gateway status is Accepted and Programmed
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		agwGwBothEnabledMeta.Name,
 		agwGwBothEnabledMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		agwGwBothEnabledMeta.Name,
 		agwGwBothEnabledMeta.Namespace,
@@ -439,7 +439,7 @@ func (s *testingSuite) TestBothEnabled() {
 	)
 
 	// Verify both HTTPRoute statuses are updated with correct parent Gateways
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		envoyRoute := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: envoyRouteBothEnabledMeta.GetNamespace(),
@@ -486,21 +486,21 @@ func (s *testingSuite) TestBothEnabled() {
 		Should(gomega.Succeed())
 
 	// Wait for Envoy proxy pods to be running before making curl requests
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		envoyGwBothEnabledMeta.GetNamespace(),
 		metav1.ListOptions{
 			LabelSelector: defaults.WellKnownAppLabel + "=" + envoyGwBothEnabledMeta.GetName(),
 		})
 
 	// Wait for Agentgateway proxy pods to be running before making curl requests
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		agwGwBothEnabledMeta.GetNamespace(),
 		metav1.ListOptions{
 			LabelSelector: defaults.WellKnownAppLabel + "=" + agwGwBothEnabledMeta.GetName(),
 		})
 
 	// Verify traffic works through Envoy Gateway
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -513,7 +513,7 @@ func (s *testingSuite) TestBothEnabled() {
 		})
 
 	// Verify traffic works through Agentgateway Gateway
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -568,14 +568,14 @@ func (s *testingSuite) installKgatewayChart() {
 	s.Require().NoError(err, "kgateway chart install should succeed")
 
 	// Wait for the kgateway controller pod to be ready
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		s.TestInstallation.Metadata.InstallNamespace,
 		metav1.ListOptions{
 			LabelSelector: "app.kubernetes.io/name=kgateway",
 		})
 
 	// Wait for GatewayClass to be created and accepted
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		gc := &gwv1.GatewayClass{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Name: wellknown.DefaultGatewayClassName,
@@ -635,14 +635,14 @@ func (s *testingSuite) installAgentgatewayChart() {
 	s.Require().NoError(err, "agentgateway chart install should succeed")
 
 	// Wait for the agentgateway controller pod to be ready
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		s.TestInstallation.Metadata.InstallNamespace,
 		metav1.ListOptions{
 			LabelSelector: "app.kubernetes.io/name=agentgateway",
 		})
 
 	// Wait for GatewayClass to be created and accepted
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		gc := &gwv1.GatewayClass{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Name: wellknown.DefaultAgwClassName,
@@ -727,7 +727,7 @@ func (s *testingSuite) uninstallAgentgatewayChart() {
 
 // verifyEnvoyDeployment verifies that the Deployment uses the envoy chart
 func (s *testingSuite) verifyEnvoyDeployment(objectMeta metav1.ObjectMeta) {
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		deployment := &appsv1.Deployment{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: objectMeta.Namespace,
@@ -754,7 +754,7 @@ func (s *testingSuite) verifyEnvoyDeployment(objectMeta metav1.ObjectMeta) {
 
 // verifyAgentgatewayDeployment verifies that the Deployment uses the agentgateway chart
 func (s *testingSuite) verifyAgentgatewayDeployment(objectMeta metav1.ObjectMeta) {
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		deployment := &appsv1.Deployment{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: objectMeta.Namespace,
@@ -780,7 +780,7 @@ func (s *testingSuite) verifyAgentgatewayDeployment(objectMeta metav1.ObjectMeta
 
 // verifyControllerNameInStatus verifies that status entries are namespaced by controllerName
 func (s *testingSuite) verifyControllerNameInStatus() {
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		// Check Envoy Gateway status has correct controllerName
 		envoyGw := &gwv1.Gateway{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{

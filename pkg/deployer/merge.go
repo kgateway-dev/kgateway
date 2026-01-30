@@ -532,7 +532,7 @@ func deepMergeIstioIntegration(dst, src *kgateway.IstioIntegration) *kgateway.Is
 	}
 
 	dst.IstioProxyContainer = deepMergeIstioContainer(dst.GetIstioProxyContainer(), src.GetIstioProxyContainer())
-	dst.CustomSidecars = mergeCustomSidecars(dst.GetCustomSidecars(), src.GetCustomSidecars())
+	dst.CustomSidecars = mergeCustomSidecars(dst.GetCustomSidecars(), src.GetCustomSidecars()) //nolint:staticcheck // deprecated but still needs merge support
 
 	return dst
 }

@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
@@ -105,8 +106,8 @@ func TestAgentgatewayParametersApplier_ApplyOverlaysToObjects(t *testing.T) {
 	params := &agentgateway.AgentgatewayParameters{
 		Spec: agentgateway.AgentgatewayParametersSpec{
 			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Deployment: &agentgateway.KubernetesResourceOverlay{
-					Metadata: &agentgateway.AgentgatewayParametersObjectMetadata{
+				Deployment: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
 						Labels: map[string]string{
 							"overlay-label": "overlay-value",
 						},

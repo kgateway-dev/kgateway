@@ -113,7 +113,7 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		},
 	}
 	for _, tc := range tt {
-		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.Ctx,
 			defaults.CurlPodExecOpt,
 			[]curl.Option{
@@ -133,7 +133,7 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		// agentgateway does auto host rewrite
 		expectedStatus = http.StatusMovedPermanently
 	}
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -182,7 +182,7 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 
 func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	p := s.TestInstallation.Assertions
+	p := s.TestInstallation.AssertionsT(s.T())
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		tlsPol := &gwv1.BackendTLSPolicy{}
 		objKey := client.ObjectKeyFromObject(backendTlsPolicy)
@@ -260,7 +260,7 @@ func (s *tsuite) TestBackendTLSPolicyClearStaleStatus() {
 
 func (s *tsuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &gwv1.BackendTLSPolicy{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,
@@ -297,7 +297,7 @@ func (s *tsuite) addAncestorStatus(policyName, policyNamespace, controllerName s
 
 func (s *tsuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &gwv1.BackendTLSPolicy{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,

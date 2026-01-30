@@ -95,10 +95,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("gateway with FrontendTLSConfig and missing refgrant", func(t *testing.T) {
+	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "frontendtlsconfig/missing-refgrant.yaml",
-			outputFile: "frontendtlsconfig/missing-refgrant.yaml",
+			inputFile:  "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
+			outputFile: "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -106,10 +106,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
+	t.Run("frontendtlsconfig with invalid conditions", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
-			outputFile: "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
+			inputFile:  "frontendtlsconfig/invalid-conditions.yaml",
+			outputFile: "frontendtlsconfig/invalid-conditions.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

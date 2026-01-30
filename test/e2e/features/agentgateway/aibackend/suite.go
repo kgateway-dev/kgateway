@@ -92,7 +92,7 @@ func (s *testingSuite) TestRouting() {
 		Resp: "The name of this project is kgateway",
 	})
 
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.T().Context(),
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -125,7 +125,7 @@ func (s *testingSuite) TestPromptGuard() {
 	)
 
 	// Test request guard
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.T().Context(),
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -143,7 +143,7 @@ func (s *testingSuite) TestPromptGuard() {
 	)
 
 	// Test response guard
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.T().Context(),
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -180,7 +180,7 @@ func (s *testingSuite) TestWebhook() {
 	)
 
 	// Ensure the guardrails webhook Pod is running and ready before sending traffic
-	s.TestInstallation.Assertions.EventuallyPodsRunning(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(
 		s.T().Context(),
 		"default",
 		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=ai-guardrails-webhook"},
@@ -188,7 +188,7 @@ func (s *testingSuite) TestWebhook() {
 	)
 
 	// Test request webhook
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.T().Context(),
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -212,7 +212,7 @@ func (s *testingSuite) TestWebhook() {
 	)
 
 	// Test response webhook
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.T().Context(),
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{

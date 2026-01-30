@@ -140,7 +140,7 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 
 func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	p := s.TestInstallation.Assertions
+	p := s.TestInstallation.AssertionsT(s.T())
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		tlsPol := &gwv1.BackendTLSPolicy{}
 		objKey := client.ObjectKeyFromObject(backendTlsPolicy)

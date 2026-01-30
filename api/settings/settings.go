@@ -23,6 +23,8 @@ const (
 	// (e.g. RDS, CDS, and security-related policies). Routes that fail these
 	// checks are also replaced with direct responses, and helps prevent unsafe
 	// config from reaching Envoy.
+	// Strict Validation is not supported with Rustformation yet,
+	// see docs/guides/transformation.md for details
 	ValidationStrict ValidationMode = "STRICT"
 )
 
