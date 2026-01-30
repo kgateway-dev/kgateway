@@ -10,7 +10,7 @@ import (
 
 // ResolveUpstreamSslConfigFromCA creates an UpstreamTlsContext from a CA certificate string.
 func ResolveUpstreamSslConfigFromCA(caCert string, validation *envoytlsv3.CertificateValidationContext, sni string) (*envoytlsv3.UpstreamTlsContext, error) {
-	common, err := ResolveCommonSslConfigFromCA(caCert, validation, false)
+	common, err := ResolveCommonSslConfigFromCA(caCert, validation)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +22,7 @@ func ResolveUpstreamSslConfigFromCA(caCert string, validation *envoytlsv3.Certif
 }
 
 // ResolveCommonSslConfigFromCA creates a CommonTlsContext from a CA certificate string.
-func ResolveCommonSslConfigFromCA(caCert string, validation *envoytlsv3.CertificateValidationContext, mustHaveCert bool) (*envoytlsv3.CommonTlsContext, error) {
+func ResolveCommonSslConfigFromCA(caCert string, validation *envoytlsv3.CertificateValidationContext) (*envoytlsv3.CommonTlsContext, error) {
 	caCrtData := StringDataSourceGenerator(true)(caCert)
 
 	tlsContext := &envoytlsv3.CommonTlsContext{
