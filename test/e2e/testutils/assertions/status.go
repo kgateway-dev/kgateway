@@ -117,17 +117,13 @@ func (p *Provider) EventuallyGatewayCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		gateway := &gwv1.Gateway{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: gatewayName, Namespace: gatewayNamespace}, gateway)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get Gateway %s/%s", gatewayNamespace, gatewayName))
-
-		condition := GetConditionByType(gateway.Status.Conditions, string(cond))
-		g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for Gateway %s/%s. Full status: %+v", cond, gatewayNamespace, gatewayName, gateway.Status))
-		g.Expect(condition.Status).To(gomega.Equal(expect), fmt.Sprintf("%v condition is not %v for Gateway %s/%s. Full status: %+v",
-			cond, expect, gatewayNamespace, gatewayName, gateway.Status))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+	eventuallyCondition(p, ctx, gatewayName, gatewayNamespace, &gwv1.Gateway{}, func(gw *gwv1.Gateway) bool {
+		condition := GetConditionByType(gw.Status.Conditions, string(cond))
+		return condition != nil && condition.Status == expect
+	}, func(gw *gwv1.Gateway) string {
+		return fmt.Sprintf("%v condition is not %v for Gateway %s/%s. Full status: %+v",
+			cond, expect, gatewayNamespace, gatewayName, gw.Status)
+	}, timeout...)
 }
 
 // EventuallyGatewayListenerAttachedRoutes checks the provided Gateway contains the expected attached routes for the listener.
@@ -140,22 +136,17 @@ func (p *Provider) EventuallyGatewayListenerAttachedRoutes(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		gateway := &gwv1.Gateway{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: gatewayName, Namespace: gatewayNamespace}, gateway)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get Gateway %s/%s", gatewayNamespace, gatewayName))
-
-		found := false
-		for _, l := range gateway.Status.Listeners {
+	eventuallyCondition(p, ctx, gatewayName, gatewayNamespace, &gwv1.Gateway{}, func(gw *gwv1.Gateway) bool {
+		for _, l := range gw.Status.Listeners {
 			if l.Name == listener {
-				found = true
-				g.Expect(l.AttachedRoutes).To(gomega.Equal(routes), fmt.Sprintf("%v listener does not contain %d attached routes for Gateway %s/%s. Full status: %+v",
-					l, routes, gatewayNamespace, gatewayName, gateway.Status))
+				return l.AttachedRoutes == routes
 			}
 		}
-		g.Expect(found).To(gomega.BeTrue(), fmt.Sprintf("%v listener not found for Gateway %s/%s. Full status: %+v", listener, gatewayNamespace, gatewayName, gateway.Status))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+		return false
+	}, func(gw *gwv1.Gateway) string {
+		return fmt.Sprintf("%v listener does not contain %d attached routes for Gateway %s/%s. Full status: %+v",
+			listener, routes, gatewayNamespace, gatewayName, gw.Status)
+	}, timeout...)
 }
 
 func (p *Provider) EventuallyGatewayStatus(
@@ -518,6 +509,13 @@ func (p *Provider) EventuallyAgwPolicyCondition(
 	}, timeout...)
 }
 
+// eventuallyCondition is a generic helper for checking status conditions on Kubernetes objects.
+//
+// Note on object reuse:
+// This function reuses the object pointer `obj` for each `Client.Get` call within the generic `Eventually` loop.
+// Client.Get overwrites the object. Since T is a pointer type (e.g. *gwv1.Gateway), passing the SAME pointer repeatedly
+// to Get is fine as long as we don't need to accumulate state or worry about partial overwrites (Get usually overwrites).
+// This reuse is standard practice in these tests.
 func eventuallyCondition[T client.Object](
 	p *Provider,
 	ctx context.Context,
@@ -530,19 +528,6 @@ func eventuallyCondition[T client.Object](
 	ginkgo.GinkgoHelper()
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		// Create a new instance of the object type to ensure we have a fresh object for each retried Get call,
-		// although re-using the pointer and resetting or just overwriting is also typical in these tests.
-		// However, Client.Get writes into the object.
-		// Since T is a pointer type (e.g. *gwv1.Gateway), passing the SAME pointer repeatedly to Get is fine
-		// as long as we don't need to accumulate state or worry about partial overwrites (Get usually overwrites).
-		// But to be safe and cleaner, we should probably verify `obj` is what we want.
-		// Because `obj` is passed in, we reuse it.
-		// Let's reflect to create a new one? No, `obj` being reused is standard for `Get`.
-
-		// Actually, `client.Object` interface requires DeepCopyObject().
-		// If we want a clean object every time, we could use reflection or expect the caller to pass a factory.
-		// But in `Eventually` loop, reusing the struct pointer `obj` to overwrite with `Client.Get` is standard practice in these tests.
-
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, obj)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get %T %s/%s", obj, namespace, name))
 
