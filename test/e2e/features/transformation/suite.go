@@ -59,6 +59,7 @@ var (
 	transformForMatchQueryManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-query.yaml")
 	transformForMatchMethodManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-method.yaml")
 	transformForHeaderToBodyJsonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-header-to-body-json.yaml")
+	transformForBodyLocalReplyManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-local-reply.yaml")
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -81,6 +82,7 @@ var (
 			transformForMatchPathManifest,
 			transformForMatchQueryManifest,
 			transformForHeaderToBodyJsonManifest,
+			transformForBodyLocalReplyManifest,
 		},
 	}
 
@@ -661,6 +663,39 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 			req: &testmatchers.HttpRequest{
 				Method: "POST",
 			},
+		},
+		{
+			// test 17
+			name:      "body transform for local reply",
+			routeName: "route-for-body-local-reply",
+			opts: []curl.Option{
+				curl.WithBody(strings.Repeat("x", 1500)),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusRequestEntityTooLarge,
+				Headers: map[string]any{
+					"content-length": "17",
+				},
+				Body: gomega.HaveLen(17), // The body should have the string "Payload Too Large" (17 bytes)
+			},
+			req: &testmatchers.HttpRequest{},
+		},
+		{
+			// test 18
+			name:      "body transform for local reply no body()",
+			routeName: "route-for-body-local-reply",
+			url:       "/foobar",
+			opts: []curl.Option{
+				curl.WithBody(strings.Repeat("x", 1500)),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusRequestEntityTooLarge,
+				Headers: map[string]any{
+					"content-length": "6",
+				},
+				Body: "foobar",
+			},
+			req: &testmatchers.HttpRequest{},
 		},
 	}
 
