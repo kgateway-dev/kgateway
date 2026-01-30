@@ -55,7 +55,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestXdsSnapshot() {
-	s.TestInstallation.Assertions.AssertKgatewayAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertKgatewayAdminApi(
 		s.Ctx,
 		kgatewayDeploymentObjectMeta,
 		s.xdsSnapshotAssertion(),
@@ -63,7 +63,7 @@ func (s *testingSuite) TestXdsSnapshot() {
 }
 
 func (s *testingSuite) TestKrtSnapshot() {
-	s.TestInstallation.Assertions.AssertKgatewayAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertKgatewayAdminApi(
 		s.Ctx,
 		kgatewayDeploymentObjectMeta,
 		s.krtSnapshotAssertion(),
@@ -71,7 +71,7 @@ func (s *testingSuite) TestKrtSnapshot() {
 }
 
 func (s *testingSuite) TestPprof() {
-	s.TestInstallation.Assertions.AssertKgatewayAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertKgatewayAdminApi(
 		s.Ctx,
 		kgatewayDeploymentObjectMeta,
 		s.pprofAssertion(),
@@ -79,7 +79,7 @@ func (s *testingSuite) TestPprof() {
 }
 
 func (s *testingSuite) TestLogging() {
-	s.TestInstallation.Assertions.AssertKgatewayAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertKgatewayAdminApi(
 		s.Ctx,
 		kgatewayDeploymentObjectMeta,
 		s.loggingAssertion(),
@@ -87,7 +87,7 @@ func (s *testingSuite) TestLogging() {
 }
 
 func (s *testingSuite) TestVersion() {
-	s.TestInstallation.Assertions.AssertKgatewayAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertKgatewayAdminApi(
 		s.Ctx,
 		kgatewayDeploymentObjectMeta,
 		s.versionAssertion(),
@@ -96,7 +96,7 @@ func (s *testingSuite) TestVersion() {
 
 func (s *testingSuite) xdsSnapshotAssertion() func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			xdsSnapshot, err := adminClient.GetXdsSnapshot(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get xds snapshot")
 			g.Expect(xdsSnapshot).NotTo(gomega.BeEmpty(), "xds snapshot is not empty")
@@ -110,7 +110,7 @@ func (s *testingSuite) xdsSnapshotAssertion() func(ctx context.Context, adminCli
 
 func (s *testingSuite) krtSnapshotAssertion() func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			krtSnapshot, err := adminClient.GetKrtSnapshot(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get krt snapshot")
 			g.Expect(krtSnapshot).NotTo(gomega.BeEmpty(), "krt snapshot is not empty")
@@ -124,7 +124,7 @@ func (s *testingSuite) krtSnapshotAssertion() func(ctx context.Context, adminCli
 
 func (s *testingSuite) pprofAssertion() func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			pprofResponse, err := adminClient.GetPprof(ctx, "goroutine")
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get pprof goroutines response")
 			g.Expect(pprofResponse).NotTo(gomega.BeEmpty(), "pprof goroutines response is not empty")
@@ -138,7 +138,7 @@ func (s *testingSuite) pprofAssertion() func(ctx context.Context, adminClient *a
 
 func (s *testingSuite) loggingAssertion() func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			loggingResponse, err := adminClient.GetLogging(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get logging response")
 			g.Expect(loggingResponse).NotTo(gomega.BeEmpty(), "logging response is not empty")
@@ -152,7 +152,7 @@ func (s *testingSuite) loggingAssertion() func(ctx context.Context, adminClient 
 
 func (s *testingSuite) versionAssertion() func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			resp, err := adminClient.GetVersion(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get version response")
 			g.Expect(resp["version"]).NotTo(gomega.BeEmpty(), "version field present")

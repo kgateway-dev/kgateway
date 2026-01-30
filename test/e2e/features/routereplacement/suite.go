@@ -84,7 +84,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 // but invalid route-attached policies are replaced with direct responses
 func (s *testingSuite) TestRouteAttachedInvalidPolicy() {
 	// Verify route status shows Accepted=False with RouteRuleDropped reason (for replacement)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		invalidPolicyRoute.Name,
 		invalidPolicyRoute.Namespace,
@@ -93,7 +93,7 @@ func (s *testingSuite) TestRouteAttachedInvalidPolicy() {
 	)
 
 	// Verify that a route with an invalid policy is replaced with a 500 direct response
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -113,7 +113,7 @@ func (s *testingSuite) TestRouteAttachedInvalidPolicy() {
 // TestInvalidMatcherDropsRoute tests that routes with invalid matchers are dropped entirely
 func (s *testingSuite) TestInvalidMatcherDropsRoute() {
 	// Verify route status shows Accepted=False with RouteRuleDropped reason
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		invalidMatcherRoute.Name,
 		invalidMatcherRoute.Namespace,
@@ -122,7 +122,7 @@ func (s *testingSuite) TestInvalidMatcherDropsRoute() {
 	)
 
 	// Verify that the route was dropped (no route should exist, so we should get 404)
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -142,7 +142,7 @@ func (s *testingSuite) TestInvalidMatcherDropsRoute() {
 // are replaced with direct responses
 func (s *testingSuite) TestInvalidRouteRuleFilter() {
 	// Verify route status shows Accepted=False with RouteRuleDropped reason (for replacement)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		invalidConfigRoute.Name,
 		invalidConfigRoute.Namespace,
@@ -151,7 +151,7 @@ func (s *testingSuite) TestInvalidRouteRuleFilter() {
 	)
 
 	// Verify that a route with an invalid built-in policy is replaced with a 500 direct response
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -171,7 +171,7 @@ func (s *testingSuite) TestInvalidRouteRuleFilter() {
 // all routes across all listeners are replaced with 500 responses
 func (s *testingSuite) TestGatewayWideInvalidPolicy() {
 	// Verify Gateway shows Accepted=False with GatewayReplaced reason
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		gatewayWideProxyObjectMeta.Name,
 		gatewayWideProxyObjectMeta.Namespace,
@@ -180,14 +180,14 @@ func (s *testingSuite) TestGatewayWideInvalidPolicy() {
 	)
 
 	// Verify both routes still show Accepted=True (routes themselves are valid, gateway policy is invalid)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		gatewayWideRoute8080.Name,
 		gatewayWideRoute8080.Namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		gatewayWideRoute8081.Name,
 		gatewayWideRoute8081.Namespace,
@@ -196,7 +196,7 @@ func (s *testingSuite) TestGatewayWideInvalidPolicy() {
 	)
 
 	// Verify that route on port 8080 is replaced with 500 response
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -212,7 +212,7 @@ func (s *testingSuite) TestGatewayWideInvalidPolicy() {
 	)
 
 	// Verify that route on port 8081 is also replaced with 500 response (gateway-wide effect)
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -232,7 +232,7 @@ func (s *testingSuite) TestGatewayWideInvalidPolicy() {
 // only routes on that listener are affected
 func (s *testingSuite) TestListenerSpecificInvalidPolicy() {
 	// Verify Gateway itself remains Accepted=True (listener-specific policy doesn't affect gateway)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		listenerSpecificProxyObjectMeta.Name,
 		listenerSpecificProxyObjectMeta.Namespace,
@@ -241,14 +241,14 @@ func (s *testingSuite) TestListenerSpecificInvalidPolicy() {
 	)
 
 	// Verify both routes still show Accepted=True (routes themselves are valid, listener policy is invalid)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		listenerAffectedRoute.Name,
 		listenerAffectedRoute.Namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		listenerUnaffectedRoute.Name,
 		listenerUnaffectedRoute.Namespace,
@@ -257,7 +257,7 @@ func (s *testingSuite) TestListenerSpecificInvalidPolicy() {
 	)
 
 	// Verify that route on affected listener is replaced with 500 response
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -273,7 +273,7 @@ func (s *testingSuite) TestListenerSpecificInvalidPolicy() {
 	)
 
 	// Verify that route on unaffected listener continues to work normally
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -292,7 +292,7 @@ func (s *testingSuite) TestListenerSpecificInvalidPolicy() {
 // only the specific listener with the invalid policy is affected (i.e. no collateral damage to other listeners on same port)
 func (s *testingSuite) TestListenerSpecificIsolation() {
 	// Verify Gateway itself remains Accepted=True (listener-specific policy doesn't affect gateway)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		listenerIsolationProxyObjectMeta.Name,
 		listenerIsolationProxyObjectMeta.Namespace,
@@ -301,21 +301,21 @@ func (s *testingSuite) TestListenerSpecificIsolation() {
 	)
 
 	// Verify all routes still show Accepted=True (routes themselves are valid, listener policy is invalid)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		mergeAffectedRoute.Name,
 		mergeAffectedRoute.Namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		mergeUnaffectedRoute.Name,
 		mergeUnaffectedRoute.Namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		mergeIsolatedRoute.Name,
 		mergeIsolatedRoute.Namespace,
@@ -324,7 +324,7 @@ func (s *testingSuite) TestListenerSpecificIsolation() {
 	)
 
 	// Verify that route on affected listener (port 8080) is replaced with 500 response
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -341,7 +341,7 @@ func (s *testingSuite) TestListenerSpecificIsolation() {
 
 	// Verify that unaffected route on same port (port 8080) continues working normally
 	// (policy is attached specifically to listener, not port-wide)
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -356,7 +356,7 @@ func (s *testingSuite) TestListenerSpecificIsolation() {
 	)
 
 	// Verify that isolated route on different port (port 8081) continues to work normally
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{

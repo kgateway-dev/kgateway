@@ -56,7 +56,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // TestTLSControlPlaneBasicFunctionality validates that the control plane with TLS enabled
 // can successfully configure a basic Gateway and route traffic.
 func (s *testingSuite) TestTLSControlPlaneBasicFunctionality() {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -77,7 +77,7 @@ func (s *testingSuite) TestTLSControlPlaneBasicFunctionality() {
 // rotation correctly by updating the TLS secret and verifying continued operation.
 func (s *testingSuite) TestTLSCertificateRotation() {
 	// validate initial traffic works with the original certificate
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -106,7 +106,7 @@ func (s *testingSuite) TestTLSCertificateRotation() {
 	time.Sleep(10 * time.Second)
 
 	// verify traffic still works after rotation
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{

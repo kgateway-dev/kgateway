@@ -46,8 +46,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) TestTrafficPolicyBasicAuthForRoute() {
 	// Ensure routes accepted
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "route-secure", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "route-public", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "route-secure", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "route-public", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	host := kubeutils.ServiceFQDN(proxyObjectMeta)
 
@@ -67,8 +67,8 @@ func (s *testingSuite) TestTrafficPolicyBasicAuthForRoute() {
 
 func (s *testingSuite) TestTrafficPolicyBasicAuthGatewayOverrideOnRoute() {
 	// Ensure routes accepted
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "route-secure", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "route-public", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "route-secure", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "route-public", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	host := kubeutils.ServiceFQDN(proxyObjectMeta)
 
@@ -86,7 +86,7 @@ func creds(user, pass string) string {
 }
 
 func (s *testingSuite) assertAuthResponse(host, path, authHeader string, expectedStatus int) {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{curl.WithHost(host), curl.WithHostHeader("secure.example.com"), curl.WithPath(path), curl.WithHeader("Authorization", "Basic "+authHeader), curl.WithPort(8080)},
@@ -95,7 +95,7 @@ func (s *testingSuite) assertAuthResponse(host, path, authHeader string, expecte
 }
 
 func (s *testingSuite) assertNoAuthResponse(host, hostHeader string, expectedStatus int) {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{curl.WithHost(host), curl.WithHostHeader(hostHeader), curl.WithPort(8080)},

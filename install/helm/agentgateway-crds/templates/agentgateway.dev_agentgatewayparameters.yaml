@@ -60,8 +60,11 @@ spec:
                   Deployment resource.
                 properties:
                   metadata:
-                    description: metadata defines a subset of object metadata to be
-                      customized.
+                    description: |-
+                      metadata defines a subset of object metadata to be customized.
+                      Labels and annotations are merged with existing values. If both GatewayClass
+                      and Gateway parameters define the same label or annotation key, the Gateway
+                      value takes precedence (applied second).
                     properties:
                       annotations:
                         additionalProperties:
@@ -87,10 +90,11 @@ spec:
                       resource Spec.\nThis field accepts a complete or partial Kubernetes
                       resource spec (e.g., PodSpec, ServiceSpec)\nand will be merged
                       with the generated configuration using **Strategic Merge Patch**
-                      semantics.\nThe patch is applied after all other fields are
-                      applied.\nIf you merge-patch the same resource from AgentgatewayParameters
-                      on the\nGatewayClass and also from AgentgatewayParameters on
-                      the Gateway, then\nthe GatewayClass merge-patch happens first.\n\n#
+                      semantics.\n\n# Application Order\n\nOverlays are applied after
+                      all typed configuration fields from both levels.\nThe full merge
+                      order is:\n\n 1. GatewayClass typed configuration fields\n 2.
+                      Gateway typed configuration fields\n 3. GatewayClass overlays\n
+                      4. Gateway overlays (can override all previous values)\n\n#
                       Strategic Merge Patch & Deletion Guide\n\nThis merge strategy
                       allows you to override individual fields, merge lists, or delete
                       items\nwithout needing to provide the entire resource definition.\n\n**1.
@@ -107,29 +111,30 @@ spec:
                       server-side apply.\n\n\tspec:\n\t  template:\n\t    spec:\n\t
                       \     # Delete pod-level securityContext\n\t      securityContext:\n\t
                       \       $patch: delete\n\t      # Delete nodeSelector\n\t      nodeSelector:\n\t
-                      \       $patch: delete\n\t      containers:\n\t        - name:
-                      agentgateway\n\t          # Delete container-level securityContext\n\t
-                      \         securityContext:\n\t            $patch: delete\n\n**4.
-                      Null Values (server-side apply only):**\nSetting a field to
-                      `null` can also remove it, but this ONLY works with\n`kubectl
-                      apply --server-side` or equivalent. With regular client-side\n`kubectl
-                      apply`, null values are stripped by kubectl before reaching\nthe
-                      API server, so the deletion won't occur. Prefer `$patch: delete`\nfor
-                      consistent behavior across both apply modes.\n\n\tspec:\n\t
-                      \ template:\n\t    spec:\n\t      nodeSelector: null  # Removes
-                      nodeSelector (server-side apply only!)\n\n**5. Replacing Maps
-                      Entirely ($patch: replace):**\nTo replace an entire map with
-                      your values (instead of merging), use `$patch: replace`.\nThis
-                      removes all existing keys and replaces them with only your specified
-                      keys.\n\n\tspec:\n\t  template:\n\t    spec:\n\t      nodeSelector:\n\t
-                      \       $patch: replace\n\t        custom-key: custom-value\n\n**6.
-                      Replacing Lists Entirely ($patch: replace):**\nIf you want to
-                      strictly define a list and ignore all generated defaults, use
-                      `$patch: replace`.\n\n\tservice:\n\t  spec:\n\t    ports:\n\t
-                      \     - $patch: replace\n\t      - name: http\n\t        port:
-                      80\n\t        targetPort: 8080\n\t        protocol: TCP\n\t
-                      \     - name: https\n\t        port: 443\n\t        targetPort:
-                      8443\n\t        protocol: TCP"
+                      \       $patch: delete\n\t      containers:\n\t        # Be
+                      sure to use the correct proxy name here or you will add a container
+                      instead of modifying a container:\n\t        - name: proxy-name\n\t
+                      \         # Delete container-level securityContext\n\t          securityContext:\n\t
+                      \           $patch: delete\n\n**4. Null Values (server-side
+                      apply only):**\nSetting a field to `null` can also remove it,
+                      but this ONLY works with\n`kubectl apply --server-side` or equivalent.
+                      With regular client-side\n`kubectl apply`, null values are stripped
+                      by kubectl before reaching\nthe API server, so the deletion
+                      won't occur. Prefer `$patch: delete`\nfor consistent behavior
+                      across both apply modes.\n\n\tspec:\n\t  template:\n\t    spec:\n\t
+                      \     nodeSelector: null  # Removes nodeSelector (server-side
+                      apply only!)\n\n**5. Replacing Maps Entirely ($patch: replace):**\nTo
+                      replace an entire map with your values (instead of merging),
+                      use `$patch: replace`.\nThis removes all existing keys and replaces
+                      them with only your specified keys.\n\n\tspec:\n\t  template:\n\t
+                      \   spec:\n\t      nodeSelector:\n\t        $patch: replace\n\t
+                      \       custom-key: custom-value\n\n**6. Replacing Lists Entirely
+                      ($patch: replace):**\nIf you want to strictly define a list
+                      and ignore all generated defaults, use `$patch: replace`.\n\n\tservice:\n\t
+                      \ spec:\n\t    ports:\n\t      - $patch: replace\n\t      -
+                      name: http\n\t        port: 80\n\t        targetPort: 8080\n\t
+                      \       protocol: TCP\n\t      - name: https\n\t        port:
+                      443\n\t        targetPort: 8443\n\t        protocol: TCP"
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                 type: object
@@ -307,8 +312,11 @@ spec:
                   The metadata and spec fields from this overlay are applied to the generated HPA.
                 properties:
                   metadata:
-                    description: metadata defines a subset of object metadata to be
-                      customized.
+                    description: |-
+                      metadata defines a subset of object metadata to be customized.
+                      Labels and annotations are merged with existing values. If both GatewayClass
+                      and Gateway parameters define the same label or annotation key, the Gateway
+                      value takes precedence (applied second).
                     properties:
                       annotations:
                         additionalProperties:
@@ -334,10 +342,11 @@ spec:
                       resource Spec.\nThis field accepts a complete or partial Kubernetes
                       resource spec (e.g., PodSpec, ServiceSpec)\nand will be merged
                       with the generated configuration using **Strategic Merge Patch**
-                      semantics.\nThe patch is applied after all other fields are
-                      applied.\nIf you merge-patch the same resource from AgentgatewayParameters
-                      on the\nGatewayClass and also from AgentgatewayParameters on
-                      the Gateway, then\nthe GatewayClass merge-patch happens first.\n\n#
+                      semantics.\n\n# Application Order\n\nOverlays are applied after
+                      all typed configuration fields from both levels.\nThe full merge
+                      order is:\n\n 1. GatewayClass typed configuration fields\n 2.
+                      Gateway typed configuration fields\n 3. GatewayClass overlays\n
+                      4. Gateway overlays (can override all previous values)\n\n#
                       Strategic Merge Patch & Deletion Guide\n\nThis merge strategy
                       allows you to override individual fields, merge lists, or delete
                       items\nwithout needing to provide the entire resource definition.\n\n**1.
@@ -354,29 +363,30 @@ spec:
                       server-side apply.\n\n\tspec:\n\t  template:\n\t    spec:\n\t
                       \     # Delete pod-level securityContext\n\t      securityContext:\n\t
                       \       $patch: delete\n\t      # Delete nodeSelector\n\t      nodeSelector:\n\t
-                      \       $patch: delete\n\t      containers:\n\t        - name:
-                      agentgateway\n\t          # Delete container-level securityContext\n\t
-                      \         securityContext:\n\t            $patch: delete\n\n**4.
-                      Null Values (server-side apply only):**\nSetting a field to
-                      `null` can also remove it, but this ONLY works with\n`kubectl
-                      apply --server-side` or equivalent. With regular client-side\n`kubectl
-                      apply`, null values are stripped by kubectl before reaching\nthe
-                      API server, so the deletion won't occur. Prefer `$patch: delete`\nfor
-                      consistent behavior across both apply modes.\n\n\tspec:\n\t
-                      \ template:\n\t    spec:\n\t      nodeSelector: null  # Removes
-                      nodeSelector (server-side apply only!)\n\n**5. Replacing Maps
-                      Entirely ($patch: replace):**\nTo replace an entire map with
-                      your values (instead of merging), use `$patch: replace`.\nThis
-                      removes all existing keys and replaces them with only your specified
-                      keys.\n\n\tspec:\n\t  template:\n\t    spec:\n\t      nodeSelector:\n\t
-                      \       $patch: replace\n\t        custom-key: custom-value\n\n**6.
-                      Replacing Lists Entirely ($patch: replace):**\nIf you want to
-                      strictly define a list and ignore all generated defaults, use
-                      `$patch: replace`.\n\n\tservice:\n\t  spec:\n\t    ports:\n\t
-                      \     - $patch: replace\n\t      - name: http\n\t        port:
-                      80\n\t        targetPort: 8080\n\t        protocol: TCP\n\t
-                      \     - name: https\n\t        port: 443\n\t        targetPort:
-                      8443\n\t        protocol: TCP"
+                      \       $patch: delete\n\t      containers:\n\t        # Be
+                      sure to use the correct proxy name here or you will add a container
+                      instead of modifying a container:\n\t        - name: proxy-name\n\t
+                      \         # Delete container-level securityContext\n\t          securityContext:\n\t
+                      \           $patch: delete\n\n**4. Null Values (server-side
+                      apply only):**\nSetting a field to `null` can also remove it,
+                      but this ONLY works with\n`kubectl apply --server-side` or equivalent.
+                      With regular client-side\n`kubectl apply`, null values are stripped
+                      by kubectl before reaching\nthe API server, so the deletion
+                      won't occur. Prefer `$patch: delete`\nfor consistent behavior
+                      across both apply modes.\n\n\tspec:\n\t  template:\n\t    spec:\n\t
+                      \     nodeSelector: null  # Removes nodeSelector (server-side
+                      apply only!)\n\n**5. Replacing Maps Entirely ($patch: replace):**\nTo
+                      replace an entire map with your values (instead of merging),
+                      use `$patch: replace`.\nThis removes all existing keys and replaces
+                      them with only your specified keys.\n\n\tspec:\n\t  template:\n\t
+                      \   spec:\n\t      nodeSelector:\n\t        $patch: replace\n\t
+                      \       custom-key: custom-value\n\n**6. Replacing Lists Entirely
+                      ($patch: replace):**\nIf you want to strictly define a list
+                      and ignore all generated defaults, use `$patch: replace`.\n\n\tservice:\n\t
+                      \ spec:\n\t    ports:\n\t      - $patch: replace\n\t      -
+                      name: http\n\t        port: 80\n\t        targetPort: 8080\n\t
+                      \       protocol: TCP\n\t      - name: https\n\t        port:
+                      443\n\t        targetPort: 8443\n\t        protocol: TCP"
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                 type: object
@@ -443,8 +453,11 @@ spec:
                   The metadata and spec fields from this overlay are applied to the generated PDB.
                 properties:
                   metadata:
-                    description: metadata defines a subset of object metadata to be
-                      customized.
+                    description: |-
+                      metadata defines a subset of object metadata to be customized.
+                      Labels and annotations are merged with existing values. If both GatewayClass
+                      and Gateway parameters define the same label or annotation key, the Gateway
+                      value takes precedence (applied second).
                     properties:
                       annotations:
                         additionalProperties:
@@ -470,10 +483,11 @@ spec:
                       resource Spec.\nThis field accepts a complete or partial Kubernetes
                       resource spec (e.g., PodSpec, ServiceSpec)\nand will be merged
                       with the generated configuration using **Strategic Merge Patch**
-                      semantics.\nThe patch is applied after all other fields are
-                      applied.\nIf you merge-patch the same resource from AgentgatewayParameters
-                      on the\nGatewayClass and also from AgentgatewayParameters on
-                      the Gateway, then\nthe GatewayClass merge-patch happens first.\n\n#
+                      semantics.\n\n# Application Order\n\nOverlays are applied after
+                      all typed configuration fields from both levels.\nThe full merge
+                      order is:\n\n 1. GatewayClass typed configuration fields\n 2.
+                      Gateway typed configuration fields\n 3. GatewayClass overlays\n
+                      4. Gateway overlays (can override all previous values)\n\n#
                       Strategic Merge Patch & Deletion Guide\n\nThis merge strategy
                       allows you to override individual fields, merge lists, or delete
                       items\nwithout needing to provide the entire resource definition.\n\n**1.
@@ -490,29 +504,30 @@ spec:
                       server-side apply.\n\n\tspec:\n\t  template:\n\t    spec:\n\t
                       \     # Delete pod-level securityContext\n\t      securityContext:\n\t
                       \       $patch: delete\n\t      # Delete nodeSelector\n\t      nodeSelector:\n\t
-                      \       $patch: delete\n\t      containers:\n\t        - name:
-                      agentgateway\n\t          # Delete container-level securityContext\n\t
-                      \         securityContext:\n\t            $patch: delete\n\n**4.
-                      Null Values (server-side apply only):**\nSetting a field to
-                      `null` can also remove it, but this ONLY works with\n`kubectl
-                      apply --server-side` or equivalent. With regular client-side\n`kubectl
-                      apply`, null values are stripped by kubectl before reaching\nthe
-                      API server, so the deletion won't occur. Prefer `$patch: delete`\nfor
-                      consistent behavior across both apply modes.\n\n\tspec:\n\t
-                      \ template:\n\t    spec:\n\t      nodeSelector: null  # Removes
-                      nodeSelector (server-side apply only!)\n\n**5. Replacing Maps
-                      Entirely ($patch: replace):**\nTo replace an entire map with
-                      your values (instead of merging), use `$patch: replace`.\nThis
-                      removes all existing keys and replaces them with only your specified
-                      keys.\n\n\tspec:\n\t  template:\n\t    spec:\n\t      nodeSelector:\n\t
-                      \       $patch: replace\n\t        custom-key: custom-value\n\n**6.
-                      Replacing Lists Entirely ($patch: replace):**\nIf you want to
-                      strictly define a list and ignore all generated defaults, use
-                      `$patch: replace`.\n\n\tservice:\n\t  spec:\n\t    ports:\n\t
-                      \     - $patch: replace\n\t      - name: http\n\t        port:
-                      80\n\t        targetPort: 8080\n\t        protocol: TCP\n\t
-                      \     - name: https\n\t        port: 443\n\t        targetPort:
-                      8443\n\t        protocol: TCP"
+                      \       $patch: delete\n\t      containers:\n\t        # Be
+                      sure to use the correct proxy name here or you will add a container
+                      instead of modifying a container:\n\t        - name: proxy-name\n\t
+                      \         # Delete container-level securityContext\n\t          securityContext:\n\t
+                      \           $patch: delete\n\n**4. Null Values (server-side
+                      apply only):**\nSetting a field to `null` can also remove it,
+                      but this ONLY works with\n`kubectl apply --server-side` or equivalent.
+                      With regular client-side\n`kubectl apply`, null values are stripped
+                      by kubectl before reaching\nthe API server, so the deletion
+                      won't occur. Prefer `$patch: delete`\nfor consistent behavior
+                      across both apply modes.\n\n\tspec:\n\t  template:\n\t    spec:\n\t
+                      \     nodeSelector: null  # Removes nodeSelector (server-side
+                      apply only!)\n\n**5. Replacing Maps Entirely ($patch: replace):**\nTo
+                      replace an entire map with your values (instead of merging),
+                      use `$patch: replace`.\nThis removes all existing keys and replaces
+                      them with only your specified keys.\n\n\tspec:\n\t  template:\n\t
+                      \   spec:\n\t      nodeSelector:\n\t        $patch: replace\n\t
+                      \       custom-key: custom-value\n\n**6. Replacing Lists Entirely
+                      ($patch: replace):**\nIf you want to strictly define a list
+                      and ignore all generated defaults, use `$patch: replace`.\n\n\tservice:\n\t
+                      \ spec:\n\t    ports:\n\t      - $patch: replace\n\t      -
+                      name: http\n\t        port: 80\n\t        targetPort: 8080\n\t
+                      \       protocol: TCP\n\t      - name: https\n\t        port:
+                      443\n\t        targetPort: 8443\n\t        protocol: TCP"
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                 type: object
@@ -598,8 +613,11 @@ spec:
                   Service resource.
                 properties:
                   metadata:
-                    description: metadata defines a subset of object metadata to be
-                      customized.
+                    description: |-
+                      metadata defines a subset of object metadata to be customized.
+                      Labels and annotations are merged with existing values. If both GatewayClass
+                      and Gateway parameters define the same label or annotation key, the Gateway
+                      value takes precedence (applied second).
                     properties:
                       annotations:
                         additionalProperties:
@@ -625,10 +643,11 @@ spec:
                       resource Spec.\nThis field accepts a complete or partial Kubernetes
                       resource spec (e.g., PodSpec, ServiceSpec)\nand will be merged
                       with the generated configuration using **Strategic Merge Patch**
-                      semantics.\nThe patch is applied after all other fields are
-                      applied.\nIf you merge-patch the same resource from AgentgatewayParameters
-                      on the\nGatewayClass and also from AgentgatewayParameters on
-                      the Gateway, then\nthe GatewayClass merge-patch happens first.\n\n#
+                      semantics.\n\n# Application Order\n\nOverlays are applied after
+                      all typed configuration fields from both levels.\nThe full merge
+                      order is:\n\n 1. GatewayClass typed configuration fields\n 2.
+                      Gateway typed configuration fields\n 3. GatewayClass overlays\n
+                      4. Gateway overlays (can override all previous values)\n\n#
                       Strategic Merge Patch & Deletion Guide\n\nThis merge strategy
                       allows you to override individual fields, merge lists, or delete
                       items\nwithout needing to provide the entire resource definition.\n\n**1.
@@ -645,29 +664,30 @@ spec:
                       server-side apply.\n\n\tspec:\n\t  template:\n\t    spec:\n\t
                       \     # Delete pod-level securityContext\n\t      securityContext:\n\t
                       \       $patch: delete\n\t      # Delete nodeSelector\n\t      nodeSelector:\n\t
-                      \       $patch: delete\n\t      containers:\n\t        - name:
-                      agentgateway\n\t          # Delete container-level securityContext\n\t
-                      \         securityContext:\n\t            $patch: delete\n\n**4.
-                      Null Values (server-side apply only):**\nSetting a field to
-                      `null` can also remove it, but this ONLY works with\n`kubectl
-                      apply --server-side` or equivalent. With regular client-side\n`kubectl
-                      apply`, null values are stripped by kubectl before reaching\nthe
-                      API server, so the deletion won't occur. Prefer `$patch: delete`\nfor
-                      consistent behavior across both apply modes.\n\n\tspec:\n\t
-                      \ template:\n\t    spec:\n\t      nodeSelector: null  # Removes
-                      nodeSelector (server-side apply only!)\n\n**5. Replacing Maps
-                      Entirely ($patch: replace):**\nTo replace an entire map with
-                      your values (instead of merging), use `$patch: replace`.\nThis
-                      removes all existing keys and replaces them with only your specified
-                      keys.\n\n\tspec:\n\t  template:\n\t    spec:\n\t      nodeSelector:\n\t
-                      \       $patch: replace\n\t        custom-key: custom-value\n\n**6.
-                      Replacing Lists Entirely ($patch: replace):**\nIf you want to
-                      strictly define a list and ignore all generated defaults, use
-                      `$patch: replace`.\n\n\tservice:\n\t  spec:\n\t    ports:\n\t
-                      \     - $patch: replace\n\t      - name: http\n\t        port:
-                      80\n\t        targetPort: 8080\n\t        protocol: TCP\n\t
-                      \     - name: https\n\t        port: 443\n\t        targetPort:
-                      8443\n\t        protocol: TCP"
+                      \       $patch: delete\n\t      containers:\n\t        # Be
+                      sure to use the correct proxy name here or you will add a container
+                      instead of modifying a container:\n\t        - name: proxy-name\n\t
+                      \         # Delete container-level securityContext\n\t          securityContext:\n\t
+                      \           $patch: delete\n\n**4. Null Values (server-side
+                      apply only):**\nSetting a field to `null` can also remove it,
+                      but this ONLY works with\n`kubectl apply --server-side` or equivalent.
+                      With regular client-side\n`kubectl apply`, null values are stripped
+                      by kubectl before reaching\nthe API server, so the deletion
+                      won't occur. Prefer `$patch: delete`\nfor consistent behavior
+                      across both apply modes.\n\n\tspec:\n\t  template:\n\t    spec:\n\t
+                      \     nodeSelector: null  # Removes nodeSelector (server-side
+                      apply only!)\n\n**5. Replacing Maps Entirely ($patch: replace):**\nTo
+                      replace an entire map with your values (instead of merging),
+                      use `$patch: replace`.\nThis removes all existing keys and replaces
+                      them with only your specified keys.\n\n\tspec:\n\t  template:\n\t
+                      \   spec:\n\t      nodeSelector:\n\t        $patch: replace\n\t
+                      \       custom-key: custom-value\n\n**6. Replacing Lists Entirely
+                      ($patch: replace):**\nIf you want to strictly define a list
+                      and ignore all generated defaults, use `$patch: replace`.\n\n\tservice:\n\t
+                      \ spec:\n\t    ports:\n\t      - $patch: replace\n\t      -
+                      name: http\n\t        port: 80\n\t        targetPort: 8080\n\t
+                      \       protocol: TCP\n\t      - name: https\n\t        port:
+                      443\n\t        targetPort: 8443\n\t        protocol: TCP"
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                 type: object
@@ -676,8 +696,11 @@ spec:
                   ServiceAccount resource.
                 properties:
                   metadata:
-                    description: metadata defines a subset of object metadata to be
-                      customized.
+                    description: |-
+                      metadata defines a subset of object metadata to be customized.
+                      Labels and annotations are merged with existing values. If both GatewayClass
+                      and Gateway parameters define the same label or annotation key, the Gateway
+                      value takes precedence (applied second).
                     properties:
                       annotations:
                         additionalProperties:
@@ -703,10 +726,11 @@ spec:
                       resource Spec.\nThis field accepts a complete or partial Kubernetes
                       resource spec (e.g., PodSpec, ServiceSpec)\nand will be merged
                       with the generated configuration using **Strategic Merge Patch**
-                      semantics.\nThe patch is applied after all other fields are
-                      applied.\nIf you merge-patch the same resource from AgentgatewayParameters
-                      on the\nGatewayClass and also from AgentgatewayParameters on
-                      the Gateway, then\nthe GatewayClass merge-patch happens first.\n\n#
+                      semantics.\n\n# Application Order\n\nOverlays are applied after
+                      all typed configuration fields from both levels.\nThe full merge
+                      order is:\n\n 1. GatewayClass typed configuration fields\n 2.
+                      Gateway typed configuration fields\n 3. GatewayClass overlays\n
+                      4. Gateway overlays (can override all previous values)\n\n#
                       Strategic Merge Patch & Deletion Guide\n\nThis merge strategy
                       allows you to override individual fields, merge lists, or delete
                       items\nwithout needing to provide the entire resource definition.\n\n**1.
@@ -723,29 +747,30 @@ spec:
                       server-side apply.\n\n\tspec:\n\t  template:\n\t    spec:\n\t
                       \     # Delete pod-level securityContext\n\t      securityContext:\n\t
                       \       $patch: delete\n\t      # Delete nodeSelector\n\t      nodeSelector:\n\t
-                      \       $patch: delete\n\t      containers:\n\t        - name:
-                      agentgateway\n\t          # Delete container-level securityContext\n\t
-                      \         securityContext:\n\t            $patch: delete\n\n**4.
-                      Null Values (server-side apply only):**\nSetting a field to
-                      `null` can also remove it, but this ONLY works with\n`kubectl
-                      apply --server-side` or equivalent. With regular client-side\n`kubectl
-                      apply`, null values are stripped by kubectl before reaching\nthe
-                      API server, so the deletion won't occur. Prefer `$patch: delete`\nfor
-                      consistent behavior across both apply modes.\n\n\tspec:\n\t
-                      \ template:\n\t    spec:\n\t      nodeSelector: null  # Removes
-                      nodeSelector (server-side apply only!)\n\n**5. Replacing Maps
-                      Entirely ($patch: replace):**\nTo replace an entire map with
-                      your values (instead of merging), use `$patch: replace`.\nThis
-                      removes all existing keys and replaces them with only your specified
-                      keys.\n\n\tspec:\n\t  template:\n\t    spec:\n\t      nodeSelector:\n\t
-                      \       $patch: replace\n\t        custom-key: custom-value\n\n**6.
-                      Replacing Lists Entirely ($patch: replace):**\nIf you want to
-                      strictly define a list and ignore all generated defaults, use
-                      `$patch: replace`.\n\n\tservice:\n\t  spec:\n\t    ports:\n\t
-                      \     - $patch: replace\n\t      - name: http\n\t        port:
-                      80\n\t        targetPort: 8080\n\t        protocol: TCP\n\t
-                      \     - name: https\n\t        port: 443\n\t        targetPort:
-                      8443\n\t        protocol: TCP"
+                      \       $patch: delete\n\t      containers:\n\t        # Be
+                      sure to use the correct proxy name here or you will add a container
+                      instead of modifying a container:\n\t        - name: proxy-name\n\t
+                      \         # Delete container-level securityContext\n\t          securityContext:\n\t
+                      \           $patch: delete\n\n**4. Null Values (server-side
+                      apply only):**\nSetting a field to `null` can also remove it,
+                      but this ONLY works with\n`kubectl apply --server-side` or equivalent.
+                      With regular client-side\n`kubectl apply`, null values are stripped
+                      by kubectl before reaching\nthe API server, so the deletion
+                      won't occur. Prefer `$patch: delete`\nfor consistent behavior
+                      across both apply modes.\n\n\tspec:\n\t  template:\n\t    spec:\n\t
+                      \     nodeSelector: null  # Removes nodeSelector (server-side
+                      apply only!)\n\n**5. Replacing Maps Entirely ($patch: replace):**\nTo
+                      replace an entire map with your values (instead of merging),
+                      use `$patch: replace`.\nThis removes all existing keys and replaces
+                      them with only your specified keys.\n\n\tspec:\n\t  template:\n\t
+                      \   spec:\n\t      nodeSelector:\n\t        $patch: replace\n\t
+                      \       custom-key: custom-value\n\n**6. Replacing Lists Entirely
+                      ($patch: replace):**\nIf you want to strictly define a list
+                      and ignore all generated defaults, use `$patch: replace`.\n\n\tservice:\n\t
+                      \ spec:\n\t    ports:\n\t      - $patch: replace\n\t      -
+                      name: http\n\t        port: 80\n\t        targetPort: 8080\n\t
+                      \       protocol: TCP\n\t      - name: https\n\t        port:
+                      443\n\t        targetPort: 8443\n\t        protocol: TCP"
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                 type: object

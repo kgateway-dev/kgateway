@@ -9,7 +9,7 @@ CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 # This version should stay in sync with `../../Makefile`.
 CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f}"
 # The version used to tag images
-VERSION="${VERSION:-1.0.0-ci1}"
+VERSION="${VERSION:-v1.0.0-ci1}"
 # Skip building docker images if we are testing a released version
 SKIP_DOCKER="${SKIP_DOCKER:-false}"
 # Stop after creating the kind cluster

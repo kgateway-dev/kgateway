@@ -151,7 +151,7 @@ const (
 This features will be enabled via a helm flag, disabled by default.
 
    ```shell
-   helm upgrade -i -n kgateway-system kgateway _test/kgateway-1.0.0-ci1.tgz --version 1.0.0-ci1 \
+   helm upgrade -i -n kgateway-system kgateway _test/kgateway-v1.0.0-ci1.tgz --version v1.0.0-ci1 \
      --set image.registry=ghcr.io/kgateway-dev \
      --set gateway.aiExtension.enabled=true \
      --set gateway.aiExtension.tracing.enabled=true \

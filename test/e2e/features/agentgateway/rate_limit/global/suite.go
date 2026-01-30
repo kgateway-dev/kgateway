@@ -177,18 +177,18 @@ func (s *testingSuite) setupTest(manifests []string, resources []client.Object) 
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
 		}
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, resources...)
+		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, resources...)
 	})
 
 	for _, manifest := range manifests {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err, "can apply "+manifest)
 	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, resources...)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, resources...)
 }
 
 func (s *testingSuite) assertResponse(path string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -203,7 +203,7 @@ func (s *testingSuite) assertResponse(path string, expectedStatus int) {
 }
 
 func (s *testingSuite) assertResponseWithHeader(path string, headerName string, headerValue string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -221,7 +221,7 @@ func (s *testingSuite) assertResponseWithHeader(path string, headerName string, 
 // Burst a few quick checks so the test doesn't cross a rate-limit window boundary.
 func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
 	for range rlBurstTries {
-		s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.ctx,
 			testdefaults.CurlPodExecOpt,
 			[]curl.Option{
@@ -238,7 +238,7 @@ func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int)
 // Safe burst a few quick checks so the test doesn't cross a rate-limit window boundary.
 func (s *testingSuite) assertConsistentResponseWithHeader(path, headerName, headerValue string, expectedStatus int) {
 	for range rlBurstTries {
-		s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.ctx,
 			testdefaults.CurlPodExecOpt,
 			[]curl.Option{

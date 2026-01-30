@@ -60,13 +60,13 @@ func (s *tsuite) SetupSuite() {
 		s.Require().NoErrorf(err, "manifest %s, out: %s", manifest, out.String())
 	}
 
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.Namespace, metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.CurlPod.Namespace, metav1.ListOptions{
 		LabelSelector: defaults.CurlPodLabelSelector,
 	})
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.Namespace, metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.Namespace, metav1.ListOptions{
 		LabelSelector: defaults.HttpbinLabelSelector,
 	})
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, gateway.Namespace, metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, gateway.Namespace, metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=" + gateway.Name,
 	})
 }
@@ -86,7 +86,7 @@ func (s *tsuite) BeforeTest(suiteName, testName string) {
 	for _, manifest := range s.testManifests[testName] {
 		err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err)
-		s.ti.Assertions.EventuallyObjectsExist(s.ctx, s.manifestObjects[manifest]...)
+		s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, s.manifestObjects[manifest]...)
 	}
 }
 
@@ -97,13 +97,13 @@ func (s *tsuite) AfterTest(suiteName, testName string) {
 	for _, manifest := range s.testManifests[testName] {
 		err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 		s.NoError(err)
-		s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, s.manifestObjects[manifest]...)
+		s.ti.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, s.manifestObjects[manifest]...)
 	}
 }
 
 func (s *tsuite) TestLabelSelector() {
 	// Verify response transformation with TrafficPolicy
-	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+	s.ti.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/get")},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Headers: map[string]any{"x-foo": "bar"}})
 
@@ -137,7 +137,7 @@ func (s *tsuite) TestGlobalPolicy() {
 	}
 
 	// Verify cors policy defined in Settings.GlobalPolicyNamespace (kgateway-system) is applied
-	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+	s.ti.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/get"), curl.WithHeaders(requestHeaders), curl.WithMethod(http.MethodOptions)},
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,

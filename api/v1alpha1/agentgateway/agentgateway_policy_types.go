@@ -748,7 +748,7 @@ const (
 	HostnameRewriteModeNone HostnameRewriteMode = "None"
 )
 
-// +kubebuilder:validation:ExactlyOneOf=key;secretRef;passthrough;aws
+// +kubebuilder:validation:ExactlyOneOf=key;secretRef;passthrough;aws;gcp
 type BackendAuth struct {
 	// key provides an inline key to use as the value of the Authorization header.
 	// This option is the least secure; usage of a Secret is preferred.
@@ -774,6 +774,35 @@ type BackendAuth struct {
 	//
 	// +optional
 	AWS *AwsAuth `json:"aws,omitempty"`
+
+	// Auth specifies to use a Google  authentication method for the backend.
+	// When omitted, we will try to use the default AWS SDK authentication methods.
+	//
+	// +optional
+	GCP *GcpAuth `json:"gcp,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=AccessToken;IdToken
+type GcpAuthType string
+
+const (
+	GcpAuthTypeAccessToken GcpAuthType = "AccessToken"
+	GcpAuthTypeIdToken     GcpAuthType = "IdToken"
+)
+
+// gcp specifies how to authenticate on Google Cloud Platform
+// +kubebuilder:validation:XValidation:rule="has(self.audience) ? self.type == 'IdToken' : true",message="audience is only valid with IdToken"
+type GcpAuth struct {
+	// The type of token to generate. To authenticate to GCP services, generally an AccessToken is used. To authenticate
+	// to CloudRun, an IdToken is used.
+	//
+	// +optional
+	Type *GcpAuthType `json:"type,omitempty"`
+	// audience allows explicitly configuring the `aud` of the ID Token. Ony valid with `IdToken` type.
+	// If not set, the aud is automatically derived from the backend hostname.
+	//
+	// +optional
+	Audience *ShortString `json:"audience,omitempty"`
 }
 
 // AwsAuth specifies the authentication method to use for the backend.
