@@ -12,7 +12,6 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -117,13 +116,13 @@ func (p *Provider) EventuallyGatewayCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, gatewayName, gatewayNamespace, &gwv1.Gateway{}, func(gw *gwv1.Gateway) bool {
-		condition := GetConditionByType(gw.Status.Conditions, string(cond))
-		return condition != nil && condition.Status == expect
-	}, func(gw *gwv1.Gateway) string {
-		return fmt.Sprintf("%v condition is not %v for Gateway %s/%s. Full status: %+v",
-			cond, expect, gatewayNamespace, gatewayName, gw.Status)
-	}, timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		gw := &gwv1.Gateway{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: gatewayName, Namespace: gatewayNamespace}, gw)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get Gateway %s/%s", gatewayNamespace, gatewayName))
+		g.Expect(gw.Status.Conditions).To(matchers.HaveCondition(string(cond), expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 // EventuallyGatewayListenerAttachedRoutes checks the provided Gateway contains the expected attached routes for the listener.
@@ -136,17 +135,24 @@ func (p *Provider) EventuallyGatewayListenerAttachedRoutes(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, gatewayName, gatewayNamespace, &gwv1.Gateway{}, func(gw *gwv1.Gateway) bool {
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		gw := &gwv1.Gateway{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: gatewayName, Namespace: gatewayNamespace}, gw)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get Gateway %s/%s", gatewayNamespace, gatewayName))
+
+		var found bool
 		for _, l := range gw.Status.Listeners {
 			if l.Name == listener {
-				return l.AttachedRoutes == routes
+				g.Expect(l.AttachedRoutes).To(gomega.Equal(routes),
+					fmt.Sprintf("%v listener does not contain %d attached routes for Gateway %s/%s. Full status: %+v",
+						listener, routes, gatewayNamespace, gatewayName, gw.Status))
+				found = true
+				break
 			}
 		}
-		return false
-	}, func(gw *gwv1.Gateway) string {
-		return fmt.Sprintf("%v listener does not contain %d attached routes for Gateway %s/%s. Full status: %+v",
-			listener, routes, gatewayNamespace, gatewayName, gw.Status)
-	}, timeout...)
+		g.Expect(found).To(gomega.BeTrue(), fmt.Sprintf("listener %s not found in Gateway %s/%s", listener, gatewayNamespace, gatewayName))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 func (p *Provider) EventuallyGatewayStatus(
@@ -194,6 +200,15 @@ func (p *Provider) EventuallyGatewayStatus(
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
+// extractParentConditions extracts conditions from route parent statuses.
+func extractParentConditions(parents []gwv1.RouteParentStatus) [][]metav1.Condition {
+	result := make([][]metav1.Condition, len(parents))
+	for i, p := range parents {
+		result[i] = p.Conditions
+	}
+	return result
+}
+
 // EventuallyHTTPRouteCondition checks that provided HTTPRoute condition is set to expect.
 func (p *Provider) EventuallyHTTPRouteCondition(
 	ctx context.Context,
@@ -204,18 +219,13 @@ func (p *Provider) EventuallyHTTPRouteCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, routeName, routeNamespace, &gwv1.HTTPRoute{}, func(route *gwv1.HTTPRoute) bool {
-		for _, parentStatus := range route.Status.Parents {
-			condition := GetConditionByType(parentStatus.Conditions, string(cond))
-			if condition != nil && condition.Status == expect {
-				return true
-			}
-		}
-		return false
-	}, func(route *gwv1.HTTPRoute) string {
-		return fmt.Sprintf("%v condition is not %v for any parent of HTTPRoute %s/%s. Full status: %+v",
-			cond, expect, routeNamespace, routeName, route.Status)
-	}, timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1.HTTPRoute{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get HTTPRoute %s/%s", routeNamespace, routeName))
+		g.Expect(extractParentConditions(route.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 // EventuallyTCPRouteCondition checks that provided TCPRoute condition is set to expect.
@@ -228,18 +238,13 @@ func (p *Provider) EventuallyTCPRouteCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, routeName, routeNamespace, &gwv1a2.TCPRoute{}, func(route *gwv1a2.TCPRoute) bool {
-		for _, parentStatus := range route.Status.Parents {
-			condition := GetConditionByType(parentStatus.Conditions, string(cond))
-			if condition != nil && condition.Status == expect {
-				return true
-			}
-		}
-		return false
-	}, func(route *gwv1a2.TCPRoute) string {
-		return fmt.Sprintf("%v condition is not %v for any parent of TCPRoute %s/%s. Full status: %+v",
-			cond, expect, routeNamespace, routeName, route.Status)
-	}, timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1a2.TCPRoute{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get TCPRoute %s/%s", routeNamespace, routeName))
+		g.Expect(extractParentConditions(route.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 // EventuallyTLSRouteCondition checks that provided TLSRoute condition is set to expect.
@@ -252,18 +257,13 @@ func (p *Provider) EventuallyTLSRouteCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, routeName, routeNamespace, &gwv1a2.TLSRoute{}, func(route *gwv1a2.TLSRoute) bool {
-		for _, parentStatus := range route.Status.Parents {
-			condition := GetConditionByType(parentStatus.Conditions, string(cond))
-			if condition != nil && condition.Status == expect {
-				return true
-			}
-		}
-		return false
-	}, func(route *gwv1a2.TLSRoute) string {
-		return fmt.Sprintf("%v condition is not %v for any parent of TLSRoute %s/%s. Full status: %+v",
-			cond, expect, routeNamespace, routeName, route.Status)
-	}, timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1a2.TLSRoute{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get TLSRoute %s/%s", routeNamespace, routeName))
+		g.Expect(extractParentConditions(route.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 // EventuallyGRPCRouteCondition checks that provided GRPCRoute condition is set to expect.
@@ -276,18 +276,22 @@ func (p *Provider) EventuallyGRPCRouteCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, routeName, routeNamespace, &gwv1.GRPCRoute{}, func(route *gwv1.GRPCRoute) bool {
-		for _, parentStatus := range route.Status.Parents {
-			condition := GetConditionByType(parentStatus.Conditions, string(cond))
-			if condition != nil && condition.Status == expect {
-				return true
-			}
-		}
-		return false
-	}, func(route *gwv1.GRPCRoute) string {
-		return fmt.Sprintf("%v condition is not %v for any parent of GRPCRoute %s/%s. Full status: %+v",
-			cond, expect, routeNamespace, routeName, route.Status)
-	}, timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1.GRPCRoute{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get GRPCRoute %s/%s", routeNamespace, routeName))
+		g.Expect(extractParentConditions(route.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+// extractInferencePoolParentConditions extracts conditions from InferencePool parent statuses.
+func extractInferencePoolParentConditions(parents []inf.ParentStatus) [][]metav1.Condition {
+	result := make([][]metav1.Condition, len(parents))
+	for i, p := range parents {
+		result[i] = p.Conditions
+	}
+	return result
 }
 
 // EventuallyInferencePoolCondition checks that the specified InferencePool condition
@@ -301,19 +305,13 @@ func (p *Provider) EventuallyInferencePoolCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-
-	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, poolName, poolNamespace, &inf.InferencePool{}, func(pool *inf.InferencePool) bool {
-		for _, parent := range pool.Status.Parents {
-			if c := GetConditionByType(parent.Conditions, string(cond)); c != nil && c.Status == expect {
-				return true
-			}
-		}
-		return false
-	}, func(pool *inf.InferencePool) string {
-		return fmt.Sprintf("%v condition is not %v for any parent of InferencePool %s/%s",
-			cond, expect, poolNamespace, poolName)
-	}, timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		pool := &inf.InferencePool{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: poolName, Namespace: poolNamespace}, pool)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get InferencePool %s/%s", poolNamespace, poolName))
+		g.Expect(extractInferencePoolParentConditions(pool.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 // Helper function to retrieve a condition by type from a list of conditions.
@@ -374,29 +372,6 @@ func (p *Provider) EventuallyListenerSetStatus(
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
-func (p *Provider) EventuallyListenerSetAttachedRoutes(
-	ctx context.Context,
-	name string,
-	namespace string,
-	listener gwv1.SectionName,
-	routes int32,
-	timeout ...time.Duration,
-) {
-	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		ls := &gwxv1a1.XListenerSet{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, ls)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get listenerset %s/%s", namespace, name))
-
-		for _, expectedListener := range ls.Status.Listeners {
-			listenerStatus := getListenerEntryStatus(ls.Status.Listeners, string(expectedListener.Name))
-			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s. Full status: %+v", expectedListener.Name, expectedListener.Name, ls.Status))
-			g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v AttachedRoutes is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name, ls.Status))
-		}
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
-
 func getListenerEntryStatus(listeners []gwxv1a1.ListenerEntryStatus, name string) *gwxv1a1.ListenerEntryStatus {
 	for i := range listeners {
 		if string(listeners[i].Name) == name {
@@ -415,6 +390,15 @@ func getListenerStatus(listeners []gwv1.ListenerStatus, name string) *gwv1.Liste
 	return nil
 }
 
+// extractAncestorConditions extracts conditions from policy ancestor statuses.
+func extractAncestorConditions(ancestors []gwv1.PolicyAncestorStatus) [][]metav1.Condition {
+	result := make([][]metav1.Condition, len(ancestors))
+	for i, a := range ancestors {
+		result[i] = a.Conditions
+	}
+	return result
+}
+
 // EventuallyHTTPListenerPolicyCondition checks that provided HTTPListenerPolicy condition is set to expect.
 func (p *Provider) EventuallyHTTPListenerPolicyCondition(
 	ctx context.Context,
@@ -425,18 +409,13 @@ func (p *Provider) EventuallyHTTPListenerPolicyCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, name, namespace, &kgateway.HTTPListenerPolicy{}, func(hlp *kgateway.HTTPListenerPolicy) bool {
-		for _, parentStatus := range hlp.Status.Ancestors {
-			condition := GetConditionByType(parentStatus.Conditions, string(cond))
-			if condition != nil && condition.Status == expect {
-				return true
-			}
-		}
-		return false
-	}, func(hlp *kgateway.HTTPListenerPolicy) string {
-		return fmt.Sprintf("%v condition is not %v for any parent of HTTPListenerPolicy %s/%s. Full status: %+v",
-			cond, expect, namespace, name, hlp.Status)
-	}, timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		hlp := &kgateway.HTTPListenerPolicy{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, hlp)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get HTTPListenerPolicy %s/%s", namespace, name))
+		g.Expect(extractAncestorConditions(hlp.Status.Ancestors)).To(matchers.HaveAnyAncestorCondition(string(cond), expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 // EventuallyBackendCondition checks that provided Backend condition is set to expect.
@@ -449,17 +428,13 @@ func (p *Provider) EventuallyBackendCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, name, namespace, &kgateway.Backend{}, func(backend *kgateway.Backend) bool {
-		for _, cond := range backend.Status.Conditions {
-			if cond.Type == condition && cond.Status == expect {
-				return true
-			}
-		}
-		return false
-	}, func(backend *kgateway.Backend) string {
-		return fmt.Sprintf("%v condition is not %v for Backend %s/%s. Full status: %+v",
-			condition, expect, namespace, name, backend.Status)
-	}, timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		backend := &kgateway.Backend{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, backend)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get Backend %s/%s", namespace, name))
+		g.Expect(backend.Status.Conditions).To(matchers.HaveCondition(condition, expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 // EventuallyAgwBackendCondition checks that provided AgentgatewayBackend condition is set to expect.
@@ -472,17 +447,22 @@ func (p *Provider) EventuallyAgwBackendCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, name, namespace, &agentgateway.AgentgatewayBackend{}, func(backend *agentgateway.AgentgatewayBackend) bool {
-		for _, cond := range backend.Status.Conditions {
-			if cond.Type == condition && cond.Status == expect {
-				return true
-			}
-		}
-		return false
-	}, func(backend *agentgateway.AgentgatewayBackend) string {
-		return fmt.Sprintf("%v condition is not %v for AgentgatewayBackend %s/%s. Full status: %+v",
-			condition, expect, namespace, name, backend.Status)
-	}, timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		backend := &agentgateway.AgentgatewayBackend{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, backend)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get AgentgatewayBackend %s/%s", namespace, name))
+		g.Expect(backend.Status.Conditions).To(matchers.HaveCondition(condition, expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+// extractAgwPolicyAncestorConditions extracts conditions from AgentgatewayPolicy ancestor statuses.
+func extractAgwPolicyAncestorConditions(ancestors []gwv1.PolicyAncestorStatus) [][]metav1.Condition {
+	result := make([][]metav1.Condition, len(ancestors))
+	for i, a := range ancestors {
+		result[i] = a.Conditions
+	}
+	return result
 }
 
 // EventuallyAgwPolicyCondition checks that provided AgentgatewayPolicy condition is set to expect.
@@ -495,42 +475,11 @@ func (p *Provider) EventuallyAgwPolicyCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
-	eventuallyCondition(p, ctx, name, namespace, &agentgateway.AgentgatewayPolicy{}, func(policy *agentgateway.AgentgatewayPolicy) bool {
-		for _, parentStatus := range policy.Status.Ancestors {
-			condition := GetConditionByType(parentStatus.Conditions, condType)
-			if condition != nil && condition.Status == expect {
-				return true
-			}
-		}
-		return false
-	}, func(policy *agentgateway.AgentgatewayPolicy) string {
-		return fmt.Sprintf("%v condition is not %v for any ancestor of AgentgatewayPolicy %s/%s. Full status: %+v",
-			condType, expect, namespace, name, policy.Status)
-	}, timeout...)
-}
-
-// eventuallyCondition is a generic helper for checking status conditions on Kubernetes objects.
-//
-// Note on object reuse:
-// This function reuses the object pointer `obj` for each `Client.Get` call within the generic `Eventually` loop.
-// Client.Get overwrites the object. Since T is a pointer type (e.g. *gwv1.Gateway), passing the SAME pointer repeatedly
-// to Get is fine as long as we don't need to accumulate state or worry about partial overwrites (Get usually overwrites).
-// This reuse is standard practice in these tests.
-func eventuallyCondition[T client.Object](
-	p *Provider,
-	ctx context.Context,
-	name, namespace string,
-	obj T,
-	check func(T) bool,
-	errMsg func(T) string,
-	timeout ...time.Duration,
-) {
-	ginkgo.GinkgoHelper()
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, obj)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get %T %s/%s", obj, namespace, name))
-
-		g.Expect(check(obj)).To(gomega.BeTrue(), errMsg(obj))
+		policy := &agentgateway.AgentgatewayPolicy{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, policy)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get AgentgatewayPolicy %s/%s", namespace, name))
+		g.Expect(extractAgwPolicyAncestorConditions(policy.Status.Ancestors)).To(matchers.HaveAnyAncestorCondition(condType, expect))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
