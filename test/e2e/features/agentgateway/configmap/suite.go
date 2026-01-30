@@ -77,7 +77,7 @@ func (s *testingSuite) TestTracingConfigMap() {
 // verifyConfigMapExists ensures the ConfigMap exists before proceeding
 func (s *testingSuite) verifyConfigMapExists(name, namespace string) {
 	s.T().Logf("Verifying ConfigMap %s exists in namespace %s", name, namespace)
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.T().Context(),
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.T().Context(),
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -89,7 +89,7 @@ func (s *testingSuite) verifyConfigMapExists(name, namespace string) {
 
 // waitForAgentgatewayPodsRunning waits for the agentgateway pods to be running
 func (s *testingSuite) waitForAgentgatewayPodsRunning() {
-	s.TestInstallation.Assertions.EventuallyPodsRunning(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(
 		s.T().Context(),
 		"default",
 		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=agentgateway"},

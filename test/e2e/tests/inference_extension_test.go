@@ -51,23 +51,23 @@ func TestInferenceExtension(t *testing.T) {
 	// This allows us to uninstall kgateway, in case the original installation only completed partially
 	testutils.Cleanup(t, func() {
 		if t.Failed() {
-			testInstallation.PreFailHandler(ctx)
+			testInstallation.PreFailHandler(ctx, t)
 		}
 
-		testInstallation.UninstallKgateway(ctx)
+		testInstallation.UninstallKgateway(ctx, t)
 
 		// Uninstall InferencePool v1 CRD
 		err := testInstallation.Actions.Kubectl().DeleteFile(ctx, poolCrdManifest)
-		testInstallation.Assertions.Require.NoError(err, "can delete manifest %s", poolCrdManifest)
+		testInstallation.AssertionsT(t).Require.NoError(err, "can delete manifest %s", poolCrdManifest)
 	})
 
 	// Install InferencePool v1 CRD
 	err := testInstallation.Actions.Kubectl().ApplyFile(ctx, poolCrdManifest)
-	testInstallation.Assertions.Require.NoError(err, "can apply manifest %s", poolCrdManifest)
+	testInstallation.AssertionsT(t).Require.NoError(err, "can apply manifest %s", poolCrdManifest)
 
 	// Install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx)
-	testInstallation.Assertions.EventuallyNamespaceExists(ctx, infExtNs)
+	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
+	testInstallation.AssertionsT(t).EventuallyNamespaceExists(ctx, infExtNs)
 
 	// Run the e2e tests
 	InferenceExtensionSuiteRunner().Run(ctx, t, testInstallation)

@@ -1,0 +1,79 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Standard class for managing Gateway API ingress traffic.
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: my-gwp
+    namespace: default
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: my-gwp
+  namespace: default
+spec:
+  kube:
+    # Overlays applied via strategic merge patch AFTER rendering
+    deploymentOverlay:
+      metadata:
+        annotations:
+          deployment-overlay-annotation: from-overlay
+        labels:
+          deployment-overlay-label1: from-overlay
+          deployment-overlay-label2: from-overlay
+      spec:
+        template:
+          spec:
+            volumes:
+              - $patch: replace
+              - name: custom-config
+                configMap:
+                  name: my-custom-config
+            containers:
+              - name: kgateway-proxy
+                volumeMounts:
+                  - name: custom-config
+                    mountPath: /etc/custom-config
+                    readOnly: true
+                securityContext: {}
+    serviceOverlay:
+      metadata:
+        annotations:
+          service-overlay-annotation: from-overlay
+      spec:
+        ports:
+          - $patch: replace
+          - name: http
+            port: 80
+            targetPort: 8080
+            protocol: TCP
+          - name: https
+            port: 443
+            targetPort: 8443
+            protocol: TCP
+    serviceAccountOverlay:
+      metadata:
+        annotations:
+          sa-overlay-annotation: from-overlay
+        labels:
+          sa-overlay-label: from-overlay
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same

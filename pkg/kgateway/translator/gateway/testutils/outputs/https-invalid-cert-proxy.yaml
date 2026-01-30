@@ -114,9 +114,9 @@ Statuses:
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: Successfully accepted Listener
-          reason: Accepted
-          status: "True"
+          message: Secret default/missing-cert not found.
+          reason: Invalid
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully verified that Listener has no conflicts
@@ -142,9 +142,10 @@ Statuses:
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: Successfully accepted Listener
-          reason: Accepted
-          status: "True"
+          message: 'invalid TLS secret default/invalid-cert: tls: failed to find any
+            PEM data in key input'
+          reason: Invalid
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully verified that Listener has no conflicts

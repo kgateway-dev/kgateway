@@ -4,6 +4,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 )
 
 // +kubebuilder:rbac:groups=agentgateway.dev,resources=agentgatewayparameters,verbs=get;list;watch
@@ -194,140 +196,29 @@ type ShutdownSpec struct {
 type AgentgatewayParametersOverlays struct {
 	// deployment allows specifying overrides for the generated Deployment resource.
 	// +optional
-	Deployment *KubernetesResourceOverlay `json:"deployment,omitempty"`
+	Deployment *shared.KubernetesResourceOverlay `json:"deployment,omitempty"`
 
 	// service allows specifying overrides for the generated Service resource.
 	// +optional
-	Service *KubernetesResourceOverlay `json:"service,omitempty"`
+	Service *shared.KubernetesResourceOverlay `json:"service,omitempty"`
 
 	// serviceAccount allows specifying overrides for the generated ServiceAccount resource.
 	// +optional
-	ServiceAccount *KubernetesResourceOverlay `json:"serviceAccount,omitempty"`
+	ServiceAccount *shared.KubernetesResourceOverlay `json:"serviceAccount,omitempty"`
 
 	// podDisruptionBudget allows creating a PodDisruptionBudget for the agentgateway proxy.
 	// If absent, no PDB is created. If present, a PDB is created with its selector
 	// automatically configured to target the agentgateway proxy Deployment.
 	// The metadata and spec fields from this overlay are applied to the generated PDB.
 	// +optional
-	PodDisruptionBudget *KubernetesResourceOverlay `json:"podDisruptionBudget,omitempty"`
+	PodDisruptionBudget *shared.KubernetesResourceOverlay `json:"podDisruptionBudget,omitempty"`
 
 	// horizontalPodAutoscaler allows creating a HorizontalPodAutoscaler for the agentgateway proxy.
 	// If absent, no HPA is created. If present, an HPA is created with its scaleTargetRef
 	// automatically configured to target the agentgateway proxy Deployment.
 	// The metadata and spec fields from this overlay are applied to the generated HPA.
 	// +optional
-	HorizontalPodAutoscaler *KubernetesResourceOverlay `json:"horizontalPodAutoscaler,omitempty"`
-}
-
-type AgentgatewayParametersObjectMetadata struct {
-	// Map of string keys and values that can be used to organize and categorize
-	// (scope and select) objects. May match selectors of replication controllers
-	// and services.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
-	// +optional
-	Labels map[string]string `json:"labels,omitempty"`
-
-	// Annotations is an unstructured key value map stored with a resource that may be
-	// set by external tools to store and retrieve arbitrary metadata. They are not
-	// queryable and should be preserved when modifying objects.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations
-	// +optional
-	Annotations map[string]string `json:"annotations,omitempty"`
-}
-
-// KubernetesResourceOverlay provides a mechanism to customize generated
-// Kubernetes resources using [Strategic Merge
-// Patch](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/strategic-merge-patch.md)
-// semantics.
-type KubernetesResourceOverlay struct {
-	// metadata defines a subset of object metadata to be customized.
-	// +optional
-	Metadata *AgentgatewayParametersObjectMetadata `json:"metadata,omitempty"`
-
-	// Spec provides an opaque mechanism to configure the resource Spec.
-	// This field accepts a complete or partial Kubernetes resource spec (e.g., PodSpec, ServiceSpec)
-	// and will be merged with the generated configuration using **Strategic Merge Patch** semantics.
-	// The patch is applied after all other fields are applied.
-	// If you merge-patch the same resource from AgentgatewayParameters on the
-	// GatewayClass and also from AgentgatewayParameters on the Gateway, then
-	// the GatewayClass merge-patch happens first.
-	//
-	// # Strategic Merge Patch & Deletion Guide
-	//
-	// This merge strategy allows you to override individual fields, merge lists, or delete items
-	// without needing to provide the entire resource definition.
-	//
-	// **1. Replacing Values (Scalars):**
-	// Simple fields (strings, integers, booleans) in your config will overwrite the generated defaults.
-	//
-	// **2. Merging Lists (Append/Merge):**
-	// Lists with "merge keys" (like `containers` which merges on `name`, or `tolerations` which merges on `key`)
-	// will append your items to the generated list, or update existing items if keys match.
-	//
-	// **3. Deleting Fields or List Items ($patch: delete):**
-	// To remove a field or list item from the generated resource, use the
-	// `$patch: delete` directive. This works for both map fields and list items,
-	// and is the recommended approach because it works with both client-side
-	// and server-side apply.
-	//
-	//	spec:
-	//	  template:
-	//	    spec:
-	//	      # Delete pod-level securityContext
-	//	      securityContext:
-	//	        $patch: delete
-	//	      # Delete nodeSelector
-	//	      nodeSelector:
-	//	        $patch: delete
-	//	      containers:
-	//	        - name: agentgateway
-	//	          # Delete container-level securityContext
-	//	          securityContext:
-	//	            $patch: delete
-	//
-	// **4. Null Values (server-side apply only):**
-	// Setting a field to `null` can also remove it, but this ONLY works with
-	// `kubectl apply --server-side` or equivalent. With regular client-side
-	// `kubectl apply`, null values are stripped by kubectl before reaching
-	// the API server, so the deletion won't occur. Prefer `$patch: delete`
-	// for consistent behavior across both apply modes.
-	//
-	//	spec:
-	//	  template:
-	//	    spec:
-	//	      nodeSelector: null  # Removes nodeSelector (server-side apply only!)
-	//
-	// **5. Replacing Maps Entirely ($patch: replace):**
-	// To replace an entire map with your values (instead of merging), use `$patch: replace`.
-	// This removes all existing keys and replaces them with only your specified keys.
-	//
-	//	spec:
-	//	  template:
-	//	    spec:
-	//	      nodeSelector:
-	//	        $patch: replace
-	//	        custom-key: custom-value
-	//
-	// **6. Replacing Lists Entirely ($patch: replace):**
-	// If you want to strictly define a list and ignore all generated defaults, use `$patch: replace`.
-	//
-	//	service:
-	//	  spec:
-	//	    ports:
-	//	      - $patch: replace
-	//	      - name: http
-	//	        port: 80
-	//	        targetPort: 8080
-	//	        protocol: TCP
-	//	      - name: https
-	//	        port: 443
-	//	        targetPort: 8443
-	//	        protocol: TCP
-	//
-	// +optional
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
+	HorizontalPodAutoscaler *shared.KubernetesResourceOverlay `json:"horizontalPodAutoscaler,omitempty"`
 }
 
 // A container image. See https://kubernetes.io/docs/concepts/containers/images

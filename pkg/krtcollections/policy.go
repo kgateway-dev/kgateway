@@ -25,6 +25,7 @@ import (
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/backendref"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -555,14 +556,8 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 
 		// Extract FrontendTLSConfig from Gateway spec
 		if gw.Spec.TLS != nil && gw.Spec.TLS.Frontend != nil {
-			frontendTLSConfig, err := getFrontendTLSConfig(gw.Spec.TLS.Frontend)
-			if err != nil {
-				gwIR.FrontendTLSConfig = &ir.FrontendTLSConfigIR{
-					Err: err,
-				}
-			} else {
-				gwIR.FrontendTLSConfig = frontendTLSConfig
-			}
+			frontendTLSConfig := getFrontendTLSConfig(gw.Spec.TLS.Frontend)
+			gwIR.FrontendTLSConfig = frontendTLSConfig
 		}
 
 		return gwIR
@@ -1668,7 +1663,7 @@ func validateCAReferenceType(ref gwv1.ObjectReference) error {
 	// Normalize kind
 	kind := string(ref.Kind)
 	if kind == "" {
-		return fmt.Errorf("CA certificate reference must specify a kind")
+		return sslutils.ErrInvalidCACertificateKindDetails(string(ref.Name), strOr(ref.Namespace, ""), "")
 	}
 
 	gvk := schema.GroupVersionKind{
@@ -1684,33 +1679,41 @@ func validateCAReferenceType(ref gwv1.ObjectReference) error {
 		return nil
 	}
 
-	return fmt.Errorf("CA certificate reference must be a ConfigMap or Secret, got %s/%s", group, kind)
+	return sslutils.ErrInvalidCACertificateKindDetails(string(ref.Name), strOr(ref.Namespace, ""), string(ref.Kind))
 }
 
 // getFrontendTLSConfig extracts FrontendTLSConfig from Gateway spec and converts it to IR format.
 // Validates that all CA certificate references are ConfigMap or Secret types.
-// Returns an error if any CA certificate reference is invalid.
+// Stores errors on the IR to be written to the listener status.
 // CA certificate fetching is deferred to the listener translation phase where queries are available.
-func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) (*ir.FrontendTLSConfigIR, error) {
+func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSConfigIR {
 	if frontendTLS == nil {
-		return nil, nil
+		return nil
 	}
 
 	result := &ir.FrontendTLSConfigIR{
 		PerPortValidation: make(map[gwv1.PortNumber]*ir.ClientCertificateValidationIR),
+		PortErrors:        make(map[gwv1.PortNumber]error),
 	}
 
 	// Extract default validation configuration
 	if frontendTLS.Default.Validation != nil {
 		// Validate all CA certificate references
+		validCARefs := make([]gwv1.ObjectReference, 0)
 		for _, ref := range frontendTLS.Default.Validation.CACertificateRefs {
 			if err := validateCAReferenceType(ref); err != nil {
-				return nil, fmt.Errorf("invalid CA certificate reference in FrontendTLSConfig.default.validation: %s/%s: %w", ref.Kind, ref.Name, err)
+				result.DefaultError = errors.Join(result.DefaultError, err)
+			} else {
+				validCARefs = append(validCARefs, ref)
 			}
 		}
-		result.DefaultValidation = &ir.ClientCertificateValidationIR{
-			RequireClientCertificate: getRequiredClientCertificate(frontendTLS.Default.Validation.Mode),
-			CACertificateRefs:        frontendTLS.Default.Validation.CACertificateRefs,
+
+		// If there are any valid CA certificate references, use them
+		if len(validCARefs) > 0 {
+			result.DefaultValidation = &ir.ClientCertificateValidationIR{
+				RequireClientCertificate: getRequiredClientCertificate(frontendTLS.Default.Validation.Mode),
+				CACertificateRefs:        validCARefs,
+			}
 		}
 	}
 
@@ -1718,19 +1721,26 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) (*ir.FrontendTLSC
 	for _, portConfig := range frontendTLS.PerPort {
 		if portConfig.TLS.Validation != nil {
 			// Validate all CA certificate references
+			validCARefs := make([]gwv1.ObjectReference, 0)
 			for _, ref := range portConfig.TLS.Validation.CACertificateRefs {
 				if err := validateCAReferenceType(ref); err != nil {
-					return nil, fmt.Errorf("invalid CA certificate reference in FrontendTLSConfig.perPort[%d].validation: %s/%s: %w", portConfig.Port, ref.Kind, ref.Name, err)
+					result.PortErrors[portConfig.Port] = errors.Join(result.PortErrors[portConfig.Port], err)
+				} else {
+					validCARefs = append(validCARefs, ref)
 				}
 			}
-			result.PerPortValidation[portConfig.Port] = &ir.ClientCertificateValidationIR{
-				RequireClientCertificate: getRequiredClientCertificate(portConfig.TLS.Validation.Mode),
-				CACertificateRefs:        portConfig.TLS.Validation.CACertificateRefs,
+
+			// If there are any valid CA certificate references, use them
+			if len(validCARefs) > 0 {
+				result.PerPortValidation[portConfig.Port] = &ir.ClientCertificateValidationIR{
+					RequireClientCertificate: getRequiredClientCertificate(portConfig.TLS.Validation.Mode),
+					CACertificateRefs:        validCARefs,
+				}
 			}
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 // getRequiredClientCertificate returns true if the client certificate is required, false otherwise.

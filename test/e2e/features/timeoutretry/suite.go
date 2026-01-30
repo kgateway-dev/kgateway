@@ -42,7 +42,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestRouteTimeout() {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -58,7 +58,7 @@ func (s *testingSuite) TestRouteTimeout() {
 }
 
 func (s *testingSuite) TestRetries() {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -71,13 +71,13 @@ func (s *testingSuite) TestRetries() {
 		},
 	)
 	// Assert that there were 2 retry attempts
-	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.T().Context(),
 		gatewayObjectMeta,
 		assertStat(s.Assert(), "cluster.kube_default_httpbin_8000.upstream_rq_retry$", 2),
 	)
 
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -91,14 +91,14 @@ func (s *testingSuite) TestRetries() {
 		},
 	)
 	// Assert that there were 2 more retry attempts, 4 in total
-	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.T().Context(),
 		gatewayObjectMeta,
 		assertStat(s.Assert(), "cluster.kube_default_httpbin_8000.upstream_rq_retry$", 4),
 	)
 
 	// Test retry policy attached to Gateway's listener
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -111,7 +111,7 @@ func (s *testingSuite) TestRetries() {
 		},
 	)
 	// Assert that there were 2 more retry attempts, 6 in total
-	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.T().Context(),
 		gatewayObjectMeta,
 		assertStat(s.Assert(), "cluster.kube_default_httpbin_8000.upstream_rq_retry$", 6),

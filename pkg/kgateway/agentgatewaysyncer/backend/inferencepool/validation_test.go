@@ -2,6 +2,7 @@ package inferencepool
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,60 +19,60 @@ import (
 
 func TestValidatePool(t *testing.T) {
 	tests := []struct {
-		name       string
-		modifyPool func(p *inf.InferencePool)
-		svc        *corev1.Service
-		wantErrs   int
+		name        string
+		modifyPool  func(p *inf.InferencePool)
+		svc         *corev1.Service
+		wantErrMsgs []string
 	}{
 		{
 			name: "unsupported Group",
 			modifyPool: func(p *inf.InferencePool) {
 				p.Spec.EndpointPickerRef.Group = ptr.To(inf.Group("foo.example.com"))
 			},
-			svc:      makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
-			wantErrs: 1,
+			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			wantErrMsgs: []string{fmt.Sprintf(ErrInvalidGroupFormat, "foo.example.com")},
 		},
 		{
 			name: "unsupported Kind",
 			modifyPool: func(p *inf.InferencePool) {
 				p.Spec.EndpointPickerRef.Kind = inf.Kind(wellknown.ConfigMapGVK.Kind)
 			},
-			svc:      makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
-			wantErrs: 1,
+			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			wantErrMsgs: []string{fmt.Sprintf(ErrInvalidKindFormat, wellknown.ConfigMapGVK.Kind)},
 		},
 		{
 			name: "port unspecified",
 			modifyPool: func(p *inf.InferencePool) {
 				p.Spec.EndpointPickerRef.Port = nil
 			},
-			svc:      nil,
-			wantErrs: 1,
+			svc:         nil,
+			wantErrMsgs: []string{ErrPortRequired},
 		},
 		{
 			name: "service not found",
 			modifyPool: func(p *inf.InferencePool) {
 				p.Spec.EndpointPickerRef.Name = inf.ObjectName("missing-svc")
 			},
-			svc:      nil,
-			wantErrs: 1,
+			svc:         nil,
+			wantErrMsgs: []string{fmt.Sprintf(ErrServiceNotFoundFormat, "default", "missing-svc")},
 		},
 		{
-			name:       "happy path",
-			modifyPool: func(_ *inf.InferencePool) {},
-			svc:        makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
-			wantErrs:   0,
+			name:        "happy path",
+			modifyPool:  func(_ *inf.InferencePool) {},
+			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			wantErrMsgs: nil,
 		},
 		{
-			name:       "ExternalName service rejected",
-			modifyPool: func(_ *inf.InferencePool) {},
-			svc:        makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeExternalName),
-			wantErrs:   1,
+			name:        "ExternalName service rejected",
+			modifyPool:  func(_ *inf.InferencePool) {},
+			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeExternalName),
+			wantErrMsgs: []string{ErrExternalNameNotAllowed},
 		},
 		{
-			name:       "UDP port not accepted",
-			modifyPool: func(_ *inf.InferencePool) {},
-			svc:        makeSvc(corev1.ProtocolUDP, corev1.ServiceTypeClusterIP),
-			wantErrs:   1,
+			name:        "UDP port not accepted",
+			modifyPool:  func(_ *inf.InferencePool) {},
+			svc:         makeSvc(corev1.ProtocolUDP, corev1.ServiceTypeClusterIP),
+			wantErrMsgs: []string{fmt.Sprintf(ErrTCPPortNotFoundFormat, 80, "default", "test-svc")},
 		},
 	}
 
@@ -115,8 +116,11 @@ func TestValidatePool(t *testing.T) {
 
 			// Assert on the number of errors
 			errs := validatePool(pool, svcCol)
-			assert.Lenf(t, errs, tc.wantErrs,
-				"validatePool() returned %d errors: %v", len(errs), errs)
+			var errStrings []string
+			for _, err := range errs {
+				errStrings = append(errStrings, err.Error())
+			}
+			assert.Equal(t, tc.wantErrMsgs, errStrings)
 		})
 	}
 }

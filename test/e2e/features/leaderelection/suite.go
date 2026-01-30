@@ -65,7 +65,7 @@ func (s *testingSuite) TestLeaderAndFollowerAction() {
 
 	s.assertCurlResponseCode(200)
 	s.assertRouteHasNoStatus()
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, routeObjectMeta.Name, routeObjectMeta.Namespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, routeObjectMeta.Name, routeObjectMeta.Namespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	// Verify that a new leader was elected
 	s.leadershipChanges(leader)
@@ -99,7 +99,7 @@ func (s *testingSuite) TestLeaderWritesBackendStatus() {
 	s.assertBackendHasNoStatus()
 
 	begin := time.Now()
-	s.TestInstallation.Assertions.EventuallyBackendCondition(s.Ctx, "httpbin-static", "default", "Accepted", metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyBackendCondition(s.Ctx, "httpbin-static", "default", "Accepted", metav1.ConditionTrue)
 	diff := time.Since(begin)
 
 	// The time to deploy the write the status is greater than the lease renewal period.
@@ -132,7 +132,7 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 	}()
 
 	begin := time.Now()
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, proxyDeployment, proxyService)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, proxyDeployment, proxyService)
 	diff := time.Since(begin)
 
 	// The time to deploy the proxy is greater than the lease renewal period.
@@ -200,7 +200,7 @@ func (s *testingSuite) killLeader(leader string) {
 }
 
 func (s *testingSuite) assertCurlResponseCode(code int) {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{

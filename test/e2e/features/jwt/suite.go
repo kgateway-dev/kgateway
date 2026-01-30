@@ -128,7 +128,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 // TestJwtAuthentication tests the JWT Policy applied at the HTTPRoute rule (extensionRef) level
 func (s *testingSuite) TestJwtAuthentication() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route",
 		"default",
@@ -153,7 +153,7 @@ func (s *testingSuite) TestJwtAuthentication() {
 
 // TestJwtAuthenticationHTTPRoute tests the JWT Policy applied at the HTTPRoute level
 func (s *testingSuite) TestJwtAuthenticationHTTPRoute() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route-get",
 		"default",
@@ -188,7 +188,7 @@ func (s *testingSuite) TestJwtAuthorization() {
 
 // TestJwtAuthenticationRemote tests the JWT Policy applied at the gateway using a remote JWKS server
 func (s *testingSuite) TestJwtAuthenticationRemote() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route-get",
 		"default",
@@ -215,7 +215,7 @@ func (s *testingSuite) TestJwtAuthenticationRemote() {
 // TestJwtDisable tests that JWT can be disabled at the route level
 func (s *testingSuite) TestJwtDisable() {
 	// Wait for both routes to be accepted
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route-jwt",
 		"default",
@@ -223,7 +223,7 @@ func (s *testingSuite) TestJwtDisable() {
 		metav1.ConditionTrue,
 	)
 
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route-no-jwt",
 		"default",
@@ -244,7 +244,7 @@ func (s *testingSuite) TestJwtDisable() {
 }
 
 func (s *testingSuite) assertResponse(path, authHeader string, expected *matchers.HttpResponse) {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -259,7 +259,7 @@ func (s *testingSuite) assertResponse(path, authHeader string, expected *matcher
 }
 
 func (s *testingSuite) assertResponseWithoutAuth(path string, expected *matchers.HttpResponse) {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
