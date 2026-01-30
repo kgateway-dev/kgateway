@@ -501,6 +501,34 @@ spec:
                                                               required:
                                                               - secretRef
                                                               type: object
+                                                            gcp:
+                                                              description: |-
+                                                                Auth specifies to use a Google  authentication method for the backend.
+                                                                When omitted, we will try to use the default AWS SDK authentication methods.
+                                                              properties:
+                                                                audience:
+                                                                  description: |-
+                                                                    audience allows explicitly configuring the `aud` of the ID Token. Ony valid with `IdToken` type.
+                                                                    If not set, the aud is automatically derived from the backend hostname.
+                                                                  maxLength: 256
+                                                                  minLength: 1
+                                                                  type: string
+                                                                type:
+                                                                  description: |-
+                                                                    The type of token to generate. To authenticate to GCP services, generally an AccessToken is used. To authenticate
+                                                                    to CloudRun, an IdToken is used.
+                                                                  enum:
+                                                                  - AccessToken
+                                                                  - IdToken
+                                                                  type: string
+                                                              type: object
+                                                              x-kubernetes-validations:
+                                                              - message: audience
+                                                                  is only valid with
+                                                                  IdToken
+                                                                rule: 'has(self.audience)
+                                                                  ? self.type == ''IdToken''
+                                                                  : true'
                                                             key:
                                                               description: |-
                                                                 key provides an inline key to use as the value of the Authorization header.
@@ -534,9 +562,9 @@ spec:
                                                           x-kubernetes-validations:
                                                           - message: exactly one of
                                                               the fields in [key secretRef
-                                                              passthrough aws] must
-                                                              be set
-                                                            rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws)].filter(x,x==true).size()
+                                                              passthrough aws gcp]
+                                                              must be set
+                                                            rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws),has(self.gcp)].filter(x,x==true).size()
                                                               == 1'
                                                         http:
                                                           description: http defines
@@ -1286,6 +1314,31 @@ spec:
                                         required:
                                         - secretRef
                                         type: object
+                                      gcp:
+                                        description: |-
+                                          Auth specifies to use a Google  authentication method for the backend.
+                                          When omitted, we will try to use the default AWS SDK authentication methods.
+                                        properties:
+                                          audience:
+                                            description: |-
+                                              audience allows explicitly configuring the `aud` of the ID Token. Ony valid with `IdToken` type.
+                                              If not set, the aud is automatically derived from the backend hostname.
+                                            maxLength: 256
+                                            minLength: 1
+                                            type: string
+                                          type:
+                                            description: |-
+                                              The type of token to generate. To authenticate to GCP services, generally an AccessToken is used. To authenticate
+                                              to CloudRun, an IdToken is used.
+                                            enum:
+                                            - AccessToken
+                                            - IdToken
+                                            type: string
+                                        type: object
+                                        x-kubernetes-validations:
+                                        - message: audience is only valid with IdToken
+                                          rule: 'has(self.audience) ? self.type ==
+                                            ''IdToken'' : true'
                                       key:
                                         description: |-
                                           key provides an inline key to use as the value of the Authorization header.
@@ -1318,8 +1371,8 @@ spec:
                                     type: object
                                     x-kubernetes-validations:
                                     - message: exactly one of the fields in [key secretRef
-                                        passthrough aws] must be set
-                                      rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws)].filter(x,x==true).size()
+                                        passthrough aws gcp] must be set
+                                      rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws),has(self.gcp)].filter(x,x==true).size()
                                         == 1'
                                   http:
                                     description: http defines settings for managing
@@ -1945,6 +1998,31 @@ spec:
                                       required:
                                       - secretRef
                                       type: object
+                                    gcp:
+                                      description: |-
+                                        Auth specifies to use a Google  authentication method for the backend.
+                                        When omitted, we will try to use the default AWS SDK authentication methods.
+                                      properties:
+                                        audience:
+                                          description: |-
+                                            audience allows explicitly configuring the `aud` of the ID Token. Ony valid with `IdToken` type.
+                                            If not set, the aud is automatically derived from the backend hostname.
+                                          maxLength: 256
+                                          minLength: 1
+                                          type: string
+                                        type:
+                                          description: |-
+                                            The type of token to generate. To authenticate to GCP services, generally an AccessToken is used. To authenticate
+                                            to CloudRun, an IdToken is used.
+                                          enum:
+                                          - AccessToken
+                                          - IdToken
+                                          type: string
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: audience is only valid with IdToken
+                                        rule: 'has(self.audience) ? self.type == ''IdToken''
+                                          : true'
                                     key:
                                       description: |-
                                         key provides an inline key to use as the value of the Authorization header.
@@ -1977,8 +2055,8 @@ spec:
                                   type: object
                                   x-kubernetes-validations:
                                   - message: exactly one of the fields in [key secretRef
-                                      passthrough aws] must be set
-                                    rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws)].filter(x,x==true).size()
+                                      passthrough aws gcp] must be set
+                                    rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws),has(self.gcp)].filter(x,x==true).size()
                                       == 1'
                                 http:
                                   description: http defines settings for managing
@@ -2682,6 +2760,32 @@ spec:
                                               required:
                                               - secretRef
                                               type: object
+                                            gcp:
+                                              description: |-
+                                                Auth specifies to use a Google  authentication method for the backend.
+                                                When omitted, we will try to use the default AWS SDK authentication methods.
+                                              properties:
+                                                audience:
+                                                  description: |-
+                                                    audience allows explicitly configuring the `aud` of the ID Token. Ony valid with `IdToken` type.
+                                                    If not set, the aud is automatically derived from the backend hostname.
+                                                  maxLength: 256
+                                                  minLength: 1
+                                                  type: string
+                                                type:
+                                                  description: |-
+                                                    The type of token to generate. To authenticate to GCP services, generally an AccessToken is used. To authenticate
+                                                    to CloudRun, an IdToken is used.
+                                                  enum:
+                                                  - AccessToken
+                                                  - IdToken
+                                                  type: string
+                                              type: object
+                                              x-kubernetes-validations:
+                                              - message: audience is only valid with
+                                                  IdToken
+                                                rule: 'has(self.audience) ? self.type
+                                                  == ''IdToken'' : true'
                                             key:
                                               description: |-
                                                 key provides an inline key to use as the value of the Authorization header.
@@ -2714,9 +2818,9 @@ spec:
                                           type: object
                                           x-kubernetes-validations:
                                           - message: exactly one of the fields in
-                                              [key secretRef passthrough aws] must
-                                              be set
-                                            rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws)].filter(x,x==true).size()
+                                              [key secretRef passthrough aws gcp]
+                                              must be set
+                                            rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws),has(self.gcp)].filter(x,x==true).size()
                                               == 1'
                                         http:
                                           description: http defines settings for managing
@@ -3419,6 +3523,30 @@ spec:
                         required:
                         - secretRef
                         type: object
+                      gcp:
+                        description: |-
+                          Auth specifies to use a Google  authentication method for the backend.
+                          When omitted, we will try to use the default AWS SDK authentication methods.
+                        properties:
+                          audience:
+                            description: |-
+                              audience allows explicitly configuring the `aud` of the ID Token. Ony valid with `IdToken` type.
+                              If not set, the aud is automatically derived from the backend hostname.
+                            maxLength: 256
+                            minLength: 1
+                            type: string
+                          type:
+                            description: |-
+                              The type of token to generate. To authenticate to GCP services, generally an AccessToken is used. To authenticate
+                              to CloudRun, an IdToken is used.
+                            enum:
+                            - AccessToken
+                            - IdToken
+                            type: string
+                        type: object
+                        x-kubernetes-validations:
+                        - message: audience is only valid with IdToken
+                          rule: 'has(self.audience) ? self.type == ''IdToken'' : true'
                       key:
                         description: |-
                           key provides an inline key to use as the value of the Authorization header.
@@ -3451,8 +3579,8 @@ spec:
                     type: object
                     x-kubernetes-validations:
                     - message: exactly one of the fields in [key secretRef passthrough
-                        aws] must be set
-                      rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws)].filter(x,x==true).size()
+                        aws gcp] must be set
+                      rule: '[has(self.key),has(self.secretRef),has(self.passthrough),has(self.aws),has(self.gcp)].filter(x,x==true).size()
                         == 1'
                   http:
                     description: http defines settings for managing HTTP requests
