@@ -318,9 +318,9 @@ func (p *Provider) EventuallyInferencePoolCondition(
 
 // Helper function to retrieve a condition by type from a list of conditions.
 func GetConditionByType(conditions []metav1.Condition, conditionType string) *metav1.Condition {
-	for _, condition := range conditions {
-		if condition.Type == conditionType {
-			return &condition
+	for i := range conditions {
+		if conditions[i].Type == conditionType {
+			return &conditions[i]
 		}
 	}
 	return nil
@@ -398,18 +398,18 @@ func (p *Provider) EventuallyListenerSetAttachedRoutes(
 }
 
 func getListenerEntryStatus(listeners []gwxv1a1.ListenerEntryStatus, name string) *gwxv1a1.ListenerEntryStatus {
-	for _, listener := range listeners {
-		if string(listener.Name) == name {
-			return &listener
+	for i := range listeners {
+		if string(listeners[i].Name) == name {
+			return &listeners[i]
 		}
 	}
 	return nil
 }
 
 func getListenerStatus(listeners []gwv1.ListenerStatus, name string) *gwv1.ListenerStatus {
-	for _, listener := range listeners {
-		if string(listener.Name) == name {
-			return &listener
+	for i := range listeners {
+		if string(listeners[i].Name) == name {
+			return &listeners[i]
 		}
 	}
 	return nil
