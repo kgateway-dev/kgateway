@@ -36,10 +36,13 @@ type Fake struct {
 }
 
 func NewFakeDiscoveryServer(t *testing.T, initialAddress ...agentgatewaysyncer.Address) Fake {
+	return NewFakeDiscoveryServerWith(t, initialAddress, nil)
+}
+func NewFakeDiscoveryServerWith(t *testing.T, initialAddress []agentgatewaysyncer.Address, initialResource []agwir.AgwResource) Fake {
 	stop := test.NewStop(t)
 	opts := krtutil.NewKrtOptions(stop, new(krt.DebugHandler))
 	xdsAddress := krt.NewStaticCollection[agentgatewaysyncer.Address](nil, initialAddress, opts.ToOptions("address")...)
-	xdsResource := krt.NewStaticCollection[agwir.AgwResource](nil, nil, opts.ToOptions("resource")...)
+	xdsResource := krt.NewStaticCollection[agwir.AgwResource](nil, initialResource, opts.ToOptions("resource")...)
 	agwResourcesByGateway := func(resource agwir.AgwResource) types.NamespacedName {
 		return resource.Gateway
 	}
@@ -142,4 +145,72 @@ func TestXDSUpdate(t *testing.T) {
 	resp = ads.ExpectResponse()
 	assert.Equal(t, len(resp.Resources), 0)
 	assert.Equal(t, len(resp.RemovedResources), 1)
+}
+
+func TestXDSDisconnect(t *testing.T) {
+	t.Run("addresses", func(t *testing.T) {
+		s := NewFakeDiscoveryServer(t, testWorkload1)
+		ads := s.ConnectDeltaADS().WithType(translator.TargetTypeAddressUrl)
+		ads.RequestResponseAck(nil)
+		ads.Cleanup()
+
+		wl2 := agentgatewaysyncer.Address{
+			Workload: ptr.Of(agentgatewaysyncer.PrecomputeWorkload(model.WorkloadInfo{Workload: &workloadapi.Workload{Uid: "wl2", ClusterId: "cluster1"}})),
+		}
+		s.Addresses.DeleteObject("wl1")
+		s.Addresses.UpdateObject(wl2)
+
+		assert.EventuallyEqual(t, func() bool {
+			col := s.Server.Collections[translator.TargetTypeAddressUrl].Col
+			return col.GetKey("wl2") != nil && col.GetKey("wl1") == nil
+		}, true)
+		ads = s.ConnectDeltaADS().WithType(translator.TargetTypeAddressUrl)
+		ads.Request(&discovery.DeltaDiscoveryRequest{
+			ResourceNamesSubscribe:   []string{"*"},
+			ResourceNamesUnsubscribe: []string{"*"},
+			InitialResourceVersions: map[string]string{
+				"wl1": "",
+			},
+		})
+		resp := ads.ExpectResponse()
+		// We should see wl1 deleted, wl2 added
+		assert.Equal(t, len(resp.Resources), 1)
+		assert.Equal(t, len(resp.RemovedResources), 1)
+	})
+	t.Run("resource", func(t *testing.T) {
+		bind1 := agwir.AgwResource{
+			Resource: &api.Resource{
+				Kind: &api.Resource_Bind{Bind: &api.Bind{Key: "bind1"}},
+			},
+		}
+		s := NewFakeDiscoveryServerWith(t, nil, []agwir.AgwResource{bind1})
+		ads := s.ConnectDeltaADS().WithType(translator.TargetTypeResourceUrl)
+		ads.RequestResponseAck(nil)
+		ads.Cleanup()
+
+		bind2 := agwir.AgwResource{
+			Resource: &api.Resource{
+				Kind: &api.Resource_Bind{Bind: &api.Bind{Key: "bind2"}},
+			},
+		}
+		s.Resources.DeleteObject("bind/bind1")
+		s.Resources.UpdateObject(bind2)
+
+		assert.EventuallyEqual(t, func() bool {
+			col := s.Server.Collections[translator.TargetTypeResourceUrl].Col
+			return col.GetKey("//bind/bind2") != nil && col.GetKey("//bind/bind1") == nil
+		}, true)
+		ads = s.ConnectDeltaADS().WithType(translator.TargetTypeResourceUrl)
+		ads.Request(&discovery.DeltaDiscoveryRequest{
+			ResourceNamesSubscribe:   []string{"*"},
+			ResourceNamesUnsubscribe: []string{"*"},
+			InitialResourceVersions: map[string]string{
+				"bind1": "",
+			},
+		})
+		resp := ads.ExpectResponse()
+		// We should see wl1 deleted, wl2 added
+		assert.Equal(t, len(resp.Resources), 1)
+		assert.Equal(t, len(resp.RemovedResources), 1)
+	})
 }
