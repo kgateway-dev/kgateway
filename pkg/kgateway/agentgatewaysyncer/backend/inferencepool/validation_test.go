@@ -2,6 +2,7 @@ package inferencepool
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,7 @@ func TestValidatePool(t *testing.T) {
 				p.Spec.EndpointPickerRef.Group = ptr.To(inf.Group("foo.example.com"))
 			},
 			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
-			wantErrMsgs: []string{"invalid extensionRef: only core API group supported, got \"foo.example.com\""},
+			wantErrMsgs: []string{fmt.Sprintf(ErrInvalidGroupFormat, "foo.example.com")},
 		},
 		{
 			name: "unsupported Kind",
@@ -37,7 +38,7 @@ func TestValidatePool(t *testing.T) {
 				p.Spec.EndpointPickerRef.Kind = inf.Kind(wellknown.ConfigMapGVK.Kind)
 			},
 			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
-			wantErrMsgs: []string{"invalid extensionRef: Kind \"Service\" is not supported (only Service)"},
+			wantErrMsgs: []string{fmt.Sprintf(ErrInvalidKindFormat, wellknown.ConfigMapGVK.Kind)},
 		},
 		{
 			name: "port unspecified",
@@ -45,7 +46,7 @@ func TestValidatePool(t *testing.T) {
 				p.Spec.EndpointPickerRef.Port = nil
 			},
 			svc:         nil,
-			wantErrMsgs: []string{"invalid extensionRef port must be specified"},
+			wantErrMsgs: []string{ErrPortRequired},
 		},
 		{
 			name: "service not found",
@@ -53,7 +54,7 @@ func TestValidatePool(t *testing.T) {
 				p.Spec.EndpointPickerRef.Name = inf.ObjectName("missing-svc")
 			},
 			svc:         nil,
-			wantErrMsgs: []string{"invalid extensionRef: Service default/missing-svc not found"},
+			wantErrMsgs: []string{fmt.Sprintf(ErrServiceNotFoundFormat, "default", "missing-svc")},
 		},
 		{
 			name:        "happy path",
@@ -65,13 +66,13 @@ func TestValidatePool(t *testing.T) {
 			name:        "ExternalName service rejected",
 			modifyPool:  func(_ *inf.InferencePool) {},
 			svc:         makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeExternalName),
-			wantErrMsgs: []string{"invalid extensionRef: must use any Service type other than ExternalName"},
+			wantErrMsgs: []string{ErrExternalNameNotAllowed},
 		},
 		{
 			name:        "UDP port not accepted",
 			modifyPool:  func(_ *inf.InferencePool) {},
 			svc:         makeSvc(corev1.ProtocolUDP, corev1.ServiceTypeClusterIP),
-			wantErrMsgs: []string{"TCP port 80 not found on Service default/test-svc"},
+			wantErrMsgs: []string{fmt.Sprintf(ErrTCPPortNotFoundFormat, 80, "default", "test-svc")},
 		},
 	}
 
