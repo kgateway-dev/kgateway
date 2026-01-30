@@ -304,7 +304,6 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 				AutoHostRewrite: &wrapperspb.BoolValue{Value: true},
 			}
 		}
-
 	}
 
 	return nil

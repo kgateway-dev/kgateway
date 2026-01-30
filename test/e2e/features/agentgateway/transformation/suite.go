@@ -6,12 +6,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/grpcurl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
@@ -149,6 +152,8 @@ func (s *testingSuite) TestGatewayWithTransformedHTTPRoute() {
 	}
 }
 
+// TestGatewayWithTransformedGRPCRoute needs to use grpcurl to send a gRPC request to the gateway, and verifies that the
+// response includes the expected metadata header.
 func (s *testingSuite) TestGatewayWithTransformedGRPCRoute() {
 	// Wait for the agent gateway to be ready
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
@@ -187,16 +192,29 @@ func (s *testingSuite) TestGatewayWithTransformedGRPCRoute() {
 		expectedResponseMetaVal = "from-grpc"
 	)
 
-	// Use a native gRPC client from the test runner to exercise the gRPC dataplane and
-	// assert transformation is applied: the policy adds response metadata `x-grpc-response: from-grpc`.
-	// This avoids needing the grpcurl client pod in the cluster.
-	common.BaseGateway.GrpcReflectionAssertResponseMetadata(
-		s.T(),
-		gatewayPort,
-		expectedHostname,
-		expectedResponseMetaKey,
-		expectedResponseMetaVal,
+	stdout, stderr := s.TestInstallation.AssertionsT(s.T()).AssertEventualGrpcurlSuccess(
+		s.Ctx,
+		kubectl.PodExecOptions{
+			Name:      "grpcurl-client",
+			Namespace: namespace,
+			Container: "grpcurl",
+		},
+		[]grpcurl.Option{
+			grpcurl.WithAddress(common.BaseGateway.Address),
+			grpcurl.WithPort(gatewayPort),
+			grpcurl.WithAuthority(expectedHostname),
+			grpcurl.WithSymbol("yages.Echo/Ping"),
+			grpcurl.WithPlaintext(),
+			grpcurl.WithVerbose(),
+			grpcurl.WithConnectTimeout(int(timeout.Seconds())),
+		},
 		timeout,
+	)
+	combined := strings.ToLower(stdout + "\n" + stderr)
+	s.Require().Contains(
+		combined,
+		strings.ToLower(expectedResponseMetaKey)+": "+expectedResponseMetaVal,
+		"expected grpcurl verbose output to contain transformed response metadata",
 	)
 
 	// Assert the HTTPRoute response does *not* include the `x-grpc-response` header, while the GRPCRoute does.
