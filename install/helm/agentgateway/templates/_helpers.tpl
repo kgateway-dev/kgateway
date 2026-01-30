@@ -52,7 +52,7 @@ Selector labels
 agentgateway: agentgateway
 app.kubernetes.io/name: {{ include "agentgateway.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/component: controller
+app.kubernetes.io/component: agentgateway-controller
 {{- end }}
 
 {{/*
