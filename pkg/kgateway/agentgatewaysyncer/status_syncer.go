@@ -92,7 +92,7 @@ func NewAgwStatusSyncer(
 			},
 		},
 		agentgatewayBackends: StatusSyncer[*agentgateway.AgentgatewayBackend, *agentgateway.AgentgatewayBackendStatus]{
-			name:   "agentgatewayPolicy",
+			name:   "agentgatewayBackend",
 			client: kclient.NewFilteredDelayed[*agentgateway.AgentgatewayBackend](client, wellknown.AgentgatewayBackendGVR, f),
 			build: func(om metav1.ObjectMeta, s *agentgateway.AgentgatewayBackendStatus) *agentgateway.AgentgatewayBackend {
 				return &agentgateway.AgentgatewayBackend{
