@@ -351,6 +351,31 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 
 		gathered.AssertHistogramPopulated("kgateway_status_syncer_status_sync_duration_seconds")
 
+		// Assert agentgateway status syncer metrics
+		// These metrics are emitted when agentgateway controller processes resources
+		// We check for agentgateway-specific syncer names
+		gathered.AssertMetricsLabelsInclude("kgateway_status_syncer_status_syncs_total", [][]metrics.Label{{
+			{Name: "name", Value: "agw-gw1"},
+			{Name: "namespace", Value: "default"},
+			{Name: "result", Value: "success"},
+			{Name: "syncer", Value: "gatewayStatus"},
+		}, {
+			{Name: "name", Value: "agw-route-1"},
+			{Name: "namespace", Value: "default"},
+			{Name: "result", Value: "success"},
+			{Name: "syncer", Value: "httpRouteStatus"},
+		}})
+
+		gathered.AssertMetricsLabelsInclude("kgateway_status_syncer_status_sync_duration_seconds", [][]metrics.Label{{
+			{Name: "name", Value: "agw-gw1"},
+			{Name: "namespace", Value: "default"},
+			{Name: "syncer", Value: "gatewayStatus"},
+		}, {
+			{Name: "name", Value: "agw-route-1"},
+			{Name: "namespace", Value: "default"},
+			{Name: "syncer", Value: "httpRouteStatus"},
+		}})
+
 		gathered.AssertMetricsLabelsInclude("kgateway_translator_translations_total", [][]metrics.Label{{
 			{Name: "name", Value: "gw1"},
 			{Name: "namespace", Value: "default"},

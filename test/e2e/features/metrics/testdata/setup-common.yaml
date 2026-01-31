@@ -116,3 +116,36 @@ spec:
   streamIdleTimeout: 30s
   healthCheck:
     path: "/health_check"
+---
+# Agentgateway Gateway for testing agentgateway status syncer metrics
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: agw-gw1
+  namespace: default
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+# Agentgateway HTTPRoute for testing agentgateway status syncer metrics
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: agw-route-1
+  namespace: default
+spec:
+  parentRefs:
+  - name: agw-gw1
+    namespace: default
+  hostnames:
+  - "agw-example1.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 8080
