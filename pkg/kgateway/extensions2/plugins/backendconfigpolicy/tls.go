@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"istio.io/istio/pkg/kube/krt"
@@ -120,10 +121,14 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 		return fmt.Errorf("invalid certificate and key pair: %w", err)
 	}
 
-	dataSource := pluginutils.StringDataSourceGenerator(tlsData.inlineDataSource)
-
-	certChainData := dataSource(cleanedCertChain)
-	privateKeyData := dataSource(tlsData.privateKey)
+	var certChainData, privateKeyData *envoycorev3.DataSource
+	if tlsData.inlineDataSource {
+		certChainData = pluginutils.InlineStringDataSource(cleanedCertChain)
+		privateKeyData = pluginutils.InlineStringDataSource(tlsData.privateKey)
+	} else {
+		certChainData = pluginutils.FileDataSource(cleanedCertChain)
+		privateKeyData = pluginutils.FileDataSource(tlsData.privateKey)
+	}
 
 	tlsContext.TlsCertificates = []*envoytlsv3.TlsCertificate{
 		{
@@ -170,8 +175,12 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 	}
 
 	// If root CA is provided, build a validation context
-	dataSource := pluginutils.StringDataSourceGenerator(tlsData.inlineDataSource)
-	rootCaData := dataSource(tlsData.rootCA)
+	var rootCaData *envoycorev3.DataSource
+	if tlsData.inlineDataSource {
+		rootCaData = pluginutils.InlineStringDataSource(tlsData.rootCA)
+	} else {
+		rootCaData = pluginutils.FileDataSource(tlsData.rootCA)
+	}
 
 	validationCtx := &envoytlsv3.CommonTlsContext_ValidationContext{
 		ValidationContext: &envoytlsv3.CertificateValidationContext{

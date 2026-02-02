@@ -23,7 +23,7 @@ func ResolveUpstreamSslConfigFromCA(caCert string, validation *envoytlsv3.Certif
 
 // ResolveCommonSslConfigFromCA creates a CommonTlsContext from a CA certificate string.
 func ResolveCommonSslConfigFromCA(caCert string, validation *envoytlsv3.CertificateValidationContext) (*envoytlsv3.CommonTlsContext, error) {
-	caCrtData := StringDataSourceGenerator(true)(caCert)
+	caCrtData := InlineStringDataSource(caCert)
 
 	tlsContext := &envoytlsv3.CommonTlsContext{
 		// default params
@@ -61,25 +61,20 @@ func CleanedSslKeyPair(certChain, privateKey string) (cleanedChain string, err e
 	return cleanedChain, err
 }
 
-// StringDataSourceGenerator returns a function that returns an Envoy data source that uses the given string as the data source.
-// If inlineDataSource is false, the returned function returns a file data source. Otherwise, the returned function returns an inline-string data source.
-func StringDataSourceGenerator(inlineDataSource bool) func(s string) *envoycorev3.DataSource {
-	// Return a file data source if inlineDataSource is false.
-	if !inlineDataSource {
-		return func(s string) *envoycorev3.DataSource {
-			return &envoycorev3.DataSource{
-				Specifier: &envoycorev3.DataSource_Filename{
-					Filename: s,
-				},
-			}
-		}
+// InlineStringDataSource returns an Envoy data source that uses the given string as an inline data source.
+func InlineStringDataSource(s string) *envoycorev3.DataSource {
+	return &envoycorev3.DataSource{
+		Specifier: &envoycorev3.DataSource_InlineString{
+			InlineString: s,
+		},
 	}
+}
 
-	return func(s string) *envoycorev3.DataSource {
-		return &envoycorev3.DataSource{
-			Specifier: &envoycorev3.DataSource_InlineString{
-				InlineString: s,
-			},
-		}
+// FileDataSource returns an Envoy data source that uses the given string as a file path.
+func FileDataSource(s string) *envoycorev3.DataSource {
+	return &envoycorev3.DataSource{
+		Specifier: &envoycorev3.DataSource_Filename{
+			Filename: s,
+		},
 	}
 }
