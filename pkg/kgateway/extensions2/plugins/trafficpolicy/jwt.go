@@ -107,7 +107,7 @@ func constructJwt(
 	out *trafficPolicySpecIr,
 	fetchGatewayExtension FetchGatewayExtensionFunc,
 ) error {
-	spec := in.Spec.JWT
+	spec := in.Spec.JWTAuth
 	if spec == nil {
 		return nil
 	}

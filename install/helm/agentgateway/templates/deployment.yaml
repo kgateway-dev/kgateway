@@ -31,6 +31,9 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.controller.priorityClassName }}
+      priorityClassName: {{ .Values.controller.priorityClassName | quote }}
+      {{- end }}
       serviceAccountName: {{ include "agentgateway.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
@@ -42,7 +45,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ include "agentgateway.imageTag" (.Values.controller.image.tag | default .Values.image.tag | default .Chart.AppVersion) }}"
           imagePullPolicy: {{ .Values.controller.image.pullPolicy | default .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.controller.service.ports.agwGrpc }}
@@ -85,12 +88,8 @@ spec:
               value: {{ include "agentgateway.fullname" . }}
             - name: KGW_AGENTGATEWAY_XDS_SERVICE_PORT
               value: {{ .Values.controller.service.ports.agwGrpc | quote }}
-            - name: KGW_DEFAULT_IMAGE_REGISTRY
-              value: {{ .Values.image.registry }}
-            - name: KGW_DEFAULT_IMAGE_TAG
-              value: {{ .Values.image.tag | default .Chart.AppVersion }}
-            - name: KGW_DEFAULT_IMAGE_PULL_POLICY
-              value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+            {{- /* Note: Unlike kgateway, agentgateway proxy images use AgentgatewayDefaultTag
+                 from pkg/deployer/wellknown.go rather than KGW_DEFAULT_IMAGE_* env vars. */}}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
             {{- if .Values.controller.extraEnv }}

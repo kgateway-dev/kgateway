@@ -2,11 +2,12 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: gw-rl-policy
+  namespace: agentgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
-    name: super-gateway
+    name: gateway
   traffic:
     rateLimit:
       local:

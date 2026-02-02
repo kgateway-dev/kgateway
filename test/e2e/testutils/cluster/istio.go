@@ -46,7 +46,7 @@ func InstallMinimalIstio(
 		return fmt.Errorf("failed to write operator file: %w", err)
 	}
 
-	return installIstioOperator(ctx, istioctlBinary, kubeContext, "")
+	return installIstioOperator(ctx, istioctlBinary, kubeContext, operatorFile)
 }
 
 func InstallRevisionedIstio(

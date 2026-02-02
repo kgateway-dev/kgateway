@@ -48,25 +48,21 @@ type AwsIr struct {
 }
 
 // Equals checks if two AwsIr objects are equal.
-func (u *AwsIr) Equals(other any) bool {
-	otherAws, ok := other.(*AwsIr)
-	if !ok {
-		return false
-	}
-	if u == nil && otherAws != nil {
+func (u *AwsIr) Equals(other *AwsIr) bool {
+	if u == nil && other != nil {
 		return false
 	}
 	if u != nil {
-		if otherAws == nil {
+		if other == nil {
 			return false
 		}
-		if !u.lambdaEndpoint.Equals(otherAws.lambdaEndpoint) {
+		if !u.lambdaEndpoint.Equals(other.lambdaEndpoint) {
 			return false
 		}
-		if !u.lambdaFilters.Equals(otherAws.lambdaFilters) {
+		if !u.lambdaFilters.Equals(other.lambdaFilters) {
 			return false
 		}
-		if !proto.Equal(u.lambdaTransportSocket, otherAws.lambdaTransportSocket) {
+		if !proto.Equal(u.lambdaTransportSocket, other.lambdaTransportSocket) {
 			return false
 		}
 	}
@@ -157,9 +153,12 @@ func configureAWSAuth(secret *ir.Secret, region string) (*envoy_request_signing_
 
 // lambdaFilters is a helper struct to store the lambda filters for the given backend.
 type lambdaFilters struct {
-	lambdaConfigAny      *anypb.Any
+	// +noKrtEquals
+	lambdaConfigAny *anypb.Any
+	// +noKrtEquals
 	awsRequestSigningAny *anypb.Any
-	codecConfigAny       *anypb.Any
+	// +noKrtEquals
+	codecConfigAny *anypb.Any
 }
 
 // Equals checks if two lambdaFilters objects are equal.
@@ -289,11 +288,6 @@ func configureLambdaEndpoint(in *kgateway.AwsBackend) (*lambdaEndpointConfig, er
 	config.port = uint32(port)
 
 	return config, nil
-}
-
-// processEndpointsAws processes the endpoints for the aws backend.
-func processEndpointsAws(_ *kgateway.AwsBackend) *ir.EndpointsForBackend {
-	return nil
 }
 
 // staticSecretDerivation is a helper struct to store the decoded secret values

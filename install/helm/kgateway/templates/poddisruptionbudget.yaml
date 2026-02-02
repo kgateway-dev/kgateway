@@ -1,0 +1,16 @@
+{{- if .Values.controller.podDisruptionBudget }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "kgateway.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kgateway.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "kgateway.selectorLabels" . | nindent 6 }}
+  {{- with .Values.controller.podDisruptionBudget }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

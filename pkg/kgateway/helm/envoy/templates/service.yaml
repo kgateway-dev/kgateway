@@ -21,6 +21,9 @@ spec:
   {{- with $gateway.service.clusterIP }}
   clusterIP: {{ . }}
   {{- end }}
+  {{- with $gateway.service.loadBalancerClass }}
+  loadBalancerClass: {{ . }}
+  {{- end }}
   {{- with $gateway.service.loadBalancerIP }}
   loadBalancerIP: {{ . }}
   {{- end }}

@@ -120,17 +120,17 @@ func TestCustomGWP(t *testing.T) {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {
-			testInstallation.PreFailHandler(ctx)
+			testInstallation.PreFailHandler(ctx, t)
 		}
 
-		testInstallation.UninstallKgateway(ctx)
+		testInstallation.UninstallKgateway(ctx, t)
 		// Also uninstall agentgateway CRDs since we installed them for this test
-		testInstallation.UninstallAgentgatewayCRDs(ctx)
+		testInstallation.UninstallAgentgatewayCRDs(ctx, t)
 	})
 
 	// install CRDs for both kgateway and agentgateway
-	testInstallation.InstallKgatewayCRDsFromLocalChart(ctx)
-	testInstallation.InstallAgentgatewayCRDsFromLocalChart(ctx)
+	testInstallation.InstallKgatewayCRDsFromLocalChart(ctx, t)
+	testInstallation.InstallAgentgatewayCRDsFromLocalChart(ctx, t)
 
 	// create GatewayParameters for kgateway
 	err := testInstallation.Actions.Kubectl().Apply(ctx, []byte(kgatewayGWP))
@@ -145,14 +145,14 @@ func TestCustomGWP(t *testing.T) {
 	}
 
 	// install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx)
-	testInstallation.InstallAgentgatewayCoreFromLocalChart(ctx)
+	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
+	testInstallation.InstallAgentgatewayCoreFromLocalChart(ctx, t)
 
 	// Wait for GatewayClasses to be created
-	testInstallation.Assertions.EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
+	testInstallation.AssertionsT(t).EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
 		ObjectMeta: metav1.ObjectMeta{Name: wellknown.DefaultGatewayClassName},
 	})
-	testInstallation.Assertions.EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
+	testInstallation.AssertionsT(t).EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
 		ObjectMeta: metav1.ObjectMeta{Name: wellknown.DefaultAgwClassName},
 	})
 
@@ -218,7 +218,7 @@ func TestCustomGWP(t *testing.T) {
 	}
 
 	// Wait for Gateway to be accepted and deployment created
-	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
+	testInstallation.AssertionsT(t).EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// Verify the gateway pod has the custom label
 	verifyPodLabel(t, ctx, testInstallation, "custom", "custom-label", "")
@@ -240,7 +240,7 @@ func TestCustomGWP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to upgrade Helm: %v", err)
 	}
-	testInstallation.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
+	testInstallation.AssertionsT(t).EventuallyKgatewayInstallSucceeded(ctx)
 	chartUriAgentgateway, err := helper.GetLocalChartPath(helmutils.AgentgatewayChartName, "")
 	if err != nil {
 		t.Fatalf("failed to get chart path: %v", err)
@@ -261,7 +261,7 @@ func TestCustomGWP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to upgrade Helm: %v", err)
 	}
-	testInstallation.Assertions.EventuallyAgentgatewayInstallSucceeded(ctx)
+	testInstallation.AssertionsT(t).EventuallyAgentgatewayInstallSucceeded(ctx)
 
 	// Verify kgateway GatewayClass is updated with new ref
 	r := require.New(t)
@@ -290,7 +290,7 @@ func TestCustomGWP(t *testing.T) {
 	}, 20*time.Second, 200*time.Millisecond)
 
 	// Ensure gateway pods are still running (even though the ParametersRef has changed to non-existent resource)
-	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
+	testInstallation.AssertionsT(t).EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// Create the kgatewayGWP2 GatewayParameters resource
 	err = testInstallation.Actions.Kubectl().Apply(ctx, []byte(kgatewayGWP2))
@@ -300,7 +300,7 @@ func TestCustomGWP(t *testing.T) {
 
 	// Wait for Gateway to reconcile with new parameters
 	// The Gateway should pick up the new GatewayParameters and update the pods
-	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
+	testInstallation.AssertionsT(t).EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// Assert that eventually the deployment gateway pod is updated with the new label
 	r.EventuallyWithT(func(c *assert.CollectT) {

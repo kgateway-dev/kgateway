@@ -45,9 +45,15 @@ listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: transformation
+          name: dynamic_modules/simple_mutations
           typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -82,27 +88,16 @@ routes:
         cluster: kube_gwtest_reviews_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              requestTransformation:
-                transformationTemplate:
-                  body:
-                    text: request-response
-                  headersToAppend:
-                  - key: x-greatness
-                    value:
-                      text: '{{ length(headers(":path")) }}'
-                  parseBodyBehavior: DontParse
-              responseTransformation:
-                transformationTemplate:
-                  body:
-                    text: '{{ body }}'
-                  headersToAppend:
-                  - key: original-greatness
-                    value:
-                      text: '{{request_headers("x-greatness")}}'
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"add":[{"name":"x-greatness","value":"{{ length(headers(\":path\"))
+              }}"}],"body":{"parseAs":"AsString","value":"request-response"}},"response":{"add":[{"name":"original-greatness","value":"{{request_headers(\"x-greatness\")}}"}],"body":{"parseAs":"AsJson","value":"{{
+              body }}"}}}'
+          perRouteConfigName: http_simple_mutations
   - domains:
     - www.example-request.com
     name: listener~8080~www_example-request_com
@@ -119,17 +114,15 @@ routes:
         cluster: kube_gwtest_reviews_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              requestTransformation:
-                transformationTemplate:
-                  body:
-                    text: requested
-                  headers:
-                    x-greatness:
-                      text: '{{length(headers(":path")) }}'
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"set":[{"name":"x-greatness","value":"{{length(headers(\":path\"))
+              }}"}],"body":{"parseAs":"AsJson","value":"requested"}}}'
+          perRouteConfigName: http_simple_mutations
   - domains:
     - www.example-response.com
     name: listener~8080~www_example-response_com
@@ -146,15 +139,11 @@ routes:
         cluster: kube_gwtest_reviews_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: original-greatness
-                    value:
-                      text: '{{request_headers("x-greatness")}}'
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"response":{"add":[{"name":"original-greatness","value":"{{request_headers(\"x-greatness\")}}"}]}}'
+          perRouteConfigName: http_simple_mutations

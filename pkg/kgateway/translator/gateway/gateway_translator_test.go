@@ -9,6 +9,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
+	// Register the UuidRequestIdConfig proto type so that it can be unmarshaled from Any in tests
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/request_id/uuid/v3"
+
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
@@ -92,10 +95,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("gateway with FrontendTLSConfig and missing refgrant", func(t *testing.T) {
+	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "frontendtlsconfig/missing-refgrant.yaml",
-			outputFile: "frontendtlsconfig/missing-refgrant.yaml",
+			inputFile:  "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
+			outputFile: "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -103,10 +106,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
+	t.Run("frontendtlsconfig with invalid conditions", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
-			outputFile: "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
+			inputFile:  "frontendtlsconfig/invalid-conditions.yaml",
+			outputFile: "frontendtlsconfig/invalid-conditions.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -341,6 +344,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy ExtAuth with cross-namespace GatewayExtension", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extauth-cross-namespace.yaml",
+			outputFile: "traffic-policy/extauth-cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy API Key Authentication at route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/api-key-auth-route.yaml",
@@ -517,6 +531,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with local rate limiting configurable percentage", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/local-rate-limit-configurable-percentage.yaml",
+			outputFile: "traffic-policy/local-rate-limit-configurable-percentage.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with local and global rate limiting combined", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/local-and-global-combined",
@@ -589,6 +614,17 @@ func TestBasic(t *testing.T) {
 			outputFile: "traffic-policy/extproc-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy ExtProc with cross-namespace GatewayExtension", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extproc-cross-namespace.yaml",
+			outputFile: "traffic-policy/extproc-cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
 				Name:      "example-gateway",
 			},
 		})
@@ -909,6 +945,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("GCP backend", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backends/gcp_backend.yaml",
+			outputFile: "backends/gcp_backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("DFP Backend with TLS", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "dfp/tls.yaml",
@@ -1129,6 +1176,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HTTPListenerPolicy with preserveExternalRequestId true", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/preserve-external-request-id.yaml",
+			outputFile: "httplistenerpolicy/preserve-external-request-id.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPListenerPolicy with generateRequestId false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/generate-request-id-false.yaml",
+			outputFile: "httplistenerpolicy/generate-request-id-false.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("HTTPListenerPolicy with acceptHttp10", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "httplistenerpolicy/accept-http10.yaml",
@@ -1177,6 +1246,39 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "httplistenerpolicy/early-header-mutation.yaml",
 			outputFile: "httplistenerpolicy/early-header-mutation.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPListenerPolicy with uuidRequestIdConfig defaults", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/request-id-config-defaults.yaml",
+			outputFile: "httplistenerpolicy/request-id-config-defaults.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPListenerPolicy with uuidRequestIdConfig explicit false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/request-id-config-explicit.yaml",
+			outputFile: "httplistenerpolicy/request-id-config-explicit.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPListenerPolicy with uuidRequestIdConfig mixed values", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/request-id-config-mixed.yaml",
+			outputFile: "httplistenerpolicy/request-id-config-mixed.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1309,6 +1411,50 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/early-header-mutation.yaml",
 			outputFile: "listener-policy-http/early-header-mutation.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with maxRequestHeadersKb", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/max-request-headers-kb.yaml",
+			outputFile: "listener-policy-http/max-request-headers-kb.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with uuidRequestIdConfig explicit false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/request-id-config-explicit.yaml",
+			outputFile: "listener-policy-http/request-id-config-explicit.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with uuidRequestIdConfig defaults", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/request-id-config-defaults.yaml",
+			outputFile: "listener-policy-http/request-id-config-defaults.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with uuidRequestIdConfig mixed values", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/request-id-config-mixed.yaml",
+			outputFile: "listener-policy-http/request-id-config-mixed.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1648,10 +1794,32 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("listener set with TLS listener with TLS extension options", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-options.yaml",
+			outputFile: "listener-sets/tls-options.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy RateLimit Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/rate-limit-full-config.yaml",
 			outputFile: "traffic-policy/rate-limit-full-config.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy RateLimit with cross-namespace GatewayExtension", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/ratelimit-cross-namespace.yaml",
+			outputFile: "traffic-policy/ratelimit-cross-namespace.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2179,18 +2347,26 @@ func TestValidation(t *testing.T) {
 			inputFile: "policy-extauth-http-pathprefix-invalid.yaml",
 			minMode:   apisettings.ValidationStrict,
 		},
-		{
-			name:      "Transformation Body Template Invalid",
-			category:  "policy",
-			inputFile: "policy-transformation-body-template-invalid.yaml",
-			minMode:   apisettings.ValidationStrict,
-		},
-		{
-			name:      "Transformation Header Template Invalid",
-			category:  "policy",
-			inputFile: "policy-transformation-header-template-invalid.yaml",
-			minMode:   apisettings.ValidationStrict,
-		},
+		// TODO: rustformation cannot detect this complex invalid template yet
+		//       This is because the rust minijinja library is fundamentally different from the
+		//       C++ library we use. minijinja treat even registered custom functions as undeclared
+		//       variable and also does not distinguish if it's a function or variable when it returns
+		//       the list. This is important because when we parse body as json, all the json fields
+		//       becomes variables but they are not known at config time. Without knowing if the
+		//       undeclared item is a function or not, we cannot effectively detect complex template
+		//       with undefined functions at compile time.
+		// {
+		//  name:      "Transformation Body Template Invalid",
+		//	category:  "policy",
+		//	inputFile: "policy-transformation-body-template-invalid.yaml",
+		//	minMode:   apisettings.ValidationStrict,
+		// },
+		// {
+		// 	name:      "Transformation Header Template Invalid",
+		// 	category:  "policy",
+		// 	inputFile: "policy-transformation-header-template-invalid.yaml",
+		// 	minMode:   apisettings.ValidationStrict,
+		// },
 		{
 			name:      "Transformation Malformed Template Invalid",
 			category:  "policy",

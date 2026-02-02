@@ -354,8 +354,10 @@ type FrontendTLSConfigIR struct {
 	// PerPort client certificate validation configuration, keyed by port number
 	PerPortValidation map[gwv1.PortNumber]*ClientCertificateValidationIR
 
-	// Err contains any error encountered during construction of the FrontendTLSConfigIR, used in status reportings
-	Err error
+	// The per-port and default configs are independent, so store errors per port and default separately.
+	PortErrors map[gwv1.PortNumber]error
+	// Error encountered during construction of the default client certificate validation configuration.
+	DefaultError error
 }
 
 // ClientCertificateValidationIR holds the client certificate validation configuration with references
@@ -501,6 +503,15 @@ func (c GVKListenerSets) Equals(in GVKListenerSets) bool {
 		}
 	}
 	return true
+}
+
+// implement marshal json for krt snapshot dump
+func (l GVKListenerSets) MarshalJSON() ([]byte, error) {
+	m := make(map[string]ListenerSets)
+	for gvk, ls := range l {
+		m[gvk.String()] = ls
+	}
+	return json.Marshal(m)
 }
 
 type ListenerSets []ListenerSet

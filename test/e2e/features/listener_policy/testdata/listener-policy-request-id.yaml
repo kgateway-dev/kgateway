@@ -1,0 +1,18 @@
+# Test manifest for RequestID configuration in ListenerPolicy
+# This manifest tests the RequestID feature when configured through a ListenerPolicy
+# with explicit false values for both packTraceReason and useRequestIdForTraceSampling
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: http-listener-policy-request-id
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  default:
+    httpSettings:
+      uuidRequestIdConfig:
+        packTraceReason: false
+        useRequestIdForTraceSampling: false

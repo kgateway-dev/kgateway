@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 )
 
 func TestOverlayApplier_ApplyOverlays_NilParams(t *testing.T) {
@@ -29,17 +30,17 @@ func TestOverlayApplier_ApplyOverlays_NilParams(t *testing.T) {
 		},
 	}
 
-	err := applier.ApplyOverlays(objs)
+	result, err := applier.ApplyOverlays(objs)
 	require.NoError(t, err)
-	assert.Len(t, objs, 1)
+	assert.Len(t, result, 1)
 }
 
 func TestOverlayApplier_ApplyOverlays_MetadataLabels(t *testing.T) {
 	params := &agentgateway.AgentgatewayParameters{
 		Spec: agentgateway.AgentgatewayParametersSpec{
 			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Deployment: &agentgateway.KubernetesResourceOverlay{
-					Metadata: &agentgateway.AgentgatewayParametersObjectMetadata{
+				Deployment: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
 						Labels: map[string]string{
 							"custom-label": "custom-value",
 						},
@@ -64,7 +65,7 @@ func TestOverlayApplier_ApplyOverlays_MetadataLabels(t *testing.T) {
 	}
 	objs := []client.Object{deployment}
 
-	err := applier.ApplyOverlays(objs)
+	objs, err := applier.ApplyOverlays(objs)
 	require.NoError(t, err)
 
 	result := objs[0].(*appsv1.Deployment)
@@ -76,8 +77,8 @@ func TestOverlayApplier_ApplyOverlays_MetadataAnnotations(t *testing.T) {
 	params := &agentgateway.AgentgatewayParameters{
 		Spec: agentgateway.AgentgatewayParametersSpec{
 			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Service: &agentgateway.KubernetesResourceOverlay{
-					Metadata: &agentgateway.AgentgatewayParametersObjectMetadata{
+				Service: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
 						Annotations: map[string]string{
 							"custom-annotation": "custom-value",
 						},
@@ -99,7 +100,7 @@ func TestOverlayApplier_ApplyOverlays_MetadataAnnotations(t *testing.T) {
 	}
 	objs := []client.Object{svc}
 
-	err := applier.ApplyOverlays(objs)
+	objs, err := applier.ApplyOverlays(objs)
 	require.NoError(t, err)
 
 	result := objs[0].(*corev1.Service)
@@ -127,7 +128,7 @@ func TestOverlayApplier_ApplyOverlays_DeploymentSpec(t *testing.T) {
 	params := &agentgateway.AgentgatewayParameters{
 		Spec: agentgateway.AgentgatewayParametersSpec{
 			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Deployment: &agentgateway.KubernetesResourceOverlay{
+				Deployment: &shared.KubernetesResourceOverlay{
 					Spec: &apiextensionsv1.JSON{Raw: specPatch},
 				},
 			},
@@ -159,7 +160,7 @@ func TestOverlayApplier_ApplyOverlays_DeploymentSpec(t *testing.T) {
 	}
 	objs := []client.Object{deployment}
 
-	err := applier.ApplyOverlays(objs)
+	objs, err := applier.ApplyOverlays(objs)
 	require.NoError(t, err)
 
 	result := objs[0].(*appsv1.Deployment)
@@ -185,7 +186,7 @@ func TestOverlayApplier_ApplyOverlays_DeleteContainerWithPatchDirective(t *testi
 	params := &agentgateway.AgentgatewayParameters{
 		Spec: agentgateway.AgentgatewayParametersSpec{
 			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Deployment: &agentgateway.KubernetesResourceOverlay{
+				Deployment: &shared.KubernetesResourceOverlay{
 					Spec: &apiextensionsv1.JSON{Raw: specPatch},
 				},
 			},
@@ -220,7 +221,7 @@ func TestOverlayApplier_ApplyOverlays_DeleteContainerWithPatchDirective(t *testi
 	}
 	objs := []client.Object{deployment}
 
-	err := applier.ApplyOverlays(objs)
+	objs, err := applier.ApplyOverlays(objs)
 	require.NoError(t, err)
 
 	result := objs[0].(*appsv1.Deployment)
@@ -236,7 +237,7 @@ func TestOverlayApplier_ApplyOverlays_ServiceSpec(t *testing.T) {
 	params := &agentgateway.AgentgatewayParameters{
 		Spec: agentgateway.AgentgatewayParametersSpec{
 			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Service: &agentgateway.KubernetesResourceOverlay{
+				Service: &shared.KubernetesResourceOverlay{
 					Spec: &apiextensionsv1.JSON{Raw: specPatch},
 				},
 			},
@@ -258,7 +259,7 @@ func TestOverlayApplier_ApplyOverlays_ServiceSpec(t *testing.T) {
 	}
 	objs := []client.Object{svc}
 
-	err := applier.ApplyOverlays(objs)
+	objs, err := applier.ApplyOverlays(objs)
 	require.NoError(t, err)
 
 	result := objs[0].(*corev1.Service)
@@ -269,18 +270,18 @@ func TestOverlayApplier_ApplyOverlays_MultipleObjects(t *testing.T) {
 	params := &agentgateway.AgentgatewayParameters{
 		Spec: agentgateway.AgentgatewayParametersSpec{
 			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Deployment: &agentgateway.KubernetesResourceOverlay{
-					Metadata: &agentgateway.AgentgatewayParametersObjectMetadata{
+				Deployment: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
 						Labels: map[string]string{"app": "modified"},
 					},
 				},
-				Service: &agentgateway.KubernetesResourceOverlay{
-					Metadata: &agentgateway.AgentgatewayParametersObjectMetadata{
+				Service: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
 						Labels: map[string]string{"svc": "modified"},
 					},
 				},
-				ServiceAccount: &agentgateway.KubernetesResourceOverlay{
-					Metadata: &agentgateway.AgentgatewayParametersObjectMetadata{
+				ServiceAccount: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
 						Labels: map[string]string{"sa": "modified"},
 					},
 				},
@@ -308,7 +309,7 @@ func TestOverlayApplier_ApplyOverlays_MultipleObjects(t *testing.T) {
 		},
 	}
 
-	err := applier.ApplyOverlays(objs)
+	objs, err := applier.ApplyOverlays(objs)
 	require.NoError(t, err)
 
 	// Check deployment

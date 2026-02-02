@@ -29,7 +29,7 @@ func TestCollectStatusSyncMetrics_Success(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	finishFunc := collectStatusSyncMetrics(statusSyncMetricLabels{
+	finishFunc := CollectStatusSyncMetrics(StatusSyncMetricLabels{
 		Name:      testGatewayName,
 		Namespace: testNamespace,
 		Syncer:    testSyncerName,
@@ -67,7 +67,7 @@ func TestCollectStatusSyncMetrics_Error(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	finishFunc := collectStatusSyncMetrics(statusSyncMetricLabels{
+	finishFunc := CollectStatusSyncMetrics(StatusSyncMetricLabels{
 		Name:      testGatewayName,
 		Namespace: testNamespace,
 		Syncer:    testSyncerName,

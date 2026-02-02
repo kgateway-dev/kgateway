@@ -251,6 +251,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
 	if useRustformations {
 		logger.Info("transformation is using Rust Dynamic Module.")
+	} else {
+		logger.Warn("class transformation using envoy-gloo is being deprecated in v2.2 and will be removed in v2.3")
 	}
 
 	cli := kclient.NewFilteredDelayed[*kgateway.TrafficPolicy](
@@ -540,7 +542,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 
 	if f := p.localRateLimitInChain[fcc.FilterChainName]; f != nil {
-		filter := filters.MustNewStagedFilter(localRateLimitFilterNamePrefix, f, filters.BeforeStage(filters.AcceptedStage))
+		filter := filters.MustNewStagedFilter(localRateLimitFilterNamePrefix, f, filters.DuringStage(filters.RateLimitStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
 	}

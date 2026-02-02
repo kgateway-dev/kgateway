@@ -19,6 +19,7 @@ import (
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/sets"
 	"istio.io/istio/pkg/workloadapi"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -77,6 +78,10 @@ type Syncer struct {
 	Outputs OutputCollections
 
 	gatewayCollectionOptions []translator.GatewayCollectionConfigOption
+
+	customResourceCollections   func(cfg CustomResourceCollectionsConfig)
+	workloadAddressProviderFunc func(model.WorkloadInfo) *workloadapi.Address
+	serviceAddressProviderFunc  func(model.ServiceInfo) *workloadapi.Address
 }
 
 func NewAgwSyncer(
@@ -102,6 +107,9 @@ func NewAgwSyncer(
 		NackPublisher:            nack.NewPublisher(client),
 		gatewayCollectionOptions: []translator.GatewayCollectionConfigOption{
 			translator.WithGatewayTransformationFunc(cfg.GatewayTransformationFunc)},
+		customResourceCollections:   cfg.CustomResourceCollections,
+		workloadAddressProviderFunc: cfg.WorkloadAddressProviderFunc,
+		serviceAddressProviderFunc:  cfg.ServiceAddressProviderFunc,
 	}
 	logger.Debug("init agentgateway Syncer", "controllername", controllerName)
 
@@ -119,12 +127,40 @@ type OutputCollections struct {
 	Addresses krt.Collection[Address]
 }
 
+type CustomResourceCollectionsConfig struct {
+	ControllerName    string
+	Gateways          krt.Collection[*gwv1.Gateway]
+	ListenerSets      krt.Collection[translator.ListenerSet]
+	GatewayClasses    krt.Collection[translator.GatewayClass]
+	Namespaces        krt.Collection[*corev1.Namespace]
+	Grants            translator.ReferenceGrants
+	Secrets           krt.Collection[*corev1.Secret]
+	ConfigMaps        krt.Collection[*corev1.ConfigMap]
+	KrtOpts           krtutil.KrtOptions
+	StatusCollections *status.StatusCollections
+}
+
 func (s *Syncer) buildResourceCollections(krtopts krtutil.KrtOptions) {
 	// Build core collections for irs
 	gatewayClasses := translator.GatewayClassesCollection(s.agwCollections.GatewayClasses, krtopts)
 	refGrants := translator.BuildReferenceGrants(translator.ReferenceGrantsCollection(s.agwCollections.ReferenceGrants, krtopts))
 	listenerSetStatus, listenerSets := s.buildListenerSetCollection(gatewayClasses, refGrants, krtopts)
 	status.RegisterStatus(s.statusCollections, listenerSetStatus, translator.GetStatus)
+	if s.customResourceCollections != nil {
+		s.customResourceCollections(CustomResourceCollectionsConfig{
+			ControllerName:    s.controllerName,
+			Gateways:          s.agwCollections.Gateways,
+			ListenerSets:      listenerSets,
+			GatewayClasses:    gatewayClasses,
+			Namespaces:        s.agwCollections.Namespaces,
+			Grants:            refGrants,
+			Secrets:           s.agwCollections.Secrets,
+			ConfigMaps:        s.agwCollections.ConfigMaps,
+			KrtOpts:           krtopts,
+			StatusCollections: s.statusCollections,
+		})
+	}
+
 	gatewayInitialStatus, gateways := s.buildGatewayCollection(gatewayClasses, listenerSets, refGrants, krtopts)
 
 	// Build Agw resources for gateway
@@ -425,6 +461,7 @@ func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collect
 		GatewaysByNetwork: Networks.GatewaysByNetwork,
 		Flags: ambient.FeatureFlags{
 			EnableK8SServiceSelectWorkloadEntries: true,
+			EnableMtlsTransportProtocol:           true,
 		},
 		Network: func(ctx krt.HandlerContext) network.ID {
 			return ""
@@ -469,9 +506,25 @@ func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collect
 
 	// Build address collections
 	workloadAddresses := krt.MapCollection(workloads, func(t model.WorkloadInfo) Address {
+		// If AsAddress is not populated and we have a provider function, use it to populate AsAddress
+		// This is called after WorkloadInfo objects are created from Kubernetes resources by Istio's
+		// ambient workload builder, but before they are wrapped in Address structs for XDS.
+		if t.AsAddress.Address == nil && s.workloadAddressProviderFunc != nil {
+			if addr := s.workloadAddressProviderFunc(t); addr != nil {
+				setWorkloadAddress(&t, addr)
+			}
+		}
 		return Address{Workload: &t}
 	})
 	svcAddresses := krt.MapCollection(services, func(t model.ServiceInfo) Address {
+		// If AsAddress is not populated and we have a provider function, use it to populate AsAddress
+		// This is called after ServiceInfo objects are created from Kubernetes resources by Istio's
+		// ambient service builder, but before they are wrapped in Address structs for XDS.
+		if t.AsAddress.Address == nil && s.serviceAddressProviderFunc != nil {
+			if addr := s.serviceAddressProviderFunc(t); addr != nil {
+				setServiceAddress(&t, addr)
+			}
+		}
 		return Address{Service: &t}
 	})
 

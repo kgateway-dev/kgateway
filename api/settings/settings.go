@@ -23,6 +23,8 @@ const (
 	// (e.g. RDS, CDS, and security-related policies). Routes that fail these
 	// checks are also replaced with direct responses, and helps prevent unsafe
 	// config from reaching Envoy.
+	// Strict Validation is not supported with Rustformation yet,
+	// see docs/guides/transformation.md for details
 	ValidationStrict ValidationMode = "STRICT"
 )
 
@@ -168,7 +170,7 @@ type Settings struct {
 	// This corresponds to the value of the `grpc-xds-agw` port in the service.
 	AgentgatewayXdsServicePort uint32 `split_words:"true" default:"9978"`
 
-	UseRustFormations bool `split_words:"true" default:"false"`
+	UseRustFormations bool `split_words:"true" default:"true"`
 
 	// EnableInferExt defines whether to enable/disable support for Gateway API inference extension.
 	// If enabled, EnableAgentgateway should also be set to true. Enabling inference extension without agentgateway

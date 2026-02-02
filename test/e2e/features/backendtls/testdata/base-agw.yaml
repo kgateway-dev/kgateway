@@ -1,18 +1,3 @@
-kind: Gateway
-apiVersion: gateway.networking.k8s.io/v1
-metadata:
-  name: gw
-  namespace: default
-spec:
-  gatewayClassName: agentgateway
-  listeners:
-  - protocol: HTTP
-    port: 8080
-    name: http
-    allowedRoutes:
-      namespaces:
-        from: All
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -20,12 +5,14 @@ metadata:
   namespace: default
 spec:
   parentRefs:
-  - name: gw
+  - name: gateway
+    namespace: agentgateway-base
   hostnames:
   - "example.com"
   rules:
   - backendRefs:
-    - name: nginx
+    - name: backend
+      namespace: agentgateway-base
       port: 8443
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -35,7 +22,8 @@ metadata:
   namespace: default
 spec:
   parentRefs:
-  - name: gw
+  - name: gateway
+    namespace: agentgateway-base
   hostnames:
   - "example2.com"
   rules:
@@ -71,7 +59,8 @@ metadata:
   namespace: default
 spec:
   parentRefs:
-  - name: gw
+  - name: gateway
+    namespace: agentgateway-base
   hostnames:
   - "foo.com"
   rules:

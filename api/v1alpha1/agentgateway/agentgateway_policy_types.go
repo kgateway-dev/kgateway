@@ -53,8 +53,8 @@ type AgentgatewayPolicyList struct {
 // +kubebuilder:validation:XValidation:rule="!has(self.backend) || !has(self.backend.ai) || ((!has(self.targetRefs) || !self.targetRefs.exists(t, t.kind == 'Service')) && (!has(self.targetSelectors) || !self.targetSelectors.exists(t, t.kind == 'Service')))",message="backend.ai may not be used with a Service target"
 // +kubebuilder:validation:XValidation:rule="has(self.frontend) && has(self.targetRefs) ? self.targetRefs.all(t, t.kind == 'Gateway' && !has(t.sectionName)) : true",message="the 'frontend' field can only target a Gateway"
 // +kubebuilder:validation:XValidation:rule="has(self.frontend) && has(self.targetSelectors) ? self.targetSelectors.all(t, t.kind == 'Gateway' && !has(t.sectionName)) : true",message="the 'frontend' field can only target a Gateway"
-// +kubebuilder:validation:XValidation:rule="has(self.traffic) && has(self.targetRefs) ? self.targetRefs.all(t, t.kind in ['Gateway', 'HTTPRoute', 'XListenerSet']) : true",message="the 'traffic' field can only target a Gateway, XListenerSet, or HTTPRoute"
-// +kubebuilder:validation:XValidation:rule="has(self.traffic) && has(self.targetSelectors) ? self.targetSelectors.all(t, t.kind in ['Gateway', 'HTTPRoute', 'XListenerSet']) : true",message="the 'traffic' field can only target a Gateway, XListenerSet, or HTTPRoute"
+// +kubebuilder:validation:XValidation:rule="has(self.traffic) && has(self.targetRefs) ? self.targetRefs.all(t, t.kind in ['Gateway', 'HTTPRoute', 'GRPCRoute', 'XListenerSet']) : true",message="the 'traffic' field can only target a Gateway, XListenerSet, GRPCRoute, or HTTPRoute"
+// +kubebuilder:validation:XValidation:rule="has(self.traffic) && has(self.targetSelectors) ? self.targetSelectors.all(t, t.kind in ['Gateway', 'HTTPRoute', 'GRPCRoute', 'XListenerSet']) : true",message="the 'traffic' field can only target a Gateway, XListenerSet, GRPCRoute, or HTTPRoute"
 // +kubebuilder:validation:XValidation:rule="has(self.targetRefs) && has(self.traffic) && has(self.traffic.phase) && self.traffic.phase == 'PreRouting' ? self.targetRefs.all(t, t.kind in ['Gateway', 'XListenerSet']) : true",message="the 'traffic.phase=PreRouting' field can only target a Gateway or XListenerSet"
 // +kubebuilder:validation:XValidation:rule="has(self.targetSelectors) && has(self.traffic) && has(self.traffic.phase) && self.traffic.phase == 'PreRouting' ? self.targetSelectors.all(t, t.kind in ['Gateway', 'XListenerSet']) : true",message="the 'traffic.phase=PreRouting' field can only target a Gateway or XListenerSet"
 type AgentgatewayPolicySpec struct {
@@ -63,7 +63,7 @@ type AgentgatewayPolicySpec struct {
 	// +listType=atomic
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'agentgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or AgentgatewayBackend resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'agentgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute', 'GRPCRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, GRPCRoute, XListenerSet, Service, or AgentgatewayBackend resources"
 	// +kubebuilder:validation:XValidation:message="Only one Kind of targetRef can be set on one policy",rule="self.all(l1, !self.exists(l2, l1.kind != l2.kind))"
 	// +optional
 	TargetRefs []shared.LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
@@ -71,7 +71,7 @@ type AgentgatewayPolicySpec struct {
 	// targetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'agentgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or AgentgatewayBackend resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'agentgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute', 'GRPCRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, GRPCRoute, XListenerSet, Service, or AgentgatewayBackend resources"
 	// +kubebuilder:validation:XValidation:message="Only one Kind of targetRef can be set on one policy",rule="self.all(l1, !self.exists(l2, l1.kind != l2.kind))"
 	// +optional
 	TargetSelectors []shared.LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
@@ -251,7 +251,6 @@ type BackendTLS struct {
 	AlpnProtocols *[]TinyString `json:"alpnProtocols,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="!has(self.tracing)",message="tracing is not currently implemented"
 type Frontend struct {
 	// tcp defines settings on managing incoming TCP connections.
 	// +optional
@@ -268,7 +267,6 @@ type Frontend struct {
 	AccessLog *AccessLog `json:"accessLog,omitempty"`
 
 	// Tracing contains various settings for OpenTelemetry tracer.
-	// TODO: not currently implemented
 	// +optional
 	Tracing *Tracing `json:"tracing,omitempty"`
 }
@@ -336,8 +334,51 @@ type FrontendTLS struct {
 	// +kubebuilder:validation:MaxItems=16
 	// +optional
 	AlpnProtocols *[]TinyString `json:"alpnProtocols,omitempty"`
+
+	// MinTLSVersion configures the minimum TLS version to support.
+	// +optional
+	MinTLSVersion *TLSVersion `json:"minProtocolVersion,omitempty"`
+
+	// MaxTLSVersion configures the maximum TLS version to support.
+	// +optional
+	MaxTLSVersion *TLSVersion `json:"maxProtocolVersion,omitempty"`
+
+	// CipherSuites configures the list of cipher suites for a TLS listener.
+	// The value is a comma-separated list of cipher suites, e.g "TLS13_AES_256_GCM_SHA384,TLS13_AES_128_GCM_SHA256".
+	// Use in the TLS options field of a TLS listener.
+	// +optional
+	CipherSuites []CipherSuite `json:"cipherSuites,omitempty"`
+
 	// TODO: mirror the tuneables on BackendTLS
 }
+
+// +kubebuilder:validation:Enum="1.2";"1.3"
+type TLSVersion string
+
+const (
+	// agentgateway currently only supports TLS 1.2 and TLS 1.3
+	TLSVersion1_2 TLSVersion = "1.2"
+	TLSVersion1_3 TLSVersion = "1.3"
+)
+
+// +kubebuilder:validation:Enum=TLS13_AES_256_GCM_SHA384;TLS13_AES_128_GCM_SHA256;TLS13_CHACHA20_POLY1305_SHA256;TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384;TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256;TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256;TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384;TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256;TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+type CipherSuite string
+
+const (
+	// TLS 1.3 cipher suites
+	CipherSuiteTLS13_AES_256_GCM_SHA384       CipherSuite = "TLS13_AES_256_GCM_SHA384"
+	CipherSuiteTLS13_AES_128_GCM_SHA256       CipherSuite = "TLS13_AES_128_GCM_SHA256"
+	CipherSuiteTLS13_CHACHA20_POLY1305_SHA256 CipherSuite = "TLS13_CHACHA20_POLY1305_SHA256"
+
+	// TLS 1.2 cipher suites
+	CipherSuiteTLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384       CipherSuite = "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+	CipherSuiteTLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256       CipherSuite = "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+	CipherSuiteTLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 CipherSuite = "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256"
+
+	CipherSuiteTLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384       CipherSuite = "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+	CipherSuiteTLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256       CipherSuite = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+	CipherSuiteTLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 CipherSuite = "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+)
 
 // +kubebuilder:validation:AtLeastOneOf=keepalive
 type FrontendTCP struct {
@@ -707,7 +748,7 @@ const (
 	HostnameRewriteModeNone HostnameRewriteMode = "None"
 )
 
-// +kubebuilder:validation:ExactlyOneOf=key;secretRef;passthrough;aws
+// +kubebuilder:validation:ExactlyOneOf=key;secretRef;passthrough;aws;gcp
 type BackendAuth struct {
 	// key provides an inline key to use as the value of the Authorization header.
 	// This option is the least secure; usage of a Secret is preferred.
@@ -733,6 +774,35 @@ type BackendAuth struct {
 	//
 	// +optional
 	AWS *AwsAuth `json:"aws,omitempty"`
+
+	// Auth specifies to use a Google  authentication method for the backend.
+	// When omitted, we will try to use the default AWS SDK authentication methods.
+	//
+	// +optional
+	GCP *GcpAuth `json:"gcp,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=AccessToken;IdToken
+type GcpAuthType string
+
+const (
+	GcpAuthTypeAccessToken GcpAuthType = "AccessToken"
+	GcpAuthTypeIdToken     GcpAuthType = "IdToken"
+)
+
+// gcp specifies how to authenticate on Google Cloud Platform
+// +kubebuilder:validation:XValidation:rule="has(self.audience) ? self.type == 'IdToken' : true",message="audience is only valid with IdToken"
+type GcpAuth struct {
+	// The type of token to generate. To authenticate to GCP services, generally an AccessToken is used. To authenticate
+	// to CloudRun, an IdToken is used.
+	//
+	// +optional
+	Type *GcpAuthType `json:"type,omitempty"`
+	// audience allows explicitly configuring the `aud` of the ID Token. Ony valid with `IdToken` type.
+	// If not set, the aud is automatically derived from the backend hostname.
+	//
+	// +optional
+	Audience *ShortString `json:"audience,omitempty"`
 }
 
 // AwsAuth specifies the authentication method to use for the backend.
@@ -815,6 +885,9 @@ const (
 
 	// RouteTypeEmbeddings processes OpenAI /v1/embeddings format requests
 	RouteTypeEmbeddings RouteType = "Embeddings"
+
+	//RouteTypeRealtime processes OpenAI /v1/realtime requests
+	RouteTypeRealtime RouteType = "Realtime"
 )
 
 // +kubebuilder:validation:AtLeastOneOf=authorization;authentication
@@ -1260,7 +1333,7 @@ const (
 
 type Tracing struct {
 	// backendRef references the OTLP server to reach.
-	// Supported types: Service and Backend.
+	// Supported types: Service and AgentgatewayBackend.
 	// +required
 	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 	// protocol specifies the OTLP protocol variant to use.
@@ -1269,9 +1342,13 @@ type Tracing struct {
 	// +optional
 	Protocol TracingProtocol `json:"protocol,omitempty"`
 
-	// attributes specifies customizations to the key-value pairs that are included in the trace
+	// attributes specify customizations to the key-value pairs that are included in the trace.
 	// +optional
 	Attributes *LogTracingAttributes `json:"attributes,omitempty"`
+
+	// resources describe the entity producing telemetry and specify the resources to be included in the trace.
+	// +optional
+	Resources []ResourceAdd `json:"resources,omitempty"`
 
 	// randomSampling is an expression to determine the amount of random sampling. Random sampling will initiate a new
 	// trace span if the incoming request does not have a trace initiated already. This should evaluate to a float between
@@ -1283,4 +1360,11 @@ type Tracing struct {
 	// 0.0-1.0, or a boolean (true/false) If unspecified, client sampling is 100% enabled.
 	// +optional
 	ClientSampling *shared.CELExpression `json:"clientSampling,omitempty"`
+}
+
+type ResourceAdd struct {
+	// +required
+	Name ShortString `json:"name"`
+	// +required
+	Expression shared.CELExpression `json:"expression"`
 }

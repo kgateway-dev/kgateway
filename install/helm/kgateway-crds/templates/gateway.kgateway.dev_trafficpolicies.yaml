@@ -54,8 +54,8 @@ spec:
             description: TrafficPolicySpec defines the desired state of a traffic
               policy.
             properties:
-              apiKeyAuthentication:
-                description: APIKeyAuthentication authenticates users based on a configured
+              apiKeyAuth:
+                description: APIKeyAuth authenticates users based on a configured
                   API Key.
                 properties:
                   clientIdHeader:
@@ -1149,7 +1149,7 @@ spec:
                     set
                   rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
-              jwt:
+              jwtAuth:
                 description: |-
                   JWT specifies the JWT authentication configuration for the policy.
                   This defines the JWT providers and their configurations.
@@ -1323,6 +1323,20 @@ spec:
                   local:
                     description: Local defines a local rate limiting policy.
                     properties:
+                      percentEnabled:
+                        description: PercentEnabled specifies the percentage of requests
+                          for which the rate limiter is enabled.
+                        format: int32
+                        maximum: 100
+                        minimum: 0
+                        type: integer
+                      percentEnforced:
+                        description: PercentEnforced specifies the percentage of requests
+                          for which the rate limiter is enforced.
+                        format: int32
+                        maximum: 100
+                        minimum: 0
+                        type: integer
                       tokenBucket:
                         description: |-
                           TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
@@ -1635,6 +1649,7 @@ spec:
                         description: |-
                           Add is a list of headers to add to the request and what that value should be set to.
                           If there is already a header with these values then append the value as an extra entry.
+                          Add is not supported on arm64 build, see docs/guides/transformation.md for details
                         items:
                           properties:
                             name:
@@ -1710,6 +1725,7 @@ spec:
                         description: |-
                           Add is a list of headers to add to the request and what that value should be set to.
                           If there is already a header with these values then append the value as an extra entry.
+                          Add is not supported on arm64 build, see docs/guides/transformation.md for details
                         items:
                           properties:
                             name:

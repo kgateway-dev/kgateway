@@ -9,10 +9,9 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -28,10 +27,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	// Define the setup TestCase for common resources
 	setupTestCase := base.TestCase{
 		Manifests: []string{
-			testdefaults.CurlPodManifest,
 			simpleServiceManifest,
 			extAuthManifest,
-			gatewayWithRouteManifest,
 		},
 	}
 
@@ -49,6 +46,11 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				insecureRouteManifest,
 			},
 		},
+		"TestExtAuthPolicyMissingBackendRef": {
+			Manifests: []string{
+				securedRouteMissingRefManifest,
+			},
+		},
 	}
 
 	return &testingSuite{
@@ -59,8 +61,6 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // TestExtAuthPolicy tests the basic ExtAuth functionality with header-based allow/deny
 // Checks for gateway level auth with route level opt out
 func (s *testingSuite) TestExtAuthPolicy() {
-	// The BaseTestingSuite automatically handles setup and cleanup of test-specific resources
-
 	testCases := []struct {
 		name                         string
 		headers                      map[string]string
@@ -103,9 +103,7 @@ func (s *testingSuite) TestExtAuthPolicy() {
 		s.Run(tc.name, func() {
 			// Build curl options
 			opts := []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjMeta)),
 				curl.WithHostHeader(tc.hostname),
-				curl.WithPort(8080),
 			}
 
 			// Add test-specific headers
@@ -114,22 +112,19 @@ func (s *testingSuite) TestExtAuthPolicy() {
 			}
 
 			// Test the request
-			s.TestInstallation.Assertions.AssertEventualCurlResponse(
-				s.Ctx,
-				testdefaults.CurlPodExecOpt,
-				opts,
+			common.BaseGateway.Send(
+				s.T(),
 				&testmatchers.HttpResponse{
 					StatusCode: tc.expectedStatus,
 					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
-				})
+				},
+				opts...)
 		})
 	}
 }
 
 // TestRouteTargetedExtAuthPolicy tests route level only extauth
 func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
-	// The BaseTestingSuite automatically handles setup and cleanup of test-specific resources
-
 	testCases := []struct {
 		name                         string
 		headers                      map[string]string
@@ -170,9 +165,7 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 		s.Run(tc.name, func() {
 			// Build curl options
 			opts := []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjMeta)),
 				curl.WithHostHeader(tc.hostname),
-				curl.WithPort(8080),
 			}
 
 			// Add test-specific headers
@@ -181,14 +174,54 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 			}
 
 			// Test the request
-			s.TestInstallation.Assertions.AssertEventualCurlResponse(
-				s.Ctx,
-				testdefaults.CurlPodExecOpt,
-				opts,
+			common.BaseGateway.Send(
+				s.T(),
 				&testmatchers.HttpResponse{
 					StatusCode: tc.expectedStatus,
 					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
-				})
+				},
+				opts...)
+		})
+	}
+}
+
+// TestExtAuthPolicyMissingBackendRef tests behavior when the ExtAuth policy is missing a backendRef
+func (s *testingSuite) TestExtAuthPolicyMissingBackendRef() {
+	testCases := []struct {
+		name                         string
+		headers                      map[string]string
+		hostname                     string
+		expectedStatus               int
+		expectedUpstreamBodyContents string
+	}{
+		{
+			name:           "request denied for invalid extauth policy due to missing backendRef",
+			hostname:       "secureroute.com",
+			headers:        map[string]string{},
+			expectedStatus: http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			// Build curl options
+			opts := []curl.Option{
+				curl.WithHostHeader(tc.hostname),
+			}
+
+			// Add test-specific headers
+			for k, v := range tc.headers {
+				opts = append(opts, curl.WithHeader(k, v))
+			}
+
+			// Test the request
+			common.BaseGateway.Send(
+				s.T(),
+				&testmatchers.HttpResponse{
+					StatusCode: tc.expectedStatus,
+					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
+				},
+				opts...)
 		})
 	}
 }

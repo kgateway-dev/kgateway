@@ -75,7 +75,7 @@ spec:
     policy:
       matchExpressions:
           - "metadata.filter_metadata['envoy.filters.http.jwt_authn']['payload']['email'] == 'dev2@kgateway.io'"
-  jwt:
+  jwtAuth:
     extensionRef:
       name: basic-jwt-provider
 ---

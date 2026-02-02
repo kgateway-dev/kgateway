@@ -103,6 +103,7 @@ spec:
         foo: |-
           bar
           attack
+        gateway.kgateway.dev/gateway-full-name: gw
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
@@ -154,6 +155,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
         image: v1 attack/v1 attack:v1 attack@v1 attack
         imagePullPolicy: |-
           v1

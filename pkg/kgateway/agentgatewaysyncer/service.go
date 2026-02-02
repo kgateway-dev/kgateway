@@ -837,11 +837,7 @@ func precomputeServicePtr(w *model.ServiceInfo) *model.ServiceInfo {
 
 func precomputeService(w model.ServiceInfo) model.ServiceInfo {
 	addr := serviceToAddress(w.Service)
-	w.MarshaledAddress = protoconv.MessageToAny(addr)
-	w.AsAddress = model.AddressInfo{
-		Address:   addr,
-		Marshaled: w.MarshaledAddress,
-	}
+	setServiceAddress(&w, addr)
 	return w
 }
 
@@ -850,5 +846,15 @@ func serviceToAddress(s *workloadapi.Service) *workloadapi.Address {
 		Type: &workloadapi.Address_Service{
 			Service: s,
 		},
+	}
+}
+
+// setServiceAddress sets the AsAddress and MarshaledAddress fields on a ServiceInfo
+// using the provided Address. This is the shared logic for populating AsAddress.
+func setServiceAddress(s *model.ServiceInfo, addr *workloadapi.Address) {
+	s.MarshaledAddress = protoconv.MessageToAny(addr)
+	s.AsAddress = model.AddressInfo{
+		Address:   addr,
+		Marshaled: s.MarshaledAddress,
 	}
 }

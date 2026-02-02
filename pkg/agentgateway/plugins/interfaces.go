@@ -15,8 +15,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 )
 
-// AgwPolicyStatusSyncHandler defines a function that handles status syncing for a specific policy type in AgentGateway
-type AgwPolicyStatusSyncHandler func(ctx context.Context, client apiclient.Client, namespacedName types.NamespacedName, status gwv1.PolicyStatus) error
+// AgwResourceStatusSyncHandler defines a function that handles status syncing for a specific resource type in AgentGateway
+type AgwResourceStatusSyncHandler func(ctx context.Context, client apiclient.Client, namespacedName types.NamespacedName, status any) error
 
 type PolicyPlugin struct {
 	Policies       krt.Collection[AgwPolicy]

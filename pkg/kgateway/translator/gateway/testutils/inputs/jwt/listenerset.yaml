@@ -77,7 +77,7 @@ spec:
     - name: example-listenerset
       group: gateway.networking.x-k8s.io
       kind: XListenerSet
-  jwt:
+  jwtAuth:
     extensionRef:
       name: jwt-ext
 ---

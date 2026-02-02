@@ -13,6 +13,9 @@ metadata:
     ) | nindent 4 }}
 spec:
   type: LoadBalancer
+  {{- with $gateway.service.loadBalancerIP }}
+  loadBalancerIP: {{ . }}
+  {{- end }}
   ports:
   {{- range $p := $gateway.ports }}
     - name: {{ $p.name | quote }}

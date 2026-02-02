@@ -144,6 +144,18 @@ type HTTPSettings struct {
 	// +optional
 	UseRemoteAddress *bool `json:"useRemoteAddress,omitempty"`
 
+	// PreserveExternalRequestId determines whether the connection manager will keep the x-request-id header if passed for
+	// a request that is edge (Edge request is the request from external clients to front Envoy) and not reset it, which is the current Envoy behaviour. This defaults to false.
+	// See here for more information https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-preserve-external-request-id
+	// +optional
+	PreserveExternalRequestId *bool `json:"preserveExternalRequestId,omitempty"`
+
+	// GenerateRequestId:  Whether the connection manager will generate the x-request-id header if it does not exist.
+	// This defaults to true. Generating a random UUID4 is expensive so in high throughput scenarios where this feature is not desired it can be disabled.
+	// See here for more information https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-generate-request-id
+	// +optional
+	GenerateRequestId *bool `json:"generateRequestId,omitempty"`
+
 	// XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
 	// +kubebuilder:validation:Minimum=0
@@ -194,6 +206,19 @@ type HTTPSettings struct {
 	// sure it did not come from the client.
 	// +optional
 	EarlyRequestHeaderModifier *gwv1.HTTPHeaderFilter `json:"earlyRequestHeaderModifier,omitempty"`
+
+	// MaxRequestHeadersKb sets the maximum size of request headers that Envoy will accept.
+	// If unset, the Envoy default is 60 KiB.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-max-request-headers-kb
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=8192
+	MaxRequestHeadersKb *int32 `json:"maxRequestHeadersKb,omitempty"`
+
+	// UuidRequestIdConfig configures the behavior of the UUID request ID extension.
+	// This extension sets the x-request-id header to a UUID value.
+	// +optional
+	UuidRequestIdConfig *UuidRequestIdConfig `json:"uuidRequestIdConfig,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -788,4 +813,20 @@ type EnvoyHealthCheck struct {
 	// +kubebuilder:validation:Pattern="^/[-a-zA-Z0-9@:%.+~#?&/=_]+$"
 	// +required
 	Path string `json:"path"`
+}
+
+// UuidRequestIdConfig configures the UUID request ID extension.
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/request_id/uuid/v3/uuid.proto
+type UuidRequestIdConfig struct {
+	// PackTraceReason determines if the trace sampling decision is embedded into the UUID.
+	// Defaults to true. Set to false to prevent Envoy from mutating the Request ID,
+	// which is useful when preserving exact UUIDs from external systems.
+	// +optional
+	PackTraceReason *bool `json:"packTraceReason,omitempty"`
+
+	// UseRequestIDForTraceSampling determines if the Request ID is used to calculate the
+	// trace sampling decision. Defaults to true. This ensures consistent sampling decisions
+	// for a given Request ID across the mesh.
+	// +optional
+	UseRequestIDForTraceSampling *bool `json:"useRequestIdForTraceSampling,omitempty"`
 }

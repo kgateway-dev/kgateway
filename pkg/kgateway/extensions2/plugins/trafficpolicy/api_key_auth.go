@@ -65,11 +65,11 @@ func constructAPIKeyAuth(
 	out *trafficPolicySpecIr,
 ) error {
 	spec := policy.Spec
-	if spec.APIKeyAuthentication == nil {
+	if spec.APIKeyAuth == nil {
 		return nil
 	}
 
-	ak := spec.APIKeyAuthentication
+	ak := spec.APIKeyAuth
 
 	// Handle disable case
 	if ak.Disable != nil {

@@ -59,7 +59,7 @@ type AgentGwStatusSyncer struct {
 	tcpRoutes    StatusSyncer[*gwv1a2.TCPRoute, *gwv1a2.TCPRouteStatus]
 	tlsRoutes    StatusSyncer[*gwv1a2.TLSRoute, *gwv1a2.TLSRouteStatus]
 
-	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
+	extraAgwResourceStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwResourceStatusSyncHandler
 }
 
 func NewAgwStatusSyncer(
@@ -68,16 +68,16 @@ func NewAgwStatusSyncer(
 	client apiclient.Client,
 	statusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
-	extraHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler,
+	extraHandlers map[schema.GroupVersionKind]agwplugins.AgwResourceStatusSyncHandler,
 ) *AgentGwStatusSyncer {
 	f := kclient.Filter{ObjectFilter: client.ObjectFilter()}
 	syncer := &AgentGwStatusSyncer{
-		controllerName:               controllerName,
-		agwClassName:                 agwClassName,
-		client:                       client,
-		statusCollections:            statusCollections,
-		cacheSyncs:                   cacheSyncs,
-		extraAgwPolicyStatusHandlers: extraHandlers,
+		controllerName:                 controllerName,
+		agwClassName:                   agwClassName,
+		client:                         client,
+		statusCollections:              statusCollections,
+		cacheSyncs:                     cacheSyncs,
+		extraAgwResourceStatusHandlers: extraHandlers,
 
 		agentgatewayPolicies: StatusSyncer[*agentgateway.AgentgatewayPolicy, *gwv1.PolicyStatus]{
 			name:   "agentgatewayPolicy",
@@ -218,16 +218,11 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 	case wellknown.AgentgatewayBackendGVK:
 		s.agentgatewayBackends.ApplyStatus(ctx, resource, statusObj)
 	default:
-		// Attempt to handle extra policy kinds via registered handlers.
-		if s.extraAgwPolicyStatusHandlers != nil {
+		// Attempt to handle resource policy kinds via registered handlers.
+		if s.extraAgwResourceStatusHandlers != nil {
 			key := resource.GroupVersionKind
-			if handler, ok := s.extraAgwPolicyStatusHandlers[key]; ok {
-				ps, _ := statusObj.(*gwv1.PolicyStatus)
-				if ps == nil {
-					logger.Warn("external status handler received non-PolicyStatus", "gvk", resource.GroupVersionKind.String())
-					return
-				}
-				if err := handler(ctx, s.client, types.NamespacedName{Name: resource.Name, Namespace: resource.Namespace}, *ps); err != nil {
+			if handler, ok := s.extraAgwResourceStatusHandlers[key]; ok {
+				if err := handler(ctx, s.client, types.NamespacedName{Name: resource.Name, Namespace: resource.Namespace}, statusObj); err != nil {
 					logger.Error("external policy status handler failed", "gvk", resource.GroupVersionKind.String(), logKeyError, err)
 				}
 				return

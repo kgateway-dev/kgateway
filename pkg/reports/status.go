@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 // Status message constants
@@ -100,6 +101,8 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 		})
 	}
 
+	handleInvalidAddresses(gwReport, &gw)
+
 	addMissingGatewayConditions(r.Gateway(&gw), &gw)
 
 	finalConditions := make([]metav1.Condition, 0)
@@ -125,6 +128,31 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	finalGwStatus.Conditions = finalConditions
 	finalGwStatus.Listeners = finalListeners
 	return &finalGwStatus
+}
+
+func handleInvalidAddresses(report *GatewayReport, g *gwv1.Gateway) {
+	for _, addr := range g.Spec.Addresses {
+		if addr.Type == nil {
+			continue
+		}
+		switch *addr.Type {
+		case gwv1.IPAddressType:
+		case gwv1.HostnameAddressType:
+			report.SetCondition(reporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionProgrammed,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonAddressNotUsable,
+				Message: "Hostname addresses may not be used",
+			})
+		default:
+			report.SetCondition(reporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonUnsupportedAddress,
+				Message: "Unknown address kind",
+			})
+		}
+	}
 }
 
 func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XListenerSet) *gwxv1a1.ListenerSetStatus {
@@ -218,9 +246,16 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 	finalLsStatus.Conditions = finalConditions
 	fl := make([]gwxv1a1.ListenerEntryStatus, 0, len(finalListeners))
 	for i, f := range finalListeners {
+		listener := ls.Spec.Listeners[i]
+		port, err := kubeutils.DetectListenerPortNumber(listener.Protocol, listener.Port)
+		if err != nil {
+			// Set a random value until upstream to allows 0 for implementations that do not support dynamic port assignment
+			port = 65535
+		}
+
 		fl = append(fl, gwxv1a1.ListenerEntryStatus{
 			Name:           f.Name,
-			Port:           ls.Spec.Listeners[i].Port,
+			Port:           port,
 			SupportedKinds: f.SupportedKinds,
 			AttachedRoutes: f.AttachedRoutes,
 			Conditions:     f.Conditions,

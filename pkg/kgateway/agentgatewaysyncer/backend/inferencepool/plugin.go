@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
+	"sigs.k8s.io/gateway-api-inference-extension/pkg/epp/metadata"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -39,17 +40,6 @@ const (
 	poolGroupKindName = "endpoint-picker"
 	// Derived from upstream Gateway API Inference Extension defaults (testdata/envoy.yaml).
 	defaultExtProcMaxRequests = 40000
-	// envoyLbNamespace is the Envoy predefined namespace for load balancing metadata.
-	envoyLbNamespace = "envoy.lb"
-	// envoySubsetHint defines the outer key of the subset list metadata entry for Envoy
-	// subset load balancing.
-	envoySubsetKey = envoyLbNamespace + ".subset_hint"
-	// dstEndpointKey defines the header and filter metadata key used to communicate the
-	// selected endpoints.
-	dstEndpointKey = "x-gateway-destination-endpoint"
-	// subsetDstEndpointKey defines the filter metadata key used to communicate the list of subset
-	// endpoints that the EPP selects from.
-	subsetDstEndpointKey = dstEndpointKey + "-subset"
 )
 
 var logger = logging.New("plugin/inference-epp")
@@ -226,7 +216,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 	}
 	hintStruct := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			subsetDstEndpointKey: {
+			metadata.SubsetFilterKey: {
 				Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{Values: vs}},
 			},
 		},
@@ -238,7 +228,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 			FilterMetadata: make(map[string]*structpb.Struct),
 		}
 	}
-	ra.MetadataMatch.FilterMetadata[envoySubsetKey] = hintStruct
+	ra.MetadataMatch.FilterMetadata[metadata.SubsetFilterNamespace] = hintStruct
 
 	// Build the route-level ext_proc override that points to this pool's ext_proc cluster.
 	override := &extprocv3.ExtProcPerRoute{
@@ -322,10 +312,10 @@ func (p *endpointPickerPass) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterCh
 		FailureModeAllow: true,
 		MetadataOptions: &extprocv3.MetadataOptions{
 			ForwardingNamespaces: &extprocv3.MetadataOptions_MetadataNamespaces{
-				Untyped: []string{envoySubsetKey},
+				Untyped: []string{metadata.SubsetFilterNamespace},
 			},
 			ReceivingNamespaces: &extprocv3.MetadataOptions_MetadataNamespaces{
-				Untyped: []string{envoyLbNamespace},
+				Untyped: []string{metadata.DestinationEndpointNamespace},
 			},
 		},
 	}
@@ -341,10 +331,10 @@ func (p *endpointPickerPass) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterCh
 
 	htm := &headertometadata.Config{
 		RequestRules: []*headertometadata.Config_Rule{{
-			Header: dstEndpointKey,
+			Header: metadata.DestinationEndpointKey,
 			OnHeaderPresent: &headertometadata.Config_KeyValuePair{
-				MetadataNamespace: envoyLbNamespace,
-				Key:               dstEndpointKey,
+				MetadataNamespace: metadata.DestinationEndpointNamespace,
+				Key:               metadata.DestinationEndpointKey,
 				Type:              headertometadata.Config_STRING,
 			},
 			Remove: false,

@@ -163,9 +163,15 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
             statPrefix: http_local_rate_limiter
         - disabled: true
-          name: transformation
+          name: dynamic_modules/simple_mutations
           typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -204,6 +210,14 @@ Routes:
         cluster: kube_a_svc-a_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"response":{"add":[{"name":"a1","value":"a1"}]}}'
+          perRouteConfigName: http_simple_mutations
         ext_proc/a/extproc-ext:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
           overrides: {}
@@ -222,18 +236,6 @@ Routes:
             fillInterval: 3s
             maxTokens: 3
             tokensPerFill: 3
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: a1
-                    value:
-                      text: a1
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
     - match:
         pathSeparatedPrefix: /mid/b/1
       metadata:
@@ -250,6 +252,14 @@ Routes:
         cluster: kube_b_svc-b_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"response":{"add":[{"name":"mid","value":"mid"}]}}'
+          perRouteConfigName: http_simple_mutations
         ext_proc/b/extproc-ext:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
           overrides: {}
@@ -268,18 +278,6 @@ Routes:
             fillInterval: 2s
             maxTokens: 2
             tokensPerFill: 2
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: mid
-                    value:
-                      text: mid
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
     - match:
         prefix: /
       metadata:
@@ -294,6 +292,14 @@ Routes:
         cluster: kube_infra_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"response":{"add":[{"name":"example","value":"example"}]}}'
+          perRouteConfigName: http_simple_mutations
         ratelimit/local:
           '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
           filterEnabled:
@@ -309,18 +315,6 @@ Routes:
             fillInterval: 1s
             maxTokens: 1
             tokensPerFill: 1
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: example
-                    value:
-                      text: example
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
 Statuses:
   gateways:
     infra/example-gateway:

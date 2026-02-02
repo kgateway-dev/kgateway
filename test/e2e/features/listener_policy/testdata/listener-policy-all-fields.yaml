@@ -15,5 +15,8 @@ spec:
       serverHeaderTransformation: AppendIfAbsent
       streamIdleTimeout: 30s
       acceptHttp10: true
+      preserveExternalRequestId: true
+      generateRequestId: false
+      maxRequestHeadersKb: 64
       healthCheck:
         path: "/health_check"

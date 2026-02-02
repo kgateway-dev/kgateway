@@ -2,20 +2,22 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: route-secure
+  namespace: agentgateway-base
 spec:
   parentRefs:
-    - name: super-gateway
+    - name: gateway
   hostnames:
     - "secureroute.com"
   rules:
     - backendRefs:
-        - name: backend-0
-          port: 8080
+        - name: backend
+          port: 80
 ---
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: route-policy
+  namespace: agentgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
@@ -31,6 +33,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: route-apikey-auth
+  namespace: agentgateway-base
 stringData:
   client1: |
     {

@@ -41,14 +41,14 @@ func TestKgatewayMetrics(t *testing.T) {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {
-			testInstallation.PreFailHandler(ctx)
+			testInstallation.PreFailHandler(ctx, t)
 		}
 
-		testInstallation.UninstallKgateway(ctx)
+		testInstallation.UninstallKgateway(ctx, t)
 	})
 
 	// Install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx)
+	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	// Metrics tests are run on their own in order to avoid metrics values being affected by other tests.
 	KGatewayMetricsSuiteRunner().Run(ctx, t, testInstallation)

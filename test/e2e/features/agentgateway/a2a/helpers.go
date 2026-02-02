@@ -3,13 +3,13 @@
 package a2a
 
 import (
-	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/google/uuid"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 )
 
 func buildMessageSendRequest(text string, id string) string {
@@ -48,14 +48,12 @@ func a2aHeaders() map[string]string {
 	}
 }
 
-func (s *testingSuite) execCurlA2A(port int, path string, headers map[string]string, body string, extraArgs ...string) (string, error) {
+func (s *testingSuite) execCurlA2A(path string, headers map[string]string, body string) (string, error) {
 	// Build curl options using the existing curl utilities
 	curlOpts := []curl.Option{
-		curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", gatewayName, gatewayNamespace)),
-		curl.WithPort(port),
+		curl.WithHost(common.BaseGateway.Address),
 		curl.WithPath(path),
 		curl.Silent(),
-		curl.WithConnectionTimeout(10), // equivalent to --max-time
 	}
 
 	// Add headers
@@ -68,28 +66,22 @@ func (s *testingSuite) execCurlA2A(port int, path string, headers map[string]str
 		curlOpts = append(curlOpts, curl.WithBody(body))
 	}
 
-	// Add extra args if any (like --max-time)
-	if len(extraArgs) > 0 {
-		curlOpts = append(curlOpts, curl.WithArgs(extraArgs))
-	}
-
-	// Execute curl using the existing utilities
-	curlResponse, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(
-		s.Ctx,
-		kubectl.PodExecOptions{Name: curlPodName, Namespace: curlPodNamespace},
-		curlOpts...,
-	)
-
+	// Execute curl request
+	resp, err := curl.ExecuteRequest(curlOpts...)
 	if err != nil {
 		s.T().Logf("curl error: %v", err)
 		return "", err
 	}
+	defer resp.Body.Close()
 
-	s.T().Logf("curl response: %s", curlResponse.StdOut)
-	return curlResponse.StdOut, nil
-}
+	// Read response body
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		s.T().Logf("read body error: %v", err)
+		return "", err
+	}
 
-func IsJSONValid(s string) bool {
-	var js json.RawMessage
-	return json.Unmarshal([]byte(s), &js) == nil
+	responseBody := string(bodyBytes)
+	s.T().Logf("curl response: %s", responseBody)
+	return responseBody, nil
 }

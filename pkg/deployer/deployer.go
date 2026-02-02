@@ -254,7 +254,9 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 
 	// Apply post-processing if the HelmValuesGenerator implements ObjectPostProcessor
 	if postProcessor, ok := d.helmValues.(ObjectPostProcessor); ok {
-		if err := postProcessor.PostProcessObjects(ctx, obj, objs); err != nil {
+		var err error
+		objs, err = postProcessor.PostProcessObjects(ctx, obj, objs)
+		if err != nil {
 			return nil, fmt.Errorf("failed to post-process objects for %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
 		}
 	}

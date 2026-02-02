@@ -1,15 +1,19 @@
 package deployer
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -21,6 +25,7 @@ import (
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -44,7 +49,8 @@ type DeployerTester struct {
 	WaypointClassName string
 }
 
-// NoSecurityContextValidator returns a validation function that ensures no securityContext appears in output
+// NoSecurityContextValidator returns a validation function that ensures no securityContext appears in output.
+// Use this for null-based deletion with server-side apply, which completely removes the field.
 func NoSecurityContextValidator() func(t *testing.T, outputYaml string) {
 	return func(t *testing.T, outputYaml string) {
 		t.Helper()
@@ -53,11 +59,41 @@ func NoSecurityContextValidator() func(t *testing.T, outputYaml string) {
 	}
 }
 
+// EmptySecurityContextValidator returns a validation function that allows
+// securityContext: {} but ensures no actual security values are configured.
+// Use this for $patch: delete, which sets securityContext to empty struct.
+// OpenShift treats an empty securityContext the same as a nonexistent one --
+// the SCC (by default, `restricted-v2`) will fill in the securityContext.
+func EmptySecurityContextValidator() func(t *testing.T, outputYaml string) {
+	return func(t *testing.T, outputYaml string) {
+		t.Helper()
+		// These are actual security values that should NOT be present when using $patch: delete
+		forbiddenValues := []string{
+			"runAsUser:",
+			"runAsGroup:",
+			"runAsNonRoot:",
+			"allowPrivilegeEscalation:",
+			"capabilities:",
+			"readOnlyRootFilesystem:",
+			"privileged:",
+			"fsGroup:",
+			"supplementalGroups:",
+		}
+		for _, val := range forbiddenValues {
+			assert.NotContains(t, outputYaml, val,
+				"output YAML should not contain security values when $patch: delete is used, found: %s", val)
+		}
+	}
+}
+
 // VerifyAllYAMLFilesReferenced ensures every YAML file in testDataDir has a corresponding test case.
 // The exclude parameter allows skipping files that are tested elsewhere (e.g., TLS tests).
 func VerifyAllYAMLFilesReferenced(t *testing.T, testDataDir string, testCases []HelmTestCase, exclude ...string) {
 	t.Helper()
-
+	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
+		t.Log("Skipping reference validation because REFRESH_GOLDEN is set")
+		return
+	}
 	yamlFiles, err := filepath.Glob(filepath.Join(testDataDir, "*.yaml"))
 	require.NoError(t, err, "failed to list YAML files in %s", testDataDir)
 
@@ -83,6 +119,61 @@ func VerifyAllYAMLFilesReferenced(t *testing.T, testDataDir string, testCases []
 	}
 
 	require.Empty(t, unreferenced, "Found YAML files in %s without corresponding test cases: %v", testDataDir, unreferenced)
+}
+
+// VerifyAllEnvoyBootstrapAreValid ensures that envoy bootstrap configs are accepted by envoy.
+func VerifyAllEnvoyBootstrapAreValid(t *testing.T, testDataDir string) {
+	t.Helper()
+
+	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
+		t.Log("Skipping envoy bootstrap validation because REFRESH_GOLDEN is set")
+		return
+	}
+
+	yamlFiles, err := filepath.Glob(filepath.Join(testDataDir, "*-out.yaml"))
+	require.NoError(t, err, "failed to list YAML files in %s", testDataDir)
+
+	// split
+	var wg sync.WaitGroup
+	var envoyErr error
+	var once sync.Once
+	validator := validator.NewDocker(validator.EtcEnvoyVolume(filepath.Join(testDataDir, "etc-envoy")))
+
+	for _, yamlFile := range yamlFiles {
+		// deserialize the YAML file
+		data, err := os.ReadFile(yamlFile)
+		require.NoError(t, err, "failed to read YAML file %s", yamlFile)
+
+		documents := strings.Split(string(data), "\n---\n")
+		for i, doc := range documents {
+			if d := strings.TrimSpace(doc); d == "" || d == "---" {
+				continue
+			}
+			var obj corev1.ConfigMap
+			err := yaml.Unmarshal([]byte(doc), &obj)
+			if err != nil && obj.Kind == "ConfigMap" {
+				require.NoErrorf(t, err, "failed to unmarshal document %d in %s", i+1, yamlFile)
+			}
+			envoyYaml, ok := obj.Data["envoy.yaml"]
+			if !ok {
+				continue
+			}
+			envoyJsn, err := yaml.YAMLToJSON([]byte(envoyYaml))
+			require.NoErrorf(t, err, "failed to convert envoy.yaml to JSON for document %d in %s", i+1, yamlFile)
+
+			wg.Go(func() {
+				// validate envoy bootstrap
+				err := validator.Validate(t.Context(), string(envoyJsn))
+				if err != nil {
+					once.Do(func() {
+						envoyErr = fmt.Errorf("envoy bootstrap validation failed for document %d in %s: %w", i+1, yamlFile, err)
+					})
+				}
+			})
+		}
+		wg.Wait()
+		require.NoErrorf(t, envoyErr, "envoy bootstrap validation failed")
+	}
 }
 
 // ExtractCommonObjs will return a collection containing only objects necessary for collections.CommonCollections,
@@ -178,6 +269,8 @@ func (dt DeployerTester) RunHelmChartTest(
 	got, err := objectsToYAML(deployObjs)
 	assert.NoError(t, err, "error converting objects to YAML")
 
+	got = sanitizeOutput(got)
+
 	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
 		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
 		err = os.WriteFile(outputFile, got, 0o644) //nolint:gosec // G306: Golden test file can be readable
@@ -207,6 +300,14 @@ func (dt DeployerTester) RunHelmChartTest(
 	if tt.Validate != nil {
 		tt.Validate(t, string(data))
 	}
+}
+
+// Remove things that change often but are not relevant to the tests
+func sanitizeOutput(got []byte) []byte {
+	old := fmt.Sprintf("%s/%s:%v", pkgdeployer.AgentgatewayRegistry, pkgdeployer.AgentgatewayImage, pkgdeployer.AgentgatewayDefaultTag)
+	now := fmt.Sprintf("%s/%s:99.99.99", pkgdeployer.AgentgatewayRegistry, pkgdeployer.AgentgatewayImage)
+
+	return bytes.Replace(got, []byte(old), []byte(now), -1)
 }
 
 // objectsToYAML converts a slice of client.Object to YAML bytes, separated by "---"

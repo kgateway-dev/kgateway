@@ -12,10 +12,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -24,7 +23,7 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 
 const (
 	// test namespace for proxy resources
-	namespace = "default"
+	namespace = "agentgateway-base"
 )
 
 var (
@@ -32,15 +31,7 @@ var (
 	secureGwPolicyManifest    = getTestFile("secured-gateway-policy.yaml")
 	secureRoutePolicyManifest = getTestFile("secured-route.yaml")
 
-	proxyObjectMeta = metav1.ObjectMeta{Name: "super-gateway", Namespace: namespace}
-
-	setup = base.TestCase{
-		Manifests: []string{
-			getTestFile("common.yaml"),
-			getTestFile("service.yaml"),
-			testdefaults.CurlPodManifest,
-		},
-	}
+	setup = base.TestCase{}
 
 	testCases = map[string]*base.TestCase{
 		"TestRoutePolicy": {
@@ -54,34 +45,29 @@ var (
 
 type testingSuite struct {
 	*base.BaseTestingSuite
-
-	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	testInstallation *e2e.TestInstallation
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
-		testInstallation: testInst,
 	}
 }
 
 func (s *testingSuite) TestRoutePolicy() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-example-insecure",
-		"default",
+		namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
 	// verify insecure route works
 	s.assertResponseWithoutAuth("insecureroute.com", http.StatusOK)
 
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure",
-		"default",
+		namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -95,10 +81,10 @@ func (s *testingSuite) TestRoutePolicy() {
 }
 
 func (s *testingSuite) TestGatewayPolicy() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
-		"default",
+		namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -112,32 +98,17 @@ func (s *testingSuite) TestGatewayPolicy() {
 }
 
 func (s *testingSuite) assertResponse(hostHeader, authHeader string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader(hostHeader),
-			curl.WithHeader("Authorization", "Bearer "+authHeader),
-			curl.WithPort(8080),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: expectedStatus,
-		})
+	common.BaseGateway.Send(s.T(),
+		&testmatchers.HttpResponse{StatusCode: expectedStatus},
+		curl.WithHostHeader(hostHeader),
+		curl.WithHeader("Authorization", "Bearer "+authHeader))
 }
 
 func (s *testingSuite) assertResponseWithoutAuth(hostHeader string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader(hostHeader),
-			curl.WithPort(8080),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: expectedStatus,
-		})
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{StatusCode: expectedStatus},
+		curl.WithHostHeader(hostHeader))
 }
 
 func getTestFile(filename string) string {

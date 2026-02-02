@@ -9,6 +9,7 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,7 +38,9 @@ type backendIr struct {
 	awsIr    *AwsIr
 	staticIr *StaticIr
 	dfpIr    *DfpIr
-	errors   []error
+	gcpIr    *GcpIr
+	// +noKrtEquals
+	errors []error
 }
 
 func (u *backendIr) Equals(other any) bool {
@@ -55,6 +58,10 @@ func (u *backendIr) Equals(other any) bool {
 	}
 	// DFP
 	if !u.dfpIr.Equals(otherBackend.dfpIr) {
+		return false
+	}
+	// GCP
+	if !u.gcpIr.Equals(otherBackend.gcpIr) {
 		return false
 	}
 	return true
@@ -95,17 +102,13 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 
 		return &backend
 	})
-	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.Backend) *ir.EndpointsForBackend {
-		return processEndpoints(i)
-	})
 	return sdk.Plugin{
 		ContributesBackends: map[schema.GroupKind]sdk.BackendPlugin{
 			gk: {
 				BackendInit: ir.BackendInit{
 					InitEnvoyBackend: processBackendForEnvoy,
 				},
-				Endpoints: endpoints,
-				Backends:  bcol,
+				Backends: bcol,
 			},
 		},
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
@@ -127,20 +130,20 @@ func buildTranslateFunc(
 ) func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
 	return func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
 		var beIr backendIr
-		switch i.Spec.Type {
-		case kgateway.BackendTypeStatic:
+		switch {
+		case i.Spec.Static != nil:
 			staticIr, err := buildStaticIr(i.Spec.Static)
 			if err != nil {
 				beIr.errors = append(beIr.errors, err)
 			}
 			beIr.staticIr = staticIr
-		case kgateway.BackendTypeDynamicForwardProxy:
+		case i.Spec.DynamicForwardProxy != nil:
 			dfpIr, err := buildDfpIr(i.Spec.DynamicForwardProxy)
 			if err != nil {
 				beIr.errors = append(beIr.errors, err)
 			}
 			beIr.dfpIr = dfpIr
-		case kgateway.BackendTypeAWS:
+		case i.Spec.Aws != nil:
 			region := i.Spec.Aws.Region
 			invokeMode := getLambdaInvocationMode(i.Spec.Aws)
 
@@ -191,6 +194,12 @@ func buildTranslateFunc(
 				lambdaTransportSocket: lambdaTransportSocket,
 				lambdaFilters:         lambdaFilters,
 			}
+		case i.Spec.Gcp != nil:
+			gcpIr, err := buildGcpIr(i.Spec.Gcp)
+			if err != nil {
+				beIr.errors = append(beIr.errors, err)
+			}
+			beIr.gcpIr = gcpIr
 		}
 		return &beIr
 	}
@@ -209,25 +218,28 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	}
 
 	// TODO: propagated error to CRD #11558.
-	// TODO(tim): do we need to do anything here for AI backends?
 	spec := be.Spec
-	switch spec.Type {
-	case kgateway.BackendTypeStatic:
+	switch {
+	case spec.Static != nil:
 		processStatic(beIr.staticIr, out)
-	case kgateway.BackendTypeAWS:
+	case spec.Aws != nil:
 		if err := processAws(beIr.awsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
 			beIr.errors = append(beIr.errors, err)
 		}
-	case kgateway.BackendTypeDynamicForwardProxy:
+	case spec.DynamicForwardProxy != nil:
 		processDynamicForwardProxy(beIr.dfpIr, out)
+	case spec.Gcp != nil:
+		if err := processGcp(beIr.gcpIr, out); err != nil {
+			logger.Error("failed to process gcp backend", "error", err)
+			beIr.errors = append(beIr.errors, err)
+		}
 	}
 	return nil
 }
 
 func parseAppProtocol(b *kgateway.Backend) ir.AppProtocol {
-	switch b.Spec.Type {
-	case kgateway.BackendTypeStatic:
+	if b.Spec.Static != nil {
 		appProtocol := b.Spec.Static.AppProtocol
 		if appProtocol != nil {
 			return ir.ParseAppProtocol(ptr.To(string(*appProtocol)))
@@ -238,7 +250,7 @@ func parseAppProtocol(b *kgateway.Backend) ir.AppProtocol {
 
 // hostname returns the hostname for the backend. Only static backends are supported.
 func hostname(in *kgateway.Backend) string {
-	if in.Spec.Type != kgateway.BackendTypeStatic {
+	if in.Spec.Static == nil {
 		return ""
 	}
 	if len(in.Spec.Static.Hosts) == 0 {
@@ -247,20 +259,10 @@ func hostname(in *kgateway.Backend) string {
 	return in.Spec.Static.Hosts[0].Host
 }
 
-func processEndpoints(be *kgateway.Backend) *ir.EndpointsForBackend {
-	spec := be.Spec
-	switch {
-	case spec.Type == kgateway.BackendTypeStatic:
-		return processEndpointsStatic(spec.Static)
-	case spec.Type == kgateway.BackendTypeAWS:
-		return processEndpointsAws(spec.Aws)
-	}
-	return nil
-}
-
 type backendPlugin struct {
 	ir.UnimplementedProxyTranslationPass
 	needsDfpFilter map[string]bool
+	needsGcpAuthn  map[string]bool
 }
 
 var _ ir.ProxyTranslationPass = &backendPlugin{}
@@ -275,14 +277,33 @@ func (p *backendPlugin) Name() string {
 
 func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
 	backend := pCtx.Backend.Obj.(*kgateway.Backend)
-	switch backend.Spec.Type {
-	case kgateway.BackendTypeDynamicForwardProxy:
+	if backend.Spec.DynamicForwardProxy != nil {
 		if p.needsDfpFilter == nil {
 			p.needsDfpFilter = make(map[string]bool)
 		}
 		p.needsDfpFilter[pCtx.FilterChainName] = true
-	default:
-		return nil
+	}
+
+	if backend.Spec.Gcp != nil {
+		if p.needsGcpAuthn == nil {
+			p.needsGcpAuthn = make(map[string]bool)
+		}
+		p.needsGcpAuthn[pCtx.FilterChainName] = true
+
+		// Set host rewrite for GCP backends (only if not already set by another policy)
+		routeAction := out.GetRoute()
+		if routeAction == nil {
+			routeAction = &envoyroutev3.RouteAction{}
+			out.Action = &envoyroutev3.Route_Route{
+				Route: routeAction,
+			}
+		}
+		// Set auto host rewrite if not already configured
+		if routeAction.GetHostRewriteSpecifier() == nil {
+			routeAction.HostRewriteSpecifier = &envoyroutev3.RouteAction_AutoHostRewrite{
+				AutoHostRewrite: &wrapperspb.BoolValue{Value: true},
+			}
+		}
 	}
 
 	return nil
@@ -300,10 +321,20 @@ func (p *backendPlugin) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterChainCo
 		f := filters.MustNewStagedFilter("envoy.filters.http.dynamic_forward_proxy", dfpFilterConfig, pluginStage)
 		result = append(result, f)
 	}
+	if p.needsGcpAuthn[fc.FilterChainName] {
+		pluginStage := filters.BeforeStage(filters.RouteStage)
+		f := filters.MustNewStagedFilter(gcpAuthnFilterName, getGcpAuthnFilterConfig(), pluginStage)
+		result = append(result, f)
+	}
 	return result, errors.Join(errs...)
 }
 
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *backendPlugin) ResourcesToAdd() ir.Resources {
-	return ir.Resources{}
+	resources := ir.Resources{}
+	// Add GCP metadata cluster if any GCP backends are present
+	if len(p.needsGcpAuthn) > 0 {
+		resources.Clusters = []*envoyclusterv3.Cluster{getGcpAuthnCluster()}
+	}
+	return resources
 }

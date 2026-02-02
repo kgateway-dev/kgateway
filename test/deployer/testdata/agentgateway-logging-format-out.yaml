@@ -79,6 +79,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3b43d7224a1e97d7d32221cfa2bbcfae83e747b809dc8b5ca1357d0f3ecf20c8
+        gateway.kgateway.dev/gateway-full-name: gw
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
@@ -130,7 +131,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        image: cr.agentgateway.dev/agentgateway:0.11.0-alpha.f0552ee66d6d9beddfca829dee1a029841c7bb43
+        - name: SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        image: cr.agentgateway.dev/agentgateway:99.99.99
         name: agentgateway
         ports:
         - containerPort: 15020

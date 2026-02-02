@@ -55,7 +55,7 @@ spec:
     - kind: Gateway
       group: gateway.networking.k8s.io
       name: example-gateway
-  jwt:
+  jwtAuth:
     extensionRef:
       name: jwt-ext-3
 ---
@@ -68,7 +68,7 @@ spec:
     - kind: HTTPRoute
       group: gateway.networking.k8s.io
       name: example-route
-  jwt:
+  jwtAuth:
     disable: {}
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1

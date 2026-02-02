@@ -58,7 +58,7 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: gw
-  jwt:
+  jwtAuth:
     extensionRef:
       name: basic-jwt-provider
 ---
@@ -72,7 +72,7 @@ spec:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       name: httpbin-route-no-jwt
-  jwt:
+  jwtAuth:
     disable: {}
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1

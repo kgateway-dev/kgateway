@@ -11,7 +11,7 @@ use serde_json::Value as JsonValue;
 
 pub mod jinja;
 
-#[derive(Default, Clone, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct LocalTransformationConfig {
     #[serde(default)]
     pub request: Option<LocalTransform>,

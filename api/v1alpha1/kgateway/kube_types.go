@@ -111,6 +111,15 @@ type Service struct {
 	//
 	// +optional
 	ExternalTrafficPolicy *string `json:"externalTrafficPolicy,omitempty"`
+
+	// LoadBalancerClass is the class of the load balancer implementation this Service belongs to.
+	// If specified, the value of this field must be a label-style identifier, with an optional prefix.
+	// This field can only be set when the Service type is 'LoadBalancer'. If not set, the default
+	// load balancer implementation is used. See
+	// https://kubernetes.io/docs/concepts/services-networking/service/#load-balancer-class
+	//
+	// +optional
+	LoadBalancerClass *string `json:"loadBalancerClass,omitempty"`
 }
 
 func (in *Service) GetPorts() []Port {
@@ -184,6 +193,13 @@ func (in *Service) GetExternalTrafficPolicy() *string {
 		return nil
 	}
 	return in.ExternalTrafficPolicy
+}
+
+func (in *Service) GetLoadBalancerClass() *string {
+	if in == nil {
+		return nil
+	}
+	return in.LoadBalancerClass
 }
 
 type ServiceAccount struct {

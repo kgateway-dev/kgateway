@@ -66,6 +66,7 @@ func (a *AgentgatewayParametersApplier) ApplyToHelmValues(vals *deployer.HelmCon
 	}
 	setIfNonNil(&res.Resources, configs.Resources)
 	setIfNonNil(&res.Shutdown, configs.Shutdown)
+	setIfNonNil(&res.Istio, configs.Istio)
 	setIfNonNil(&res.RawConfig, configs.RawConfig)
 
 	// Apply logging.level as RUST_LOG first, then merge explicit env vars on top.
@@ -116,9 +117,11 @@ func mergeEnvVars(base, override []corev1.EnvVar) []corev1.EnvVar {
 
 // ApplyOverlaysToObjects applies the strategic-merge-patch overlays to rendered k8s objects.
 // This is called after rendering the helm chart.
-func (a *AgentgatewayParametersApplier) ApplyOverlaysToObjects(objs []client.Object) error {
+// It returns the (potentially modified) slice of objects, as new objects may be added
+// (e.g., PodDisruptionBudget, HorizontalPodAutoscaler).
+func (a *AgentgatewayParametersApplier) ApplyOverlaysToObjects(objs []client.Object) ([]client.Object, error) {
 	if a.params == nil {
-		return nil
+		return objs, nil
 	}
 	applier := strategicpatch.NewOverlayApplier(a.params)
 	return applier.ApplyOverlays(objs)
@@ -281,6 +284,12 @@ func (g *agentgatewayParametersHelmValuesGenerator) getDefaultAgentgatewayHelmVa
 		Repository: ptr.To(deployer.AgentgatewayImage),
 		Tag:        ptr.To(deployer.AgentgatewayDefaultTag),
 		PullPolicy: nil,
+	}
+
+	gtw.Service = &deployer.AgentgatewayHelmService{}
+	// Extract loadBalancerIP from Gateway.spec.addresses and set it on the service
+	if err := deployer.SetLoadBalancerIPFromGatewayForAgentgateway(gw, gtw.Service); err != nil {
+		return nil, err
 	}
 
 	return &deployer.HelmConfig{Agentgateway: gtw}, nil

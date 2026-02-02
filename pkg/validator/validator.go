@@ -12,8 +12,13 @@ import (
 
 var (
 	defaultEnvoyPath = "/usr/local/bin/envoy"
-	// TODO(tim): avoid hardcoding the envoy image version in multiple places.
-	defaultEnvoyImage = "quay.io/solo-io/envoy-gloo:1.36.3-patch1"
+	// NOTE: We cannot use vanilla upstream image here because it won't have the rustformation dynamic
+	//       modules bundled into the image and some strict validation test on transformation will not work.
+	//       This can be a chicken and an egg problem if we need a fix in the rustformation module to
+	//       fix the validation test. We will need to merge the fix PR first and wait for the image to
+	//       be updated and then maybe update the golden files
+	//       Also probably need to change this version when backporting or creating a new release
+	defaultEnvoyImage = "ghcr.io/kgateway-dev/envoy-wrapper:v2.3.0-main"
 )
 
 // ErrInvalidXDS is returned when Envoy rejects the supplied JSON.
@@ -43,6 +48,7 @@ func NewBinary(path ...string) Validator {
 
 func (b *binaryValidator) Validate(ctx context.Context, json string) error {
 	cmd := exec.CommandContext(ctx, b.path, "--mode", "validate", "--config-path", "/dev/fd/0", "-l", "critical", "--log-format", "%v") //nolint:gosec // G204: envoy binary with controlled args for config validation
+	cmd.Env = append(cmd.Env, "ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib")
 	cmd.Stdin = strings.NewReader(json)
 	var e bytes.Buffer
 	cmd.Stderr = &e
@@ -60,33 +66,66 @@ func (b *binaryValidator) Validate(ctx context.Context, json string) error {
 }
 
 type dockerValidator struct {
-	img string
+	img      string
+	etcEnvoy string
+}
+
+type DockerValidatorOptions func(*dockerValidator)
+
+func Image(img string) func(*dockerValidator) {
+	return func(d *dockerValidator) {
+		d.img = img
+	}
+}
+
+func EtcEnvoyVolume(etcEnvoy string) func(*dockerValidator) {
+	return func(d *dockerValidator) {
+		d.etcEnvoy = etcEnvoy
+	}
 }
 
 var _ Validator = &dockerValidator{}
 
 // NewDocker creates a new docker validator. If img is empty, the default image is used.
-func NewDocker(img ...string) Validator {
-	if len(img) == 0 {
-		img = []string{defaultEnvoyImage}
+func NewDocker(opts ...DockerValidatorOptions) Validator {
+	ret := &dockerValidator{
+		img: defaultEnvoyImage,
 	}
-	return &dockerValidator{img: img[0]}
+
+	for _, opt := range opts {
+		opt(ret)
+	}
+
+	return ret
+}
+
+func (d *dockerValidator) args() []string {
+	args := []string{
+		"run",
+		"--rm",
+		"-i",
+	}
+	if d.etcEnvoy != "" {
+		args = append(args, "-v", fmt.Sprintf("%s:/etc/envoy/:ro", d.etcEnvoy))
+	}
+	args = append(args,
+		"--entrypoint", "/usr/local/bin/envoy",
+		d.img,
+		"--mode",
+		"validate",
+		"--service-node", "dummy-node",
+		"--config-path", "/dev/fd/0",
+		"-l", "critical",
+		"--log-format", "%v",
+	)
+	return args
 }
 
 func (d *dockerValidator) Validate(ctx context.Context, json string) error {
 	cmd := exec.CommandContext( //nolint:gosec // G204: docker command with controlled args for config validation
 		ctx,
-		"docker", "run",
-		"--rm",
-		"-i",
-		"--platform", "linux/amd64",
-		d.img,
-		"--mode",
-		"validate",
-		"--config-path", "/dev/fd/0",
-		"-l", "critical",
-		"--log-format", "%v",
-	)
+		"docker", d.args()...)
+
 	cmd.Stdin = strings.NewReader(json)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

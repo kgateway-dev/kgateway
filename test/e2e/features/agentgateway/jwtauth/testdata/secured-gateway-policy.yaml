@@ -2,26 +2,28 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: route-secure-gw
+  namespace: agentgateway-base
 spec:
   parentRefs:
-  - name: super-gateway
+  - name: gateway
   hostnames:
   - "securegateways.com"
   rules:
   - backendRefs:
-    - name: backend-0
-      port: 8080
+    - name: backend
+      port: 80
 ---
 # jwks were generated using hack/utils/jwt/jwt-generator.go
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: gw-policy
+  namespace: agentgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
-    name: super-gateway
+    name: gateway
   traffic:
     jwtAuthentication:
       mode: Strict

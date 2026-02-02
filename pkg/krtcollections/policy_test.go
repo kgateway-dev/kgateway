@@ -609,7 +609,7 @@ func backend(ns string) *kgateway.Backend {
 			Namespace: ns,
 		},
 		Spec: kgateway.BackendSpec{
-			Type: kgateway.BackendTypeStatic,
+			Type: ptr.To(kgateway.BackendTypeStatic),
 			Static: &kgateway.StaticBackend{
 				Hosts: []kgateway.Host{
 					{

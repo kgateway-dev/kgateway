@@ -40,7 +40,7 @@ linters:
         description: Checks Equals() implementations for KRT-style semantic equality issues
         settings:
           deepEqual: false
-          checkUnexported: false # TODO: enable this. there's several violations that need to be fixed.
+          checkUnexported: true
       kubeapilinter:
         type: module
         description: Kube API Linter lints Kube like APIs based on API conventions and best practices

@@ -45,7 +45,7 @@ kind: TrafficPolicy
 metadata:
   name: jwt-policy
 spec:
-  jwt:
+  jwtAuth:
     extensionRef:
       name: basic-jwt-provider
 ---

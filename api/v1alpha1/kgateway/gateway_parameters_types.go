@@ -42,7 +42,14 @@ type GatewayParametersList struct {
 //
 // +kubebuilder:validation:ExactlyOneOf=kube;selfManaged
 type GatewayParametersSpec struct {
-	// The proxy will be deployed on Kubernetes.
+	// The proxy will be deployed on Kubernetes. Overlays (fields named with
+	// the suffix 'Overlay') are applied after non-overlay configurations
+	// ("configs"). Configs on a GatewayClass (inside of GatewayParameters) are
+	// applied before configs on a Gateway (inside of GatewayParameters), which
+	// merge together. Overlays on a GatewayClass are then applied, and
+	// finally, overlays on a Gateway. It is recommended to use an overlay only
+	// if necessary (no config exists that can achieve the same goal) for
+	// smoother upgrades, readability, and earlier and improved validation.
 	//
 	// +optional
 	Kube *KubernetesProxyConfig `json:"kube,omitempty"`
@@ -73,8 +80,15 @@ type GatewayParametersStatus struct{}
 
 type SelfManagedGateway struct{}
 
-// KubernetesProxyConfig configures the set of Kubernetes resources that will be provisioned
-// for a given Gateway.
+// KubernetesProxyConfig configures the set of Kubernetes resources that will
+// be provisioned for a given Gateway. Overlays (fields named with the suffix
+// 'Overlay') are applied after non-overlay configurations ("configs"). Configs
+// on a GatewayClass (inside of GatewayParameters) are applied before configs
+// on a Gateway (inside of GatewayParameters), which merge together. Overlays
+// on a GatewayClass are then applied, and finally, overlays on a Gateway. It
+// is recommended to use an overlay only if necessary (no config exists that
+// can achieve the same goal) for smoother upgrades, readability, and earlier
+// and improved validation.
 type KubernetesProxyConfig struct {
 	// Use a Kubernetes deployment as the proxy workload type. Currently, this is the only
 	// supported workload type.
@@ -118,14 +132,6 @@ type KubernetesProxyConfig struct {
 	// +optional
 	Stats *StatsConfig `json:"stats,omitempty"`
 
-	// Obsolete: This field is no longer used. Agentgateway configuration is now
-	// determined automatically based on the GatewayClass controllerName
-	// (agentgateway.dev/agentgateway). Use the AgentgatewayParameters API to
-	// configure agentgateway deployments. Any values specified here are ignored.
-	//
-	// +optional
-	Agentgateway *Agentgateway `json:"agentgateway,omitempty"`
-
 	// OmitDefaultSecurityContext is used to control whether or not
 	// `securityContext` fields should be rendered for the various generated
 	// Deployments/Containers that are dynamically provisioned by the deployer.
@@ -139,6 +145,8 @@ type KubernetesProxyConfig struct {
 	//
 	// +optional
 	OmitDefaultSecurityContext *bool `json:"omitDefaultSecurityContext,omitempty"`
+
+	GatewayParametersOverlays `json:",inline"`
 }
 
 func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
@@ -195,13 +203,6 @@ func (in *KubernetesProxyConfig) GetStats() *StatsConfig {
 		return nil
 	}
 	return in.Stats
-}
-
-func (in *KubernetesProxyConfig) GetAgentgateway() *Agentgateway {
-	if in == nil {
-		return nil
-	}
-	return in.Agentgateway
 }
 
 func (in *KubernetesProxyConfig) GetOmitDefaultSecurityContext() *bool {
@@ -368,6 +369,27 @@ type EnvoyBootstrap struct {
 	//
 	// +optional
 	ComponentLogLevels map[string]string `json:"componentLogLevels,omitempty"`
+
+	// DNS resolver configuration for Envoy's CARES DNS resolver.
+	// This configuration applies to all clusters and affects DNS query behavior.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto
+	// for more information.
+	//
+	// +optional
+	DnsResolver *DnsResolver `json:"dnsResolver,omitempty"`
+}
+
+// DnsResolver configures the CARES DNS resolver for Envoy.
+type DnsResolver struct {
+	// Maximum number of UDP queries to be issued on a single UDP channel.
+	// This helps prevent DNS query pinning to a single resolver, addressing
+	// the issue described in https://github.com/istio/istio/issues/53577.
+	// Defaults to 100 if not specified. Set to 0 to disable this limit.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto#extensions-network-dns-resolver-cares-v3-caresdnsresolverconfig
+	//
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	UdpMaxQueries *int32 `json:"udpMaxQueries,omitempty"`
 }
 
 func (in *EnvoyBootstrap) GetLogLevel() *string {
@@ -382,6 +404,20 @@ func (in *EnvoyBootstrap) GetComponentLogLevels() map[string]string {
 		return nil
 	}
 	return in.ComponentLogLevels
+}
+
+func (in *EnvoyBootstrap) GetDnsResolver() *DnsResolver {
+	if in == nil {
+		return nil
+	}
+	return in.DnsResolver
+}
+
+func (in *DnsResolver) GetUdpMaxQueries() *int32 {
+	if in == nil {
+		return nil
+	}
+	return in.UdpMaxQueries
 }
 
 // SdsContainer configures the container running SDS sidecar.
@@ -466,8 +502,20 @@ type IstioIntegration struct {
 	// +optional
 	IstioProxyContainer *IstioContainer `json:"istioProxyContainer,omitempty"`
 
-	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
-	// Override the default Istio sidecar in gateway-proxy with a custom container.
+	// Deprecated: This field was never implemented in v2 and will be deleted.
+	// If you need custom TLS certificate handling, use the built-in SDS (Secret Discovery
+	// Service) container via the sdsContainer field instead. For other sidecar needs,
+	// use a deployment overlay. Example overlay that adds a sidecar:
+	//
+	//	spec:
+	//	  kube:
+	//	    deploymentOverlay:
+	//	      spec:
+	//	        template:
+	//	          spec:
+	//	            containers:
+	//	              - name: my-sidecar
+	//	                image: my-sidecar:latest
 	//
 	// +optional
 	CustomSidecars []corev1.Container `json:"customSidecars,omitempty"`
@@ -676,105 +724,37 @@ func (in *StatsMatcher) GetExclusionList() []shared.StringMatcher {
 	return in.ExclusionList
 }
 
-// Agentgateway is obsolete and retained only for backwards compatibility.  Use
-// the agentgateway.dev AgentgatewayParameters API to configure agentgateway
-// deployments.
-type Agentgateway struct {
-	// Obsolete: This field is no longer used. The agentgateway dataplane is
-	// automatically enabled when the Gateway references a GatewayClass with
-	// controllerName: agentgateway.dev/agentgateway. Use the AgentgatewayParameters
-	// API to configure agentgateway deployments. Any values specified here are ignored.
-	//
+type GatewayParametersOverlays struct {
+	// deploymentOverlay allows specifying overrides for the generated Deployment resource.
 	// +optional
-	Enabled *bool `json:"enabled,omitempty"`
+	DeploymentOverlay *shared.KubernetesResourceOverlay `json:"deploymentOverlay,omitempty"`
 
-	// Log level for the agentgateway. Defaults to info.
-	// Levels include "trace", "debug", "info", "error", "warn". See: https://docs.rs/tracing/latest/tracing/struct.Level.html
-	//
+	// serviceOverlay allows specifying overrides for the generated Service resource.
 	// +optional
-	LogLevel *string `json:"logLevel,omitempty"`
+	ServiceOverlay *shared.KubernetesResourceOverlay `json:"serviceOverlay,omitempty"`
 
-	// The agentgateway container image. See
-	// https://kubernetes.io/docs/concepts/containers/images
-	// for details.
-	//
-	// Default values, which may be overridden individually:
-	//
-	//	registry: cr.agentgateway.dev
-	//	repository: agentgateway
-	//	tag: <agentgateway version>
-	//	pullPolicy: IfNotPresent
-	//
+	// serviceAccountOverlay allows specifying overrides for the generated ServiceAccount resource.
 	// +optional
-	Image *Image `json:"image,omitempty"`
+	ServiceAccountOverlay *shared.KubernetesResourceOverlay `json:"serviceAccountOverlay,omitempty"`
 
-	// The security context for this container. See
-	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core
-	// for details.
-	//
+	// podDisruptionBudget allows creating a PodDisruptionBudget for the proxy.
+	// If absent, no PDB is created. If present, a PDB is created with its selector
+	// automatically configured to target the proxy Deployment.
+	// The metadata and spec fields from this overlay are applied to the generated PDB.
 	// +optional
-	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
+	PodDisruptionBudget *shared.KubernetesResourceOverlay `json:"podDisruptionBudget,omitempty"`
 
-	// The compute resources required by this container. See
-	// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-	// for details.
-	//
+	// horizontalPodAutoscaler allows creating a HorizontalPodAutoscaler for the proxy.
+	// If absent, no HPA is created. If present, an HPA is created with its scaleTargetRef
+	// automatically configured to target the proxy Deployment.
+	// The metadata and spec fields from this overlay are applied to the generated HPA.
 	// +optional
-	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	HorizontalPodAutoscaler *shared.KubernetesResourceOverlay `json:"horizontalPodAutoscaler,omitempty"`
 
-	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
-
-	// The container environment variables.
-	//
+	// verticalPodAutoscaler allows creating a VerticalPodAutoscaler for the proxy.
+	// If absent, no VPA is created. If present, a VPA is created with its targetRef
+	// automatically configured to target the proxy Deployment.
+	// The metadata and spec fields from this overlay are applied to the generated VPA.
 	// +optional
-	Env []corev1.EnvVar `json:"env,omitempty"`
-
-	// Additional volume mounts to add to the container. See
-	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core
-	// for details.
-	//
-	// +optional
-	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
-}
-
-func (in *Agentgateway) GetEnabled() *bool {
-	if in == nil {
-		return nil
-	}
-	return in.Enabled
-}
-
-func (in *Agentgateway) GetLogLevel() *string {
-	if in == nil {
-		return nil
-	}
-	return in.LogLevel
-}
-
-func (in *Agentgateway) GetImage() *Image {
-	if in == nil {
-		return nil
-	}
-	return in.Image
-}
-
-func (in *Agentgateway) GetSecurityContext() *corev1.SecurityContext {
-	if in == nil {
-		return nil
-	}
-	return in.SecurityContext
-}
-
-func (in *Agentgateway) GetResources() *corev1.ResourceRequirements {
-	if in == nil {
-		return nil
-	}
-	return in.Resources
-}
-
-func (in *Agentgateway) GetEnv() []corev1.EnvVar {
-	if in == nil {
-		return nil
-	}
-	return in.Env
+	VerticalPodAutoscaler *shared.KubernetesResourceOverlay `json:"verticalPodAutoscaler,omitempty"`
 }

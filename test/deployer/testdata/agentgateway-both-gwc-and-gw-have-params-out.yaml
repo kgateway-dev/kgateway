@@ -78,6 +78,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 9fbb8893347ff0b7be4bf329b3534c0da22ae769bd6547471f071a1980dffd20
+        gateway.kgateway.dev/gateway-full-name: gw-using-gw-params
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
@@ -129,6 +130,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
         image: from-gw/agentgateway@sha256:fd697c0542524e19a19baf75acfd06714b95bf4f7c60bf22c86164dd647ceb48
         name: agentgateway
         ports:

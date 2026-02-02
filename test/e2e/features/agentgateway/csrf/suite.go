@@ -7,15 +7,12 @@ import (
 	"net/http"
 
 	"github.com/stretchr/testify/suite"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -26,11 +23,12 @@ type testingSuite struct {
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	setupTestCase := base.TestCase{
-		Manifests: []string{commonManifest, testdefaults.CurlPodManifest, testdefaults.HttpbinManifest},
+	setupTestCase := base.TestCase{}
+	testCases := map[string]*base.TestCase{
+		"TestGatewayLevelCSRF": {
+			Manifests: []string{routesManifest, csrfAgwPolicyManifest},
+		},
 	}
-	// everything is applied during setup; there are no additional test-specific manifests
-	testCases := map[string]*base.TestCase{}
 
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setupTestCase, testCases),
@@ -42,8 +40,6 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TestGatewayLevelCSRF() {
-	s.setupTest([]string{csrfAgwPolicyManifest}, []client.Object{agwPolicy})
-
 	// Request without origin header should be allowed (agentgateway CSRF allows this)
 	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{})
 
@@ -66,22 +62,6 @@ func (s *testingSuite) TestGatewayLevelCSRF() {
 	})
 }
 
-func (s *testingSuite) setupTest(manifests []string, resources []client.Object) {
-	testutils.Cleanup(s.T(), func() {
-		for _, manifest := range manifests {
-			err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest)
-			s.Require().NoError(err)
-		}
-		s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, resources...)
-	})
-
-	for _, manifest := range manifests {
-		err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
-		s.Require().NoError(err, "can apply "+manifest)
-	}
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, resources...)
-}
-
 // A safe http method is one that doesn't alter the state of the server (ie read only).
 // A CSRF attack targets state changing requests, so the filter only acts on unsafe methods (ones that change state).
 // We use POST as the unsafe method to test the filter.
@@ -89,15 +69,12 @@ func (s *testingSuite) assertPreflightResponse(path string, expectedStatus int, 
 	allOptions := append([]curl.Option{
 		curl.WithMethod("POST"),
 		curl.WithPath(path),
-		curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 		curl.WithHostHeader("example.com"),
-		curl.WithPort(8080),
 	}, options...)
 
-	s.TestInstallation.Assertions.AssertEventuallyConsistentCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		allOptions,
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{StatusCode: expectedStatus},
+		allOptions...,
 	)
 }

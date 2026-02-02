@@ -114,14 +114,14 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 			wantErr:     ErrMultipleAddresses,
 		},
 		{
-			name: "multiple addresses with mixed types returns error",
+			name: "multiple addresses with mixed types returns ip address",
 			addresses: []gwv1.GatewaySpecAddress{
 				{Type: ptr.To(gwv1.HostnameAddressType), Value: "example.com"},
 				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      nil,
-			wantErr:     ErrMultipleAddresses,
+			wantIP:      ptr.To("203.0.113.10"),
+			wantErr:     nil,
 		},
 		{
 			name: "single hostname address returns error",

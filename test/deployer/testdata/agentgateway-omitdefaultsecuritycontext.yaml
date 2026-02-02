@@ -17,16 +17,17 @@ metadata:
   name: agwp-omit-security
   namespace: default
 spec:
-  # Use deployment overlay to delete the default securityContext using null
+  # Demonstrate using both $patch: delete and null to remove securityContexts
   deployment:
     spec:
       template:
         spec:
-          # Delete pod-level securityContext
-          securityContext: null
+          # Delete pod-level securityContext using $patch: delete (works with any apply mode)
+          securityContext:
+            $patch: delete
           containers:
             - name: agentgateway
-              # Delete container-level securityContext
+              # Delete container-level securityContext using null (requires server-side apply)
               securityContext: null
 ---
 kind: Gateway

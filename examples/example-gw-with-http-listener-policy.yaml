@@ -9,15 +9,15 @@ spec:
   - "example.com"
   rules:
   - backendRefs:
-    - name: example-svc
-      port: 8080
+    - name: httpbin
+      port: 8000
   - matches:
     - path:
         type: PathPrefix
         value: /timeout
     backendRefs:
-    - name: example-svc
-      port: 8080
+    - name: httpbin
+      port: 8000
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: HTTPListenerPolicy
@@ -28,6 +28,7 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
+  preserveExternalRequestId: false
   accessLog:
   - fileSink:
       path: /dev/stdout

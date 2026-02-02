@@ -122,6 +122,7 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 	var extraAnnotations map[string]string
 	var extraLabels map[string]string
 	var externalTrafficPolicy *string
+	var loadBalancerClass *string
 
 	if svcConfig != nil {
 		if svcConfig.GetType() != nil {
@@ -131,6 +132,7 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 		extraAnnotations = svcConfig.GetExtraAnnotations()
 		extraLabels = svcConfig.GetExtraLabels()
 		externalTrafficPolicy = svcConfig.GetExternalTrafficPolicy()
+		loadBalancerClass = svcConfig.GetLoadBalancerClass()
 	}
 
 	return &HelmService{
@@ -139,7 +141,40 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 		ExtraAnnotations:      extraAnnotations,
 		ExtraLabels:           extraLabels,
 		ExternalTrafficPolicy: externalTrafficPolicy,
+		LoadBalancerClass:     loadBalancerClass,
 	}
+}
+
+// GetLoadBalancerIPFromGatewayAddresses extracts the IP address from Gateway.spec.addresses.
+// Returns the IP address if exactly one valid IP address is found, nil if no addresses are specified,
+// or an error if more than one address is specified or no valid IP address is found.
+func GetLoadBalancerIPFromGatewayAddresses(gw *gwv1.Gateway) (*string, error) {
+	ipAddresses := slices.MapFilter(gw.Spec.Addresses, func(addr gwv1.GatewaySpecAddress) *string {
+		if addr.Type == nil || *addr.Type == gwv1.IPAddressType {
+			return &addr.Value
+		}
+		return nil
+	})
+
+	if len(ipAddresses) == 0 && len(gw.Spec.Addresses) != 0 {
+		return nil, ErrNoValidIPAddress
+	}
+
+	if len(ipAddresses) == 0 {
+		return nil, nil
+	}
+	if len(ipAddresses) > 1 {
+		return nil, fmt.Errorf("%w: gateway %s/%s has %d addresses", ErrMultipleAddresses, gw.Namespace, gw.Name, len(gw.Spec.Addresses))
+	}
+
+	addr := ipAddresses[0]
+
+	// Validate IP format
+	parsedIP, err := netip.ParseAddr(addr)
+	if err == nil && parsedIP.IsValid() {
+		return &addr, nil
+	}
+	return nil, ErrNoValidIPAddress
 }
 
 // SetLoadBalancerIPFromGateway extracts the IP address from Gateway.spec.addresses
@@ -152,25 +187,30 @@ func SetLoadBalancerIPFromGateway(gw *gwv1.Gateway, svc *HelmService) error {
 		return nil
 	}
 
-	if len(gw.Spec.Addresses) == 0 {
-		return nil
+	ip, err := GetLoadBalancerIPFromGatewayAddresses(gw)
+	if err != nil {
+		return err
 	}
-
-	if len(gw.Spec.Addresses) > 1 {
-		return fmt.Errorf("%w: gateway %s/%s has %d addresses", ErrMultipleAddresses, gw.Namespace, gw.Name, len(gw.Spec.Addresses))
+	if ip != nil {
+		svc.LoadBalancerIP = ip
 	}
+	return nil
+}
 
-	addr := gw.Spec.Addresses[0]
-	// IPAddressType or nil (defaults to IPAddressType per Gateway API spec)
-	if addr.Type == nil || *addr.Type == gwv1.IPAddressType {
-		// Validate IP format
-		if parsedIP, err := netip.ParseAddr(addr.Value); err == nil && parsedIP.IsValid() {
-			svc.LoadBalancerIP = &addr.Value
-			return nil
-		}
+// SetLoadBalancerIPFromGatewayForAgentgateway extracts the IP address from Gateway.spec.addresses
+// and sets it on the AgentgatewayHelmService.
+// Only sets the IP if exactly one valid IP address is found in Gateway.spec.addresses.
+// Returns an error if more than one address is specified or no valid IP address is found.
+// Note: Agentgateway services are always LoadBalancer type, so no service type check is needed.
+func SetLoadBalancerIPFromGatewayForAgentgateway(gw *gwv1.Gateway, svc *AgentgatewayHelmService) error {
+	ip, err := GetLoadBalancerIPFromGatewayAddresses(gw)
+	if err != nil {
+		return err
 	}
-
-	return fmt.Errorf("%w: gateway %s/%s has no valid IP address", ErrNoValidIPAddress, gw.Namespace, gw.Name)
+	if ip != nil {
+		svc.LoadBalancerIP = ip
+	}
+	return nil
 }
 
 // Convert service account values from GatewayParameters into helm values to be used by the deployer.

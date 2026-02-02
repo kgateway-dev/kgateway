@@ -1275,6 +1275,12 @@ spec:
                     - name
                     x-kubernetes-list-type: map
                 type: object
+              generateRequestId:
+                description: |-
+                  GenerateRequestId:  Whether the connection manager will generate the x-request-id header if it does not exist.
+                  This defaults to true. Generating a random UUID4 is expensive so in high throughput scenarios where this feature is not desired it can be disabled.
+                  See here for more information https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-generate-request-id
+                type: boolean
               healthCheck:
                 description: HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
                 properties:
@@ -1295,6 +1301,21 @@ spec:
                 x-kubernetes-validations:
                 - message: invalid duration value
                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+              maxRequestHeadersKb:
+                description: |-
+                  MaxRequestHeadersKb sets the maximum size of request headers that Envoy will accept.
+                  If unset, the Envoy default is 60 KiB.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-max-request-headers-kb
+                format: int32
+                maximum: 8192
+                minimum: 1
+                type: integer
+              preserveExternalRequestId:
+                description: |-
+                  PreserveExternalRequestId determines whether the connection manager will keep the x-request-id header if passed for
+                  a request that is edge (Edge request is the request from external clients to front Envoy) and not reset it, which is the current Envoy behaviour. This defaults to false.
+                  See here for more information https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-preserve-external-request-id
+                type: boolean
               preserveHttp1HeaderCase:
                 description: |-
                   PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 request headers.
@@ -1808,6 +1829,24 @@ spec:
                   When false, Envoy will use the X-Forwarded-For header to determine the client address.
                   See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address
                 type: boolean
+              uuidRequestIdConfig:
+                description: |-
+                  UuidRequestIdConfig configures the behavior of the UUID request ID extension.
+                  This extension sets the x-request-id header to a UUID value.
+                properties:
+                  packTraceReason:
+                    description: |-
+                      PackTraceReason determines if the trace sampling decision is embedded into the UUID.
+                      Defaults to true. Set to false to prevent Envoy from mutating the Request ID,
+                      which is useful when preserving exact UUIDs from external systems.
+                    type: boolean
+                  useRequestIdForTraceSampling:
+                    description: |-
+                      UseRequestIDForTraceSampling determines if the Request ID is used to calculate the
+                      trace sampling decision. Defaults to true. This ensures consistent sampling decisions
+                      for a given Request ID across the mesh.
+                    type: boolean
+                type: object
               xffNumTrustedHops:
                 description: |-
                   XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.

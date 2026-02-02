@@ -32,6 +32,7 @@ output:
       namespace: default
     target:
       route:
+        kind: HTTPRoute
         name: test
         namespace: default
     traffic:
@@ -51,13 +52,14 @@ output:
       namespace: default
     target:
       route:
+        kind: HTTPRoute
         name: test
         namespace: default
 status:
   ancestors:
   - ancestorRef:
       group: gateway.networking.k8s.io
-      kind: HTTPRoute
+      kind: Gateway
       name: test
       namespace: default
     conditions:

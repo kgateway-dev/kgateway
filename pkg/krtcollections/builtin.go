@@ -85,8 +85,11 @@ func (f *filterIR) apply(
 }
 
 type builtinPlugin struct {
-	filter  *filterIR
-	rule    ruleIR
+	// +noKrtEquals
+	filter *filterIR
+	// +noKrtEquals
+	rule ruleIR
+	// +noKrtEquals
 	hasCors bool
 }
 

@@ -115,7 +115,8 @@ type PolicyCtx struct {
 
 type ResolvedTarget struct {
 	AgentgatewayTarget *api.PolicyTarget
-	GatewayTarget      gwv1.ParentReference
+	AncestorRefs       []gwv1.ParentReference
+	AttachmentError    string
 }
 
 // TranslateAgentgatewayPolicy generates policies for a single traffic policy
@@ -132,22 +133,8 @@ func TranslateAgentgatewayPolicy(
 	// TODO: add selectors
 	for _, target := range policy.Spec.TargetRefs {
 		var policyTarget *api.PolicyTarget
-		// Build a base ParentReference for status
 
-		gk := schema.GroupKind{
-			Group: string(target.Group),
-			Kind:  string(target.Kind),
-		}
-		parentRef := gwv1.ParentReference{
-			Name:      target.Name,
-			Namespace: ptr.Of(gwv1.Namespace(policy.Namespace)),
-			Group:     ptr.Of(gwv1.Group(gk.Group)),
-			Kind:      ptr.Of(gwv1.Kind(gk.Kind)),
-		}
-		if target.SectionName != nil {
-			parentRef.SectionName = target.SectionName
-		}
-		// TODO: add support for XListenerSet
+		gk := schema.GroupKind{Group: string(target.Group), Kind: string(target.Kind)}
 		switch gk {
 		case wellknown.GatewayGVK.GroupKind():
 			policyTarget = &api.PolicyTarget{
@@ -155,7 +142,11 @@ func TranslateAgentgatewayPolicy(
 			}
 		case wellknown.HTTPRouteGVK.GroupKind():
 			policyTarget = &api.PolicyTarget{
-				Kind: utils.RouteTarget(policy.Namespace, string(target.Name), target.SectionName),
+				Kind: utils.RouteTarget(policy.Namespace, string(target.Name), wellknown.HTTPRouteGVK.Kind, target.SectionName),
+			}
+		case wellknown.GRPCRouteGVK.GroupKind():
+			policyTarget = &api.PolicyTarget{
+				Kind: utils.RouteTarget(policy.Namespace, string(target.Name), wellknown.GRPCRouteGVK.Kind, target.SectionName),
 			}
 		case wellknown.AgentgatewayBackendGVK.GroupKind():
 			policyTarget = &api.PolicyTarget{
@@ -165,16 +156,21 @@ func TranslateAgentgatewayPolicy(
 			policyTarget = &api.PolicyTarget{
 				Kind: utils.ServiceTarget(policy.Namespace, string(target.Name), target.SectionName),
 			}
-			// TODO: inferencepool
+			// TODO: add support for inferencepool https://github.com/kgateway-dev/kgateway/issues/13295
+			// TODO: add support for XListenerSet https://github.com/kgateway-dev/kgateway/issues/13296
 
 		default:
 			// TODO(npolshak): support attaching policies to k8s services, serviceentries, and other backends
 			logger.Warn("unsupported target kind", "kind", target.Kind, "policy", policy.Name)
 			continue
 		}
+
+		ancestorRefs, attachmentErr := resolvePolicyAncestorRefs(ctx, policy.Namespace, gk, target.Name, agw)
+
 		policyTargets = append(policyTargets, ResolvedTarget{
 			AgentgatewayTarget: policyTarget,
-			GatewayTarget:      parentRef,
+			AncestorRefs:       ancestorRefs,
+			AttachmentError:    attachmentErr,
 		})
 	}
 
@@ -223,6 +219,23 @@ func TranslateAgentgatewayPolicy(
 				Message: reporter.PolicyAttachedMsg,
 			})
 		}
+
+		// If we cannot resolve this policy target to a Gateway (e.g., missing HTTPRoute),
+		// report the policy as not attached instead of falling back to a higher-cardinality ancestor.
+		if policyTarget.AttachmentError != "" {
+			meta.SetStatusCondition(&conds, metav1.Condition{
+				Type:    string(shared.PolicyConditionAccepted),
+				Status:  metav1.ConditionTrue,
+				Reason:  string(shared.PolicyReasonValid),
+				Message: reporter.PolicyAcceptedMsg,
+			})
+			meta.SetStatusCondition(&conds, metav1.Condition{
+				Type:    string(shared.PolicyConditionAttached),
+				Status:  metav1.ConditionFalse,
+				Reason:  string(shared.PolicyReasonPending),
+				Message: policyTarget.AttachmentError,
+			})
+		}
 		// TODO: validate the target exists with dataplane https://github.com/kgateway-dev/kgateway/issues/12275
 		// Ensure LastTransitionTime is set for all conditions
 		for i := range conds {
@@ -230,12 +243,29 @@ func TranslateAgentgatewayPolicy(
 				conds[i].LastTransitionTime = metav1.Now()
 			}
 		}
-		// Only append valid ancestors: require non-empty controllerName and parentRef name
-		if agw.ControllerName != "" && string(policyTarget.GatewayTarget.Name) != "" {
-			ancestors = append(ancestors, gwv1.PolicyAncestorStatus{
-				AncestorRef:    policyTarget.GatewayTarget,
-				ControllerName: v1alpha2.GatewayController(agw.ControllerName),
-				Conditions:     conds,
+
+		// Policy status SHOULD be reported per Gateway
+		// If we couldn't resolve a Gateway ancestor, report status against a summary ref.
+		appendAncestor := func(ar gwv1.ParentReference) {
+			// Only append valid ancestors: require non-empty controllerName and parentRef name
+			if agw.ControllerName != "" && string(ar.Name) != "" {
+				ancestors = append(ancestors, gwv1.PolicyAncestorStatus{
+					AncestorRef:    ar,
+					ControllerName: v1alpha2.GatewayController(agw.ControllerName),
+					Conditions:     conds,
+				})
+			}
+		}
+		if len(policyTarget.AncestorRefs) > 0 {
+			for _, ar := range policyTarget.AncestorRefs {
+				appendAncestor(ar)
+			}
+		} else if policyTarget.AttachmentError != "" {
+			// no ancestor refs resolved due to attachment error, report status against a summary ref
+			logger.Warn("failed to resolve ancestor refs", "error", policyTarget.AttachmentError)
+			appendAncestor(gwv1.ParentReference{
+				Group: ptr.Of(gwv1.Group(wellknown.AgentgatewayPolicyGVK.Group)),
+				Name:  "StatusSummary",
 			})
 		}
 	}
@@ -273,6 +303,92 @@ func TranslateAgentgatewayPolicy(
 	return &status, agwPolicies
 }
 
+func resolvePolicyAncestorRefs(
+	ctx krt.HandlerContext,
+	policyNamespace string,
+	targetGK schema.GroupKind,
+	targetName gwv1.ObjectName,
+	agw *AgwCollections,
+) ([]gwv1.ParentReference, string) {
+	// Default: fall back to the original targetRef (for non-route targets)
+	fallback := []gwv1.ParentReference{{
+		Name:      targetName,
+		Namespace: ptr.Of(gwv1.Namespace(policyNamespace)),
+		Group:     ptr.Of(gwv1.Group(targetGK.Group)),
+		Kind:      ptr.Of(gwv1.Kind(targetGK.Kind)),
+	}}
+
+	// If the policy is attached directly to a Gateway, that Gateway is the ancestor.
+	if targetGK == wellknown.GatewayGVK.GroupKind() {
+		key := policyNamespace + "/" + string(targetName)
+		gw := ptr.Flatten(krt.FetchOne(ctx, agw.Gateways, krt.FilterKey(key)))
+		if gw == nil {
+			return nil, fmt.Sprintf("Policy is not attached: Gateway %s/%s not found", policyNamespace, targetName)
+		}
+		// TODO: Validate the listener exists to avoid reporting attached for a non-existent sectionName
+		// Requires listeners attachment to be supported: https://github.com/agentgateway/agentgateway/issues/825
+		return fallback, ""
+	}
+
+	// If attached to an AgentgatewayBackend, the backend itself is the ancestor.
+	if targetGK == wellknown.AgentgatewayBackendGVK.GroupKind() {
+		key := policyNamespace + "/" + string(targetName)
+		be := ptr.Flatten(krt.FetchOne(ctx, agw.Backends, krt.FilterKey(key)))
+		if be == nil {
+			return nil, fmt.Sprintf("Policy is not attached: AgentgatewayBackend %s/%s not found", policyNamespace, targetName)
+		}
+		return []gwv1.ParentReference{{
+			Name:      targetName,
+			Namespace: ptr.Of(gwv1.Namespace(policyNamespace)),
+			Group:     ptr.Of(gwv1.Group(wellknown.AgentgatewayBackendGVK.Group)),
+			Kind:      ptr.Of(gwv1.Kind(wellknown.AgentgatewayBackendGVK.Kind)),
+		}}, ""
+	}
+
+	// If attached to an HTTPRoute, prefer the Gateway(s) the route attaches to.
+	// This follows Gateway API guidance to use Gateway as the PolicyAncestorStatus when possible.
+	if targetGK == wellknown.HTTPRouteGVK.GroupKind() {
+		key := policyNamespace + "/" + string(targetName)
+		route := ptr.Flatten(krt.FetchOne(ctx, agw.HTTPRoutes, krt.FilterKey(key)))
+		if route == nil {
+			return nil, fmt.Sprintf("Policy is not attached: HTTPRoute %s/%s not found", policyNamespace, targetName)
+		}
+
+		seen := make(map[types.NamespacedName]struct{})
+		var refs []gwv1.ParentReference
+		for _, pr := range route.Spec.ParentRefs {
+			kind := ptr.OrDefault(pr.Kind, gwv1.Kind(wellknown.GatewayKind))
+			group := ptr.OrDefault(pr.Group, gwv1.Group(wellknown.GatewayGVK.Group))
+			if string(kind) != wellknown.GatewayKind || string(group) != wellknown.GatewayGVK.Group {
+				continue
+			}
+			ns := string(ptr.OrDefault(pr.Namespace, gwv1.Namespace(route.Namespace)))
+			nn := types.NamespacedName{Namespace: ns, Name: string(pr.Name)}
+			if _, ok := seen[nn]; ok {
+				continue
+			}
+			seen[nn] = struct{}{}
+			refs = append(refs, gwv1.ParentReference{
+				Name:      pr.Name,
+				Namespace: ptr.Of(gwv1.Namespace(ns)),
+				Group:     ptr.Of(gwv1.Group(wellknown.GatewayGVK.Group)),
+				Kind:      ptr.Of(gwv1.Kind(wellknown.GatewayKind)),
+				// NOTE: Intentionally omit SectionName; we report per Gateway, not per listener.
+			})
+		}
+
+		if len(refs) == 0 {
+			return nil, fmt.Sprintf("Policy is not attached: HTTPRoute %s/%s has no Gateway parentRefs", policyNamespace, targetName)
+		}
+		slices.SortStableFunc(refs, func(a, b gwv1.ParentReference) int {
+			return strings.Compare(reports.ParentString(a), reports.ParentString(b))
+		})
+		return refs, ""
+	}
+
+	return fallback, ""
+}
+
 // translateTrafficPolicyToAgw converts a TrafficPolicy to agentgateway Policy resources
 func translatePolicyToAgw(
 	ctx PolicyCtx,
@@ -282,7 +398,7 @@ func translatePolicyToAgw(
 	agwPolicies := make([]AgwPolicy, 0)
 	var errs []error
 
-	frontend, err := translateFrontendPolicyToAgw(policy, policyTarget)
+	frontend, err := translateFrontendPolicyToAgw(ctx, policy, policyTarget)
 	agwPolicies = append(agwPolicies, frontend...)
 	if err != nil {
 		errs = append(errs, err)
@@ -454,9 +570,10 @@ func processRetriesPolicy(retry *agentgateway.Retry, basePolicyName string, poli
 
 	if a := retry.Attempts; a != nil {
 		if *a < 0 || *a > math.MaxInt32 {
-			return nil, fmt.Errorf("failed to parse retry attemptes should be positive int32 (%d)", *a)
+			return nil, fmt.Errorf("failed to parse retry attempts should be positive int32 (%d)", *a)
 		}
-		translatedRetry.Attempts = int32(*retry.Attempts) //nolint:gosec // G115: attempts asserted above
+		// Agentgateway stores this as a u8 so has a max of 255
+		translatedRetry.Attempts = int32(min(*retry.Attempts, 255)) //nolint:gosec // G115: attempts asserted above
 	}
 
 	retryPolicy := &api.Policy{
@@ -827,13 +944,15 @@ func processExtAuthPolicy(
 	policy types.NamespacedName,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
+	var backendErr error
 	be, err := buildBackendRef(ctx, extAuth.BackendRef, policy.Namespace)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build extAuth: %v", err)
+		backendErr = fmt.Errorf("failed to build extAuth: %v", err)
 	}
 
 	spec := &api.TrafficPolicySpec_ExternalAuth{
-		Target: be,
+		Target:      be,
+		FailureMode: api.TrafficPolicySpec_ExternalAuth_DENY,
 	}
 	if g := extAuth.GRPC; g != nil {
 		p := &api.TrafficPolicySpec_ExternalAuth_GRPCProtocol{
@@ -886,7 +1005,7 @@ func processExtAuthPolicy(
 		"agentgateway_policy", extauthPolicy.Name,
 		"target", policyTarget)
 
-	return []AgwPolicy{{Policy: extauthPolicy}}, nil
+	return []AgwPolicy{{Policy: extauthPolicy}}, backendErr
 }
 
 // processExtProcPolicy processes ExtProc configuration and creates corresponding agentgateway policies
@@ -1205,7 +1324,7 @@ func buildBackendRef(ctx PolicyCtx, ref gwv1.BackendObjectReference, defaultNS s
 			},
 			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 		}, nil
-	case wellknown.BackendGVK.GroupKind():
+	case wellknown.AgentgatewayBackendGVK.GroupKind():
 		key := namespace + "/" + string(ref.Name)
 		be := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Collections.Backends, krt.FilterKey(key)))
 		if be == nil {

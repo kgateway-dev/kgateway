@@ -83,6 +83,9 @@ type HelmGateway struct {
 	Env               []corev1.EnvVar              `json:"env,omitempty"`
 	ExtraVolumeMounts []corev1.VolumeMount         `json:"extraVolumeMounts,omitempty"`
 
+	// envoy bootstrap values
+	DnsResolver *HelmDnsResolver `json:"dnsResolver,omitempty"`
+
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`
 
@@ -115,6 +118,7 @@ type HelmImage struct {
 type HelmService struct {
 	Type                  *string           `json:"type,omitempty"`
 	ClusterIP             *string           `json:"clusterIP,omitempty"`
+	LoadBalancerClass     *string           `json:"loadBalancerClass,omitempty"`
 	LoadBalancerIP        *string           `json:"loadBalancerIP,omitempty"`
 	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
 	ExtraLabels           map[string]string `json:"extraLabels,omitempty"`
@@ -137,6 +141,10 @@ type HelmXds struct {
 type HelmXdsTls struct {
 	Enabled *bool   `json:"enabled,omitempty"`
 	CaCert  *string `json:"caCert,omitempty"`
+}
+
+type HelmDnsResolver struct {
+	UdpMaxQueries *int32 `json:"udpMaxQueries,omitempty"`
 }
 
 type HelmIstio struct {
@@ -200,6 +208,10 @@ type HelmEndpointPickerExtension struct {
 	PoolNamespace string `json:"poolNamespace"`
 }
 
+type AgentgatewayHelmService struct {
+	LoadBalancerIP *string `json:"loadBalancerIP,omitempty"`
+}
+
 type AgentgatewayHelmGateway struct {
 	agentgateway.AgentgatewayParametersConfigs `json:",inline"`
 	// naming
@@ -209,7 +221,8 @@ type AgentgatewayHelmGateway struct {
 	GatewayLabels      map[string]string `json:"gatewayLabels,omitempty"`
 
 	// deployment/service values
-	Ports []HelmPort `json:"ports,omitempty"`
+	Ports   []HelmPort               `json:"ports,omitempty"`
+	Service *AgentgatewayHelmService `json:"service,omitempty"`
 
 	// agentgateway xds values
 	Xds *HelmXds `json:"xds,omitempty"`

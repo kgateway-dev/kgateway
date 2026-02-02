@@ -96,7 +96,7 @@ func (sw selectedWorkload) Equals(o selectedWorkload) bool {
 	return o.network == sw.network &&
 		sw.LocalityPod.Equals(o.LocalityPod) &&
 		slices.Equal(sw.selectedBy, o.selectedBy) &&
-		maps.Equal(sw.portMapping, o.portMapping)
+		maps.Equal(sw.portMapping, o.portMapping) && sw.weight == o.weight
 }
 
 type serviceEntryPlugin struct {

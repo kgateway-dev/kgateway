@@ -42,9 +42,15 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: transformation
+          name: dynamic_modules/simple_mutations
           typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -80,27 +86,14 @@ Routes:
         cluster: kube_a_svc-a_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: source
-                    value:
-                      text: example
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: source
-                    value:
-                      text: a
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"response":{"add":[{"name":"source","value":"a"},{"name":"source","value":"example"}]}}'
+          perRouteConfigName: http_simple_mutations
     - match:
         pathSeparatedPrefix: /a/2
       metadata:
@@ -113,18 +106,14 @@ Routes:
         cluster: kube_a_svc-a_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: source
-                    value:
-                      text: example
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"response":{"add":[{"name":"source","value":"example"}]}}'
+          perRouteConfigName: http_simple_mutations
   - domains:
     - foo.com
     name: listener~80~foo_com
@@ -142,27 +131,14 @@ Routes:
         cluster: kube_b_svc-b_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: source
-                    value:
-                      text: b
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: source
-                    value:
-                      text: foo
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"response":{"add":[{"name":"source","value":"foo"},{"name":"source","value":"b"}]}}'
+          perRouteConfigName: http_simple_mutations
     - match:
         pathSeparatedPrefix: /b/2
       metadata:
@@ -175,18 +151,14 @@ Routes:
         cluster: kube_b_svc-b_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        transformation:
-          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
-          transformations:
-          - requestMatch:
-              responseTransformation:
-                transformationTemplate:
-                  headersToAppend:
-                  - key: source
-                    value:
-                      text: foo
-                  parseBodyBehavior: DontParse
-                  passthrough: {}
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"response":{"add":[{"name":"source","value":"foo"}]}}'
+          perRouteConfigName: http_simple_mutations
 Statuses:
   gateways:
     infra/example-gateway:

@@ -7,25 +7,19 @@ import (
 	"path/filepath"
 
 	"github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
+const (
+	namespace = "agentgateway-base"
+)
+
 var (
 	// manifests
-	setupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	rbacManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "cel-rbac.yaml")
-	// Core infrastructure objects that we need to track
-	gatewayObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
-	}
-	gatewayService = &corev1.Service{ObjectMeta: gatewayObjectMeta}
+	rbacManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "cel-rbac.yaml")
 
 	expectStatus200Success = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
@@ -38,13 +32,9 @@ var (
 
 	// Base test setup - common infrastructure for all tests
 	setup = base.TestCase{
-		Manifests: []string{setupManifest, defaults.HttpbinManifest, defaults.CurlPodManifest},
+		Manifests: []string{rbacManifest},
 	}
 
 	// Individual test cases - test-specific manifests and resources
-	testCases = map[string]*base.TestCase{
-		"TestRBACHeaderAuthorization": {
-			Manifests: []string{rbacManifest},
-		},
-	}
+	testCases = map[string]*base.TestCase{}
 )

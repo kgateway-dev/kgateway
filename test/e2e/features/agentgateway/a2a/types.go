@@ -7,7 +7,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 )
 
@@ -86,21 +85,18 @@ type A2AAgentCard struct {
 }
 
 const (
-	// a2aProto is the protocol version for A2A
-	a2aProto         = "0.3.0"
-	curlPodName      = "curl"
-	curlPodNamespace = "curl"
+	// test namespace for proxy resources
+	namespace = "agentgateway-base"
 )
 
 var (
 	_ e2e.NewSuiteFunc = NewTestingSuite
 
-	gatewayName      = "gw"
-	gatewayNamespace = "agent-gateway-test"
+	gatewayName = "gateway"
 
 	setupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
 
 	setup = base.TestCase{
-		Manifests: []string{setupManifest, defaults.CurlPodManifest},
+		Manifests: []string{setupManifest},
 	}
 )

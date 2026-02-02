@@ -40,6 +40,9 @@ helm.sh/chart: {{ include "agentgateway.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.commonLabels | default dict }}
+{{ toYaml . }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -72,6 +75,23 @@ Supported values: "standard" or "strict" (case-insensitive).
 {{- $level -}}
 {{- else -}}
 {{- printf "ERROR: Invalid validation.level '%s'. Must be 'standard' or 'strict' (case-insensitive). Current value: '%s'" $level .Values.validation.level | fail -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Get the image tag with 'v' prefix for semver tags.
+If the input already starts with 'v', return it as-is.
+If the input looks like a semver version (e.g., "1.2.3"), prepend 'v'.
+Otherwise (e.g., "latest", "dev"), return it unchanged.
+*/}}
+{{- define "agentgateway.imageTag" -}}
+{{- $tag := . -}}
+{{- if hasPrefix "v" $tag -}}
+{{- $tag -}}
+{{- else if regexMatch "^[0-9]+\\.[0-9]+\\..*$" $tag -}}
+{{- printf "v%s" $tag -}}
+{{- else -}}
+{{- $tag -}}
 {{- end -}}
 {{- end }}
 

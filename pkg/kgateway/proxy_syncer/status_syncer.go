@@ -194,7 +194,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 
 				for _, gatewayName := range gatewayNames {
 					finishMetrics[gatewayName] = finishMetricsErrors{
-						finishFunc: collectStatusSyncMetrics(statusSyncMetricLabels{
+						finishFunc: CollectStatusSyncMetrics(StatusSyncMetricLabels{
 							Name:      gatewayName,
 							Namespace: routeKey.Namespace,
 							Syncer:    "RouteStatusSyncer",
@@ -357,7 +357,7 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 	stopwatch.Start()
 
 	for gwnn := range rm.Gateways {
-		finishMetrics := collectStatusSyncMetrics(statusSyncMetricLabels{
+		finishMetrics := CollectStatusSyncMetrics(StatusSyncMetricLabels{
 			Name:      gwnn.Name,
 			Namespace: gwnn.Namespace,
 			Syncer:    "GatewayStatusSyncer",
@@ -472,7 +472,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 
 			var statusErr error
 
-			finishMetrics := collectStatusSyncMetrics(statusSyncMetricLabels{
+			finishMetrics := CollectStatusSyncMetrics(StatusSyncMetricLabels{
 				Name:      string(ls.Spec.ParentRef.Name),
 				Namespace: lsnn.Namespace,
 				Syncer:    "ListenerSetStatusSyncer",
@@ -586,7 +586,7 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			}
 		}
 
-		finishMetrics := collectStatusSyncMetrics(statusSyncMetricLabels{
+		finishMetrics := CollectStatusSyncMetrics(StatusSyncMetricLabels{
 			Name:      gk.Kind,
 			Namespace: nsName.Namespace,
 			Syncer:    "PolicyStatusSyncer",

@@ -1,17 +1,3 @@
-# This tests the scenario where both GWC and GW specify parametersRef,
-# and verifies that the Gateway's parametersRef takes over completely.
-#
-# Expected behavior: Gateway's parametersRef REPLACES GatewayClass's parametersRef entirely.
-# The GWP on the Gateway takes full precedence; GWP from GatewayClass is ignored.
-# This follows the Gateway API spec which states merging is implementation-specific,
-# and we choose replacement semantics for clarity and predictability.
-#
-# Note that inlined parameters on the Gateway will merge with parameters in the
-# GatewayClass's parametersRef; see ./envoy-infrastructure.yaml for an example.
-#
-# gwc-params: sets replicas: 2
-# gw-params: sets omitDefaultSecurityContext: true
-# Result: We should see omitDefaultSecurityContext applied, NOT replicas: 2
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
@@ -47,7 +33,7 @@ spec:
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: gw-using-gw-params
+  name: gw
   namespace: default
 spec:
   gatewayClassName: kgateway

@@ -25,5 +25,7 @@ type HelmValuesGenerator interface {
 type ObjectPostProcessor interface {
 	// PostProcessObjects applies any post-processing to the rendered objects.
 	// This is called after helm rendering but before deployment.
-	PostProcessObjects(ctx context.Context, obj client.Object, rendered []client.Object) error
+	// It returns the (potentially modified) slice of objects, as new objects may be added
+	// (e.g., PodDisruptionBudget, HorizontalPodAutoscaler).
+	PostProcessObjects(ctx context.Context, obj client.Object, rendered []client.Object) ([]client.Object, error)
 }

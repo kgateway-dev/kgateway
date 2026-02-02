@@ -194,7 +194,7 @@ func WithValidator(v validator.Validator) func(*setup) {
 	}
 }
 
-func WithExtraAgwPolicyStatusHandlers(handlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler) func(*setup) {
+func WithExtraAgwResourceStatusHandlers(handlers map[schema.GroupVersionKind]agwplugins.AgwResourceStatusSyncHandler) func(*setup) {
 	return func(s *setup) {
 		s.extraAgwPolicyStatusHandlers = handlers
 	}
@@ -244,7 +244,7 @@ type setup struct {
 	globalSettings               *apisettings.Settings
 	leaderElectionID             string
 	validator                    validator.Validator
-	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
+	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwResourceStatusSyncHandler
 
 	commonCollectionsOptions  []collections.Option
 	statusSyncerOptions       []proxy_syncer.StatusSyncerOption
@@ -522,31 +522,31 @@ func (s *setup) buildKgatewayWithConfig(
 
 	slog.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
-		Manager:                      mgr,
-		ControllerName:               s.gatewayControllerName,
-		AgwControllerName:            s.agwControllerName,
-		GatewayClassName:             s.gatewayClassName,
-		WaypointGatewayClassName:     s.waypointClassName,
-		AgentgatewayClassName:        s.agentgatewayClassName,
-		AdditionalGatewayClasses:     s.additionalGatewayClasses,
-		GatewayClassInfos:            gatewayClassInfos,
-		ExtraPlugins:                 s.extraPlugins,
-		ExtraAgwPlugins:              s.extraAgwPlugins,
-		HelmValuesGeneratorOverride:  s.helmValuesGeneratorOverride,
-		RestConfig:                   s.restConfig,
-		SetupOpts:                    setupOpts,
-		Client:                       s.apiClient,
-		AugmentedPods:                augmentedPods,
-		UniqueClients:                ucc,
-		Dev:                          logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
-		KrtOptions:                   krtOpts,
-		CommonCollections:            commonCollections,
-		AgwCollections:               agwCollections,
-		Validator:                    s.validator,
-		ExtraAgwPolicyStatusHandlers: s.extraAgwPolicyStatusHandlers,
-		GatewayControllerExtension:   s.gatewayControllerExtension,
-		StatusSyncerOptions:          s.statusSyncerOptions,
-		AgentgatewaySyncerOptions:    s.agentgatewaySyncerOptions,
+		Manager:                        mgr,
+		ControllerName:                 s.gatewayControllerName,
+		AgwControllerName:              s.agwControllerName,
+		GatewayClassName:               s.gatewayClassName,
+		WaypointGatewayClassName:       s.waypointClassName,
+		AgentgatewayClassName:          s.agentgatewayClassName,
+		AdditionalGatewayClasses:       s.additionalGatewayClasses,
+		GatewayClassInfos:              gatewayClassInfos,
+		ExtraPlugins:                   s.extraPlugins,
+		ExtraAgwPlugins:                s.extraAgwPlugins,
+		HelmValuesGeneratorOverride:    s.helmValuesGeneratorOverride,
+		RestConfig:                     s.restConfig,
+		SetupOpts:                      setupOpts,
+		Client:                         s.apiClient,
+		AugmentedPods:                  augmentedPods,
+		UniqueClients:                  ucc,
+		Dev:                            logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
+		KrtOptions:                     krtOpts,
+		CommonCollections:              commonCollections,
+		AgwCollections:                 agwCollections,
+		Validator:                      s.validator,
+		ExtraAgwResourceStatusHandlers: s.extraAgwPolicyStatusHandlers,
+		GatewayControllerExtension:     s.gatewayControllerExtension,
+		StatusSyncerOptions:            s.statusSyncerOptions,
+		AgentgatewaySyncerOptions:      s.agentgatewaySyncerOptions,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)
