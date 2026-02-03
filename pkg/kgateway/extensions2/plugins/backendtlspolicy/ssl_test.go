@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 )
 
@@ -110,7 +111,7 @@ func TestUpstreamTlsConfig(t *testing.T) {
 				return
 			}
 			// If we expected an error but didn't get one during extraction, continue to check ResolveUpstreamSslConfigFromCA
-			tlsCtx, err := ResolveUpstreamSslConfigFromCA(caCert, validation, tt.sni)
+			tlsCtx, err := pluginutils.ResolveUpstreamSslConfigFromCA(caCert, validation, tt.sni)
 			if tt.expectedError != "" && err == nil {
 				t.Fatalf("expected error but got nil")
 			} else if tt.expectedError != "" && err != nil {
