@@ -193,6 +193,11 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
+    typed_dns_resolver_config:
+      name: envoy.network.dns_resolver.cares
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
+        udp_max_queries: 100
     dynamic_resources:
       ads_config:
         transport_api_version: V3
@@ -292,6 +297,7 @@ spec:
     metadata:
       annotations:
         extra-annotation: v1
+        gateway.kgateway.dev/gateway-full-name: gw
         infra-and-params: infra
         my-annotation: my-value
         prometheus.io/path: /something/else

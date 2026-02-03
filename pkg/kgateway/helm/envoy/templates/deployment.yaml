@@ -32,6 +32,7 @@ spec:
           (deepCopy ($gateway.gatewayAnnotations | default dict))
           ($gateway.extraPodAnnotations | default dict)
           $promAnnotations
+          (include "kgateway.gateway.gatewayNameAnnotation" . | fromYaml)
        ) | nindent 8 }}
       labels:
         {{- toYaml (merge

@@ -81,6 +81,7 @@ spec:
     metadata:
       annotations:
         checksum/config: cbf0b8cbd77bdcbda8bab51122412ace9f28b61e8dd3c8a2680b7a3d19d7b19e
+        gateway.kgateway.dev/gateway-full-name: gw
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"

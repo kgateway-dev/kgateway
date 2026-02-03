@@ -54,29 +54,30 @@ fn substring(input: &str, start: usize, len: Option<usize>) -> String {
     input[start..end].to_string()
 }
 
-fn header(state: &State, key: &str) -> String {
-    let headers = state.lookup(STATE_LOOKUP_KEY_HEADERS);
+fn lookup_header(headers: Option<minijinja::Value>, key: &str) -> String {
     let Some(headers) = headers else {
         return String::default();
     };
 
+    // TODO: can this be cached at a per request/response context somehow?
+    //       This is called inside a custom function registered to minijina and
+    //       we only get the State object which can only contain minijina::Value
+    //       when we get called.
     let Some(header_map) = <HashMap<String, String>>::deserialize(headers.clone()).ok() else {
         return String::default();
     };
+    let lowercase_key = key.to_lowercase();
+    header_map.get(&lowercase_key).cloned().unwrap_or_default()
+}
 
-    header_map.get(key).cloned().unwrap_or_default()
+fn header(state: &State, key: &str) -> String {
+    let headers = state.lookup(STATE_LOOKUP_KEY_HEADERS);
+    lookup_header(headers, key)
 }
 
 fn request_header(state: &State, key: &str) -> String {
     let headers = state.lookup(STATE_LOOKUP_KEY_REQ_HEADERS);
-    let Some(headers) = headers else {
-        return String::default();
-    };
-
-    let Some(header_map) = <HashMap<String, String>>::deserialize(headers.clone()).ok() else {
-        return String::default();
-    };
-    header_map.get(key).cloned().unwrap_or_default()
+    lookup_header(headers, key)
 }
 
 fn trim_outer_quotes(s: &str) -> &str {

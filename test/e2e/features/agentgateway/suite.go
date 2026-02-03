@@ -30,21 +30,21 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestAgentgatewayTCPRoute() {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		tcpGatewayObjectMeta.Name,
 		tcpGatewayObjectMeta.Namespace,
 		gwv1.GatewayConditionProgrammed,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		tcpGatewayObjectMeta.Name,
 		tcpGatewayObjectMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayListenerAttachedRoutes(
 		s.Ctx,
 		tcpGatewayObjectMeta.Name,
 		tcpGatewayObjectMeta.Namespace,
@@ -52,7 +52,7 @@ func (s *testingSuite) TestAgentgatewayTCPRoute() {
 		1,
 	)
 
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -67,21 +67,21 @@ func (s *testingSuite) TestAgentgatewayTCPRoute() {
 }
 
 func (s *testingSuite) TestAgentgatewayHTTPRoute() {
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		httpGatewayObjectMeta.Name,
 		httpGatewayObjectMeta.Namespace,
 		gwv1.GatewayConditionProgrammed,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		httpGatewayObjectMeta.Name,
 		httpGatewayObjectMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
-	s.TestInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayListenerAttachedRoutes(
 		s.Ctx,
 		httpGatewayObjectMeta.Name,
 		httpGatewayObjectMeta.Namespace,
@@ -89,7 +89,7 @@ func (s *testingSuite) TestAgentgatewayHTTPRoute() {
 		1,
 	)
 
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{

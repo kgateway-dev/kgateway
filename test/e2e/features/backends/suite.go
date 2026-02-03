@@ -76,7 +76,7 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
 		}
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, backend)
+		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, backend)
 	})
 
 	for _, manifest := range manifests {
@@ -85,20 +85,20 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 	}
 
 	// assert the expected resources are created and running before attempting to send traffic
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, backend)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, backend)
 	// TODO: make this a specific assertion to remove the need for c/p the label selector
 	// e.g. EventuallyCurlPodRunning(...) etc.
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=curl",
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=gw",
 	})
 
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -138,7 +138,7 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 		},
 	}
 
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, backendWithError)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, backendWithError)
 
 	s.assertStatus(backendWithError, metav1.Condition{
 		Type:    "Accepted",
@@ -168,7 +168,7 @@ secret_key is not a valid string"`,
 
 func (s *testingSuite) assertStatus(backend *kgateway.Backend, expected metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	p := s.testInstallation.Assertions
+	p := s.testInstallation.AssertionsT(s.T())
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		be := &kgateway.Backend{}
 		objKey := client.ObjectKeyFromObject(backend)

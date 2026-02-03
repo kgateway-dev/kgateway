@@ -65,7 +65,7 @@ func NewIstioCustomMtlsSuite(ctx context.Context, testInst *e2e.TestInstallation
 // TestCleartextWithIstio tests that with Istio enabled, a backend that has its auto-mtls disabled annotation
 // and references the cleartext port of nginx can be reached.
 func (s *istioCustomMtlsTestingSuite) TestCleartextWithIstio() {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		curlPodExecOpt,
 		[]curl.Option{
@@ -79,7 +79,7 @@ func (s *istioCustomMtlsTestingSuite) TestCleartextWithIstio() {
 // and references the simple TLS port of nginx can be reached.
 // BackendConfigPolicy is used to validate the TLS certificate.
 func (s *istioCustomMtlsTestingSuite) TestSimpleTlsWithIstioAndBcp() {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		curlPodExecOpt,
 		[]curl.Option{
@@ -93,7 +93,7 @@ func (s *istioCustomMtlsTestingSuite) TestSimpleTlsWithIstioAndBcp() {
 // and references the custom mTLS port of nginx can be reached.
 // BackendConfigPolicy is used to validate the TLS certificate.
 func (s *istioCustomMtlsTestingSuite) TestCustomMtlsWithIstioAndBcp() {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		curlPodExecOpt,
 		[]curl.Option{
@@ -107,7 +107,7 @@ func (s *istioCustomMtlsTestingSuite) TestCustomMtlsWithIstioAndBcp() {
 // and references the simple TLS port of nginx can be reached.
 // BackendTLSPolicy is used to validate the TLS certificate.
 func (s *istioCustomMtlsTestingSuite) TestSimpleTlsWithIstioAndBtp() {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		curlPodExecOpt,
 		[]curl.Option{

@@ -5,6 +5,7 @@ package deployer
 import (
 	"context"
 	"fmt"
+	"testing"
 	"time"
 
 	"github.com/onsi/gomega"
@@ -73,11 +74,11 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestProvisionDeploymentAndService() {
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 }
 
 func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// check that the labels and annotations got passed through from GatewayParameters to the ServiceAccount
 	sa := &corev1.ServiceAccount{}
@@ -91,9 +92,9 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	)
 	s.Require().NoError(err)
 
-	s.TestInstallation.Assertions.Gomega.Expect(sa.GetLabels()).To(
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Expect(sa.GetLabels()).To(
 		gomega.HaveKeyWithValue("sa-label-key", "sa-label-val"))
-	s.TestInstallation.Assertions.Gomega.Expect(sa.GetAnnotations()).To(
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Expect(sa.GetAnnotations()).To(
 		gomega.HaveKeyWithValue("sa-anno-key", "sa-anno-val"))
 
 	// check that the labels and annotations got passed through from GatewayParameters to the Service
@@ -107,9 +108,9 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 		svc,
 	)
 	s.Require().NoError(err)
-	s.TestInstallation.Assertions.Gomega.Expect(svc.GetLabels()).To(
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Expect(svc.GetLabels()).To(
 		gomega.HaveKeyWithValue("svc-label-key", "svc-label-val"))
-	s.TestInstallation.Assertions.Gomega.Expect(svc.GetAnnotations()).To(
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Expect(svc.GetAnnotations()).To(
 		gomega.HaveKeyWithValue("svc-anno-key", "svc-anno-val"))
 
 	// check that the proxy pod has the expected labels
@@ -136,7 +137,7 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 		Name:      proxyObjectMeta.Name,
 	}, proxyDeployment)
 	s.Require().NoError(err)
-	s.TestInstallation.Assertions.Gomega.Expect(proxyDeployment.Spec.Strategy).To(gomega.Equal(
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Expect(proxyDeployment.Spec.Strategy).To(gomega.Equal(
 		appsv1.DeploymentStrategy{
 			Type: "RollingUpdate",
 			RollingUpdate: &appsv1.RollingUpdateDeployment{
@@ -161,18 +162,18 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	})
 
 	// Assert that the expected custom configuration exists.
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(2))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(2))
 
-	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.Ctx,
 		proxyObjectMeta,
-		serverInfoLogLevelAssertion(s.TestInstallation, "debug", "connection:trace,upstream:debug"),
-		xdsClusterAssertion(s.TestInstallation),
+		serverInfoLogLevelAssertion(s.T(), s.TestInstallation, "debug", "connection:trace,upstream:debug"),
+		xdsClusterAssertion(s.T(), s.TestInstallation),
 	)
 }
 
 func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// modify the number of replicas in the GatewayParameters
 	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *kgateway.GatewayParameters) {
@@ -181,7 +182,7 @@ func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
 
 	// the GatewayParameters modification should cause the deployer to re-run and update the
 	// deployment to have 2 replicas
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(2))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(2))
 }
 
 // TestMissingGatewayParameters tests that a Gateway referencing a missing GatewayParameters
@@ -189,7 +190,7 @@ func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
 // This is to make sure that the controller and status syncer are working properly
 // until this is fixed: https://github.com/kgateway-dev/kgateway/issues/12207
 func (s *testingSuite) TestMissingGatewayParameters() {
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// patch the Gateway to reference a missing GatewayParameters
 	gw := &gwv1.Gateway{}
@@ -208,11 +209,11 @@ func (s *testingSuite) TestMissingGatewayParameters() {
 	})
 
 	// ensure the gateway pod is still running
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// initially, the Gateway should not be accepted
 	// because the GatewayParameters is missing
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		proxyObjectMeta.Name,
 		proxyObjectMeta.Namespace,
@@ -232,7 +233,7 @@ func (s *testingSuite) TestMissingGatewayParameters() {
 	})
 
 	// the Gateway should be accepted once the GatewayParameters is created
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
 		proxyObjectMeta.Name,
 		proxyObjectMeta.Namespace,
@@ -242,7 +243,7 @@ func (s *testingSuite) TestMissingGatewayParameters() {
 }
 
 func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	proxyDeployment := &appsv1.Deployment{}
 	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
@@ -277,7 +278,7 @@ func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
 	// the deployer to run and re-provision resources. If the original values are consistently
 	// retained after that amount of time, we can be confident that the deployer has had time to
 	// consume the new values and fail to apply them.
-	s.TestInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Consistently(func(g gomega.Gomega) {
 		proxyDeployment := &appsv1.Deployment{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: proxyObjectMeta.Namespace,
@@ -312,7 +313,7 @@ func (s *testingSuite) TestSelfManagedGateway() {
 		assert.True(c, accepted, "gateway status not accepted")
 	}, 60*time.Second, 1*time.Second)
 
-	s.TestInstallation.Assertions.ConsistentlyObjectsNotExist(s.Ctx,
+	s.TestInstallation.AssertionsT(s.T()).ConsistentlyObjectsNotExist(s.Ctx,
 		&appsv1.Deployment{ObjectMeta: proxyObjectMeta},
 		&corev1.Service{ObjectMeta: proxyObjectMeta},
 		&corev1.ServiceAccount{ObjectMeta: proxyObjectMeta},
@@ -354,9 +355,9 @@ func (s *testingSuite) patchGatewayParameters(objectMeta metav1.ObjectMeta, patc
 	s.Assert().NoError(err, "can update the GatewayParameters object")
 }
 
-func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation, expectedLogLevel, expectedComponentLogLevel string) func(ctx context.Context, adminClient *admincli.Client) {
+func serverInfoLogLevelAssertion(t *testing.T, testInstallation *e2e.TestInstallation, expectedLogLevel, expectedComponentLogLevel string) func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
-		testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		testInstallation.AssertionsT(t).Gomega.Eventually(func(g gomega.Gomega) {
 			serverInfo, err := adminClient.GetServerInfo(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get server info")
 			g.Expect(serverInfo.GetCommandLineOptions().GetLogLevel()).To(
@@ -371,9 +372,9 @@ func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation, expecte
 	}
 }
 
-func xdsClusterAssertion(testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
+func xdsClusterAssertion(t *testing.T, testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
-		testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		testInstallation.AssertionsT(t).Gomega.Eventually(func(g gomega.Gomega) {
 			clusters, err := adminClient.GetStaticClusters(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get static clusters from config dump")
 

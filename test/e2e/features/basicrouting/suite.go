@@ -80,16 +80,16 @@ func (s *testingSuite) assertSuccessfulResponse() {
 	// which the test runner can resolve (requires cluster DNS access or
 	// port-forwarding for external test runners).
 	for _, port := range []int{listenerHighPort, listenerLowPort} {
-		s.BaseTestingSuite.TestInstallation.Assertions.AssertEventualCurlResponseNative(
-			s.BaseTestingSuite.Ctx,
-			[]curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-				curl.WithHostHeader("example.com"),
-				curl.WithPort(port),
-			},
-			&testmatchers.HttpResponse{
-				StatusCode: http.StatusOK,
-				Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
-			})
-	}
+	s.BaseTestingSuite.TestInstallation.Assertions.AssertEventualCurlResponseNative(
+		s.BaseTestingSuite.Ctx,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(port),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
+		},
+	)
 }

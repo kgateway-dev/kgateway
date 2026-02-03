@@ -168,6 +168,9 @@ spec:
         accessToken: access_token
         idToken: id_token
       sameSite: Lax
+      disableAccessTokenSetCookie: true
+      disableIDTokenSetCookie: true
+      disableRefreshTokenSetCookie: true
     denyRedirect:
       headers:
       - type: Exact

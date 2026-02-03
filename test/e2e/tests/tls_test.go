@@ -70,9 +70,9 @@ func TestControlPlaneTLS(t *testing.T) {
 		}
 		// use a separate context than the one used for the test, as the test context
 		// might be cancelled if we fail to install kgateway.
-		testInstallation.UninstallKgateway(cleanupCtx)
+		testInstallation.UninstallKgateway(cleanupCtx, t)
 	})
-	testInstallation.InstallKgatewayFromLocalChart(t.Context())
+	testInstallation.InstallKgatewayFromLocalChart(t.Context(), t)
 
 	TLSSuiteRunner().Run(t.Context(), t, testInstallation)
 }

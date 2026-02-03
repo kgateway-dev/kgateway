@@ -38,20 +38,16 @@ BUILDX_BUILD ?= docker buildx build -q
 # Helper variable for escaping commas in Make functions
 comma := ,
 
-# A semver resembling 1.0.1-dev. Most calling GHA jobs customize this. Exported for use in goreleaser.yaml.
-VERSION ?= 1.0.1-dev
+# A 'v'-prefixed semver used only locally. Most calling GHA jobs customize
+# this. Exported for use in goreleaser.yaml. Because our docker images are
+# tagged with a 'v' prefix, we use the prefix here and strip the 'v' prefix
+# where actual semver is desired.
+VERSION ?= v1.0.1-dev
 export VERSION
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-# Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-# When we switch Rustformation to be used by default, we can set ENVOY_IMAGE=envoyproxy/envoy:v1.36.4
-# if we want to switch to use upstream vanilla envoy for the multi-arch arm build. For v2.2 release,
-# we plan to still use envoy-gloo for x86 build (so people can switch back to classic transformation if needed).
-# For arm build, we will use upstream envoy and cannot switch back to classic transformation.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.36.4-patch1
 
-export RUST_BUILD_ARCH ?= x86_64 # override this to aarch64 for local arm build
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
 
@@ -69,6 +65,32 @@ else
 		GOARCH := amd64
 	endif
 endif
+
+# Note: When bumping this version, update the version in pkg/validator/validator.go as well.
+# For v2.2, we use vanilla upstream envoy for arm build and envoy-gloo for x86 build. These are used by goreleaser 
+# directly when building the images for the respective architecture.
+# TODO: Consolidate to just upstream image in v2.3
+export ENVOY_IMAGE_ARM64 = envoyproxy/envoy:v1.36.4
+export ENVOY_IMAGE_AMD64 = quay.io/solo-io/envoy-gloo:1.36.4-patch1
+
+# ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image 
+# to use base on GOARCH. This doesn't affect goreleaser
+ifeq ($(GOARCH), arm64)
+	RUST_BUILD_ARCH := aarch64
+	ifeq ($(ENVOY_IMAGE), )
+		ENVOY_IMAGE := $(ENVOY_IMAGE_ARM64)
+		export ENVOY_IMAGE
+	endif
+else
+	RUST_BUILD_ARCH := x86_64
+# For v2.2 release, we plan to still use envoy-gloo for x86 build (so people can switch back to
+# classic transformation if needed).
+	ifeq ($(ENVOY_IMAGE), )
+		ENVOY_IMAGE := $(ENVOY_IMAGE_AMD64)
+		export ENVOY_IMAGE
+	endif
+endif
+
 
 PLATFORM := --platform=linux/$(GOARCH)
 
@@ -131,6 +153,7 @@ mod-download:  ## Download the dependencies
 mod-tidy-nested:  ## Tidy go mod files in nested modules
 	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
 	@echo "Tidying tools..." && cd tools && go mod tidy
+	@echo "Tidying test/e2e/defaults/extproc..." && cd test/e2e/defaults/extproc && go mod tidy
 
 .PHONY: mod-tidy
 mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
@@ -596,7 +619,7 @@ kind-load-dummy-idp:
 # extproc-server (used in e2e tests)
 #----------------------------------------------------------------------------------
 
-EXTPROC_SERVER_DIR=test/e2e/features/agentgateway/extproc/example
+EXTPROC_SERVER_DIR=test/e2e/defaults/extproc
 EXTPROC_SERVER_OUTPUT_DIR=$(OUTPUT_DIR)/$(EXTPROC_SERVER_DIR)
 export EXTPROC_SERVER_IMAGE_REPO ?= extproc-server
 EXTPROC_SERVER_VERSION=0.0.1
@@ -662,12 +685,18 @@ package-agentgateway-crd-chart: ## Package the agentgateway crd chart
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_AGW_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
 
+# VERSION_NO_V strips the leading 'v' from VERSION (e.g., v2.0.0 -> 2.0.0)
+VERSION_NO_V := $(patsubst v%,%,$(VERSION))
+CHART_NAMES := kgateway kgateway-crds agentgateway agentgateway-crds
+
 .PHONY: release-charts
-release-charts: package-kgateway-charts package-agentgateway-charts ## Release the kgateway and agentgateway charts
-	$(HELM) push $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
-	$(HELM) push $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
-	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
-	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+release-charts: ## Release the kgateway and agentgateway charts (publishes both vX.Y.Z and X.Y.Z tags)
+	@for v in $(VERSION) $(VERSION_NO_V); do \
+		$(MAKE) package-kgateway-charts package-agentgateway-charts VERSION=$$v; \
+		for chart in $(CHART_NAMES); do \
+			$(HELM) push $(TEST_ASSET_DIR)/$$chart-$$v.tgz oci://$(IMAGE_REGISTRY)/charts; \
+		done; \
+	done
 
 .PHONY: deploy-kgateway-crd-chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
@@ -779,10 +808,7 @@ setup-base: kind-create gw-api-crds gie-crds metallb ## Setup the base infrastru
 setup: setup-base kind-build-and-load package-kgateway-charts package-agentgateway-charts dummy-idp-docker kind-load-dummy-idp  ## Setup the complete infrastructure (base setup plus images and charts)
 
 .PHONY: run
-run: setup deploy-kgateway  ## Set up complete development environment
-
-.PHONY: run-agentgateway
-run-agentgateway: setup deploy-agentgateway  ## Set up complete development environment
+run: setup deploy-kgateway deploy-agentgateway ## Set up complete development environment
 
 .PHONY: undeploy
 undeploy: undeploy-kgateway undeploy-kgateway-crds ## Undeploy the application from the cluster

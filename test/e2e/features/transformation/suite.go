@@ -178,6 +178,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 			opts: []curl.Option{
 				curl.WithBody("hello"),
 				curl.WithHeader("cookie", "foo=bar"),
+				curl.WithHeader("User-Agent", "curl/8.18.0"),
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
@@ -208,6 +209,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 					// There should be a space at the beginning and end but
 					// there might be a side effect from the echo server where the header values are trimmed
 					"x-space-test": "foobar",
+					"x-client":     "text",
 
 					// REMOVE-ENVOY-1.37: Add header is no-op for arm build, so comment this out for now until after we upgrade to ENVOY-1.37
 					// "cookie":       []string{"foo=bar", "test=123"},
@@ -708,7 +710,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 		s.SetRustformationInController(true)
 	})
 
-	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.Ctx,
 		proxyObjectMeta,
 		s.dynamicModuleAssertion(false),
@@ -752,7 +754,7 @@ func (s *testingSuite) SetRustformationInController(enabled bool) {
 
 	if !enabled {
 		// wait for the changes to be reflected in pod
-		s.TestInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
+		s.TestInstallation.AssertionsT(s.T()).EventuallyPodContainerContainsEnvVar(
 			s.Ctx,
 			s.TestInstallation.Metadata.InstallNamespace,
 			metav1.ListOptions{
@@ -763,7 +765,7 @@ func (s *testingSuite) SetRustformationInController(enabled bool) {
 		)
 	} else {
 		// make sure the env var is removed
-		s.TestInstallation.Assertions.EventuallyPodContainerDoesNotContainEnvVar(
+		s.TestInstallation.AssertionsT(s.T()).EventuallyPodContainerDoesNotContainEnvVar(
 			s.Ctx,
 			s.TestInstallation.Metadata.InstallNamespace,
 			metav1.ListOptions{
@@ -780,14 +782,14 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 	s.assertTestResourceStatus()
 
 	// wait for pods to be running again, since controller deployment was patched
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
 		LabelSelector: defaults.ControllerLabelSelector,
 	})
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 
-	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.Ctx,
 		proxyObjectMeta,
 		s.dynamicModuleAssertion(true),
@@ -802,7 +804,7 @@ func (s *testingSuite) runTestCases(testCases []transformationTestCase) {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
-			resp := s.TestInstallation.Assertions.AssertEventualCurlReturnResponse(
+			resp := s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlReturnResponse(
 				s.Ctx,
 				defaults.CurlPodExecOpt,
 				append(tc.opts,
@@ -831,7 +833,7 @@ func (s *testingSuite) assertRouteAndTrafficPolicyStatus(routesToCheck, trafficP
 		trafficPolicyName := trafficPoliciesToCheck[i]
 
 		// get the traffic policy
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			tp := &kgateway.TrafficPolicy{}
 			tpObjKey := client.ObjectKey{
 				Name:      trafficPolicyName,
@@ -915,7 +917,7 @@ func (s *testingSuite) assertTestResourceStatus() {
 
 func (s *testingSuite) dynamicModuleAssertion(shouldBeLoaded bool) func(ctx context.Context, adminClient *envoyadmincli.Client) {
 	return func(ctx context.Context, adminClient *envoyadmincli.Client) {
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
 			g.Expect(err).ToNot(gomega.HaveOccurred(), "failed to get listener")
 

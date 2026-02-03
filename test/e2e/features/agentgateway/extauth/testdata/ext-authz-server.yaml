@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ext-authz
+  namespace: agentgateway-base
   labels:
     app: ext-authz
 spec:
@@ -17,6 +18,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ext-authz
+  namespace: agentgateway-base
 spec:
   replicas: 1
   selector:

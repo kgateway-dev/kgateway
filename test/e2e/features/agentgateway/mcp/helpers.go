@@ -272,7 +272,10 @@ func (s *testingSuite) requireHTTPStatus(out string, code int) {
 
 // ExtractMCPSessionID finds the mcp-session-id header value in a verbose curl output.
 func ExtractMCPSessionID(out string) string {
-	re := regexp.MustCompile(`(?i)mcp-session-id:\s*([a-f0-9-]+)`)
+	// Session IDs used to be UUIDs (hex + '-'), but are now an encoded state blob
+	// (base64 / base64url / encrypted) which may include non-hex characters.
+	// Capture the full header value up to whitespace/end-of-line.
+	re := regexp.MustCompile(`(?mi)^\s*(?:<\s*)?mcp-session-id\s*:\s*([^\s\r\n]+)\s*$`)
 	m := re.FindStringSubmatch(out)
 	if len(m) > 1 {
 		return strings.TrimSpace(m[1])

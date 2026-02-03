@@ -23,7 +23,7 @@ status:
       namespace: default
     conditions:
     - lastTransitionTime: fake
-      message: failed to parse retry attemptes should be positive int32 (-4)
+      message: failed to parse retry attempts should be positive int32 (-4)
       reason: Invalid
       status: "True"
       type: Accepted

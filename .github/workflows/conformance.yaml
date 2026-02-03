@@ -6,7 +6,7 @@ on:
     types: [checks_requested]
 
 env:
-  VERSION: '1.0.0-ci1'
+  VERSION: 'v1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }} # necessary to pass upgrade tests
   ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
 
@@ -16,8 +16,8 @@ concurrency:
 
 jobs:
   gw_api_conformance_tests:
-    name: K8s Gw Api Conformance Tests (${{ matrix.test-type }}, ${{ matrix.gateway-api-channel }})
-    runs-on: ubuntu-22.04
+    name: K8s Gw Api Conformance Tests (${{ matrix.test-type }}, ${{ matrix.gateway-api-channel }}, ${{ matrix.arch }})
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
     strategy:
@@ -25,6 +25,7 @@ jobs:
       matrix:
         gateway-api-channel: [ 'experimental', 'standard' ]
         test-type: [ gateway-api, agentgateway ]
+        arch: [ 'amd64', 'arm64' ]
     steps:
     - uses: actions/checkout@v4
     - name: Dotenv Action

@@ -1,0 +1,178 @@
+Clusters:
+- connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
+  loadAssignment:
+    clusterName: backend_default_gcp-backend-with-audience_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: example.googleapis.com
+              portValue: 443
+  metadata:
+    typedFilterMetadata:
+      envoy.filters.http.gcp_authn:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.gcp_authn.v3.Audience
+        url: https://custom-audience.googleapis.com
+  name: backend_default_gcp-backend-with-audience_0
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      sni: example.googleapis.com
+  type: STRICT_DNS
+- connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
+  loadAssignment:
+    clusterName: backend_default_gcp-backend_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: example.googleapis.com
+              portValue: 443
+  metadata:
+    typedFilterMetadata:
+      envoy.filters.http.gcp_authn:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.gcp_authn.v3.Audience
+        url: https://example.googleapis.com
+  name: backend_default_gcp-backend_0
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      sni: example.googleapis.com
+  type: STRICT_DNS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+ExtraClusters:
+- altStatName: gcp_authn
+  connectTimeout: 5s
+  dnsLookupFamily: V4_ONLY
+  loadAssignment:
+    clusterName: gcp_authn
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: metadata.google.internal
+              portValue: 80
+  name: gcp_authn
+  respectDnsTtl: true
+  type: STRICT_DNS
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 80
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.gcp_authn
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.gcp_authn.v3.GcpAuthnFilterConfig
+            cluster: gcp_authn
+            timeout: 10s
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~80
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~80
+  name: listener~80
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~80
+  virtualHosts:
+  - domains:
+    - www.example.com
+    name: listener~80~www_example_com
+    routes:
+    - match:
+        path: /gcp
+      name: listener~80~www_example_com-route-0-httproute-gcp-route-default-0-0-matcher-0
+      route:
+        autoHostRewrite: true
+        cluster: backend_default_gcp-backend_0
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+  httpRoutes:
+    default/gcp-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway

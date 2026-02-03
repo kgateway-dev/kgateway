@@ -120,7 +120,7 @@ func GatewayTarget[T ~string](namespace, name string, listener *T) *api.PolicyTa
 	}
 }
 
-func RouteTarget[T ~string](namespace, name string, ruleName *T) *api.PolicyTarget_Route {
+func RouteTarget[T ~string](namespace, name, kind string, ruleName *T) *api.PolicyTarget_Route {
 	var ls *string
 	if ruleName != nil {
 		ls = ptr.Of((string)(*ruleName))
@@ -130,6 +130,7 @@ func RouteTarget[T ~string](namespace, name string, ruleName *T) *api.PolicyTarg
 			Name:      name,
 			Namespace: namespace,
 			RouteRule: ls,
+			Kind:      kind,
 		},
 	}
 }

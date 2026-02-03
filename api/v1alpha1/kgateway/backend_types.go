@@ -38,22 +38,24 @@ const (
 	BackendTypeStatic BackendType = "Static"
 	// BackendTypeDynamicForwardProxy is the type for dynamic forward proxy backends.
 	BackendTypeDynamicForwardProxy BackendType = "DynamicForwardProxy"
+	// BackendTypeGCP is the type for GCP backends.
+	BackendTypeGCP BackendType = "GCP"
 )
 
 // BackendSpec defines the desired state of Backend.
 // +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'AWS'",rule="self.type == 'AWS' ? has(self.aws) : true"
 // +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'Static'",rule="self.type == 'Static' ? has(self.static) : true"
 // +kubebuilder:validation:XValidation:message="dynamicForwardProxy backend must be specified when type is 'DynamicForwardProxy'",rule="self.type == 'DynamicForwardProxy' ? has(self.dynamicForwardProxy) : true"
-// +kubebuilder:validation:ExactlyOneOf=aws;static;dynamicForwardProxy
+// +kubebuilder:validation:XValidation:message="gcp backend must be specified when type is 'GCP'",rule="self.type == 'GCP' ? has(self.gcp) : true"
+// +kubebuilder:validation:ExactlyOneOf=aws;static;dynamicForwardProxy;gcp
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
-	// +kubebuilder:validation:Enum=AWS;Static;DynamicForwardProxy
+	// +kubebuilder:validation:Enum=AWS;Static;DynamicForwardProxy;GCP
 	// Deprecated: The Type field is deprecated and will be removed in a future release.
 	// The backend type is inferred from the configuration.
 	// +optional
 	Type *BackendType `json:"type,omitempty"`
 	// Aws is the AWS backend configuration.
-	// The Aws backend type is only supported with envoy-based gateways, it is not supported in agentgateway.
 	// +optional
 	Aws *AwsBackend `json:"aws,omitempty"`
 	// Static is the static backend configuration.
@@ -62,6 +64,9 @@ type BackendSpec struct {
 	// DynamicForwardProxy is the dynamic forward proxy backend configuration.
 	// +optional
 	DynamicForwardProxy *DynamicForwardProxyBackend `json:"dynamicForwardProxy,omitempty"`
+	// Gcp is the GCP backend configuration.
+	// +optional
+	Gcp *GcpBackend `json:"gcp,omitempty"`
 }
 
 // AppProtocol defines the application protocol to use when communicating with the backend.
@@ -216,6 +221,22 @@ type StaticBackend struct {
 	// AppProtocol is the application protocol to use when communicating with the backend.
 	// +optional
 	AppProtocol *AppProtocol `json:"appProtocol,omitempty"`
+}
+
+// GcpBackend is the GCP backend configuration.
+type GcpBackend struct {
+	// Host is the hostname of the GCP service to connect to.
+	// This will be used for SNI and as the target address.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	Host string `json:"host"`
+
+	// Audience is the GCP service account audience URL.
+	// When omitted, defaults to "https://{host}".
+	// This is used by the GCP authn filter to request the appropriate token.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Audience *string `json:"audience,omitempty"`
 }
 
 // Host defines a static backend host.

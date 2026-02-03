@@ -124,7 +124,7 @@ func (s *testingSuite) assertPreflightResponse(path string, expectedStatus int, 
 		curl.WithPort(8080),
 	}, options...)
 
-	s.TestInstallation.Assertions.AssertEventuallyConsistentCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		allOptions,

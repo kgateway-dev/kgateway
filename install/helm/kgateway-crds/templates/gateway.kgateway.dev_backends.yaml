@@ -57,9 +57,7 @@ spec:
             description: BackendSpec defines the desired state of Backend.
             properties:
               aws:
-                description: |-
-                  Aws is the AWS backend configuration.
-                  The Aws backend type is only supported with envoy-based gateways, it is not supported in agentgateway.
+                description: Aws is the AWS backend configuration.
                 properties:
                   accountId:
                     description: AccountId is the AWS account ID to use for the backend.
@@ -177,6 +175,25 @@ spec:
                       The hostname will be used for SNI and auto SAN validation.
                     type: boolean
                 type: object
+              gcp:
+                description: Gcp is the GCP backend configuration.
+                properties:
+                  audience:
+                    description: |-
+                      Audience is the GCP service account audience URL.
+                      When omitted, defaults to "https://{host}".
+                      This is used by the GCP authn filter to request the appropriate token.
+                    minLength: 1
+                    type: string
+                  host:
+                    description: |-
+                      Host is the hostname of the GCP service to connect to.
+                      This will be used for SNI and as the target address.
+                    minLength: 1
+                    type: string
+                required:
+                - host
+                type: object
               static:
                 description: Static is the static backend configuration.
                 properties:
@@ -221,6 +238,7 @@ spec:
                 - AWS
                 - Static
                 - DynamicForwardProxy
+                - GCP
                 type: string
             type: object
             x-kubernetes-validations:
@@ -232,9 +250,11 @@ spec:
                 'DynamicForwardProxy'
               rule: 'self.type == ''DynamicForwardProxy'' ? has(self.dynamicForwardProxy)
                 : true'
-            - message: exactly one of the fields in [aws static dynamicForwardProxy]
-                must be set
-              rule: '[has(self.aws),has(self.static),has(self.dynamicForwardProxy)].filter(x,x==true).size()
+            - message: gcp backend must be specified when type is 'GCP'
+              rule: 'self.type == ''GCP'' ? has(self.gcp) : true'
+            - message: exactly one of the fields in [aws static dynamicForwardProxy
+                gcp] must be set
+              rule: '[has(self.aws),has(self.static),has(self.dynamicForwardProxy),has(self.gcp)].filter(x,x==true).size()
                 == 1'
           status:
             description: BackendStatus defines the observed state of Backend.

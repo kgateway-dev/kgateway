@@ -13,21 +13,15 @@ import (
 
 var (
 	gateway = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
-	}
-
-	gatewayService = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
+		Name:      "gateway",
+		Namespace: "agentgateway-base",
 	}
 
 	timeout = 60 * time.Second
 
-	gatewayManifest                  = getTestFile("gateway.yaml")
+	extProcManifest                  = getTestFile("ext-proc-server.yaml")
 	routeWithTargetReferenceManifest = getTestFile("httproute-targetref.yaml")
 	gatewayTargetReferenceManifest   = getTestFile("gateway-targetref.yaml")
-	extProcWithServiceManifest       = getTestFile("extproc-service.yaml")
 	backendWithServiceManifest       = getTestFile("backend-service.yaml")
 )
 

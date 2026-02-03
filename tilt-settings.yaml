@@ -1,8 +1,15 @@
-
 helm_installation_name: kgateway
+
+# Add your custom helm value files here
 helm_values_files:
-- ./test/e2e/tests/manifests/common-recommendations.yaml
+  - ./test/e2e/tests/manifests/common-recommendations.yaml
+  
+
 helm_installation_namespace: kgateway-system
+
+# Inline Helm --set flags (key: value format)
+helm_flags: {}
+  # Example: controller.extraEnv.KGW_VALIDATION_MODE: "strict"
 
 enabled_providers:
   - kgateway
@@ -23,13 +30,28 @@ providers:
     # The service name
     label: kgateway
     # Command to build the binary
-    #build_binary: GCFLAGS='all="-N -l"' make -B kgateway
+    # NOTE: If you want to build the binary with debugging enabled, uncomment the following line and comment out the next line.
+    #build_binary: make -B kgateway GCFLAGS="all=-N -l" LDFLAGS=""
     build_binary:  make -B kgateway
     # Name of the binary file when built
     binary_name: kgateway-linux-$ARCH
-    # A custom docker file. This might be required when the base image is different or managing an external project such as envoy
-    #dockerfile_contents: ...
-    # To enable debugging, just add the `debug_port` param to a provider (provided it supports debugging)
+    # Custom Dockerfile with Envoy binary for strict validation mode.
+    # NOTE: Do NOT include ENTRYPOINT here - the Tiltfile will append the correct
+    # entrypoint (standard or debug) based on whether debug_port is set.
+    dockerfile_contents: |
+      FROM quay.io/solo-io/envoy-gloo:1.36.3-patch1 as envoy-bin
+
+      FROM golang:latest as tilt
+      WORKDIR /app
+      COPY --from=tilt-helper /go/bin/dlv /go/bin/dlv
+      COPY --from=tilt-helper /process.txt .
+      COPY --from=tilt-helper /start.sh .
+      COPY --from=tilt-helper /restart.sh .
+      # Copy envoy binary for strict validation
+      COPY --from=envoy-bin /usr/local/bin/envoy /usr/local/bin/envoy
+      COPY $binary_name .
+      RUN chmod 777 ./$binary_name
+    # To enable debugging with strict validation, uncomment both debug_port and port 50100
     #debug_port: 50100
     links:
       - http://localhost:9092/metrics

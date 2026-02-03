@@ -45,13 +45,13 @@ func (s *testingSuite) TestOTelTracingSecure() {
 // testOTelTracing makes a request to the httpbin service
 // and checks if the collector pod logs contain the expected lines
 func (s *testingSuite) testOTelTracing() {
-	s.TestInstallation.Assertions.EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
 	// The headerValue passed is used to differentiate between multiple calls by identifying a unique trace per call
 	headerValue := fmt.Sprintf("%v", rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		// make curl request to httpbin service with the custom header
-		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.Ctx,
 			defaults.CurlPodExecOpt,
 			[]curl.Option{

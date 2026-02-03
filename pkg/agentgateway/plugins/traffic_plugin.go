@@ -142,7 +142,11 @@ func TranslateAgentgatewayPolicy(
 			}
 		case wellknown.HTTPRouteGVK.GroupKind():
 			policyTarget = &api.PolicyTarget{
-				Kind: utils.RouteTarget(policy.Namespace, string(target.Name), target.SectionName),
+				Kind: utils.RouteTarget(policy.Namespace, string(target.Name), wellknown.HTTPRouteGVK.Kind, target.SectionName),
+			}
+		case wellknown.GRPCRouteGVK.GroupKind():
+			policyTarget = &api.PolicyTarget{
+				Kind: utils.RouteTarget(policy.Namespace, string(target.Name), wellknown.GRPCRouteGVK.Kind, target.SectionName),
 			}
 		case wellknown.AgentgatewayBackendGVK.GroupKind():
 			policyTarget = &api.PolicyTarget{
@@ -566,9 +570,10 @@ func processRetriesPolicy(retry *agentgateway.Retry, basePolicyName string, poli
 
 	if a := retry.Attempts; a != nil {
 		if *a < 0 || *a > math.MaxInt32 {
-			return nil, fmt.Errorf("failed to parse retry attemptes should be positive int32 (%d)", *a)
+			return nil, fmt.Errorf("failed to parse retry attempts should be positive int32 (%d)", *a)
 		}
-		translatedRetry.Attempts = int32(*retry.Attempts) //nolint:gosec // G115: attempts asserted above
+		// Agentgateway stores this as a u8 so has a max of 255
+		translatedRetry.Attempts = int32(min(*retry.Attempts, 255)) //nolint:gosec // G115: attempts asserted above
 	}
 
 	retryPolicy := &api.Policy{

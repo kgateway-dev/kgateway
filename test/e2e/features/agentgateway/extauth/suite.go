@@ -9,10 +9,9 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -28,10 +27,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	// Define the setup TestCase for common resources
 	setupTestCase := base.TestCase{
 		Manifests: []string{
-			testdefaults.CurlPodManifest,
 			simpleServiceManifest,
 			extAuthManifest,
-			gatewayWithRouteManifest,
 		},
 	}
 
@@ -106,9 +103,7 @@ func (s *testingSuite) TestExtAuthPolicy() {
 		s.Run(tc.name, func() {
 			// Build curl options
 			opts := []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjMeta)),
 				curl.WithHostHeader(tc.hostname),
-				curl.WithPort(8080),
 			}
 
 			// Add test-specific headers
@@ -117,14 +112,13 @@ func (s *testingSuite) TestExtAuthPolicy() {
 			}
 
 			// Test the request
-			s.TestInstallation.Assertions.AssertEventualCurlResponse(
-				s.Ctx,
-				testdefaults.CurlPodExecOpt,
-				opts,
+			common.BaseGateway.Send(
+				s.T(),
 				&testmatchers.HttpResponse{
 					StatusCode: tc.expectedStatus,
 					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
-				})
+				},
+				opts...)
 		})
 	}
 }
@@ -171,9 +165,7 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 		s.Run(tc.name, func() {
 			// Build curl options
 			opts := []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjMeta)),
 				curl.WithHostHeader(tc.hostname),
-				curl.WithPort(8080),
 			}
 
 			// Add test-specific headers
@@ -182,14 +174,13 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 			}
 
 			// Test the request
-			s.TestInstallation.Assertions.AssertEventualCurlResponse(
-				s.Ctx,
-				testdefaults.CurlPodExecOpt,
-				opts,
+			common.BaseGateway.Send(
+				s.T(),
 				&testmatchers.HttpResponse{
 					StatusCode: tc.expectedStatus,
 					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
-				})
+				},
+				opts...)
 		})
 	}
 }
@@ -215,9 +206,7 @@ func (s *testingSuite) TestExtAuthPolicyMissingBackendRef() {
 		s.Run(tc.name, func() {
 			// Build curl options
 			opts := []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjMeta)),
 				curl.WithHostHeader(tc.hostname),
-				curl.WithPort(8080),
 			}
 
 			// Add test-specific headers
@@ -226,14 +215,13 @@ func (s *testingSuite) TestExtAuthPolicyMissingBackendRef() {
 			}
 
 			// Test the request
-			s.TestInstallation.Assertions.AssertEventualCurlResponse(
-				s.Ctx,
-				testdefaults.CurlPodExecOpt,
-				opts,
+			common.BaseGateway.Send(
+				s.T(),
 				&testmatchers.HttpResponse{
 					StatusCode: tc.expectedStatus,
 					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
-				})
+				},
+				opts...)
 		})
 	}
 }

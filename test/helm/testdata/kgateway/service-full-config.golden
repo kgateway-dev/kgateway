@@ -6,11 +6,11 @@ metadata:
   name: test-release-kgateway
   namespace: default
   labels:
-    helm.sh/chart: kgateway-v0.0.1
+    helm.sh/chart: kgateway-0.0.2
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
-    app.kubernetes.io/version: "v0.0.2"
+    app.kubernetes.io/version: "0.0.1"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: kgateway/templates/role.yaml
@@ -231,11 +231,11 @@ metadata:
   name: test-release-kgateway
   namespace: default
   labels:
-    helm.sh/chart: kgateway-v0.0.1
+    helm.sh/chart: kgateway-0.0.2
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
-    app.kubernetes.io/version: "v0.0.2"
+    app.kubernetes.io/version: "0.0.1"
     app.kubernetes.io/managed-by: Helm
     custom-label: custom-value
     environment: test
@@ -292,11 +292,11 @@ metadata:
   name: test-release-kgateway
   namespace: default
   labels:
-    helm.sh/chart: kgateway-v0.0.1
+    helm.sh/chart: kgateway-0.0.2
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
-    app.kubernetes.io/version: "v0.0.2"
+    app.kubernetes.io/version: "0.0.1"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -319,7 +319,7 @@ spec:
       serviceAccountName: test-release-kgateway
       containers:
         - name: controller
-          image: "cr.kgateway.dev/kgateway-dev/kgateway:v0.0.2"
+          image: "cr.kgateway.dev/kgateway-dev/kgateway:v0.0.1"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9977
@@ -365,7 +365,7 @@ spec:
             - name: KGW_DEFAULT_IMAGE_REGISTRY
               value: cr.kgateway.dev/kgateway-dev
             - name: KGW_DEFAULT_IMAGE_TAG
-              value: v0.0.2
+              value: v0.0.1
             - name: KGW_DEFAULT_IMAGE_PULL_POLICY
               value: IfNotPresent
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS

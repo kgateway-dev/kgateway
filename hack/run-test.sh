@@ -321,7 +321,7 @@ run_unit_test() {
     echo ""
 
     # Set default version for tests
-    local test_version="${VERSION:-1.0.0-ci1}"
+    local test_version="${VERSION:-v1.0.0-ci1}"
     local ldflags="-X github.com/kgateway-dev/kgateway/v2/pkg/version.Version=${test_version}"
 
     # If dry-run mode, just print the command and exit

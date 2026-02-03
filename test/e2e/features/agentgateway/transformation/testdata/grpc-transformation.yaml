@@ -1,0 +1,123 @@
+# grpcurl -plaintext -authority example.com -vv gateway:80 yages.Echo/Ping
+# should have `x-grpc-response: from-grpc` header
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: example-route # same name and namespace as HTTPRoute
+  namespace: agentgateway-base
+spec:
+  parentRefs:
+    - name: gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - matches:
+        - method:
+            method: ServerReflectionInfo
+            service: grpc.reflection.v1alpha.ServerReflection
+        - method:
+            method: Ping
+      backendRefs:
+        - name: grpc-echo-svc
+          port: 3000
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: agentgateway-base
+spec:
+  parentRefs:
+    - name: gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - name: backend
+          port: 80
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: example-agw-policy-for-grpc
+  namespace: agentgateway-base
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: GRPCRoute
+      name: example-route
+  traffic:
+    transformation:
+      response:
+        set:
+          - name: x-grpc-response
+            value: "'from-grpc'"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-echo
+  namespace: agentgateway-base
+  labels:
+    app.kubernetes.io/name: grpc-echo
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grpc-echo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: grpc-echo
+    spec:
+      containers:
+        - name: grpc-echo
+          image: ghcr.io/projectcontour/yages:v0.1.0
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: GRPC_ECHO_SERVER
+              value: "true"
+            - name: SERVICE_NAME
+              value: grpc-echo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-echo-svc
+  namespace: agentgateway-base
+  labels:
+    app.kubernetes.io/name: grpc-echo
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      protocol: TCP
+      targetPort: 9000
+      appProtocol: kubernetes.io/h2c
+  selector:
+    app.kubernetes.io/name: grpc-echo
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grpcurl-client
+  namespace: agentgateway-base
+  labels:
+    app.kubernetes.io/name: grpcurl-client
+spec:
+  containers:
+    - name: grpcurl
+      image: docker.io/fullstorydev/grpcurl:v1.8.7-alpine
+      command:
+        - sleep
+        - "infinity"
