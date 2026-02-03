@@ -118,12 +118,12 @@ spec:
       requestTrailerMode: SKIP
       responseTrailerMode: SKIP
     allowedProcessingModeOverrides:
-      requestHeaderMode: SEND
-      responseHeaderMode: SEND
-      requestBodyMode: NONE
-      responseBodyMode: BUFFERED
-      requestTrailerMode: SKIP
-      responseTrailerMode: SKIP
+      - requestHeaderMode: SEND
+        responseHeaderMode: SEND
+        requestBodyMode: NONE
+        responseBodyMode: BUFFERED
+        requestTrailerMode: SKIP
+        responseTrailerMode: SKIP
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
@@ -145,12 +145,12 @@ spec:
       requestTrailerMode: SKIP
       responseTrailerMode: SKIP
     allowedProcessingModeOverrides:
-      requestHeaderMode: SEND
-      responseHeaderMode: SEND
-      requestBodyMode: NONE
-      responseBodyMode: BUFFERED
-      requestTrailerMode: SKIP
-      responseTrailerMode: SKIP
+      - requestHeaderMode: SEND
+        responseHeaderMode: SEND
+        requestBodyMode: NONE
+        responseBodyMode: BUFFERED
+        requestTrailerMode: SKIP
+        responseTrailerMode: SKIP
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
@@ -172,12 +172,12 @@ spec:
       requestTrailerMode: SKIP
       responseTrailerMode: SKIP
     allowedProcessingModeOverrides:
-      requestHeaderMode: SEND
-      responseHeaderMode: SEND
-      requestBodyMode: NONE
-      responseBodyMode: BUFFERED
-      requestTrailerMode: SKIP
-      responseTrailerMode: SKIP
+      - requestHeaderMode: SEND
+        responseHeaderMode: SEND
+        requestBodyMode: NONE
+        responseBodyMode: BUFFERED
+        requestTrailerMode: SKIP
+        responseTrailerMode: SKIP
 ---
 apiVersion: v1
 kind: Service
