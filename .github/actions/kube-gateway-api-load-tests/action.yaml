@@ -28,7 +28,7 @@ runs:
         go tool helm upgrade --install kgateway ./install/helm/kgateway/ \
           --namespace kgateway-system --create-namespace \
           --set image.tag=${VERSION:-v1.0.0-ci1} \
-          --set image.registry=${IMAGE_REGISTRY} \
+          --set image.registry=${IMAGE_REGISTRY:-ghcr.io/kgateway-dev} \
           --wait --timeout 5m
 
     - name: Wait for KGateway deployment to be ready
