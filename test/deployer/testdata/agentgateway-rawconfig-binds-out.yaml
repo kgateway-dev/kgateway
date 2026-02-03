@@ -3,6 +3,7 @@ automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -31,6 +32,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -44,6 +46,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -59,6 +62,7 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/name: gw
     gateway.networking.k8s.io/gateway-name: gw
@@ -70,6 +74,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -81,6 +86,7 @@ metadata:
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/component: agentgateway-gateway
       app.kubernetes.io/instance: gw
       app.kubernetes.io/name: gw
       gateway.networking.k8s.io/gateway-name: gw
@@ -88,12 +94,13 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 407c0f4790d6c546dcd3f6e25d851393551583ac234d4effaf03520f6a53e2c8
+        checksum/config: 9c38805c097205b56c055f125e016345a452d41947d53132c873a2cd4f36af55
         gateway.kgateway.dev/gateway-full-name: gw
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: agentgateway-gateway
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
         gateway.networking.k8s.io/gateway-class-name: agentgateway

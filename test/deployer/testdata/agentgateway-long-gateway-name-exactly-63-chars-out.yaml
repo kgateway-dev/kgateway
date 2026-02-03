@@ -3,6 +3,7 @@ automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
@@ -19,6 +20,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
@@ -32,6 +34,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
@@ -47,6 +50,7 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     gateway.networking.k8s.io/gateway-name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
@@ -58,6 +62,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
@@ -69,6 +74,7 @@ metadata:
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/component: agentgateway-gateway
       app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
       app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
       gateway.networking.k8s.io/gateway-name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
@@ -76,12 +82,13 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: bd5a792abb7811a8cd7c81d8acfed9ae4be83332ee2972d4df458f37c4912c01
+        checksum/config: 4bd02eeb7b569cf7d8a8baec5b1c09ce783958656c89fb0e0ca9ee4f32828045
         gateway.kgateway.dev/gateway-full-name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: agentgateway-gateway
         app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
         app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
         gateway.networking.k8s.io/gateway-class-name: agentgateway

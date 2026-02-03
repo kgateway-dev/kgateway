@@ -3,6 +3,7 @@ automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -19,6 +20,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -48,6 +50,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -61,6 +64,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -76,6 +80,7 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/name: gw
     gateway.networking.k8s.io/gateway-name: gw
@@ -87,6 +92,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -98,6 +104,7 @@ metadata:
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/component: agentgateway-gateway
       app.kubernetes.io/instance: gw
       app.kubernetes.io/name: gw
       gateway.networking.k8s.io/gateway-name: gw
@@ -105,12 +112,13 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: bb8bdc8cacbd1ae4af6e9f72baafbd5859e9422ade140b725464c0ec0d7fee9d
+        checksum/config: b8aedef33b82ff4a6a1083dfb452f9a8c3c7b93a1fe68fdfdd80a50c1bd9c51e
         gateway.kgateway.dev/gateway-full-name: gw
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: agentgateway-gateway
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
         gateway.networking.k8s.io/gateway-class-name: agentgateway

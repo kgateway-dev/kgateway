@@ -7,6 +7,7 @@ metadata:
       bar
       attack
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -34,6 +35,7 @@ metadata:
       bar
       attack
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -51,6 +53,7 @@ metadata:
       bar
       attack
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -66,6 +69,7 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/name: gw
     gateway.networking.k8s.io/gateway-name: gw
@@ -81,6 +85,7 @@ metadata:
       bar
       attack
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -92,6 +97,7 @@ metadata:
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/component: agentgateway-gateway
       app.kubernetes.io/instance: gw
       app.kubernetes.io/name: gw
       gateway.networking.k8s.io/gateway-name: gw
@@ -99,7 +105,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 742e237f5e52d6e9ec5ec88bfbf17d33ca53da13d2eeb84a856ea88bf28d5533
+        checksum/config: f823c63dbba7019df9a47c4aafd82678b9a1aefcba9e1395d206c172412454df
         foo: |-
           bar
           attack
@@ -108,6 +114,7 @@ spec:
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: agentgateway-gateway
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
         gateway.networking.k8s.io/gateway-class-name: agentgateway-v2

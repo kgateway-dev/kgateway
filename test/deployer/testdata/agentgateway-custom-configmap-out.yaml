@@ -3,6 +3,7 @@ automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: agentgateway
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: agentgateway
@@ -19,6 +20,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: agentgateway
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: agentgateway
@@ -32,6 +34,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: agentgateway
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: agentgateway
@@ -47,6 +50,7 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: agentgateway
     app.kubernetes.io/name: agentgateway
     gateway.networking.k8s.io/gateway-name: agentgateway
@@ -58,6 +62,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: agentgateway
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: agentgateway
@@ -69,6 +74,7 @@ metadata:
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/component: agentgateway-gateway
       app.kubernetes.io/instance: agentgateway
       app.kubernetes.io/name: agentgateway
       gateway.networking.k8s.io/gateway-name: agentgateway
@@ -76,12 +82,13 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 63173967f10317253d918f3354b522fc6d25c8f116d0201f34cc3bd72be3d496
+        checksum/config: 804e34677791c93ee744b9cc17d910547343fa469dce00ba4220335bf66c2a59
         gateway.kgateway.dev/gateway-full-name: agentgateway
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: agentgateway-gateway
         app.kubernetes.io/instance: agentgateway
         app.kubernetes.io/name: agentgateway
         gateway.networking.k8s.io/gateway-class-name: agentgateway

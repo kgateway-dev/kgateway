@@ -3,6 +3,7 @@ automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
@@ -19,6 +20,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
@@ -32,6 +34,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
@@ -47,6 +50,7 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
@@ -58,6 +62,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
@@ -69,6 +74,7 @@ metadata:
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/component: agentgateway-gateway
       app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
       app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
       gateway.networking.k8s.io/gateway-name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
@@ -76,12 +82,13 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: aaf5e2738c763c66015fbfc634d35ab6ccf946d18956c1ad787c730ba03aa5d4
+        checksum/config: cc7e22394e2d6df0bdf8833d1927c9a151d1c9365718640ae46a939d01bc4f56
         gateway.kgateway.dev/gateway-full-name: extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: agentgateway-gateway
         app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
         app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
         gateway.networking.k8s.io/gateway-class-name: agentgateway

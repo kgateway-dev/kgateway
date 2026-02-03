@@ -7,6 +7,7 @@ metadata:
     my-annotation: my-value
     prometheus.io/path: /something/else
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -225,6 +226,7 @@ metadata:
     my-annotation: my-value
     prometheus.io/path: /something/else
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -244,6 +246,7 @@ metadata:
     my-annotation: my-value
     prometheus.io/path: /something/else
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -261,6 +264,7 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/name: gw
     gateway.networking.k8s.io/gateway-name: gw
@@ -276,6 +280,7 @@ metadata:
     my-annotation: my-value
     prometheus.io/path: /something/else
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -289,6 +294,7 @@ metadata:
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/component: agentgateway-gateway
       app.kubernetes.io/instance: gw
       app.kubernetes.io/name: gw
       gateway.networking.k8s.io/gateway-name: gw
@@ -304,6 +310,7 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: agentgateway-gateway
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
         extra-label: v1

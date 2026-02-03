@@ -7,6 +7,7 @@ metadata:
     my-annotation: my-value
     prometheus.io/path: /something/else
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -29,6 +30,7 @@ metadata:
     my-annotation: my-value
     prometheus.io/path: /something/else
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -48,6 +50,7 @@ metadata:
     my-annotation: my-value
     prometheus.io/path: /something/else
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -65,6 +68,7 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/name: gw
     gateway.networking.k8s.io/gateway-name: gw
@@ -81,6 +85,7 @@ metadata:
     my-annotation: my-value
     prometheus.io/path: /something/else
   labels:
+    app.kubernetes.io/component: agentgateway-gateway
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -95,6 +100,7 @@ metadata:
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/component: agentgateway-gateway
       app.kubernetes.io/instance: gw
       app.kubernetes.io/name: gw
       gateway.networking.k8s.io/gateway-name: gw
@@ -102,7 +108,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: a1c83112dda602acaac811fc898dd49fe4c4736a4e4c7d895019293dc7ab1726
+        checksum/config: af0c9c1c42206ab70d31939188da9fe740ed3f98fba98a024c89a492d1a8db3f
         extra-annotation: v1
         gateway.kgateway.dev/gateway-full-name: gw
         infra-and-params: params-but-only-because-overlays-happen-last
@@ -111,6 +117,7 @@ spec:
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: agentgateway-gateway
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
         extra-label: v1
