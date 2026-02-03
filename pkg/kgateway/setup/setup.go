@@ -368,6 +368,20 @@ func (s *setup) Start(ctx context.Context) error {
 		slog.Error("unable to extend scheme", "error", err)
 		return err
 	}
+	effectiveGlobalSettings := *s.globalSettings
+	inferExtCRDExists := false
+	if effectiveGlobalSettings.EnableInferExt {
+		var err error
+		inferExtCRDExists, err = schemes.AddInferExtV1Scheme(s.restConfig, mgr.GetScheme())
+		if err != nil {
+			slog.Error("unable to add inference extension scheme", "error", err)
+			return err
+		}
+		if !inferExtCRDExists {
+			slog.Info("inference extension is enabled but InferencePool CRD was not found; disabling inference extension paths")
+			effectiveGlobalSettings.EnableInferExt = false
+		}
+	}
 
 	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(s.extraXDSCallbacks, s.globalSettings.XdsAuth)
 
@@ -401,7 +415,7 @@ func (s *setup) Start(ctx context.Context) error {
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
 		KrtDebugger:    s.krtDebugger,
-		GlobalSettings: s.globalSettings,
+		GlobalSettings: &effectiveGlobalSettings,
 		CertWatcher:    certWatcher,
 	}
 
@@ -414,7 +428,7 @@ func (s *setup) Start(ctx context.Context) error {
 		s.apiClient,
 		s.gatewayControllerName,
 		s.agwControllerName,
-		*s.globalSettings,
+		effectiveGlobalSettings,
 		s.commonCollectionsOptions...,
 	)
 	if err != nil {
@@ -451,7 +465,7 @@ func (s *setup) Start(ctx context.Context) error {
 
 	runnablesRegistry := make(map[string]any)
 	for _, runnable := range s.extraRunnables {
-		enabled, r := runnable(ctx, commoncol, agwCollections, s.globalSettings)
+		enabled, r := runnable(ctx, commoncol, agwCollections, &effectiveGlobalSettings)
 		if !enabled {
 			continue
 		}
@@ -470,7 +484,7 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	agw, err := s.buildKgatewayWithConfig(ctx, mgr, setupOpts, commoncol, agwCollections, uccBuilder)
+	agw, err := s.buildKgatewayWithConfig(ctx, mgr, setupOpts, commoncol, agwCollections, uccBuilder, inferExtCRDExists)
 	if err != nil {
 		return err
 	}
@@ -498,6 +512,7 @@ func (s *setup) buildKgatewayWithConfig(
 	commonCollections *collections.CommonCollections,
 	agwCollections *agwplugins.AgwCollections,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
+	inferExtCRDExists bool,
 ) (*agentgatewaysyncer.Syncer, error) {
 	slog.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
@@ -544,6 +559,7 @@ func (s *setup) buildKgatewayWithConfig(
 		AgwCollections:                 agwCollections,
 		Validator:                      s.validator,
 		ExtraAgwResourceStatusHandlers: s.extraAgwPolicyStatusHandlers,
+		EnableInferencePoolStatusSync:  setupOpts.GlobalSettings.EnableInferExt && inferExtCRDExists,
 		GatewayControllerExtension:     s.gatewayControllerExtension,
 		StatusSyncerOptions:            s.statusSyncerOptions,
 		AgentgatewaySyncerOptions:      s.agentgatewaySyncerOptions,

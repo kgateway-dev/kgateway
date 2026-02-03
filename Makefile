@@ -938,8 +938,10 @@ GIE_CONFORMANCE_REPORT_ARGS ?= \
     -contact=github.com/kgateway-dev/kgateway/issues/new/choose
 
 # The args to pass into the Gateway API Inference Extension conformance test suite.
+# TODO: Remove `-skip-tests` after GIE dep is bumped to v1.3.1+ due to https://github.com/kubernetes-sigs/gateway-api-inference-extension/pull/2316.
 GIE_CONFORMANCE_ARGS := \
     -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) \
+    -skip-tests GatewayWeightedAcrossTwoInferencePools \
     $(GIE_CONFORMANCE_REPORT_ARGS)
 
 INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance

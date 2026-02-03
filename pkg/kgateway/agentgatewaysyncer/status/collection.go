@@ -10,6 +10,7 @@ import (
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
@@ -34,6 +35,19 @@ type StatusCollections struct {
 	queue        WorkerQueue
 	// extraGVKs tracks extra GVKs to sync statuses for
 	extraGVKs []schema.GroupVersionKind
+}
+
+type cancelableHandlerRegistration struct {
+	krt.HandlerRegistration
+	stopCh chan struct{}
+	once   sync.Once
+}
+
+func (c *cancelableHandlerRegistration) UnregisterHandler() {
+	c.once.Do(func() {
+		close(c.stopCh)
+	})
+	c.HandlerRegistration.UnregisterHandler()
 }
 
 // NewStatusCollections creates a StatusCollections with an optional immutable set of extra GVKs.
@@ -79,8 +93,8 @@ func (s *StatusCollections) SetQueue(queue WorkerQueue) []krt.Syncer {
 // It will then compare the live status to the desired status to determine whether to write or not.
 func RegisterStatus[I controllers.Object, IS any](s *StatusCollections, statusCol krt.StatusCollection[I, IS], getStatus func(I) IS) {
 	reg := func(statusWriter WorkerQueue) krt.HandlerRegistration {
-		h := statusCol.Register(func(o krt.Event[krt.ObjectWithStatus[I, IS]]) {
-			l := o.Latest()
+		stopCh := make(chan struct{})
+		enqueueIfNeeded := func(l krt.ObjectWithStatus[I, IS], ev controllers.EventType) {
 			liveStatus := getStatus(l.Obj)
 			if krt.Equal(liveStatus, l.Status) {
 				// We want the same status we already have! No need for a write so skip this.
@@ -91,15 +105,37 @@ func RegisterStatus[I controllers.Object, IS any](s *StatusCollections, statusCo
 				return
 			}
 			status := &l.Status
-			if o.Event == controllers.EventDelete {
+			if ev == controllers.EventDelete {
 				// if the object is being deleted, we should not reset status
 				var empty IS
 				status = &empty
 			}
 			enqueueStatus(statusWriter, l.Obj, status, s.extraGVKs)
 			log.Debugf("Enqueued status update for %v %v: %v", l.ResourceName(), l.Obj.GetResourceVersion(), status)
+		}
+		h := statusCol.Register(func(o krt.Event[krt.ObjectWithStatus[I, IS]]) {
+			enqueueIfNeeded(o.Latest(), o.Event)
 		})
-		return h
+		wrapped := &cancelableHandlerRegistration{
+			HandlerRegistration: h,
+			stopCh:              stopCh,
+		}
+		go func() {
+			// Ensure the status collection is synced before we do an initial enqueue sweep.
+			if !statusCol.WaitUntilSynced(stopCh) {
+				return
+			}
+			list := statusCol.List()
+			for _, l := range list {
+				select {
+				case <-stopCh:
+					return
+				default:
+				}
+				enqueueIfNeeded(l, controllers.EventAdd)
+			}
+		}()
+		return wrapped
 	}
 	s.Register(reg)
 }
@@ -125,6 +161,8 @@ func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVK
 		res.GroupVersionKind = wellknown.AgentgatewayPolicyGVK
 	case *agentgateway.AgentgatewayBackend:
 		res.GroupVersionKind = wellknown.AgentgatewayBackendGVK
+	case *inf.InferencePool:
+		res.GroupVersionKind = wellknown.InferencePoolGVK
 	case *gwxv1a1.XListenerSet:
 		res.GroupVersionKind = wellknown.XListenerSetGVK
 	default:

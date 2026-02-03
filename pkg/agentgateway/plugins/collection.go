@@ -44,15 +44,16 @@ type AgwCollections struct {
 	ServiceEntries  krt.Collection[*networkingclient.ServiceEntry]
 
 	// Gateway API resources
-	GatewayClasses     krt.Collection[*gwv1.GatewayClass]
-	Gateways           krt.Collection[*gwv1.Gateway]
-	HTTPRoutes         krt.Collection[*gwv1.HTTPRoute]
-	GRPCRoutes         krt.Collection[*gwv1.GRPCRoute]
-	TCPRoutes          krt.Collection[*gwv1a2.TCPRoute]
-	TLSRoutes          krt.Collection[*gwv1a2.TLSRoute]
-	ReferenceGrants    krt.Collection[*gwv1b1.ReferenceGrant]
-	BackendTLSPolicies krt.Collection[*gwv1.BackendTLSPolicy]
-	XListenerSets      krt.Collection[*gwxv1a1.XListenerSet]
+	GatewayClasses        krt.Collection[*gwv1.GatewayClass]
+	Gateways              krt.Collection[*gwv1.Gateway]
+	HTTPRoutes            krt.Collection[*gwv1.HTTPRoute]
+	HTTPRoutesByNamespace krt.Index[string, *gwv1.HTTPRoute]
+	GRPCRoutes            krt.Collection[*gwv1.GRPCRoute]
+	TCPRoutes             krt.Collection[*gwv1a2.TCPRoute]
+	TLSRoutes             krt.Collection[*gwv1a2.TLSRoute]
+	ReferenceGrants       krt.Collection[*gwv1b1.ReferenceGrant]
+	BackendTLSPolicies    krt.Collection[*gwv1.BackendTLSPolicy]
+	XListenerSets         krt.Collection[*gwxv1a1.XListenerSet]
 
 	// Extended resources
 	InferencePools krt.Collection[*inf.InferencePool]
@@ -181,4 +182,5 @@ func NewAgwCollections(
 func (c *AgwCollections) SetupIndexes() {
 	c.SecretsByNamespace = krt.NewNamespaceIndex(c.Secrets)
 	c.ServicesByNamespace = krt.NewNamespaceIndex(c.Services)
+	c.HTTPRoutesByNamespace = krt.NewNamespaceIndex(c.HTTPRoutes)
 }
