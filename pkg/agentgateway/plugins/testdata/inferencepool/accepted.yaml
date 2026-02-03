@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: epp
+  namespace: default
+spec:
+  ports:
+    - port: 9002
+      protocol: TCP
+      targetPort: 9002
+---
+apiVersion: inference.networking.k8s.io/v1
+kind: InferencePool
+metadata:
+  name: pool
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: pool
+  targetPorts:
+    - number: 8080
+  endpointPickerRef:
+    kind: Service
+    name: epp
+    port:
+      number: 9002
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pool-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: test-gateway
+  rules:
+    - backendRefs:
+        - group: inference.networking.k8s.io
+          kind: InferencePool
+          name: pool
+---
+# Output
+output: []
+status:
+- apiVersion: inference.networking.k8s.io/v1
+  kind: InferencePool
+  metadata:
+    name: pool
+    namespace: default
+  spec: null
+  status:
+    parents:
+    - conditions:
+      - lastTransitionTime: fake
+        message: InferencePool has been accepted by controller agentgateway.dev/agentgateway
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: fake
+        message: All InferencePool references have been resolved
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      controllerName: agentgateway.dev/agentgateway
+      parentRef:
+        kind: Gateway
+        name: test-gateway
+        namespace: default

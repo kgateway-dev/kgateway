@@ -169,6 +169,9 @@ func (s *Syncer) buildResourceCollections(krtopts krtutil.KrtOptions) {
 	for _, col := range policyStatuses {
 		status.RegisterStatus(s.statusCollections, col, translator.GetStatus)
 	}
+	if s.agwPlugins.RegisterStatuses != nil {
+		s.agwPlugins.RegisterStatuses(s.statusCollections)
+	}
 
 	gatewayFinalStatus := s.buildFinalGatewayStatus(gatewayInitialStatus, routeAttachments, krtopts)
 	status.RegisterStatus(s.statusCollections, gatewayFinalStatus, translator.GetStatus)

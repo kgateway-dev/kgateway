@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
@@ -45,6 +46,7 @@ type AgentGwStatusSyncer struct {
 
 	agentgatewayPolicies StatusSyncer[*agentgateway.AgentgatewayPolicy, *gwv1.PolicyStatus]
 	agentgatewayBackends StatusSyncer[*agentgateway.AgentgatewayBackend, *agentgateway.AgentgatewayBackendStatus]
+	inferencePools       StatusSyncer[*inf.InferencePool, *inf.InferencePoolStatus]
 
 	// Configuration
 	controllerName string
@@ -53,6 +55,8 @@ type AgentGwStatusSyncer struct {
 	statusCollections *status.StatusCollections
 
 	cacheSyncs []cache.InformerSynced
+	// enableInferencePoolStatusSync gates informer cache sync waiting for InferencePool status updates.
+	enableInferencePoolStatusSync bool
 
 	listenerSets       StatusSyncer[*gwxv1a1.XListenerSet, *gwxv1a1.ListenerSetStatus]
 	gateways           StatusSyncer[*gwv1.Gateway, *gwv1.GatewayStatus]
@@ -68,6 +72,7 @@ type AgentGwStatusSyncer struct {
 func NewAgwStatusSyncer(
 	controllerName string,
 	agwClassName string,
+	enableInferencePoolStatusSync bool,
 	client apiclient.Client,
 	statusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
@@ -80,6 +85,7 @@ func NewAgwStatusSyncer(
 		client:                         client,
 		statusCollections:              statusCollections,
 		cacheSyncs:                     cacheSyncs,
+		enableInferencePoolStatusSync:  enableInferencePoolStatusSync,
 		extraAgwResourceStatusHandlers: extraHandlers,
 
 		agentgatewayPolicies: StatusSyncer[*agentgateway.AgentgatewayPolicy, *gwv1.PolicyStatus]{
@@ -101,6 +107,16 @@ func NewAgwStatusSyncer(
 			client:         kclient.NewFilteredDelayed[*agentgateway.AgentgatewayBackend](client, wellknown.AgentgatewayBackendGVR, f),
 			build: func(om metav1.ObjectMeta, s *agentgateway.AgentgatewayBackendStatus) *agentgateway.AgentgatewayBackend {
 				return &agentgateway.AgentgatewayBackend{
+					ObjectMeta: om,
+					Status:     *s,
+				}
+			},
+		},
+		inferencePools: StatusSyncer[*inf.InferencePool, *inf.InferencePoolStatus]{
+			name:   "inferencePool",
+			client: kclient.NewFilteredDelayed[*inf.InferencePool](client, wellknown.InferencePoolGVR, f),
+			build: func(om metav1.ObjectMeta, s *inf.InferencePoolStatus) *inf.InferencePool {
+				return &inf.InferencePool{
 					ObjectMeta: om,
 					Status:     *s,
 				}
@@ -198,16 +214,18 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 		ctx.Done(),
 		s.cacheSyncs...,
 	)
-	s.client.WaitForCacheSync(
-		"agent gateway status clients",
-		ctx.Done(),
+	statusClientSyncers := []cache.InformerSynced{
 		s.listenerSets.client.HasSynced,
 		s.gateways.client.HasSynced,
 		s.httpRoutes.client.HasSynced,
 		s.grpcRoutes.client.HasSynced,
 		s.tcpRoutes.client.HasSynced,
 		s.tlsRoutes.client.HasSynced,
-	)
+	}
+	if s.enableInferencePoolStatusSync {
+		statusClientSyncers = append(statusClientSyncers, s.inferencePools.client.HasSynced)
+	}
+	s.client.WaitForCacheSync("agent gateway status clients", ctx.Done(), statusClientSyncers...)
 
 	logger.Info("caches warm!")
 
@@ -215,6 +233,8 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 	// The policyStatusQueue implements https://github.com/istio/istio/blob/531c61709aaa9bc9187c625e9e460be98f2abf2e/pilot/pkg/status/manager.go#L107
 	nq := s.NewStatusWorker(ctx)
 	s.statusCollections.SetQueue(nq)
+	// Ensure status registrations are unbound on shutdown so background sync waits are canceled.
+	defer s.statusCollections.UnsetQueue()
 
 	<-ctx.Done()
 	return nil
@@ -240,6 +260,8 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 		s.agentgatewayBackends.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.BackendTLSPolicyGVK:
 		s.backendTLSPolicies.ApplyStatus(ctx, resource, statusObj)
+	case wellknown.InferencePoolGVK:
+		s.inferencePools.ApplyStatus(ctx, resource, statusObj)
 	default:
 		// Attempt to handle resource policy kinds via registered handlers.
 		if s.extraAgwResourceStatusHandlers != nil {

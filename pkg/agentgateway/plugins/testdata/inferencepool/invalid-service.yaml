@@ -1,0 +1,37 @@
+apiVersion: inference.networking.k8s.io/v1
+kind: InferencePool
+metadata:
+  name: pool
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: pool
+  targetPorts:
+    - number: 8080
+  endpointPickerRef:
+    kind: Service
+    name: missing-svc
+    port:
+      number: 9002
+---
+# Output
+output: []
+status:
+- apiVersion: inference.networking.k8s.io/v1
+  kind: InferencePool
+  metadata:
+    name: pool
+    namespace: default
+  spec: null
+  status:
+    parents:
+    - conditions:
+      - lastTransitionTime: fake
+        message: 'error: invalid extensionRef: Service default/missing-svc not found'
+        reason: InvalidExtensionRef
+        status: "False"
+        type: ResolvedRefs
+      parentRef:
+        kind: Status
+        name: default

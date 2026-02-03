@@ -98,13 +98,11 @@ runs:
       if [[ -z "${{ inputs.version }}" ]]; then
         # If inputs.version is empty, use the local chart path specified in the Makefile.
         helm upgrade -i -n kgateway-system kgateway-crds ./install/helm/kgateway-crds/ \
-          --create-namespace \
-          ${INFERENCE_EXT_FLAG}
+          --create-namespace
         helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
           --create-namespace \
           ${EXPERIMENTAL_FLAG} \
           --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
-          ${INFERENCE_EXT_FLAG} \
           ${ADDITIONAL_VALUES}
         
         # For agentgateway and inference-extension tests, also install the agentgateway chart
@@ -127,14 +125,12 @@ runs:
         # Else, use the provided version to install kgateway from the helm repository.
         helm upgrade -i -n kgateway-system kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
           --version ${VERSION} \
-          --create-namespace \
-          ${INFERENCE_EXT_FLAG}
+          --create-namespace
         helm upgrade -i -n kgateway-system kgateway oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
           --version ${VERSION} \
           --create-namespace \
           ${EXPERIMENTAL_FLAG} \
           --set image.tag=${VERSION} \
-          ${INFERENCE_EXT_FLAG} \
           ${ADDITIONAL_VALUES}
         
         # For agentgateway and inference-extension tests, also install the agentgateway chart

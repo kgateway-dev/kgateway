@@ -4,17 +4,24 @@ import (
 	"maps"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/status"
 )
 
 type AgwPlugin struct {
 	AddResourceExtension *AddResourcesPlugin
 	ContributesPolicies  map[schema.GroupKind]PolicyPlugin
+	// extra has sync beyond primary resources in the collections above
+	ExtraHasSynced func() bool
+	// RegisterStatuses allows plugins to register non-policy status collections, e.g. InferencePool.
+	RegisterStatuses func(sc *status.StatusCollections)
 }
 
 func MergePlugins(plug ...AgwPlugin) AgwPlugin {
 	ret := AgwPlugin{
 		ContributesPolicies: make(map[schema.GroupKind]PolicyPlugin),
 	}
+	var hasSynced []func() bool
 	for _, p := range plug {
 		// Merge contributed policies
 		maps.Copy(ret.ContributesPolicies, p.ContributesPolicies)
@@ -32,8 +39,32 @@ func MergePlugins(plug ...AgwPlugin) AgwPlugin {
 				ret.AddResourceExtension.Routes = p.AddResourceExtension.Routes
 			}
 		}
+		if p.ExtraHasSynced != nil {
+			hasSynced = append(hasSynced, p.ExtraHasSynced)
+		}
+		if p.RegisterStatuses != nil {
+			prev := ret.RegisterStatuses
+			ret.RegisterStatuses = func(sc *status.StatusCollections) {
+				if prev != nil {
+					prev(sc)
+				}
+				p.RegisterStatuses(sc)
+			}
+		}
 	}
+	ret.ExtraHasSynced = mergeSynced(hasSynced)
 	return ret
+}
+
+func mergeSynced(funcs []func() bool) func() bool {
+	return func() bool {
+		for _, f := range funcs {
+			if !f() {
+				return false
+			}
+		}
+		return true
+	}
 }
 
 // Plugins registers all built-in policy plugins

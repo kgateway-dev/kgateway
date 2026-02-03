@@ -24,8 +24,17 @@ jobs:
       fail-fast: false
       matrix:
         gateway-api-channel: [ 'experimental', 'standard' ]
-        test-type: [ gateway-api, agentgateway ]
+        test-type: [ gateway-api, agentgateway, inference-extension ]
         arch: [ 'amd64', 'arm64' ]
+        # EPP image used by inference-extension conformance does not support arm64.
+        # TODO: Remove when https://github.com/kubernetes-sigs/gateway-api-inference-extension/issues/685 is fixed.
+        exclude:
+          - gateway-api-channel: experimental
+            test-type: inference-extension
+            arch: arm64
+          - gateway-api-channel: standard
+            test-type: inference-extension
+            arch: arm64
     steps:
     - uses: actions/checkout@v4
     - name: Dotenv Action
@@ -39,28 +48,9 @@ jobs:
       with:
         test-type: ${{ matrix.test-type }}
         api-channel: ${{ matrix.gateway-api-channel }}
+        enable-inference-extension: true
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-
-  # gie_conformance_tests:
-  #   name: Kubernetes Gateway API Inference Extension Conformance Tests
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #   - name: Dotenv Action
-  #     uses: falti/dotenv-action@v1.1.4
-  #     id: dotenv
-  #     with:
-  #       path: "./.github/workflows/.env/pr-tests/versions.env"
-  #       log-variables: true
-  #   - name: Run GIE Conformance Tests
-  #     uses: ./.github/actions/kube-conformance-tests
-  #     with:
-  #       test-type: inference-extension
-  #       api-channel: experimental
-  #       enable-inference-extension: true
-  #       kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-  #       kind-node-version: ${{ steps.dotenv.outputs.node_version }}
 
   conformance:
     if: always()
