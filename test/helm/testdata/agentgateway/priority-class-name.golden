@@ -10,6 +10,7 @@ metadata:
     agentgateway: agentgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: agentgateway-controller
     app.kubernetes.io/version: "0.0.1"
     app.kubernetes.io/managed-by: Helm
 ---
@@ -221,6 +222,7 @@ metadata:
     agentgateway: agentgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: agentgateway-controller
     app.kubernetes.io/version: "0.0.1"
     app.kubernetes.io/managed-by: Helm
 spec:
@@ -242,6 +244,7 @@ spec:
     agentgateway: agentgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: agentgateway-controller
 ---
 # Source: agentgateway/templates/deployment.yaml
 apiVersion: apps/v1
@@ -254,6 +257,7 @@ metadata:
     agentgateway: agentgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: agentgateway-controller
     app.kubernetes.io/version: "0.0.1"
     app.kubernetes.io/managed-by: Helm
 spec:
@@ -263,6 +267,7 @@ spec:
       agentgateway: agentgateway
       app.kubernetes.io/name: agentgateway
       app.kubernetes.io/instance: test-release
+      app.kubernetes.io/component: agentgateway-controller
   template:
     metadata:
       annotations:
@@ -273,6 +278,7 @@ spec:
         agentgateway: agentgateway
         app.kubernetes.io/name: agentgateway
         app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: agentgateway-controller
     spec:
       priorityClassName: "system-cluster-critical"
       serviceAccountName: test-release-agentgateway

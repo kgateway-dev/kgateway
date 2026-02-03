@@ -10,6 +10,7 @@ metadata:
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: agentgateway-controller
     app.kubernetes.io/version: "0.0.1"
     app.kubernetes.io/managed-by: Helm
 spec:
@@ -18,6 +19,7 @@ spec:
       kgateway: kgateway
       app.kubernetes.io/name: kgateway
       app.kubernetes.io/instance: test-release
+      app.kubernetes.io/component: agentgateway-controller
   maxUnavailable: 25%
 ---
 # Source: kgateway/templates/serviceaccount.yaml
@@ -31,6 +33,7 @@ metadata:
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: agentgateway-controller
     app.kubernetes.io/version: "0.0.1"
     app.kubernetes.io/managed-by: Helm
 ---
@@ -256,6 +259,7 @@ metadata:
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: agentgateway-controller
     app.kubernetes.io/version: "0.0.1"
     app.kubernetes.io/managed-by: Helm
 spec:
@@ -277,6 +281,7 @@ spec:
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: agentgateway-controller
 ---
 # Source: kgateway/templates/deployment.yaml
 apiVersion: apps/v1
@@ -289,6 +294,7 @@ metadata:
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: agentgateway-controller
     app.kubernetes.io/version: "0.0.1"
     app.kubernetes.io/managed-by: Helm
 spec:
@@ -298,6 +304,7 @@ spec:
       kgateway: kgateway
       app.kubernetes.io/name: kgateway
       app.kubernetes.io/instance: test-release
+      app.kubernetes.io/component: agentgateway-controller
   template:
     metadata:
       annotations:
@@ -308,6 +315,7 @@ spec:
         kgateway: kgateway
         app.kubernetes.io/name: kgateway
         app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: agentgateway-controller
     spec:
       serviceAccountName: test-release-kgateway
       containers:
