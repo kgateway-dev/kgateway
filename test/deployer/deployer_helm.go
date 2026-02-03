@@ -13,7 +13,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -149,7 +149,7 @@ func VerifyAllEnvoyBootstrapAreValid(t *testing.T, testDataDir string) {
 			if d := strings.TrimSpace(doc); d == "" || d == "---" {
 				continue
 			}
-			var obj v1.ConfigMap
+			var obj corev1.ConfigMap
 			err := yaml.Unmarshal([]byte(doc), &obj)
 			if err != nil && obj.Kind == "ConfigMap" {
 				require.NoErrorf(t, err, "failed to unmarshal document %d in %s", i+1, yamlFile)
@@ -161,9 +161,7 @@ func VerifyAllEnvoyBootstrapAreValid(t *testing.T, testDataDir string) {
 			envoyJsn, err := yaml.YAMLToJSON([]byte(envoyYaml))
 			require.NoErrorf(t, err, "failed to convert envoy.yaml to JSON for document %d in %s", i+1, yamlFile)
 
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				// validate envoy bootstrap
 				err := validator.Validate(t.Context(), string(envoyJsn))
 				if err != nil {
@@ -171,12 +169,11 @@ func VerifyAllEnvoyBootstrapAreValid(t *testing.T, testDataDir string) {
 						envoyErr = fmt.Errorf("envoy bootstrap validation failed for document %d in %s: %w", i+1, yamlFile, err)
 					})
 				}
-			}()
+			})
 		}
 		wg.Wait()
 		require.NoErrorf(t, envoyErr, "envoy bootstrap validation failed")
 	}
-
 }
 
 // ExtractCommonObjs will return a collection containing only objects necessary for collections.CommonCollections,

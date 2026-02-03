@@ -4,7 +4,7 @@ update_settings(k8s_upsert_timeout_secs = 600)
 load('ext://helm_resource', 'helm_resource')
 load("ext://uibutton", "cmd_button", "location")
 
-image_tag = "1.0.0-ci1"
+image_tag = "v1.0.0-ci1"
 
 kubectl_cmd = "kubectl"
 helm_cmd = "helm"

@@ -11,6 +11,16 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
+const (
+	ErrInvalidGroupFormat     = "invalid extensionRef: only core API group supported, got %q"
+	ErrInvalidKindFormat      = "invalid extensionRef: Kind %q is not supported (only Service)"
+	ErrInvalidOneTargetPort   = "invalid InferencePool: must have exactly one target port"
+	ErrPortRequired           = "invalid extensionRef port must be specified"
+	ErrServiceNotFoundFormat  = "invalid extensionRef: Service %s/%s not found"
+	ErrExternalNameNotAllowed = "invalid extensionRef: must use any Service type other than ExternalName"
+	ErrTCPPortNotFoundFormat  = "TCP port %d not found on Service %s/%s"
+)
+
 // validatePool verifies that the given InferencePool is valid.
 func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service]) []error {
 	var errs []error
@@ -19,25 +29,25 @@ func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service
 	// Group must be empty (core API group only)
 	if ext.Group != nil && *ext.Group != "" {
 		errs = append(errs,
-			fmt.Errorf("invalid extensionRef: only core API group supported, got %q", *ext.Group))
+			fmt.Errorf(ErrInvalidGroupFormat, *ext.Group))
 	}
 
 	// Only Service kind is allowed
 	if ext.Kind != wellknown.ServiceKind {
 		errs = append(errs,
-			fmt.Errorf("invalid extensionRef: Kind %q is not supported (only Service)", wellknown.ServiceKind))
+			fmt.Errorf(ErrInvalidKindFormat, ext.Kind))
 	}
 
 	// Inferencepool v1 only supports a single target port
 	if len(pool.Spec.TargetPorts) != 1 {
 		errs = append(errs,
-			fmt.Errorf("invalid InferencePool: must have exactly one target port"))
+			fmt.Errorf(ErrInvalidOneTargetPort))
 	}
 
 	// Port must be specified when kind is Service
 	if pool.Spec.EndpointPickerRef.Port == nil {
 		errs = append(errs,
-			fmt.Errorf("invalid extensionRef port must be specified"))
+			fmt.Errorf(ErrPortRequired))
 		return errs
 	}
 
@@ -45,7 +55,7 @@ func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service
 	svcPtr := svcCol.GetKey(svcNN.String())
 	if svcPtr == nil {
 		errs = append(errs,
-			fmt.Errorf("invalid extensionRef: Service %s/%s not found",
+			fmt.Errorf(ErrServiceNotFoundFormat,
 				pool.Namespace, ext.Name))
 		return errs
 	}
@@ -54,7 +64,7 @@ func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service
 	// ExternalName Services are not allowed
 	if svc.Spec.Type == corev1.ServiceTypeExternalName {
 		errs = append(errs,
-			fmt.Errorf("invalid extensionRef: must use any Service type other than ExternalName"))
+			fmt.Errorf(ErrExternalNameNotAllowed))
 	}
 
 	// Service must expose the requested TCP port
@@ -72,7 +82,7 @@ func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service
 	}
 	if !found {
 		errs = append(errs,
-			fmt.Errorf("TCP port %d not found on Service %s/%s",
+			fmt.Errorf(ErrTCPPortNotFoundFormat,
 				eppPort, pool.Namespace, ext.Name))
 	}
 

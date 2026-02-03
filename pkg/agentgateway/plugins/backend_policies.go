@@ -519,6 +519,8 @@ func translateBackendAuth(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy
 		awsAuth, err := buildAwsAuthPolicy(ctx.Krt, auth.AWS, ctx.Collections.Secrets, policy.Namespace)
 		translatedAuth = awsAuth
 		errs = append(errs, err)
+	} else if auth.GCP != nil {
+		translatedAuth = buildGcpAuthPolicy(auth.GCP)
 	} else if auth.Passthrough != nil {
 		translatedAuth = &api.BackendAuthPolicy{
 			Kind: &api.BackendAuthPolicy_Passthrough{
@@ -639,4 +641,29 @@ func buildAwsAuthPolicy(krtctx krt.HandlerContext, auth *agentgateway.AwsAuth, s
 			},
 		},
 	}, errors.Join(errs...)
+}
+
+func buildGcpAuthPolicy(auth *agentgateway.GcpAuth) *api.BackendAuthPolicy {
+	if auth.Type == nil || *auth.Type == agentgateway.GcpAuthTypeAccessToken {
+		return &api.BackendAuthPolicy{
+			Kind: &api.BackendAuthPolicy_Gcp{
+				Gcp: &api.Gcp{
+					TokenType: &api.Gcp_AccessToken_{
+						AccessToken: &api.Gcp_AccessToken{},
+					},
+				},
+			},
+		}
+	}
+	return &api.BackendAuthPolicy{
+		Kind: &api.BackendAuthPolicy_Gcp{
+			Gcp: &api.Gcp{
+				TokenType: &api.Gcp_IdToken_{
+					IdToken: &api.Gcp_IdToken{
+						Audience: auth.Audience,
+					},
+				},
+			},
+		},
+	}
 }

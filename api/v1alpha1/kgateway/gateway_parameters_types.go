@@ -42,7 +42,14 @@ type GatewayParametersList struct {
 //
 // +kubebuilder:validation:ExactlyOneOf=kube;selfManaged
 type GatewayParametersSpec struct {
-	// The proxy will be deployed on Kubernetes.
+	// The proxy will be deployed on Kubernetes. Overlays (fields named with
+	// the suffix 'Overlay') are applied after non-overlay configurations
+	// ("configs"). Configs on a GatewayClass (inside of GatewayParameters) are
+	// applied before configs on a Gateway (inside of GatewayParameters), which
+	// merge together. Overlays on a GatewayClass are then applied, and
+	// finally, overlays on a Gateway. It is recommended to use an overlay only
+	// if necessary (no config exists that can achieve the same goal) for
+	// smoother upgrades, readability, and earlier and improved validation.
 	//
 	// +optional
 	Kube *KubernetesProxyConfig `json:"kube,omitempty"`
@@ -73,8 +80,15 @@ type GatewayParametersStatus struct{}
 
 type SelfManagedGateway struct{}
 
-// KubernetesProxyConfig configures the set of Kubernetes resources that will be provisioned
-// for a given Gateway.
+// KubernetesProxyConfig configures the set of Kubernetes resources that will
+// be provisioned for a given Gateway. Overlays (fields named with the suffix
+// 'Overlay') are applied after non-overlay configurations ("configs"). Configs
+// on a GatewayClass (inside of GatewayParameters) are applied before configs
+// on a Gateway (inside of GatewayParameters), which merge together. Overlays
+// on a GatewayClass are then applied, and finally, overlays on a Gateway. It
+// is recommended to use an overlay only if necessary (no config exists that
+// can achieve the same goal) for smoother upgrades, readability, and earlier
+// and improved validation.
 type KubernetesProxyConfig struct {
 	// Use a Kubernetes deployment as the proxy workload type. Currently, this is the only
 	// supported workload type.
@@ -131,6 +145,8 @@ type KubernetesProxyConfig struct {
 	//
 	// +optional
 	OmitDefaultSecurityContext *bool `json:"omitDefaultSecurityContext,omitempty"`
+
+	GatewayParametersOverlays `json:",inline"`
 }
 
 func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
@@ -486,8 +502,20 @@ type IstioIntegration struct {
 	// +optional
 	IstioProxyContainer *IstioContainer `json:"istioProxyContainer,omitempty"`
 
-	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
-	// Override the default Istio sidecar in gateway-proxy with a custom container.
+	// Deprecated: This field was never implemented in v2 and will be deleted.
+	// If you need custom TLS certificate handling, use the built-in SDS (Secret Discovery
+	// Service) container via the sdsContainer field instead. For other sidecar needs,
+	// use a deployment overlay. Example overlay that adds a sidecar:
+	//
+	//	spec:
+	//	  kube:
+	//	    deploymentOverlay:
+	//	      spec:
+	//	        template:
+	//	          spec:
+	//	            containers:
+	//	              - name: my-sidecar
+	//	                image: my-sidecar:latest
 	//
 	// +optional
 	CustomSidecars []corev1.Container `json:"customSidecars,omitempty"`
@@ -694,4 +722,39 @@ func (in *StatsMatcher) GetExclusionList() []shared.StringMatcher {
 		return nil
 	}
 	return in.ExclusionList
+}
+
+type GatewayParametersOverlays struct {
+	// deploymentOverlay allows specifying overrides for the generated Deployment resource.
+	// +optional
+	DeploymentOverlay *shared.KubernetesResourceOverlay `json:"deploymentOverlay,omitempty"`
+
+	// serviceOverlay allows specifying overrides for the generated Service resource.
+	// +optional
+	ServiceOverlay *shared.KubernetesResourceOverlay `json:"serviceOverlay,omitempty"`
+
+	// serviceAccountOverlay allows specifying overrides for the generated ServiceAccount resource.
+	// +optional
+	ServiceAccountOverlay *shared.KubernetesResourceOverlay `json:"serviceAccountOverlay,omitempty"`
+
+	// podDisruptionBudget allows creating a PodDisruptionBudget for the proxy.
+	// If absent, no PDB is created. If present, a PDB is created with its selector
+	// automatically configured to target the proxy Deployment.
+	// The metadata and spec fields from this overlay are applied to the generated PDB.
+	// +optional
+	PodDisruptionBudget *shared.KubernetesResourceOverlay `json:"podDisruptionBudget,omitempty"`
+
+	// horizontalPodAutoscaler allows creating a HorizontalPodAutoscaler for the proxy.
+	// If absent, no HPA is created. If present, an HPA is created with its scaleTargetRef
+	// automatically configured to target the proxy Deployment.
+	// The metadata and spec fields from this overlay are applied to the generated HPA.
+	// +optional
+	HorizontalPodAutoscaler *shared.KubernetesResourceOverlay `json:"horizontalPodAutoscaler,omitempty"`
+
+	// verticalPodAutoscaler allows creating a VerticalPodAutoscaler for the proxy.
+	// If absent, no VPA is created. If present, a VPA is created with its targetRef
+	// automatically configured to target the proxy Deployment.
+	// The metadata and spec fields from this overlay are applied to the generated VPA.
+	// +optional
+	VerticalPodAutoscaler *shared.KubernetesResourceOverlay `json:"verticalPodAutoscaler,omitempty"`
 }
