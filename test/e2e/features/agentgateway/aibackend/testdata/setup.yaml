@@ -1,23 +1,8 @@
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: ai-gateway
-  namespace: default
-spec:
-  gatewayClassName: agentgateway
-  listeners:
-  - allowedRoutes:
-      namespaces:
-        from: Same
-    name: http
-    port: 8080
-    protocol: HTTP
----
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: openai
-  namespace: default
+  namespace: agentgateway-base
 spec:
   ai:
     provider:
@@ -33,7 +18,7 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: anthropic
-  namespace: default
+  namespace: agentgateway-base
 spec:
   ai:
     provider:
@@ -49,12 +34,12 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: llm
-  namespace: default
+  namespace: agentgateway-base
 spec:
   parentRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
-    name: ai-gateway
+    name: gateway
   rules:
   - name: openai
     backendRefs:
@@ -96,7 +81,7 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: openai-prompt-guard
-  namespace: default
+  namespace: agentgateway-base
 spec:
   targetRefs:
   - group: agentgateway.dev
@@ -123,7 +108,7 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: anthropic-request-guardrails
-  namespace: default
+  namespace: agentgateway-base
 spec:
   targetRefs:
     - group: agentgateway.dev
@@ -142,7 +127,7 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: anthropic-response-guardrails
-  namespace: default
+  namespace: agentgateway-base
 spec:
   targetRefs:
     - group: agentgateway.dev

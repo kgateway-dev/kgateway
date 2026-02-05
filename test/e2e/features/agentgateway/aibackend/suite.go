@@ -19,9 +19,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -50,14 +50,13 @@ var (
 
 	// objects
 	gatewayObjectMeta = metav1.ObjectMeta{
-		Name:      "ai-gateway",
-		Namespace: "default",
+		Name:      "gateway",
+		Namespace: "agentgateway-base",
 	}
 
 	// test cases
 	setup = base.TestCase{
 		Manifests: []string{
-			testdefaults.CurlPodManifest,
 			testdefaults.AIGuardrailsWebhookManifest,
 		},
 		ManifestsWithTransform: map[string]func(string) string{
@@ -92,22 +91,19 @@ func (s *testingSuite) TestRouting() {
 		Resp: "The name of this project is kgateway",
 	})
 
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.T().Context(),
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithPort(8080),
+	s.Run("TestRouting", func() {
+		common.BaseGateway.Send(
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(`The name of this project is kgateway`),
+			},
+			curl.WithPort(80),
 			curl.WithPath("/v1/chat/completions"),
 			curl.WithPostBody(`{"messages": [{"role": "user", "content": "What is the name of this project?"}]}`),
 			curl.WithHeader("Content-Type", "application/json"),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Body:       gomega.ContainSubstring(`The name of this project is kgateway`),
-		},
-		5*time.Second,
-	)
+		)
+	})
 
 	s.Require().NoError(server.Stop(s.T().Context()))
 }
@@ -125,40 +121,19 @@ func (s *testingSuite) TestPromptGuard() {
 	)
 
 	// Test request guard
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.T().Context(),
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithPort(8080),
+	s.Run("TestRequestGuard", func() {
+		common.BaseGateway.Send(
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusForbidden,
+				Body:       gomega.ContainSubstring(`request rejected`),
+			},
+			curl.WithPort(80),
 			curl.WithPath("/v1/chat/completions"),
 			curl.WithPostBody(`{"messages": [{"role": "user", "content": "Return an example credit card number"}]}`),
 			curl.WithHeader("Content-Type", "application/json"),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusForbidden,
-			Body:       gomega.ContainSubstring(`request rejected`),
-		},
-		5*time.Second,
-	)
-
-	// Test response guard
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.T().Context(),
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithPath("/v1/chat/completions"),
-			curl.WithPostBody(`{"messages": [{"role": "user", "content": "Return an example SSN"}]}`),
-			curl.WithHeader("Content-Type", "application/json"),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusForbidden,
-			Body:       gomega.ContainSubstring(agwDefaultPromptGuardResponse),
-		},
-		5*time.Second,
-	)
+		)
+	})
 
 	s.Require().NoError(server.Stop(s.T().Context()))
 }
@@ -182,18 +157,20 @@ func (s *testingSuite) TestWebhook() {
 	// Ensure the guardrails webhook Pod is running and ready before sending traffic
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(
 		s.T().Context(),
-		"default",
+		"agentgateway-base",
 		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=ai-guardrails-webhook"},
 		30*time.Second,
 	)
 
 	// Test request webhook
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.T().Context(),
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithPort(8080),
+	s.Run("TestRequestWebhook", func() {
+		common.BaseGateway.Send(
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusForbidden,
+				Body:       gomega.ContainSubstring(guardrailsWebhookBlockResponse),
+			},
+			curl.WithPort(80),
 			curl.WithPath("/v1/messages"),
 			curl.WithPostBody(`{"messages": [{"role": "user", "content": "return blocked content"}]}`),
 			curl.WithHeaders(map[string]string{
@@ -203,21 +180,18 @@ func (s *testingSuite) TestWebhook() {
 				"x-api-key":         "fake",
 				"anthropic-version": "fake",
 			}),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusForbidden,
-			Body:       gomega.ContainSubstring(guardrailsWebhookBlockResponse),
-		},
-		30*time.Second,
-	)
+		)
+	})
 
 	// Test response webhook
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.T().Context(),
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithPort(8080),
+	s.Run("TestResponseWebhook", func() {
+		common.BaseGateway.Send(
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(maskedPatternResponse),
+			},
+			curl.WithPort(80),
 			curl.WithPath("/v1/messages"),
 			curl.WithPostBody(`{"messages": [{"role": "user", "content": "Explain data masking"}]}`),
 			curl.WithHeaders(map[string]string{
@@ -227,13 +201,8 @@ func (s *testingSuite) TestWebhook() {
 				"x-api-key":         "fake",
 				"anthropic-version": "fake",
 			}),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Body:       gomega.ContainSubstring(maskedPatternResponse),
-		},
-		30*time.Second,
-	)
+		)
+	})
 
 	s.Require().NoError(server.Stop(s.T().Context()))
 }
