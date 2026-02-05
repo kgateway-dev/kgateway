@@ -79,6 +79,7 @@ func BuildCorsPolicy(
 	if f.MaxAge != 0 {
 		corsPolicy.MaxAge = fmt.Sprintf("%d", f.MaxAge)
 	}
+	corsPolicy.ForwardNotMatchingPreflights = &wrapperspb.BoolValue{Value: false}
 	return corsPolicy
 }
 
