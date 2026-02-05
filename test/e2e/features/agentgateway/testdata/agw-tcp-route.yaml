@@ -9,55 +9,6 @@ spec:
   rules:
     - name: test
       backendRefs:
-        - name: tcp-backend
-          port: 3001
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: tcp-backend
-  namespace: agentgateway-base
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: tcp-backend
-      version: v1
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: tcp-backend
-        version: v1
-    spec:
-      containers:
-        - image: gcr.io/k8s-staging-gateway-api/echo-basic:v20231214-v1.0.0-140-gf544a46e
-          imagePullPolicy: IfNotPresent
-          name: tcp-backend
-          ports:
-            - containerPort: 3000
-          env:
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: SERVICE_NAME
-              value: tcp-backend
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: tcp-backend
-  namespace: agentgateway-base
-  labels:
-    app.kubernetes.io/name: tcp-backend
-spec:
-  ports:
-    - name: http
-      port: 3001
-      targetPort: 3000
-  selector:
-    app.kubernetes.io/name: tcp-backend
+        - name: backend
+        # Using port 80,since the test expects status code 200
+          port: 80
