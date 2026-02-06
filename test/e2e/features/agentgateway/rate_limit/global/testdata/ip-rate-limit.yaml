@@ -2,6 +2,7 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: ip-rate-limit
+  namespace: agentgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
@@ -15,7 +16,7 @@ spec:
       global:
         backendRef:
           name: ratelimit
-          namespace: kgateway-test-extensions
+          namespace: agentgateway-base
           port: 8081
         domain: "api-gateway"
         descriptors:
