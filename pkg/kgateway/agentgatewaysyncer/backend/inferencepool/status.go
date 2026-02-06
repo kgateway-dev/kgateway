@@ -120,13 +120,11 @@ func reconcilePoolsForRoute(
 		return
 	}
 
-	// Which gateways are parents of this route?
 	var parentGws map[types.NamespacedName]struct{}
 	if deletedUID == "" {
 		parentGws = parentGateways(hrt, commonCol)
 	}
 
-	// Pools referenced by this route
 	seen := map[types.NamespacedName]struct{}{}
 	for _, rule := range hrt.Spec.Rules {
 		for _, be := range rule.BackendRefs {
@@ -137,9 +135,7 @@ func reconcilePoolsForRoute(
 		}
 	}
 
-	// Update each pool's status based on the current state of the route and its parent Gateways.
 	for nn := range seen {
-		// Check if the pool is in the index
 		if irs := poolIdx.Lookup(nn.String()); len(irs) != 0 {
 			updatePoolStatus(commonCol, cli, irs[0], deletedUID, parentGws)
 			continue
@@ -175,7 +171,6 @@ func reconcilePoolsForService(
 ) {
 	// Pick whichever Service is non-nil
 	svc := ev.Latest()
-	// Use the old service for a delete event
 	if svc == nil && ev.Old != nil {
 		svc = *ev.Old
 	}
@@ -184,7 +179,6 @@ func reconcilePoolsForService(
 		return
 	}
 
-	// For every pool whose extensionRef points at this Service, revalidate and update status
 	svcNN := types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name}
 	for _, beIR := range bcol.List() {
 		irPool, ok := beIR.ObjIr.(*inferencePool)
@@ -192,7 +186,6 @@ func reconcilePoolsForService(
 			continue
 		}
 		if irPool.configRef.Namespace == svcNN.Namespace && irPool.configRef.Name == svcNN.Name {
-			// Compute new errors, then atomically swap them in
 			irPool.setErrors(validatePool(beIR.Obj.(*inf.InferencePool), commonCol.Services))
 			updatePoolStatus(commonCol, cli, beIR, "", nil)
 		}
@@ -201,19 +194,20 @@ func reconcilePoolsForService(
 
 // isPoolBackend returns true if the given backendRef references the given InferencePool.
 func isPoolBackend(be gwv1.HTTPBackendRef, poolNN types.NamespacedName) bool {
-	// Group defaulting
 	group := inf.GroupVersion.Group
 	if be.Group != nil {
 		group = string(*be.Group)
 	}
 
-	// Kind defaulting
 	kind := wellknown.InferencePoolKind
 	if be.Kind != nil {
 		kind = string(*be.Kind)
 	}
 
-	// Namespace defaulting
+	if be.Kind != nil {
+		kind = string(*be.Kind)
+	}
+
 	if be.Namespace != nil && string(*be.Namespace) != poolNN.Namespace {
 		return false
 	}
@@ -233,7 +227,7 @@ func referencedGateways(
 	for _, irRt := range routes {
 		rt, ok := irRt.SourceObject.(*gwv1.HTTPRoute)
 		if !ok || !rt.DeletionTimestamp.IsZero() {
-			continue // Not an HTTPRoute or is already deleted
+			continue
 		}
 
 		// Does this route reference the pool?
@@ -255,7 +249,6 @@ func referencedGateways(
 
 		// Collect every Gateway parentRef on that route
 		for _, pr := range rt.Spec.ParentRefs {
-			// Handle Gateway ParentRefs (existing logic)
 			if pr.Group != nil && string(*pr.Group) != gwv1.GroupName {
 				// Check if this is a ListenerSet ParentRef
 				if string(*pr.Group) == wellknown.XListenerSetGVK.Group &&
@@ -287,7 +280,6 @@ func referencedGateways(
 				}
 				continue
 			}
-			// Handle Gateway ParentRefs (existing logic)
 			ns := rt.Namespace
 			if pr.Namespace != nil {
 				ns = string(*pr.Namespace)
@@ -305,6 +297,11 @@ func resolveListenerSetGateways(
 	commonCol *collections.CommonCollections,
 ) (map[types.NamespacedName]struct{}, error) {
 	gws := make(map[types.NamespacedName]struct{})
+
+	if commonCol == nil || commonCol.Client == nil {
+		logger.Warn("cannot resolve ListenerSet: commonCol or client is nil", "listenerSet", pr.Name)
+		return gws, nil
+	}
 
 	// Determine ListenerSet namespace
 	lsNamespace := routeNamespace
@@ -342,7 +339,6 @@ func resolveListenerSetGateways(
 func parentGateways(rt *gwv1.HTTPRoute, commonCol *collections.CommonCollections) map[types.NamespacedName]struct{} {
 	gws := make(map[types.NamespacedName]struct{})
 	for _, pr := range rt.Spec.ParentRefs {
-		// Handle Gateway ParentRefs (existing logic)
 		if pr.Group != nil && string(*pr.Group) != gwv1.GroupName {
 			// Check if this is a ListenerSet ParentRef
 			if string(*pr.Group) == wellknown.XListenerSetGVK.Group &&
@@ -374,7 +370,6 @@ func parentGateways(rt *gwv1.HTTPRoute, commonCol *collections.CommonCollections
 			}
 			continue
 		}
-		// Handle Gateway ParentRefs (existing logic)
 		ns := rt.Namespace
 		if pr.Namespace != nil {
 			ns = string(*pr.Namespace)
@@ -399,7 +394,6 @@ func updatePoolStatus(
 	deletedUID types.UID,
 	parentGws map[types.NamespacedName]struct{},
 ) *inf.InferencePool {
-	// Lookup the pool from the backend IR
 	irPool, ok := beIR.ObjIr.(*inferencePool)
 	if !ok {
 		return nil
@@ -415,14 +409,12 @@ func updatePoolStatus(
 		return nil
 	}
 
-	// Build the set of current HTTPRoutes in the namespace
 	allRoutes := commonCol.Routes.ListHTTPRoutesInNamespace(poolNN.Namespace)
 	routes := allRoutes[:0]
 	if deletedUID == "" {
 		routes = append(routes, allRoutes...)
 	} else {
 		for _, r := range allRoutes {
-			// Only keep routes that are present and do not match the deleted route UID
 			if r.SourceObject.GetUID() != deletedUID {
 				routes = append(routes, r)
 			}
@@ -432,12 +424,10 @@ func updatePoolStatus(
 	// Compute the authoritative set of Gateways that still reference the pool
 	activeGws := referencedGateways(routes, poolNN, commonCol)
 
-	// Merge any Gateways supplied by the caller (may be nil/no-op)
 	for g := range parentGws {
 		activeGws[g] = struct{}{}
 	}
 
-	// Rewrite status parents based on the active Gateways
 	before := append([]inf.ParentStatus(nil), pool.Status.Parents...)
 	var updated []inf.ParentStatus
 
@@ -453,7 +443,6 @@ func updatePoolStatus(
 		return &updated[len(updated)-1]
 	}
 
-	// Add back each active Gateway
 	for g := range activeGws {
 		p := updateParent(inf.ParentReference{
 			Kind:      inf.Kind(wellknown.GatewayKind),
@@ -465,7 +454,6 @@ func updatePoolStatus(
 	}
 
 	if irPool.hasErrors() {
-		// Ensure it exists and carries only the ResolvedRefs condition
 		p := updateParent(inf.ParentReference{
 			Kind: inf.Kind(defaultInfPoolStatusKind),
 			Name: inf.ObjectName(defaultInfPoolStatusName),
@@ -474,7 +462,6 @@ func updatePoolStatus(
 		// Per InferencePool spec, do not set Accepted on this parent
 	}
 
-	// Remove default parent when no errors and no gateways
 	if !irPool.hasErrors() && len(activeGws) == 0 {
 		cleaned := updated[:0]
 		for _, p := range updated {
@@ -486,12 +473,10 @@ func updatePoolStatus(
 		updated = cleaned
 	}
 
-	// Did we really change anything? Return early if not.
 	if parentsEqual(before, updated) {
 		return pool
 	}
 
-	// Capture the final state of pool status to persist
 	finalParents := append([]inf.ParentStatus(nil), updated...)
 
 	var updatedObj *inf.InferencePool
@@ -504,7 +489,6 @@ func updatePoolStatus(
 				return pluginsdk.ErrNotFound
 			}
 
-			// Replace with the authoritative slice (may be empty)
 			var err error
 			updatedObj, err = cli.UpdateStatus(&inf.InferencePool{
 				ObjectMeta: pluginsdk.CloneObjectMetaForStatus(cur.ObjectMeta),
@@ -566,13 +550,11 @@ func parentsEqual(a, b []inf.ParentStatus) bool {
 		return false
 	}
 
-	// Index A by identity key
 	idx := make(map[string]inf.ParentStatus, len(a))
 	for _, pa := range a {
 		idx[key(pa.ParentRef)] = pa
 	}
 
-	// Walk B and compare
 	for _, pb := range b {
 		pa, ok := idx[key(pb.ParentRef)]
 		if !ok {
@@ -610,7 +592,6 @@ func buildResolvedRefsCondition(gen int64, errs []error) metav1.Condition {
 		return cond
 	}
 
-	// Build a human-friendly prefix.
 	var prefix string
 	if len(errs) == 1 {
 		prefix = "error:"
@@ -618,7 +599,6 @@ func buildResolvedRefsCondition(gen int64, errs []error) metav1.Condition {
 		prefix = fmt.Sprintf("InferencePool has %d errors:", len(errs))
 	}
 
-	// Collect and semicolon-join all error messages.
 	msgs := make([]string, 0, len(errs))
 	for _, err := range errs {
 		msgs = append(msgs, err.Error())
