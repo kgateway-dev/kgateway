@@ -30,6 +30,8 @@ import (
 
 func fakeRoutesIndex(col krt.Collection[ir.HttpRouteIR]) *krtcollections.RoutesIndex {
 	ri := &krtcollections.RoutesIndex{}
+
+	// Locate the unexported field.
 	v := reflect.ValueOf(ri).Elem().FieldByName("httpRoutes")
 
 	// Turn it into an addressable value and replace the contents.
@@ -40,6 +42,7 @@ func fakeRoutesIndex(col krt.Collection[ir.HttpRouteIR]) *krtcollections.RoutesI
 }
 
 func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
+	// Set up the context, controller name, namespace, and pool name
 	ctx := t.Context()
 	controllerName := "test-controller"
 	ns := "default"
@@ -53,6 +56,7 @@ func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
 		},
 	}
 
+	// Create a fake client with the InferencePool object
 	fakeClient := fake.NewClient(t, pool)
 
 	mock := krttest.NewMock(t, []any{})
@@ -78,13 +82,16 @@ func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
 		ObjIr: &inferencePool{errors: nil},
 	}
 
+	// Call the function to update the pool status
 	updated := updatePoolStatus(commonCol, cli, beIR, "", nil)
 
+	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
 	assert.Empty(t, updated.Status.Parents)
 }
 
 func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
+	// Set up the context, controller name, namespace, pool name, and gateway name
 	ctx := t.Context()
 	controllerName := "test-controller"
 	ns := "default"
@@ -92,6 +99,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 	poolNN := types.NamespacedName{Namespace: ns, Name: poolName}
 	gwName := "my-gateway"
 
+	// Create a sample HTTPRoute with a reference to the InferencePool
 	route := &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
@@ -133,6 +141,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 		},
 	}
 
+	// Create a fake client with the InferencePool object
 	fakeClient := fake.NewClient(t, pool)
 	mock := krttest.NewMock(t, []any{
 		ir.HttpRouteIR{
@@ -146,6 +155,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 		},
 	})
 
+	// Get the mock collection for HTTPRouteIR
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 	commonCol := &collections.CommonCollections{
 		ControllerName: controllerName,
@@ -168,8 +178,10 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 		ObjIr: &inferencePool{errors: nil},
 	}
 
+	// Call the function to update the pool status
 	updated := updatePoolStatus(commonCol, cli, beIR, "", nil)
 
+	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
 	require.Len(t, updated.Status.Parents, 1)
 	p := updated.Status.Parents[0]
@@ -179,6 +191,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 		Name:      inf.ObjectName(gwName),
 	}, p.ParentRef)
 
+	// Check the accepted condition
 	accepted := meta.FindStatusCondition(p.Conditions, string(inf.InferencePoolConditionAccepted))
 	require.NotNil(t, accepted)
 	assert.Equal(t, metav1.ConditionTrue, accepted.Status)
@@ -187,6 +200,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 	assert.Equal(t, int64(1), accepted.ObservedGeneration)
 	assert.NotZero(t, accepted.LastTransitionTime)
 
+	// Check the resolved references condition
 	resolved := meta.FindStatusCondition(p.Conditions, string(inf.InferencePoolConditionResolvedRefs))
 	require.NotNil(t, resolved)
 	assert.Equal(t, metav1.ConditionTrue, resolved.Status)
@@ -197,6 +211,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 }
 
 func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
+	// Set up the context, controller name, namespace, pool name, and gateway name
 	ctx := t.Context()
 	controllerName := "test-controller"
 	ns := "default"
@@ -204,6 +219,7 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 	poolNN := types.NamespacedName{Namespace: ns, Name: poolName}
 	gwName := "my-gateway"
 
+	// Create a sample HTTPRoute with a reference to the InferencePool
 	route := &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
@@ -258,6 +274,7 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 		},
 	})
 
+	// Get the mock collection for HTTPRouteIR
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 	commonCol := &collections.CommonCollections{
 		ControllerName: controllerName,
@@ -280,11 +297,14 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 		ObjIr: &inferencePool{errors: []error{fmt.Errorf("test error")}},
 	}
 
+	// Call the function to update the pool status with errors
 	updated := updatePoolStatus(commonCol, cli, beIR, "", nil)
 
+	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
 	require.Len(t, updated.Status.Parents, 2)
 
+	// Check the gateway parent status
 	var gwParent, defaultParent inf.ParentStatus
 	for _, p := range updated.Status.Parents {
 		if p.ParentRef.Kind == inf.Kind(wellknown.GatewayKind) {
@@ -308,12 +328,14 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 	assert.Equal(t, string(inf.InferencePoolReasonInvalidExtensionRef), resolved.Reason)
 	assert.Equal(t, "error: test error", resolved.Message)
 
+	// Default parent
 	require.NotZero(t, defaultParent)
 	assert.Equal(t, inf.ParentReference{
 		Kind: inf.Kind(defaultInfPoolStatusKind),
 		Name: inf.ObjectName(defaultInfPoolStatusName),
 	}, defaultParent.ParentRef)
 	require.Len(t, defaultParent.Conditions, 1)
+	// Check the conditions for the default parent
 	resolved = meta.FindStatusCondition(defaultParent.Conditions, string(inf.InferencePoolConditionResolvedRefs))
 	require.NotNil(t, resolved)
 	assert.Equal(t, metav1.ConditionFalse, resolved.Status)
@@ -323,6 +345,7 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 }
 
 func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
+	// Set up the context, controller name, namespace, pool name, and route UID
 	ctx := t.Context()
 	ns := "default"
 	poolName := "my-pool"
@@ -331,6 +354,7 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 	gwName := "my-gateway"
 	routeUID := types.UID("uid1")
 
+	// Create a sample HTTPRoute with a reference to the InferencePool
 	route := &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
@@ -372,6 +396,7 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 		},
 	}
 
+	// Create a fake client with the InferencePool object
 	fakeClient := fake.NewClient(t, pool)
 	mock := krttest.NewMock(t, []any{
 		ir.HttpRouteIR{
@@ -385,6 +410,7 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 		},
 	})
 
+    // Get the mock collection for HTTPRouteIR
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 	commonCol := &collections.CommonCollections{
 		ControllerName: controllerName,
@@ -407,18 +433,22 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 		ObjIr: &inferencePool{errors: nil},
 	}
 
+	// Call the function to update the pool status with the route
 	updated := updatePoolStatus(commonCol, cli, beIR, routeUID, nil)
 
+	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
 	assert.Empty(t, updated.Status.Parents)
 }
 
 func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
+	// Set up the context, namespace, pool name, and extra gateway name
 	ctx := t.Context()
 	ns := "default"
 	poolName := "my-pool"
 	gwName := "extra-gw"
 
+	// Create a sample InferencePool object
 	pool := &inf.InferencePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       poolName,
@@ -427,10 +457,12 @@ func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 		},
 	}
 
+	// Create a fake client with the InferencePool object
 	fakeClient := fake.NewClient(t, pool)
 	mock := krttest.NewMock(t, []any{}) // no HTTPRouteIRs
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 
+	// Create a CommonCollections instance with the fake client and routes index
 	commonCol := &collections.CommonCollections{
 		ControllerName: "test-controller",
 		Routes:         fakeRoutesIndex(col),
@@ -452,12 +484,15 @@ func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 		ObjIr: &inferencePool{errors: nil},
 	}
 
+	// Simulate controller knowing about a parent Gateway even if no HTTPRoute is present
 	extraGws := map[types.NamespacedName]struct{}{
 		{Namespace: ns, Name: gwName}: {},
 	}
 
+	// Call the function to update the pool status with the extra gateways
 	updated := updatePoolStatus(commonCol, cli, beIR, "", extraGws)
 
+	// Assert that the InferencePool status is updated correctly
 	require.NotNil(t, updated)
 	require.Len(t, updated.Status.Parents, 1)
 
@@ -469,11 +504,13 @@ func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 }
 
 func TestReferencedGateways(t *testing.T) {
+	// Set up the test with a namespace, pool name, and two gateways in different namespaces
 	ns := "default"
 	poolNN := types.NamespacedName{Namespace: ns, Name: "my-pool"}
 	gw1 := types.NamespacedName{Namespace: ns, Name: "gw1"}
 	gw2 := types.NamespacedName{Namespace: "other", Name: "gw2"}
 
+	// Create two gateways with different namespaces
 	route1 := ir.HttpRouteIR{
 		SourceObject: &gwv1.HTTPRoute{
 			ObjectMeta: metav1.ObjectMeta{
@@ -603,15 +640,18 @@ func TestIsPoolBackend(t *testing.T) {
 	// Default namespace (nil) – should match.
 	assert.True(t, isPoolBackend(be, poolNN))
 
+	// Wrong name
 	be.Name = "wrong"
 	assert.False(t, isPoolBackend(be, poolNN))
 
+	// Nil group/kind
 	be.Group = nil
 	assert.False(t, isPoolBackend(be, poolNN))
 	be.Group = &group
 	be.Kind = nil
 	assert.False(t, isPoolBackend(be, poolNN))
 
+	// Explicit different namespace – should NOT match
 	otherNS := gwv1.Namespace("other")
 	be.Namespace = &otherNS
 	be.Group = &group
@@ -619,11 +659,14 @@ func TestIsPoolBackend(t *testing.T) {
 	be.Name = "my-pool"
 	assert.False(t, isPoolBackend(be, poolNN))
 
+	// Explicit matching namespace – should match
 	sameNS := gwv1.Namespace("")
 	sameNS = gwv1.Namespace(poolNN.Namespace) // assign route namespace
 	be.Namespace = &sameNS
 	assert.True(t, isPoolBackend(be, poolNN))
 
+	
+	// Wrong group/kind
 	wrongGroup := gwv1.Group("wrong")
 	be.Group = &wrongGroup
 	assert.False(t, isPoolBackend(be, poolNN))
@@ -664,9 +707,11 @@ func TestParentsEqual(t *testing.T) {
 	}
 	assert.True(t, parentsEqual(a, b))
 
+	// Different
 	b[0].ParentRef.Name = "wrong"
 	assert.False(t, parentsEqual(a, b))
 
+	// Different length
 	b = append(b, a[0])
 	assert.False(t, parentsEqual(a, b))
 }
@@ -674,6 +719,7 @@ func TestParentsEqual(t *testing.T) {
 func TestBuildAcceptedCondition(t *testing.T) {
 	gen := int64(1)
 	controllerName := "test-controller"
+	// Test the buildAcceptedCondition function
 	c := buildAcceptedCondition(gen, controllerName)
 	assert.Equal(t, string(inf.InferencePoolConditionAccepted), c.Type)
 	assert.Equal(t, metav1.ConditionTrue, c.Status)
@@ -685,6 +731,7 @@ func TestBuildAcceptedCondition(t *testing.T) {
 
 func TestBuildResolvedRefsCondition(t *testing.T) {
 	gen := int64(1)
+	// Test the buildResolvedRefsCondition function
 	c := buildResolvedRefsCondition(gen, nil)
 	assert.Equal(t, string(inf.InferencePoolConditionResolvedRefs), c.Type)
 	assert.Equal(t, metav1.ConditionTrue, c.Status)
@@ -693,12 +740,14 @@ func TestBuildResolvedRefsCondition(t *testing.T) {
 	assert.Equal(t, gen, c.ObservedGeneration)
 	assert.NotZero(t, c.LastTransitionTime)
 
+	// With one error
 	errs := []error{fmt.Errorf("test error")}
 	c = buildResolvedRefsCondition(gen, errs)
 	assert.Equal(t, metav1.ConditionFalse, c.Status)
 	assert.Equal(t, string(inf.InferencePoolReasonInvalidExtensionRef), c.Reason)
 	assert.Equal(t, "error: test error", c.Message)
 
+	// With multiple errors
 	errs = append(errs, fmt.Errorf("another error"))
 	c = buildResolvedRefsCondition(gen, errs)
 	assert.Equal(t, "InferencePool has 2 errors: test error; another error", c.Message)
