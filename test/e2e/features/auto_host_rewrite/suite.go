@@ -49,19 +49,20 @@ func (s *testingSuite) SetupSuite() {
 			"apply "+mf,
 		)
 	}
-	s.ti.Assertions.EventuallyObjectsExist(s.ctx, s.commonResources...)
+	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, s.commonResources...)
 
 	// wait for all pods to actually come up
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.CurlPodLabelSelector,
 	})
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.HttpbinLabelSelector,
 	})
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=" + proxyObjectMeta.GetName(),
 	})
 }
+
 func (s *testingSuite) TearDownSuite() {
 	if testutils.ShouldSkipCleanup(s.T()) {
 		return
@@ -69,14 +70,14 @@ func (s *testingSuite) TearDownSuite() {
 	for _, mf := range s.commonManifests {
 		_ = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, mf)
 	}
-	s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, s.commonResources...)
+	s.ti.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, s.commonResources...)
 }
 
 /* ──────────────────────────── Test Cases ──────────────────────────── */
 
 func (s *testingSuite) TestHostHeader() {
 	// test basic route with autoHostRewrite
-	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -94,7 +95,7 @@ func (s *testingSuite) TestHostHeader() {
 	)
 
 	// test specific rule with URLRewrite.hostname set, which overrides the autoHostRewrite from TrafficPolicy
-	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{

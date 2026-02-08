@@ -164,7 +164,7 @@ See `/api/README.md` for full guidelines.
 ctlptl create cluster kind --name kind-kind --registry=ctlptl-registry
 
 # Build images and load into kind
-VERSION=1.0.0-ci1 CLUSTER_NAME=kind make kind-build-and-load  # Builds all 3 images
+VERSION=v1.0.0-ci1 CLUSTER_NAME=kind make kind-build-and-load  # Builds all 3 images
 
 # Deploy with Tilt (live reload enabled)
 tilt up  # Configure via tilt-settings.yaml

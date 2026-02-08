@@ -324,6 +324,7 @@ func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options .
 		podOpts.Namespace,
 		"--",
 		"curl",
+		"--no-progress-meter",
 		"--connect-timeout",
 		"1",
 		"--max-time",

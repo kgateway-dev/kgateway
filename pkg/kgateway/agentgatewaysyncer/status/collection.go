@@ -127,6 +127,8 @@ func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVK
 		res.GroupVersionKind = wellknown.AgentgatewayBackendGVK
 	case *gwxv1a1.XListenerSet:
 		res.GroupVersionKind = wellknown.XListenerSetGVK
+	case *gwv1.BackendTLSPolicy:
+		res.GroupVersionKind = wellknown.BackendTLSPolicyGVK
 	default:
 		// Prefer the object's own GVK if available
 		if gvk := obj.GetObjectKind().GroupVersionKind(); !gvk.Empty() {

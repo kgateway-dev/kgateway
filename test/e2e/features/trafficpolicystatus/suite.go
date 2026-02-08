@@ -66,7 +66,7 @@ func (s *testingSuite) TestTrafficPolicyClearStaleStatus() {
 
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.TrafficPolicy{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,
@@ -98,7 +98,7 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, co
 
 func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.TrafficPolicy{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,

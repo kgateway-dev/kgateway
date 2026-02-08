@@ -6,7 +6,7 @@ metadata:
   name: test-release-agentgateway
   namespace: default
   labels:
-    helm.sh/chart: agentgateway-0.0.1
+    helm.sh/chart: agentgateway-0.0.2
     agentgateway: agentgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/instance: test-release
@@ -217,7 +217,7 @@ metadata:
   name: test-release-agentgateway
   namespace: default
   labels:
-    helm.sh/chart: agentgateway-0.0.1
+    helm.sh/chart: agentgateway-0.0.2
     agentgateway: agentgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/instance: test-release
@@ -250,7 +250,7 @@ metadata:
   name: test-release-agentgateway
   namespace: default
   labels:
-    helm.sh/chart: agentgateway-0.0.1
+    helm.sh/chart: agentgateway-0.0.2
     agentgateway: agentgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/instance: test-release
@@ -277,7 +277,7 @@ spec:
       serviceAccountName: test-release-agentgateway
       containers:
         - name: controller
-          image: "cr.agentgateway.dev/controller:0.0.1"
+          image: "cr.agentgateway.dev/controller:v0.0.1"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9978
@@ -320,12 +320,6 @@ spec:
               value: test-release-agentgateway
             - name: KGW_AGENTGATEWAY_XDS_SERVICE_PORT
               value: "9978"
-            - name: KGW_DEFAULT_IMAGE_REGISTRY
-              value: cr.agentgateway.dev
-            - name: KGW_DEFAULT_IMAGE_TAG
-              value: 0.0.1
-            - name: KGW_DEFAULT_IMAGE_PULL_POLICY
-              value: IfNotPresent
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: "[]"
             - name: KGW_ENABLE_AGENTGATEWAY

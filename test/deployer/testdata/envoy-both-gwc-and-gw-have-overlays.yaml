@@ -1,0 +1,88 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Standard class for managing Gateway API ingress traffic.
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: gwc-gwp
+    namespace: default
+---
+# GatewayClass-level GatewayParameters with overlays
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gwc-gwp
+  namespace: default
+spec:
+  kube:
+    deploymentOverlay:
+      metadata:
+        annotations:
+          gwc-annotation: from-gatewayclass
+          shared-annotation: from-gatewayclass
+        labels:
+          gwc-label: from-gatewayclass
+          shared-label: from-gatewayclass
+    # PDB on GatewayClass level
+    podDisruptionBudget:
+      metadata:
+        labels:
+          pdb-source: gatewayclass
+      spec:
+        minAvailable: 1
+---
+# Gateway-level GatewayParameters with overlays that override/supplement GWC overlays
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gw-gwp
+  namespace: default
+spec:
+  kube:
+    deploymentOverlay:
+      metadata:
+        annotations:
+          gw-annotation: from-gateway
+          shared-annotation: from-gateway
+        labels:
+          gw-label: from-gateway
+          shared-label: from-gateway
+    # HPA only on Gateway level
+    horizontalPodAutoscaler:
+      metadata:
+        labels:
+          hpa-source: gateway
+      spec:
+        minReplicas: 2
+        maxReplicas: 5
+        metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 70
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gw-gwp
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same

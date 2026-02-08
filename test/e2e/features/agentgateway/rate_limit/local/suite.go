@@ -42,7 +42,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 // Test cases for local rate limit on a route (/path1)
 func (s *testingSuite) TestLocalRateLimitForRoute() {
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, route, route2, routeRateLimitTrafficPolicy)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, route, route2, routeRateLimitTrafficPolicy)
 
 	// First request should be successful
 	s.assertResponse("/path1")
@@ -56,7 +56,7 @@ func (s *testingSuite) TestLocalRateLimitForRoute() {
 
 // Test cases for local rate limit on a gateway
 func (s *testingSuite) TestLocalRateLimitForGateway() {
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, route, route2, gwRateLimitTrafficPolicy)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, route, route2, gwRateLimitTrafficPolicy)
 
 	// First request should be successful (to any route)
 	s.assertResponse("/path1")
@@ -72,7 +72,7 @@ func (s *testingSuite) TestLocalRateLimitForGateway() {
 // local rate limit
 func (s *testingSuite) TestLocalRateLimitDisabledForRoute() {
 	s.skipIfAgentgatewayUnsupported("LocalRateLimit disabled at Route level")
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, route, route2, gwRateLimitTrafficPolicy, routeRateLimitTrafficPolicy)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, route, route2, gwRateLimitTrafficPolicy, routeRateLimitTrafficPolicy)
 
 	// First request should be successful (to any route)
 	s.assertResponse("/path1")
@@ -87,7 +87,7 @@ func (s *testingSuite) TestLocalRateLimitDisabledForRoute() {
 // Test cases for local rate limit on a route (/path2) using extensionref in the HTTPRoute
 func (s *testingSuite) TestLocalRateLimitForRouteUsingExtensionRef() {
 	s.skipIfAgentgatewayUnsupported("LocalRateLimit using extensionRef in HTTPRoute")
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, route, routeRateLimitTrafficPolicy)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, route, routeRateLimitTrafficPolicy)
 
 	// First request should be successful
 	s.assertResponse("/path2")

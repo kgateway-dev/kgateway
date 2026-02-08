@@ -1,0 +1,53 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Standard class for managing Gateway API ingress traffic.
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: my-gwp
+    namespace: default
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: my-gwp
+  namespace: default
+spec:
+  kube:
+    verticalPodAutoscaler:
+      metadata:
+        labels:
+          vpa-label: from-overlay
+        annotations:
+          vpa-annotation: from-overlay
+      spec:
+        updatePolicy:
+          updateMode: Auto
+        resourcePolicy:
+          containerPolicies:
+            - containerName: envoy
+              minAllowed:
+                cpu: 100m
+                memory: 128Mi
+              maxAllowed:
+                cpu: 2
+                memory: 2Gi
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same

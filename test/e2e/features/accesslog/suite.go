@@ -43,7 +43,7 @@ func (s *testingSuite) SetupSuite() {
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	s.BaseTestingSuite.BeforeTest(suiteName, testName)
 
-	s.TestInstallation.Assertions.EventuallyHTTPListenerPolicyCondition(s.Ctx, "access-logs", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "access-logs", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 }
 
 // TestAccessLogWithFileSink tests access log with file sink
@@ -107,7 +107,7 @@ func (s *testingSuite) TestAccessLogWithOTelSink() {
 }
 
 func (s *testingSuite) sendTestRequest() {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -124,7 +124,7 @@ func (s *testingSuite) sendTestRequest() {
 }
 
 func (s *testingSuite) getPods(label string) []string {
-	s.TestInstallation.Assertions.EventuallyPodsRunning(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(
 		s.Ctx,
 		accessLoggerObjectMeta.GetNamespace(),
 		metav1.ListOptions{

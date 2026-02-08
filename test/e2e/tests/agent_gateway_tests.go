@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/extproc"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/jwtauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/mcp"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/policystatus"
 	global_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rate_limit/global"
 	local_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rate_limit/local"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rbac"
@@ -49,6 +50,7 @@ func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	agentgatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("ApiKeyAuth", apikeyauth.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("JwtAuth", jwtauth.NewTestingSuite)
+	agentgatewaySuiteRunner.Register("PolicyStatus", policystatus.NewTestingSuite)
 
 	return agentgatewaySuiteRunner
 }

@@ -51,14 +51,14 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {
-			testInstallation.PreFailHandler(ctx)
+			testInstallation.PreFailHandler(ctx, t)
 
 			// Generate istioctl bug report
 			testInstallation.CreateIstioBugReport(ctx)
 		}
 
 		// Uninstall kgateway
-		testInstallation.UninstallKgateway(ctx)
+		testInstallation.UninstallKgateway(ctx, t)
 
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
@@ -74,7 +74,7 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 	}
 
 	// Install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx)
+	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	AutomtlsIstioSuiteRunner().Run(ctx, t, testInstallation)
 }

@@ -50,9 +50,9 @@ func (s *istioAutoMtlsTestingSuite) BeforeTest(suiteName, testName string) {
 		s.NoError(err, "can apply "+manifest)
 	}
 
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	// Check that test resources are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
 		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=gw"}, time.Minute*2)
 }
 
@@ -67,15 +67,15 @@ func (s *istioAutoMtlsTestingSuite) AfterTest(suiteName, testName string) {
 		s.NoError(err, "can delete "+manifest)
 	}
 
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 }
 
 func (s *istioAutoMtlsTestingSuite) SetupSuite() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply setup manifest")
 	// Check that istio injection is successful and httpbin is running
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(),
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, httpbinDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(),
 		metav1.ListOptions{LabelSelector: "app=httpbin"}, time.Minute*2)
 
 	// We include tests with manual setup here because the cleanup is still automated via AfterTest
@@ -92,11 +92,11 @@ func (s *istioAutoMtlsTestingSuite) TearDownSuite() {
 	}
 	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
 }
 
 func (s *istioAutoMtlsTestingSuite) TestMtlsStrictPeerAuth() {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
 		[]curl.Option{
@@ -109,7 +109,7 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsStrictPeerAuth() {
 
 func (s *istioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
 	// With auto mtls enabled in the mesh, the response should contain the X-Forwarded-Client-Cert header even with permissive mode
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
 		[]curl.Option{
@@ -121,7 +121,7 @@ func (s *istioAutoMtlsTestingSuite) TestMtlsPermissivePeerAuth() {
 }
 
 func (s *istioAutoMtlsTestingSuite) TestMtlsDisablePeerAuth() {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		curlPodExecOpt,
 		[]curl.Option{

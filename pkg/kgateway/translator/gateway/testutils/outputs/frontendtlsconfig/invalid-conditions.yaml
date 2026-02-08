@@ -1,0 +1,255 @@
+Clusters:
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 80
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~80
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~80
+  name: listener~80
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~80
+  virtualHosts:
+  - domains:
+    - example.com
+    name: listener~80~example_com
+    routes:
+    - match:
+        prefix: /
+      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
+      route:
+        cluster: blackhole-cluster
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: |-
+          Some listeners are not programmed: https: failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef; listener-bad-certref: failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef; listener-partially-valid: invalid ca.crt kind Service in default/ca-cert-missing: InvalidCACertificateKind; listener-bad-certkind: failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef
+          failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef; listener-missing-refgrant: failed to fetch CA certificate ConfigMap ca-cert-2/default: missing CA certificate reference grant
+        reason: ListenersNotValid
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: 'failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef'
+          reason: InvalidCACertificateRef
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: 'failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef'
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: 'failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef'
+          reason: NoValidCACertificate
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        name: https
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+            InvalidCACertificateRef'
+          reason: InvalidCACertificateRef
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+            InvalidCACertificateRef'
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+            InvalidCACertificateRef'
+          reason: NoValidCACertificate
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        name: listener-bad-certref
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: 'invalid ca.crt kind Service in default/ca-cert-missing: InvalidCACertificateKind'
+          reason: InvalidCACertificateKind
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: 'invalid ca.crt kind Service in default/ca-cert-missing: InvalidCACertificateKind'
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: 'invalid ca.crt kind Service in default/ca-cert-missing: InvalidCACertificateKind'
+          reason: NoValidCACertificate
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        name: listener-partially-valid
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: |-
+            failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef
+            failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef
+          reason: InvalidCACertificateRef
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: |-
+            failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef
+            failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: |-
+            failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef
+            failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef
+          reason: NoValidCACertificate
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        name: listener-bad-certkind
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-2/default: missing
+            CA certificate reference grant'
+          reason: RefNotPermitted
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-2/default: missing
+            CA certificate reference grant'
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-2/default: missing
+            CA certificate reference grant'
+          reason: NoValidCACertificate
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        name: listener-missing-refgrant
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+  httpRoutes:
+    default/example-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Service default/httpbin not found
+          reason: BackendNotFound
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
