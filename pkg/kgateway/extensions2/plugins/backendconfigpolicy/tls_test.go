@@ -270,17 +270,6 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "should error with san and no rootca",
-			tlsConfig: &kgateway.TLS{
-				Files: &kgateway.TLSFiles{
-					TLSCertificate: ptr.To(CACert),
-					TLSKey:         ptr.To(TLSKey),
-				},
-				VerifySubjectAltNames: []string{"test.example.com"},
-			},
-			wantErr: true,
-		},
-		{
 			name: "should error with only cert and no key",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{

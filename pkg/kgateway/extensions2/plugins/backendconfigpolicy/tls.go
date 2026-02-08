@@ -166,13 +166,8 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 	}
 
 	if tlsData.rootCA == "" {
-		// If no root CA and no SAN verification, no validation context needed
-		if len(sanMatchers) == 0 {
-			return nil
-		}
-		// Root CA is required if SAN verification is specified
-		return errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
-	}
+    return nil
+  }
 
 	// If root CA is provided, build a validation context
 	var rootCaData *envoycorev3.DataSource

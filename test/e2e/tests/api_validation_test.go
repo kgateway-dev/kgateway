@@ -123,6 +123,24 @@ spec:
     maxConcurrentStreams: 100
 `,
 		},
+    {
+      name: "BackendConfigPolicy: verifySubjectAltNames requires root CA",
+      input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-invalid-san
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  tls:
+    verifySubjectAltNames:
+    - "example.com"
+`,
+      wantErrors: []string{`If verifySubjectAltNames is specified, a root CA must be provided via secretRef, files, or wellKnownCACertificates`},
+    },
 		{
 			name: "BackendConfigPolicy: HTTP2 protocol options with invalid integer values",
 			input: `---
