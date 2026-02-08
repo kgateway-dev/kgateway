@@ -166,8 +166,11 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 	}
 
 	if tlsData.rootCA == "" {
-    return nil
-  }
+		if len(sanMatchers) > 0 {
+			return fmt.Errorf("verifySubjectAltNames specified but no validation CA is configured")
+		}
+		return nil
+	}
 
 	// If root CA is provided, build a validation context
 	var rootCaData *envoycorev3.DataSource
