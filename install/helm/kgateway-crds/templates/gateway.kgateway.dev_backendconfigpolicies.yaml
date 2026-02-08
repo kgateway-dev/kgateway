@@ -923,9 +923,15 @@ spec:
                 type: object
                 x-kubernetes-validations:
                 - message: If verifySubjectAltNames is specified, a root CA must be
-                    provided via secretRef, files, or wellKnownCACertificates
+                    provided via secretRef, files.rootCA, or wellKnownCACertificates
                   rule: '!has(self.verifySubjectAltNames) || size(self.verifySubjectAltNames)
-                    == 0 || has(self.secretRef) || has(self.files) || has(self.wellKnownCACertificates)'
+                    == 0 || has(self.secretRef) || (has(self.files) && has(self.files.rootCA))
+                    || has(self.wellKnownCACertificates)'
+                - message: verifySubjectAltNames cannot be used when insecureSkipVerify
+                    is true
+                  rule: '!(has(self.insecureSkipVerify) && self.insecureSkipVerify
+                    && has(self.verifySubjectAltNames) && size(self.verifySubjectAltNames)
+                    > 0)'
                 - message: exactly one of the fields in [secretRef files insecureSkipVerify
                     wellKnownCACertificates] must be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()

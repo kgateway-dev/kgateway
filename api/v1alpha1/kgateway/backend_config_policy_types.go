@@ -238,7 +238,8 @@ type TCPKeepalive struct {
 }
 
 // +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
-// +kubebuilder:validation:XValidation:rule="!has(self.verifySubjectAltNames) || size(self.verifySubjectAltNames) == 0 || has(self.secretRef) || has(self.files) || has(self.wellKnownCACertificates)",message="If verifySubjectAltNames is specified, a root CA must be provided via secretRef, files, or wellKnownCACertificates"
+// +kubebuilder:validation:XValidation:rule="!has(self.verifySubjectAltNames) || size(self.verifySubjectAltNames) == 0 || has(self.secretRef) || (has(self.files) && has(self.files.rootCA)) || has(self.wellKnownCACertificates)",message="If verifySubjectAltNames is specified, a root CA must be provided via secretRef, files.rootCA, or wellKnownCACertificates"
+// +kubebuilder:validation:XValidation:rule="!(has(self.insecureSkipVerify) && self.insecureSkipVerify && has(self.verifySubjectAltNames) && size(self.verifySubjectAltNames) > 0)",message="verifySubjectAltNames cannot be used when insecureSkipVerify is true"
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
