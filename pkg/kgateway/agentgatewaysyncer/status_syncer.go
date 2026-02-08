@@ -21,7 +21,6 @@ import (
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/status"
-	proxysyncermetrics "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
@@ -247,16 +246,6 @@ type StatusSyncer[O controllers.ComparableObject, S any] struct {
 
 func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource, statusObj any) {
 	status := statusObj.(S)
-	var rErr error
-
-	finishMetrics := proxysyncermetrics.CollectStatusSyncMetrics(proxysyncermetrics.StatusSyncMetricLabels{
-		Name:      obj.Name,
-		Namespace: obj.Namespace,
-		Syncer:    s.name + "Status",
-	})
-	defer func() {
-		finishMetrics(rErr)
-	}()
 
 	logger := logger.With("kind", s.name, "resource", obj.NamespacedName.String())
 	// TODO: move this to retry by putting it back on the queue, with some limit on the retry attempts allowed
@@ -284,7 +273,6 @@ func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource
 	}, retry.Attempts(maxRetryAttempts), retry.Delay(retryDelay))
 
 	if err != nil {
-		rErr = err
 		logger.Error("failed to sync status after retries", logKeyError, err, "policy", obj.NamespacedName.String())
 	} else {
 		logger.Debug("updated policy status")
