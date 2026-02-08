@@ -139,7 +139,8 @@ spec:
     verifySubjectAltNames:
     - "example.com"
 `,
-			wantErrors: []string{`If verifySubjectAltNames is specified, a root CA must be provided via secretRef, files, or wellKnownCACertificates`},
+			// wantErrors is a regex; escape '.' in files.rootCA to match the literal field name
+			wantErrors: []string{`If verifySubjectAltNames is specified, a root CA must be provided via secretRef, files\.rootCA, or wellKnownCACertificates`},
 		},
 		{
 			name: "BackendConfigPolicy: HTTP2 protocol options with invalid integer values",
