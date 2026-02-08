@@ -447,6 +447,28 @@ func TestTranslateTLSConfig(t *testing.T) {
 				Sni: "test.example.com",
 			},
 		},
+		{
+			name: "verifySubjectAltNames specified but secret is missing ca.crt",
+			tlsConfig: &kgateway.TLS{
+				VerifySubjectAltNames: []string{"example.com"},
+				SecretRef: &corev1.LocalObjectReference{
+					Name: "empty-secret",
+				},
+			},
+			secret: &ir.Secret{
+				ObjectSource: ir.ObjectSource{
+					Group:     "",
+					Kind:      "Secret",
+					Namespace: "default",
+					Name:      "empty-secret",
+				},
+				Obj: &corev1.Secret{},
+				Data: map[string][]byte{
+					"tls.crt": []byte("some-cert"),
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
