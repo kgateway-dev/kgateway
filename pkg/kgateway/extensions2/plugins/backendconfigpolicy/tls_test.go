@@ -464,7 +464,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 				},
 				Obj: &corev1.Secret{},
 				Data: map[string][]byte{
-					"tls.crt": []byte("some-cert"),
+					"tls.crt": []byte(CACert),
+					"tls.key": []byte(TLSKey),
 				},
 			},
 			wantErr: true,
