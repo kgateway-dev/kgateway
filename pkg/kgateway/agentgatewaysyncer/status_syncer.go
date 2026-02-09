@@ -55,12 +55,13 @@ type AgentGwStatusSyncer struct {
 
 	cacheSyncs []cache.InformerSynced
 
-	listenerSets StatusSyncer[*gwxv1a1.XListenerSet, *gwxv1a1.ListenerSetStatus]
-	gateways     StatusSyncer[*gwv1.Gateway, *gwv1.GatewayStatus]
-	httpRoutes   StatusSyncer[*gwv1.HTTPRoute, *gwv1.HTTPRouteStatus]
-	grpcRoutes   StatusSyncer[*gwv1.GRPCRoute, *gwv1.GRPCRouteStatus]
-	tcpRoutes    StatusSyncer[*gwv1a2.TCPRoute, *gwv1a2.TCPRouteStatus]
-	tlsRoutes    StatusSyncer[*gwv1a2.TLSRoute, *gwv1a2.TLSRouteStatus]
+	listenerSets       StatusSyncer[*gwxv1a1.XListenerSet, *gwxv1a1.ListenerSetStatus]
+	gateways           StatusSyncer[*gwv1.Gateway, *gwv1.GatewayStatus]
+	httpRoutes         StatusSyncer[*gwv1.HTTPRoute, *gwv1.HTTPRouteStatus]
+	grpcRoutes         StatusSyncer[*gwv1.GRPCRoute, *gwv1.GRPCRouteStatus]
+	tcpRoutes          StatusSyncer[*gwv1a2.TCPRoute, *gwv1a2.TCPRouteStatus]
+	tlsRoutes          StatusSyncer[*gwv1a2.TLSRoute, *gwv1a2.TLSRouteStatus]
+	backendTLSPolicies StatusSyncer[*gwv1.BackendTLSPolicy, *gwv1.PolicyStatus]
 
 	extraAgwResourceStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwResourceStatusSyncHandler
 }
@@ -172,6 +173,16 @@ func NewAgwStatusSyncer(
 				}
 			},
 		},
+		backendTLSPolicies: StatusSyncer[*gwv1.BackendTLSPolicy, *gwv1.PolicyStatus]{
+			name:   "backendTLSPolicy",
+			client: kclient.NewFilteredDelayed[*gwv1.BackendTLSPolicy](client, wellknown.BackendTLSPolicyGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwv1.PolicyStatus) *gwv1.BackendTLSPolicy {
+				return &gwv1.BackendTLSPolicy{
+					ObjectMeta: om,
+					Status:     *s,
+				}
+			},
+		},
 	}
 
 	return syncer
@@ -228,6 +239,8 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 		s.agentgatewayPolicies.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.AgentgatewayBackendGVK:
 		s.agentgatewayBackends.ApplyStatus(ctx, resource, statusObj)
+	case wellknown.BackendTLSPolicyGVK:
+		s.backendTLSPolicies.ApplyStatus(ctx, resource, statusObj)
 	default:
 		// Attempt to handle resource policy kinds via registered handlers.
 		if s.extraAgwResourceStatusHandlers != nil {

@@ -269,9 +269,6 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			// Test deep merging of AgentgatewayParameters between GWC and GW.
 			// When GWC sets some fields and GW sets other fields within the same
 			// struct, the merging should preserve both.
-			//
-			// We use a non-default caAddress because the helm template has a fallback
-			// default of "https://istiod.istio-system.svc:15012" which would mask the bug.
 			Name:      "agentgateway deep merging - istio and resources fields",
 			InputFile: "agentgateway-deep-merging",
 			Validate: func(t *testing.T, outputYaml string) {

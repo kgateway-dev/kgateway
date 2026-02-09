@@ -77,8 +77,8 @@ func init() {
 
 // convertStatusCollection converts the specific TrafficPolicy status collection
 // to the generic controllers.Object status collection expected by the interface
-func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*agentgateway.AgentgatewayPolicy, gwv1.PolicyStatus]]) krt.StatusCollection[controllers.Object, gwv1.PolicyStatus] {
-	return krt.MapCollection(col, func(item krt.ObjectWithStatus[*agentgateway.AgentgatewayPolicy, gwv1.PolicyStatus]) krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus] {
+func convertStatusCollection[T controllers.Object](col krt.Collection[krt.ObjectWithStatus[T, gwv1.PolicyStatus]]) krt.StatusCollection[controllers.Object, gwv1.PolicyStatus] {
+	return krt.MapCollection(col, func(item krt.ObjectWithStatus[T, gwv1.PolicyStatus]) krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus] {
 		return krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]{
 			Obj:    controllers.Object(item.Obj),
 			Status: item.Status,
@@ -98,12 +98,10 @@ func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.AgentgatewayPolicyGVK.GroupKind(): {
-				Policies:       policyCol,
-				PolicyStatuses: convertStatusCollection(policyStatusCol),
+				Build: func(input PolicyPluginInput) (krt.StatusCollection[controllers.Object, gwv1.PolicyStatus], krt.Collection[AgwPolicy]) {
+					return convertStatusCollection(policyStatusCol), policyCol
+				},
 			},
-		},
-		ExtraHasSynced: func() bool {
-			return policyCol.HasSynced() && policyStatusCol.HasSynced()
 		},
 	}
 }

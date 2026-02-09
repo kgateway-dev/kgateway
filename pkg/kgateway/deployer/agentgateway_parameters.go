@@ -71,6 +71,17 @@ func (a *AgentgatewayParametersApplier) ApplyToHelmValues(vals *deployer.Agentga
 	// Merge resources field-by-field to preserve values from GatewayClass AGWP
 	// when Gateway AGWP only sets some fields (e.g., GWC sets limits, GW sets requests).
 	res.Resources = deployer.DeepMergeResourceRequirements(res.Resources, configs.Resources)
+	setIfNonNil(&res.Shutdown, configs.Shutdown)
+	// Merge Istio field-by-field to preserve values from GatewayClass AGWP
+	// when Gateway AGWP only sets some fields (e.g., GWC sets caAddress, GW sets trustDomain).
+	if configs.Istio != nil {
+		if res.Istio == nil {
+			res.Istio = &agentgateway.IstioSpec{}
+		}
+		setIfNonZero(&res.Istio.CaAddress, configs.Istio.CaAddress)
+		setIfNonZero(&res.Istio.TrustDomain, configs.Istio.TrustDomain)
+	}
+	setIfNonNil(&res.RawConfig, configs.RawConfig)
 
 	// Convert RawConfig from *apiextensionsv1.JSON to map[string]any
 	if configs.RawConfig != nil && len(configs.RawConfig.Raw) > 0 {
