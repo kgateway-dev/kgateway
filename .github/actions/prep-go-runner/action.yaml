@@ -54,7 +54,7 @@ runs:
         docker system df -v
     - name: Set up Go
       id: setup-go
-      uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+      uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
       with:
         # https://github.com/actions/setup-go/blob/main/action.yml
         go-version-file: ${{ inputs.working-directory }}/go.mod

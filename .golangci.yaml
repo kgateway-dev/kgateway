@@ -102,8 +102,6 @@ linters:
           alias: gwv1
         - pkg: sigs.k8s.io/gateway-api/apis/v1alpha2
           alias: gwv1a2
-        - pkg: sigs.k8s.io/gateway-api/apis/v1alpha3
-          alias: gwv1a3
         - pkg: sigs.k8s.io/gateway-api/apis/v1beta1
           alias: gwv1b1
         - pkg: github.com/envoyproxy/go-control-plane/envoy/config/(\w+)/(v[\w\d]+)

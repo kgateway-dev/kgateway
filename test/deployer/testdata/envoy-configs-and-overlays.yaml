@@ -1,0 +1,95 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Test configs vs overlays precedence and GWC vs GW merging.
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: gwc-params
+    namespace: default
+---
+# GatewayClass-level GatewayParameters
+# Demonstrates both configs and overlays at GWC level
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gwc-params
+  namespace: default
+spec:
+  kube:
+    # Configs - applied FIRST to base template
+    deployment:
+      replicas: 2
+    service:
+      type: ClusterIP
+    # Overlays - applied AFTER configs
+    # This tests that overlays can override config values:
+    # - replicas: 2 (from config) -> 5 (from overlay)
+    deploymentOverlay:
+      metadata:
+        annotations:
+          gwc-only-annotation: from-gatewayclass
+          shared-annotation: from-gatewayclass
+        labels:
+          gwc-only-label: from-gatewayclass
+          shared-label: from-gatewayclass
+      spec:
+        replicas: 5
+    serviceOverlay:
+      metadata:
+        annotations:
+          gwc-service-annotation: from-gatewayclass
+          shared-service-annotation: from-gatewayclass
+---
+# Gateway-level GatewayParameters
+# Tests that Gateway GWP takes precedence over GatewayClass GWP
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gw-params
+  namespace: default
+spec:
+  kube:
+    # Configs at Gateway level
+    # This overrides GWC's service.type: ClusterIP
+    service:
+      type: LoadBalancer
+    # Overlays at Gateway level
+    # - shared-annotation: gateway wins over gatewayclass
+    # - gw-only-annotation: only from gateway
+    deploymentOverlay:
+      metadata:
+        annotations:
+          gw-only-annotation: from-gateway
+          shared-annotation: from-gateway
+        labels:
+          gw-only-label: from-gateway
+          shared-label: from-gateway
+    serviceOverlay:
+      metadata:
+        annotations:
+          gw-service-annotation: from-gateway
+          shared-service-annotation: from-gateway
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gw-params
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same

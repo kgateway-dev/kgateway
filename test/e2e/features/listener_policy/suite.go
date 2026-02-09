@@ -52,9 +52,9 @@ func (s *testingSuite) SetupSuite() {
 	// Check that the common setup manifest is applied
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply "+setupManifest)
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, exampleSvc, nginxPod)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, exampleSvc, nginxPod)
 	// Check that test app is running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
 
@@ -96,8 +96,8 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 
 	// we recreate the `Gateway` resource (and thus dynamically provision the proxy pod) for each test run
 	// so let's assert the proxy svc and pod is ready before moving on
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=gw",
 	})
 }
@@ -110,7 +110,7 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 
 	for _, manifest := range manifests {
 		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
-		s.testInstallation.Assertions.ExpectObjectDeleted(manifest, err, output)
+		s.testInstallation.AssertionsT(s.T()).ExpectObjectDeleted(manifest, err, output)
 	}
 }
 
@@ -118,7 +118,7 @@ func (s *testingSuite) TestHttpListenerPolicyAllFields() {
 	// Test that the HTTPListenerPolicy with all additional fields is applied correctly
 	// The test verifies that the gateway is working and all policy fields are applied
 	fmt.Println("TestHttpListenerPolicyAllFields")
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -131,7 +131,7 @@ func (s *testingSuite) TestHttpListenerPolicyAllFields() {
 		})
 
 	// Check the health check path is working
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -149,7 +149,7 @@ func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 	// The test verifies that the server header is transformed as expected
 	// With PassThrough, the server header should be the backend server's header (nginx/1.28.0)
 	// instead of Envoy's default (envoy)
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -169,11 +169,11 @@ func (s *testingSuite) TestPreserveHttp1HeaderCase() {
 	// The test verifies that the HTTP1 headers are preserved as expected in the request and response
 	// The HTTPListenerPolicy ensures that the header is preserved in the request,
 	// and the BackendConfigPolicy ensures that the header is preserved in the response.
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=raw-header-echo",
 	})
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -193,7 +193,7 @@ func (s *testingSuite) TestPreserveHttp1HeaderCase() {
 
 func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	// First: trigger a 404 that SHOULD be logged (filter is GE 400)
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -223,7 +223,7 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	}, 30*time.Second, 200*time.Millisecond)
 
 	// Second: trigger a 200 that SHOULD NOT be logged due to filter GE 400
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -277,7 +277,7 @@ func (s *testingSuite) TestHttpListenerPolicyClearStaleStatus() {
 
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.ListenerPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,
@@ -309,7 +309,7 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, co
 
 func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.ListenerPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,
@@ -338,7 +338,7 @@ func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedContr
 
 func (s *testingSuite) TestEarlyRequestHeaderModifier() {
 	// Route matches only when a specific header is present. The policy adds it early.
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -356,7 +356,7 @@ func (s *testingSuite) TestEarlyRequestHeaderModifier() {
 // Test that enabling PROXY protocol causes plain HTTP (no PROXY header) to be rejected.
 func (s *testingSuite) TestProxyProtocol() {
 	// Attempt a normal HTTP request; expect curl to error (connection closed/empty reply).
-	s.testInstallation.Assertions.AssertEventualCurlError(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -368,7 +368,7 @@ func (s *testingSuite) TestProxyProtocol() {
 	)
 
 	// test with PROXY protocol header; expect 200 OK
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -387,8 +387,8 @@ func (s *testingSuite) TestProxyProtocol() {
 // 3. The x-request-id header is generated with valid UUID format
 func (s *testingSuite) TestListenerPolicyRequestId() {
 	// Wait for echo server to be ready
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, requestIdEchoService, requestIdEchoDeployment)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, requestIdEchoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, requestIdEchoService, requestIdEchoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, requestIdEchoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=request-id-echo",
 	})
 
@@ -396,7 +396,7 @@ func (s *testingSuite) TestListenerPolicyRequestId() {
 	// UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 lowercase hex digits)
 	// The echo server returns all request headers in the response body, allowing us to verify
 	// that Envoy properly generates the x-request-id header
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -417,8 +417,8 @@ func (s *testingSuite) TestListenerPolicyRequestId() {
 // 3. The x-request-id header is generated with valid UUID format
 func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
 	// Wait for echo server to be ready
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, requestIdEchoService, requestIdEchoDeployment)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, requestIdEchoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, requestIdEchoService, requestIdEchoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, requestIdEchoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=request-id-echo",
 	})
 
@@ -426,7 +426,7 @@ func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
 	// UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 lowercase hex digits)
 	// The echo server returns all request headers in the response body, allowing us to verify
 	// that Envoy properly generates the x-request-id header
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{

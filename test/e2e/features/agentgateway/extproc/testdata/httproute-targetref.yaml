@@ -3,9 +3,10 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: route-with-extproc
+  namespace: agentgateway-base
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
   hostnames:
     - "www.example.com"
   rules:
@@ -14,16 +15,17 @@ spec:
             type: PathPrefix
             value: /myapp
       backendRefs:
-        - name: backend
+        - name: extproc-backend
           port: 3000
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: route-without-extproc
+  namespace: agentgateway-base
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
   hostnames:
     - "www.example.com"
   rules:
@@ -32,13 +34,14 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: backend
+        - name: extproc-backend
           port: 3000
 ---
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: httproute-test
+  namespace: agentgateway-base
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io

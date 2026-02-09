@@ -1,0 +1,88 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Test overlay ordering - GWC first, then GW.
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: gwc-gwp
+    namespace: default
+---
+# GatewayClass-level GatewayParameters with overlays
+# These are applied FIRST
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gwc-gwp
+  namespace: default
+spec:
+  kube:
+    # Test 1: Metadata ordering - GWC sets labels/annotations
+    deploymentOverlay:
+      metadata:
+        annotations:
+          overlay-source: from-gatewayclass
+          gwc-only-annotation: present
+        labels:
+          overlay-source: from-gatewayclass
+          gwc-only-label: present
+      # Test 2: Spec ordering - GWC sets terminationGracePeriodSeconds to 29
+      spec:
+        template:
+          spec:
+            terminationGracePeriodSeconds: 29
+    serviceOverlay:
+      metadata:
+        annotations:
+          overlay-source: from-gatewayclass
+---
+# Gateway-level GatewayParameters with overlays
+# These are applied SECOND and can override GWC values
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gw-gwp
+  namespace: default
+spec:
+  kube:
+    # Test 1: Metadata ordering - GW overrides overlay-source
+    deploymentOverlay:
+      metadata:
+        annotations:
+          overlay-source: from-gateway
+          gw-only-annotation: present
+        labels:
+          overlay-source: from-gateway
+          gw-only-label: present
+      # Test 2: Spec ordering - GW overrides terminationGracePeriodSeconds to 59
+      spec:
+        template:
+          spec:
+            terminationGracePeriodSeconds: 59
+    serviceOverlay:
+      metadata:
+        annotations:
+          overlay-source: from-gateway
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gw-gwp
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same

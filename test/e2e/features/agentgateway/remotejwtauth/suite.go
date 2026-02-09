@@ -112,7 +112,7 @@ var (
 )
 
 func (s *testingSuite) TestRoutePolicyBackend() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-example-insecure",
 		"default",
@@ -122,7 +122,7 @@ func (s *testingSuite) TestRoutePolicyBackend() {
 	// verify unprotected route works
 	s.assertResponseWithoutAuth("insecureroute.com", http.StatusOK)
 
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure",
 		"default",
@@ -138,7 +138,7 @@ func (s *testingSuite) TestRoutePolicyBackend() {
 }
 
 func (s *testingSuite) TestRoutePolicyBackendAndTlsPolicy() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure",
 		"default",
@@ -157,7 +157,7 @@ func (s *testingSuite) TestRoutePolicySvcCaCert() {
 }
 
 func (s *testingSuite) TestRoutePolicySvc() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure",
 		"default",
@@ -172,7 +172,7 @@ func (s *testingSuite) TestRoutePolicySvc() {
 }
 
 func (s *testingSuite) TestRoutePolicyWithRbac() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure",
 		"default",
@@ -186,7 +186,7 @@ func (s *testingSuite) TestRoutePolicyWithRbac() {
 }
 
 func (s *testingSuite) TestGatewayPolicySvc() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
 		"default",
@@ -204,7 +204,7 @@ func (s *testingSuite) TestGatewayPolicySvcCaCert() {
 }
 
 func (s *testingSuite) TestGatewayPolicyBackend() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
 		"default",
@@ -219,7 +219,7 @@ func (s *testingSuite) TestGatewayPolicyBackend() {
 }
 
 func (s *testingSuite) TestGatewayPolicyBackendWithTlsPolicy() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
 		"default",
@@ -233,7 +233,7 @@ func (s *testingSuite) TestGatewayPolicyBackendWithTlsPolicy() {
 }
 
 func (s *testingSuite) TestGatewayPolicyWithRbac() {
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
 		"default",
@@ -247,7 +247,7 @@ func (s *testingSuite) TestGatewayPolicyWithRbac() {
 }
 
 func (s *testingSuite) assertResponse(hostHeader, authHeader string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -262,7 +262,7 @@ func (s *testingSuite) assertResponse(hostHeader, authHeader string, expectedSta
 }
 
 func (s *testingSuite) assertResponseWithoutAuth(hostHeader string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{

@@ -77,3 +77,20 @@ Supported values: "standard" or "strict" (case-insensitive).
 {{- printf "ERROR: Invalid validation.level '%s'. Must be 'standard' or 'strict' (case-insensitive). Current value: '%s'" $level .Values.validation.level | fail -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+Get the image tag with 'v' prefix for semver tags.
+If the input already starts with 'v', return it as-is.
+If the input looks like a semver version (e.g., "1.2.3"), prepend 'v'.
+Otherwise (e.g., "latest", "dev"), return it unchanged.
+*/}}
+{{- define "kgateway.imageTag" -}}
+{{- $tag := . -}}
+{{- if hasPrefix "v" $tag -}}
+{{- $tag -}}
+{{- else if regexMatch "^[0-9]+\\.[0-9]+\\..*$" $tag -}}
+{{- printf "v%s" $tag -}}
+{{- else -}}
+{{- $tag -}}
+{{- end -}}
+{{- end }}

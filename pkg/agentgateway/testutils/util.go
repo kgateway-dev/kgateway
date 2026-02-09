@@ -2,7 +2,6 @@ package testutils
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -164,7 +163,7 @@ func Syncer(t *testing.T, ctx plugins.PolicyCtx, includeStatusKinds ...string) (
 		// Only used for NACK, so no need to do anything special here.
 		fc,
 		ctx.Collections,
-		agwPluginFactory(test.NewContext(t), ctx.Collections),
+		agwPluginFactory(ctx.Collections),
 		nil,
 		opts,
 		nil,
@@ -187,12 +186,9 @@ func Syncer(t *testing.T, ctx plugins.PolicyCtx, includeStatusKinds ...string) (
 
 // agwPluginFactory is a factory function that returns the agent gateway plugins
 // It is based on agwPluginFactory(cfg)(ctx, cfg.AgwCollections) in start.go
-func agwPluginFactory(ctx context.Context, agwCollections *plugins.AgwCollections) plugins.AgwPlugin {
+func agwPluginFactory(agwCollections *plugins.AgwCollections) plugins.AgwPlugin {
 	agwPlugins := plugins.Plugins(agwCollections)
 	mergedPlugins := plugins.MergePlugins(agwPlugins...)
-	for i, plug := range agwPlugins {
-		kube.WaitForCacheSync(fmt.Sprintf("plugin-%d", i), ctx.Done(), plug.HasSynced)
-	}
 	return mergedPlugins
 }
 
