@@ -25,7 +25,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stopwatch"
 )
 
 var _ manager.LeaderElectionRunnable = &AgentGwStatusSyncer{}
@@ -97,7 +96,7 @@ func NewAgwStatusSyncer(
 			},
 		},
 		agentgatewayBackends: StatusSyncer[*agentgateway.AgentgatewayBackend, *agentgateway.AgentgatewayBackendStatus]{
-			name:           "agentgatewayPolicy",
+			name:           "agentgatewayBackend",
 			controllerName: controllerName,
 			client:         kclient.NewFilteredDelayed[*agentgateway.AgentgatewayBackend](client, wellknown.AgentgatewayBackendGVR, f),
 			build: func(om metav1.ObjectMeta, s *agentgateway.AgentgatewayBackendStatus) *agentgateway.AgentgatewayBackend {
@@ -276,9 +275,6 @@ type StatusSyncer[O controllers.ComparableObject, S any] struct {
 
 func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource, statusObj any) {
 	status := statusObj.(S)
-	stopwatch := stopwatch.NewTranslatorStopWatch(s.name + "Status")
-	stopwatch.Start()
-	defer stopwatch.Stop(ctx)
 
 	logger := logger.With("kind", s.name, "resource", obj.NamespacedName.String())
 	// TODO: move this to retry by putting it back on the queue, with some limit on the retry attempts allowed
