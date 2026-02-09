@@ -20,6 +20,7 @@ pub struct FilterConfig {
 
 struct EnvoyTransformationOps<'a> {
     envoy_filter: &'a mut dyn EnvoyHttpFilter,
+    used_received_request_body: Option<bool>,
     used_received_response_body: Option<bool>,
 }
 
@@ -27,6 +28,7 @@ impl<'a> EnvoyTransformationOps<'a> {
     fn new(envoy_filter: &'a mut dyn EnvoyHttpFilter) -> EnvoyTransformationOps<'a> {
         EnvoyTransformationOps {
             envoy_filter,
+            used_received_request_body: None,
             used_received_response_body: None,
         }
     }
@@ -52,33 +54,62 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         self.envoy_filter.remove_request_header(key)
     }
     fn parse_request_json_body(&mut self) -> Result<JsonValue> {
-        let Some(buffers) = self.envoy_filter.get_buffered_request_body() else {
-            return Ok(JsonValue::Null);
-        };
-
-        if buffers.is_empty() {
+        let body = self.get_request_body();
+        if body.is_empty() {
             return Ok(JsonValue::Null);
         }
-        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
-        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
-        let body = chunks.concat();
         serde_json::from_slice(&body).context("failed to parse request body as json")
     }
     fn get_request_body(&mut self) -> Vec<u8> {
-        let Some(buffers) = self.envoy_filter.get_buffered_request_body() else {
-            return Vec::default();
-        };
+        self.used_received_request_body = Some(false);
 
-        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
-        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
-        chunks.concat()
+        let mut buffers = self.envoy_filter.get_buffered_request_body();
+
+        if buffers.is_none() {
+            // When the body arrives in a single chunk (common for small JSON
+            // payloads), the first on_request_body callback fires with
+            // end_of_stream=true before any prior StopIterationAndBuffer could
+            // populate the buffered body.  In that case the data is only in the
+            // "received" buffer — mirror the same fallback used for responses.
+            buffers = self.envoy_filter.get_received_request_body();
+            if buffers.is_some() {
+                self.used_received_request_body = Some(true);
+            }
+        }
+
+        match buffers {
+            None => Vec::default(),
+            Some(buffers) => {
+                // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
+                let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
+                chunks.concat()
+            }
+        }
     }
     fn drain_request_body(&mut self, number_of_bytes: usize) -> bool {
-        self.envoy_filter
-            .drain_buffered_request_body(number_of_bytes)
+        if self.used_received_request_body.is_none() {
+            self.used_received_request_body = Some(false);
+            if self.envoy_filter.get_buffered_request_body().is_none()
+                && self.envoy_filter.get_received_request_body().is_some()
+            {
+                self.used_received_request_body = Some(true);
+            }
+        }
+
+        if self.used_received_request_body.unwrap_or(false) {
+            self.envoy_filter
+                .drain_received_request_body(number_of_bytes)
+        } else {
+            self.envoy_filter
+                .drain_buffered_request_body(number_of_bytes)
+        }
     }
     fn append_request_body(&mut self, data: &[u8]) -> bool {
-        self.envoy_filter.append_buffered_request_body(data)
+        if self.used_received_request_body.unwrap_or(false) {
+            self.envoy_filter.append_received_request_body(data)
+        } else {
+            self.envoy_filter.append_buffered_request_body(data)
+        }
     }
 
     // REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, remove the platform specific directive here
