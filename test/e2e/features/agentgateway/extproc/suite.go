@@ -12,10 +12,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
@@ -32,10 +31,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	// Define the setup TestCase for common resources only
 	setupTestCase := base.TestCase{
 		Manifests: []string{
-			defaults.CurlPodManifest,
-			gatewayManifest,
 			backendWithServiceManifest,
-			defaults.ExtProcManifest,
+			extProcManifest,
 		},
 	}
 
@@ -89,11 +86,8 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		{
 			name: "first route should have ExtProc applied via Gateway policy",
 			opts: []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
-				curl.VerboseOutput(),
 				curl.WithHostHeader("www.example.com"),
 				curl.WithPath("/"),
-				curl.WithPort(8080),
 				curl.WithHeader("instructions", getInstructionsJson(instructions{
 					AddHeaders: map[string]string{"extproctest": "true"},
 				})),
@@ -110,11 +104,8 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		{
 			name: "second route also has ExtProc applied via Gateway policy",
 			opts: []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
-				curl.VerboseOutput(),
 				curl.WithHostHeader("www.example.com"),
 				curl.WithPath("/myapp"),
-				curl.WithPort(8080),
 				curl.WithHeader("instructions", getInstructionsJson(instructions{
 					AddHeaders: map[string]string{"extproctest": "true"},
 				})),
@@ -130,11 +121,9 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		},
 	}
 	for _, tc := range testCases {
-		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-			s.Ctx,
-			defaults.CurlPodExecOpt,
-			tc.opts,
-			tc.resp)
+		s.Run(tc.name, func() {
+			common.BaseGateway.Send(s.T(), tc.resp, tc.opts...)
+		})
 	}
 }
 
@@ -165,11 +154,8 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 		{
 			name: "route with ExtProc applied should have header modified",
 			opts: []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
-				curl.VerboseOutput(),
 				curl.WithHostHeader("www.example.com"),
 				curl.WithPath("/myapp"),
-				curl.WithPort(8080),
 				curl.WithHeader("instructions", getInstructionsJson(instructions{
 					AddHeaders: map[string]string{"extproctest": "true"},
 				})),
@@ -186,11 +172,8 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 		{
 			name: "route without ExtProc should not have header modified",
 			opts: []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
-				curl.VerboseOutput(),
 				curl.WithHostHeader("www.example.com"),
 				curl.WithPath("/"),
-				curl.WithPort(8080),
 				curl.WithHeader("instructions", getInstructionsJson(instructions{
 					AddHeaders: map[string]string{"extproctest": "true"},
 				})),
@@ -206,11 +189,9 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 		},
 	}
 	for _, tc := range testCases {
-		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-			s.Ctx,
-			defaults.CurlPodExecOpt,
-			tc.opts,
-			tc.resp)
+		s.Run(tc.name, func() {
+			common.BaseGateway.Send(s.T(), tc.resp, tc.opts...)
+		})
 	}
 }
 

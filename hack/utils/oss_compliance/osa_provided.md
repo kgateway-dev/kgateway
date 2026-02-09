@@ -35,7 +35,6 @@ Name|Version|License
 [spf13/afero](https://github.com/spf13/afero)|v1.15.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.2|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
-[go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.9.0|Apache License 2.0
 [go.uber.org/atomic](https://go.uber.org/atomic)|v1.11.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.1|MIT License

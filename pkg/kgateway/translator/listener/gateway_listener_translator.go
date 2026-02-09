@@ -835,7 +835,6 @@ func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.Fronte
 	}
 
 	return frontendTLSConfig.DefaultValidation, frontendTLSConfig.DefaultError
-
 }
 
 // NOTE: Because a listener can be partially valid when there are multiple certificate references, this function can return both a ClientCertificateValidationIR
@@ -976,7 +975,6 @@ func buildCaCertificateReference(
 			}
 			// If its not a missing reference grant error, return the invalid certificate ref error
 			return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, sslutils.ErrInvalidCACertificateRef)
-
 		}
 
 		// Extract CA certificate from ConfigMap

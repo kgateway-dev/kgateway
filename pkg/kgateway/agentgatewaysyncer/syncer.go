@@ -332,12 +332,12 @@ func (s *Syncer) buildAgwResources(
 		Backends:       s.agwCollections.Backends,
 	}
 
-	agwRoutes, routeAttachments := translator.AgwRouteCollection(s.statusCollections, s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts)
+	agwRoutes, routeAttachments, ancestorBackends := translator.AgwRouteCollection(s.statusCollections, s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts)
 	if s.agwPlugins.AddResourceExtension != nil && s.agwPlugins.AddResourceExtension.Routes != nil {
 		agwRoutes = krt.JoinCollection([]krt.Collection[agwir.AgwResource]{agwRoutes, s.agwPlugins.AddResourceExtension.Routes})
 	}
 
-	agwPolicies, policyStatuses := AgwPolicyCollection(s.agwPlugins, krtopts)
+	agwPolicies, policyStatuses := AgwPolicyCollection(s.agwPlugins, ancestorBackends, krtopts)
 
 	// Create an agentgateway backend collection from the kgateway backend resources
 	agwBackendStatus, agwBackends := s.newAgwBackendCollection(s.agwCollections.Backends, krtopts)
@@ -550,8 +550,6 @@ func (s *Syncer) setupSyncDependencies(
 	addresses krt.Collection[Address],
 ) {
 	s.waitForSync = []cache.InformerSynced{
-		s.agwCollections.HasSynced,
-		s.agwPlugins.HasSynced,
 		agwResources.HasSynced,
 		addresses.HasSynced,
 		s.NackPublisher.HasSynced,

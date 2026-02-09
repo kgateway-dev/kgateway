@@ -11,6 +11,7 @@ import (
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/protomarshal"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -42,7 +44,7 @@ func AgwRouteCollection(
 	tlsRouteCol krt.Collection[*gwv1a2.TLSRoute],
 	inputs RouteContextInputs,
 	krtopts krtutil.KrtOptions,
-) (krt.Collection[agwir.AgwResource], krt.Collection[*RouteAttachment]) {
+) (krt.Collection[agwir.AgwResource], krt.Collection[*RouteAttachment], krt.Collection[*utils.AncestorBackend]) {
 	httpRouteStatus, httpRoutes := createRouteCollection(httpRouteCol, inputs, krtopts, "HTTPRoutes",
 		func(ctx RouteContext, obj *gwv1.HTTPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwRoute, *reporter.RouteCondition]) {
 			route := obj.Spec
@@ -129,7 +131,15 @@ func AgwRouteCollection(
 		gatewayRouteAttachmentCountCollection(inputs, tcpRouteCol, wellknown.TCPRouteGVK, krtopts),
 	})
 
-	return routes, routeAttachments
+	ancestorBackends := krt.JoinCollection([]krt.Collection[*utils.AncestorBackend]{
+		krt.NewManyCollection(httpRouteCol, func(krtctx krt.HandlerContext, obj *gwv1.HTTPRoute) []*utils.AncestorBackend {
+			return extractAncestorBackends(obj.Namespace, obj.Spec.ParentRefs, obj.Spec.Rules, func(r gwv1.HTTPRouteRule) []gwv1.HTTPBackendRef {
+				return r.BackendRefs
+			})
+		}, krtopts.ToOptions("HTTPAncestors")...),
+	})
+
+	return routes, routeAttachments, ancestorBackends
 }
 
 // ProcessParentReferences processes filtered parent references and builds resources per gateway.
@@ -600,4 +610,58 @@ func (r RouteAttachment) ResourceName() string {
 
 func (r RouteAttachment) Equals(other RouteAttachment) bool {
 	return r.From == other.From && r.To == other.To && r.ListenerName == other.ListenerName
+}
+
+func extractAncestorBackends[RT, BT any](ns string, prefs []gwv1.ParentReference, rules []RT, extract func(RT) []BT) []*utils.AncestorBackend {
+	gateways := sets.Set[types.NamespacedName]{}
+	for _, r := range prefs {
+		ref := NormalizeReference(r.Group, r.Kind, wellknown.GatewayGVK)
+		if ref != wellknown.GatewayGVK {
+			continue
+		}
+		gateways.Insert(types.NamespacedName{
+			Namespace: defaultString(r.Namespace, ns),
+			Name:      string(r.Name),
+		})
+	}
+	backends := sets.Set[utils.TypedNamespacedName]{}
+	for _, r := range rules {
+		for _, b := range extract(r) {
+			ref, refNs, refName := GetBackendRef(b)
+			be := utils.TypedNamespacedName{
+				NamespacedName: types.NamespacedName{
+					Namespace: defaultString(refNs, ns),
+					Name:      string(refName),
+				},
+				Kind: ref.Kind,
+			}
+			backends.Insert(be)
+		}
+	}
+	gtw := slices.SortBy(gateways.UnsortedList(), types.NamespacedName.String)
+	bes := slices.SortBy(backends.UnsortedList(), utils.TypedNamespacedName.String)
+	res := make([]*utils.AncestorBackend, 0, len(gtw)*len(bes))
+	for _, gw := range gtw {
+		for _, be := range bes {
+			res = append(res, &utils.AncestorBackend{
+				Gateway: gw,
+				Backend: be,
+			})
+		}
+	}
+	return res
+}
+
+func GetBackendRef[I any](spec I) (schema.GroupVersionKind, *gwv1.Namespace, gwv1.ObjectName) {
+	switch t := any(spec).(type) {
+	case gwv1.HTTPBackendRef:
+		return NormalizeReference(t.Group, t.Kind, wellknown.ServiceGVK), t.Namespace, t.Name
+	case gwv1.GRPCBackendRef:
+		return NormalizeReference(t.Group, t.Kind, wellknown.ServiceGVK), t.Namespace, t.Name
+	case gwv1.BackendRef:
+		return NormalizeReference(t.Group, t.Kind, wellknown.ServiceGVK), t.Namespace, t.Name
+	default:
+		log.Fatalf("unknown GetBackendRef type %T", t)
+		return schema.GroupVersionKind{}, nil, ""
+	}
 }

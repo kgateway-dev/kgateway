@@ -1995,12 +1995,13 @@ spec:
                 type: array
                 x-kubernetes-list-type: atomic
                 x-kubernetes-validations:
-                - message: targetRefs may only reference Gateway, HTTPRoute, XListenerSet,
-                    Service, or AgentgatewayBackend resources
+                - message: targetRefs may only reference Gateway, HTTPRoute, GRPCRoute,
+                    XListenerSet, Service, or AgentgatewayBackend resources
                   rule: self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind
                     == 'AgentgatewayBackend' && r.group == 'agentgateway.dev') ||
-                    (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io')
-                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
+                    (r.kind in ['Gateway', 'HTTPRoute', 'GRPCRoute'] && r.group ==
+                    'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group
+                    == 'gateway.networking.x-k8s.io'))
                 - message: Only one Kind of targetRef can be set on one policy
                   rule: self.all(l1, !self.exists(l2, l1.kind != l2.kind))
               targetSelectors:
@@ -2050,12 +2051,13 @@ spec:
                 minItems: 1
                 type: array
                 x-kubernetes-validations:
-                - message: targetRefs may only reference Gateway, HTTPRoute, XListenerSet,
-                    Service, or AgentgatewayBackend resources
+                - message: targetRefs may only reference Gateway, HTTPRoute, GRPCRoute,
+                    XListenerSet, Service, or AgentgatewayBackend resources
                   rule: self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind
                     == 'AgentgatewayBackend' && r.group == 'agentgateway.dev') ||
-                    (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io')
-                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
+                    (r.kind in ['Gateway', 'HTTPRoute', 'GRPCRoute'] && r.group ==
+                    'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group
+                    == 'gateway.networking.x-k8s.io'))
                 - message: Only one Kind of targetRef can be set on one policy
                   rule: self.all(l1, !self.exists(l2, l1.kind != l2.kind))
               traffic:
@@ -3861,13 +3863,15 @@ spec:
               rule: 'has(self.frontend) && has(self.targetSelectors) ? self.targetSelectors.all(t,
                 t.kind == ''Gateway'' && !has(t.sectionName)) : true'
             - message: the 'traffic' field can only target a Gateway, XListenerSet,
-                or HTTPRoute
+                GRPCRoute, or HTTPRoute
               rule: 'has(self.traffic) && has(self.targetRefs) ? self.targetRefs.all(t,
-                t.kind in [''Gateway'', ''HTTPRoute'', ''XListenerSet'']) : true'
+                t.kind in [''Gateway'', ''HTTPRoute'', ''GRPCRoute'', ''XListenerSet''])
+                : true'
             - message: the 'traffic' field can only target a Gateway, XListenerSet,
-                or HTTPRoute
+                GRPCRoute, or HTTPRoute
               rule: 'has(self.traffic) && has(self.targetSelectors) ? self.targetSelectors.all(t,
-                t.kind in [''Gateway'', ''HTTPRoute'', ''XListenerSet'']) : true'
+                t.kind in [''Gateway'', ''HTTPRoute'', ''GRPCRoute'', ''XListenerSet''])
+                : true'
             - message: the 'traffic.phase=PreRouting' field can only target a Gateway
                 or XListenerSet
               rule: 'has(self.targetRefs) && has(self.traffic) && has(self.traffic.phase)

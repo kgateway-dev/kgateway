@@ -1,0 +1,75 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-for-body-local-reply
+spec:
+  parentRefs:
+    - name: gw
+  hostnames:
+    - "example-route-for-body-local-reply.com"
+  rules:
+    - backendRefs:
+        - name: simple-svc
+          port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-for-body-local-reply-2
+spec:
+  parentRefs:
+    - name: gw
+  hostnames:
+    - "example-route-for-body-local-reply.com"
+  rules:
+    - matches:
+      - path:
+          value: /anything/:anything/foobar
+      backendRefs:
+        - name: simple-svc
+          port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: transformation-buffer-limit
+spec:
+  buffer:
+    maxRequestSize: "1024"
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-for-body-local-reply
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-for-body-local-reply-2
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-traffic-policy-for-body-local-reply
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-for-body-local-reply
+  transformation:
+    response:
+      body:
+        parseAs: AsString
+        value: '{{ body() }}'
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-traffic-policy-for-body-local-reply-2
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-for-body-local-reply-2
+  transformation:
+    response:
+      body:
+        parseAs: AsString
+        value: 'foobar'
