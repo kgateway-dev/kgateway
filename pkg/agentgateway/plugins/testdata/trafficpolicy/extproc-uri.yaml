@@ -14,7 +14,15 @@ spec:
 ---
 # Output
 output:
-- Policy:
+- Backend:
+    key: default/internal-1a1ce307e0417c73
+    name:
+      name: internal-1a1ce307e0417c73
+      namespace: default
+    static:
+      host: extproc-svc.example.com
+      port: 4444
+  Policy:
     key: traffic/default/http:extproc:default/test
     name:
       kind: AgentgatewayPolicy
@@ -27,10 +35,7 @@ output:
     traffic:
       extProc:
         target:
-          port: 4444
-          service:
-            hostname: extproc-svc.example.com
-            namespace: default
+          backend: default/internal-1a1ce307e0417c73
 status:
   ancestors:
   - ancestorRef:

@@ -73,7 +73,7 @@ func translateFrontendTracing(ctx PolicyCtx, policy *agentgateway.AgentgatewayPo
 		return nil, nil
 	}
 
-	provider, err := buildBackendRefWithDerivedBackend(ctx, tracing.URI, tracing.BackendRef, policy.Namespace)
+	provider, derivedBackend, err := buildBackendRefWithDerivedBackend(ctx, tracing.URI, tracing.BackendRef, policy.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to translate tracing backend ref: %v", err)
 	}
@@ -147,7 +147,7 @@ func translateFrontendTracing(ctx PolicyCtx, policy *agentgateway.AgentgatewayPo
 		"agentgateway_policy", tracingPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: tracingPolicy}}, nil
+	return []AgwPolicy{{Policy: tracingPolicy, Backend: derivedBackend}}, nil
 }
 
 func translateFrontendAccessLog(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {

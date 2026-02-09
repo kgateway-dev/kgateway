@@ -3,7 +3,6 @@ package agentgatewaysyncer
 import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -36,9 +35,15 @@ func AgwPolicyCollection(agwPlugins plugins.AgwPlugin, ancestors krt.Collection[
 	}
 	joinPolicies := krt.JoinCollection(allPolicies, krtopts.ToOptions("JoinPolicies")...)
 
-	allPoliciesCol := krt.NewCollection(joinPolicies, func(ctx krt.HandlerContext, i plugins.AgwPolicy) *ir.AgwResource {
-		return ptr.Of(translator.ToResourceGlobal(i))
-	}, krtopts.ToOptions("AllPolicies")...)
+	// We add resources for both the policy and the derived backend (if any) to the collection.
+	allResourcesCol := krt.NewManyCollection(joinPolicies, func(ctx krt.HandlerContext, i plugins.AgwPolicy) []ir.AgwResource {
+		resources := make([]ir.AgwResource, 0, 2)
+		resources = append(resources, translator.ToResourceGlobal(i))
+		if i.Backend != nil {
+			resources = append(resources, translator.ToResourceGlobal(i.Backend))
+		}
+		return resources
+	}, krtopts.ToOptions("AllPoliciesResources")...)
 
-	return allPoliciesCol, policyStatusMap
+	return allResourcesCol, policyStatusMap
 }

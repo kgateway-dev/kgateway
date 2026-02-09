@@ -89,12 +89,11 @@ func (f *defaultJwksUrlFactory) BuildJwksUrlAndTlsConfig(krtctx krt.HandlerConte
 	refName := string(ref.Name)
 	refNamespace := string(ptr.OrDefault(ref.Namespace, gwv1.Namespace(defaultNS)))
 
-	var path string
-	if remoteProvider.JwksPath != nil {
-		path = strings.TrimPrefix(*remoteProvider.JwksPath, "/")
-	} else {
-		path = ""
+	if remoteProvider.JwksPath == nil {
+		return "", nil, fmt.Errorf("jwksPath is required when backendRef is specified")
 	}
+
+	path := strings.TrimPrefix(*remoteProvider.JwksPath, "/")
 
 	switch string(*ref.Kind) {
 	case wellknown.AgentgatewayBackendGVK.Kind:

@@ -37,10 +37,13 @@ func (p *PolicyPlugin) ApplyPolicies(inputs PolicyPluginInput) (krt.Collection[A
 type AgwPolicy struct {
 	Policy *api.Policy
 	// TODO: track errors per policy
+
+	// Derived backend from a policy to be added as an Agw resource
+	Backend *api.Backend `json:"Backend,omitempty"`
 }
 
 func (p AgwPolicy) Equals(in AgwPolicy) bool {
-	return protoconv.Equals(p.Policy, in.Policy)
+	return protoconv.Equals(p.Policy, in.Policy) && protoconv.Equals(p.Backend, in.Backend)
 }
 
 func (p AgwPolicy) ResourceName() string {

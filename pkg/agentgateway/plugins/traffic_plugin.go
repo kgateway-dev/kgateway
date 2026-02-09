@@ -2,6 +2,8 @@ package plugins
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -944,13 +946,13 @@ func processExtAuthPolicy(
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
 	var backendErr error
-	be, err := buildBackendRefWithDerivedBackend(ctx, extAuth.URI, extAuth.BackendRef, policy.Namespace)
+	backendRef, derived, err := buildBackendRefWithDerivedBackend(ctx, extAuth.URI, extAuth.BackendRef, policy.Namespace)
 	if err != nil {
 		backendErr = fmt.Errorf("failed to build extAuth: %v", err)
 	}
 
 	spec := &api.TrafficPolicySpec_ExternalAuth{
-		Target:      be,
+		Target:      backendRef,
 		FailureMode: api.TrafficPolicySpec_ExternalAuth_DENY,
 	}
 	if g := extAuth.GRPC; g != nil {
@@ -1004,7 +1006,7 @@ func processExtAuthPolicy(
 		"agentgateway_policy", extauthPolicy.Name,
 		"target", policyTarget)
 
-	return []AgwPolicy{{Policy: extauthPolicy}}, backendErr
+	return []AgwPolicy{{Policy: extauthPolicy, Backend: derived}}, backendErr
 }
 
 // processExtProcPolicy processes ExtProc configuration and creates corresponding agentgateway policies
@@ -1016,13 +1018,13 @@ func processExtProcPolicy(
 	policy types.NamespacedName,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
-	be, err := buildBackendRefWithDerivedBackend(ctx, extProc.URI, extProc.BackendRef, policy.Namespace)
+	backendRef, derived, err := buildBackendRefWithDerivedBackend(ctx, extProc.URI, extProc.BackendRef, policy.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build extProc: %v", err)
 	}
 
 	spec := &api.TrafficPolicySpec_ExtProc{
-		Target: be,
+		Target: backendRef,
 		// always use FAIL_CLOSED to prevent silent data loss when ExtProc is unavailable.
 		FailureMode: api.TrafficPolicySpec_ExtProc_FAIL_CLOSED,
 	}
@@ -1046,7 +1048,10 @@ func processExtProcPolicy(
 		"agentgateway_policy", extprocPolicy.Name,
 		"target", policyTarget)
 
-	return []AgwPolicy{{Policy: extprocPolicy}}, nil
+	return []AgwPolicy{{
+		Policy:  extprocPolicy,
+		Backend: derived,
+	}}, nil
 }
 
 func phase(policyPhase *agentgateway.PolicyPhase) api.TrafficPolicySpec_PolicyPhase {
@@ -1212,7 +1217,7 @@ func processGlobalRateLimitPolicy(
 	policy types.NamespacedName,
 	policyTarget *api.PolicyTarget,
 ) (*AgwPolicy, error) {
-	be, err := buildBackendRefWithDerivedBackend(ctx, grl.URI, grl.BackendRef, policy.Namespace)
+	backendRef, derived, err := buildBackendRefWithDerivedBackend(ctx, grl.URI, grl.BackendRef, policy.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build global rate limit: %v", err)
 	}
@@ -1234,7 +1239,7 @@ func processGlobalRateLimitPolicy(
 				Kind: &api.TrafficPolicySpec_RemoteRateLimit_{
 					RemoteRateLimit: &api.TrafficPolicySpec_RemoteRateLimit{
 						Domain:      grl.Domain,
-						Target:      be,
+						Target:      backendRef,
 						Descriptors: descriptors,
 					},
 				},
@@ -1242,7 +1247,7 @@ func processGlobalRateLimitPolicy(
 		},
 	}
 
-	return &AgwPolicy{Policy: p}, nil
+	return &AgwPolicy{Policy: p, Backend: derived}, nil
 }
 
 func processRateLimitDescriptor(descriptor agentgateway.RateLimitDescriptor) *api.TrafficPolicySpec_RemoteRateLimit_Descriptor {
@@ -1266,16 +1271,21 @@ func processRateLimitDescriptor(descriptor agentgateway.RateLimitDescriptor) *ap
 	}
 }
 
-func buildBackendRefWithDerivedBackend(ctx PolicyCtx, uri *string, backendObjRef *gwv1.BackendObjectReference, defaultNS string) (*api.BackendReference, error) {
+// buildBackendRefWithDerivedBackend builds a backend reference and a derived backend from a URI or a backend object reference.
+// If both are provided, an error is returned.
+// If only a URI is provided, a derived static backend is created and returned along with a backend reference to it.
+// If only a backend object reference is provided, a backend reference is built and returned.
+func buildBackendRefWithDerivedBackend(ctx PolicyCtx, uri *string, backendObjRef *gwv1.BackendObjectReference, defaultNS string) (*api.BackendReference, *api.Backend, error) {
 	if len(ptr.OrEmpty(uri)) > 0 && backendObjRef != nil {
-		return nil, fmt.Errorf("uri and backendRef cannot be specified together")
+		return nil, nil, fmt.Errorf("uri and backendRef cannot be specified together")
 	}
 	if len(ptr.OrEmpty(uri)) > 0 {
-		// Create a BackendRef with inlined static service from the URI
+		// Create a derived static backend from the URI and return it along with a backend reference to it
 		return buildStaticBackendRefFromURI(*uri, defaultNS)
 	}
 
-	return buildBackendRef(ctx, *backendObjRef, defaultNS)
+	backendRef, err := buildBackendRef(ctx, *backendObjRef, defaultNS)
+	return backendRef, nil, err
 }
 
 func buildBackendRef(ctx PolicyCtx, ref gwv1.BackendObjectReference, defaultNS string) (*api.BackendReference, error) {
@@ -1351,47 +1361,74 @@ func buildBackendRef(ctx PolicyCtx, ref gwv1.BackendObjectReference, defaultNS s
 	}
 }
 
-// buildStaticBackendRefFromURI parses a URI and creates a BackendReference to a static service
-func buildStaticBackendRefFromURI(uriStr string, ns string) (*api.BackendReference, error) {
+// buildStaticBackendRefFromURI parses a URI and creates a BackendReference to a static backend.
+// The backend key is generated deterministically from host and port so that all URIs to the same endpoint share a backend.
+func buildStaticBackendRefFromURI(uriStr string, ns string) (*api.BackendReference, *api.Backend, error) {
 	parsedURL, err := url.Parse(uriStr)
 	if err != nil {
-		return nil, fmt.Errorf("invalid URI: %w", err)
+		return nil, nil, fmt.Errorf("invalid URI: %w", err)
+	}
+
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return nil, nil, fmt.Errorf("URI scheme must be http or https, got: %s", parsedURL.Scheme)
 	}
 
 	if parsedURL.Hostname() == "" {
-		return nil, fmt.Errorf("URI must contain a hostname")
+		return nil, nil, fmt.Errorf("URI must contain a hostname")
 	}
 
-	var port uint32
+	var port int32
 	if parsedURL.Port() != "" {
-		portNum, err := strconv.ParseUint(parsedURL.Port(), 10, 32)
+		portNum, err := strconv.ParseInt(parsedURL.Port(), 10, 32)
 		if err != nil {
-			return nil, fmt.Errorf("invalid port in URI: %w", err)
+			return nil, nil, fmt.Errorf("invalid port in URI: %w", err)
 		}
-		port = uint32(portNum)
+		port = int32(portNum)
 	} else {
-		switch parsedURL.Scheme {
-		case "https":
+		if parsedURL.Scheme == "https" {
 			port = 443
-		case "http":
+		} else {
 			port = 80
-		default:
-			return nil, fmt.Errorf("couldn't determine port for scheme: %s", parsedURL.Scheme)
 		}
 	}
 
-	// Create a backend reference to the derived static service.
-	backendRef := &api.BackendReference{
-		Kind: &api.BackendReference_Service_{
-			Service: &api.BackendReference_Service{
-				Hostname:  parsedURL.Hostname(),
-				Namespace: ns,
+	host := parsedURL.Hostname()
+	// Create a derived static backend from the URI. Key and name are based on host:port so the same backend is reused for all URIs to that endpoint.
+	var backend *api.Backend = &api.Backend{
+		Key: generateBackendKeyFromHostPort(host, port, ns),
+		Name: &api.ResourceName{
+			Namespace: ns,
+			Name:      fmt.Sprintf("%s", internalStaticBackendName(host, port)),
+		},
+		Kind: &api.Backend_Static{
+			Static: &api.StaticBackend{
+				Host: host,
+				Port: port,
 			},
 		},
-		Port: uint32(port),
 	}
 
-	return backendRef, nil
+	// Create a backend reference to the derived static backend.
+	backendRef := &api.BackendReference{
+		Kind: &api.BackendReference_Backend{
+			Backend: backend.GetKey(),
+		},
+	}
+
+	return backendRef, backend, nil
+}
+
+// generateBackendKeyFromHostPort creates a deterministic backend key from host and port so that all URIs to the same endpoint share a backend.
+// Format: namespace/internal-<hash-of-host:port>
+func generateBackendKeyFromHostPort(host string, port int32, namespace string) string {
+	return fmt.Sprintf("%s/%s", namespace, internalStaticBackendName(host, port))
+}
+
+// internalStaticBackendName returns a unique name for a static backend based on host and port.
+func internalStaticBackendName(host string, port int32) string {
+	hostPort := fmt.Sprintf("%s:%d", host, port)
+	hash := sha256.Sum256([]byte(hostPort))
+	return fmt.Sprintf("internal-%s", hex.EncodeToString(hash[:])[:16])
 }
 
 func toJSONValue(j apiextensionsv1.JSON) (string, error) {

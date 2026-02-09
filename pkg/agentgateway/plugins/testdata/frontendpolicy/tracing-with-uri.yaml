@@ -39,7 +39,15 @@ spec:
 ---
 # Output
 output:
-- Policy:
+- Backend:
+    key: default/internal-9da485307a5ab59b
+    name:
+      name: internal-9da485307a5ab59b
+      namespace: default
+    static:
+      host: my-otel.some-other-ns
+      port: 4317
+  Policy:
     frontend:
       tracing:
         attributes:
@@ -47,10 +55,7 @@ output:
           value: request.headers["user-agent"]
         clientSampling: "true"
         providerBackend:
-          port: 4317
-          service:
-            hostname: my-otel.some-other-ns
-            namespace: default
+          backend: default/internal-9da485307a5ab59b
         randomSampling: "true"
         remove:
         - response.code

@@ -20,7 +20,15 @@ spec:
 ---
 # Output
 output:
-- Policy:
+- Backend:
+    key: default/internal-bd63dc4f4187f910
+    name:
+      name: internal-bd63dc4f4187f910
+      namespace: default
+    static:
+      host: rl-svc.example.com
+      port: 4444
+  Policy:
     key: traffic/default/http:rl-global:default/test
     name:
       kind: AgentgatewayPolicy
@@ -38,10 +46,7 @@ output:
             value: request.headers["user-agent"]
         domain: api-gateway
         target:
-          port: 4444
-          service:
-            hostname: rl-svc.example.com
-            namespace: default
+          backend: default/internal-bd63dc4f4187f910
 status:
   ancestors:
   - ancestorRef:

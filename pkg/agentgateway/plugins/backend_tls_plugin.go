@@ -188,7 +188,7 @@ func translatePoliciesForBackendTLS(
 				},
 			},
 		}
-		policies = append(policies, AgwPolicy{policy})
+		policies = append(policies, AgwPolicy{Policy: policy})
 	}
 	ancestorStatus := make([]gwv1.PolicyAncestorStatus, 0, len(btls.Spec.TargetRefs))
 	for g := range uniqueGateways {

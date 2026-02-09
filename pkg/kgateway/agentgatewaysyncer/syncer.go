@@ -339,8 +339,15 @@ func (s *Syncer) buildAgwResources(
 
 	agwPolicies, policyStatuses := AgwPolicyCollection(s.agwPlugins, ancestorBackends, krtopts)
 
+	// Join cluster backends with plugin-derived backends
+	finalBackends := s.agwCollections.Backends
+	if s.agwPlugins.DerivedBackends != nil {
+		finalBackends = krt.JoinCollection([]krt.Collection[*agentgateway.AgentgatewayBackend]{
+			s.agwCollections.Backends, s.agwPlugins.DerivedBackends}, krtopts.ToOptions("AllBackends")...)
+	}
+
 	// Create an agentgateway backend collection from the kgateway backend resources
-	agwBackendStatus, agwBackends := s.newAgwBackendCollection(s.agwCollections.Backends, krtopts)
+	agwBackendStatus, agwBackends := s.newAgwBackendCollection(finalBackends, krtopts)
 
 	// Join all Agw resources
 	allAgwResources := krt.JoinCollection([]krt.Collection[agwir.AgwResource]{binds, listeners, agwRoutes, agwPolicies, agwBackends}, krtopts.ToOptions("Resources")...)

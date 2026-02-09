@@ -29,7 +29,15 @@ spec:
 ---
 # Output
 output:
-- Policy:
+- Backend:
+    key: default/internal-9490f3bd86d72e2d
+    name:
+      name: internal-9490f3bd86d72e2d
+      namespace: default
+    static:
+      host: extauthz.example.com
+      port: 4321
+  Policy:
     key: traffic/default/http:extauth:default/test
     name:
       kind: AgentgatewayPolicy
@@ -58,10 +66,7 @@ output:
         includeRequestHeaders:
         - authorization
         target:
-          port: 4321
-          service:
-            hostname: extauthz.example.com
-            namespace: default
+          backend: default/internal-9490f3bd86d72e2d
 status:
   ancestors:
   - ancestorRef:
