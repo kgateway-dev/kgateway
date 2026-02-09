@@ -93,7 +93,7 @@ jobs:
 
   helm:
     name: Package helm charts
-    needs: setup
+    needs: [setup, goreleaser]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -144,7 +144,7 @@ jobs:
 
   goreleaser:
     name: goreleaser
-    needs: [setup, helm, release-notes]
+    needs: [setup, release-notes]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -186,11 +186,60 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{ needs.setup.outputs.version }}
           GORELEASER_DISABLE_RELEASE: ${{ env.GORELEASER_DISABLE_RELEASE }}
 
+  container-structure-test:
+    name: Validate images with container structure tests (${{ matrix.arch }})
+    needs: [setup, goreleaser]
+    # Only run when images are pushed to the registry (not on PRs where --snapshot is used)
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        arch: [ 'amd64', 'arm64' ]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: "docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392" # v3.6.0
+        if: matrix.arch != 'amd64'
+
+      - name: Log into ghcr.io
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install container-structure-test
+        run: |
+          curl -LO https://github.com/GoogleContainerTools/container-structure-test/releases/download/v1.19.3/container-structure-test-linux-amd64
+          chmod +x container-structure-test-linux-amd64
+          sudo mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
+
+      - name: Pull images
+        run: |
+          for image in kgateway agentgateway-controller sds envoy-wrapper; do
+            docker pull --platform "linux/${{ matrix.arch }}" \
+              "${{ env.IMAGE_REGISTRY }}/${image}:${{ needs.setup.outputs.version }}-${{ matrix.arch }}"
+          done
+
+      - name: Run container structure tests
+        run: |
+          for image in kgateway agentgateway-controller sds envoy-wrapper; do
+            echo "Testing ${image} (${{ matrix.arch }})..."
+            container-structure-test test \
+              --image "${{ env.IMAGE_REGISTRY }}/${image}:${{ needs.setup.outputs.version }}-${{ matrix.arch }}" \
+              --platform "linux/${{ matrix.arch }}" \
+              --config "test/container-structure/${image}.yaml"
+          done
+
   validate:
-    name: Validate release artifacts
+    name: Validate release artifacts e2e (${{ matrix.arch }})
     needs: [setup, helm, goreleaser]
     if: ${{ inputs.validate }}
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ 'amd64', 'arm64' ]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Prep Go Runner

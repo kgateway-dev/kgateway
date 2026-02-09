@@ -1,0 +1,32 @@
+schemaVersion: 2.0.0
+
+# Container structure tests for the agentgateway-controller image
+# Built on distroless base (cgr.dev/chainguard/static)
+
+# UID 10101 must match the helm chart's securityContext.runAsUser
+# (see pkg/kgateway/helm/agentgateway/templates/deployment.yaml)
+metadataTest:
+  user: "10101"
+  entrypoint: ["/usr/local/bin/kgateway"]
+
+fileExistenceTests:
+  - name: "kgateway binary exists"
+    path: "/usr/local/bin/kgateway"
+    shouldExist: true
+    permissions: "-rwxr-xr-x"
+    isExecutableBy: "owner"
+
+  # Distroless base should NOT have a shell
+  - name: "no shell in distroless image"
+    path: "/bin/sh"
+    shouldExist: false
+
+  - name: "no bash in distroless image"
+    path: "/bin/bash"
+    shouldExist: false
+
+commandTests:
+  - name: "kgateway binary is executable"
+    command: "/usr/local/bin/kgateway"
+    args: ["--help"]
+    exitCode: 0
