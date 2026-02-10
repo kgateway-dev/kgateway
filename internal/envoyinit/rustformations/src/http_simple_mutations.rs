@@ -20,11 +20,15 @@ pub struct FilterConfig {
 
 struct EnvoyTransformationOps<'a> {
     envoy_filter: &'a mut dyn EnvoyHttpFilter,
+    used_received_response_body: Option<bool>,
 }
 
 impl<'a> EnvoyTransformationOps<'a> {
     fn new(envoy_filter: &'a mut dyn EnvoyHttpFilter) -> EnvoyTransformationOps<'a> {
-        EnvoyTransformationOps { envoy_filter }
+        EnvoyTransformationOps {
+            envoy_filter,
+            used_received_response_body: None,
+        }
     }
 }
 impl TransformationOps for EnvoyTransformationOps<'_> {
@@ -95,29 +99,72 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         self.envoy_filter.remove_response_header(key)
     }
     fn parse_response_json_body(&mut self) -> Result<JsonValue> {
-        let Some(buffers) = self.envoy_filter.get_buffered_response_body() else {
+        let body = self.get_response_body();
+        if body.is_empty() {
             return Ok(JsonValue::Null);
-        };
-        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
-        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
-        let body = chunks.concat();
+        }
         serde_json::from_slice(&body).context("failed to parse response body as json")
     }
     fn get_response_body(&mut self) -> Vec<u8> {
-        let Some(buffers) = self.envoy_filter.get_buffered_response_body() else {
-            return Vec::default();
-        };
+        self.used_received_response_body = Some(false);
 
-        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
-        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
-        chunks.concat()
+        let mut buffers = self.envoy_filter.get_buffered_response_body();
+
+        if buffers.is_none() {
+            // For LocalReply, the body is in the "received_response_body"
+            buffers = self.envoy_filter.get_received_response_body();
+            if buffers.is_some() {
+                self.used_received_response_body = Some(true);
+            }
+        }
+
+        match buffers {
+            None => Vec::default(),
+            Some(buffers) => {
+                // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
+                let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
+                chunks.concat()
+            }
+        }
     }
     fn drain_response_body(&mut self, number_of_bytes: usize) -> bool {
-        self.envoy_filter
-            .drain_buffered_response_body(number_of_bytes)
+        // With testing, it seems to be unnecessary to detect
+        // if we should drain the "received_response_body" if the body is from there.
+        // As long as something get pushed to the "buffered_response_body", that
+        // seems to get used first before the received_response_body.
+
+        // ie in the case of LocalReply, the body comes from "received_response_body"
+        // but we can push the new body in "buffered_response_body" without draining
+        // the "received_response_body", the new body is sent to end user.
+
+        // However, not sure if there is any side effect for that, so doing it here
+        // just in case.
+        if self.used_received_response_body.is_none() {
+            // the used_received_response_body boolean only get set if
+            // the body() inja function is used in the transformation
+            // so, detect it here again if not set.
+            self.used_received_response_body = Some(false);
+            if self.envoy_filter.get_buffered_response_body().is_none()
+                && self.envoy_filter.get_received_response_body().is_some()
+            {
+                self.used_received_response_body = Some(true);
+            }
+        }
+
+        if self.used_received_response_body.unwrap_or(false) {
+            self.envoy_filter
+                .drain_received_response_body(number_of_bytes)
+        } else {
+            self.envoy_filter
+                .drain_buffered_response_body(number_of_bytes)
+        }
     }
     fn append_response_body(&mut self, data: &[u8]) -> bool {
-        self.envoy_filter.append_buffered_response_body(data)
+        if self.used_received_response_body.unwrap_or(false) {
+            self.envoy_filter.append_received_response_body(data)
+        } else {
+            self.envoy_filter.append_buffered_response_body(data)
+        }
     }
 }
 

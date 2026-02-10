@@ -6,12 +6,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/grpcurl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
@@ -28,15 +31,21 @@ type testingSuite struct {
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	// Define the setup TestCase for common resources
 	setupTestCase := base.TestCase{
-		Manifests: []string{
-			transformForHeadersManifest,
-			transformForBodyManifest,
-			gatewayAttachedTransformManifest,
-		},
+		Manifests: []string{},
 	}
 
-	// everything is applied during setup; there are no additional test-specific manifests
-	testCases := map[string]*base.TestCase{}
+	testCases := map[string]*base.TestCase{
+		"TestGatewayWithTransformedHTTPRoute": {
+			Manifests: []string{
+				transformForHeadersManifest,
+				transformForBodyManifest,
+				gatewayAttachedTransformManifest,
+			},
+		},
+		"TestGatewayWithTransformedGRPCRoute": {
+			Manifests: []string{grpcTransformationManifest},
+		},
+	}
 
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setupTestCase, testCases),
@@ -47,7 +56,7 @@ func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 }
 
-func (s *testingSuite) TestGatewayWithTransformedRoute() {
+func (s *testingSuite) TestGatewayWithTransformedHTTPRoute() {
 	// Wait for the agent gateway to be ready
 	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(
 		s.Ctx,
@@ -141,4 +150,82 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 			allOpts...,
 		)
 	}
+}
+
+// TestGatewayWithTransformedGRPCRoute needs to use grpcurl to send a gRPC request to the gateway, and verifies that the
+// response includes the expected metadata header.
+func (s *testingSuite) TestGatewayWithTransformedGRPCRoute() {
+	// Wait for the agent gateway to be ready
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		gateway.Name,
+		gateway.Namespace,
+		gwv1.GatewayConditionProgrammed,
+		metav1.ConditionTrue,
+		timeout,
+	)
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		gateway.Name,
+		gateway.Namespace,
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionTrue,
+		timeout,
+	)
+
+	// Ensure the GRPCRoute is admitted and ready.
+	const grpcRouteName = "example-route"
+	s.TestInstallation.Assertions.EventuallyGRPCRouteCondition(s.Ctx, grpcRouteName, namespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+	s.TestInstallation.Assertions.EventuallyGRPCRouteCondition(s.Ctx, grpcRouteName, namespace, gwv1.RouteConditionResolvedRefs, metav1.ConditionTrue, timeout)
+
+	// Ensure the HTTPRoute that shares the same hostname is also admitted and ready.
+	// We'll use this to assert the HTTPRoute does *not* get gRPC metadata/header transformation.
+	const httpRouteName = "example-route"
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, httpRouteName, namespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, httpRouteName, namespace, gwv1.RouteConditionResolvedRefs, metav1.ConditionTrue, timeout)
+
+	// Use grpcurl from an in-cluster client pod so we exercise the actual dataplane.
+	const (
+		expectedHostname        = "example.com"
+		gatewayPort             = 80
+		expectedResponseMetaKey = "x-grpc-response"
+		expectedResponseMetaVal = "from-grpc"
+	)
+
+	stdout, stderr := s.TestInstallation.AssertionsT(s.T()).AssertEventualGrpcurlSuccess(
+		s.Ctx,
+		kubectl.PodExecOptions{
+			Name:      "grpcurl-client",
+			Namespace: namespace,
+			Container: "grpcurl",
+		},
+		[]grpcurl.Option{
+			grpcurl.WithAddress(common.BaseGateway.Address),
+			grpcurl.WithPort(gatewayPort),
+			grpcurl.WithAuthority(expectedHostname),
+			grpcurl.WithSymbol("yages.Echo/Ping"),
+			grpcurl.WithPlaintext(),
+			grpcurl.WithVerbose(),
+			grpcurl.WithConnectTimeout(int(timeout.Seconds())),
+		},
+		timeout,
+	)
+	combined := strings.ToLower(stdout + "\n" + stderr)
+	s.Require().Contains(
+		combined,
+		strings.ToLower(expectedResponseMetaKey)+": "+expectedResponseMetaVal,
+		"expected grpcurl verbose output to contain transformed response metadata",
+	)
+
+	// Assert the HTTPRoute response does *not* include the `x-grpc-response` header, while the GRPCRoute does.
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			NotHeaders: []string{
+				"x-grpc-response",
+			},
+		},
+		curl.WithHostHeader(expectedHostname),
+	)
 }

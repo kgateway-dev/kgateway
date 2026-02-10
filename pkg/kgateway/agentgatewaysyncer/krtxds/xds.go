@@ -1147,7 +1147,7 @@ func (e CollectionGenerator) GenerateDeltas(req *PushRequest, w *model.WatchedRe
 			}
 			return &e.Resource
 		})
-		toDeleted := w.ResourceNames.Copy()
+		toDeleted := req.Delta.Subscribed
 		for _, r := range res {
 			toDeleted.Delete(r.Name)
 		}
