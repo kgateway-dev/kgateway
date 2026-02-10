@@ -7,12 +7,19 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
 	testruntime "github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
+)
+
+var (
+	// minAutomtlsIstioVersion is the minimum Istio version required to run the automtls/custom TLS Istio tests
+	minAutomtlsIstioVersion = semver.MustParse("1.24.2")
 )
 
 // TestKgatewayIstioAutoMtls is the function which executes a series of tests against a given installation
@@ -22,6 +29,11 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 	// Set Istio version if not already set
 	if os.Getenv(testruntime.IstioVersionEnv) == "" {
 		os.Setenv(testruntime.IstioVersionEnv, "1.25.1") // Using default istio version
+	}
+
+	if shouldSkipAutomtlsIstio(t) {
+		t.Skip("Skipping due to https://github.com/istio/istio/issues/53846 which is fixed in Istio >= 1.24.2")
+		return
 	}
 
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "automtls-istio-test")
@@ -77,4 +89,18 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	AutomtlsIstioSuiteRunner().Run(ctx, t, testInstallation)
+}
+
+func shouldSkipAutomtlsIstio(t *testing.T) bool {
+	istioVersion, ok := os.LookupEnv(testruntime.IstioVersionEnv)
+	if !ok {
+		t.Fatalf("required environment variable %s not set", testruntime.IstioVersionEnv)
+	}
+
+	istioVersionSemver, err := semver.NewVersion(istioVersion)
+	if err != nil {
+		t.Fatalf("failed to parse istio version %s as semver: %v", istioVersion, err)
+	}
+
+	return istioVersionSemver.LessThan(minAutomtlsIstioVersion)
 }
