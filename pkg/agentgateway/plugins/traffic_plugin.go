@@ -92,17 +92,16 @@ func convertStatusCollection[T controllers.Object](col krt.Collection[krt.Object
 
 // NewAgentPlugin creates a new AgentgatewayPolicy plugin
 func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
-	policyStatusCol, policyCol := krt.NewStatusManyCollection(agw.AgentgatewayPolicies, func(krtctx krt.HandlerContext, policyCR *agentgateway.AgentgatewayPolicy) (
-		*gwv1.PolicyStatus,
-		[]AgwPolicy,
-	) {
-		return TranslateAgentgatewayPolicy(krtctx, policyCR, agw)
-	}, agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
-
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.AgentgatewayPolicyGVK.GroupKind(): {
 				Build: func(input PolicyPluginInput) (krt.StatusCollection[controllers.Object, gwv1.PolicyStatus], krt.Collection[AgwPolicy]) {
+					policyStatusCol, policyCol := krt.NewStatusManyCollection(agw.AgentgatewayPolicies, func(krtctx krt.HandlerContext, policyCR *agentgateway.AgentgatewayPolicy) (
+						*gwv1.PolicyStatus,
+						[]AgwPolicy,
+					) {
+						return TranslateAgentgatewayPolicy(krtctx, policyCR, agw)
+					}, agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
 					return convertStatusCollection(policyStatusCol), policyCol
 				},
 			},

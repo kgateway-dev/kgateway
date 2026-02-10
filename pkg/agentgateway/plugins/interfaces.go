@@ -14,7 +14,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 // AgwResourceStatusSyncHandler defines a function that handles status syncing for a specific resource type in AgentGateway
