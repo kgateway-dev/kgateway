@@ -1555,7 +1555,7 @@ func getPolicyStatusFn(
 	return func(ctx context.Context, nn types.NamespacedName) (gwv1.PolicyStatus, error) {
 		res := cl.Get(nn.Name, nn.Namespace)
 		if res == nil {
-			return gwv1.PolicyStatus{}, errors.New("policy not found")
+			return gwv1.PolicyStatus{}, pluginsdk.ErrNotFound
 		}
 		return res.Status, nil
 	}
@@ -1567,7 +1567,7 @@ func patchPolicyStatusFn(
 	return func(ctx context.Context, nn types.NamespacedName, policyStatus gwv1.PolicyStatus) error {
 		cur := cl.Get(nn.Name, nn.Namespace)
 		if cur == nil {
-			return errors.New("policy not found")
+			return pluginsdk.ErrNotFound
 		}
 
 		_, err := cl.UpdateStatus(&agentgateway.AgentgatewayPolicy{
@@ -1576,6 +1576,7 @@ func patchPolicyStatusFn(
 		})
 		if err != nil {
 			if k8serrors.IsConflict(err) {
+				logger.Debug("error updating stale status", "ref", nn, "error", err)
 				return nil // let the conflicting Status update trigger a KRT event to requeue the updated object
 			}
 			return fmt.Errorf("error updating status for AgentgatewayPolicy %s: %w", nn.String(), err)
