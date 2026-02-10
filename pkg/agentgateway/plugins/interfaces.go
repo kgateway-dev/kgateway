@@ -23,8 +23,19 @@ type PolicyPluginInput struct {
 	Ancestors krt.IndexCollection[utils.TypedNamespacedName, *utils.AncestorBackend]
 }
 
+type (
+	// GetPolicyStatusFn is a function type that plugins implement to get the PolicyStatus for a given policy
+	GetPolicyStatusFn func(ctx context.Context, nn types.NamespacedName) (gwv1.PolicyStatus, error)
+	// PatchPolicyStatusFn is a function type that plugins implement to patch the PolicyStatus for a given policy
+	PatchPolicyStatusFn func(ctx context.Context, nn types.NamespacedName, status gwv1.PolicyStatus) error
+)
+
 type PolicyPlugin struct {
 	Build func(PolicyPluginInput) (krt.StatusCollection[controllers.Object, gwv1.PolicyStatus], krt.Collection[AgwPolicy])
+	// GetPolicyStatus returns the current PolicyStatus for the given policy
+	GetPolicyStatus GetPolicyStatusFn
+	// PatchPolicyStatus updates the PolicyStatus for the given policy
+	PatchPolicyStatus PatchPolicyStatusFn
 }
 
 // ApplyPolicies extracts all policies from the collection

@@ -39,7 +39,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -92,6 +91,8 @@ func convertStatusCollection[T controllers.Object](col krt.Collection[krt.Object
 
 // NewAgentPlugin creates a new AgentgatewayPolicy plugin
 func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
+	// Reuse the shared kclient for both the KRT collection and status functions
+	cli := agw.AgentgatewayPolicyClient
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.AgentgatewayPolicyGVK.GroupKind(): {
@@ -104,6 +105,8 @@ func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
 					}, agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
 					return convertStatusCollection(policyStatusCol), policyCol
 				},
+				GetPolicyStatus:   getPolicyStatusFn(cli),
+				PatchPolicyStatus: patchPolicyStatusFn(cli),
 			},
 		},
 	}
@@ -1549,13 +1552,16 @@ func toStruct(rm json.RawMessage) (*structpb.Struct, error) {
 	return pbs, nil
 }
 
+// ErrNotFound is returned when a requested resource is not found
+var ErrNotFound = errors.New("not found")
+
 func getPolicyStatusFn(
 	cl kclient.Client[*agentgateway.AgentgatewayPolicy],
-) pluginsdk.GetPolicyStatusFn {
+) GetPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName) (gwv1.PolicyStatus, error) {
 		res := cl.Get(nn.Name, nn.Namespace)
 		if res == nil {
-			return gwv1.PolicyStatus{}, pluginsdk.ErrNotFound
+			return gwv1.PolicyStatus{}, ErrNotFound
 		}
 		return res.Status, nil
 	}
@@ -1563,15 +1569,15 @@ func getPolicyStatusFn(
 
 func patchPolicyStatusFn(
 	cl kclient.Client[*agentgateway.AgentgatewayPolicy],
-) pluginsdk.PatchPolicyStatusFn {
+) PatchPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName, policyStatus gwv1.PolicyStatus) error {
 		cur := cl.Get(nn.Name, nn.Namespace)
 		if cur == nil {
-			return pluginsdk.ErrNotFound
+			return ErrNotFound
 		}
 
 		_, err := cl.UpdateStatus(&agentgateway.AgentgatewayPolicy{
-			ObjectMeta: pluginsdk.CloneObjectMetaForStatus(cur.ObjectMeta),
+			ObjectMeta: cloneObjectMetaForStatus(cur.ObjectMeta),
 			Status:     policyStatus,
 		})
 		if err != nil {
@@ -1582,5 +1588,14 @@ func patchPolicyStatusFn(
 			return fmt.Errorf("error updating status for AgentgatewayPolicy %s: %w", nn.String(), err)
 		}
 		return nil
+	}
+}
+
+// cloneObjectMetaForStatus creates a minimal ObjectMeta copy for status updates
+func cloneObjectMetaForStatus(m metav1.ObjectMeta) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:            m.GetName(),
+		Namespace:       m.GetNamespace(),
+		ResourceVersion: m.GetResourceVersion(),
 	}
 }

@@ -72,6 +72,7 @@ func NewAgwStatusSyncer(
 	statusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
 	extraHandlers map[schema.GroupVersionKind]agwplugins.AgwResourceStatusSyncHandler,
+	agentgatewayPolicyClient kclient.Client[*agentgateway.AgentgatewayPolicy],
 ) *AgentGwStatusSyncer {
 	f := kclient.Filter{ObjectFilter: client.ObjectFilter()}
 	syncer := &AgentGwStatusSyncer{
@@ -85,7 +86,7 @@ func NewAgwStatusSyncer(
 		agentgatewayPolicies: StatusSyncer[*agentgateway.AgentgatewayPolicy, *gwv1.PolicyStatus]{
 			name:           "agentgatewayPolicy",
 			controllerName: controllerName,
-			client:         kclient.NewFilteredDelayed[*agentgateway.AgentgatewayPolicy](client, wellknown.AgentgatewayPolicyGVR, f),
+			client:         agentgatewayPolicyClient, // Reuse the shared kclient from the plugin
 			build: func(om metav1.ObjectMeta, s *gwv1.PolicyStatus) *agentgateway.AgentgatewayPolicy {
 				return &agentgateway.AgentgatewayPolicy{
 					ObjectMeta: om,
