@@ -24,13 +24,19 @@ package deployer
 import (
 	"os"
 	"path/filepath"
+	"reflect"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	pkgdeployer "github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer/strategicpatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -735,4 +741,105 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, fakeClient)
 		})
 	}
+}
+
+// TestDeployerManagedResourcesHaveRBACPermissions verifies that all Kubernetes
+// resource types the deployer can create or manage have corresponding RBAC
+// permissions in the controller's ClusterRole. This test would have caught the
+// missing RBAC rules when PDB, HPA, and VPA support were added to the deployer.
+//
+// If you add a new field to strategicpatch.ResourceOverlays, you must:
+// 1. Add a +kubebuilder:rbac marker in the appropriate doc.go
+// 2. Run `make generate-all` to regenerate the ClusterRole
+// 3. Update this test's resource lists
+func TestDeployerManagedResourcesHaveRBACPermissions(t *testing.T) {
+	// Guard: if ResourceOverlays gains new fields, this test must be updated.
+	numFields := reflect.TypeOf(strategicpatch.ResourceOverlays{}).NumField()
+	require.Equal(t, 6, numFields,
+		"ResourceOverlays struct field count changed; update this test's resource lists "+
+			"and add +kubebuilder:rbac markers in doc.go for any new resource types")
+
+	rootDir := testutils.GitRootDirectory()
+
+	type managedResource struct {
+		apiGroup string
+		resource string
+	}
+
+	// All resource types from ResourceOverlays mapped to their RBAC API group
+	// and plural resource name. Each entry corresponds to a field in
+	// strategicpatch.ResourceOverlays.
+	allOverlayResources := []managedResource{
+		{apiGroup: "apps", resource: "deployments"},                          // Deployment
+		{apiGroup: "", resource: "services"},                                 // Service
+		{apiGroup: "", resource: "serviceaccounts"},                          // ServiceAccount
+		{apiGroup: "policy", resource: "poddisruptionbudgets"},               // PodDisruptionBudget
+		{apiGroup: "autoscaling", resource: "horizontalpodautoscalers"},      // HorizontalPodAutoscaler
+		{apiGroup: "autoscaling.k8s.io", resource: "verticalpodautoscalers"}, // VerticalPodAutoscaler
+	}
+
+	// The deployer uses server-side apply (patch) to manage resources, so it
+	// needs at minimum: create, delete, get, list, patch, watch. The "update"
+	// verb is not strictly required since SSA uses patch, not update.
+	requiredVerbs := []string{"create", "delete", "get", "list", "patch", "watch"}
+
+	tests := []struct {
+		name      string
+		roleFile  string
+		resources []managedResource
+	}{
+		{
+			name:      "kgateway",
+			roleFile:  filepath.Join(rootDir, "install/helm/kgateway/templates/role.yaml"),
+			resources: allOverlayResources, // kgateway supports all overlay types including VPA
+		},
+		{
+			name:     "agentgateway",
+			roleFile: filepath.Join(rootDir, "install/helm/agentgateway/templates/role.yaml"),
+			// Agentgateway supports all overlay types except VerticalPodAutoscaler
+			// (see strategicpatch.FromAgentgatewayParameters which sets VPA to nil)
+			resources: allOverlayResources[:len(allOverlayResources)-1],
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rules := parseClusterRoleRules(t, tt.roleFile)
+
+			for _, res := range tt.resources {
+				for _, verb := range requiredVerbs {
+					found := false
+					for _, rule := range rules {
+						if slices.Contains(rule.APIGroups, res.apiGroup) &&
+							slices.Contains(rule.Resources, res.resource) &&
+							slices.Contains(rule.Verbs, verb) {
+							found = true
+							break
+						}
+					}
+					assert.True(t, found,
+						"ClusterRole is missing RBAC permission: apiGroup=%q resource=%q verb=%q; "+
+							"add a +kubebuilder:rbac marker in doc.go and run make generate-all",
+						res.apiGroup, res.resource, verb)
+				}
+			}
+		})
+	}
+}
+
+// parseClusterRoleRules reads a Helm-templated ClusterRole YAML file and
+// returns its RBAC policy rules.
+func parseClusterRoleRules(t *testing.T, rolePath string) []rbacv1.PolicyRule {
+	t.Helper()
+	data, err := os.ReadFile(rolePath)
+	require.NoError(t, err, "failed to read role file: %s", rolePath)
+
+	// Replace Helm template expressions to make it parseable as plain YAML
+	yamlStr := strings.ReplaceAll(string(data), "{{ .Release.Namespace }}", "test")
+
+	var role rbacv1.ClusterRole
+	err = yaml.Unmarshal([]byte(yamlStr), &role)
+	require.NoError(t, err, "failed to parse ClusterRole from %s", rolePath)
+
+	return role.Rules
 }
