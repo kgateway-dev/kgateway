@@ -776,6 +776,8 @@ type BackendAuth struct {
 	AWS *AwsAuth `json:"aws,omitempty"`
 
 	// Azure specifies an Azure authentication method for the backend.
+	//
+	// +optional
 	Azure *AzureAuth `json:"azure,omitempty"`
 
 	// Auth specifies to use a Google  authentication method for the backend.
@@ -819,18 +821,22 @@ type AwsAuth struct {
 type AzureAuth struct {
 	// SecretRef references a Kubernetes Secret containing the Azure credentials.
 	// The Secret must have keys "clientId", "tenantId", and "clientSecret".
+	//
+	// +optional
 	SecretRef corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
 	// Details for managed identity authentication
+	//
+	// +optional
 	ManagedIdentity *AzureManagedIdentity `json:"managedIdentity,omitempty"`
-
-	// TODO: does not appear to have schema??
-	// WorkloadIdentity *AzureWorkloadIdentity `json:"workloadIdentity,omitempty"`
 }
 
 type AzureManagedIdentity struct {
-	ClientID   string `json:"clientId,omitempty"`
-	ObjectID   string `json:"objectId,omitempty"`
+	// +required
+	ClientID string `json:"clientId,omitempty"`
+	// +required
+	ObjectID string `json:"objectId,omitempty"`
+	// +required
 	ResourceID string `json:"resourceId,omitempty"`
 }
 
