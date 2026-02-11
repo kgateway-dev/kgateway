@@ -1,16 +1,14 @@
 Clusters:
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
+- loadAssignment:
+    clusterName: kube_gwtest_example-svc_80
   metadata: {}
   name: kube_gwtest_example-svc_80
-  type: EDS
-- connectTimeout: 5s
+  type: STATIC
+- loadAssignment:
+    clusterName: test-backend-plugin_default_example-svc_80
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
+  type: STATIC
 Listeners:
 - address:
     socketAddress:
@@ -44,15 +42,6 @@ Routes:
   - domains:
     - www.example.com
     name: listener~8080~www_example_com
-    routes:
-    - directResponse:
-        body:
-          inlineString: invalid route configuration detected and replaced with a direct
-            response.
-        status: 500
-      match:
-        prefix: /
-      name: listener~8080~www_example_com-route-0-httproute-test-route-gwtest-0-0-matcher-0
 Statuses:
   gateways:
     gwtest/example-gateway:
@@ -106,9 +95,10 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/my-tp-that-doesnt-exist:
-            policy not found'
-          reason: RouteRuleReplaced
+          message: |-
+            Dropped Rule (0): invalid matcher configuration: validation failed: invalid xds configuration: Cannot connect to the Docker daemon at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?
+            gateway.kgateway.dev/TrafficPolicy/gwtest/my-tp-that-doesnt-exist: policy not found
+          reason: RouteRuleDropped
           status: "False"
           type: Accepted
         - lastTransitionTime: null

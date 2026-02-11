@@ -1,16 +1,14 @@
 Clusters:
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
+- loadAssignment:
+    clusterName: kube_gwtest_example-svc_80
   metadata: {}
   name: kube_gwtest_example-svc_80
-  type: EDS
-- connectTimeout: 5s
+  type: STATIC
+- loadAssignment:
+    clusterName: test-backend-plugin_default_example-svc_80
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
+  type: STATIC
 Listeners:
 - address:
     socketAddress:
@@ -129,13 +127,6 @@ Routes:
   - domains:
     - alt.example.com
     name: listener~8081~alt_example_com
-    routes:
-    - match:
-        prefix: /
-      name: listener~8081~alt_example_com-route-0-httproute-test-route-gwtest-0-0-matcher-0
-      route:
-        cluster: kube_gwtest_example-svc_80
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:
     gwtest/example-gateway:
@@ -159,9 +150,8 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to create pre-route filter config: Failed to initialize per-route
-            dynamic module'
+          message: 'invalid xds configuration: Cannot connect to the Docker daemon
+            at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -217,9 +207,8 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to create pre-route filter config: Failed to initialize per-route
-            dynamic module'
+          message: 'invalid xds configuration: Cannot connect to the Docker daemon
+            at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -242,14 +231,18 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
   httpRoutes:
     gwtest/test-route:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Successfully accepted Route
-          reason: Accepted
-          status: "True"
+          message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
+            invalid xds configuration: Cannot connect to the Docker daemon at unix:///Users/omar/.docker/run/docker.sock.
+            Is the docker daemon running?'
+          reason: RouteRuleDropped
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references
@@ -271,9 +264,8 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to create pre-route filter config: Failed to initialize per-route
-            dynamic module'
+          message: 'invalid xds configuration: Cannot connect to the Docker daemon
+            at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?'
           reason: Invalid
           status: "False"
           type: Accepted
