@@ -242,8 +242,8 @@ golden-helm:  ## Refreshes golden files for ./test/helm snapshot testing
 # Env test
 #----------------------------------------------------------------------------------
 
-ENVTEST_K8S_VERSION = 1.23
-ENVTEST ?= go tool setup-envtest
+ENVTEST_K8S_VERSION = 1.31
+ENVTEST ?= go -C tools tool setup-envtest
 
 .PHONY: envtest-path
 envtest-path: ## Set the envtest path
@@ -266,11 +266,13 @@ endif
 
 # Skip -race on e2e. This requires building the codebase twice, and provides no value as the only code executed is test code.
 # Skip -vet; we already run it on the linter step and its very slow.
-E2E_GO_TEST_ARGS ?= -vet=off -timeout=25m -outputdir=$(OUTPUT_DIR)
+E2E_GO_TEST_ARGS ?= -vet=off -timeout=35m -outputdir=$(OUTPUT_DIR)
 # Testing flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
-# The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
-# to 25 minutes based on the time it takes to run the longest test setup (kgateway_test).
-GO_TEST_ARGS ?= -timeout=25m -outputdir=$(OUTPUT_DIR) -race
+# The default timeout for a suite is 10 minutes, but this can be overridden by
+# setting the -timeout flag. Currently set to 35 minutes based on the time it
+# takes to run the longest test step (unittests. TODO(chandler): why is the
+# upgraded setup-envtest so much slower?)
+GO_TEST_ARGS ?= -timeout=35m -outputdir=$(OUTPUT_DIR) -race
 GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=cover.out
 GO_TEST_COVERAGE ?= go tool github.com/vladopajic/go-test-coverage/v2
 
@@ -956,7 +958,7 @@ gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
 	go test -mod=mod -ldflags='$(LDFLAGS)' \
 	    -tags conformance \
-	    -timeout=25m \
+	    -timeout=35m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) \
 	    -args $(GIE_CONFORMANCE_ARGS)
 
@@ -965,7 +967,7 @@ gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Exte
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
 	go test -mod=mod -ldflags='$(LDFLAGS)' \
 	    -tags conformance \
-	    -timeout=25m \
+	    -timeout=35m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) \
 	    -args $(GIE_CONFORMANCE_ARGS) -run-test=$*
 
