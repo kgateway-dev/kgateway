@@ -1,19 +1,25 @@
 Clusters:
-- loadAssignment:
-    clusterName: kube_gwtest_httpbin_8080
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_gwtest_httpbin_8080
-  type: STATIC
-- loadAssignment:
-    clusterName: kube_gwtest_oauth2-proxy_4180
+  type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_gwtest_oauth2-proxy_4180
-  type: STATIC
-- loadAssignment:
-    clusterName: test-backend-plugin_default_example-svc_80
+  type: EDS
+- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-  type: STATIC
 Listeners:
 - address:
     socketAddress:
@@ -109,9 +115,8 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): invalid xds configuration: Cannot connect to
-            the Docker daemon at unix:///Users/omar/.docker/run/docker.sock. Is the
-            docker daemon running?'
+          message: 'Replaced Rule (0): invalid xds configuration: error initializing
+            configuration ''/dev/fd/0'': path_prefix should start with "/".'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
@@ -135,8 +140,8 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: Cannot connect to the Docker daemon
-            at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?'
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            path_prefix should start with "/".'
           reason: Invalid
           status: "False"
           type: Accepted

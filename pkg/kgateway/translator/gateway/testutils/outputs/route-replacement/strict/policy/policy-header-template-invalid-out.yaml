@@ -1,14 +1,16 @@
 Clusters:
-- loadAssignment:
-    clusterName: kube_gwtest_example-svc_80
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_gwtest_example-svc_80
-  type: STATIC
-- loadAssignment:
-    clusterName: test-backend-plugin_default_example-svc_80
+  type: EDS
+- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-  type: STATIC
 Listeners:
 - address:
     socketAddress:
@@ -42,6 +44,15 @@ Routes:
   - domains:
     - example.com
     name: listener~8080~example_com
+    routes:
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
+        prefix: /
+      name: listener~8080~example_com-route-0-httproute-invalid-header-template-route-gwtest-0-0-matcher-0
 Statuses:
   gateways:
     gwtest/example-gateway:
@@ -95,10 +106,11 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
-            invalid xds configuration: Cannot connect to the Docker daemon at unix:///Users/omar/.docker/run/docker.sock.
-            Is the docker daemon running?'
-          reason: RouteRuleDropped
+          message: 'Replaced Rule (0): invalid route configuration: validation failed:
+            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            Incorrect configuration: %REQ(Correlation-Id. Couldn''t find valid command
+            at position 0'
+          reason: RouteRuleReplaced
           status: "False"
           type: Accepted
         - lastTransitionTime: null

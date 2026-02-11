@@ -1,14 +1,16 @@
 Clusters:
-- loadAssignment:
-    clusterName: kube_gwtest_example-svc_80
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_gwtest_example-svc_80
-  type: STATIC
-- loadAssignment:
-    clusterName: test-backend-plugin_default_example-svc_80
+  type: EDS
+- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-  type: STATIC
 Listeners:
 - address:
     socketAddress:
@@ -104,9 +106,8 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: |-
-            Replaced Rule (0): extauth: gateway extension gwtest/non-existent-auth-extension not found
-            invalid xds configuration: Cannot connect to the Docker daemon at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?
+          message: 'Replaced Rule (0): extauth: gateway extension gwtest/non-existent-auth-extension
+            not found'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
@@ -131,8 +132,7 @@ Statuses:
         conditions:
         - lastTransitionTime: null
           message: 'extauth: gateway extension gwtest/non-existent-auth-extension
-            not found; invalid xds configuration: Cannot connect to the Docker daemon
-            at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?'
+            not found'
           reason: Invalid
           status: "False"
           type: Accepted

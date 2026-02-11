@@ -4,11 +4,9 @@ Clusters:
   metadata: {}
   name: kube_gwtest_example-svc_80
   type: STATIC
-- loadAssignment:
-    clusterName: test-backend-plugin_default_example-svc_80
+- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-  type: STATIC
 Listeners:
 - address:
     socketAddress:
@@ -49,6 +47,13 @@ Routes:
   - domains:
     - www.example.com
     name: https~www_example_com
+    routes:
+    - match:
+        prefix: /
+      name: https~www_example_com-route-0-httproute-test-route-gwtest-0-0-matcher-0
+      route:
+        cluster: kube_gwtest_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:
     gwtest/example-gateway:
@@ -102,11 +107,9 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
-            invalid xds configuration: Cannot connect to the Docker daemon at unix:///Users/omar/.docker/run/docker.sock.
-            Is the docker daemon running?'
-          reason: RouteRuleDropped
-          status: "False"
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references
@@ -128,8 +131,10 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: Cannot connect to the Docker daemon
-            at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?'
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            Failed to initialize cipher suites BOGUS_CIPHER_SUITE_1:INVALID_AES_256_GCM_SHA384:FAKE_ECDHE_RSA_WITH_AES_128_CBC_SHA.
+            The following ciphers were rejected when tried individually: BOGUS_CIPHER_SUITE_1,
+            INVALID_AES_256_GCM_SHA384, FAKE_ECDHE_RSA_WITH_AES_128_CBC_SHA'
           reason: Invalid
           status: "False"
           type: Accepted

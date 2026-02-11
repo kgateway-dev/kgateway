@@ -1,14 +1,16 @@
 Clusters:
-- loadAssignment:
-    clusterName: kube_gwtest_example-svc_80
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_gwtest_example-svc_80
-  type: STATIC
-- loadAssignment:
-    clusterName: test-backend-plugin_default_example-svc_80
+  type: EDS
+- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-  type: STATIC
 Listeners:
 - address:
     socketAddress:
@@ -177,8 +179,9 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'invalid xds configuration: Cannot connect to the Docker daemon at
-          unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?'
+        message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+          Failed to create pre-route filter config: Failed to initialize per-route
+          dynamic module'
         reason: GatewayReplaced
         status: "False"
         type: Accepted
@@ -249,11 +252,9 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
-            invalid xds configuration: Cannot connect to the Docker daemon at unix:///Users/omar/.docker/run/docker.sock.
-            Is the docker daemon running?'
-          reason: RouteRuleDropped
-          status: "False"
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references
@@ -269,11 +270,9 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
-            invalid xds configuration: Cannot connect to the Docker daemon at unix:///Users/omar/.docker/run/docker.sock.
-            Is the docker daemon running?'
-          reason: RouteRuleDropped
-          status: "False"
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references
@@ -302,9 +301,7 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: |-
-            extauth: gateway extension gwtest/missing-extauth not found
-            invalid xds configuration: Cannot connect to the Docker daemon at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?
+          message: 'extauth: gateway extension gwtest/missing-extauth not found'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -333,8 +330,9 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: Cannot connect to the Docker daemon
-            at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?'
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            Failed to create pre-route filter config: Failed to initialize per-route
+            dynamic module'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -370,8 +368,9 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: Cannot connect to the Docker daemon
-            at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?'
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            Failed to create pre-route filter config: Failed to initialize per-route
+            dynamic module'
           reason: Invalid
           status: "False"
           type: Accepted
@@ -388,8 +387,9 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: Cannot connect to the Docker daemon
-            at unix:///Users/omar/.docker/run/docker.sock. Is the docker daemon running?'
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            Failed to create pre-route filter config: Failed to initialize per-route
+            dynamic module'
           reason: Invalid
           status: "False"
           type: Accepted
@@ -408,9 +408,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: gateway extension gwtest/missing-extauth not found; invalid
-            xds configuration: Cannot connect to the Docker daemon at unix:///Users/omar/.docker/run/docker.sock.
-            Is the docker daemon running?'
+          message: 'extauth: gateway extension gwtest/missing-extauth not found'
           reason: Invalid
           status: "False"
           type: Accepted

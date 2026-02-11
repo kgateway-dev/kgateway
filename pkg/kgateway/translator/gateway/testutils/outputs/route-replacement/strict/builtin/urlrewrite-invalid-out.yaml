@@ -1,14 +1,16 @@
 Clusters:
-- loadAssignment:
-    clusterName: kube_gwtest_example-svc_80
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_gwtest_example-svc_80
-  type: STATIC
-- loadAssignment:
-    clusterName: test-backend-plugin_default_example-svc_80
+  type: EDS
+- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-  type: STATIC
 Listeners:
 - address:
     socketAddress:
