@@ -434,7 +434,6 @@ require (
 	k8s.io/kubectl v0.34.0 // indirect
 	mvdan.cc/gofumpt v0.9.2 // indirect
 	mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15 // indirect
-	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231019135941-15d792835235 // indirect
 	sigs.k8s.io/controller-tools v0.19.1-0.20251023132335-bf7d6b742e6a // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/kind v0.31.0 // indirect
@@ -456,7 +455,6 @@ tool (
 	k8s.io/code-generator/cmd/client-gen
 	k8s.io/code-generator/cmd/register-gen
 	k8s.io/kube-openapi/cmd/openapi-gen
-	sigs.k8s.io/controller-runtime/tools/setup-envtest
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kind
 )
