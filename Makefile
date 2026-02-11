@@ -238,8 +238,8 @@ golden-helm:  ## Refreshes golden files for ./test/helm snapshot testing
 # Env test
 #----------------------------------------------------------------------------------
 
-ENVTEST_K8S_VERSION = 1.23
-ENVTEST ?= go tool setup-envtest
+ENVTEST_K8S_VERSION = 1.31
+ENVTEST ?= go -C tools tool setup-envtest
 
 .PHONY: envtest-path
 envtest-path: ## Set the envtest path
