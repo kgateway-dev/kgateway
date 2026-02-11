@@ -752,7 +752,7 @@ func buildAzureClientSecret(secrets krt.Collection[*corev1.Secret], krtctx krt.H
 				},
 			},
 		},
-	}
+	}, errors.Join(errs...)
 }
 
 func buildGcpAuthPolicy(auth *agentgateway.GcpAuth) *api.BackendAuthPolicy {
@@ -777,5 +777,5 @@ func buildGcpAuthPolicy(auth *agentgateway.GcpAuth) *api.BackendAuthPolicy {
 				},
 			},
 		},
-	}, errors.Join(errs...)
+	}
 }
