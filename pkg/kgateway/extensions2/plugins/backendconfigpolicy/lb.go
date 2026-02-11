@@ -54,142 +54,172 @@ func translateLoadBalancerConfig(config *kgateway.LoadBalancer, policyName, poli
 		out.commonLbConfig.CloseConnectionsOnHostSetChange = *config.CloseConnectionsOnHostSetChange
 	}
 
-	if config.LeastRequest != nil {
-		leastRequest := &envoyleastrequestv3.LeastRequest{
-			ChoiceCount: &wrapperspb.UInt32Value{
-				Value: uint32(config.LeastRequest.ChoiceCount), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
-			},
-			SlowStartConfig: toSlowStartConfig(config.LeastRequest.SlowStart, policyName, policyNamespace),
-		}
-		if config.LocalityType != nil {
-			leastRequest.LocalityLbConfig = &envoycommonv3.LocalityLbConfig{
-				LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
-					LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
-				},
-			}
-		}
-		leastRequestAny, err := utils.MessageToAny(leastRequest)
-		if err != nil {
-			return nil, err
-		}
-		out.loadBalancingPolicy = &envoyclusterv3.LoadBalancingPolicy{
-			Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
-				TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
-					Name:        "envoy.load_balancing_policies.least_request",
-					TypedConfig: leastRequestAny,
-				},
-			}},
-		}
-	} else if config.RoundRobin != nil {
-		roundRobin := &envoyroundrobinv3.RoundRobin{
-			SlowStartConfig: toSlowStartConfig(config.RoundRobin.SlowStart, policyName, policyNamespace),
-		}
-		if config.LocalityType != nil {
-			roundRobin.LocalityLbConfig = &envoycommonv3.LocalityLbConfig{
-				LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
-					LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
-				},
-			}
-		}
-		roundRobinAny, err := utils.MessageToAny(roundRobin)
-		if err != nil {
-			return nil, err
-		}
-		out.loadBalancingPolicy = &envoyclusterv3.LoadBalancingPolicy{
-			Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
-				TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
-					Name:        "envoy.load_balancing_policies.round_robin",
-					TypedConfig: roundRobinAny,
-				},
-			}},
-		}
-	} else if config.RingHash != nil {
-		ringHash := &envoyringhashv3.RingHash{}
-		if config.RingHash.MinimumRingSize != nil {
-			ringHash.MinimumRingSize = &wrapperspb.UInt64Value{
-				Value: uint64(*config.RingHash.MinimumRingSize), // nolint:gosec // G115: kubebuilder validation ensures safe for uint64
-			}
-		}
-		if config.RingHash.MaximumRingSize != nil {
-			ringHash.MaximumRingSize = &wrapperspb.UInt64Value{
-				Value: uint64(*config.RingHash.MaximumRingSize), // nolint:gosec // G115: kubebuilder validation ensures safe for uint64
-			}
-		}
-		if config.RingHash.UseHostnameForHashing != nil || len(config.RingHash.HashPolicies) > 0 {
-			hashingLBConfig := &envoycommonv3.ConsistentHashingLbConfig{}
-			if config.RingHash.UseHostnameForHashing != nil {
-				out.useHostnameForHashing = *config.RingHash.UseHostnameForHashing
-				hashingLBConfig.UseHostnameForHashing = *config.RingHash.UseHostnameForHashing
-			}
-			hashingLBConfig.HashPolicy = constructHashPolicy(config.RingHash.HashPolicies)
-			ringHash.ConsistentHashingLbConfig = hashingLBConfig
-		}
+	var err error
+	switch {
+	case config.LeastRequest != nil:
+		out.loadBalancingPolicy, err = buildLeastRequestPolicy(config, policyName, policyNamespace)
+	case config.RoundRobin != nil:
+		out.loadBalancingPolicy, err = buildRoundRobinPolicy(config, policyName, policyNamespace)
+	case config.RingHash != nil:
+		out.loadBalancingPolicy, out.useHostnameForHashing, err = buildRingHashPolicy(config)
+	case config.Maglev != nil:
+		out.loadBalancingPolicy, out.useHostnameForHashing, err = buildMaglevPolicy(config)
+	case config.Random != nil:
+		out.loadBalancingPolicy, err = buildRandomPolicy(config)
+	}
 
-		if config.LocalityType != nil {
-			ringHash.LocalityWeightedLbConfig = &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{}
-		}
-		ringHashAny, err := utils.MessageToAny(ringHash)
-		if err != nil {
-			return nil, err
-		}
-		out.loadBalancingPolicy = &envoyclusterv3.LoadBalancingPolicy{
-			Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
-				TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
-					Name:        "envoy.load_balancing_policies.ring_hash",
-					TypedConfig: ringHashAny,
-				},
-			}},
-		}
-	} else if config.Maglev != nil {
-		maglev := &envoymaglevv3.Maglev{}
-		if config.Maglev.UseHostnameForHashing != nil || len(config.Maglev.HashPolicies) > 0 {
-			hashingLBConfig := &envoycommonv3.ConsistentHashingLbConfig{}
-			if config.Maglev.UseHostnameForHashing != nil {
-				out.useHostnameForHashing = *config.Maglev.UseHostnameForHashing
-				hashingLBConfig.UseHostnameForHashing = *config.Maglev.UseHostnameForHashing
-			}
-			hashingLBConfig.HashPolicy = constructHashPolicy(config.Maglev.HashPolicies)
-			maglev.ConsistentHashingLbConfig = hashingLBConfig
-		}
-		if config.LocalityType != nil {
-			maglev.LocalityWeightedLbConfig = &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{}
-		}
-		maglevAny, err := utils.MessageToAny(maglev)
-		if err != nil {
-			return nil, err
-		}
-		out.loadBalancingPolicy = &envoyclusterv3.LoadBalancingPolicy{
-			Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
-				TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
-					Name:        "envoy.load_balancing_policies.maglev",
-					TypedConfig: maglevAny,
-				},
-			}},
-		}
-	} else if config.Random != nil {
-		random := &envoyrandomv3.Random{}
-		if config.LocalityType != nil {
-			random.LocalityLbConfig = &envoycommonv3.LocalityLbConfig{
-				LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
-					LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
-				},
-			}
-		}
-		randomAny, err := utils.MessageToAny(random)
-		if err != nil {
-			return nil, err
-		}
-		out.loadBalancingPolicy = &envoyclusterv3.LoadBalancingPolicy{
-			Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
-				TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
-					Name:        "envoy.load_balancing_policies.random",
-					TypedConfig: randomAny,
-				},
-			}},
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	return out, nil
+}
+
+func buildLeastRequestPolicy(config *kgateway.LoadBalancer, policyName, policyNamespace string) (*envoyclusterv3.LoadBalancingPolicy, error) {
+	leastRequest := &envoyleastrequestv3.LeastRequest{
+		ChoiceCount: &wrapperspb.UInt32Value{
+			Value: uint32(config.LeastRequest.ChoiceCount), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		},
+		SlowStartConfig: toSlowStartConfig(config.LeastRequest.SlowStart, policyName, policyNamespace),
+	}
+	if config.LocalityType != nil {
+		leastRequest.LocalityLbConfig = &envoycommonv3.LocalityLbConfig{
+			LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
+			},
+		}
+	}
+	leastRequestAny, err := utils.MessageToAny(leastRequest)
+	if err != nil {
+		return nil, err
+	}
+	return &envoyclusterv3.LoadBalancingPolicy{
+		Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+			TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+				Name:        "envoy.load_balancing_policies.least_request",
+				TypedConfig: leastRequestAny,
+			},
+		}},
+	}, nil
+}
+
+func buildRoundRobinPolicy(config *kgateway.LoadBalancer, policyName, policyNamespace string) (*envoyclusterv3.LoadBalancingPolicy, error) {
+	roundRobin := &envoyroundrobinv3.RoundRobin{
+		SlowStartConfig: toSlowStartConfig(config.RoundRobin.SlowStart, policyName, policyNamespace),
+	}
+	if config.LocalityType != nil {
+		roundRobin.LocalityLbConfig = &envoycommonv3.LocalityLbConfig{
+			LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
+			},
+		}
+	}
+	roundRobinAny, err := utils.MessageToAny(roundRobin)
+	if err != nil {
+		return nil, err
+	}
+	return &envoyclusterv3.LoadBalancingPolicy{
+		Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+			TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+				Name:        "envoy.load_balancing_policies.round_robin",
+				TypedConfig: roundRobinAny,
+			},
+		}},
+	}, nil
+}
+
+func buildRingHashPolicy(config *kgateway.LoadBalancer) (*envoyclusterv3.LoadBalancingPolicy, bool, error) {
+	ringHash := &envoyringhashv3.RingHash{}
+	useHostnameForHashing := false
+
+	if config.RingHash.MinimumRingSize != nil {
+		ringHash.MinimumRingSize = &wrapperspb.UInt64Value{
+			Value: uint64(*config.RingHash.MinimumRingSize), // nolint:gosec // G115: kubebuilder validation ensures safe for uint64
+		}
+	}
+	if config.RingHash.MaximumRingSize != nil {
+		ringHash.MaximumRingSize = &wrapperspb.UInt64Value{
+			Value: uint64(*config.RingHash.MaximumRingSize), // nolint:gosec // G115: kubebuilder validation ensures safe for uint64
+		}
+	}
+	if config.RingHash.UseHostnameForHashing != nil || len(config.RingHash.HashPolicies) > 0 {
+		hashingLBConfig := &envoycommonv3.ConsistentHashingLbConfig{}
+		if config.RingHash.UseHostnameForHashing != nil {
+			useHostnameForHashing = *config.RingHash.UseHostnameForHashing
+			hashingLBConfig.UseHostnameForHashing = *config.RingHash.UseHostnameForHashing
+		}
+		hashingLBConfig.HashPolicy = constructHashPolicy(config.RingHash.HashPolicies)
+		ringHash.ConsistentHashingLbConfig = hashingLBConfig
+	}
+
+	if config.LocalityType != nil {
+		ringHash.LocalityWeightedLbConfig = &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{}
+	}
+	ringHashAny, err := utils.MessageToAny(ringHash)
+	if err != nil {
+		return nil, false, err
+	}
+	return &envoyclusterv3.LoadBalancingPolicy{
+		Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+			TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+				Name:        "envoy.load_balancing_policies.ring_hash",
+				TypedConfig: ringHashAny,
+			},
+		}},
+	}, useHostnameForHashing, nil
+}
+
+func buildMaglevPolicy(config *kgateway.LoadBalancer) (*envoyclusterv3.LoadBalancingPolicy, bool, error) {
+	maglev := &envoymaglevv3.Maglev{}
+	useHostnameForHashing := false
+
+	if config.Maglev.UseHostnameForHashing != nil || len(config.Maglev.HashPolicies) > 0 {
+		hashingLBConfig := &envoycommonv3.ConsistentHashingLbConfig{}
+		if config.Maglev.UseHostnameForHashing != nil {
+			useHostnameForHashing = *config.Maglev.UseHostnameForHashing
+			hashingLBConfig.UseHostnameForHashing = *config.Maglev.UseHostnameForHashing
+		}
+		hashingLBConfig.HashPolicy = constructHashPolicy(config.Maglev.HashPolicies)
+		maglev.ConsistentHashingLbConfig = hashingLBConfig
+	}
+	if config.LocalityType != nil {
+		maglev.LocalityWeightedLbConfig = &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{}
+	}
+	maglevAny, err := utils.MessageToAny(maglev)
+	if err != nil {
+		return nil, false, err
+	}
+	return &envoyclusterv3.LoadBalancingPolicy{
+		Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+			TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+				Name:        "envoy.load_balancing_policies.maglev",
+				TypedConfig: maglevAny,
+			},
+		}},
+	}, useHostnameForHashing, nil
+}
+
+func buildRandomPolicy(config *kgateway.LoadBalancer) (*envoyclusterv3.LoadBalancingPolicy, error) {
+	random := &envoyrandomv3.Random{}
+	if config.LocalityType != nil {
+		random.LocalityLbConfig = &envoycommonv3.LocalityLbConfig{
+			LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
+			},
+		}
+	}
+	randomAny, err := utils.MessageToAny(random)
+	if err != nil {
+		return nil, err
+	}
+	return &envoyclusterv3.LoadBalancingPolicy{
+		Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+			TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+				Name:        "envoy.load_balancing_policies.random",
+				TypedConfig: randomAny,
+			},
+		}},
+	}, nil
 }
 
 func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *envoyclusterv3.Cluster) {

@@ -81,74 +81,102 @@ func (d *destrulePlugin) processEndpoints(
 
 func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, outCluster *envoyclusterv3.Cluster) {
 	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, in.CanonicalHostname, ucc.Labels)
-	if destrule != nil {
-		trafficPolicy := getTrafficPolicy(destrule, uint32(in.Port)) //nolint:gosec // G115: BackendObjectIR.Port is int32 representing a port number, always in valid range
-		if outlier := trafficPolicy.GetOutlierDetection(); outlier != nil {
-			if getLocalityLbSetting(trafficPolicy) != nil {
-				if outCluster.GetCommonLbConfig() == nil {
-					outCluster.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
-				}
-				outCluster.GetCommonLbConfig().LocalityConfigSpecifier = &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-					LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
-				}
-			}
+	if destrule == nil {
+		return
+	}
 
-			out := &envoyclusterv3.OutlierDetection{
-				Consecutive_5Xx:  outlier.GetConsecutive_5XxErrors(),
-				Interval:         outlier.GetInterval(),
-				BaseEjectionTime: outlier.GetBaseEjectionTime(),
-			}
-			if e := outlier.GetConsecutiveGatewayErrors(); e != nil {
-				v := e.GetValue()
-				out.ConsecutiveGatewayFailure = &wrapperspb.UInt32Value{Value: v}
-				if v > 0 {
-					v = 100
-				}
-				out.EnforcingConsecutiveGatewayFailure = &wrapperspb.UInt32Value{Value: v}
-			}
-			if outlier.GetMaxEjectionPercent() > 0 {
-				out.MaxEjectionPercent = &wrapperspb.UInt32Value{Value: uint32(outlier.GetMaxEjectionPercent())} //nolint:gosec // G115: MaxEjectionPercent is a percentage value (0-100), safe for uint32
-			}
-			if outlier.GetSplitExternalLocalOriginErrors() {
-				out.SplitExternalLocalOriginErrors = true
-				if outlier.GetConsecutiveLocalOriginFailures().GetValue() > 0 {
-					out.ConsecutiveLocalOriginFailure = &wrapperspb.UInt32Value{Value: outlier.GetConsecutiveLocalOriginFailures().Value}
-					out.EnforcingConsecutiveLocalOriginFailure = &wrapperspb.UInt32Value{Value: 100}
-				}
-				// SuccessRate based outlier detection should be disabled.
-				out.EnforcingLocalOriginSuccessRate = &wrapperspb.UInt32Value{Value: 0}
-			}
-			minHealthPercent := outlier.GetMinHealthPercent()
-			if minHealthPercent >= 0 {
-				if outCluster.GetCommonLbConfig() == nil {
-					outCluster.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
-				}
-				outCluster.GetCommonLbConfig().HealthyPanicThreshold = &envoy_type_v3.Percent{Value: float64(minHealthPercent)}
-			}
+	trafficPolicy := getTrafficPolicy(destrule, uint32(in.Port)) //nolint:gosec // G115: BackendObjectIR.Port is int32 representing a port number, always in valid range
+	outlier := trafficPolicy.GetOutlierDetection()
+	if outlier == nil {
+		return
+	}
 
-			outCluster.OutlierDetection = out
+	// All of the following are only applied when outlier detection is present
+	applyLocalityLbConfig(trafficPolicy, outCluster)
+	applyOutlierDetection(outlier, outCluster)
+	applyTCPKeepalive(trafficPolicy, outCluster)
+}
 
-			// Translate TCP keepalive settings
-			if tcpSettings := trafficPolicy.GetConnectionPool().GetTcp(); tcpSettings != nil {
-				if tcpKeepalive := tcpSettings.GetTcpKeepalive(); tcpKeepalive != nil {
-					if outCluster.GetUpstreamConnectionOptions() == nil {
-						outCluster.UpstreamConnectionOptions = &envoyclusterv3.UpstreamConnectionOptions{}
-					}
-					if outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive() == nil {
-						outCluster.GetUpstreamConnectionOptions().TcpKeepalive = &envoycorev3.TcpKeepalive{}
-					}
-					if tcpKeepalive.GetTime() != nil {
-						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetTime().GetSeconds())} //nolint:gosec // G115: TCP keepalive time in seconds, reasonable range for uint32
-					}
-					if tcpKeepalive.GetInterval() != nil {
-						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetInterval().GetSeconds())} //nolint:gosec // G115: TCP keepalive interval in seconds, reasonable range for uint32
-					}
-					if tcpKeepalive.GetProbes() > 0 {
-						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetProbes())} //nolint:gosec // G115: TCP keepalive probe count, reasonable range for uint32
-					}
-				}
-			}
+func applyLocalityLbConfig(trafficPolicy *v1alpha3.TrafficPolicy, outCluster *envoyclusterv3.Cluster) {
+	if getLocalityLbSetting(trafficPolicy) == nil {
+		return
+	}
+
+	if outCluster.GetCommonLbConfig() == nil {
+		outCluster.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
+	}
+	outCluster.GetCommonLbConfig().LocalityConfigSpecifier = &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+		LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+	}
+}
+
+func applyOutlierDetection(outlier *v1alpha3.OutlierDetection, outCluster *envoyclusterv3.Cluster) {
+	out := &envoyclusterv3.OutlierDetection{
+		Consecutive_5Xx:  outlier.GetConsecutive_5XxErrors(),
+		Interval:         outlier.GetInterval(),
+		BaseEjectionTime: outlier.GetBaseEjectionTime(),
+	}
+
+	if e := outlier.GetConsecutiveGatewayErrors(); e != nil {
+		v := e.GetValue()
+		out.ConsecutiveGatewayFailure = &wrapperspb.UInt32Value{Value: v}
+		if v > 0 {
+			v = 100
 		}
+		out.EnforcingConsecutiveGatewayFailure = &wrapperspb.UInt32Value{Value: v}
+	}
+
+	if outlier.GetMaxEjectionPercent() > 0 {
+		out.MaxEjectionPercent = &wrapperspb.UInt32Value{Value: uint32(outlier.GetMaxEjectionPercent())} //nolint:gosec // G115: MaxEjectionPercent is a percentage value (0-100), safe for uint32
+	}
+
+	if outlier.GetSplitExternalLocalOriginErrors() {
+		out.SplitExternalLocalOriginErrors = true
+		if outlier.GetConsecutiveLocalOriginFailures().GetValue() > 0 {
+			out.ConsecutiveLocalOriginFailure = &wrapperspb.UInt32Value{Value: outlier.GetConsecutiveLocalOriginFailures().Value}
+			out.EnforcingConsecutiveLocalOriginFailure = &wrapperspb.UInt32Value{Value: 100}
+		}
+		// SuccessRate based outlier detection should be disabled.
+		out.EnforcingLocalOriginSuccessRate = &wrapperspb.UInt32Value{Value: 0}
+	}
+
+	minHealthPercent := outlier.GetMinHealthPercent()
+	if minHealthPercent >= 0 {
+		if outCluster.GetCommonLbConfig() == nil {
+			outCluster.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
+		}
+		outCluster.GetCommonLbConfig().HealthyPanicThreshold = &envoy_type_v3.Percent{Value: float64(minHealthPercent)}
+	}
+
+	outCluster.OutlierDetection = out
+}
+
+func applyTCPKeepalive(trafficPolicy *v1alpha3.TrafficPolicy, outCluster *envoyclusterv3.Cluster) {
+	tcpSettings := trafficPolicy.GetConnectionPool().GetTcp()
+	if tcpSettings == nil {
+		return
+	}
+
+	tcpKeepalive := tcpSettings.GetTcpKeepalive()
+	if tcpKeepalive == nil {
+		return
+	}
+
+	if outCluster.GetUpstreamConnectionOptions() == nil {
+		outCluster.UpstreamConnectionOptions = &envoyclusterv3.UpstreamConnectionOptions{}
+	}
+	if outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive() == nil {
+		outCluster.GetUpstreamConnectionOptions().TcpKeepalive = &envoycorev3.TcpKeepalive{}
+	}
+
+	if tcpKeepalive.GetTime() != nil {
+		outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetTime().GetSeconds())} //nolint:gosec // G115: TCP keepalive time in seconds, reasonable range for uint32
+	}
+	if tcpKeepalive.GetInterval() != nil {
+		outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetInterval().GetSeconds())} //nolint:gosec // G115: TCP keepalive interval in seconds, reasonable range for uint32
+	}
+	if tcpKeepalive.GetProbes() > 0 {
+		outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetProbes())} //nolint:gosec // G115: TCP keepalive probe count, reasonable range for uint32
 	}
 }
 
