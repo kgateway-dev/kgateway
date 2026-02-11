@@ -31,6 +31,8 @@ kind: Namespace
 metadata:
   name: curl
 ---
+# Immutable pod spec fields should be consistent with test/e2e/defaults/testdata/curl_pod.yaml
+# due to https://github.com/kgateway-dev/kgateway/issues/13408.
 apiVersion: v1
 kind: Pod
 metadata:
@@ -40,6 +42,7 @@ metadata:
     app: curl
     version: v1
 spec:
+  terminationGracePeriodSeconds: 0
   containers:
     - name: curl
       image: ghcr.io/kgateway-dev/curl:7.83.1
@@ -48,3 +51,10 @@ spec:
         - "tail"
         - "-f"
         - "/dev/null"
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "64Mi"
+        limits:
+          cpu: "200m"
+          memory: "128Mi"

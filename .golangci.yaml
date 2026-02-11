@@ -24,6 +24,7 @@ linters:
     - misspell
     - modernize
     - nakedret
+    - nestif
     - predeclared
     - promlinter
     - sloglint
@@ -138,6 +139,9 @@ linters:
       #     // This is allowed but really, really bad. DO NOT do this.
       #     return b, a
       max-func-lines: 0
+    nestif:
+      # This catches only the worst offenders (complexity >= 20)
+      min-complexity: 20
     staticcheck:
       checks:
         - SA1019 # deprecated usage

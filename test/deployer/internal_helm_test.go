@@ -259,6 +259,31 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "agentgateway-both-gwc-and-gw-have-params",
 		},
 		{
+			// Test deep merging of AgentgatewayParameters between GWC and GW.
+			// When GWC sets some fields and GW sets other fields within the same
+			// struct, the merging should preserve both.
+			Name:      "agentgateway deep merging - istio and resources fields",
+			InputFile: "agentgateway-deep-merging",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				// Istio field merging: GWC sets caAddress, GW sets trustDomain
+				assert.Contains(t, outputYaml, "https://my-custom-istiod.custom-namespace.svc:15012",
+					"caAddress from GatewayClass AGWP should be preserved when Gateway AGWP sets trustDomain")
+				assert.Contains(t, outputYaml, "my-custom-trust-domain",
+					"trustDomain from Gateway AGWP should be present")
+
+				// Resources field merging: GWC sets limits, GW sets requests
+				assert.Contains(t, outputYaml, "cpu: \"2\"",
+					"limits.cpu from GatewayClass AGWP should be preserved when Gateway AGWP sets requests")
+				assert.Contains(t, outputYaml, "memory: 1Gi",
+					"limits.memory from GatewayClass AGWP should be preserved when Gateway AGWP sets requests")
+				assert.Contains(t, outputYaml, "cpu: 500m",
+					"requests.cpu from Gateway AGWP should be present")
+				assert.Contains(t, outputYaml, "memory: 256Mi",
+					"requests.memory from Gateway AGWP should be present")
+			},
+		},
+		{
 			Name:      "agentgateway strategic-merge-patch tests",
 			InputFile: "agentgateway-strategic-merge-patch",
 			Validate: func(t *testing.T, outputYaml string) {

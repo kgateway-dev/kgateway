@@ -200,38 +200,7 @@ func extractMetricInfo(call *ast.CallExpr, metricType string, constants map[stri
 	// First argument should be the opts struct.
 	if len(call.Args) >= 1 {
 		if comp, ok := call.Args[0].(*ast.CompositeLit); ok {
-			for _, elt := range comp.Elts {
-				if kv, ok := elt.(*ast.KeyValueExpr); ok {
-					if ident, ok := kv.Key.(*ast.Ident); ok {
-						switch ident.Name {
-						case "Name":
-							if lit, ok := kv.Value.(*ast.BasicLit); ok && lit.Kind == token.STRING {
-								metric.Name = strings.Trim(lit.Value, `"`)
-							}
-						case "Help":
-							if lit, ok := kv.Value.(*ast.BasicLit); ok && lit.Kind == token.STRING {
-								metric.Help = strings.Trim(lit.Value, `"`)
-							}
-						case "Namespace":
-							if lit, ok := kv.Value.(*ast.BasicLit); ok && lit.Kind == token.STRING {
-								metric.Namespace = strings.Trim(lit.Value, `"`)
-							} else if ident, ok := kv.Value.(*ast.Ident); ok {
-								if val, exists := constants[ident.Name]; exists {
-									metric.Namespace = val
-								}
-							}
-						case "Subsystem":
-							if lit, ok := kv.Value.(*ast.BasicLit); ok && lit.Kind == token.STRING {
-								metric.Subsystem = strings.Trim(lit.Value, `"`)
-							} else if ident, ok := kv.Value.(*ast.Ident); ok {
-								if val, exists := constants[ident.Name]; exists {
-									metric.Subsystem = val
-								}
-							}
-						}
-					}
-				}
-			}
+			extractMetricFields(&metric, comp, constants)
 		}
 	}
 
@@ -242,20 +211,63 @@ func extractMetricInfo(call *ast.CallExpr, metricType string, constants map[stri
 	// Second argument should be the labels slice.
 	if len(call.Args) >= 2 {
 		if comp, ok := call.Args[1].(*ast.CompositeLit); ok {
-			for _, elt := range comp.Elts {
-				if lit, ok := elt.(*ast.BasicLit); ok && lit.Kind == token.STRING {
-					label := strings.Trim(lit.Value, `"`)
-					metric.Labels = append(metric.Labels, label)
-				} else if ident, ok := elt.(*ast.Ident); ok {
-					if val, exists := constants[ident.Name]; exists {
-						metric.Labels = append(metric.Labels, val)
-					} else {
-						metric.Labels = append(metric.Labels, ident.Name)
-					}
-				}
-			}
+			extractMetricLabels(&metric, comp, constants)
 		}
 	}
 
 	return metric
+}
+
+func extractMetricFields(metric *metricInfo, comp *ast.CompositeLit, constants map[string]string) {
+	for _, elt := range comp.Elts {
+		kv, ok := elt.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+
+		ident, ok := kv.Key.(*ast.Ident)
+		if !ok {
+			continue
+		}
+
+		switch ident.Name {
+		case "Name":
+			if lit, ok := kv.Value.(*ast.BasicLit); ok && lit.Kind == token.STRING {
+				metric.Name = strings.Trim(lit.Value, `"`)
+			}
+		case "Help":
+			if lit, ok := kv.Value.(*ast.BasicLit); ok && lit.Kind == token.STRING {
+				metric.Help = strings.Trim(lit.Value, `"`)
+			}
+		case "Namespace":
+			extractStringField(&metric.Namespace, kv.Value, constants)
+		case "Subsystem":
+			extractStringField(&metric.Subsystem, kv.Value, constants)
+		}
+	}
+}
+
+func extractStringField(field *string, value ast.Expr, constants map[string]string) {
+	if lit, ok := value.(*ast.BasicLit); ok && lit.Kind == token.STRING {
+		*field = strings.Trim(lit.Value, `"`)
+	} else if ident, ok := value.(*ast.Ident); ok {
+		if val, exists := constants[ident.Name]; exists {
+			*field = val
+		}
+	}
+}
+
+func extractMetricLabels(metric *metricInfo, comp *ast.CompositeLit, constants map[string]string) {
+	for _, elt := range comp.Elts {
+		if lit, ok := elt.(*ast.BasicLit); ok && lit.Kind == token.STRING {
+			label := strings.Trim(lit.Value, `"`)
+			metric.Labels = append(metric.Labels, label)
+		} else if ident, ok := elt.(*ast.Ident); ok {
+			if val, exists := constants[ident.Name]; exists {
+				metric.Labels = append(metric.Labels, val)
+			} else {
+				metric.Labels = append(metric.Labels, ident.Name)
+			}
+		}
+	}
 }

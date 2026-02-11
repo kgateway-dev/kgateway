@@ -71,28 +71,6 @@ type AgwCollections struct {
 	ClusterID string
 }
 
-func (c *AgwCollections) HasSynced() bool {
-	// we check nil as well because some of the inner
-	// collections aren't initialized until we call InitPlugins
-	return c.Namespaces != nil && c.Namespaces.HasSynced() &&
-		c.Services != nil && c.Services.HasSynced() &&
-		c.Secrets != nil && c.Secrets.HasSynced() &&
-		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
-		c.WorkloadEntries != nil && c.WorkloadEntries.HasSynced() &&
-		c.ServiceEntries != nil && c.ServiceEntries.HasSynced() &&
-		c.GatewayClasses != nil && c.GatewayClasses.HasSynced() &&
-		c.Gateways != nil && c.Gateways.HasSynced() &&
-		c.HTTPRoutes != nil && c.HTTPRoutes.HasSynced() &&
-		c.GRPCRoutes != nil && c.GRPCRoutes.HasSynced() &&
-		c.TCPRoutes != nil && c.TCPRoutes.HasSynced() &&
-		c.TLSRoutes != nil && c.TLSRoutes.HasSynced() &&
-		c.ReferenceGrants != nil && c.ReferenceGrants.HasSynced() &&
-		c.BackendTLSPolicies != nil && c.BackendTLSPolicies.HasSynced() &&
-		c.InferencePools != nil && c.InferencePools.HasSynced() &&
-		c.Backends != nil && c.Backends.HasSynced() &&
-		c.AgentgatewayPolicies != nil && c.AgentgatewayPolicies.HasSynced()
-}
-
 // NewAgwCollections initializes the core krt collections.
 // Collections that rely on plugins aren't initialized here,
 // and InitPlugins must be called.
