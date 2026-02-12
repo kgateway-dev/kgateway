@@ -173,7 +173,7 @@ func TestXDSDisconnect(t *testing.T) {
 			},
 		})
 		resp := ads.ExpectResponse()
-		// We should see wl1 deleted, wl2 added
+		// We should see bind1 deleted, bind2 added
 		assert.Equal(t, len(resp.Resources), 1)
 		assert.Equal(t, len(resp.RemovedResources), 1)
 	})
