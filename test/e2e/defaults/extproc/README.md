@@ -1,6 +1,6 @@
 # ExtProc Test Server
 
-This is an example external processing service used to test ExtProc functionality in KGateway with agentgateway as the data-plane.
+This is an example external processing service used to test ExtProc functionality in e2e test suites.
 
 The service is based on the basic-sink example from https://github.com/solo-io/ext-proc-examples
 
@@ -37,6 +37,8 @@ The extproc server image is built and loaded into the kind cluster automatically
 ```bash
 make e2e-test
 ```
+
+See `test/e2e/README-e2e-framework.md` for details on the e2e framework and test workflow.
 
 To build/load only the extproc server, run
 
