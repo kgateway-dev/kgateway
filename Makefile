@@ -707,7 +707,7 @@ release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG opt
 
 KIND ?= go tool kind
 CLUSTER_NAME ?= kind
-# TODO: This should probably change depending on if kgateway or agw is installed
+# Default namespace for kgateway installation
 INSTALL_NAMESPACE ?= kgateway-system
 
 # The version of the Node Docker image to use for booting the kind cluster: https://hub.docker.com/r/kindest/node/tags

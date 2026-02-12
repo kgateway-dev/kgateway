@@ -142,7 +142,6 @@ make kind-reload-kgateway
 ```bash
 make conformance  # Gateway API conformance
 make gie-conformance  # Gateway API Inference Extension
-make agw-conformance  # Agent Gateway conformance
 make all-conformance  # All suites
 
 # Run specific test by ShortName
