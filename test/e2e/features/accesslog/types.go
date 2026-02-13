@@ -8,7 +8,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 )
 
@@ -21,18 +20,18 @@ var (
 
 	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
+		Name:      "gateway",
+		Namespace: "kgateway-base",
 	}
 
 	// TestAccessLogWithGrpcSink
 	accessLoggerObjectMeta = metav1.ObjectMeta{
 		Name:      "gateway-proxy-access-logger",
-		Namespace: "default",
+		Namespace: "kgateway-base",
 	}
 
 	setup = base.TestCase{
-		Manifests: []string{e2edefaults.CurlPodManifest, setupManifest},
+		Manifests: []string{setupManifest},
 	}
 
 	// test cases
