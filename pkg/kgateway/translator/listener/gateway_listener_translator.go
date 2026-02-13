@@ -952,23 +952,23 @@ func translateTLSConfig(
 		// This allows the listener to work without client certs even if the CA cert ConfigMap is missing
 		generated, caErr = applyClientCertificateValidation(kctx, ctx, queries, listener, resolvedValidation, tlsConfig)
 		if !generated {
-			// If client certs are not required (AllowInsecureFallback), log the error but don't fail the listener
-			// The listener will still work for connections without client certs
-			if !resolvedValidation.RequireClientCertificate {
-				// Skip setting Gateway-level ClientCertificateValidation - per-listner validation will be attempted if exists
-				logger.Warn("failed to fetch CA certificate for client validation, skipping validation",
+			if resolvedValidation.RequireClientCertificate {
+				// If client certs are required (AllowValidOnly), fail the listener
+				logger.Warn("failed to fetch CA certificate for client validation, failing listener",
 					"listener", listener.Name,
 					"port", listener.Port,
 					"error", caErr,
-					"mode", "AllowInsecureFallback")
+					"mode", "AllowValidOnly")
+				return nil, caErr
 			}
-			// If client certs are required (AllowValidOnly), fail the listener
-			logger.Warn("failed to fetch CA certificate for client validation, failing listener",
+			// If client certs are not required (AllowInsecureFallback), log the error but don't fail the listener
+			// The listener will still work for connections without client certs
+			// Skip setting Gateway-level ClientCertificateValidation - per-listener validation will be attempted if exists
+			logger.Warn("failed to fetch CA certificate for client validation, skipping validation",
 				"listener", listener.Name,
 				"port", listener.Port,
 				"error", caErr,
-				"mode", "AllowValidOnly")
-			return nil, caErr
+				"mode", "AllowInsecureFallback")
 		}
 	}
 
