@@ -48,17 +48,17 @@ type ListenerPolicySpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	// +kubebuilder:validation:XValidation:rule="self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group == 'gateway.networking.k8s.io'))",message="targetRefs may only reference Gateway resource"
-	TargetRefs []shared.LocalPolicyTargetReference `json:"targetRefs,omitempty"`
+	TargetRefs []shared.LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
 
 	// TargetSelectors specifies the target selectors to select `Gateway` resources to attach the policy to.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group == 'gateway.networking.k8s.io'))",message="targetSelectors may only reference Gateway resource"
-	TargetSelectors []shared.LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
+	TargetSelectors []shared.LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
 
 	// Default specifies default listener configuration for all Listeners, unless a per-port
 	// configuration is defined.
 	// +optional
-	Default *ListenerConfig `json:"default,omitempty"`
+	Default *DefaultListenerConfig `json:"default,omitempty"`
 
 	// Per port configuration allows overriding the listener config per port. Once set, this
 	// configuration completely replaces the default configuration for all listeners handling traffic
@@ -111,6 +111,25 @@ type ListenerConfig struct {
 	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
+}
+
+type DefaultListenerConfig struct {
+	ListenerConfig `json:",inline"`
+
+	// ClientCertificateValidation configures mutual TLS (mTLS) client certificate validation for the listener.
+	// This enables per-listener configuration of CA certificates for client certificate validation,
+	// allowing different listeners on the same port to enforce different mTLS trust boundaries.
+	// When configured on a ListenerPolicy targeting a specific listener (via sectionName),
+	// it overrides any Gateway-level mTLS configuration for that listener.
+	//
+	// Security Note: Per-listener CA certificate validation can be bypassed in scenarios where
+	// wildcard listeners (e.g., *.example.com) overlap with more specific hostnames on the same port,
+	// due to TLS connection coalescing. For deployments with non-overlapping hostnames per listener,
+	// this security concern does not apply. See GEP-91 and GEP-3567 for more details.
+	// Reference: https://gateway-api.sigs.k8s.io/geps/gep-91/
+	// Reference: https://github.com/kubernetes-sigs/gateway-api/issues/3567
+	// +optional
+	ClientCertificateValidation *ClientCertificateValidationConfig `json:"clientCertificateValidation,omitempty"`
 }
 
 // ProxyProtocolConfig configures the PROXY protocol listener filter.
@@ -831,3 +850,33 @@ type UuidRequestIdConfig struct {
 	// +optional
 	UseRequestIDForTraceSampling *bool `json:"useRequestIdForTraceSampling,omitempty"`
 }
+
+// ClientCertificateValidationConfig configures mutual TLS (mTLS) client certificate validation.
+type ClientCertificateValidationConfig struct {
+	// Mode specifies how the listener should enforce client certificate validation.
+	// +kubebuilder:validation:Enum=Require;Optional
+	// +required
+	Mode ClientCertificateValidationMode `json:"mode"`
+
+	// CACertificateRefs contains references to Kubernetes Secrets or ConfigMaps containing
+	// CA certificates. Multiple references will be combined into a single trusted CA pool for the listener.
+	// The referenced Secrets/ConfigMaps must have a ca.crt key containing the PEM data
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=8
+	// +required
+	CACertificateRefs []gwv1.ObjectReference `json:"caCertificateRefs"`
+}
+
+// ClientCertificateValidationMode specifies how client certificate validation is enforced.
+// +kubebuilder:validation:Enum=Require;Optional
+type ClientCertificateValidationMode string
+
+const (
+	// ClientCertificateValidationModeRequire requires the client to present a valid certificate.
+	// The connection will be rejected if no valid client certificate is presented.
+	ClientCertificateValidationModeRequire ClientCertificateValidationMode = "Require"
+
+	// ClientCertificateValidationModeOptional allows connections without client certificates
+	// but validates the certificate if one is presented. If validation fails, the connection is rejected.
+	ClientCertificateValidationModeOptional ClientCertificateValidationMode = "Optional"
+)

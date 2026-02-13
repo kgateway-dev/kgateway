@@ -369,6 +369,14 @@ type ClientCertificateValidationIR struct {
 	RequireClientCertificate bool
 }
 
+func (c *ClientCertificateValidationIR) Equals(in any) bool {
+	c2, ok := in.(*ClientCertificateValidationIR)
+	if !ok {
+		return false
+	}
+	return equalsClientCertValidationIR(c, c2)
+}
+
 func (c Gateway) ResourceName() string {
 	return c.ObjectSource.ResourceName()
 }
