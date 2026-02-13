@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2
 
-go 1.25.7
+go 1.26.0
 
 require (
 	github.com/avast/retry-go/v4 v4.7.0
