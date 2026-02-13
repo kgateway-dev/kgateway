@@ -9,17 +9,15 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
@@ -33,19 +31,16 @@ var (
 		filepath.Join(fsutils.MustGetThisDir(), "testdata/base.yaml"),
 		// backend in separate manifest to allow creation independently of routing config
 		filepath.Join(fsutils.MustGetThisDir(), "testdata/backend.yaml"),
-		defaults.CurlPodManifest,
 	}
 
 	proxyObjMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
+		Name:      "gateway",
+		Namespace: "kgateway-base",
 	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyObjMeta}
-	proxyService    = &corev1.Service{ObjectMeta: proxyObjMeta}
 
 	nginxMeta = metav1.ObjectMeta{
 		Name:      "nginx",
-		Namespace: "default",
+		Namespace: "kgateway-base",
 	}
 )
 
@@ -65,7 +60,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 	backendMeta := metav1.ObjectMeta{
 		Name:      "nginx-static",
-		Namespace: "default",
+		Namespace: "kgateway-base",
 	}
 	backend := &kgateway.Backend{
 		ObjectMeta: backendMeta,
@@ -76,7 +71,7 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
 		}
-		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, backend)
+		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, backend)
 	})
 
 	for _, manifest := range manifests {
@@ -85,31 +80,24 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 	}
 
 	// assert the expected resources are created and running before attempting to send traffic
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, backend)
-	// TODO: make this a specific assertion to remove the need for c/p the label selector
-	// e.g. EventuallyCurlPodRunning(...) etc.
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=curl",
-	})
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, backend)
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=gw",
+		LabelSelector: defaults.WellKnownAppLabel + "=gateway",
 	})
 
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPath("/"),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring(defaults.NginxResponse),
-		})
+		},
+		curl.WithHostHeader("example.com"),
+		curl.WithPath("/"),
+		curl.WithPort(80),
+	)
 
 	s.assertStatus(backend, metav1.Condition{
 		Type:    "Accepted",
@@ -134,7 +122,7 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 	backendWithError := &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-aws-backend",
-			Namespace: "default",
+			Namespace: "kgateway-base",
 		},
 	}
 
@@ -144,7 +132,7 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 		Type:    "Accepted",
 		Status:  metav1.ConditionFalse,
 		Reason:  "Invalid",
-		Message: `Backend error: "Secret default/lambda-secret not found"`,
+		Message: `Backend error: "Secret kgateway-base/lambda-secret not found"`,
 	})
 
 	updateErrorManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/backend-update-error.yaml")

@@ -19,34 +19,27 @@ var (
 	simpleSvc = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "simple-svc",
-			Namespace: "kgateway-test",
+			Namespace: "kgateway-base",
 		},
 	}
 	simpleDeployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "backend-0",
-			Namespace: "kgateway-test",
+			Namespace: "kgateway-base",
 		},
 	}
-
-	proxyObjMeta = metav1.ObjectMeta{
-		Name:      "super-gateway",
-		Namespace: "kgateway-test",
-	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyObjMeta}
-	proxyService    = &corev1.Service{ObjectMeta: proxyObjMeta}
 
 	// MARK per test data
 	dfpRoute = &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route-dfp",
-			Namespace: "kgateway-test",
+			Namespace: "kgateway-base",
 		},
 	}
 	dfpBackend = &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "dfp-backend",
-			Namespace: "kgateway-test",
+			Namespace: "kgateway-base",
 		},
 	}
 
