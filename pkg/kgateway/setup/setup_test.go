@@ -229,7 +229,7 @@ func TestPolicyUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
-	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort, _ int) {
+	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
 
 		err = client.ApplyYAMLContents("gwtest", `kind: Gateway
@@ -327,7 +327,7 @@ func TestServiceAppProtocolUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
-	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort, _ int) {
+	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
 
 		err = client.ApplyYAMLContents("gwtest", `kind: Gateway
@@ -432,7 +432,7 @@ spec:
 }
 
 func runScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
-	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort, _ int) {
+	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		// list all yamls in test data
 		files, err := os.ReadDir(scenarioDir)
 		if err != nil {
@@ -473,7 +473,6 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 	kdbg *krt.DebugHandler,
 	client istiokube.CLIClient,
 	xdsPort int,
-	agwXdsPort int,
 ),
 ) {
 	proxy_syncer.UseDetailedUnmarshalling = true
@@ -486,7 +485,6 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
 			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
-			filepath.Join("..", "..", "..", "install", "helm", "agentgateway-crds", "templates"),
 			filepath.Join("testdata", "istio_crds_setup"),
 		},
 		ErrorIfCRDPathMissing: true,

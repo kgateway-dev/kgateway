@@ -56,7 +56,6 @@ const (
 	altGatewayClassName         = "clsname-alt"
 	selfManagedGatewayClassName = "clsname-selfmanaged"
 	gatewayControllerName       = "kgateway.dev/kgateway"
-	agwControllerName           = "agentgateway.dev/agentgateway"
 	defaultNamespace            = "default"
 
 	localhost = "127.0.0.1"
@@ -67,7 +66,7 @@ var (
 	gwClasses           = []string{gatewayClassName, altGatewayClassName, selfManagedGatewayClassName}
 	gwClassToController = map[string]string{
 		gatewayClassName:            gatewayControllerName,
-		altGatewayClassName:         agwControllerName,
+		altGatewayClassName:         gatewayControllerName,
 		selfManagedGatewayClassName: gatewayControllerName,
 	}
 	// defaultPollTimeout is the default timeout for polling operations
@@ -110,7 +109,6 @@ func (s *ControllerSuite) SetupSuite() {
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
 			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
-			filepath.Join("..", "..", "..", "install", "helm", "agentgateway-crds", "templates"),
 		},
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
@@ -747,12 +745,10 @@ func (s *ControllerSuite) startController(
 	}
 
 	gwCfg := GatewayConfig{
-		Client:             kubeClient,
-		Mgr:                mgr,
-		ControllerName:     gatewayControllerName,
-		AgwControllerName:  agwControllerName,
-		EnableEnvoy:        true,
-		EnableAgentgateway: true,
+		Client:         kubeClient,
+		Mgr:            mgr,
+		ControllerName: gatewayControllerName,
+		EnableEnvoy:    true,
 		ImageInfo: &deployer.ImageInfo{
 			Registry: "ghcr.io/kgateway-dev",
 			Tag:      "latest",
@@ -820,7 +816,7 @@ func newCommonCols(ctx context.Context, kubeClient apiclient.Client) (*collectio
 	if err != nil {
 		return nil, fmt.Errorf("error building Settings: %w", err)
 	}
-	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, gatewayControllerName, agwControllerName, *settings)
+	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, gatewayControllerName, *settings)
 	if err != nil {
 		return nil, fmt.Errorf("error building CommonCollections: %w", err)
 	}

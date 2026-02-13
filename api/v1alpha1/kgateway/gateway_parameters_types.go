@@ -12,7 +12,7 @@ import (
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=gatewayparameters/status,verbs=get;update;patch
 
 // A GatewayParameters contains configuration that is used to dynamically
-// provision kgateway's data plane (Envoy or agentgateway proxy instance), based on a
+// provision kgateway's data plane (Envoy proxy instance), based on a
 // Kubernetes Gateway.
 //
 // +genclient

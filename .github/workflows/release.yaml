@@ -28,7 +28,6 @@ env:
   # this uses the `github.repository_owner` to support releases from forks (useful for testing).
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   VANITY_REGISTRY: cr.kgateway.dev/kgateway-dev
-  AGW_VANITY_REGISTRY: cr.agentgateway.dev
   MAIN_VERSION: v2.3.0-main
   GORELEASER_DISABLE_RELEASE: false
 
@@ -102,12 +101,12 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Package kgateway and agentgateway charts
-        run: make package-kgateway-charts package-agentgateway-charts
+      - name: Package kgateway charts
+        run: make package-kgateway-charts
         env:
           VERSION: ${{ needs.setup.outputs.version }}
 
-      - name: Push kgateway and agentgateway charts to registry
+      - name: Push kgateway charts to registry
         if: ${{ github.event_name != 'pull_request' }}
         run: make release-charts
         env:
@@ -221,14 +220,13 @@ jobs:
             oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
             --set image.registry=${{ env.IMAGE_REGISTRY }} \
             --version ${{ needs.setup.outputs.version }} \
-            --set inferenceExtension.enabled=true \
             --wait --timeout 5m
 
       - name: Wait for the kgateway deployment to be ready
         run: |
           kubectl wait --for=condition=available --timeout=5m deployment/kgateway -n kgateway-system
 
-      - name: Run Gateway API and Inference Extension Conformance Tests
+      - name: Run Gateway API Conformance Tests
         run: make all-conformance
         shell: bash
         env:
@@ -269,7 +267,6 @@ jobs:
             oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
             --set image.registry=${{ env.IMAGE_REGISTRY }} \
             --version ${{ needs.setup.outputs.version }} \
-            --set inferenceExtension.enabled=true \
             --wait --timeout 5m
 
       - name: Wait for the kgateway deployment to be ready

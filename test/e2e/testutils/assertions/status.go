@@ -17,7 +17,6 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
@@ -434,52 +433,5 @@ func (p *Provider) EventuallyBackendCondition(
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, backend)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get Backend %s/%s", namespace, name))
 		g.Expect(backend.Status.Conditions).To(matchers.HaveCondition(condition, expect))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
-
-// EventuallyAgwBackendCondition checks that provided AgentgatewayBackend condition is set to expect.
-func (p *Provider) EventuallyAgwBackendCondition(
-	ctx context.Context,
-	name string,
-	namespace string,
-	condition string,
-	expect metav1.ConditionStatus,
-	timeout ...time.Duration,
-) {
-	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		backend := &agentgateway.AgentgatewayBackend{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, backend)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get AgentgatewayBackend %s/%s", namespace, name))
-		g.Expect(backend.Status.Conditions).To(matchers.HaveCondition(condition, expect))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
-
-// extractAgwPolicyAncestorConditions extracts conditions from AgentgatewayPolicy ancestor statuses.
-func extractAgwPolicyAncestorConditions(ancestors []gwv1.PolicyAncestorStatus) [][]metav1.Condition {
-	result := make([][]metav1.Condition, len(ancestors))
-	for i, a := range ancestors {
-		result[i] = a.Conditions
-	}
-	return result
-}
-
-// EventuallyAgwPolicyCondition checks that provided AgentgatewayPolicy condition is set to expect.
-func (p *Provider) EventuallyAgwPolicyCondition(
-	ctx context.Context,
-	name string,
-	namespace string,
-	condType string,
-	expect metav1.ConditionStatus,
-	timeout ...time.Duration,
-) {
-	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &agentgateway.AgentgatewayPolicy{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, policy)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get AgentgatewayPolicy %s/%s", namespace, name))
-		g.Expect(extractAgwPolicyAncestorConditions(policy.Status.Ancestors)).To(matchers.HaveAnyAncestorCondition(condType, expect))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

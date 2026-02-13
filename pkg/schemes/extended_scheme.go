@@ -3,13 +3,11 @@ package schemes
 import (
 	"fmt"
 
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -31,27 +29,6 @@ func AddGatewayV1A2Scheme(restConfig *rest.Config, scheme *runtime.Scheme) error
 	return nil
 }
 
-// AddInferExtV1Scheme adds the Inference Extension v1 and k8s RBAC v1 schemes to the
-// provided scheme if the InferencePool CRD exists.
-func AddInferExtV1Scheme(restConfig *rest.Config, scheme *runtime.Scheme) (bool, error) {
-	exists, err := CRDExists(restConfig, inf.GroupVersion.Group, inf.GroupVersion.Version, wellknown.InferencePoolKind)
-	if err != nil {
-		return false, fmt.Errorf("error checking if %s CRD exists: %w", wellknown.InferencePoolKind, err)
-	}
-
-	if exists {
-		// Required to deploy RBAC resources for endpoint picker extension.
-		if err := rbacv1.AddToScheme(scheme); err != nil {
-			return false, fmt.Errorf("error adding RBAC v1 to scheme: %w", err)
-		}
-		if err := inf.Install(scheme); err != nil {
-			return false, fmt.Errorf("error adding Gateway API Inference Extension v1 to scheme: %w", err)
-		}
-	}
-
-	return exists, nil
-}
-
 // Helper function to check if a CRD exists
 func CRDExists(restConfig *rest.Config, group, version, kind string) (bool, error) {
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(restConfig)
@@ -64,7 +41,7 @@ func CRDExists(restConfig *rest.Config, group, version, kind string) (bool, erro
 	if err != nil {
 		// Treat permission errors as "CRD doesn't exist" rather than failing
 		// This allows controllers to start even without RBAC for all API groups
-		// Kind of a hack because kgateway and agentgateway share controllers so some of these don't exist
+		// Kind of a hack because some of these APIs may not exist in the cluster
 		if errors.IsNotFound(err) || errors.IsForbidden(err) || errors.IsUnauthorized(err) || discovery.IsGroupDiscoveryFailedError(err) || meta.IsNoMatchError(err) {
 			return false, nil
 		}

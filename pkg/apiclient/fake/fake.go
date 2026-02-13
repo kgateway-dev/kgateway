@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/gateway-api/pkg/consts"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
@@ -106,10 +105,7 @@ func filterObjects(objects ...client.Object) (istio []client.Object, kgw []clien
 			*kgateway.GatewayParameters,
 			*kgateway.HTTPListenerPolicy,
 			*kgateway.ListenerPolicy,
-			*kgateway.TrafficPolicy,
-			*agentgateway.AgentgatewayPolicy,
-			*agentgateway.AgentgatewayBackend,
-			*agentgateway.AgentgatewayParameters:
+			*kgateway.TrafficPolicy:
 			kgw = append(kgw, obj)
 		default:
 			istio = append(istio, obj)

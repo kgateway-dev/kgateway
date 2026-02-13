@@ -18,8 +18,6 @@ JUST_KIND="${JUST_KIND:-false}"
 CONFORMANCE_VERSION="${CONFORMANCE_VERSION:-$(go list -m sigs.k8s.io/gateway-api | awk '{print $2}')}"
 # The channel of the k8s gateway api conformance tests to run.
 CONFORMANCE_CHANNEL="${CONFORMANCE_CHANNEL:-"experimental"}"
-# The version of the k8s gateway api inference extension CRDs to install. Managed by `make bump-gie`.
-GIE_CRD_VERSION="v1.1.0"
 # The kind CLI to use. Defaults to the latest version from the kind repo.
 KIND="${KIND:-go tool kind}"
 # The helm CLI to use. Defaults to the latest version from the helm repo.
@@ -28,8 +26,6 @@ HELM="${HELM:-go tool helm}"
 LOCALSTACK="${LOCALSTACK:-false}"
 # Registry cache reference for envoyinit Docker build (optional)
 ENVOYINIT_CACHE_REF="${ENVOYINIT_CACHE_REF:-}"
-# If true, build and load agentgateway images instead of envoy
-AGENTGATEWAY="${AGENTGATEWAY:-false}"
 
 # Export the variables so they are available in the environment
 export VERSION CLUSTER_NAME ENVOYINIT_CACHE_REF
@@ -72,9 +68,6 @@ function create_and_setup() {
     kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
   fi
 
-  # 6. Apply the Kubernetes Gateway API Inference Extension CRDs
-  make gie-crds
-
   # TODO: extract metallb install to a diff function so we can let it run in the background
   . $SCRIPT_DIR/setup-metalllb-on-kind.sh
 }
@@ -89,14 +82,9 @@ if [[ $SKIP_DOCKER == 'true' ]]; then
   echo "SKIP_DOCKER=true, not building images or chart"
 else
   # 2. Make all the docker images and load them to the kind cluster
-  if [[ $AGENTGATEWAY == 'true' ]]; then
-    # Skip expensive envoy build
-    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-agentgateway-controller kind-build-and-load-dummy-idp
-  else
-    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load kind-build-and-load-dummy-idp
-  fi
+  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load kind-build-and-load-dummy-idp
 
-  VERSION=$VERSION make package-kgateway-charts package-agentgateway-charts
+  VERSION=$VERSION make package-kgateway-charts
 fi
 
 # 7. Setup localstack

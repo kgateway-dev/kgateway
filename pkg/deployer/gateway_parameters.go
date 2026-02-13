@@ -1,8 +1,6 @@
 package deployer
 
 import (
-	"fmt"
-
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
@@ -15,15 +13,13 @@ import (
 
 // Inputs is the set of options used to configure gateway/inference pool deployment.
 type Inputs struct {
-	Dev                        bool
-	IstioAutoMtlsEnabled       bool
-	ControlPlane               ControlPlaneInfo
-	ImageInfo                  *ImageInfo
-	CommonCollections          *collections.CommonCollections
-	GatewayClassName           string
-	WaypointGatewayClassName   string
-	AgentgatewayClassName      string
-	AgentgatewayControllerName string
+	Dev                      bool
+	IstioAutoMtlsEnabled     bool
+	ControlPlane             ControlPlaneInfo
+	ImageInfo                *ImageInfo
+	CommonCollections        *collections.CommonCollections
+	GatewayClassName         string
+	WaypointGatewayClassName string
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.
@@ -80,15 +76,10 @@ type InMemoryGatewayParametersConfig struct {
 	ClassName                  string
 	ImageInfo                  *ImageInfo
 	WaypointClassName          string
-	AgwControllerName          string
 	OmitDefaultSecurityContext bool
 }
 
 // GetInMemoryGatewayParameters returns an in-memory GatewayParameters for envoy-based gateways.
-//
-// This function must NOT be called for agentgateway controllers - agentgateway uses
-// agwHelmValuesGenerator which has its own defaults. Calling this with the agentgateway
-// controllerName indicates a bug in the routing logic.
 //
 // Priority order:
 // 1. Waypoint class name (must check before envoy controller since waypoint uses the same controller)
@@ -97,10 +88,6 @@ type InMemoryGatewayParametersConfig struct {
 // This allows users to define their own GatewayClass that acts very much like a
 // built-in class but is not an exact name match.
 func GetInMemoryGatewayParameters(cfg InMemoryGatewayParametersConfig) (*kgateway.GatewayParameters, error) {
-	if cfg.ControllerName == cfg.AgwControllerName {
-		return nil, fmt.Errorf("GetInMemoryGatewayParameters must not be called for agentgateway controller %q; "+
-			"agentgateway gateways should use agwHelmValuesGenerator", cfg.ControllerName)
-	}
 	if cfg.ClassName == cfg.WaypointClassName {
 		return defaultWaypointGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext), nil
 	}
@@ -241,8 +228,6 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						IstioMetaClusterId:    ptr.To("Kubernetes"),
 					},
 				},
-				// Note: Agentgateway config is only added for agentgateway controller gateways
-				// via defaultAgentgatewayParameters(). For envoy gateways, we leave this nil.
 			},
 		},
 	}

@@ -4,22 +4,19 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 type DataPlaneType string
 
 const (
-	DataPlaneAgentgateway DataPlaneType = "agentgateway"
-	DataPlaneEnvoy        DataPlaneType = "envoy"
+	DataPlaneEnvoy DataPlaneType = "envoy"
 )
 
 // helmConfig stores the top-level helm values used by the deployer.
 type HelmConfig struct {
-	Gateway            *HelmGateway             `json:"gateway,omitempty"`
-	Agentgateway       *AgentgatewayHelmGateway `json:"agentgateway,omitempty"`
-	InferenceExtension *HelmInferenceExtension  `json:"inferenceExtension,omitempty"`
+	Gateway            *HelmGateway            `json:"gateway,omitempty"`
+	InferenceExtension *HelmInferenceExtension `json:"inferenceExtension,omitempty"`
 }
 
 type HelmGateway struct {
@@ -73,9 +70,7 @@ type HelmGateway struct {
 	// envoy container values
 	ComponentLogLevel *string `json:"componentLogLevel,omitempty"`
 
-	// envoy or agentgateway container values
-	// Note: ideally, these should be mapped to container specific values, but right now they
-	// map to the proxy container
+	// envoy container values (mapped to the proxy container)
 	LogLevel          *string                      `json:"logLevel,omitempty"`
 	Image             *HelmImage                   `json:"image,omitempty"`
 	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
@@ -91,11 +86,6 @@ type HelmGateway struct {
 
 	// stats values
 	Stats *HelmStatsConfig `json:"stats,omitempty"`
-
-	// LogFormat specifies the logging format for agentgateway (Json or Text)
-	LogFormat *string `json:"logFormat,omitempty"`
-	// RawConfig provides opaque config to be merged into config.yaml
-	RawConfig map[string]any `json:"rawConfig,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -206,24 +196,4 @@ type HelmInferenceExtension struct {
 type HelmEndpointPickerExtension struct {
 	PoolName      string `json:"poolName"`
 	PoolNamespace string `json:"poolNamespace"`
-}
-
-type AgentgatewayHelmService struct {
-	LoadBalancerIP *string `json:"loadBalancerIP,omitempty"`
-}
-
-type AgentgatewayHelmGateway struct {
-	agentgateway.AgentgatewayParametersConfigs `json:",inline"`
-	// naming
-	Name               *string           `json:"name,omitempty"`
-	GatewayClassName   *string           `json:"gatewayClassName,omitempty"`
-	GatewayAnnotations map[string]string `json:"gatewayAnnotations,omitempty"`
-	GatewayLabels      map[string]string `json:"gatewayLabels,omitempty"`
-
-	// deployment/service values
-	Ports   []HelmPort               `json:"ports,omitempty"`
-	Service *AgentgatewayHelmService `json:"service,omitempty"`
-
-	// agentgateway xds values
-	Xds *HelmXds `json:"xds,omitempty"`
 }

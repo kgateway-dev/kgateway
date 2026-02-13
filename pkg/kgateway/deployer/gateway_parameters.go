@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -42,11 +41,6 @@ func NewGatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *Gatewa
 		gp.kgwParameters = newkgatewayParameters(cli, inputs)
 	}
 
-	// Only create the agentgateway parameters client if agentgateway is enabled
-	if inputs.CommonCollections.Settings.EnableAgentgateway {
-		gp.agwHelmValuesGenerator = newAgentgatewayParametersHelmValuesGenerator(cli, inputs)
-	}
-
 	return gp
 }
 
@@ -54,7 +48,6 @@ type GatewayParameters struct {
 	inputs                      *deployer.Inputs
 	helmValuesGeneratorOverride deployer.HelmValuesGenerator
 	kgwParameters               *kgatewayParameters
-	agwHelmValuesGenerator      *agentgatewayParametersHelmValuesGenerator
 }
 
 type kgatewayParameters struct {
@@ -77,21 +70,8 @@ func (gp *GatewayParameters) GetGatewayParametersClient() kclient.Client[*kgatew
 	return nil
 }
 
-// GetAgentgatewayParametersClient returns the AgentgatewayParameters client if Agentgateway is enabled, nil otherwise.
-// This allows the reconciler to reuse the same client for watching changes.
-func (gp *GatewayParameters) GetAgentgatewayParametersClient() kclient.Client[*agentgateway.AgentgatewayParameters] {
-	if gp.agwHelmValuesGenerator != nil {
-		return gp.agwHelmValuesGenerator.agwParamClient
-	}
-	return nil
-}
-
 func LoadEnvoyChart() (*chart.Chart, error) {
 	return loadChart(helm.EnvoyHelmChart)
-}
-
-func LoadAgentgatewayChart() (*chart.Chart, error) {
-	return loadChart(helm.AgentgatewayHelmChart)
 }
 
 func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (map[string]any, error) {
@@ -112,14 +92,11 @@ func (gp *GatewayParameters) GetCacheSyncHandlers() []cache.InformerSynced {
 	if gp.kgwParameters != nil {
 		handlers = append(handlers, gp.kgwParameters.GetCacheSyncHandlers()...)
 	}
-	if gp.agwHelmValuesGenerator != nil {
-		handlers = append(handlers, gp.agwHelmValuesGenerator.GetCacheSyncHandlers()...)
-	}
 	return handlers
 }
 
 // PostProcessObjects implements deployer.ObjectPostProcessor.
-// It applies GatewayParameters or AgentgatewayParameters overlays to the rendered objects.
+// It applies GatewayParameters overlays to the rendered objects.
 // When both GatewayClass and Gateway have parameters, the overlays
 // are applied in order: GatewayClass first, then Gateway on top.
 func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.Object, rendered []client.Object) ([]client.Object, error) {
@@ -135,72 +112,27 @@ func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.
 		return rendered, nil
 	}
 
-	// Determine which controller this Gateway uses
-	var gwClassClient kclient.Client[*gwv1.GatewayClass]
-	if gp.kgwParameters != nil {
-		gwClassClient = gp.kgwParameters.gwClassClient
-	} else if gp.agwHelmValuesGenerator != nil {
-		gwClassClient = gp.agwHelmValuesGenerator.gwClassClient
-	} else {
-		return nil, fmt.Errorf("no controller enabled for Gateway %s/%s", gw.GetNamespace(), gw.GetName())
+	if gp.kgwParameters == nil {
+		// Envoy not enabled; skip overlays (not an error since overlays are optional).
+		return rendered, nil
 	}
+	resolved := gp.kgwParameters.resolveParametersForOverlays(gw)
 
-	gwc, err := getGatewayClassFromGateway(gwClassClient, gw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get GatewayClass for Gateway %s/%s: %w", gw.GetNamespace(), gw.GetName(), err)
-	}
-
-	// Check if this is an agentgateway or envoy gateway
-	if string(gwc.Spec.ControllerName) == gp.inputs.AgentgatewayControllerName {
-		// Agentgateway overlays
-		if gp.agwHelmValuesGenerator == nil {
-			// Agentgateway not enabled; skip overlays (not an error since overlays are optional).
-			return rendered, nil
-		}
-		resolved, err := gp.agwHelmValuesGenerator.GetResolvedParametersForGateway(gw)
+	// Apply overlays in order: GatewayClass first, then Gateway.
+	if resolved.gatewayClassGWP != nil {
+		applier := strategicpatch.NewOverlayApplierFromGatewayParameters(resolved.gatewayClassGWP)
+		var err error
+		rendered, err = applier.ApplyOverlays(rendered)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve AgentgatewayParameters for Gateway %s/%s: %w", gw.GetNamespace(), gw.GetName(), err)
+			return nil, err
 		}
-
-		// Apply overlays in order: GatewayClass first, then Gateway.
-		if resolved.gatewayClassAGWP != nil {
-			applier := NewAgentgatewayParametersApplier(resolved.gatewayClassAGWP)
-			rendered, err = applier.ApplyOverlaysToObjects(rendered)
-			if err != nil {
-				return nil, err
-			}
-		}
-		if resolved.gatewayAGWP != nil {
-			applier := NewAgentgatewayParametersApplier(resolved.gatewayAGWP)
-			rendered, err = applier.ApplyOverlaysToObjects(rendered)
-			if err != nil {
-				return nil, err
-			}
-		}
-	} else {
-		// Envoy (kgateway) overlays
-		if gp.kgwParameters == nil {
-			// Envoy not enabled; skip overlays (not an error since overlays are optional).
-			return rendered, nil
-		}
-		resolved := gp.kgwParameters.resolveParametersForOverlays(gw)
-
-		// Apply overlays in order: GatewayClass first, then Gateway.
-		if resolved.gatewayClassGWP != nil {
-			applier := strategicpatch.NewOverlayApplierFromGatewayParameters(resolved.gatewayClassGWP)
-			var err error
-			rendered, err = applier.ApplyOverlays(rendered)
-			if err != nil {
-				return nil, err
-			}
-		}
-		if resolved.gatewayGWP != nil {
-			applier := strategicpatch.NewOverlayApplierFromGatewayParameters(resolved.gatewayGWP)
-			var err error
-			rendered, err = applier.ApplyOverlays(rendered)
-			if err != nil {
-				return nil, err
-			}
+	}
+	if resolved.gatewayGWP != nil {
+		applier := strategicpatch.NewOverlayApplierFromGatewayParameters(resolved.gatewayGWP)
+		var err error
+		rendered, err = applier.ApplyOverlays(rendered)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -227,45 +159,12 @@ func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer
 		return gp.helmValuesGeneratorOverride, nil
 	}
 
-	// Need a GatewayClass client to determine which controller this Gateway uses.
-	// Use whichever parameter client is available (both have gwClassClient).
-	var gwClassClient kclient.Client[*gwv1.GatewayClass]
-	if gp.kgwParameters != nil {
-		gwClassClient = gp.kgwParameters.gwClassClient
-	} else if gp.agwHelmValuesGenerator != nil {
-		gwClassClient = gp.agwHelmValuesGenerator.gwClassClient
-	} else {
-		return nil, fmt.Errorf("no parameter clients available")
-	}
-
-	// Check if the GatewayClass uses the agentgateway controller
-	gwc, err := getGatewayClassFromGateway(gwClassClient, gw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get GatewayClass of Gateway: %w", err)
-	}
-
-	if string(gwc.Spec.ControllerName) == gp.inputs.AgentgatewayControllerName {
-		if gp.agwHelmValuesGenerator == nil {
-			// this should never happen, as the controller should not let any of these GatewayClass's through if agentgateway is not enabled
-			return nil, fmt.Errorf("agentgateway is not enabled but Gateway %s/%s uses agentgateway controller", gw.GetNamespace(), gw.GetName())
-		}
-		slog.Debug("using AgentgatewayParameters HelmValuesGenerator for Gateway",
-			"gateway_name", gw.GetName(),
-			"gateway_namespace", gw.GetNamespace(),
-			"controller_name", gwc.Spec.ControllerName,
-		)
-		return gp.agwHelmValuesGenerator, nil
-	}
-
-	// Use kgwParameters for helm values generation (envoy-based gateways).
 	if gp.kgwParameters == nil {
-		// this should never happen, as the controller should not let any of these GatewayClass's through if envoy is not enabled
-		return nil, fmt.Errorf("envoy is not enabled but Gateway %s/%s uses envoy controller", gw.GetNamespace(), gw.GetName())
+		return nil, fmt.Errorf("no parameter clients available")
 	}
 	slog.Debug("using default HelmValuesGenerator for Gateway",
 		"gateway_name", gw.GetName(),
 		"gateway_namespace", gw.GetNamespace(),
-		"controller_name", gwc.Spec.ControllerName,
 	)
 	return gp.kgwParameters, nil
 }
@@ -320,15 +219,6 @@ func (k *kgatewayParameters) getGatewayParametersForGateway(gw *gwv1.Gateway) (*
 	}
 
 	ref := gw.Spec.Infrastructure.ParametersRef
-	// If the parametersRef is for AgentgatewayParameters, treat it as no GatewayParameters
-	// (AgentgatewayParameters overlays are applied via PostProcessObjects)
-	if ref.Group == agentgateway.GroupName && ref.Kind == gwv1.Kind(wellknown.AgentgatewayParametersGVK.Kind) {
-		slog.Debug("the Gateway references AgentgatewayParameters, using default GatewayParameters",
-			"gateway_name", gw.GetName(),
-			"gateway_namespace", gw.GetNamespace(),
-		)
-		return k.getDefaultGatewayParameters(gw)
-	}
 
 	gwpName := ref.Name
 	if group := ref.Group; group != kgateway.GroupName {
@@ -382,7 +272,6 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 		ClassName:                  gwc.GetName(),
 		ImageInfo:                  k.inputs.ImageInfo,
 		WaypointClassName:          k.inputs.WaypointGatewayClassName,
-		AgwControllerName:          k.inputs.AgentgatewayControllerName,
 		OmitDefaultSecurityContext: false,
 	})
 	if err != nil {
@@ -392,15 +281,6 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 	paramRef := gwc.Spec.ParametersRef
 	if paramRef == nil {
 		// when there is no parametersRef, just return the defaults
-		return defaultGwp, nil
-	}
-
-	// If the parametersRef is for AgentgatewayParameters, treat it as no GatewayParameters
-	// (AgentgatewayParameters overlays are applied via PostProcessObjects)
-	if paramRef.Group == agentgateway.GroupName && string(paramRef.Kind) == wellknown.AgentgatewayParametersGVK.Kind {
-		slog.Debug("the GatewayClass references AgentgatewayParameters, using default GatewayParameters",
-			"gatewayclass_name", gwc.GetName(),
-		)
 		return defaultGwp, nil
 	}
 
@@ -439,7 +319,6 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 			ClassName:                  gwc.GetName(),
 			ImageInfo:                  k.inputs.ImageInfo,
 			WaypointClassName:          k.inputs.WaypointGatewayClassName,
-			AgwControllerName:          k.inputs.AgentgatewayControllerName,
 			OmitDefaultSecurityContext: true,
 		})
 		if err != nil {
@@ -452,8 +331,7 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 
 func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.GatewayParameters) (*deployer.HelmConfig, error) {
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
-	// kgatewayParameters is only used for envoy gateways (agentgateway uses agentgatewayParametersHelmValuesGenerator)
-	ports := deployer.GetPortsValues(irGW, gwParam, false)
+	ports := deployer.GetPortsValues(irGW, gwParam)
 	if len(ports) == 0 {
 		return nil, ErrNoValidPorts
 	}
@@ -552,7 +430,6 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
 	gateway.PriorityClassName = podConfig.GetPriorityClassName()
 
-	// kgatewayParameters is only used for envoy gateways (agentgateway uses agentgatewayParametersHelmValuesGenerator)
 	gateway.DataPlaneType = deployer.DataPlaneEnvoy
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
 	gateway.LogLevel = logLevel

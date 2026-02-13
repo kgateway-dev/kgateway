@@ -33,13 +33,8 @@ type GatewayConfig struct {
 	// ControllerName is the name of the Envoy controller. Any GatewayClass objects
 	// managed by this controller must have this name as their ControllerName.
 	ControllerName string
-	// AgwControllerName is the name of the agentgateway controller. Any GatewayClass objects
-	// managed by this controller must have this name as their ControllerName.
-	AgwControllerName string
 	// EnableEnvoy indicates if the Envoy controller is enabled
 	EnableEnvoy bool
-	// EnableAgentgateway indicates if the agentgateway controller is enabled
-	EnableAgentgateway bool
 	// ControlPlane sets the default control plane information the deployer will use.
 	ControlPlane deployer.ControlPlaneInfo
 	// IstioAutoMtlsEnabled enables istio auto mtls mode for the controller,
@@ -55,8 +50,6 @@ type GatewayConfig struct {
 	GatewayClassName string
 	// WaypointGatewayClassName is the configured waypoint gateway class name.
 	WaypointGatewayClassName string
-	// AgentgatewayClassName is the configured agent gateway class name.
-	AgentgatewayClassName string
 	// Additional GatewayClass definitions to support extending to other well-known gateway classes
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	// CertWatcher is the shared certificate watcher for xDS TLS
@@ -93,21 +86,19 @@ func watchGw(
 	gatewayControllerExtension pluginsdk.GatewayControllerExtension,
 ) error {
 	logger.Info("creating gateway deployer",
-		"ctrlname", cfg.ControllerName, "agwctrlname", cfg.AgwControllerName,
+		"ctrlname", cfg.ControllerName,
 		"server", cfg.ControlPlane.XdsHost, "port", cfg.ControlPlane.XdsPort,
-		"agwport", cfg.ControlPlane.AgwXdsPort, "tls", cfg.ControlPlane.XdsTLS,
+		"tls", cfg.ControlPlane.XdsTLS,
 	)
 
 	inputs := &deployer.Inputs{
-		Dev:                        cfg.Dev,
-		IstioAutoMtlsEnabled:       cfg.IstioAutoMtlsEnabled,
-		ControlPlane:               cfg.ControlPlane,
-		ImageInfo:                  cfg.ImageInfo,
-		CommonCollections:          cfg.CommonCollections,
-		GatewayClassName:           cfg.GatewayClassName,
-		WaypointGatewayClassName:   cfg.WaypointGatewayClassName,
-		AgentgatewayClassName:      cfg.AgentgatewayClassName,
-		AgentgatewayControllerName: cfg.AgwControllerName,
+		Dev:                      cfg.Dev,
+		IstioAutoMtlsEnabled:     cfg.IstioAutoMtlsEnabled,
+		ControlPlane:             cfg.ControlPlane,
+		ImageInfo:                cfg.ImageInfo,
+		CommonCollections:        cfg.CommonCollections,
+		GatewayClassName:         cfg.GatewayClassName,
+		WaypointGatewayClassName: cfg.WaypointGatewayClassName,
 	}
 
 	gwParams := internaldeployer.NewGatewayParameters(cfg.Client, inputs)
@@ -117,8 +108,6 @@ func watchGw(
 
 	d, err := internaldeployer.NewGatewayDeployer(
 		cfg.ControllerName,
-		cfg.AgwControllerName,
-		cfg.AgentgatewayClassName,
 		cfg.Mgr.GetScheme(),
 		cfg.Client,
 		gwParams,

@@ -54,7 +54,13 @@ func newGatewayClassReconciler(
 		client:                cfg.Client,
 	}
 	r.queue = controllers.NewQueue("GatewayClassController", controllers.WithReconciler(r.reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
-	ourControllers := sets.New(cfg.ControllerName, cfg.AgwControllerName)
+	ourControllerNames := []string{cfg.ControllerName}
+	for _, info := range classInfo {
+		if info.ControllerName != "" {
+			ourControllerNames = append(ourControllerNames, info.ControllerName)
+		}
+	}
+	ourControllers := sets.New(ourControllerNames...)
 
 	r.gwClassClient.AddEventHandler(
 		controllers.FromEventHandler(func(o controllers.Event) {

@@ -30,7 +30,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	agentgatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -301,33 +300,6 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 		}
-
-		agentgatewayParam = func(name string) *agentgatewayv1alpha1.AgentgatewayParameters {
-			return &agentgatewayv1alpha1.AgentgatewayParameters{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      name,
-					Namespace: defaultNamespace,
-					UID:       "1237",
-				},
-				Spec: agentgatewayv1alpha1.AgentgatewayParametersSpec{
-					AgentgatewayParametersConfigs: agentgatewayv1alpha1.AgentgatewayParametersConfigs{
-						Image: &agentgatewayv1alpha1.Image{
-							Repository: ptr.To("agentgateway"),
-							Tag:        ptr.To("0.4.0"),
-						},
-						Resources: &corev1.ResourceRequirements{
-							Limits: corev1.ResourceList{"cpu": resource.MustParse("101m")},
-						},
-						Env: []corev1.EnvVar{
-							{
-								Name:  "test",
-								Value: "value",
-							},
-						},
-					},
-				},
-			}
-		}
 	)
 
 	Context("default case", func() {
@@ -377,23 +349,18 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:           wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwp,
@@ -464,23 +431,18 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:           wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 			})
 			d, err = deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams,
@@ -492,111 +454,6 @@ var _ = Describe("Deployer", func() {
 			Expect(err).NotTo(HaveOccurred())
 			objs = d.SetNamespaceAndOwner(gw, objs)
 			Expect(objs).To(BeEmpty())
-		})
-	})
-
-	Context("agentgateway", func() {
-		var (
-			agwp *agentgatewayv1alpha1.AgentgatewayParameters
-			gwc  *gwv1.GatewayClass
-		)
-		BeforeEach(func() {
-			agwp = agentgatewayParam("agent-gateway-params")
-			gwc = &gwv1.GatewayClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: wellknown.DefaultAgwClassName,
-				},
-				Spec: gwv1.GatewayClassSpec{
-					ControllerName: wellknown.DefaultAgwControllerName,
-					ParametersRef: &gwv1.ParametersReference{
-						Group:     agentgatewayv1alpha1.GroupName,
-						Kind:      gwv1.Kind(wellknown.AgentgatewayParametersGVK.Kind),
-						Name:      agwp.GetName(),
-						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
-					},
-				},
-			}
-		})
-
-		It("deploys agentgateway", func() {
-			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "agent-gateway",
-					Namespace: defaultNamespace,
-				},
-				Spec: gwv1.GatewaySpec{
-					GatewayClassName: wellknown.DefaultAgwClassName,
-					Infrastructure: &gwv1.GatewayInfrastructure{
-						ParametersRef: &gwv1.LocalParametersReference{
-							Group: agentgatewayv1alpha1.GroupName,
-							Kind:  gwv1.Kind(wellknown.AgentgatewayParametersGVK.Kind),
-							Name:  agwp.GetName(),
-						},
-					},
-					Listeners: []gwv1.Listener{{
-						Name: "listener-1",
-						Port: 80,
-					}},
-				},
-			}
-			fakeClient := fake.NewClient(GinkgoT(), gwc, agwp)
-			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
-				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
-				Dev:               false,
-				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
-				},
-				ImageInfo: &deployer.ImageInfo{
-					Registry: "foo",
-					Tag:      "bar",
-				},
-				GatewayClassName:           wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
-			})
-			d, err := deployerinternal.NewGatewayDeployer(
-				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
-				scheme,
-				fakeClient,
-				gwParams,
-			)
-			Expect(err).NotTo(HaveOccurred())
-			fakeClient.RunAndWait(context.Background().Done())
-
-			var objs clientObjects
-			objs, err = d.GetObjsToDeploy(context.Background(), gw)
-			Expect(err).NotTo(HaveOccurred())
-			objs = d.SetNamespaceAndOwner(gw, objs)
-			// check the image is using the agentgateway image
-			deployment := objs.findDeployment("agent-gateway")
-			Expect(deployment).ToNot(BeNil())
-			// check the image uses the override tag
-			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("agentgateway"))
-			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("0.4.0"))
-			// check resource requirements are correctly set
-			Expect(deployment.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().Equal(resource.MustParse("101m"))).To(BeTrue())
-			// check env values are appended to the end of the list
-			var testEnvVar corev1.EnvVar
-			for _, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {
-				if envVar.Name == "test" {
-					testEnvVar = envVar
-					break
-				}
-			}
-			Expect(testEnvVar.Name).To(Equal("test"))
-			Expect(testEnvVar.Value).To(Equal("value"))
-			// check the service is using the agentgateway port
-			svc := objs.findService("agent-gateway")
-			Expect(svc).ToNot(BeNil())
-			Expect(svc.Spec.Ports[0].Port).To(Equal(int32(80)))
-			// check the config map is using the xds address and port
-			cm := objs.findConfigMap(defaultNamespace, "agent-gateway")
-			Expect(cm).ToNot(BeNil())
 		})
 	})
 
@@ -662,23 +519,18 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:           wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams,
@@ -735,23 +587,18 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:           wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams,
@@ -824,23 +671,18 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:           wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams,
@@ -919,23 +761,18 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:           wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams,
@@ -1010,23 +847,18 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw1, gw2),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:           wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 			})
 			d1, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams1,
@@ -1037,23 +869,18 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw1, gw2),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:           wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 			})
 			d2, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams2,
@@ -1114,9 +941,8 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), defaultGatewayClass(), gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
@@ -1125,8 +951,6 @@ var _ = Describe("Deployer", func() {
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams,
@@ -1162,9 +986,8 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), defaultGatewayClass(), gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
@@ -1173,8 +996,6 @@ var _ = Describe("Deployer", func() {
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams,
@@ -1223,9 +1044,8 @@ var _ = Describe("Deployer", func() {
 					CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost:    "something.cluster.local",
-						XdsPort:    1234,
-						AgwXdsPort: 5678,
+						XdsHost: "something.cluster.local",
+						XdsPort: 1234,
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: registry,
@@ -1234,8 +1054,6 @@ var _ = Describe("Deployer", func() {
 				})
 				d, err = deployerinternal.NewGatewayDeployer(
 					wellknown.DefaultGatewayControllerName,
-					wellknown.DefaultAgwControllerName,
-					wellknown.DefaultAgwClassName,
 					scheme,
 					fakeClient,
 					gwParams,
@@ -1314,9 +1132,8 @@ var _ = Describe("Deployer", func() {
 					CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost:    "something.cluster.local",
-						XdsPort:    1234,
-						AgwXdsPort: 5678,
+						XdsHost: "something.cluster.local",
+						XdsPort: 1234,
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: registry,
@@ -1325,8 +1142,6 @@ var _ = Describe("Deployer", func() {
 				})
 				d, err = deployerinternal.NewGatewayDeployer(
 					wellknown.DefaultGatewayControllerName,
-					wellknown.DefaultAgwControllerName,
-					wellknown.DefaultAgwClassName,
 					scheme,
 					fakeClient,
 					gwParams,
@@ -1409,9 +1224,8 @@ var _ = Describe("Deployer", func() {
 					CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost:    "something.cluster.local",
-						XdsPort:    1234,
-						AgwXdsPort: 5678,
+						XdsHost: "something.cluster.local",
+						XdsPort: 1234,
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: registry,
@@ -1420,8 +1234,6 @@ var _ = Describe("Deployer", func() {
 				})
 				d, err = deployerinternal.NewGatewayDeployer(
 					wellknown.DefaultGatewayControllerName,
-					wellknown.DefaultAgwControllerName,
-					wellknown.DefaultAgwClassName,
 					scheme,
 					fakeClient,
 					gwParams,
@@ -1713,16 +1525,14 @@ var _ = Describe("Deployer", func() {
 				return &deployer.Inputs{
 					Dev: false,
 					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost: "something.cluster.local", XdsPort: 1234, AgwXdsPort: 5678,
+						XdsHost: "something.cluster.local", XdsPort: 1234,
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: "foo",
 						Tag:      defaultImageTag,
 					},
-					GatewayClassName:           wellknown.DefaultGatewayClassName,
-					WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-					AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-					AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+					GatewayClassName:         wellknown.DefaultGatewayClassName,
+					WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				}
 			}
 
@@ -1898,7 +1708,6 @@ var _ = Describe("Deployer", func() {
 				ClassName:                  "a",
 				ImageInfo:                  &deployer.ImageInfo{},
 				WaypointClassName:          "b",
-				AgwControllerName:          "c",
 				OmitDefaultSecurityContext: true,
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -2047,8 +1856,6 @@ var _ = Describe("Deployer", func() {
 			gwParams := deployerinternal.NewGatewayParameters(fakeClient, inp.dInputs)
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams,
@@ -2465,7 +2272,7 @@ var _ = Describe("Deployer", func() {
 					CommonCollections: deployertest.NewCommonCols(GinkgoT(), defaultGatewayClass(), gw, ls),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost: "something.cluster.local", XdsPort: 1234, AgwXdsPort: 5678,
+						XdsHost: "something.cluster.local", XdsPort: 1234,
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: "foo",
@@ -2474,8 +2281,6 @@ var _ = Describe("Deployer", func() {
 				})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
 				scheme,
 				fakeClient,
 				gwParams,
@@ -2711,8 +2516,6 @@ var _ = Describe("DeployObjs", func() {
 	getDeployer := func(fc apiclient.Client, patcher deployer.Patcher) *deployer.Deployer {
 		d, err := deployerinternal.NewGatewayDeployer(
 			wellknown.DefaultGatewayControllerName,
-			wellknown.DefaultAgwControllerName,
-			wellknown.DefaultAgwClassName,
 			scheme,
 			fc,
 			nil,
@@ -2800,58 +2603,4 @@ var _ = Describe("DeployObjs", func() {
 		Expect(patched).To(BeTrue())
 	})
 
-	It("uses GatewayClass controllerName (not class name) as SSA field manager", func() {
-		customClassName := "custom-agw-class"
-		gwc := &gwv1.GatewayClass{
-			ObjectMeta: metav1.ObjectMeta{Name: customClassName},
-			Spec:       gwv1.GatewayClassSpec{ControllerName: wellknown.DefaultAgwControllerName},
-		}
-		gw := &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{Name: "test-gw", Namespace: ns, UID: "12345"},
-			Spec:       gwv1.GatewaySpec{GatewayClassName: gwv1.ObjectName(customClassName)},
-		}
-		gw.SetGroupVersionKind(wellknown.GatewayGVK)
-		cm := &corev1.ConfigMap{
-			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
-			Data:       map[string]string{"foo": "bar"},
-		}
-
-		fc := fake.NewClient(GinkgoT(), gwc)
-		var usedFieldManager string
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
-			usedFieldManager = fieldManager
-			return nil
-		})
-		fc.RunAndWait(context.Background().Done())
-
-		err := d.DeployObjsWithSource(ctx, []client.Object{cm}, gw)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(usedFieldManager).To(Equal(wellknown.DefaultAgwControllerName))
-	})
-
-	It("falls back to class name comparison when GatewayClass lookup fails", func() {
-		gw := &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{Name: "test-gw", Namespace: ns, UID: "12345"},
-			Spec:       gwv1.GatewaySpec{GatewayClassName: wellknown.DefaultAgwClassName},
-		}
-		gw.SetGroupVersionKind(wellknown.GatewayGVK)
-		cm := &corev1.ConfigMap{
-			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
-			Data:       map[string]string{"foo": "bar"},
-		}
-
-		fc := fake.NewClient(GinkgoT()) // no GatewayClass created
-		var usedFieldManager string
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
-			usedFieldManager = fieldManager
-			return nil
-		})
-		fc.RunAndWait(context.Background().Done())
-
-		err := d.DeployObjsWithSource(ctx, []client.Object{cm}, gw)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(usedFieldManager).To(Equal(wellknown.DefaultAgwControllerName))
-	})
 })

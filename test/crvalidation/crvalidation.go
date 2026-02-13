@@ -19,17 +19,14 @@ import (
 // The test data is split into multiple documents by the '---' delimiter.
 // If an error is expected, the error message should be in the _err field of the yaml document, for example:
 // ```
-// _err: deploymentName is required for this apiVersion
-// apiVersion: agentgateway.dev/v1alpha1
-// kind: AgentgatewayBackend
+// _err: some validation error message
+// apiVersion: gateway.kgateway.dev/v1alpha1
+// kind: GatewayParameters
 // metadata:
-//   name: azure-invalid-deployment-name
-// spec:
-//   ai:
-//     provider:
-//       azureopenai:
-//         apiVersion: 2024-01-01
-//         endpoint: test
+//
+//	name: example-invalid
+//
+// spec: {}
 // ---
 // ... more test cases
 // ```

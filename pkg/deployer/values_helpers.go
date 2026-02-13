@@ -38,13 +38,13 @@ var ComponentLogLevelEmptyError = func(key string, value string) error {
 // Extract the listener ports from a Gateway and corresponding listener sets. These will be used to populate:
 // 1. the ports exposed on the envoy container
 // 2. the ports exposed on the proxy service
-func GetPortsValues(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters, agentgateway bool) []HelmPort {
+func GetPortsValues(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters) []HelmPort {
 	gwPorts := []HelmPort{}
 
 	// Add ports from Gateway listeners
 	for _, port := range gw.Ports.List() {
 		portName := listener.GenerateListenerNameFromPort(port)
-		if err := validate.ListenerPortForParent(port, agentgateway); err != nil {
+		if err := validate.ListenerPort(ir.Listener{Listener: gwv1.Listener{Port: port}}, port); err != nil {
 			// skip invalid ports; statuses are handled in the translator
 			logger.Error("skipping port", "gateway", gw.ResourceName(), "error", err)
 			continue
@@ -187,22 +187,6 @@ func SetLoadBalancerIPFromGateway(gw *gwv1.Gateway, svc *HelmService) error {
 		return nil
 	}
 
-	ip, err := GetLoadBalancerIPFromGatewayAddresses(gw)
-	if err != nil {
-		return err
-	}
-	if ip != nil {
-		svc.LoadBalancerIP = ip
-	}
-	return nil
-}
-
-// SetLoadBalancerIPFromGatewayForAgentgateway extracts the IP address from Gateway.spec.addresses
-// and sets it on the AgentgatewayHelmService.
-// Only sets the IP if exactly one valid IP address is found in Gateway.spec.addresses.
-// Returns an error if more than one address is specified or no valid IP address is found.
-// Note: Agentgateway services are always LoadBalancer type, so no service type check is needed.
-func SetLoadBalancerIPFromGatewayForAgentgateway(gw *gwv1.Gateway, svc *AgentgatewayHelmService) error {
 	ip, err := GetLoadBalancerIPFromGatewayAddresses(gw)
 	if err != nil {
 		return err

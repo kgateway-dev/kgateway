@@ -470,6 +470,10 @@ func TestProtocolConflict(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 			Conditions: []metav1.Condition{
 				{
@@ -528,6 +532,10 @@ func TestProtocolConflictInvalidRoutes(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 		},
 	}
@@ -576,6 +584,10 @@ func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 			Conditions: []metav1.Condition{

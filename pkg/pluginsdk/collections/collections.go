@@ -46,9 +46,8 @@ type CommonCollections struct {
 	// static set of global Settings, non-krt based for dev speed
 	// TODO: this should be refactored to a more correct location,
 	// or even better, be removed entirely and done per Gateway (maybe in GwParams)
-	Settings                   apisettings.Settings
-	ControllerName             string
-	AgentgatewayControllerName string
+	Settings       apisettings.Settings
+	ControllerName string
 
 	options *option
 }
@@ -77,7 +76,6 @@ func NewCommonCollections(
 	krtOptions krtutil.KrtOptions,
 	client apiclient.Client,
 	controllerName string,
-	agentGatewayControllerName string,
 	settings apisettings.Settings,
 	opts ...Option,
 ) (*CommonCollections, error) {
@@ -150,7 +148,6 @@ func NewCommonCollections(
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
 	// Only create GatewayExtensions collection if Envoy is enabled
-	// This CRD is specific to Envoy and not used by agentgateway
 	var gwExts krt.Collection[ir.GatewayExtension]
 	if settings.EnableEnvoy {
 		gwExts = krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
@@ -174,8 +171,7 @@ func NewCommonCollections(
 
 		DiscoveryNamespacesFilter: discoveryNamespacesFilter,
 
-		ControllerName:             controllerName,
-		AgentgatewayControllerName: agentGatewayControllerName,
+		ControllerName: controllerName,
 
 		options: options,
 	}, nil
@@ -191,7 +187,7 @@ func (c *CommonCollections) InitPlugins(
 ) {
 	gateways, routeIndex, backendIndex, endpointIRs := c.InitCollections(
 		ctx,
-		smallset.New(c.ControllerName, c.AgentgatewayControllerName),
+		smallset.New(c.ControllerName),
 		mergedPlugins,
 		globalSettings,
 	)

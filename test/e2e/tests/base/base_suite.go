@@ -583,7 +583,7 @@ func (s *BaseTestingSuite) setupHelpers() {
 		s.CrdPath = testutils.CRDPath
 	}
 	var err error
-	s.gvkToStructuralSchema, err = testutils.GetStructuralSchemasForBothCharts()
+	s.gvkToStructuralSchema, err = testutils.GetStructuralSchemasForAllCharts()
 	s.Require().NoError(err)
 }
 

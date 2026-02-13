@@ -88,10 +88,6 @@ spec:
               value: {{ include "kgateway.fullname" . }}
             - name: KGW_XDS_SERVICE_PORT
               value: {{ .Values.controller.service.ports.grpc | quote }}
-            {{- if .Values.inferenceExtension.enabled }}
-            - name: KGW_ENABLE_INFER_EXT
-              value: "true"
-            {{- end }}
             - name: KGW_DEFAULT_IMAGE_REGISTRY
               value: {{ .Values.image.registry }}
             - name: KGW_DEFAULT_IMAGE_TAG
@@ -110,8 +106,6 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
-            - name: KGW_ENABLE_AGENTGATEWAY
-              value: "false"
             - name: KGW_ENABLE_ENVOY
               value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS

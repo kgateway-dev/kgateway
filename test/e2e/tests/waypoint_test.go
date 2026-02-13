@@ -7,8 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Masterminds/semver/v3"
-
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
@@ -18,8 +16,7 @@ import (
 )
 
 var (
-	// the min istio version required to run the waypoint tests
-	minIstioVersion = semver.MustParse("1.25.1")
+	minWaypointIstioVersion = "1.25.1"
 )
 
 func TestKgatewayWaypoint(t *testing.T) {
@@ -27,10 +24,10 @@ func TestKgatewayWaypoint(t *testing.T) {
 
 	// Set Istio version if not already set
 	if os.Getenv(testruntime.IstioVersionEnv) == "" {
-		os.Setenv(testruntime.IstioVersionEnv, "1.25.1") // Using minimum required version that supports multiple TargetRef types for Istio Authz policies.
+		os.Setenv(testruntime.IstioVersionEnv, testruntime.DefaultIstioVersion) // Using minimum required version that supports multiple TargetRef types for Istio Authz policies.
 	}
 
-	if shouldSkip(t) {
+	if testruntime.ShouldSkipIstioVersion(t, minWaypointIstioVersion) {
 		t.Skip("Skipping waypoint tests due to istio version requirements")
 		return
 	}
@@ -85,21 +82,4 @@ func TestKgatewayWaypoint(t *testing.T) {
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	WaypointSuiteRunner().Run(ctx, t, testInstallation)
-}
-
-func shouldSkip(t *testing.T) bool {
-	istioVersion, ok := os.LookupEnv(testruntime.IstioVersionEnv)
-	if !ok {
-		t.Fatalf("required environment variable %s not set", testruntime.IstioVersionEnv)
-	}
-
-	istioVersionSemver, err := semver.NewVersion(istioVersion)
-	if err != nil {
-		t.Fatalf("failed to parse istio version %s as semver: %v", istioVersion, err)
-	}
-
-	if istioVersionSemver.LessThan(minIstioVersion) {
-		return true
-	}
-	return false
 }
