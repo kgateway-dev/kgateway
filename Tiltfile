@@ -15,7 +15,8 @@ if str(local("command -v " + helm_cmd + " || true", quiet = True)) == "":
     fail("Required command '" + helm_cmd + "' not found in PATH")
 
 # Get IMAGE_REGISTRY from environment variable with fallback to default
-image_registry = str(local("echo ${IMAGE_REGISTRY:-ghcr.io/kgateway-dev}", quiet = True)).strip()
+image_registry = os.getenv("IMAGE_REGISTRY", "ghcr.io/kgateway-dev")
+
 
 settings = {
     "helm_installation_name": "kgateway",
