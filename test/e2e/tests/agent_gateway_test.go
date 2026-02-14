@@ -65,7 +65,7 @@ func TestAgentgatewayIntegration(t *testing.T) {
 		testInstallation.UninstallKgateway(ctx)
 
 		// Uninstall InferencePool v1 CRD
-		err := testInstallation.Actions.Kubectl().DeleteFile(ctx, poolCrdManifest)
+		err := testInstallation.Actions.Kubectl().DeleteFileSafe(ctx, poolCrdManifest)
 		testInstallation.Assertions.Require.NoError(err, "can delete manifest %s", poolCrdManifest)
 	})
 
