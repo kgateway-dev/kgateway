@@ -298,7 +298,7 @@ func TestParseCELExpression_Invalid(t *testing.T) {
 
 	invalidExprs := []sharedv1alpha1.CELExpression{
 		`this is not valid CEL`,
-		`source.address.invalidFunction()`,
+		`source.address ==`,
 		`unclosed string literal"`,
 	}
 

@@ -34,10 +34,16 @@ func translateNetworkRbac(rbac *sharedv1alpha1.Authorization, objSrc ir.ObjectSo
 		if err != nil {
 			errs = append(errs, err)
 		}
-		matchers = append(matchers, matcher)
+		if matcher != nil {
+			matchers = append(matchers, matcher)
+		}
 	}
 
 	if len(matchers) == 0 {
+		// If there were errors during matcher creation, return them
+		if len(errs) > 0 {
+			return nil, fmt.Errorf("network RBAC policy encountered CEL matcher errors: %v", errs)
+		}
 		// If no CEL matchers, create a simple deny-all RBAC
 		rbacConfig := &envoyrbacnetwork.RBAC{
 			StatPrefix: fmt.Sprintf("%s_%s_network_rbac", objSrc.Namespace, objSrc.Name),
@@ -59,7 +65,7 @@ func translateNetworkRbac(rbac *sharedv1alpha1.Authorization, objSrc ir.ObjectSo
 				Matchers: matchers,
 			},
 		},
-		OnNoMatch: createDefaultAction(envoyrbacv3.RBAC_DENY),
+		OnNoMatch: createDefaultAction(getInverseRBACAction(rbac.Action)),
 	}
 
 	rbacConfig := &envoyrbacnetwork.RBAC{
@@ -79,15 +85,14 @@ func translateNetworkRbac(rbac *sharedv1alpha1.Authorization, objSrc ir.ObjectSo
 }
 
 // createNetworkCELMatcher creates CEL matcher for network-level attributes
-// KEY DIFFERENCE from HTTP: Uses ConnectionAttributesCelMatchInput instead of HttpAttributesCelMatchInput
 func createNetworkCELMatcher(celExprs []sharedv1alpha1.CELExpression, action sharedv1alpha1.AuthorizationPolicyAction) (*cncfmatcherv3.Matcher_MatcherList_FieldMatcher, error) {
 	if len(celExprs) == 0 {
 		return nil, fmt.Errorf("no CEL expressions provided")
 	}
 
 	// Create CEL match input for connection attributes
-	// Note: For network-level RBAC, we use an empty struct as the CEL input
-	// The actual connection attributes are available in the CEL context automatically
+	// Note: For network-level RBAC, we use HttpAttributesCelMatchInput (despite the name)
+	// as it's the generic CEL input type. Connection attributes are available in the CEL context.
 	celMatchInput, err := utils.MessageToAny(&cncfmatcherv3.HttpAttributesCelMatchInput{})
 	if err != nil {
 		return nil, err
@@ -278,4 +283,15 @@ func parseCELExpression(env *cel.Env, celExpr sharedv1alpha1.CELExpression) (*ex
 	}
 
 	return &celDevParsed, nil
+}
+
+// getInverseRBACAction returns the inverse RBAC action
+// This is used for OnNoMatch to ensure correct policy semantics:
+// - Allow policy: match → ALLOW, no-match → DENY
+// - Deny policy: match → DENY, no-match → ALLOW
+func getInverseRBACAction(action sharedv1alpha1.AuthorizationPolicyAction) envoyrbacv3.RBAC_Action {
+	if action == sharedv1alpha1.AuthorizationPolicyActionDeny {
+		return envoyrbacv3.RBAC_ALLOW
+	}
+	return envoyrbacv3.RBAC_DENY
 }
