@@ -1860,7 +1860,7 @@ spec:
                           matchExpressions:
                             description: |-
                               MatchExpressions defines a set of conditions that must be satisfied for the rule to match.
-                              These expression should be in the form of a Common Expression Language (CEL) expression.
+                              These expressions should be in the form of a Common Expression Language (CEL) expression.
                             items:
                               description: CELExpression represents a Common Expression
                                 Language (CEL) expression.
