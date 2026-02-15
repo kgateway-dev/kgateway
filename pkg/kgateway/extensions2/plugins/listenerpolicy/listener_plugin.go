@@ -55,6 +55,7 @@ type ListenerPolicyIR struct {
 type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
 	perConnectionBufferLimitBytes *uint32
+	rbacNetworkFilter             *anypb.Any
 	// +noKrtEquals
 	http *HttpListenerPolicyIr
 }
@@ -65,15 +66,30 @@ func newListenerPolicy(
 	if i == nil {
 		return listenerPolicy{}, nil
 	}
+	var errs []error
+
 	var perConnectionBufferLimitBytes *uint32
 	if i.PerConnectionBufferLimitBytes != nil {
 		perConnectionBufferLimitBytes = ptr.To(uint32(*i.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
 	}
-	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
+
+	// Translate network RBAC if configured
+	var rbacNetworkFilter *anypb.Any
+	if i.RBAC != nil {
+		filter, err := translateNetworkRbac(i.RBAC, objSrc)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		rbacNetworkFilter = filter
+	}
+
+	http, httpErrs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
+	errs = append(errs, httpErrs...)
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
+		rbacNetworkFilter:             rbacNetworkFilter,
 		http:                          http,
 	}, errs
 }
@@ -108,6 +124,11 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	}
 
 	if !cmputils.PointerValsEqual(d.perConnectionBufferLimitBytes, d2.perConnectionBufferLimitBytes) {
+		return false
+	}
+
+	// Compare RBAC network filter
+	if !proto.Equal(d.rbacNetworkFilter, d2.rbacNetworkFilter) {
 		return false
 	}
 
@@ -161,7 +182,8 @@ type listenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 	reporter reporter.Reporter
 
-	healthCheckPolicy map[uint32]*healthcheckv3.HealthCheck
+	healthCheckPolicy  map[uint32]*healthcheckv3.HealthCheck
+	rbacNetworkFilters map[uint32]*anypb.Any // Track RBAC filters per port
 }
 
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
@@ -268,8 +290,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &listenerPolicyPluginGwPass{
-		reporter:          reporter,
-		healthCheckPolicy: map[uint32]*healthcheckv3.HealthCheck{},
+		reporter:           reporter,
+		healthCheckPolicy:  map[uint32]*healthcheckv3.HealthCheck{},
+		rbacNetworkFilters: map[uint32]*anypb.Any{},
 	}
 }
 
@@ -304,6 +327,21 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	// Set per connection buffer limit if configured
 	if cfg.perConnectionBufferLimitBytes != nil {
 		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *cfg.perConnectionBufferLimitBytes}
+	}
+	if cfg.rbacNetworkFilter != nil {
+		p.rbacNetworkFilters[pCtx.Port] = cfg.rbacNetworkFilter
+		// Apply RBAC network filter to all filter chains on this listener
+		// Network RBAC must be added BEFORE the HttpConnectionManager filter
+		rbacFilter := &envoylistenerv3.Filter{
+			Name: "envoy.filters.network.rbac",
+			ConfigType: &envoylistenerv3.Filter_TypedConfig{
+				TypedConfig: cfg.rbacNetworkFilter,
+			},
+		}
+		for _, fc := range out.FilterChains {
+			// Prepend RBAC filter to the beginning of the filter chain making sure it runs before HTTP processing
+			fc.Filters = append([]*envoylistenerv3.Filter{rbacFilter}, fc.Filters...)
+		}
 	}
 	if http := cfg.http; http != nil {
 		p.healthCheckPolicy[pCtx.Port] = http.healthCheckPolicy
