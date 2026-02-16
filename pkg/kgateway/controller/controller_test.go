@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	istiosets "istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -93,14 +91,8 @@ func (s *ControllerSuite) SetupSuite() {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.suitCtxCancelFn = cancel
 
-	// Create a scheme and add both Gateway and InferencePool types.
+	// Create a scheme and add Gateway types.
 	scheme := schemes.GatewayScheme()
-	err := inf.Install(scheme)
-	s.Require().NoError(err)
-
-	// Required to deploy endpoint picker RBAC resources.
-	err = rbacv1.AddToScheme(scheme)
-	s.Require().NoError(err)
 
 	assetsDir, err := getAssetsDir()
 	s.Require().NoError(err)

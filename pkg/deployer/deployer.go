@@ -38,9 +38,6 @@ type ControlPlaneInfo struct {
 	XdsTlsCaPath string
 }
 
-// InferenceExtInfo defines the runtime state of Gateway API inference extensions.
-type InferenceExtInfo struct{}
-
 type ImageInfo struct {
 	Registry   string
 	Tag        string
@@ -50,7 +47,7 @@ type ImageInfo struct {
 // Custom patcher; used for testing since SSA does not work with Dynamic fake client
 type Patcher func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error
 
-// A Deployer is responsible for deploying proxies and inference extensions.
+// A Deployer is responsible for deploying proxies.
 type Deployer struct {
 	controllerName                       string
 	chart                                *chart.Chart
@@ -76,9 +73,7 @@ func WithGVKToGVRMapper(m map[schema.GroupVersionKind]schema.GroupVersionResourc
 	}
 }
 
-// NewDeployer creates a new gateway/inference pool/etc
-// TODO [danehans]: Reloading the chart for every reconciliation is inefficient.
-// See https://github.com/kgateway-dev/kgateway/issues/10672 for details.
+// NewDeployer creates a new deployer for managed resources.
 func NewDeployer(
 	controllerName string,
 	scheme *runtime.Scheme,
@@ -182,9 +177,8 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 //
 // * returns the objects to be deployed by the caller
 //
-// obj can currently be a pointer to a Gateway (https://github.com/kubernetes-sigs/gateway-api/blob/main/apis/v1/gateway_types.go#L35) or
-//
-//	a pointer to an InferencePool (https://github.com/kubernetes-sigs/gateway-api-inference-extension/blob/main/api/v1alpha2/inferencepool_types.go#L30)
+// obj can currently be a pointer to a Gateway
+// (https://github.com/kubernetes-sigs/gateway-api/blob/main/apis/v1/gateway_types.go#L35).
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]client.Object, error) {
 	vals, err := d.helmValues.GetValues(ctx, obj)
 	if err != nil {

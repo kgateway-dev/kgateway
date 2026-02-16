@@ -1144,8 +1144,8 @@ go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.14.0 h1:B/g+qde6Mkzxbry5Z
 go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.14.0/go.mod h1:mOJK8eMmgW6ocDJn6Bn11CcZ05gi3P8GylBXEkZtbgA=
 go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.37.0 h1:6VjV6Et+1Hd2iLZEPtdV7vie80Yyqf7oikJLjQ/myi0=
 go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.37.0/go.mod h1:u8hcp8ji5gaM/RfcOo8z9NMnf1pVLfVY7lBY2VOGuUU=
-go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.38.0 h1:kJxSDN4SgWWTjG/hPp3O7LCGLcHXFlvS2/FFOrwL+SE=
-go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.38.0/go.mod h1:mgIOzS7iZeKJdeB8/NYHrJ48fdGc71Llo5bJ1J4DWUE=
+go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.32.0 h1:cC2yDI3IQd0Udsux7Qmq8ToKAx1XCilTQECZ0KDZyTw=
+go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.32.0/go.mod h1:2PD5Ex6z8CFzDbTdOlwyNIUywRr1DN0ospafJM1wJ+s=
 go.opentelemetry.io/otel/log v0.14.0 h1:2rzJ+pOAZ8qmZ3DDHg73NEKzSZkhkGIua9gXtxNGgrM=
 go.opentelemetry.io/otel/log v0.14.0/go.mod h1:5jRG92fEAgx0SU/vFPxmJvhIuDU9E1SUnEQrMlJpOno=
 go.opentelemetry.io/otel/metric v1.39.0 h1:d1UzonvEZriVfpNKEVmHXbdf909uGTOQjA0HF0Ls5Q0=
@@ -1638,8 +1638,8 @@ sigs.k8s.io/controller-tools v0.19.1-0.20251023132335-bf7d6b742e6a h1:xQ53A2QHll
 sigs.k8s.io/controller-tools v0.19.1-0.20251023132335-bf7d6b742e6a/go.mod h1:1xadwE5nu9G5zDyJQxFP1AE8E4t7kIkQraKHux9GuE4=
 sigs.k8s.io/gateway-api v1.4.1 h1:NPxFutNkKNa8UfLd2CMlEuhIPMQgDQ6DXNKG9sHbJU8=
 sigs.k8s.io/gateway-api v1.4.1/go.mod h1:AR5RSqciWP98OPckEjOjh2XJhAe2Na4LHyXD2FUY7Qk=
-sigs.k8s.io/gateway-api-inference-extension v1.1.0 h1:MqRYk+3LNUWB0MbTgTZVhmJGNDTvm8l3ze4MOlzR7MU=
-sigs.k8s.io/gateway-api-inference-extension v1.1.0/go.mod h1:BmJy8Hvc2EHl3Oa/Ka8/4RqwVHCCbX7BLndLdMNtugI=
+sigs.k8s.io/gateway-api-inference-extension v0.0.0-20250926182816-0a3bb2010751 h1:02xtteK+vH0484psoJ8QuncdEF8e4ElliMBUuKoWWZY=
+sigs.k8s.io/gateway-api-inference-extension v0.0.0-20250926182816-0a3bb2010751/go.mod h1:x4ydLmxI0lGo0g7DY3qkIImagLGq5JuPHaDu3NLDj8k=
 sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 h1:IpInykpT6ceI+QxKBbEflcR5EXP7sU1kvOlxwZh5txg=
 sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730/go.mod h1:mdzfpAEoE6DHQEN0uh9ZbOCuHbLK5wOm7dK4ctXE9Tg=
 sigs.k8s.io/kind v0.31.0 h1:UcT4nzm+YM7YEbqiAKECk+b6dsvc/HRZZu9U0FolL1g=

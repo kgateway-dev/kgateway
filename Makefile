@@ -35,6 +35,22 @@ z := $(shell mkdir -p $(OUTPUT_DIR))
 
 BUILDX_BUILD ?= docker buildx build -q
 
+#----------------------------------------------------------------------------------
+# Devcontainer build-tools image
+#----------------------------------------------------------------------------------
+BUILD_TOOLS_DIR ?= tools/build-tools
+BUILD_TOOLS_IMAGE ?= kgateway-build-tools:dev
+BUILD_TOOLS_VERSION ?= $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo dev)
+
+.PHONY: build-tools-image
+build-tools-image: ## Build the devcontainer build-tools image locally (override BUILD_TOOLS_IMAGE=... to change tag)
+	docker buildx build \
+		--load \
+		-t $(BUILD_TOOLS_IMAGE) \
+		--build-arg VERSION=$(BUILD_TOOLS_VERSION) \
+		-f $(BUILD_TOOLS_DIR)/Dockerfile \
+		.
+
 # Helper variable for escaping commas in Make functions
 comma := ,
 
@@ -706,6 +722,7 @@ release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG opt
 #----------------------------------------------------------------------------------
 
 KIND ?= go tool kind
+KIND_VERSION ?= $(shell grep -E '^\s*sigs.k8s.io/kind ' go.mod | awk '{print $$2}')
 CLUSTER_NAME ?= kind
 # Default namespace for kgateway installation
 INSTALL_NAMESPACE ?= kgateway-system

@@ -141,7 +141,6 @@ make kind-reload-kgateway
 ### Running Conformance Tests
 ```bash
 make conformance  # Gateway API conformance
-make gie-conformance  # Gateway API Inference Extension
 make all-conformance  # All suites
 
 # Run specific test by ShortName
@@ -193,7 +192,6 @@ make deploy-kgateway   # Deploy to cluster
 ## Dependencies & Bumping
 ```bash
 make bump-gtw DEP_REF=v1.3.0     # Bump Gateway API
-make bump-gie DEP_REF=v1.1.0     # Bump Inference Extension
 make generate-licenses            # Update license attribution
 ```
 
