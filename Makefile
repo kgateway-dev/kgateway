@@ -159,21 +159,19 @@ fmt:  ## Format the code with golangci-lint
 fmt-changed: ## Format only the changed code with golangci-lint (skip deleted files)
 	git status -s -uno | awk '{print $$2}' | grep '.*.go$$' | xargs -r -I{} bash -lc '[ -f "{}" ] && $(CUSTOM_GOLANGCI_LINT_FMT) "{}" || true'
 
-# must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
-mod-download:  ## Download the dependencies
-	go mod download all
-	cd tools && go mod download all
+mod-download:  ## Download transitive dependencies
+	go mod download
+	cd hack/utils/applier && go mod download
+	cd tools && go mod download
+	cd test/e2e/defaults/extproc && go mod download
 
-.PHONY: mod-tidy-nested
-mod-tidy-nested:  ## Tidy go mod files in nested modules
+.PHONY: mod-tidy
+mod-tidy: ## Tidy the go mod file
 	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
 	@echo "Tidying tools..." && cd tools && go mod tidy
 	@echo "Tidying test/e2e/defaults/extproc..." && cd test/e2e/defaults/extproc && go mod tidy
-
-.PHONY: mod-tidy
-mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
-	go mod tidy
+	@echo "Tidying top level" && go mod tidy
 
 #----------------------------------------------------------------------------
 # Analyze
@@ -388,7 +386,10 @@ API_SOURCE_FILES += hack/generate.sh hack/generate.go
 MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go
 
 # Files that track dependency changes
-MOD_FILES := go.mod go.sum
+MOD_FILES := go.mod go.sum \
+	hack/utils/applier/go.mod hack/utils/applier/go.sum \
+	tools/go.mod tools/go.sum \
+	test/e2e/defaults/extproc/go.mod test/e2e/defaults/extproc/go.sum
 
 # Clean generated code
 .PHONY: clean-gen
@@ -423,10 +424,7 @@ $(STAMP_DIR)/go-generate-all: $(STAMP_DIR)/go-generate-apis $(STAMP_DIR)/go-gene
 
 # Module tidy with dependency tracking
 $(STAMP_DIR)/mod-tidy: $(MOD_FILES) | $(STAMP_DIR)
-	@echo "Running mod tidy..."
-	@$(MAKE) --no-print-directory mod-download
-	@$(MAKE) --no-print-directory mod-tidy-nested
-	go mod tidy
+	@$(MAKE) --no-print-directory mod-tidy
 	@touch $@
 
 # License generation with dependency tracking
