@@ -853,17 +853,17 @@ func (s *testingSuite) TestRustformationModelExtraction() {
 	s.SetRustformationInController(true)
 
 	// wait for pods to be running again, since controller deployment was patched
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
 		LabelSelector: defaults.ControllerLabelSelector,
 	})
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 
 	// assert the policy is accepted
 	s.assertModelExtractionResourceStatus()
 
-	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
 		s.Ctx,
 		proxyObjectMeta,
 		s.dynamicModuleAssertion(true),
