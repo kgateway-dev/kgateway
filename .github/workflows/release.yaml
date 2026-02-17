@@ -209,7 +209,7 @@ jobs:
           VERSION: ${{ needs.setup.outputs.version }}
           SKIP_DOCKER: "true"
 
-      - name: Install the released chart
+      - name: Install released charts (Envoy dataplane)
         run: |
           # install the crds first
           go tool helm install kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
@@ -221,15 +221,42 @@ jobs:
             oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
             --set image.registry=${{ env.IMAGE_REGISTRY }} \
             --version ${{ needs.setup.outputs.version }} \
-            --set inferenceExtension.enabled=true \
             --wait --timeout 5m
 
-      - name: Wait for the kgateway deployment to be ready
+      - name: Wait for the kgateway deployment to be ready (Envoy dataplane)
         run: |
           kubectl wait --for=condition=available --timeout=5m deployment/kgateway -n kgateway-system
 
-      - name: Run Gateway API and Inference Extension Conformance Tests
-        run: make all-conformance
+      - name: Run Gateway API Conformance Tests (Envoy dataplane)
+        run: make conformance
+        shell: bash
+        env:
+          VERSION: ${{ needs.setup.outputs.version }}
+
+      - name: Install released charts (agentgateway dataplane)
+        run: |
+          # install agentgateway CRDs
+          go tool helm install agentgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/agentgateway-crds \
+            --version ${{ needs.setup.outputs.version }} \
+            --wait --timeout 5m
+
+          # install agentgateway with inference extension enabled for GIE conformance
+          go tool helm install --create-namespace --namespace agentgateway-system agentgateway \
+            oci://${{ env.IMAGE_REGISTRY }}/charts/agentgateway \
+            --set image.registry=${{ env.IMAGE_REGISTRY }} \
+            --set controller.image.repository=agentgateway-controller \
+            --set inferenceExtension.enabled=true \
+            --version ${{ needs.setup.outputs.version }} \
+            --wait --timeout 5m
+
+      - name: Wait for the agentgateway deployment to be ready
+        run: |
+          kubectl wait --for=condition=available --timeout=5m deployment/agentgateway -n agentgateway-system
+
+      - name: Run Inference Extension and Agentgateway Conformance Tests
+        run: |
+          make gie-conformance
+          make agw-conformance
         shell: bash
         env:
           VERSION: ${{ needs.setup.outputs.version }}
