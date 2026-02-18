@@ -193,13 +193,7 @@ func translateProvider(
 	resolver backendResolver,
 	gwExtObj ir.ObjectSource,
 ) (*jwtauthnv3.JwtProvider, error) {
-	var claimToHeaders []*jwtauthnv3.JwtClaimToHeader
-	for _, claim := range provider.ClaimsToHeaders {
-		claimToHeaders = append(claimToHeaders, &jwtauthnv3.JwtClaimToHeader{
-			ClaimName:  claim.Name,
-			HeaderName: claim.Header,
-		})
-	}
+	claimToHeaders := translateJWTClaimsToHeaders(provider.ClaimsToHeaders)
 	var shouldForward bool
 	if provider.ForwardToken != nil && *provider.ForwardToken {
 		shouldForward = true
@@ -221,6 +215,17 @@ func translateProvider(
 		return nil, err
 	}
 	return jwtProvider, nil
+}
+
+func translateJWTClaimsToHeaders(claimsToHeaders []kgateway.JWTClaimToHeader) []*jwtauthnv3.JwtClaimToHeader {
+	var claimToHeaders []*jwtauthnv3.JwtClaimToHeader
+	for _, claim := range claimsToHeaders {
+		claimToHeaders = append(claimToHeaders, &jwtauthnv3.JwtClaimToHeader{
+			ClaimName:  claim.Name,
+			HeaderName: claim.Header,
+		})
+	}
+	return claimToHeaders
 }
 
 func translateTokenSource(provider kgateway.JWTProvider, out *jwtauthnv3.JwtProvider) {

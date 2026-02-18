@@ -488,6 +488,21 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 		stagedFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, stagedFilter)
+
+		jwtFilter := provider.Extension.OAuth2.jwtCfg
+		if jwtFilter == nil {
+			continue
+		}
+
+		stagedJwtFilter := filters.MustNewStagedFilterWithWeight(
+			oauthJWTFilterName(provider.Name),
+			jwtFilter,
+			filters.DuringStage(filters.AuthNStage),
+			provider.Extension.PrecedenceWeight,
+		)
+
+		stagedJwtFilter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, stagedJwtFilter)
 	}
 
 	if len(p.jwtPerProvider.Providers[fcc.FilterChainName]) > 0 {

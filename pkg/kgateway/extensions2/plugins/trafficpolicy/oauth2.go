@@ -7,6 +7,7 @@ import (
 	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyjwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	envoyoauth2v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/oauth2/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -37,6 +38,10 @@ const (
 	defaultRedictURI            = "%REQ(x-forwarded-proto)%://%REQ(:authority)%/oauth2/redirect"
 	clientSecretKey             = "client-secret"
 	defaultTokenEndpointTimeout = 15 * time.Second
+
+	oauthJWTRequirementName     = "oauth2"
+	oauthJWTAccessTokenProvider = "oauth2/accessToken" //nolint:gosec // G101: This is only an identifier within the Envoy filter, not a credential
+	oauthJWTIDTokenProvider     = "oauth2/idToken"     //nolint:gosec // G101: This is only an identifier within the Envoy filter, not a credential
 )
 
 type oauthIR struct {
@@ -46,6 +51,7 @@ type oauthIR struct {
 
 type oauthPerProviderConfig struct {
 	cfg     *envoyoauth2v3.OAuth2
+	jwtCfg  *envoyjwtauthnv3.JwtAuthentication
 	secrets []*envoytlsv3.Secret
 }
 
@@ -53,7 +59,7 @@ func (a *oauthPerProviderConfig) Equals(b *oauthPerProviderConfig) bool {
 	if a == nil || b == nil {
 		return a == nil && b == nil
 	}
-	return proto.Equal(a.cfg, b.cfg) && slices.EqualFunc(a.secrets, b.secrets, func(x, y *envoytlsv3.Secret) bool {
+	return proto.Equal(a.cfg, b.cfg) && proto.Equal(a.jwtCfg, b.jwtCfg) && slices.EqualFunc(a.secrets, b.secrets, func(x, y *envoytlsv3.Secret) bool {
 		return proto.Equal(x, y)
 	})
 }
@@ -125,10 +131,11 @@ func buildOAuth2ProviderConfig(
 	tokenEndpoint := ptr.Deref(in.TokenEndpoint, "").String()
 	authorizationEndpoint := ptr.Deref(in.AuthorizationEndpoint, "").String()
 	endSessionEndpoint := ptr.Deref(in.EndSessionEndpoint, "").String()
+	jwksURI := ptr.Deref(in.JWKSURI, "").String()
 
 	if in.IssuerURI != nil {
 		// only discover config if we need to, i.e., when either tokenEndpoint, authorizationEndpoint, or endSessionEndpoint is not provided
-		if in.TokenEndpoint == nil || in.AuthorizationEndpoint == nil || in.EndSessionEndpoint == nil {
+		if in.TokenEndpoint == nil || in.AuthorizationEndpoint == nil || in.EndSessionEndpoint == nil || in.JWKSURI == nil {
 			openidCfg, err := discoverer.get(*in.IssuerURI)
 			if err != nil {
 				return nil, err
@@ -141,6 +148,9 @@ func buildOAuth2ProviderConfig(
 			}
 			if endSessionEndpoint == "" {
 				endSessionEndpoint = ptr.Deref(openidCfg.EndSessionEndpoint, "")
+			}
+			if jwksURI == "" {
+				jwksURI = openidCfg.JWKSURI
 			}
 		}
 	}
@@ -301,8 +311,14 @@ func buildOAuth2ProviderConfig(
 		cfg.Config.DenyRedirectMatcher = matcher
 	}
 
+	jwtCfg, err := buildOAuth2JWTConfig(ext, jwksURI, cookieNames, backend)
+	if err != nil {
+		return nil, err
+	}
+
 	return &oauthPerProviderConfig{
-		cfg: cfg,
+		cfg:    cfg,
+		jwtCfg: jwtCfg,
 		secrets: []*envoytlsv3.Secret{
 			{
 				Name: oauthClientSecretName(in.Credentials.ClientSecretRef.Name, ext.Namespace),
@@ -332,6 +348,83 @@ func buildOAuth2ProviderConfig(
 	}, nil
 }
 
+func buildOAuth2JWTConfig(
+	ext *ir.GatewayExtension,
+	jwksURI string,
+	cookieNames *envoyoauth2v3.OAuth2Credentials_CookieNames,
+	backend *ir.BackendObjectIR,
+) (*envoyjwtauthnv3.JwtAuthentication, error) {
+	jwts := ext.OAuth2.JWTs
+	if jwts == nil {
+		return nil, nil
+	}
+
+	if jwts.AccessToken == nil && jwts.IDToken == nil {
+		return nil, nil
+	}
+
+	if jwksURI == "" {
+		return nil, fmt.Errorf("jwksURI must be specified when JWT parsing is configured on GatewayExtension %s", ext.NamespacedName())
+	}
+
+	providers := map[string]*envoyjwtauthnv3.JwtProvider{}
+	var requirements []*envoyjwtauthnv3.JwtRequirement
+
+	jwksSource := &envoyjwtauthnv3.JwtProvider_RemoteJwks{
+		RemoteJwks: &envoyjwtauthnv3.RemoteJwks{
+			HttpUri: &envoycorev3.HttpUri{
+				Timeout: &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs},
+				Uri:     jwksURI,
+				HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
+					Cluster: backend.ClusterName(),
+				},
+			},
+		},
+	}
+	if jwts.AccessToken != nil {
+		claimsToHeaders := translateJWTClaimsToHeaders(jwts.AccessToken.ClaimsToHeaders)
+		providers[oauthJWTAccessTokenProvider] = &envoyjwtauthnv3.JwtProvider{
+			FromCookies:         []string{cookieNames.BearerToken},
+			PayloadInMetadata:   "accessToken",
+			JwksSourceSpecifier: jwksSource,
+			Audiences:           jwts.AccessToken.Audiences,
+			ClaimToHeaders:      claimsToHeaders,
+			ClearRouteCache:     len(claimsToHeaders) > 0,
+		}
+		requirements = append(requirements, &envoyjwtauthnv3.JwtRequirement{
+			RequiresType: &envoyjwtauthnv3.JwtRequirement_ProviderName{
+				ProviderName: oauthJWTAccessTokenProvider,
+			},
+		})
+	}
+
+	if jwts.IDToken != nil {
+		claimsToHeaders := translateJWTClaimsToHeaders(jwts.IDToken.ClaimsToHeaders)
+		providers[oauthJWTIDTokenProvider] = &envoyjwtauthnv3.JwtProvider{
+			FromCookies:         []string{cookieNames.IdToken},
+			PayloadInMetadata:   "idToken",
+			JwksSourceSpecifier: jwksSource,
+			Audiences:           jwts.IDToken.Audiences,
+			ClaimToHeaders:      claimsToHeaders,
+			ClearRouteCache:     len(claimsToHeaders) > 0,
+		}
+		requirements = append(requirements, &envoyjwtauthnv3.JwtRequirement{
+			RequiresType: &envoyjwtauthnv3.JwtRequirement_ProviderName{
+				ProviderName: oauthJWTIDTokenProvider,
+			},
+		})
+	}
+
+	return &envoyjwtauthnv3.JwtAuthentication{
+		Providers: providers,
+		RequirementMap: map[string]*envoyjwtauthnv3.JwtRequirement{
+			oauthJWTRequirementName: {RequiresType: &envoyjwtauthnv3.JwtRequirement_RequiresAll{
+				RequiresAll: &envoyjwtauthnv3.JwtRequirementAndList{Requirements: requirements},
+			}},
+		},
+	}, nil
+}
+
 func oauthClientSecretName(name, namespace string) string {
 	return fmt.Sprintf("oauth2/client_secret/%s/%s", namespace, name)
 }
@@ -356,6 +449,10 @@ func oauthFilterName(provider string) string {
 	return "envoy.filters.http.oauth2/" + provider
 }
 
+func oauthJWTFilterName(provider string) string {
+	return "envoy.filters.http.oauth2/jwt/" + provider
+}
+
 func adsConfigSource() *envoycorev3.ConfigSource {
 	return &envoycorev3.ConfigSource{
 		ResourceApiVersion: envoycorev3.ApiVersion_V3,
@@ -373,6 +470,13 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 	// TODO: add disable capability when needed
 	p.oauth2PerProvider.Add(filterChain, in.source.Name, in.source)
 	perFilterConfig.AddTypedConfig(oauthFilterName(in.source.Name), EnableFilterPerRoute())
+	if in.jwtCfg != nil {
+		perFilterConfig.AddTypedConfig(oauthJWTFilterName(in.source.Name), &envoyjwtauthnv3.PerRouteConfig{
+			RequirementSpecifier: &envoyjwtauthnv3.PerRouteConfig_RequirementName{
+				RequirementName: oauthJWTRequirementName,
+			},
+		})
+	}
 	for _, secret := range in.secrets {
 		p.secrets[secret.Name] = secret
 	}
