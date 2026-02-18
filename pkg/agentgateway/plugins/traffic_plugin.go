@@ -760,7 +760,15 @@ func processAPIKeyAuthenticationPolicy(
 	}
 	var errs []error
 	for _, s := range secrets {
-		for k, v := range s.Data {
+		// Sort keys for deterministic ordering
+		// tests fail without this
+		keys := make([]string, 0, len(s.Data))
+		for k := range s.Data {
+			keys = append(keys, k)
+		}
+		slices.Sort(keys)
+		for _, k := range keys {
+			v := s.Data[k]
 			var ke APIKeyEntry
 			if bytes.TrimSpace(v)[0] != '{' {
 				// A raw key entry without metadata
