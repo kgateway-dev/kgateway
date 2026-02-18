@@ -1398,6 +1398,28 @@ spec:
                       Policy specifies the Authorization rule to evaluate.
                       A policy matches when **any** of the conditions evaluates to true.
                     properties:
+                      allowedCIDRs:
+                        description: |-
+                          AllowedCIDRs defines a list of IP address ranges in CIDR notation that are allowed.
+                          These are combined with MatchExpressions using AND logic - both must match.
+                          Uses the client's source IP address for matching.
+                          Example: ["192.168.1.0/24", "10.0.0.0/8"]
+                        items:
+                          type: string
+                        maxItems: 256
+                        minItems: 1
+                        type: array
+                      blockedCIDRs:
+                        description: |-
+                          BlockedCIDRs defines a list of IP address ranges in CIDR notation that are blocked.
+                          If an IP matches BlockedCIDRs, it will be denied regardless of AllowedCIDRs.
+                          Uses the client's source IP address for matching.
+                          Example: ["192.168.1.100/32", "10.1.0.0/16"]
+                        items:
+                          type: string
+                        maxItems: 256
+                        minItems: 1
+                        type: array
                       matchExpressions:
                         description: |-
                           MatchExpressions defines a set of conditions that must be satisfied for the rule to match.
@@ -1411,9 +1433,12 @@ spec:
                         maxItems: 256
                         minItems: 1
                         type: array
-                    required:
-                    - matchExpressions
                     type: object
+                    x-kubernetes-validations:
+                    - message: at least one of matchExpressions, allowedCIDRs, or
+                        blockedCIDRs must be specified
+                      rule: has(self.matchExpressions) || has(self.allowedCIDRs) ||
+                        has(self.blockedCIDRs)
                 required:
                 - policy
                 type: object

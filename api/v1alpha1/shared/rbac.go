@@ -22,14 +22,33 @@ type Authorization struct {
 type CELExpression string
 
 // AuthorizationPolicy defines a single Authorization rule.
+// +kubebuilder:validation:XValidation:rule="has(self.matchExpressions) || has(self.allowedCIDRs) || has(self.blockedCIDRs)",message="at least one of matchExpressions, allowedCIDRs, or blockedCIDRs must be specified"
 type AuthorizationPolicy struct {
 	// MatchExpressions defines a set of conditions that must be satisfied for the rule to match.
 	// These expression should be in the form of a Common Expression Language (CEL) expression.
 	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=256
-	// +required
-	MatchExpressions []CELExpression `json:"matchExpressions"`
+	// +optional
+	MatchExpressions []CELExpression `json:"matchExpressions,omitempty"`
+
+	// AllowedCIDRs defines a list of IP address ranges in CIDR notation that are allowed.
+	// These are combined with MatchExpressions using AND logic - both must match.
+	// Uses the client's source IP address for matching.
+	// Example: ["192.168.1.0/24", "10.0.0.0/8"]
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=256
+	AllowedCIDRs []string `json:"allowedCIDRs,omitempty"`
+
+	// BlockedCIDRs defines a list of IP address ranges in CIDR notation that are blocked.
+	// If an IP matches BlockedCIDRs, it will be denied regardless of AllowedCIDRs.
+	// Uses the client's source IP address for matching.
+	// Example: ["192.168.1.100/32", "10.1.0.0/16"]
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=256
+	BlockedCIDRs []string `json:"blockedCIDRs,omitempty"`
 }
 
 // AuthorizationPolicyAction defines the action to take when the RBACPolicies matches.

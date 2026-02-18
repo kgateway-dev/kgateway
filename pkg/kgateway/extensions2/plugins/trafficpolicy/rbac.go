@@ -2,15 +2,20 @@ package trafficpolicy
 
 import (
 	"fmt"
+	"net"
 
 	"cel.dev/expr"
 	cncfcorev3 "github.com/cncf/xds/go/xds/core/v3"
 	cncfmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
 	cncftypev3 "github.com/cncf/xds/go/xds/type/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	envoyauthz "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
+	envoynetworkinputv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
+	envoyipmatcherv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/input_matchers/ip/v3"
 	"github.com/google/cel-go/cel"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -87,16 +92,43 @@ func translateRBAC(rbac *sharedv1alpha1.Authorization) (*envoyauthz.RBACPerRoute
 	// Create matcher-based RBAC configuration
 	var matchers []*cncfmatcherv3.Matcher_MatcherList_FieldMatcher
 
+	// Add IP matchers for blocked CIDRs (checked first)
+	if len(rbac.Policy.BlockedCIDRs) > 0 {
+		matcher, err := createIPMatcher(rbac.Policy.BlockedCIDRs, true, rbac.Action)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			matchers = append(matchers, matcher)
+		}
+	}
+
+	// Add IP matchers for allowed CIDRs
+	if len(rbac.Policy.AllowedCIDRs) > 0 {
+		matcher, err := createIPMatcher(rbac.Policy.AllowedCIDRs, false, rbac.Action)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			matchers = append(matchers, matcher)
+		}
+	}
+
+	// Add CEL matchers (existing logic)
 	if len(rbac.Policy.MatchExpressions) > 0 {
 		matcher, err := createCELMatcher(rbac.Policy.MatchExpressions, rbac.Action)
 		if err != nil {
 			errs = append(errs, err)
+		} else {
+			matchers = append(matchers, matcher)
 		}
-		matchers = append(matchers, matcher)
+	}
+
+	// Check for errors first before returning results
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("RBAC policy encountered errors: %v", errs)
 	}
 
 	if len(matchers) == 0 {
-		// If no CEL matchers, create a simple deny-all RBAC
+		// If no matchers at all, create a simple deny-all RBAC
 		return &envoyauthz.RBACPerRoute{
 			Rbac: &envoyauthz.RBAC{
 				Rules: &envoyrbacv3.RBAC{
@@ -107,6 +139,8 @@ func translateRBAC(rbac *sharedv1alpha1.Authorization) (*envoyauthz.RBACPerRoute
 		}, nil
 	}
 
+	// Combine all matchers into a matcher list
+	// Matchers are evaluated in order, first match wins
 	celMatcher := &cncfmatcherv3.Matcher{
 		MatcherType: &cncfmatcherv3.Matcher_MatcherList_{
 			MatcherList: &cncfmatcherv3.Matcher_MatcherList{
@@ -116,16 +150,113 @@ func translateRBAC(rbac *sharedv1alpha1.Authorization) (*envoyauthz.RBACPerRoute
 		OnNoMatch: createDefaultAction(envoyrbacv3.RBAC_DENY),
 	}
 
-	res := &envoyauthz.RBACPerRoute{
+	return &envoyauthz.RBACPerRoute{
 		Rbac: &envoyauthz.RBAC{
-			Matcher: celMatcher, // Use the Matcher field directly
+			Matcher: celMatcher,
+		},
+	}, nil
+}
+
+// validateCIDR validates that the given string is a valid CIDR notation
+func validateCIDR(cidr string) error {
+	_, _, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return fmt.Errorf("invalid CIDR notation %q: %w", cidr, err)
+	}
+	return nil
+}
+
+// createIPMatcher creates an IP-based matcher for CIDR ranges
+// Returns a FieldMatcher that uses Envoy's IP custom matcher with SourceIPInput
+func createIPMatcher(cidrs []string, isBlocklist bool, action sharedv1alpha1.AuthorizationPolicyAction) (*cncfmatcherv3.Matcher_MatcherList_FieldMatcher, error) {
+	// Validate all CIDRs first
+	for _, cidr := range cidrs {
+		if err := validateCIDR(cidr); err != nil {
+			return nil, err
+		}
+	}
+
+	// Create SourceIPInput matcher configuration
+	// Use envoy/extensions/matching/common_inputs/network/v3.SourceIPInput
+	sourceIPInput, err := utils.MessageToAny(&envoynetworkinputv3.SourceIPInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	sourceIPInputConfig := &cncfcorev3.TypedExtensionConfig{
+		Name:        "envoy.matching.common_inputs.network.source_ip",
+		TypedConfig: sourceIPInput,
+	}
+
+	// Create IP matcher configuration
+	// Use envoy/extensions/matching/input_matchers/ip/v3.Ip
+	// StatPrefix is required by Envoy proto validation (minimum 1 character)
+	ipMatcher := &envoyipmatcherv3.Ip{
+		StatPrefix: "ip_matcher",
+		CidrRanges: make([]*envoycorev3.CidrRange, len(cidrs)),
+	}
+
+	for i, cidr := range cidrs {
+		ip, ipNet, _ := net.ParseCIDR(cidr) // Already validated above
+		prefixLen, _ := ipNet.Mask.Size()
+
+		// prefixLen is guaranteed to be in valid range (0-32 for IPv4, 0-128 for IPv6)
+		// since the CIDR was validated by net.ParseCIDR
+		ipMatcher.CidrRanges[i] = &envoycorev3.CidrRange{
+			AddressPrefix: ip.String(),
+			PrefixLen:     &wrapperspb.UInt32Value{Value: uint32(prefixLen)}, //nolint:gosec // prefixLen is validated by net.ParseCIDR
+		}
+	}
+
+	ipMatcherAny, err := utils.MessageToAny(ipMatcher)
+	if err != nil {
+		return nil, err
+	}
+
+	typedIPMatchConfig := &cncfcorev3.TypedExtensionConfig{
+		Name:        "envoy.matching.input_matchers.ip",
+		TypedConfig: ipMatcherAny,
+	}
+
+	// Create single predicate with IP matcher
+	predicate := &cncfmatcherv3.Matcher_MatcherList_Predicate{
+		MatchType: &cncfmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate_{
+			SinglePredicate: &cncfmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate{
+				Input: sourceIPInputConfig,
+				Matcher: &cncfmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate_CustomMatch{
+					CustomMatch: typedIPMatchConfig,
+				},
+			},
 		},
 	}
 
-	if len(errs) > 0 {
-		return res, fmt.Errorf("RBAC policy encountered CEL matcher errors: %v", errs)
+	// For blocklist, wrap with NotMatcher
+	if isBlocklist {
+		predicate = &cncfmatcherv3.Matcher_MatcherList_Predicate{
+			MatchType: &cncfmatcherv3.Matcher_MatcherList_Predicate_NotMatcher{
+				NotMatcher: predicate,
+			},
+		}
 	}
-	return res, nil
+
+	// Determine action based on policy and blocklist
+	var onMatchAction *cncfmatcherv3.Matcher_OnMatch
+	if isBlocklist {
+		// Blocklist: if NOT in blocked list, continue (allow to proceed to next matcher)
+		onMatchAction = createMatchAction(envoyrbacv3.RBAC_ALLOW)
+	} else {
+		// Allowlist: if in allowed list, use the policy action
+		if action == sharedv1alpha1.AuthorizationPolicyActionDeny {
+			onMatchAction = createMatchAction(envoyrbacv3.RBAC_DENY)
+		} else {
+			onMatchAction = createMatchAction(envoyrbacv3.RBAC_ALLOW)
+		}
+	}
+
+	return &cncfmatcherv3.Matcher_MatcherList_FieldMatcher{
+		Predicate: predicate,
+		OnMatch:   onMatchAction,
+	}, nil
 }
 
 func createCELMatcher(celExprs []sharedv1alpha1.CELExpression, action sharedv1alpha1.AuthorizationPolicyAction) (*cncfmatcherv3.Matcher_MatcherList_FieldMatcher, error) {
