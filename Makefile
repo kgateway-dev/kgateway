@@ -2,7 +2,7 @@
 
 # https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
 .DEFAULT_GOAL := help
-SHELL := /bin/bash
+SHELL := bash
 
 #----------------------------------------------------------------------------------
 # Help
@@ -83,13 +83,13 @@ else
 endif
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-# For v2.2, we use vanilla upstream envoy for arm build and envoy-gloo for x86 build. These are used by goreleaser 
+# For v2.2, we use vanilla upstream envoy for arm build and envoy-gloo for x86 build. These are used by goreleaser
 # directly when building the images for the respective architecture.
 # TODO: Consolidate to just upstream image in v2.3
 export ENVOY_IMAGE_ARM64 = envoyproxy/envoy:v1.36.4
 export ENVOY_IMAGE_AMD64 = quay.io/solo-io/envoy-gloo:1.36.4-patch1
 
-# ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image 
+# ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
 ifeq ($(GOARCH), arm64)
 	RUST_BUILD_ARCH := aarch64

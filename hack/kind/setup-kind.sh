@@ -1,4 +1,6 @@
-#!/bin/bash -ex
+#!/usr/bin/env bash
+
+set -ex
 
 # 0. Assign default values to some of our environment variables
 # Get directory this script is located in to access script local files
