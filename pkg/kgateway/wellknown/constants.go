@@ -37,8 +37,9 @@ const (
 )
 
 const (
-	SetMetadataFilterName = "envoy.filters.http.set_filter_state"
-	ExtprocFilterName     = "envoy.filters.http.ext_proc"
+	InfPoolTransformationFilterName = "inferencepool.backend.transformation.kgateway.io"
+	SetMetadataFilterName           = "envoy.filters.http.set_filter_state"
+	ExtprocFilterName               = "envoy.filters.http.ext_proc"
 )
 
 const (

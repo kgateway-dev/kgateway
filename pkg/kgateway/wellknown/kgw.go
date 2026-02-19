@@ -56,6 +56,8 @@ func GVKToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) 
 	switch gvk {
 	case GatewayParametersGVK:
 		return GatewayParametersGVR, nil
+	case AgentgatewayParametersGVK:
+		return AgentgatewayParametersGVR, nil
 	case GatewayExtensionGVK:
 		return GatewayExtensionGVR, nil
 	case DirectResponseGVK:
@@ -70,6 +72,10 @@ func GVKToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) 
 		return ListenerPolicyGVR, nil
 	case BackendConfigPolicyGVK:
 		return BackendConfigPolicyGVR, nil
+	case AgentgatewayPolicyGVK:
+		return AgentgatewayPolicyGVR, nil
+	case AgentgatewayBackendGVK:
+		return AgentgatewayBackendGVR, nil
 	default:
 		return schema.GroupVersionResource{}, fmt.Errorf("unknown GVK: %v", gvk)
 	}

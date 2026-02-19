@@ -4,6 +4,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
@@ -15,7 +16,8 @@ const (
 
 // helmConfig stores the top-level helm values used by the deployer.
 type HelmConfig struct {
-	Gateway *HelmGateway `json:"gateway,omitempty"`
+	Gateway      *HelmGateway             `json:"gateway,omitempty"`
+	Agentgateway *AgentgatewayHelmGateway `json:"agentgateway,omitempty"`
 }
 
 type HelmGateway struct {
@@ -186,4 +188,23 @@ type HelmStringMatcher struct {
 	Contains   *string `json:"contains,omitempty"`
 	SafeRegex  *string `json:"safeRegex,omitempty"`
 	IgnoreCase *bool   `json:"ignoreCase,omitempty"`
+}
+type AgentgatewayHelmService struct {
+	LoadBalancerIP *string `json:"loadBalancerIP,omitempty"`
+}
+
+type AgentgatewayHelmGateway struct {
+	agentgateway.AgentgatewayParametersConfigs `json:",inline"`
+	// naming
+	Name               *string           `json:"name,omitempty"`
+	GatewayClassName   *string           `json:"gatewayClassName,omitempty"`
+	GatewayAnnotations map[string]string `json:"gatewayAnnotations,omitempty"`
+	GatewayLabels      map[string]string `json:"gatewayLabels,omitempty"`
+
+	// deployment/service values
+	Ports   []HelmPort               `json:"ports,omitempty"`
+	Service *AgentgatewayHelmService `json:"service,omitempty"`
+
+	// agentgateway xds values
+	Xds *HelmXds `json:"xds,omitempty"`
 }

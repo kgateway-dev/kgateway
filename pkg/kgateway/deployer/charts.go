@@ -54,6 +54,8 @@ func loadFs(filesystem fs.FS) (*chart.Chart, error) {
 		if relErr != nil {
 			return relErr
 		}
+		// on windows, the separator is '\', but helm expects '/'
+		relativePath = filepath.ToSlash(relativePath)
 
 		bufferedFile := &loader.BufferedFile{
 			Name: relativePath,

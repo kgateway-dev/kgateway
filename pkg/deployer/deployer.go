@@ -186,12 +186,6 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 	if vals == nil {
 		return nil, nil
 	}
-	logger.Debug("got deployer helm values",
-		"name", obj.GetName(),
-		"namespace", obj.GetNamespace(),
-		"gvk", obj.GetObjectKind().GroupVersionKind().String(),
-		"values", vals,
-	)
 
 	rname, rns := d.helmReleaseNameAndNamespaceGenerator(obj)
 	objs, err := d.RenderToObjects(rns, rname, vals)
