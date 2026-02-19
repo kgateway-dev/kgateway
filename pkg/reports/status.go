@@ -254,7 +254,6 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 				break
 			}
 		}
-		
 		var port gwxv1a1.PortNumber
 		if specListener != nil {
 			detectedPort, err := kubeutils.DetectListenerPortNumber(specListener.Protocol, specListener.Port)
