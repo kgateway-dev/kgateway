@@ -363,13 +363,16 @@ func TestTracingConverter(t *testing.T) {
 									},
 									MetadataKey: &metadatav3.MetadataKey{
 										Key: "Host",
-										Path: []*metadatav3.MetadataKey_PathSegment{{
-											Segment: &metadatav3.MetadataKey_PathSegment_Key{
-												Key: "Host-key-1",
-											}}, {
-											Segment: &metadatav3.MetadataKey_PathSegment_Key{
-												Key: "Host-key-2",
-											}},
+										Path: []*metadatav3.MetadataKey_PathSegment{
+											{
+												Segment: &metadatav3.MetadataKey_PathSegment_Key{
+													Key: "Host-key-1",
+												},
+											}, {
+												Segment: &metadatav3.MetadataKey_PathSegment_Key{
+													Key: "Host-key-2",
+												},
+											},
 										},
 									},
 								},

@@ -113,6 +113,7 @@ func (w *waypointQueries) HasSynced() bool {
 	authzSync := w.authzPolicies.HasSynced()
 	return waypointSync && authzSync
 }
+
 func (w *waypointQueries) GetHTTPRoutesForService(
 	kctx krt.HandlerContext,
 	ctx context.Context,

@@ -25,4 +25,4 @@ data:
 kind: ConfigMap
 metadata:
   name: ca
-  namespace: default
+  namespace: kgateway-base

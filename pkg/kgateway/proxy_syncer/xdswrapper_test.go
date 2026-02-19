@@ -57,7 +57,6 @@ func TestRedacted(t *testing.T) {
 
 	x := XdsSnapWrapper{}.WithSnapshot(snap)
 	data, err := x.MarshalJSON()
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +125,6 @@ func redactCluster(t *testing.T, testCase string) string {
 	var c envoyclusterv3.Cluster
 	var j protojson.UnmarshalOptions
 	err := j.Unmarshal([]byte(testCase), &c)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +136,6 @@ func redactCluster(t *testing.T, testCase string) string {
 
 	x := XdsSnapWrapper{}.WithSnapshot(snap)
 	data, err := x.MarshalJSON()
-
 	if err != nil {
 		t.Fatal(err)
 	}

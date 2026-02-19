@@ -60,7 +60,8 @@ type listenerPolicy struct {
 
 func newListenerPolicy(
 	krtctx krt.HandlerContext, commoncol *collections.CommonCollections,
-	objSrc ir.ObjectSource, i *kgateway.ListenerConfig) (listenerPolicy, []error) {
+	objSrc ir.ObjectSource, i *kgateway.ListenerConfig,
+) (listenerPolicy, []error) {
 	if i == nil {
 		return listenerPolicy{}, nil
 	}
@@ -275,6 +276,7 @@ func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Repor
 func (p *listenerPolicyPluginGwPass) Name() string {
 	return "listenerpolicy"
 }
+
 func (p *listenerPolicyPluginGwPass) getPolicy(policy ir.PolicyIR, port uint32) listenerPolicy {
 	pol, ok := policy.(*ListenerPolicyIR)
 	if !ok || pol == nil {

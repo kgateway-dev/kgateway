@@ -23,9 +23,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var (
-	grpcport = flag.String("grpcport", ":18080", "grpcport")
-)
+var grpcport = flag.String("grpcport", ":18080", "grpcport")
 
 type Instructions struct {
 	// Header key/value pairs to add to the request or response.
@@ -178,7 +176,6 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 }
 
 func main() {
-
 	flag.Parse()
 
 	lis, err := net.Listen("tcp", *grpcport)
@@ -196,7 +193,7 @@ func main() {
 
 	slog.Info("starting gRPC server", "port", *grpcport)
 
-	var gracefulStop = make(chan os.Signal, 1)
+	gracefulStop := make(chan os.Signal, 1)
 	signal.Notify(gracefulStop, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		sig := <-gracefulStop

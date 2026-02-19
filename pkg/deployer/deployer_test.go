@@ -732,7 +732,8 @@ var _ = Describe("Deployer", func() {
 						},
 						{
 							SafeRegex: new("cluster\\..*\\.upstream_cx.*"),
-						}},
+						},
+					},
 				},
 			}
 
@@ -2602,5 +2603,4 @@ var _ = Describe("DeployObjs", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
 	})
-
 })
