@@ -684,8 +684,73 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(status.Conditions).To(HaveLen(2))
 			Expect(status.Listeners).To(BeEmpty())
 		})
+
+		It("should correctly match listener ports by name not index for multiple listeners", func() {
+			// This test validates the fix for issue #13310
+			// Create a ListenerSet with multiple listeners having different ports
+			ls := &gwxv1a1.XListenerSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "test-multi-listener",
+				},
+			}
+			ls.Spec.Listeners = []gwxv1a1.ListenerEntry{
+				{
+					Name:     "http",
+					Port:     90,
+					Protocol: gwv1.HTTPProtocolType,
+				},
+				{
+					Name:     "http-2", 
+					Port:     8091,
+					Protocol: gwv1.HTTPProtocolType,
+				},
+			}
+
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.ListenerSet(ls)
+
+			status := rm.BuildListenerSetStatus(context.Background(), *ls)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Listeners).To(HaveLen(2))
+
+			// Verify that each listener's port in status matches the spec by name, not index
+			for _, statusListener := range status.Listeners {
+				var expectedPort gwxv1a1.PortNumber
+				for _, specListener := range ls.Spec.Listeners {
+					if specListener.Name == statusListener.Name {
+						expectedPort = specListener.Port
+						break
+					}
+				}
+				Expect(statusListener.Port).To(Equal(expectedPort), 
+					"Listener %s port should match spec port %d, got %d", 
+					statusListener.Name, expectedPort, statusListener.Port)
+			}
+
+			// Specifically verify the expected ports for our test case
+			httpListener := findListenerByName(status.Listeners, "http")
+			Expect(httpListener).NotTo(BeNil())
+			Expect(httpListener.Port).To(Equal(gwxv1a1.PortNumber(90)))
+
+			http2Listener := findListenerByName(status.Listeners, "http-2")
+			Expect(http2Listener).NotTo(BeNil())
+			Expect(http2Listener.Port).To(Equal(gwxv1a1.PortNumber(8091)))
+		})
 	})
 })
+
+// findListenerByName is a helper function to find a listener by name in the status
+func findListenerByName(listeners []gwxv1a1.ListenerEntryStatus, name gwv1.SectionName) *gwxv1a1.ListenerEntryStatus {
+	for i := range listeners {
+		if listeners[i].Name == name {
+			return &listeners[i]
+		}
+	}
+	return nil
+}
 
 // fakeTranslate mimics the translation loop and reports for the provided route
 // along with all parentRefs defined in the route

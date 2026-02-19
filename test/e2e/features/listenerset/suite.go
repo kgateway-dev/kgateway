@@ -131,6 +131,64 @@ func (s *testingSuite) TestValidListenerSet() {
 		expectOK)
 }
 
+func (s *testingSuite) TestListenerSetPortStatusMatching() {
+	// This test specifically validates the fix for issue #13310
+	// It ensures that ListenerSet status reports correct ports by name, not by index
+	s.expectValidListenerSetAccepted(validListenerSet)
+
+	// Validate that the status correctly reports ports by name
+	s.TestInstallation.Assertions.EventuallyListenerSetStatus(s.Ctx, validListenerSet.GetName(), validListenerSet.GetNamespace(),
+		gwxv1a1.ListenerSetStatus{
+			Conditions: []metav1.Condition{
+				{
+					Type:   string(gwxv1a1.ListenerSetConditionAccepted),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwxv1a1.ListenerSetReasonAccepted),
+				},
+				{
+					Type:   string(gwxv1a1.ListenerSetConditionProgrammed),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwxv1a1.ListenerSetReasonProgrammed),
+				},
+			},
+			Listeners: []gwxv1a1.ListenerEntryStatus{
+				{
+					Name: "http",
+					Port: gwxv1a1.PortNumber(ls1Listener1Port), // Must be 90, not 8091
+					// Other fields are not critical for this specific test
+				},
+				{
+					Name: "http-2", 
+					Port: gwxv1a1.PortNumber(ls1Listener2Port), // Must be 8091, not 90
+					// Other fields are not critical for this specific test
+				},
+			},
+		})
+
+	// Verify functional behavior - each listener should work on its correct port
+	// Listener "http" (port 90) should work
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(ls1Listener1Port), // 90
+			curl.WithHostHeader("listenerset.com"),
+		},
+		expectOK)
+
+	// Listener "http-2" (port 8091) should work  
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(ls1Listener2Port), // 8091
+			curl.WithHostHeader("listenerset.com"),
+		},
+		expectOK)
+}
+
 func (s *testingSuite) TestInvalidListenerSetNotAllowed() {
 	s.expectInvalidListenerSetNotAllowed(invalidListenerSetNotAllowed)
 

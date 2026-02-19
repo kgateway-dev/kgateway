@@ -103,6 +103,9 @@ var (
 		"TestValidListenerSet": {
 			Manifests: []string{validListenerSetManifest},
 		},
+		"TestListenerSetPortStatusMatching": {
+			Manifests: []string{validListenerSetManifest},
+		},
 		"TestInvalidListenerSetNotAllowed": {
 			Manifests: []string{invalidListenerSetNotAllowedManifest},
 		},
