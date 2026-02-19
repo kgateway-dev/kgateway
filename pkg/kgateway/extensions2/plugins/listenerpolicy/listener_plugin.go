@@ -373,6 +373,25 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		out.XffNumTrustedHops = *policy.xffNumTrustedHops
 	}
 
+	// translate xffConfig (as extension)
+	if policy.xffConfig != nil {
+		xffConfig, err := utils.MessageToAny(policy.xffConfig)
+		if err != nil {
+			return err
+		}
+		out.OriginalIpDetectionExtensions = []*envoycorev3.TypedExtensionConfig{
+			{
+				Name:        "envoy.http.original_ip_detection.xff",
+				TypedConfig: xffConfig,
+			},
+		}
+	}
+
+	// translate skipXffAppend
+	if policy.skipXffAppend != nil {
+		out.SkipXffAppend = *policy.skipXffAppend
+	}
+
 	// translate serverHeaderTransformation
 	if policy.serverHeaderTransformation != nil {
 		out.ServerHeaderTransformation = *policy.serverHeaderTransformation

@@ -119,6 +119,8 @@ type ProxyProtocolConfig struct {
 	// The presence or absence of this configuration is what matters.
 }
 
+// +kubebuilder:validation:XValidation:message="useRemoteAddress must be set to false if xffTrustedCIDRs is set",rule="!has(self.xffTrustedCIDRs) || (has(self.useRemoteAddress) && !self.useRemoteAddress)"
+// +kubebuilder:validation:XValidation:message="only one of xffNumTrustedHops and xffTrustedCIDRs may be set",rule="!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)"
 type HTTPSettings struct {
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
@@ -140,7 +142,7 @@ type HTTPSettings struct {
 	// Note: If this field is omitted, it will fallback to the default value of 'true', which we set for all Envoy HCMs.
 	// Thus, setting this explicitly to true is unnecessary (but will not cause any harm).
 	// When true, Envoy will use the remote address of the connection as the client address.
-	// When false, Envoy will use the X-Forwarded-For header to determine the client address.
+	// When false, Envoy will use the X-Forwarded-For header to determine the client address. Furthermore, SkipXffAppend will implicitly be set to true unless explicitly configured.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address
 	// +optional
 	UseRemoteAddress *bool `json:"useRemoteAddress,omitempty"`
@@ -158,10 +160,24 @@ type HTTPSettings struct {
 	GenerateRequestId *bool `json:"generateRequestId,omitempty"`
 
 	// XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.
+	// This is mutually exclusive with XffTrustedCIDRs.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
 	// +kubebuilder:validation:Minimum=0
 	// +optional
 	XffNumTrustedHops *int32 `json:"xffNumTrustedHops,omitempty"`
+
+	// XffTrustedCIDRs are ranges of IPs that may appear in the X-Forwarded-For HTTP header and are trusted when determining the origin client's IP address.
+	// This is mutually exclusive with XffNumTrustedHops and requires UseRemoteAddress to be set to false.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/original_ip_detection/xff/v3/xff.proto#envoy-v3-api-field-extensions-http-original-ip-detection-xff-v3-xffconfig-xff-trusted-cidrs
+	// +kubebuilder:validation:MinItems=1
+	// +optional
+	XffTrustedCIDRs []shared.CIDR `json:"xffTrustedCIDRs,omitempty"`
+
+	// SkipXffAppend specifies whether to skip adding the downstream's remote IP address to the X-Forwarded-For HTTP header.
+	// Note: If omitted, this effectively will default to true when UseRemoteAddress is false, such that Envoy acts as a "transparent proxy".
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-skip-xff-append
+	// +optional
+	SkipXffAppend *bool `json:"skipXFFAppend,omitempty"`
 
 	// ServerHeaderTransformation determines how the server header is transformed.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-header-transformation

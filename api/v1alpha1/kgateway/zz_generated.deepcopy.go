@@ -2152,6 +2152,16 @@ func (in *HTTPSettings) DeepCopyInto(out *HTTPSettings) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.XffTrustedCIDRs != nil {
+		in, out := &in.XffTrustedCIDRs, &out.XffTrustedCIDRs
+		*out = make([]shared.CIDR, len(*in))
+		copy(*out, *in)
+	}
+	if in.SkipXffAppend != nil {
+		in, out := &in.SkipXffAppend, &out.SkipXffAppend
+		*out = new(bool)
+		**out = **in
+	}
 	if in.ServerHeaderTransformation != nil {
 		in, out := &in.ServerHeaderTransformation, &out.ServerHeaderTransformation
 		*out = new(ServerHeaderTransformation)

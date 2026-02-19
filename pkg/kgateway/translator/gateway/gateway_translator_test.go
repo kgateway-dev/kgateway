@@ -1374,6 +1374,83 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with skipXFFAppend absent", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/skip-xff-append-absent.yaml",
+			outputFile: "listener-policy-http/skip-xff-append-absent.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with skipXFFAppend true", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/skip-xff-append-true.yaml",
+			outputFile: "listener-policy-http/skip-xff-append-true.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with skipXFFAppend false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/skip-xff-append-false.yaml",
+			outputFile: "listener-policy-http/skip-xff-append-false.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with xffNumTrustedHops", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/xff-num-trusted-hops.yaml",
+			outputFile: "listener-policy-http/xff-num-trusted-hops.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with xffNumTrustedHops and useRemoteAddress false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/xff-num-trusted-hops-extension.yaml",
+			outputFile: "listener-policy-http/xff-num-trusted-hops-extension.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with xffTrustedCIDRs", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/xff-trusted-cidrs.yaml",
+			outputFile: "listener-policy-http/xff-trusted-cidrs.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with xffTrustedCIDRs and skipXFFAppend false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/xff-trusted-cidrs-no-skip-append.yaml",
+			outputFile: "listener-policy-http/xff-trusted-cidrs-no-skip-append.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with acceptHttp10", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/accept-http10.yaml",

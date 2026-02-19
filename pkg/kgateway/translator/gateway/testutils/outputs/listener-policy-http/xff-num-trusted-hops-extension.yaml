@@ -32,6 +32,7 @@ Listeners:
           - name: envoy.http.original_ip_detection.xff
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.http.original_ip_detection.xff.v3.XffConfig
+              xffNumTrustedHops: 2
         rds:
           configSource:
             ads: {}
@@ -44,9 +45,9 @@ Listeners:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.httpSettings.useRemoteAddress:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/xff-num-trusted-hops-extension
         default.httpSettings.xffConfig:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/xff-num-trusted-hops-extension
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
@@ -54,9 +55,9 @@ Routes:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.httpSettings.useRemoteAddress:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/xff-num-trusted-hops-extension
         default.httpSettings.xffConfig:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/xff-num-trusted-hops-extension
   name: listener~80
   virtualHosts:
   - domains:
@@ -137,7 +138,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    ListenerPolicy/default/use-remote-address-false:
+    ListenerPolicy/default/xff-num-trusted-hops-extension:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
