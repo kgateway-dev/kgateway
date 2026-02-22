@@ -159,4 +159,3 @@ The test suite validates that FrontendTLSConfig supports multiple CA certificate
 **Note**: Both `verify-certificate-hash` and `FrontendTLSConfig` can be used together on the same listener. The `verify-certificate-hash` validates the specific certificate hash (certificate pinning), while `FrontendTLSConfig` validates the certificate chain against the CA.
 
 **Multiple CA Support**: FrontendTLSConfig supports multiple CA certificate references in the `caCertificateRefs` array. When multiple CAs are configured, client certificates signed by any of the configured CAs will be accepted. This is useful for scenarios where you need to support clients with certificates from different certificate authorities (e.g., during CA migration or supporting multiple client organizations). This feature works with wildcard domains, allowing multiple root CA certs for the same wildcard domain pattern (e.g., `*.example.com`).
-

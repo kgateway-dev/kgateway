@@ -74,4 +74,3 @@ It it up to the author and reviewers to make sure all conversations are resolved
 - If there is a non-trivial technical proposal that the PR author implemented, they should leave the conversation open to ensure the reviewer is satisfied with the change
 
 **An important side-effect of this, is that as a reviewer if you only have nits on a PR, you should approve that PR**
-

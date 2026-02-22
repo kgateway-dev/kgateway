@@ -164,5 +164,3 @@ RUN mkdir -p /go /gocache /gobin \
 WORKDIR /
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
 CMD ["bash"]
-
-

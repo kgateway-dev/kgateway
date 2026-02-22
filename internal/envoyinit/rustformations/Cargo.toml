@@ -33,5 +33,3 @@ once_cell = "1.21.3"
 name = "rust_module"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
-
-

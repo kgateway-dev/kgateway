@@ -45,4 +45,3 @@ spec:
                   fieldPath: metadata.namespace
             - name: SERVICE_NAME
               value: tls-listener-svc
-

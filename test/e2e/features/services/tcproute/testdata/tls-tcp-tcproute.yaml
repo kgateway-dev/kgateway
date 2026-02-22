@@ -10,4 +10,3 @@ spec:
     - backendRefs:
         - name: tls-listener-svc
           port: 3001
-

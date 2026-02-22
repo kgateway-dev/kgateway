@@ -173,4 +173,3 @@ This proposal attempts to set the basic way to configure extensions which have n
 ## Open Questions
 Should filter staging information be comingled with the datasources for external providers?
 Should this truly be externalprovider or is there a cleaner name.
-

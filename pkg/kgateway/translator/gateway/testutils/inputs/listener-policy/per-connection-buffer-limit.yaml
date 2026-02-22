@@ -49,4 +49,3 @@ spec:
     name: example-gateway
   default:
     perConnectionBufferLimitBytes: 65536
-

@@ -1,0 +1,45 @@
+# 'true' will fix files
+autofix: false
+
+# other than .git, rest are .gitignore patterns
+ignore:
+  - .git/
+  - _output/
+  - _test/
+  - .idea/
+  - .vscode/
+  - "*.code-workspace"
+  - .venv
+  - .cursor
+  - docker-local
+  - .DS_Store
+  - "**/gomock_reflect*"
+  - .vscode/launch.json
+  - .vscode/settings.json
+  - "*__debug_bin"
+  - junit.xml
+  - "junit-*.xml"
+  - "*.test"
+  - "*.swp"
+  - test-report.json
+  - "*.cov"
+  - "**/ginkgo.report"
+  - cover.out
+  - data
+  - "*.p"
+  - "istio-*/*"
+  - .bin/
+  - dist/
+  - "*.o"
+  - "*.d"
+  - "*-build"
+  - "internal/envoyinit/rustformations/target/*"
+
+rules:
+  # checks if file ends in a newline character
+  end-of-file:
+    # set to true to enable this rule
+    enable: true
+
+    # if true also checks if file ends in a single newline character
+    single-new-line: true

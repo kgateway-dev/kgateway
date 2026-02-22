@@ -31,4 +31,3 @@ If you encounter a bug or have a feature request, please take the following appr
 
 ## Security Issues
 We take kgateway's security very seriously. If you've found a security issue or a potential security issue in kgateway, please **DO NOT** file a public Github issue, instead see https://github.com/kgateway-dev/community/blob/main/CVE.md for how to submit.
-

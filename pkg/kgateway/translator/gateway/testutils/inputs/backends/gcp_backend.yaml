@@ -50,4 +50,3 @@ spec:
   gcp:
     host: example.googleapis.com
     audience: "https://custom-audience.googleapis.com"
-

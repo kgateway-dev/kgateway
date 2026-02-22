@@ -133,4 +133,3 @@ spec:
   extAuth:
     extensionRef: 
       name: missing-extauth
-

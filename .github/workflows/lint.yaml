@@ -68,3 +68,14 @@ jobs:
     - name: Lint
       run: |
         make -C internal/envoyinit lint
+
+  # Check if all files end in newline
+  line-lint:
+    name: Linelint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Linelint
+      uses: fernandrone/linelint@0.0.6

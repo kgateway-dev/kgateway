@@ -45,5 +45,3 @@ if [[ -d /config-copy ]]; then
 fi
 
 exec "$@"
-
-

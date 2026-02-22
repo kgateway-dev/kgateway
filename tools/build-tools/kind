@@ -2,5 +2,3 @@
 set -euo pipefail
 
 exec go tool kind "$@"
-
-

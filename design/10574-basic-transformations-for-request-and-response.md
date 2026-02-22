@@ -131,5 +131,3 @@ To be precise this is to mirror some version of the envoy-gloo repo to kgateway-
 ## Open Questions
 What is the timeline to removal of the current extended envoy image.
 How do we want to handle route level overrides. 
-
-

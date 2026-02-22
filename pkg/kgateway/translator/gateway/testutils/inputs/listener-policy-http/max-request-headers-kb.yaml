@@ -47,4 +47,3 @@ spec:
   default:
     httpSettings:
       maxRequestHeadersKb: 64
-

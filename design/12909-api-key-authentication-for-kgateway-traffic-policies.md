@@ -450,4 +450,3 @@ Status reporting should include:
 - [Envoy API Key Auth Filter](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/api_key_auth/v3/api_key_auth.proto)
 - [Gloo Edge API Key Auth](https://docs.solo.io/gloo-edge/latest/guides/security/auth/extauth/apikey_auth/)
 - [Agentgateway API Key Auth Implementation](https://github.com/kgateway-dev/kgateway/blob/main/pkg/agentgateway/plugins/traffic_plugin.go#L595)
-

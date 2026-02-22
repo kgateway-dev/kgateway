@@ -36,4 +36,3 @@ Not Applicable.
 - Continue with the current ad-hoc naming practices.
 
 ## Open Questions
-

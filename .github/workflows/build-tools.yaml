@@ -86,5 +86,3 @@ jobs:
           tags: ${{ steps.tags.outputs.tags }}
           build-args: |
             VERSION=${{ github.sha }}
-
-

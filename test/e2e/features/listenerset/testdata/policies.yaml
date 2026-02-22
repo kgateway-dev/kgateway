@@ -61,4 +61,3 @@ spec:
       set:
         - name: policy
           value: listener-set-section
-

@@ -93,4 +93,3 @@ Translation unit tests with golden files.
 ## Alternatives
 
 ## Open Questions
-

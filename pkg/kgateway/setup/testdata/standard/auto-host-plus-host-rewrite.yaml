@@ -117,4 +117,3 @@ spec:
     hosts:
       - host: httpbin.default.svc # static reference to common httpbin k8s svc
         port: 8000
-

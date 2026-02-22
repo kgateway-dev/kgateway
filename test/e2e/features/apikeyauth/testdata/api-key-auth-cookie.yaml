@@ -59,4 +59,3 @@ spec:
     forwardCredential: true
     secretRef:
       name: api-keys-cookie
-

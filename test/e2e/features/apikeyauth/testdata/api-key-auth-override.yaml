@@ -89,4 +89,3 @@ spec:
     forwardCredential: false
     secretRef:
       name: api-keys-secret-route
-

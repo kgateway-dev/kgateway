@@ -17,5 +17,3 @@ fi
 
 make_options=$(find "${root}" -maxdepth 6 -iname "Makefile*" 2>/dev/null | xargs -r -I {} grep -hoE '^[a-zA-Z0-9_.-]+:([^=]|$)' {} | sed 's/[^a-zA-Z0-9_.-]*$//' | sort -u)
 complete -W "$make_options" make
-
-

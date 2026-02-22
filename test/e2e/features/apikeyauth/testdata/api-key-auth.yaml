@@ -61,4 +61,3 @@ spec:
     clientIdHeader: "x-client-id"
     secretRef:
       name: api-keys
-
