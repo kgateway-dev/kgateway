@@ -185,7 +185,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				Parameters: &kgateway.TLSParameters{
 					MinVersion:   ptr.To(kgateway.TLSVersion1_2),
 					MaxVersion:   ptr.To(kgateway.TLSVersion1_3),
-					CipherSuites: []string{"TLS_AES_128_GCM_SHA256"},
+					CipherSuites: []string{"ECDHE-ECDSA-AES128-GCM-SHA256"},
 					EcdhCurves:   []string{"X25519"},
 				},
 				AllowRenegotiation: new(true),
@@ -200,7 +200,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 					TlsParams: &envoytlsv3.TlsParameters{
 						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_2,
 						TlsMaximumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_3,
-						CipherSuites:              []string{"TLS_AES_128_GCM_SHA256"},
+						CipherSuites:              []string{"ECDHE-ECDSA-AES128-GCM-SHA256"},
 						EcdhCurves:                []string{"X25519"},
 					},
 				},
@@ -456,6 +456,58 @@ func TestTranslateTLSConfig(t *testing.T) {
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{},
 				},
 				Sni: "test.example.com",
+			},
+		},
+		{
+			name: "rejected by envoy - invalid ECDH curve",
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
+					RootCA: ptr.To(CACert),
+				},
+				Parameters: &kgateway.TLSParameters{
+					EcdhCurves: []string{"hello"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "rejected by envoy - invalid Cipher Suite format",
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
+					RootCA: ptr.To(CACert),
+				},
+				Parameters: &kgateway.TLSParameters{
+					CipherSuites: []string{"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "accepted - valid parameters with deduplication",
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
+					RootCA: ptr.To(CACert),
+				},
+				Parameters: &kgateway.TLSParameters{
+					EcdhCurves:   []string{"P-256", "P-256"},
+					CipherSuites: []string{"ECDHE-ECDSA-AES128-GCM-SHA256"},
+				},
+			},
+			wantErr: false,
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					TlsParams: &envoytlsv3.TlsParameters{
+						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLS_AUTO,
+						TlsMaximumProtocolVersion: envoytlsv3.TlsParameters_TLS_AUTO,
+						CipherSuites:              []string{"ECDHE-ECDSA-AES128-GCM-SHA256"},
+						EcdhCurves:                []string{"P-256"},
+					},
+					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
+						ValidationContext: &envoytlsv3.CertificateValidationContext{
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+						},
+					},
+				},
 			},
 		},
 	}

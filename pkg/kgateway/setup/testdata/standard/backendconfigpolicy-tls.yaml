@@ -107,8 +107,8 @@ spec:
       minVersion: "1.2"
       maxVersion: "1.3"
       cipherSuites:
-        - "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
-        - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+        - "ECDHE-ECDSA-AES128-GCM-SHA256"
+        - "ECDHE-RSA-AES128-GCM-SHA256"
       ecdhCurves:
         - "X25519"
         - "P-256"

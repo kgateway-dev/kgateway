@@ -25,6 +25,30 @@ const (
 	ListenerReasonNoValidCACertificate     gwv1.ListenerConditionReason = "NoValidCACertificate"
 )
 
+// SupportedCipherSuites is the definitive list of OpenSSL-style names for TLS 1.0-1.2.
+// Note: TLS 1.3 suites are handled automatically by BoringSSL and cannot be tuned here.
+var SupportedCipherSuites = []string{
+	"ECDHE-ECDSA-AES128-GCM-SHA256",
+	"ECDHE-RSA-AES128-GCM-SHA256",
+	"ECDHE-ECDSA-AES256-GCM-SHA384",
+	"ECDHE-RSA-AES256-GCM-SHA384",
+	"ECDHE-ECDSA-CHACHA20-POLY1305",
+	"ECDHE-RSA-CHACHA20-POLY1305",
+	"AES128-GCM-SHA256",
+	"AES256-GCM-SHA384",
+	"AES128-SHA",
+	"AES256-SHA",
+	"ECDHE-ECDSA-AES128-SHA",
+	"ECDHE-RSA-AES128-SHA",
+}
+
+var SupportedEcdhCurves = []string{
+	"X25519",
+	"P-256",
+	"P-384",
+	"P-521",
+}
+
 var (
 	ErrInvalidTlsSecret = errors.New("invalid TLS secret")
 
@@ -248,6 +272,36 @@ func validateCertificateHash(hash string) error {
 	default:
 		return fmt.Errorf("invalid certificate hash: %s", hash)
 	}
+}
+
+func ValidateTlsStrings(input []string, supported []string, fieldName string) ([]string, error) {
+	if len(input) == 0 {
+		return nil, nil
+	}
+
+	set := make(map[string]struct{})
+	var cleaned []string
+
+	for _, val := range input {
+		trimmed := strings.TrimSpace(val)
+		isSupported := false
+		for _, s := range supported {
+			if trimmed == s {
+				isSupported = true
+				break
+			}
+		}
+
+		if !isSupported {
+			return nil, fmt.Errorf("unsupported %s: %s (ensure you are using OpenSSL-style naming)", fieldName, trimmed)
+		}
+
+		if _, exists := set[trimmed]; !exists {
+			set[trimmed] = struct{}{}
+			cleaned = append(cleaned, trimmed)
+		}
+	}
+	return cleaned, nil
 }
 
 // This function is used to support "fake yaml" array syntax in the annotations.

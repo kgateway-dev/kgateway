@@ -234,3 +234,34 @@ func TestSplitFakeYamlArray(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateTlsStrings(t *testing.T) {
+	ciphers := []string{"ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-RSA-AES128-GCM-SHA256"}
+	curves := []string{"X25519", "P-256"}
+
+	testCases := []struct {
+		name      string
+		input     []string
+		supported []string
+		want      []string
+		wantErr   bool
+	}{
+		{"valid ciphers", []string{"ECDHE-ECDSA-AES128-GCM-SHA256"}, ciphers, []string{"ECDHE-ECDSA-AES128-GCM-SHA256"}, false},
+		{"valid curves", []string{"X25519"}, curves, []string{"X25519"}, false},
+		{"unsupported", []string{"INVALID-CIPHER"}, ciphers, nil, true},
+		{"duplicates", []string{"X25519", "X25519"}, curves, []string{"X25519"}, false},
+		{"empty", []string{}, ciphers, nil, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ValidateTlsStrings(tc.input, tc.supported, "test")
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.want, got)
+			}
+		})
+	}
+}
