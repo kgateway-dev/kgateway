@@ -361,6 +361,12 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 		return
 	}
 
+	// Apply timeouts as defaults across all vhosts.
+	// Handles TrafficPolicy targeting a Gateway without sectionName.
+	for _, vhost := range out.VirtualHosts {
+		applyTimeoutDefaults(vhost.Routes, policy.spec.timeouts)
+	}
+
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 }
 
@@ -685,11 +691,13 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	}
 
 	if spec.timeouts != nil {
-		action.IdleTimeout = spec.timeouts.routeStreamIdleTimeout
-		// Only set the route timeout if it is not already set, which implies that it was
+		// Only set timeouts if not already set, which implies they were
 		// set by the builtin HTTPRouteTimeouts policy
-		if action.GetTimeout() == nil {
+		if spec.timeouts.routeTimeout != nil && action.GetTimeout() == nil {
 			action.Timeout = spec.timeouts.routeTimeout
+		}
+		if spec.timeouts.routeStreamIdleTimeout != nil && action.GetIdleTimeout() == nil {
+			action.IdleTimeout = spec.timeouts.routeStreamIdleTimeout
 		}
 	}
 
@@ -711,6 +719,10 @@ func (p *trafficPolicyPluginGwPass) handlePerVHostPolicies(
 	if spec.retry != nil {
 		out.RetryPolicy = spec.retry.policy
 	}
+	// Envoy has no VirtualHost-level timeout field, so apply as defaults
+	// to each route. Route-level timeouts take precedence (applied first
+	// during runRoutePlugins before runVhostPlugins).
+	applyTimeoutDefaults(out.Routes, spec.timeouts)
 }
 
 func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {

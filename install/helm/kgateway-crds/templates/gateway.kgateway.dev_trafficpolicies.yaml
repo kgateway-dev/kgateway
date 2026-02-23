@@ -1614,8 +1614,10 @@ spec:
                     || r.kind.endsWith('ListenerSet')))
               timeouts:
                 description: |-
-                  Timeouts defines the timeouts for requests
-                  It is applicable to HTTPRoutes and ignored for other targeted kinds.
+                  Timeouts defines the timeouts for requests.
+                  When targeting a Gateway or ListenerSet, the timeout applies as a default
+                  to all HTTPRoutes on the targeted listener(s). Route-level timeouts take precedence.
+                  GRPCRoutes are not affected by gateway-level timeout defaults.
                 properties:
                   request:
                     description: |-

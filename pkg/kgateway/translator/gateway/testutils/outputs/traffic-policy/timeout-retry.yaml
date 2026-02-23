@@ -48,6 +48,8 @@ Routes:
         merge.TrafficPolicy.gateway.kgateway.dev:
           retry:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
+          timeouts:
+          - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~builtin_com
     retryPolicy:
       numRetries: 3
@@ -68,6 +70,7 @@ Routes:
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        idleTimeout: 60s
         retryPolicy:
           numRetries: 5
           perTryTimeout: 0.005s
@@ -84,6 +87,8 @@ Routes:
       filterMetadata:
         merge.TrafficPolicy.gateway.kgateway.dev:
           retry:
+          - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
+          timeouts:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~example-retry-and-timeouts_com
     retryPolicy:
@@ -129,6 +134,7 @@ Routes:
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        idleTimeout: 60s
         retryPolicy:
           numRetries: 5
           perTryTimeout: 1s
@@ -144,6 +150,8 @@ Routes:
       filterMetadata:
         merge.TrafficPolicy.gateway.kgateway.dev:
           retry:
+          - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
+          timeouts:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~example-retry_com
     retryPolicy:
@@ -163,6 +171,7 @@ Routes:
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        idleTimeout: 60s
         retryPolicy:
           numRetries: 2
           perTryTimeout: 0.500s
@@ -172,12 +181,15 @@ Routes:
           retryBackOff:
             baseInterval: 0.050s
           retryOn: connect-failure,gateway-error,reset,retriable-status-codes
+        timeout: 30s
   - domains:
     - example.com
     metadata:
       filterMetadata:
         merge.TrafficPolicy.gateway.kgateway.dev:
           retry:
+          - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
+          timeouts:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~example_com
     retryPolicy:

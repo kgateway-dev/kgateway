@@ -101,8 +101,10 @@ type TrafficPolicySpec struct {
 	// +optional
 	Buffer *Buffer `json:"buffer,omitempty"`
 
-	// Timeouts defines the timeouts for requests
-	// It is applicable to HTTPRoutes and ignored for other targeted kinds.
+	// Timeouts defines the timeouts for requests.
+	// When targeting a Gateway or ListenerSet, the timeout applies as a default
+	// to all HTTPRoutes on the targeted listener(s). Route-level timeouts take precedence.
+	// GRPCRoutes are not affected by gateway-level timeout defaults.
 	// +optional
 	Timeouts *shared.Timeouts `json:"timeouts,omitempty"`
 

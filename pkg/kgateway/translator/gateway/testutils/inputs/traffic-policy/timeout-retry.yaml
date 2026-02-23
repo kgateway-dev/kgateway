@@ -157,7 +157,10 @@ spec:
   retry:
     attempts: 3
     retryOn:
-    - gateway-error 
+    - gateway-error
+  timeouts:
+    request: 30s
+    streamIdle: 60s
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

@@ -1,6 +1,8 @@
 package trafficpolicy
 
 import (
+	"strings"
+
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -55,6 +57,39 @@ func (a *timeoutsIR) Equals(other PolicySubIR) bool {
 
 func (a *timeoutsIR) Validate() error {
 	return nil
+}
+
+// applyTimeoutDefaults sets timeout values on routes that don't already have them.
+// This is used for gateway/listener-level policies where timeouts act as defaults
+// that can be overridden by route-level policies.
+func applyTimeoutDefaults(routes []*envoyroutev3.Route, timeouts *timeoutsIR) {
+	if timeouts == nil {
+		return
+	}
+	for _, route := range routes {
+		action := route.GetRoute()
+		if action == nil {
+			continue
+		}
+		// GRPCRoute timeouts are not defined by the Gateway API spec, so
+		// gateway-level timeout defaults must not apply to them.
+		if isGRPCRoute(route) {
+			continue
+		}
+		if timeouts.routeTimeout != nil && action.GetTimeout() == nil {
+			action.Timeout = timeouts.routeTimeout
+		}
+		if timeouts.routeStreamIdleTimeout != nil && action.GetIdleTimeout() == nil {
+			action.IdleTimeout = timeouts.routeStreamIdleTimeout
+		}
+	}
+}
+
+// isGRPCRoute reports whether the given Envoy route originated from a GRPCRoute.
+// UniqueRouteName() in query/route.go embeds the lowercase route kind in the
+// route name (e.g. "listener~80~...-route-0-grpcroute-<name>-...").
+func isGRPCRoute(route *envoyroutev3.Route) bool {
+	return strings.Contains(route.GetName(), "-grpcroute-")
 }
 
 func constructTimeoutRetry(
