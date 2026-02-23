@@ -868,7 +868,6 @@ type ClientCertificateValidationConfig struct {
 }
 
 // ClientCertificateValidationMode specifies how client certificate validation is enforced.
-// +kubebuilder:validation:Enum=Require;Optional
 type ClientCertificateValidationMode string
 
 const (

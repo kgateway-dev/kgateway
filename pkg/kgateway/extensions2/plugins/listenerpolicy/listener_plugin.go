@@ -82,7 +82,8 @@ func newListenerPolicy(
 
 func newDefaultListenerPolicy(
 	krtctx krt.HandlerContext, commoncol *collections.CommonCollections,
-	objSrc ir.ObjectSource, i *kgateway.DefaultListenerConfig) (listenerPolicy, []error) {
+	objSrc ir.ObjectSource, i *kgateway.DefaultListenerConfig,
+) (listenerPolicy, []error) {
 	if i == nil {
 		return listenerPolicy{}, nil
 	}
@@ -506,10 +507,7 @@ func convertClientCertificateValidationConfig(_ ir.ObjectSource, config *kgatewa
 		return nil
 	}
 
-	requireClientCertificate := false
-	if config.Mode == kgateway.ClientCertificateValidationModeRequire {
-		requireClientCertificate = true
-	}
+	requireClientCertificate := config.Mode == kgateway.ClientCertificateValidationModeRequire
 
 	return &ir.ClientCertificateValidationIR{
 		RequireClientCertificate: requireClientCertificate,
