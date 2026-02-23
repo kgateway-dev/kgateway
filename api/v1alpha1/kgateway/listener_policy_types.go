@@ -58,7 +58,7 @@ type ListenerPolicySpec struct {
 	// Default specifies default listener configuration for all Listeners, unless a per-port
 	// configuration is defined.
 	// +optional
-	Default *DefaultListenerConfig `json:"default,omitempty"`
+	Default *ListenerDefaultConfig `json:"default,omitempty"`
 
 	// Per port configuration allows overriding the listener config per port. Once set, this
 	// configuration completely replaces the default configuration for all listeners handling traffic
@@ -113,9 +113,7 @@ type ListenerConfig struct {
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
 }
 
-type DefaultListenerConfig struct {
-	ListenerConfig `json:",inline"`
-
+type ListenerDefaultConfig struct {
 	// ClientCertificateValidation configures mutual TLS (mTLS) client certificate validation for the listener.
 	// This enables per-listener configuration of CA certificates for client certificate validation,
 	// allowing different listeners on the same port to enforce different mTLS trust boundaries.
@@ -130,6 +128,8 @@ type DefaultListenerConfig struct {
 	// Reference: https://github.com/kubernetes-sigs/gateway-api/issues/3567
 	// +optional
 	ClientCertificateValidation *ClientCertificateValidationConfig `json:"clientCertificateValidation,omitempty"`
+
+	ListenerConfig `json:",inline"`
 }
 
 // ProxyProtocolConfig configures the PROXY protocol listener filter.

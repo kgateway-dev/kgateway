@@ -82,7 +82,7 @@ func newListenerPolicy(
 
 func newDefaultListenerPolicy(
 	krtctx krt.HandlerContext, commoncol *collections.CommonCollections,
-	objSrc ir.ObjectSource, i *kgateway.DefaultListenerConfig,
+	objSrc ir.ObjectSource, i *kgateway.ListenerDefaultConfig,
 ) (listenerPolicy, []error) {
 	if i == nil {
 		return listenerPolicy{}, nil
