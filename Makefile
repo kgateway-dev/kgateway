@@ -189,6 +189,10 @@ ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint
 lint-actions: ## Lint the GitHub Actions workflows
 	$(ACTION_LINT)
 
+.PHONY: lint-lines
+lint-lines: ## Fix line ending issues automatically
+	docker run --rm -v $(PWD)/.linelintautofix.yml:/.linelint.yml -v $(PWD):/data fernandrone/linelint
+
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
 #----------------------------------------------------------------------------------
