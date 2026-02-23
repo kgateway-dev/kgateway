@@ -195,7 +195,7 @@ issues:
   uniq-by-line: true
 formatters:
   enable:
-    - gofmt
+    - gofumpt
     - gci
   settings:
     gci:

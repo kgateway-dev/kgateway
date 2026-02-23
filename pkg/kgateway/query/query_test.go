@@ -1001,7 +1001,8 @@ var _ = Describe("Query", func() {
 		irGW := ir.Gateway{
 			Obj: gwWithListener,
 			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{
-				wellknown.XListenerSetGVK: []ir.ListenerSet{{Obj: lsWithListener}}},
+				wellknown.XListenerSetGVK: []ir.ListenerSet{{Obj: lsWithListener}},
+			},
 		}
 
 		gq := newQueries(GinkgoT(), gwHR, lsHR)

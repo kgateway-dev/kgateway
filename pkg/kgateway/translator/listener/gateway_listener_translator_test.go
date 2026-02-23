@@ -123,7 +123,6 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				Listeners: []*listener.MergedListener{},
 				Queries:   queries,
 			}
-
 		})
 
 		AfterEach(func() {

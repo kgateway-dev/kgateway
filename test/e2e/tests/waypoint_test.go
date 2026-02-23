@@ -15,9 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-var (
-	minWaypointIstioVersion = "1.25.1"
-)
+var minWaypointIstioVersion = "1.25.1"
 
 func TestKgatewayWaypoint(t *testing.T) {
 	ctx := context.Background()

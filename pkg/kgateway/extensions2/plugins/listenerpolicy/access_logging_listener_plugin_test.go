@@ -53,14 +53,15 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 			},
 			{
 				name: "FileSinkWithJSONFormat",
-				config: []kgateway.AccessLog{{
-					FileSink: &kgateway.FileSink{
-						Path: "/var/log/access.json",
-						JsonFormat: &runtime.RawExtension{
-							Raw: []byte(`{"request_method": "%REQ(:METHOD)%", "response_code": "%RESPONSE_CODE%"}`),
+				config: []kgateway.AccessLog{
+					{
+						FileSink: &kgateway.FileSink{
+							Path: "/var/log/access.json",
+							JsonFormat: &runtime.RawExtension{
+								Raw: []byte(`{"request_method": "%REQ(:METHOD)%", "response_code": "%RESPONSE_CODE%"}`),
+							},
 						},
 					},
-				},
 				},
 				expected: []*envoyaccesslogv3.AccessLog{
 					{

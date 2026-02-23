@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("Downward", func() {
-
 	var data map[string][]byte
 	var errors map[string]error
 	var env map[string]string
@@ -98,7 +97,6 @@ var _ = Describe("Downward", func() {
 		ExpectSet(&downward.IsPodUID, downward.PodUID)
 		ExpectSetMap(&downward.IsPodLabels, downward.PodLabels)
 		ExpectSetMap(&downward.IsPodAnnotations, downward.PodAnnotations)
-
 	})
 })
 

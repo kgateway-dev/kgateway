@@ -1,0 +1,113 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_example-tls-svc_443
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8443
+  filterChains:
+  - filterChainMatch:
+      serverNames:
+      - example.com
+    filters:
+    - name: envoy.filters.network.tcp_proxy
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+        cluster: kube_default_example-tls-svc_443
+        statPrefix: listener~8443-default.example-tls-route-rule-0
+    name: listener~8443-default.example-tls-route-rule-0
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+        commonTlsContext:
+          tlsCertificates:
+          - certificateChain:
+              inlineBytes: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREVENDQWZXZ0F3SUJBZ0lVTkdyRWplRmNzelJjWmdnYW1FNWNXZ0lZQkkwd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0ZqRVVNQklHQTFVRUF3d0xaWGhoYlhCc1pTNWpiMjB3SGhjTk1qWXdNakU1TVRFeU1ERTBXaGNOTXpZdwpNakUzTVRFeU1ERTBXakFXTVJRd0VnWURWUVFEREF0bGVHRnRjR3hsTG1OdmJUQ0NBU0l3RFFZSktvWklodmNOCkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFMQURGRFNKU2NZQzJMcmx6YVk3NmpxVERsTHZiVW9jY21yNmJabFEKSUJDRW5XQ1VnTHhDcmoyWUVuWVhjOThYd1h0MVkvSmdHN2Y0TUcrbTZMVTkvR0pNWjROVG5JV2l3NTVEY3FSKwpyWElwbGZHaUswYXhDZy9IREkwQ1dLRHgzQk12OGsvM3M2MFljbit5bUhTd29RZm5PWDU4RzgzR1BhYW9OclNtCkNJU1JvcXA2VUx2NnFkSERVeDBuanBFRlo1c2NFb09OWjBxTUhmYnNvL2h6Q3Byc0ZHTkNvcFgzWUdBQjFyTVQKcHdWWkRTSmg4K1A4QWxPZE16VkJyWWF2MFp4bVdMcmd3Y3FYTzNuT1RYTVZ1TWpocmVMSFcxZlNJOWZ5QWU5QgpaQ3dSSmJZNXBsd2t4RVNrUXRhb2YvZFdTM2ZnaHEvSC9keEk0bU9EN2diL2taRUNBd0VBQWFOVE1GRXdIUVlEClZSME9CQllFRkVwWnh2enVDR05pWk9XNUd1TkIwL3hwMWRiN01COEdBMVVkSXdRWU1CYUFGRXBaeHZ6dUNHTmkKWk9XNUd1TkIwL3hwMWRiN01BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQgpBS0V5WWs0YURaTW1iWmRKYmpFM1M4aGMrUGlrT0ZCaGtVY3Q2aG05bjhhM3pUcHN6S21YVU9Nd3p4VjhZNDBDCjc2Z0lSL1BNT3BoQUpTWkNXQmYzTndLenl0Z0lMZUFhRFFVWXFYbVpTaHRYeDMvU3I4c0szblYxREZ0NnZTaGMKSWdTK1dTZ2xhZU5aVWJwb1VZSDZuUWpXaDlYYVJBbmdudXEweEJLM1FUeVoxUHRzZE5seW5PWVdqR2JLc3pvNgpuNHJLOSs1WERjL3lMQlduT2ZxU28zQTRiOWI3d0VyeThCV2VBRGhvREJ2YXRvQmZ1NkVNYzBvV251VVQ0UEdiCmhVVW5xSFJiT2hVcVZFemlRZDZqajlDejdKWTRBZnhHYitQclNVYnBNdjV6ZllNZXFDY21MOW5vUEVpckxUV0gKUktCVWFyTTJjMGFQTktUZFJvTEtqaE09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+            privateKey:
+              inlineBytes: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2QUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktZd2dnU2lBZ0VBQW9JQkFRQ3dBeFEwaVVuR0F0aTYKNWMybU8rbzZrdzVTNzIxS0hISnErbTJaVUNBUWhKMWdsSUM4UXE0OW1CSjJGM1BmRjhGN2RXUHlZQnUzK0RCdgpwdWkxUGZ4aVRHZURVNXlGb3NPZVEzS2tmcTF5S1pYeG9pdEdzUW9QeHd5TkFsaWc4ZHdUTC9KUDk3T3RHSEovCnNwaDBzS0VINXpsK2ZCdk54ajJtcURhMHBnaUVrYUtxZWxDNytxblJ3MU1kSjQ2UkJXZWJIQktEaldkS2pCMzIKN0tQNGN3cWE3QlJqUXFLVjkyQmdBZGF6RTZjRldRMGlZZlBqL0FKVG5UTTFRYTJHcjlHY1psaTY0TUhLbHp0NQp6azF6RmJqSTRhM2l4MXRYMGlQWDhnSHZRV1FzRVNXMk9hWmNKTVJFcEVMV3FILzNWa3QzNElhdngvM2NTT0pqCmcrNEcvNUdSQWdNQkFBRUNnZ0VBS0s0ZGZtTDRyUTQ5WHp6N3dkNzVMTjZPSWZiNmNIV1FzRTcvQTc4MEdmMDgKam5Ua0tCN1ZQS0VvS3lrU2U4NTJ4bjBFUTZHWTVuVXpaS3JVQUFlNmpGR1NYeFQxQ1NIc1NtaldWMVI3Ni9YVwpsUWxoTFM1LzM5T21mL1M1M1VEcEYzb3VhL01aRVBta2hRVVhIV2t4WHEwL2FZOXZzYWlPMlRUcHArano4UWVCCnZVb1czWlhEUjZTVkVTdFVwblRQOFh1ZzRvelRTcGdFZG1ScFlmR0FqcytDL3lRcjZmUFEyRmxONWhNRm4zSVAKa0Zna3p1SjlWd0dQK25DZ0VxUlhwR0kyMWJlZkFENzJUQ3p2NW9tODhrUjZsdGhJa0xINWdzVjBnbVFDN2J1YgpMM3NrTHdUMXBHTHZBditweUdRZVFOVnJSU1Q2dUc4alJlZWpMS3FLVFFLQmdRRGIzRXJ2NjhKcFZnUnpXSldwClRURDdCL3FLRFFGSEttQVl1VTVpM25odEZKWkJ6blF1NFA4YXVkelRWNk94RWloTFdkUGo3aUJCcG1JbGIyTy8KazJleE5QY3FnOXN6QVB4UzdzdmN5bmpQN2ZwM3hHVVNKWndTYlI5Nm5QS0tZeTBiOCt2WXUrU1VpSUczMFN6awoxQk13SWlWb3g4OE8zK3c5NkNxUzk4UEJkd0tCZ1FETThhVjJqYmh1ZjMvOWdEL0xHeExWT0pESlR6Q1RRKzNvCmdJTzlpYTRMaitacUNZNVVHWkhBK1J2M2hTSXY4a2g4WVlPbUV5MDZqdjhTZ1ZLd3FhTU1vbXZkUGtPNWUxWkgKN2h6OWhWQVJ2UlVpU2M0S1BYbWVOUXM2RWNtM1FwNnh6ZlhKemJxZmtDNjQwd25xbXdIMWxDczhqaHI1ZVc2VQpWek1CZ3o5SE53S0JnSFlBNDd1bjl6MmdMRjFZYzJOZUNlY0NYa2RRT1pwZnRSb3dBMUZ2aElWUFltSkprL1JCClVNcWdiVlNGbWxjRW50bnFpWjZ4aFdDWEUrQnh5OERjTmZCWHREMStiZDBQTDE2M3luVmp1cm9uU2FLVXA0YTQKNXU3QTRQOW5VNHBSTnJubERuWFNTeG9wdGkzWnVGWE5PY3RBMklGSGxPdXY1ZFZJVWVsMXoveDdBb0dBUjBMdgpDZDRWZHphV1JvdEZvMVh5b25sY3Z1THVQUWF0dnQ2UThHTGpSZG52Z0lkNkdmd2FGa09JV2ZUTkFtYjRsV2RDCjQ0aGZmYkVqT0VnSGZLNC9wN0VDV0pmQjdNamFJNERFUzlNREdHZnE1VlZNYzNzVXd0SW02VFl1TWE3VWgzYmEKTkNWNDh1cXJsRkN0YmdvZ0VFaEpFSEZKSjkzMWVWY293U25sNHRrQ2dZQS84RmptR1E0NXZhOVQ1cDN1K1VqcQpPVzk5U1ZwR1hLS0c5MFJyelNoRHF5cDBpTTgvQzF3Y0FyWjFzc3p3QWx3QjNkUEJScmhadkNZYVh6NlNDczh1CmljOG5naUNneWV1WW05T1AzU1dKNk1VSU5Ha0pVbEJWOHlJRlI4R3FYN1NLVE5EUWZUNEw5K0xYd2VHYkF3WlMKNVUwd2N6ZG1IWW5lR1ZUa2dvQncxZz09Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
+          tlsParams: {}
+  listenerFilters:
+  - name: envoy.filters.listener.tls_inspector
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+  name: listener~8443
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: tls
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: TLSRoute
+        - group: gateway.networking.k8s.io
+          kind: TCPRoute
+  tlsRoutes:
+    default/example-tls-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: ""
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway

@@ -107,7 +107,6 @@ func findMetrics(target string) ([]metricInfo, error) {
 
 			return nil
 		})
-
 		if err != nil {
 			return nil, err
 		}

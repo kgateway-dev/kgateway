@@ -13,9 +13,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -37,13 +37,13 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin", "httpbin", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	s.BaseTestingSuite.BeforeTest(suiteName, testName)
 
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "access-logs", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "access-logs", "kgateway-base", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 }
 
 // TestAccessLogWithFileSink tests access log with file sink
@@ -61,7 +61,7 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 		assert.Contains(c, logs, `"path":"/status/200"`)
 		assert.Contains(c, logs, `"protocol":"HTTP/1.1"`)
 		assert.Contains(c, logs, `"response_code":200`)
-		assert.Contains(c, logs, `"backendCluster":"kube_httpbin_httpbin_8000"`)
+		assert.Contains(c, logs, `"backendCluster":"kube_kgateway-base_httpbin_8000"`)
 	}, 5*time.Second, 100*time.Millisecond)
 }
 
@@ -76,7 +76,7 @@ func (s *testingSuite) TestAccessLogWithGrpcSink() {
 
 		// Verify the log contains the expected JSON pattern
 		assert.Contains(c, logs, `"logger_name":"test-accesslog-service"`)
-		assert.Contains(c, logs, `"cluster":"kube_httpbin_httpbin_8000"`)
+		assert.Contains(c, logs, `"cluster":"kube_kgateway-base_httpbin_8000"`)
 	}, 5*time.Second, 100*time.Millisecond)
 }
 
@@ -90,11 +90,11 @@ func (s *testingSuite) TestAccessLogWithOTelSink() {
 		s.Require().NoError(err)
 
 		// Example log line for the access log
-		// {"level":"info","ts":"2025-06-20T18:22:57.716Z","msg":"ResourceLog #0\nResource SchemaURL: \nResource attributes:\n     -> log_name: Str(test-otel-accesslog-service)\n     -> zone_name: Str()\n     -> cluster_name: Str(gw.default)\n     -> node_name: Str(gw-69c5b8cd88-ln44n.default)\n     -> service.name: Str(gw.default)\nScopeLogs #0\nScopeLogs SchemaURL: \nInstrumentationScope  \nLogRecord #0\nObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC\nTimestamp: 2025-06-20 18:22:56.807883 +0000 UTC\nSeverityText: \nSeverityNumber: Unspecified(0)\nBody: Str(\"GET /get 200 \"www.example.com\" \"kube_httpbin_httpbin_8000\"\\n')\nAttributes:\n     -> custom: Str(string)\n     -> kvlist: Map({\"key-1\":\"value-1\",\"key-2\":\"value-2\"})\nTrace ID: \nSpan ID: \nFlags: 0\n","kind":"exporter","data_type":"logs","name":"debug"}		assert.Contains(c, logs, `-> log_name: Str(test-otel-accesslog-service)`)
-		assert.Contains(c, logs, `-> service.name: Str(gw.default)`)
+		// {"level":"info","ts":"2025-06-20T18:22:57.716Z","msg":"ResourceLog #0\nResource SchemaURL: \nResource attributes:\n     -> log_name: Str(test-otel-accesslog-service)\n     -> zone_name: Str()\n     -> cluster_name: Str(gateway.kgateway-base.default)\n     -> node_name: Str(gateway-69c5b8cd88-ln44n.kgateway-base)\n     -> service.name: Str(gateway.kgateway-base)\nScopeLogs #0\nScopeLogs SchemaURL: \nInstrumentationScope  \nLogRecord #0\nObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC\nTimestamp: 2025-06-20 18:22:56.807883 +0000 UTC\nSeverityText: \nSeverityNumber: Unspecified(0)\nBody: Str(\"GET /get 200 \"www.example.com\" \"kube_kgateway-base_httpbin_8000\"\\n')\nAttributes:\n     -> custom: Str(string)\n     -> kvlist: Map({\"key-1\":\"value-1\",\"key-2\":\"value-2\"})\nTrace ID: \nSpan ID: \nFlags: 0\n","kind":"exporter","data_type":"logs","name":"debug"}		assert.Contains(c, logs, `-> log_name: Str(test-otel-accesslog-service)`)
+		assert.Contains(c, logs, `-> service.name: Str(gateway.kgateway-base)`)
 		assert.Contains(c, logs, `GET /status/200 200`)
 		assert.Contains(c, logs, `www.example.com`)
-		assert.Contains(c, logs, `kube_httpbin_httpbin_8000`)
+		assert.Contains(c, logs, `kube_kgateway-base_httpbin_8000`)
 		// Custom string attribute passed in the access log config
 		assert.Contains(c, logs, `-> custom: Str(string)`)
 		// Custom kvlist attribute passed in the access log config
@@ -107,19 +107,15 @@ func (s *testingSuite) TestAccessLogWithOTelSink() {
 }
 
 func (s *testingSuite) sendTestRequest() {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/status/200"),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/status/200"),
+		curl.WithPort(80),
 	)
 }
 
