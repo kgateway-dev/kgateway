@@ -5,7 +5,6 @@ import (
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -59,10 +58,6 @@ func validateXDS(
 	if err != nil {
 		return err
 	}
-	data, err := protojson.Marshal(bootstrap)
-	if err != nil {
-		return err
-	}
 
-	return v.Validate(ctx, string(data))
+	return v.Validate(ctx, bootstrap)
 }
