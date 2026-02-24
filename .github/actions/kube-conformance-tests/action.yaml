@@ -154,7 +154,7 @@ runs:
       esac
 
   - name: Summary
-    if: ${{ inputs.summarize-report }}
+    if: ${{ inputs.summarize-report == 'true' }}
     shell: bash
     run: |
       echo -e '\n# Conformance Reports\n' >> $GITHUB_STEP_SUMMARY
