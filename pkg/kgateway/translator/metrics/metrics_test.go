@@ -109,6 +109,76 @@ func TestCollectTranslationMetrics_Error(t *testing.T) {
 	currentMetrics.AssertHistogramPopulated("kgateway_translator_translation_duration_seconds")
 }
 
+func TestCollectTranslationMetrics_BackendConfigPolicy(t *testing.T) {
+	setupTest()
+
+	// Test success scenario
+	finishFunc := CollectTranslationMetrics(TranslatorMetricLabels{
+		Name:       testGatewayName,
+		Namespace:  testNamespace,
+		Translator: "BackendConfigPolicy",
+	})
+
+	currentMetrics := metricstest.MustGatherMetrics(t)
+	currentMetrics.AssertMetric("kgateway_translator_translations_running", &metricstest.ExpectedMetric{
+		Labels: []metrics.Label{
+			{Name: "name", Value: testGatewayName},
+			{Name: "namespace", Value: testNamespace},
+			{Name: "translator", Value: "BackendConfigPolicy"},
+		},
+		Value: 1,
+	})
+
+	finishFunc(nil)
+	currentMetrics = metricstest.MustGatherMetrics(t)
+
+	currentMetrics.AssertMetricsInclude("kgateway_translator_translations_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "name", Value: testGatewayName},
+				{Name: "namespace", Value: testNamespace},
+				{Name: "result", Value: "success"},
+				{Name: "translator", Value: "BackendConfigPolicy"},
+			},
+			Value: 1,
+		},
+	})
+
+	// Test error scenario
+	setupTest()
+
+	finishFunc = CollectTranslationMetrics(TranslatorMetricLabels{
+		Name:       testGatewayName,
+		Namespace:  testNamespace,
+		Translator: "BackendConfigPolicy",
+	})
+
+	currentMetrics = metricstest.MustGatherMetrics(t)
+	currentMetrics.AssertMetric("kgateway_translator_translations_running", &metricstest.ExpectedMetric{
+		Labels: []metrics.Label{
+			{Name: "name", Value: testGatewayName},
+			{Name: "namespace", Value: testNamespace},
+			{Name: "translator", Value: "BackendConfigPolicy"},
+		},
+		Value: 1,
+	})
+
+	finishFunc(assert.AnError)
+	currentMetrics = metricstest.MustGatherMetrics(t)
+
+	currentMetrics.AssertMetricsInclude("kgateway_translator_translations_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "name", Value: testGatewayName},
+				{Name: "namespace", Value: testNamespace},
+				{Name: "result", Value: "error"},
+				{Name: "translator", Value: "BackendConfigPolicy"},
+			},
+			Value: 1,
+		},
+	})
+}
+
 func TestTranslationMetricsNotActive(t *testing.T) {
 	metrics.SetActive(false)
 	defer metrics.SetActive(true)
