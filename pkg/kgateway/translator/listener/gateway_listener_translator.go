@@ -954,7 +954,7 @@ func translateTLSConfig(
 		if !generated {
 			if resolvedValidation.RequireClientCertificate {
 				// If client certs are required (AllowValidOnly), fail the listener
-				logger.Warn("failed to fetch CA certificate for client validation, failing listener",
+				logger.Error("failed to fetch CA certificate for client validation, failing listener",
 					"listener", listener.Name,
 					"port", listener.Port,
 					"error", caErr,
@@ -986,7 +986,7 @@ func translateTLSConfig(
 				// Keep Gateway-level validation if ListenerPolicy fetch fails
 				return tlsConfig, nil
 			}
-			logger.Warn("failed to fetch CA certificate for ListenerPolicy client validation override, failing listener",
+			logger.Error("failed to fetch CA certificate for ListenerPolicy client validation override, failing listener",
 				"listener", listener.Name,
 				"port", listener.Port,
 				"error", caErr,

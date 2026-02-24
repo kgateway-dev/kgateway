@@ -58,7 +58,7 @@ spec:
       - name: server-cert-a
   - name: tenant-b-https
     protocol: HTTPS
-    port: 8444
+    port: 8443
     hostname: tenant-b.example.com
     tls:
       mode: Terminate
