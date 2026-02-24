@@ -205,8 +205,6 @@ func TranslateGatewayExtensionBuilder(
 				commoncol.ConfigMaps.Collection(),
 				commoncol.BackendIndex,
 				gExt.ObjectSource,
-				gExt.Name,
-				gExt.Namespace,
 				gExt.JWT,
 			)
 			if err != nil {
@@ -232,18 +230,16 @@ func resolveJwtProviders(
 	configMaps krt.Collection[*corev1.ConfigMap],
 	backendResolver backendResolver,
 	gwExtObj ir.ObjectSource,
-	policyName, policyNamespace string,
 	jwt *kgateway.JWT,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
 	uniqProviders := make(map[string]*envoyjwtauthnv3.JwtProvider)
-	policyNameNamespace := fmt.Sprintf("%s_%s", policyName, policyNamespace)
+	extNameNamespace := fmt.Sprintf("%s_%s", gwExtObj.Name, gwExtObj.Namespace)
 
 	for _, provider := range jwt.Providers {
-		providerNameForPolicy := ProviderName(policyNameNamespace, provider.Name)
+		providerNameForExt := ProviderName(extNameNamespace, provider.Name)
 		jwtProvider, err := translateProvider(
 			krtctx,
 			provider.JWTProvider,
-			policyNamespace,
 			configMaps,
 			backendResolver,
 			gwExtObj,
@@ -251,10 +247,10 @@ func resolveJwtProviders(
 		if err != nil {
 			return nil, err
 		}
-		uniqProviders[providerNameForPolicy] = jwtProvider
+		uniqProviders[providerNameForExt] = jwtProvider
 	}
 
-	requirementsName := fmt.Sprintf("%s_requirements", policyNameNamespace)
+	requirementsName := fmt.Sprintf("%s_requirements", extNameNamespace)
 	requirements := make(map[string]*envoyjwtauthnv3.JwtRequirement)
 	requirements[requirementsName] = buildJwtRequirementFromProviders(uniqProviders, jwt.ValidationMode)
 
