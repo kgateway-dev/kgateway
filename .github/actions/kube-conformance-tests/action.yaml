@@ -23,6 +23,9 @@ inputs:
   version:
     description: "Version of the kgateway and kgateway-crds charts to use"
     required: false
+  always-publish-report:
+    description: "Always publish report"
+    required: false
 
 runs:
   using: "composite"
@@ -151,7 +154,7 @@ runs:
       esac
 
   - name: Upload reports
-    if: ${{ failure() }}
+    if: ${{ failure() || inputs.always-publish-report }}
     uses: ./.github/actions/upload-artifact
     with:
       # Name of the path to upload. The VERSION variable refers to the Makefile
