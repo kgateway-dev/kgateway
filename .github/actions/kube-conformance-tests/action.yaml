@@ -23,6 +23,9 @@ inputs:
   version:
     description: "Version of the kgateway and kgateway-crds charts to use"
     required: false
+  summarize-report:
+    description: "Add a summary of the report to the GitHub step summary"
+    required: false
 
 runs:
   using: "composite"
@@ -149,6 +152,19 @@ runs:
           exit 1
           ;;
       esac
+
+  - name: Summary
+    if: ${{ inputs.summarize-report == 'true' }}
+    shell: bash
+    run: |
+      echo -e '\n# Conformance Reports\n' >> $GITHUB_STEP_SUMMARY
+      if [[ -f "${{ env.ARTIFACT_PATH }}" ]]; then
+        echo -e '```yaml' >> $GITHUB_STEP_SUMMARY
+        cat "${{ env.ARTIFACT_PATH }}" >> $GITHUB_STEP_SUMMARY
+        echo -e '```\n' >> $GITHUB_STEP_SUMMARY
+      else
+        echo "Report file not found: ${{ env.ARTIFACT_PATH }}" >> $GITHUB_STEP_SUMMARY
+      fi
 
   - name: Upload reports
     if: ${{ failure() }}

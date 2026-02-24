@@ -73,6 +73,7 @@ jobs:
         api-channel: ${{ matrix.gateway-api-channel }}
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+        summarize-report: true
 
   kube_gateway_api_load_tests:
     name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
