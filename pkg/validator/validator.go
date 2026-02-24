@@ -47,7 +47,7 @@ func NewBinary(path ...string) Validator {
 }
 
 func (b *binaryValidator) Validate(ctx context.Context, json string) error {
-	cmd := exec.CommandContext(ctx, b.path, "--mode", "validate", "--config-path", "/dev/fd/0", "-l", "critical", "--log-format", "%v") //nolint:gosec // G204: envoy binary with controlled args for config validation
+	cmd := exec.CommandContext(ctx, b.path, "--mode", "validate", "--config-path", "/dev/fd/0", "-l", "critical") //nolint:gosec // G204: envoy binary with controlled args for config validation
 	cmd.Env = append(cmd.Env, "ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib")
 	cmd.Stdin = strings.NewReader(json)
 	var e bytes.Buffer
@@ -117,7 +117,6 @@ func (d *dockerValidator) args() []string {
 		"--service-node", "dummy-node",
 		"--config-path", "/dev/fd/0",
 		"-l", "critical",
-		"--log-format", "%v",
 	)
 	return args
 }

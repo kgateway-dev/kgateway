@@ -257,6 +257,31 @@ spec:
                                 minimum: 0
                                 type: integer
                             type: object
+                          logFormat:
+                            description: |-
+                              Envoy application log format. Does *not* affect access logs. Can be JSON or custom text format.
+                              Defaults to text with default format string as defined in Envoy documentation.
+                              See https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-log-format for format flag options.
+                            properties:
+                              json:
+                                description: |-
+                                  The format object by which Envoy will emit logs in a structured way.
+                                  Mutually exclusive with Text.
+                                  See https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/application_logging#printing-logs-in-json-format.
+                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
+                              text:
+                                description: |-
+                                  The format string by which Envoy will format log lines.
+                                  Mutually exclusive with JSON.
+                                  See https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-log-format.
+                                type: string
+                            type: object
+                            x-kubernetes-validations:
+                            - message: exactly one of the fields in [json text] must
+                                be set
+                              rule: '[has(self.json),has(self.text)].filter(x,x==true).size()
+                                == 1'
                           logLevel:
                             description: |-
                               Envoy log level. Options include "trace", "debug", "info", "warn", "error",

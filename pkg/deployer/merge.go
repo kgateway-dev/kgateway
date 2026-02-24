@@ -642,6 +642,11 @@ func deepMergeEnvoyBootstrap(dst, src *kgateway.EnvoyBootstrap) *kgateway.EnvoyB
 	if dst == nil {
 		return src
 	}
+
+	if src.GetLogFormat() != nil {
+		dst.LogFormat = src.GetLogFormat()
+	}
+
 	if src.GetLogLevel() != nil {
 		dst.LogLevel = src.GetLogLevel()
 	}

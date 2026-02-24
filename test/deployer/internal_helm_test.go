@@ -137,6 +137,14 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "envoy-dns-resolver-zero",
 		},
 		{
+			Name:      "envoy JSON log",
+			InputFile: "envoy-log-json",
+		},
+		{
+			Name:      "envoy text log",
+			InputFile: "envoy-log-text",
+		},
+		{
 			// The GW parametersRef merges with the GWC parametersRef.
 			// GWC has replicas:2, GW has omitDefaultSecurityContext:true.
 			// Both settings should appear in the output.

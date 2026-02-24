@@ -70,6 +70,7 @@ type HelmGateway struct {
 	ComponentLogLevel *string `json:"componentLogLevel,omitempty"`
 
 	// envoy container values (mapped to the proxy container)
+	LogFormat         *kgateway.LogFormat          `json:"logFormat,omitempty"`
 	LogLevel          *string                      `json:"logLevel,omitempty"`
 	Image             *HelmImage                   `json:"image,omitempty"`
 	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
