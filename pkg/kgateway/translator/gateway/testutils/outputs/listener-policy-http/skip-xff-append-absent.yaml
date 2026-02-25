@@ -44,9 +44,9 @@ Listeners:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.httpSettings.useRemoteAddress:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-absent
         default.httpSettings.xffConfig:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-absent
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
@@ -54,9 +54,9 @@ Routes:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.httpSettings.useRemoteAddress:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-absent
         default.httpSettings.xffConfig:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-absent
   name: listener~80
   virtualHosts:
   - domains:
@@ -137,7 +137,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    ListenerPolicy/default/use-remote-address-false:
+    ListenerPolicy/default/skip-xff-append-absent:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

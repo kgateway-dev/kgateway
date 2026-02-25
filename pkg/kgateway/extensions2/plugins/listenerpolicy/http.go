@@ -1,6 +1,7 @@
 package listenerpolicy
 
 import (
+	"net"
 	"reflect"
 	"slices"
 	"time"
@@ -11,6 +12,7 @@ import (
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/early_header_mutation/header_mutation/v3"
+	envoyxffv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/original_ip_detection/xff/v3"
 	envoyuuidv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/request_id/uuid/v3"
 	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
@@ -31,6 +33,8 @@ type HttpListenerPolicyIr struct {
 	upgradeConfigs             []*envoy_hcm.HttpConnectionManager_UpgradeConfig
 	useRemoteAddress           *bool
 	xffNumTrustedHops          *uint32
+	xffConfig                  *envoyxffv3.XffConfig
+	skipXffAppend              *bool
 	serverHeaderTransformation *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation
 	streamIdleTimeout          *time.Duration
 	idleTimeout                *time.Duration
@@ -105,6 +109,16 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 
 	// Check xffNumTrustedHops
 	if !cmputils.PointerValsEqual(d.xffNumTrustedHops, d2.xffNumTrustedHops) {
+		return false
+	}
+
+	// Check xffConfig
+	if !proto.Equal(d.xffConfig, d2.xffConfig) {
+		return false
+	}
+
+	// Check skipXffAppend
+	if !cmputils.PointerValsEqual(d.skipXffAppend, d2.skipXffAppend) {
 		return false
 	}
 
@@ -202,9 +216,46 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 	}
 
 	healthCheckPolicy := convertHealthCheckPolicy(h)
+
 	var xffNumTrustedHops *uint32
 	if h.XffNumTrustedHops != nil {
 		xffNumTrustedHops = new(uint32(*h.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
+
+	var xffConfig *envoyxffv3.XffConfig
+	// Envoy will create a default XFF Original IP Detection extension and completely ignore skipXffAppend when useRemoteAddress is false.
+	// So we explicitly create the configuration here that will be able to use the configured skipXffAppend.
+	if h.UseRemoteAddress != nil && !*h.UseRemoteAddress {
+		xffConfig = &envoyxffv3.XffConfig{}
+	}
+
+	if xffNumTrustedHops != nil && xffConfig != nil {
+		xffConfig.XffNumTrustedHops = *xffNumTrustedHops
+		// Set to nil so it doesn't get added to Envoy config anymore
+		xffNumTrustedHops = nil
+	}
+
+	// xffConfig should always be non-nil here since xffTrustedCIDRs may only be set if useRemoteAddress is false, but check regardless
+	if xffConfig != nil && len(h.XffTrustedCIDRs) > 0 {
+		var ranges []*envoycorev3.CidrRange
+		for _, cidr := range h.XffTrustedCIDRs {
+			ip, ipNet, err := net.ParseCIDR(string(cidr))
+			if err != nil {
+				logger.Error("error parsing CIDR for XFF trust", "error", err)
+				errs = append(errs, err)
+				continue
+			}
+			maskSize, _ := ipNet.Mask.Size()
+			ranges = append(ranges, &envoycorev3.CidrRange{
+				AddressPrefix: ip.String(),
+				PrefixLen:     &wrapperspb.UInt32Value{Value: uint32(maskSize)}, // nolint:gosec // prefixLen is validated by net.ParseCIDR
+			})
+		}
+		xffConfig.XffTrustedCidrs = &envoyxffv3.XffTrustedCidrs{Cidrs: ranges}
+	}
+
+	if xffConfig != nil && h.SkipXffAppend != nil {
+		xffConfig.SkipXffAppend = &wrapperspb.BoolValue{Value: *h.SkipXffAppend}
 	}
 
 	var maxRequestHeadersKb *uint32
@@ -230,6 +281,8 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		preserveExternalRequestId:     h.PreserveExternalRequestId,
 		generateRequestId:             h.GenerateRequestId,
 		xffNumTrustedHops:             xffNumTrustedHops,
+		xffConfig:                     xffConfig,
+		skipXffAppend:                 h.SkipXffAppend,
 		serverHeaderTransformation:    serverHeaderTransformation,
 		streamIdleTimeout:             streamIdleTimeout,
 		idleTimeout:                   idleTimeout,

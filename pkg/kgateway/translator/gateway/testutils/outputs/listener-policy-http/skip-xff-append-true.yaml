@@ -32,6 +32,7 @@ Listeners:
           - name: envoy.http.original_ip_detection.xff
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.http.original_ip_detection.xff.v3.XffConfig
+              skipXffAppend: true
         rds:
           configSource:
             ads: {}
@@ -39,14 +40,17 @@ Listeners:
           routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: false
+        skipXffAppend: true
     name: listener~80
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.httpSettings.useRemoteAddress:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
+        default.httpSettings.skipXffAppend:
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
         default.httpSettings.xffConfig:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
@@ -54,9 +58,11 @@ Routes:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.httpSettings.useRemoteAddress:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
+        default.httpSettings.skipXffAppend:
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
         default.httpSettings.xffConfig:
-        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
   name: listener~80
   virtualHosts:
   - domains:
@@ -137,7 +143,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    ListenerPolicy/default/use-remote-address-false:
+    ListenerPolicy/default/skip-xff-append-true:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
