@@ -307,6 +307,17 @@ func TestHelmChartTemplate(t *testing.T) {
     another-label: "true"
 `,
 		},
+		{
+			name: "topology-spread-constraints",
+			valuesYAML: `topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: kgateway
+`,
+		},
 	}
 
 	for _, chart := range charts {
