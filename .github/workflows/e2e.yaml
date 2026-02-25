@@ -50,7 +50,7 @@ jobs:
         # December 4, 2025: ~19 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestCustomGWP$$'
+          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestKgateway$$/^GlobalRateLimit$$|^TestCustomGWP$$'
           localstack: 'false'
         # December 4, 2025: ~21 minutes
         - cluster-name: 'cluster-five'
@@ -65,7 +65,7 @@ jobs:
         # December 4, 2025: ~9 minutes
         - cluster-name: 'api-validation' # TODO: rename to cluster-seven
           go-test-args: '-timeout=15m'
-          go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$'
+          go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^AttachedRoutes$$'
           localstack: 'false'
         # December 4, 2025: ~15 minutes
         - cluster-name: 'cluster-metrics'

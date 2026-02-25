@@ -42,6 +42,10 @@ Example: `/pkg/kgateway/extensions2/plugins/trafficpolicy/traffic_policy_plugin.
 
 ## Critical Developer Patterns
 
+### go build tag e2e
+
+If you intend to include all source code, run 'go' commands that accept '-tags' with '-tags e2e'.
+
 ### IR Equals() Methods (STRICTLY ENFORCED)
 IRs output by KRT collections **must** implement `Equals(other T) bool`:
 - **Compare ALL fields** or mark with `// +noKrtEquals` (last line of comment)
@@ -141,7 +145,6 @@ make kind-reload-kgateway
 ### Running Conformance Tests
 ```bash
 make conformance  # Gateway API conformance
-make gie-conformance  # Gateway API Inference Extension
 make all-conformance  # All suites
 
 # Run specific test by ShortName
@@ -193,7 +196,6 @@ make deploy-kgateway   # Deploy to cluster
 ## Dependencies & Bumping
 ```bash
 make bump-gtw DEP_REF=v1.3.0     # Bump Gateway API
-make bump-gie DEP_REF=v1.1.0     # Bump Inference Extension
 make generate-licenses            # Update license attribution
 ```
 

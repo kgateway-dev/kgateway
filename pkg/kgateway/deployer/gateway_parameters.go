@@ -341,7 +341,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 		FullnameOverride: &gw.Name,
 		GatewayName:      &gw.Name,
 		GatewayNamespace: &gw.Namespace,
-		GatewayClassName: ptr.To(string(gw.Spec.GatewayClassName)),
+		GatewayClassName: new(string(gw.Spec.GatewayClassName)),
 		Ports:            ports,
 		Xds: &deployer.HelmXds{
 			// The xds host/port MUST map to the Service definition for the Control Plane
@@ -349,8 +349,8 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 			Host: &k.inputs.ControlPlane.XdsHost,
 			Port: &k.inputs.ControlPlane.XdsPort,
 			Tls: &deployer.HelmXdsTls{
-				Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
-				CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
+				Enabled: new(k.inputs.ControlPlane.XdsTLS),
+				CaCert:  new(k.inputs.ControlPlane.XdsTlsCaPath),
 			},
 		},
 	}
@@ -401,7 +401,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 
 	// deployment values
 	if deployConfig.GetReplicas() != nil {
-		gateway.ReplicaCount = ptr.To(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		gateway.ReplicaCount = new(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	gateway.Strategy = deployConfig.GetStrategy()
 

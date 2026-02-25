@@ -461,7 +461,7 @@ func setupOutDir(outdir string) {
 
 // fileAtPath creates a file at the given path, and returns the file object
 func fileAtPath(path string) *os.File {
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {
 		fmt.Printf("unable to openfile: %f\n", err)
 	}

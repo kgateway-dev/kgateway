@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
@@ -23,20 +22,20 @@ func TestBufferIREquals(t *testing.T) {
 		{
 			name: "non-nil and not equal",
 			a: &kgateway.Buffer{
-				MaxRequestSize: ptr.To(resource.MustParse("1Ki")),
+				MaxRequestSize: new(resource.MustParse("1Ki")),
 			},
 			b: &kgateway.Buffer{
-				MaxRequestSize: ptr.To(resource.MustParse("2Ki")),
+				MaxRequestSize: new(resource.MustParse("2Ki")),
 			},
 			want: false,
 		},
 		{
 			name: "non-nil and equal",
 			a: &kgateway.Buffer{
-				MaxRequestSize: ptr.To(resource.MustParse("1Ki")),
+				MaxRequestSize: new(resource.MustParse("1Ki")),
 			},
 			b: &kgateway.Buffer{
-				MaxRequestSize: ptr.To(resource.MustParse("1Ki")),
+				MaxRequestSize: new(resource.MustParse("1Ki")),
 			},
 			want: true,
 		},

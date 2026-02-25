@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -61,13 +60,14 @@ type listenerPolicy struct {
 
 func newListenerPolicy(
 	krtctx krt.HandlerContext, commoncol *collections.CommonCollections,
-	objSrc ir.ObjectSource, i *kgateway.ListenerConfig) (listenerPolicy, []error) {
+	objSrc ir.ObjectSource, i *kgateway.ListenerConfig,
+) (listenerPolicy, []error) {
 	if i == nil {
 		return listenerPolicy{}, nil
 	}
 	var perConnectionBufferLimitBytes *uint32
 	if i.PerConnectionBufferLimitBytes != nil {
-		perConnectionBufferLimitBytes = ptr.To(uint32(*i.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
+		perConnectionBufferLimitBytes = new(uint32(*i.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
 	}
 	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
 
@@ -276,6 +276,7 @@ func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Repor
 func (p *listenerPolicyPluginGwPass) Name() string {
 	return "listenerpolicy"
 }
+
 func (p *listenerPolicyPluginGwPass) getPolicy(policy ir.PolicyIR, port uint32) listenerPolicy {
 	pol, ok := policy.(*ListenerPolicyIR)
 	if !ok || pol == nil {

@@ -89,7 +89,8 @@ func expectedRequestHeaders(suffixes ...string) map[string][]any {
 
 	if len(suffixes) > 0 {
 		h["X-Custom-Request-Header-Set"] = []any{
-			"custom-request-value-" + suffixes[len(suffixes)-1]}
+			"custom-request-value-" + suffixes[len(suffixes)-1],
+		}
 	}
 
 	return h

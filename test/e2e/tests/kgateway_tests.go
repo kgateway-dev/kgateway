@@ -48,14 +48,10 @@ import (
 
 func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner := e2e.NewSuiteRunner(false)
-	kubeGatewaySuiteRunner.Register("ExtAuth", extauth.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("AccessLog", accesslog.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("Backends", backends.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("BackendTLSPolicies", backendtls.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("BasicRouting", basicrouting.NewTestingSuite)
+
 	kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("DynamicForwardProxy", dfp.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
+
+	// Slow tests not yet migrated to use the more modern testing approach
 	kubeGatewaySuiteRunner.Register("ListenerPolicy", listener_policy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
@@ -90,6 +86,15 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("FrontendTLS", frontendtls.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
+
+	// Fast tests
+	kubeGatewaySuiteRunner.Register("AccessLog", accesslog.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("ExtAuth", extauth.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Backends", backends.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("BackendTLSPolicies", backendtls.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("BasicRouting", basicrouting.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("DynamicForwardProxy", dfp.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

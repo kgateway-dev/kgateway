@@ -109,7 +109,7 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 	}
 
 	// Only handle backends with the istio.io/ingress-use-waypoint label
-	if !hasIngressUseWaypointLabel(kctx, t.commonCols, in) {
+	if !HasIngressUseWaypointLabel(kctx, t.commonCols, in) {
 		// Neither the backend nor any relevant namespace/alias has the label, skip processing
 		return
 	}
@@ -122,16 +122,18 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 		return
 	}
 
-	// All preliminary checks passed, process the ingress use waypoint
-	processIngressUseWaypoint(in, out, &t.commonCols.Settings)
+	// All preliminary checks passed, apply ingress-use-waypoint cluster changes
+	ApplyIngressUseWaypointCluster(in, out, &t.commonCols.Settings)
 }
 
-// processIngressUseWaypoint configures the cluster of the connected gateway to have a static
-// inlined addresses of the destination service. This will cause the traffic from the kgateway
-// to be redirected to the waypoint by the ztunnel.
-// Addresses are sorted based on DNS lookup family setting, with the primary address in Address
-// and additional addresses in AdditionalAddresses.
-func processIngressUseWaypoint(in ir.BackendObjectIR, out *envoyclusterv3.Cluster, settings *apisettings.Settings) {
+// ApplyIngressUseWaypointCluster mutates out to configure a STATIC cluster with inlined
+// addresses for the destination service so traffic from the ingress is redirected to the
+// waypoint by the ztunnel. It forces out.ClusterDiscoveryType to STATIC, clears
+// out.EdsClusterConfig, and overwrites out.LoadAssignment with a new ClusterLoadAssignment
+// built from the backend's resolved addresses. Addresses are sorted based on DNS lookup
+// family setting, with the primary address in Address and additional addresses in
+// AdditionalAddresses.
+func ApplyIngressUseWaypointCluster(in ir.BackendObjectIR, out *envoyclusterv3.Cluster, settings *apisettings.Settings) {
 	addresses := waypointquery.BackendAddresses(in)
 
 	// Sort addresses based on DNS lookup family setting. Since this is a static cluster
@@ -264,8 +266,8 @@ func sortAddressesByDnsLookupFamily(addresses []string, settings *apisettings.Se
 	return sortedAddresses
 }
 
-// hasIngressUseWaypointLabel checks if the backend or any relevant namespace/alias has the ingress-use-waypoint label.
-func hasIngressUseWaypointLabel(kctx krt.HandlerContext, commonCols *collections.CommonCollections, in ir.BackendObjectIR) bool {
+// HasIngressUseWaypointLabel checks if the backend or any relevant namespace/alias has the ingress-use-waypoint label.
+func HasIngressUseWaypointLabel(kctx krt.HandlerContext, commonCols *collections.CommonCollections, in ir.BackendObjectIR) bool {
 	// Check the backend's own label first
 	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
 		return true

@@ -489,7 +489,7 @@ var _ = Describe("Query", func() {
 					ParentRefs: []gwv1.ParentReference{
 						{
 							Name:      gwv1.ObjectName(gw.Name),
-							Namespace: ptr.To(gwv1.Namespace(gw.Namespace)),
+							Namespace: new(gwv1.Namespace(gw.Namespace)),
 						},
 					},
 				},
@@ -670,7 +670,7 @@ var _ = Describe("Query", func() {
 				ParentRefs: []gwv1.ParentReference{
 					{
 						Name:      gwv1.ObjectName(gw.Name),
-						Namespace: ptr.To(gwv1.Namespace(gw.Namespace)),
+						Namespace: new(gwv1.Namespace(gw.Namespace)),
 					},
 				},
 			},
@@ -841,7 +841,7 @@ var _ = Describe("Query", func() {
 				ParentRefs: []gwv1.ParentReference{
 					{
 						Name:      gwv1.ObjectName(gw.Name),
-						Namespace: ptr.To(gwv1.Namespace(gw.Namespace)),
+						Namespace: new(gwv1.Namespace(gw.Namespace)),
 					},
 				},
 			},
@@ -1001,7 +1001,8 @@ var _ = Describe("Query", func() {
 		irGW := ir.Gateway{
 			Obj: gwWithListener,
 			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{
-				wellknown.XListenerSetGVK: []ir.ListenerSet{{Obj: lsWithListener}}},
+				wellknown.XListenerSetGVK: []ir.ListenerSet{{Obj: lsWithListener}},
+			},
 		}
 
 		gq := newQueries(GinkgoT(), gwHR, lsHR)

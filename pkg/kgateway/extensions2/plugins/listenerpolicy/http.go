@@ -204,12 +204,12 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 	healthCheckPolicy := convertHealthCheckPolicy(h)
 	var xffNumTrustedHops *uint32
 	if h.XffNumTrustedHops != nil {
-		xffNumTrustedHops = ptr.To(uint32(*h.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		xffNumTrustedHops = new(uint32(*h.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
 	var maxRequestHeadersKb *uint32
 	if h.MaxRequestHeadersKb != nil {
-		maxRequestHeadersKb = ptr.To(uint32(*h.MaxRequestHeadersKb)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		maxRequestHeadersKb = new(uint32(*h.MaxRequestHeadersKb)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
 	var uuidRequestIdConfig *envoyuuidv3.UuidRequestIdConfig

@@ -20,7 +20,6 @@ import (
 )
 
 var _ = Describe("SDS Server", func() {
-
 	var (
 		fs                                          afero.Fs
 		dir                                         string

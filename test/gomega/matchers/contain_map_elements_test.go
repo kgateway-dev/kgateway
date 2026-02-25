@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("ContainMapElements", func() {
-
 	DescribeTable("Map contains all Key/Value pairs",
 		func(expectedMap map[string]string) {
 			actualMap := map[string]string{
@@ -52,9 +51,7 @@ var _ = Describe("ContainMapElements", func() {
 	)
 
 	When("actual is nil", func() {
-		var (
-			actual map[string]any = nil
-		)
+		var actual map[string]any = nil
 		It("never matches when expected is nil", func() {
 			var expected map[string]string = nil
 			Expect(actual).ToNot(matchers.ContainMapElements(expected))
@@ -69,9 +66,7 @@ var _ = Describe("ContainMapElements", func() {
 		})
 	})
 	When("actual is empty", func() {
-		var (
-			actual map[string]any = map[string]any{}
-		)
+		var actual map[string]any = map[string]any{}
 		It("never matches when expected is nil", func() {
 			var expected map[string]string = nil
 			Expect(actual).ToNot(matchers.ContainMapElements(expected))
@@ -124,9 +119,7 @@ var _ = Describe("ContainsDeepMapElements", func() {
 	)
 
 	When("actual is nil", func() {
-		var (
-			actual map[string]any = nil
-		)
+		var actual map[string]any = nil
 		It("never matches when expected is nil", func() {
 			var expected map[string]any = nil
 			Expect(actual).ToNot(matchers.ContainsDeepMapElements(expected))
@@ -142,9 +135,7 @@ var _ = Describe("ContainsDeepMapElements", func() {
 	})
 
 	When("actual is empty", func() {
-		var (
-			actual map[string]any = map[string]any{}
-		)
+		var actual map[string]any = map[string]any{}
 		It("never matches when expected is nil", func() {
 			var expected map[string]any = nil
 			Expect(actual).ToNot(matchers.ContainsDeepMapElements(expected))
