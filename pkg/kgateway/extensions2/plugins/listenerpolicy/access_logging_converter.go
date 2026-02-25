@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -31,7 +32,12 @@ import (
 
 var ErrUnresolvedBackendRef = errors.New("unresolved backend reference")
 
-const serviceNameKey = "service.name"
+const (
+	serviceNameKey       = "service.name"
+	serviceNamespaceKey  = "service.namespace"
+	serviceVersionKey    = "service.version"
+	serviceInstanceIdKey = "service.instance.id"
+)
 
 // convertAccessLogConfig transforms a list of AccessLog configurations into Envoy AccessLog configurations
 // These access log configs can be either FileAccessLog, HttpGrpcAccessLogConfig or OpenTelemetryAccessLogConfig.
@@ -609,32 +615,43 @@ func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog,
 }
 
 func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_telemetry.OpenTelemetryAccessLogConfig) {
-	if config.GetResourceAttributes() == nil {
-		config.ResourceAttributes = &otelv1.KeyValueList{
-			Values: []*otelv1.KeyValue{
-				{
-					Key: serviceNameKey,
-					Value: &otelv1.AnyValue{
-						Value: &otelv1.AnyValue_StringValue{
-							StringValue: GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace()),
-						},
-					},
-				},
-			},
-		}
-		return
-	}
+	gatewayName := pCtx.Gateway.SourceObject.GetName()
+	gatewayNamespace := pCtx.Gateway.SourceObject.GetNamespace()
 
-	for _, ra := range config.GetResourceAttributes().Values {
-		if ra.Key == serviceNameKey {
-			return
+	// Set default service.name if not already present
+	addResourceAttributeIfMissing(config, serviceNameKey, GenerateDefaultServiceName(gatewayName, gatewayNamespace))
+
+	// Set default service.namespace if not already present
+	addResourceAttributeIfMissing(config, serviceNamespaceKey, gatewayNamespace)
+
+	if pCtx.Gateway.SourceObject.Obj != nil {
+		// Set default service.instance.id from the Gateway CR UID if not already present
+		uid := string(pCtx.Gateway.SourceObject.Obj.GetUID())
+		addResourceAttributeIfMissing(config, serviceInstanceIdKey, uid)
+		// Set default service.version from the Gateway CR generation if not already present
+		gen := pCtx.Gateway.SourceObject.Obj.GetGeneration()
+		addResourceAttributeIfMissing(config, serviceVersionKey, strconv.FormatInt(gen, 10))
+	}
+}
+
+// addResourceAttributeIfMissing adds a string resource attribute to the config
+// only if no attribute with the given key already exists.
+func addResourceAttributeIfMissing(config *envoy_open_telemetry.OpenTelemetryAccessLogConfig, key, value string) {
+	if config.GetResourceAttributes() != nil {
+		for _, ra := range config.GetResourceAttributes().Values {
+			if ra.Key == key {
+				return
+			}
 		}
 	}
-	config.GetResourceAttributes().Values = append(config.GetResourceAttributes().Values, &otelv1.KeyValue{
-		Key: serviceNameKey,
+	if config.ResourceAttributes == nil {
+		config.ResourceAttributes = &otelv1.KeyValueList{}
+	}
+	config.ResourceAttributes.Values = append(config.ResourceAttributes.Values, &otelv1.KeyValue{
+		Key: key,
 		Value: &otelv1.AnyValue{
 			Value: &otelv1.AnyValue_StringValue{
-				StringValue: GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace()),
+				StringValue: value,
 			},
 		},
 	})

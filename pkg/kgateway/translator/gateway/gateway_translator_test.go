@@ -1572,6 +1572,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with OTel access log service identity fields", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/opentelemetry.yaml",
+			outputFile: "listener-policy-http/opentelemetry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Service with appProtocol=kubernetes.io/ws", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend-protocol/svc-ws.yaml",

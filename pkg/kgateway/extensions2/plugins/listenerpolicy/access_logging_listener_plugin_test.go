@@ -801,6 +801,30 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 												},
 											},
 										},
+										{
+											Key: "service.namespace",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "service.instance.id",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "test-uid-1234",
+												},
+											},
+										},
+										{
+											Key: "service.version",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "7",
+												},
+											},
+										},
 									},
 								},
 							}),
@@ -1106,6 +1130,30 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 												},
 											},
 										},
+										{
+											Key: "service.namespace",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "service.instance.id",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "test-uid-1234",
+												},
+											},
+										},
+										{
+											Key: "service.version",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "7",
+												},
+											},
+										},
 									},
 								},
 								Attributes: &otelv1.KeyValueList{
@@ -1246,6 +1294,12 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 							ObjectSource: ir.ObjectSource{
 								Namespace: "default",
 								Name:      "gw",
+							},
+							Obj: &gwv1.Gateway{
+								ObjectMeta: metav1.ObjectMeta{
+									UID:        "test-uid-1234",
+									Generation: 7,
+								},
 							},
 						},
 					},
