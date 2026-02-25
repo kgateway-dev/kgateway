@@ -879,6 +879,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("tls gateway with TLSRoute and TLS termination", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "tls-routing/tls-terminate.yaml",
+			outputFile: "tls-routing/tls-terminate-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("grpc gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "grpc-routing/basic.yaml",
@@ -919,6 +930,17 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-grpc-gateway",
+			},
+		})
+	})
+
+	t.Run("grpc route with https listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "grpc-routing/https-listener.yaml",
+			outputFile: "grpc-routing/https-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
 			},
 		})
 	})
@@ -2150,6 +2172,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/cross-namespace.yaml",
 			outputFile: "jwt/cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy with cross-namespace GatewayExtension", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/cross-namespace-extension.yaml",
+			outputFile: "jwt/cross-namespace-extension.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

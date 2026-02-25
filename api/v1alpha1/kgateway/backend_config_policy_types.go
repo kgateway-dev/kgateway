@@ -45,12 +45,12 @@ type BackendConfigPolicySpec struct {
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="TargetRefs must reference either a Kubernetes Service or a Backend API"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend') || (r.group == 'networking.istio.io' && r.kind == 'Hostname'))",message="TargetRefs must reference either a Kubernetes Service, a Backend, or an Istio Hostname"
 	TargetRefs []shared.LocalPolicyTargetReference `json:"targetRefs,omitempty"`
 
 	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="TargetSelectors must reference either a Kubernetes Service or a Backend API"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend') || (r.group == 'networking.istio.io' && r.kind == 'Hostname'))",message="TargetSelectors must reference either a Kubernetes Service, a Backend, or an Istio Hostname"
 	TargetSelectors []shared.LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
 	// The timeout for new network connections to hosts in the cluster.

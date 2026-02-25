@@ -20,6 +20,7 @@ pub struct FilterConfig {
 
 struct EnvoyTransformationOps<'a> {
     envoy_filter: &'a mut dyn EnvoyHttpFilter,
+    used_received_request_body: Option<bool>,
     used_received_response_body: Option<bool>,
 }
 
@@ -27,6 +28,7 @@ impl<'a> EnvoyTransformationOps<'a> {
     fn new(envoy_filter: &'a mut dyn EnvoyHttpFilter) -> EnvoyTransformationOps<'a> {
         EnvoyTransformationOps {
             envoy_filter,
+            used_received_request_body: None,
             used_received_response_body: None,
         }
     }
@@ -52,33 +54,62 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         self.envoy_filter.remove_request_header(key)
     }
     fn parse_request_json_body(&mut self) -> Result<JsonValue> {
-        let Some(buffers) = self.envoy_filter.get_buffered_request_body() else {
-            return Ok(JsonValue::Null);
-        };
-
-        if buffers.is_empty() {
+        let body = self.get_request_body();
+        if body.is_empty() {
             return Ok(JsonValue::Null);
         }
-        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
-        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
-        let body = chunks.concat();
         serde_json::from_slice(&body).context("failed to parse request body as json")
     }
     fn get_request_body(&mut self) -> Vec<u8> {
-        let Some(buffers) = self.envoy_filter.get_buffered_request_body() else {
-            return Vec::default();
-        };
+        self.used_received_request_body = Some(false);
 
-        // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
-        let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
-        chunks.concat()
+        let mut buffers = self.envoy_filter.get_buffered_request_body();
+
+        if buffers.is_none() {
+            // When the body arrives in a single chunk (common for small JSON
+            // payloads), the first on_request_body callback fires with
+            // end_of_stream=true before any prior StopIterationAndBuffer could
+            // populate the buffered body.  In that case the data is only in the
+            // "received" buffer — mirror the same fallback used for responses.
+            buffers = self.envoy_filter.get_received_request_body();
+            if buffers.is_some() {
+                self.used_received_request_body = Some(true);
+            }
+        }
+
+        match buffers {
+            None => Vec::default(),
+            Some(buffers) => {
+                // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
+                let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
+                chunks.concat()
+            }
+        }
     }
     fn drain_request_body(&mut self, number_of_bytes: usize) -> bool {
-        self.envoy_filter
-            .drain_buffered_request_body(number_of_bytes)
+        if self.used_received_request_body.is_none() {
+            self.used_received_request_body = Some(false);
+            if self.envoy_filter.get_buffered_request_body().is_none()
+                && self.envoy_filter.get_received_request_body().is_some()
+            {
+                self.used_received_request_body = Some(true);
+            }
+        }
+
+        if self.used_received_request_body.unwrap_or(false) {
+            self.envoy_filter
+                .drain_received_request_body(number_of_bytes)
+        } else {
+            self.envoy_filter
+                .drain_buffered_request_body(number_of_bytes)
+        }
     }
     fn append_request_body(&mut self, data: &[u8]) -> bool {
-        self.envoy_filter.append_buffered_request_body(data)
+        if self.used_received_request_body.unwrap_or(false) {
+            self.envoy_filter.append_received_request_body(data)
+        } else {
+            self.envoy_filter.append_buffered_request_body(data)
+        }
     }
 
     // REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, remove the platform specific directive here
@@ -693,6 +724,77 @@ mod tests {
         assert_eq!(
             filter.on_response_headers(&mut envoy_filter, true),
             abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue
+        );
+    }
+
+    /// Regression test: when a request body arrives in a single chunk,
+    /// `get_buffered_request_body` returns None because no prior
+    /// `StopIterationAndBuffer` populated it — the data sits in the
+    /// "received" buffer only.  Without the fallback to
+    /// `get_received_request_body`, `parse_request_json_body` returns Null
+    /// and the undeclared-variables check fires a 400.
+    #[test]
+    fn test_json_body_extracted_from_received_when_buffered_is_empty() {
+        let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
+
+        // Config: parse body as JSON, extract "model" field into X-Model header.
+        let json_str = r#"
+        {
+          "request": {
+            "body": { "parseAs": "AsJson" },
+            "set": [
+              { "name": "X-Model", "value": "{{ model }}" }
+            ]
+          }
+        }
+        "#;
+        let mut filter_conf =
+            FilterConfig::new(json_str).expect("Failed to parse filter config json");
+        let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+
+        // No per-route config — use the base config.
+        envoy_filter
+            .expect_get_most_specific_route_config()
+            .returning(|| None);
+
+        envoy_filter
+            .expect_get_request_headers()
+            .returning(|| vec![(EnvoyBuffer::new("host"), EnvoyBuffer::new("example.com"))]);
+
+        // Simulate the single-chunk scenario:
+        //   • buffered body is empty (None)
+        //   • received body contains the JSON payload
+        envoy_filter
+            .expect_get_buffered_request_body()
+            .returning(|| None);
+
+        static mut BODY: [u8; 19] = *b"{\"model\":\"gpt-4\"}  ";
+        envoy_filter
+            .expect_get_received_request_body()
+            .returning(|| Some(vec![EnvoyMutBuffer::new(unsafe { &mut BODY[..17] })]));
+
+        // Expect the extracted header to be set with the model value.
+        envoy_filter
+            .expect_set_request_header()
+            .times(1)
+            .returning(|key, value: &[u8]| {
+                assert_eq!(key, "X-Model");
+                assert_eq!(std::str::from_utf8(value).unwrap(), "gpt-4");
+                true
+            });
+
+        // Phase 1: headers arrive, body not yet received → buffer.
+        assert_eq!(
+            filter.on_request_headers(&mut envoy_filter, false),
+            abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration
+        );
+
+        // Phase 2: entire body arrives in one chunk (end_of_stream = true).
+        // Without the fix this returns StopIterationAndBuffer (400 sent).
+        // With the fix the body is found via received fallback → Continue.
+        assert_eq!(
+            filter.on_request_body(&mut envoy_filter, true),
+            abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
         );
     }
 }

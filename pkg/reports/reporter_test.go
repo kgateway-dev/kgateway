@@ -438,25 +438,25 @@ var _ = Describe("Reporting Infrastructure", func() {
 				// Assign the first listener to the first route's parent ref
 				switch r1 := route1.(type) {
 				case *gwv1.HTTPRoute:
-					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
+					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				case *gwv1a2.TCPRoute:
-					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
+					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				case *gwv1a2.TLSRoute:
-					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
+					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				case *gwv1.GRPCRoute:
-					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
+					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				}
 
 				// Assign the second listener to the second route's parent ref
 				switch r2 := route2.(type) {
 				case *gwv1.HTTPRoute:
-					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
+					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
 				case *gwv1a2.TCPRoute:
-					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
+					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
 				case *gwv1a2.TLSRoute:
-					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
+					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
 				case *gwv1.GRPCRoute:
-					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
+					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
 				}
 
 				rm := reports.NewReportMap()

@@ -27,8 +27,10 @@ type decompressionIR struct {
 	enable bool
 }
 
-var _ PolicySubIR = &compressionIR{}
-var _ PolicySubIR = &decompressionIR{}
+var (
+	_ PolicySubIR = &compressionIR{}
+	_ PolicySubIR = &decompressionIR{}
+)
 
 func (c *compressionIR) Equals(other PolicySubIR) bool {
 	oc, ok := other.(*compressionIR)

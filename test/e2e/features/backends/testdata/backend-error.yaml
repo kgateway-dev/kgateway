@@ -1,28 +1,12 @@
 apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: example-gateway
-  namespace: default
-spec:
-  gatewayClassName: kgateway
-  listeners:
-  - name: http
-    port: 8080
-    protocol: HTTP
-    hostname: www.example.com
-    allowedRoutes:
-      namespaces:
-        from: All
----
-apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: example-route
-  namespace: default
+  namespace: kgateway-base
 spec:
   parentRefs:
-  - name: example-gateway
-    namespace: default
+  - name: gateway
+    namespace: kgateway-base
   hostnames:
   - "www.example.com"
   rules:
@@ -37,7 +21,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
   name: example-aws-backend
-  namespace: default
+  namespace: kgateway-base
 spec:
   type: AWS
   aws:

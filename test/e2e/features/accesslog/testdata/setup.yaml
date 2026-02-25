@@ -1,19 +1,14 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: httpbin
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: httpbin
-  namespace: httpbin
+  namespace: kgateway-base
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: httpbin
-  namespace: httpbin
+  namespace: kgateway-base
   labels:
     app.kubernetes.io/name: httpbin
     service: httpbin
@@ -31,7 +26,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: httpbin
-  namespace: httpbin
+  namespace: kgateway-base
 spec:
   replicas: 1
   selector:
@@ -63,31 +58,17 @@ spec:
             limits:
               cpu: "200m"
 ---
-kind: Gateway
-apiVersion: gateway.networking.k8s.io/v1
-metadata:
-  name: gw
-spec:
-  gatewayClassName: kgateway
-  listeners:
-    - protocol: HTTP
-      port: 8080
-      name: http
-      allowedRoutes:
-        namespaces:
-          from: All
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: httpbin
-  namespace: httpbin
+  namespace: kgateway-base
   labels:
     example: httpbin-route
 spec:
   parentRefs:
-    - name: gw
-      namespace: default
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:

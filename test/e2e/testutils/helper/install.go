@@ -18,9 +18,7 @@ const (
 	HelmRepoIndexFileName = "index.yaml"
 )
 
-var (
-	logger = logging.New("helper/install")
-)
+var logger = logging.New("helper/install")
 
 // Gets the absolute path to a locally-built helm chart. This assumes that the helm index has a reference
 // to exactly one version of the helm chart. If assetDir is an empty string, it will default to "_test".

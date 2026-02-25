@@ -42,8 +42,7 @@ var _ manager.LeaderElectionRunnable = &ProxySyncer{}
 // It queues the status reports resulting from translation on the `reportQueue` && `backendPolicyReportQueue`
 // to be handled by the statusSyncer.
 type ProxySyncer struct {
-	controllerName        string
-	agentgatewayClassName string
+	controllerName string
 
 	mgr        manager.Manager
 	commonCols *collections.CommonCollections
@@ -144,12 +143,10 @@ func NewProxySyncer(
 	mergedPlugins plug.Plugin,
 	commonCols *collections.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
-	agentgatewayClassName string,
 	validator validator.Validator,
 ) *ProxySyncer {
 	return &ProxySyncer{
 		controllerName:           controllerName,
-		agentgatewayClassName:    agentgatewayClassName,
 		commonCols:               commonCols,
 		mgr:                      mgr,
 		apiClient:                client,

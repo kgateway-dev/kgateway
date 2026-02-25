@@ -1,7 +1,6 @@
 package deployer
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -43,9 +42,7 @@ type HelmTestCase struct {
 
 type DeployerTester struct {
 	ControllerName    string
-	AgwControllerName string
 	ClassName         string
-	AgwClassName      string
 	WaypointClassName string
 }
 
@@ -251,8 +248,6 @@ func (dt DeployerTester) RunHelmChartTest(
 	}
 	deployer, err := internaldeployer.NewGatewayDeployer(
 		dt.ControllerName,
-		dt.AgwControllerName,
-		dt.AgwClassName,
 		scheme,
 		fakeClient,
 		gwParams,
@@ -302,12 +297,9 @@ func (dt DeployerTester) RunHelmChartTest(
 	}
 }
 
-// Remove things that change often but are not relevant to the tests
+// sanitizeOutput removes things that change often but are not relevant to the tests
 func sanitizeOutput(got []byte) []byte {
-	old := fmt.Sprintf("%s/%s:%v", pkgdeployer.AgentgatewayRegistry, pkgdeployer.AgentgatewayImage, pkgdeployer.AgentgatewayDefaultTag)
-	now := fmt.Sprintf("%s/%s:99.99.99", pkgdeployer.AgentgatewayRegistry, pkgdeployer.AgentgatewayImage)
-
-	return bytes.Replace(got, []byte(old), []byte(now), -1)
+	return got
 }
 
 // objectsToYAML converts a slice of client.Object to YAML bytes, separated by "---"
@@ -331,18 +323,15 @@ func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonColl
 		Dev:               false,
 		CommonCollections: commonCols,
 		ControlPlane: pkgdeployer.ControlPlaneInfo{
-			XdsHost:    "xds.cluster.local",
-			XdsPort:    9977,
-			AgwXdsPort: 9978,
+			XdsHost: "xds.cluster.local",
+			XdsPort: 9977,
 		},
 		ImageInfo: &pkgdeployer.ImageInfo{
 			Registry: "ghcr.io",
 			Tag:      "v2.1.0-dev",
 		},
-		GatewayClassName:           dt.ClassName,
-		WaypointGatewayClassName:   dt.WaypointClassName,
-		AgentgatewayClassName:      dt.AgwClassName,
-		AgentgatewayControllerName: dt.AgwControllerName,
+		GatewayClassName:         dt.ClassName,
+		WaypointGatewayClassName: dt.WaypointClassName,
 	}
 }
 

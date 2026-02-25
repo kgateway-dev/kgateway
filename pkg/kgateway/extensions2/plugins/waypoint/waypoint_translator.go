@@ -449,7 +449,7 @@ func buildDefaultToPortVirtualHost(
 			Match: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/"),
+					Value: new("/"),
 				},
 			},
 		}},

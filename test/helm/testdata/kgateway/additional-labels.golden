@@ -91,6 +91,30 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - autoscaling.k8s.io
+  resources:
+  - verticalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
@@ -109,8 +133,6 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
-  - agentgatewaybackends
-  - agentgatewaypolicies
   - backendconfigpolicies
   - backends
   - directresponses
@@ -126,8 +148,6 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
-  - agentgatewaybackends/status
-  - agentgatewaypolicies/status
   - backendconfigpolicies/status
   - backends/status
   - directresponses/status
@@ -202,6 +222,18 @@ rules:
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - security.istio.io
@@ -352,8 +384,6 @@ spec:
               value: "{}"
             - name: KGW_VALIDATION_MODE
               value: "standard"
-            - name: KGW_ENABLE_AGENTGATEWAY
-              value: "false"
             - name: KGW_ENABLE_ENVOY
               value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS

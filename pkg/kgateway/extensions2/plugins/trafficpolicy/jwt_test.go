@@ -222,7 +222,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer: "test-issuer",
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
 						ClaimsToHeaders: []kgateway.JWTClaimToHeader{
@@ -231,14 +231,14 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 								Header: "X-Subject",
 							},
 						},
-						ForwardToken: ptr.To(true),
+						ForwardToken: new(true),
 					},
 				},
 			},
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
+					"test-ext_test-ns_test-provider": {
 						Issuer:            "test-issuer",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
@@ -263,7 +263,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer: "test-issuer",
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To("abc"),
+								Inline: new("abc"),
 							},
 						},
 					},
@@ -281,7 +281,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer: "test-issuer-1",
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
 							},
 						},
 					},
@@ -292,7 +292,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer: "test-issuer-2",
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
 							},
 						},
 					},
@@ -301,12 +301,12 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_provider1": {
+					"test-ext_test-ns_provider1": {
 						Issuer:            "test-issuer-1",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
 					},
-					"test-policy_test-ns_provider2": {
+					"test-ext_test-ns_provider2": {
 						Issuer:            "test-issuer-2",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
@@ -324,7 +324,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Audiences: []string{"aud1", "aud2"},
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
 					},
@@ -333,7 +333,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
+					"test-ext_test-ns_test-provider": {
 						Issuer:            "test-issuer",
 						Audiences:         []string{"aud1", "aud2"},
 						PayloadInMetadata: PayloadInMetadata,
@@ -355,7 +355,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						},
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
 					},
@@ -364,7 +364,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
+					"test-ext_test-ns_test-provider": {
 						Issuer:            "test-issuer",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
@@ -380,11 +380,11 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 					JWTProvider: kgateway.JWTProvider{
 						Issuer: "test-issuer",
 						TokenSource: &kgateway.JWTTokenSource{
-							QueryParameter: ptr.To("jwt"),
+							QueryParameter: new("jwt"),
 						},
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
 					},
@@ -393,7 +393,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
+					"test-ext_test-ns_test-provider": {
 						Issuer:            "test-issuer",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
@@ -411,17 +411,17 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer: "test-issuer",
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
-						ForwardToken: ptr.To(false),
+						ForwardToken: new(false),
 					},
 				},
 			},
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
+					"test-ext_test-ns_test-provider": {
 						Issuer:            "test-issuer",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
@@ -437,7 +437,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			jwt := &kgateway.JWT{
 				Providers: tt.providers,
 			}
-			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{}, "test-policy", "test-ns", jwt)
+			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{Namespace: "test-ns", Name: "test-ext"}, jwt)
 			if tt.expectedError {
 				assert.Error(t, err)
 				return
@@ -503,7 +503,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 							Issuer: "test-issuer",
 							JWKS: kgateway.JWKS{
 								LocalJWKS: &kgateway.LocalJWKS{
-									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+									Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 								},
 							},
 						},
@@ -523,7 +523,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 							Issuer: "test-issuer",
 							JWKS: kgateway.JWKS{
 								LocalJWKS: &kgateway.LocalJWKS{
-									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+									Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 								},
 							},
 						},
@@ -543,7 +543,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 							Issuer: "test-issuer-1",
 							JWKS: kgateway.JWKS{
 								LocalJWKS: &kgateway.LocalJWKS{
-									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
+									Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
 								},
 							},
 						},
@@ -554,7 +554,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 							Issuer: "test-issuer-2",
 							JWKS: kgateway.JWKS{
 								LocalJWKS: &kgateway.LocalJWKS{
-									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
+									Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
 								},
 							},
 						},
@@ -567,12 +567,12 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{}, "test-policy", "test-ns", tt.jwt)
+			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{Namespace: "test-ns", Name: "test-ext"}, tt.jwt)
 			require.NoError(t, err)
 			assert.NotNil(t, config)
 			assert.NotNil(t, config.RequirementMap)
 
-			requirementsName := "test-policy_test-ns_requirements"
+			requirementsName := "test-ext_test-ns_requirements"
 			req, ok := config.RequirementMap[requirementsName]
 			require.True(t, ok, "requirements not found in map")
 
@@ -647,11 +647,10 @@ func TestTranslateJwksRemote(t *testing.T) {
 					CacheDuration: &cacheDuration,
 				},
 			},
-			"policy-ns",
 			out,
 			nil,
 			resolver,
-			ir.ObjectSource{Namespace: "policy-ns"},
+			ir.ObjectSource{Namespace: "ext-ns"},
 		)
 		require.NoError(t, err)
 
@@ -676,11 +675,10 @@ func TestTranslateJwksRemote(t *testing.T) {
 					BackendRef: makeBackendRef("backend", "backend-ns", 80),
 				},
 			},
-			"policy-ns",
 			out,
 			nil,
 			resolver,
-			ir.ObjectSource{Namespace: "policy-ns"},
+			ir.ObjectSource{Namespace: "ext-ns"},
 		)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "remote jwks: unresolved backend ref")

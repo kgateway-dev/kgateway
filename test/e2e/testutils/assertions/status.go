@@ -12,12 +12,10 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
@@ -285,35 +283,6 @@ func (p *Provider) EventuallyGRPCRouteCondition(
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
-// extractInferencePoolParentConditions extracts conditions from InferencePool parent statuses.
-func extractInferencePoolParentConditions(parents []inf.ParentStatus) [][]metav1.Condition {
-	result := make([][]metav1.Condition, len(parents))
-	for i, p := range parents {
-		result[i] = p.Conditions
-	}
-	return result
-}
-
-// EventuallyInferencePoolCondition checks that the specified InferencePool condition
-// eventually has the desired status on any parent managed by Kgateway.
-func (p *Provider) EventuallyInferencePoolCondition(
-	ctx context.Context,
-	poolName string,
-	poolNamespace string,
-	cond inf.InferencePoolConditionType,
-	expect metav1.ConditionStatus,
-	timeout ...time.Duration,
-) {
-	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		pool := &inf.InferencePool{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: poolName, Namespace: poolNamespace}, pool)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get InferencePool %s/%s", poolNamespace, poolName))
-		g.Expect(extractInferencePoolParentConditions(pool.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
-
 // Helper function to retrieve a condition by type from a list of conditions.
 func GetConditionByType(conditions []metav1.Condition, conditionType string) *metav1.Condition {
 	for i := range conditions {
@@ -434,52 +403,5 @@ func (p *Provider) EventuallyBackendCondition(
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, backend)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get Backend %s/%s", namespace, name))
 		g.Expect(backend.Status.Conditions).To(matchers.HaveCondition(condition, expect))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
-
-// EventuallyAgwBackendCondition checks that provided AgentgatewayBackend condition is set to expect.
-func (p *Provider) EventuallyAgwBackendCondition(
-	ctx context.Context,
-	name string,
-	namespace string,
-	condition string,
-	expect metav1.ConditionStatus,
-	timeout ...time.Duration,
-) {
-	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		backend := &agentgateway.AgentgatewayBackend{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, backend)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get AgentgatewayBackend %s/%s", namespace, name))
-		g.Expect(backend.Status.Conditions).To(matchers.HaveCondition(condition, expect))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
-
-// extractAgwPolicyAncestorConditions extracts conditions from AgentgatewayPolicy ancestor statuses.
-func extractAgwPolicyAncestorConditions(ancestors []gwv1.PolicyAncestorStatus) [][]metav1.Condition {
-	result := make([][]metav1.Condition, len(ancestors))
-	for i, a := range ancestors {
-		result[i] = a.Conditions
-	}
-	return result
-}
-
-// EventuallyAgwPolicyCondition checks that provided AgentgatewayPolicy condition is set to expect.
-func (p *Provider) EventuallyAgwPolicyCondition(
-	ctx context.Context,
-	name string,
-	namespace string,
-	condType string,
-	expect metav1.ConditionStatus,
-	timeout ...time.Duration,
-) {
-	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &agentgateway.AgentgatewayPolicy{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, policy)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get AgentgatewayPolicy %s/%s", namespace, name))
-		g.Expect(extractAgwPolicyAncestorConditions(policy.Status.Ancestors)).To(matchers.HaveAnyAncestorCondition(condType, expect))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

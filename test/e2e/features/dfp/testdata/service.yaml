@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: kgateway-test
+  namespace: kgateway-base
   name: simple-svc
   labels:
     app: simple-svc
@@ -17,7 +17,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: kgateway-test
+  namespace: kgateway-base
   name: backend-0
 spec:
   replicas: 1
