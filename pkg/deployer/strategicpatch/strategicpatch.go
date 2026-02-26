@@ -194,15 +194,15 @@ func applyOverlay(obj client.Object, overlay *shared.KubernetesResourceOverlay, 
 }
 
 // buildMetadataPatch converts ObjectMetadata into a JSON-compatible map where
-// empty string values become nil (JSON null). This is needed because YAML null
-// deserializes to "" in map[string]string, and SMP uses null to delete map keys.
+// nil *string values become nil (JSON null) for key deletion, and non-nil
+// *string values are dereferenced. SMP uses null to delete map keys.
 func buildMetadataPatch(meta *shared.ObjectMetadata) map[string]any {
 	result := make(map[string]any)
 	if meta.Labels != nil {
-		result["labels"] = stringMapToNullable(meta.Labels)
+		result["labels"] = stringPtrMapToNullable(meta.Labels)
 	}
 	if meta.Annotations != nil {
-		result["annotations"] = stringMapToNullable(meta.Annotations)
+		result["annotations"] = stringPtrMapToNullable(meta.Annotations)
 	}
 	if len(result) == 0 {
 		return nil
@@ -210,15 +210,29 @@ func buildMetadataPatch(meta *shared.ObjectMetadata) map[string]any {
 	return result
 }
 
-// stringMapToNullable converts a map[string]string to map[string]any where
-// empty string values become nil (JSON null), enabling key deletion via SMP.
-func stringMapToNullable(m map[string]string) map[string]any {
+// stringPtrMapToNullable converts a map[string]*string to map[string]any where
+// nil values stay nil (JSON null) for key deletion via SMP, and non-nil values
+// are dereferenced to their string value (including empty string).
+func stringPtrMapToNullable(m map[string]*string) map[string]any {
 	result := make(map[string]any, len(m))
 	for k, v := range m {
-		if v == "" {
+		if v == nil {
 			result[k] = nil
 		} else {
-			result[k] = v
+			result[k] = *v
+		}
+	}
+	return result
+}
+
+// resolveStringPtrMap converts a map[string]*string to map[string]string,
+// skipping nil entries (deletions). Used for VPA which is created fresh and
+// has no existing labels to delete.
+func resolveStringPtrMap(m map[string]*string) map[string]string {
+	result := make(map[string]string, len(m))
+	for k, v := range m {
+		if v != nil {
+			result[k] = *v
 		}
 	}
 	return result
@@ -356,10 +370,10 @@ func createVerticalPodAutoscaler(deployment *appsv1.Deployment, overlay *shared.
 
 	if overlay.Metadata != nil {
 		if overlay.Metadata.Labels != nil {
-			vpa.SetLabels(overlay.Metadata.Labels)
+			vpa.SetLabels(resolveStringPtrMap(overlay.Metadata.Labels))
 		}
 		if overlay.Metadata.Annotations != nil {
-			vpa.SetAnnotations(overlay.Metadata.Annotations)
+			vpa.SetAnnotations(resolveStringPtrMap(overlay.Metadata.Annotations))
 		}
 	}
 

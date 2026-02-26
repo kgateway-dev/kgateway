@@ -42,8 +42,8 @@ func TestOverlayApplier_ApplyOverlays_MetadataLabels(t *testing.T) {
 				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
 					DeploymentOverlay: &shared.KubernetesResourceOverlay{
 						Metadata: &shared.ObjectMetadata{
-							Labels: map[string]string{
-								"custom-label": "custom-value",
+							Labels: map[string]*string{
+								"custom-label": new("custom-value"),
 							},
 						},
 					},
@@ -76,17 +76,16 @@ func TestOverlayApplier_ApplyOverlays_MetadataLabels(t *testing.T) {
 }
 
 func TestOverlayApplier_ApplyOverlays_MetadataLabelDeletion(t *testing.T) {
-	// Empty string values in overlay labels should delete existing keys.
-	// This is how YAML null is represented in map[string]string.
+	// Nil *string values in overlay labels delete existing keys via SMP null.
 	params := &kgateway.GatewayParameters{
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
 				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
 					DeploymentOverlay: &shared.KubernetesResourceOverlay{
 						Metadata: &shared.ObjectMetadata{
-							Labels: map[string]string{
-								"label-to-delete": "",
-								"new-label":       "new-value",
+							Labels: map[string]*string{
+								"label-to-delete": nil,
+								"new-label":       new("new-value"),
 							},
 						},
 					},
@@ -115,9 +114,178 @@ func TestOverlayApplier_ApplyOverlays_MetadataLabelDeletion(t *testing.T) {
 	require.NoError(t, err)
 
 	result := objs[0].(*appsv1.Deployment)
-	assert.NotContains(t, result.Labels, "label-to-delete", "empty string overlay value should delete the label")
+	assert.NotContains(t, result.Labels, "label-to-delete", "nil overlay value should delete the label")
 	assert.Equal(t, "keep-value", result.Labels["label-to-keep"], "unaffected labels should remain")
 	assert.Equal(t, "new-value", result.Labels["new-label"], "new labels should be added")
+}
+
+func TestOverlayApplier_ApplyOverlays_NilDeleteNonExistentKey(t *testing.T) {
+	// Nil *string for a non-existent key is a no-op (deletion of nothing).
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DeploymentOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{
+							Labels: map[string]*string{
+								"does-not-exist": nil,
+							},
+							Annotations: map[string]*string{
+								"does-not-exist": nil,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	applier := NewOverlayApplierFromGatewayParameters(params)
+	deployment := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "Deployment",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-deployment",
+			Labels: map[string]string{
+				"existing": "value",
+			},
+			Annotations: map[string]string{
+				"existing": "value",
+			},
+		},
+	}
+	objs := []client.Object{deployment}
+
+	objs, err := applier.ApplyOverlays(objs)
+	require.NoError(t, err)
+
+	result := objs[0].(*appsv1.Deployment)
+	assert.NotContains(t, result.Labels, "does-not-exist",
+		"nil for a non-existent key should not create the label")
+	assert.Equal(t, "value", result.Labels["existing"],
+		"existing labels should be unaffected")
+	assert.NotContains(t, result.Annotations, "does-not-exist",
+		"nil for a non-existent key should not create the annotation")
+	assert.Equal(t, "value", result.Annotations["existing"],
+		"existing annotations should be unaffected")
+}
+
+func TestOverlayApplier_ApplyOverlays_EmptyStringNewKey(t *testing.T) {
+	// ptr.To("") for a non-existent key creates it with an empty string value.
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DeploymentOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{
+							Labels: map[string]*string{
+								"new-empty": new(""),
+							},
+							Annotations: map[string]*string{
+								"new-empty": new(""),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	applier := NewOverlayApplierFromGatewayParameters(params)
+	deployment := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "Deployment",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-deployment",
+			Labels: map[string]string{
+				"existing": "value",
+			},
+			Annotations: map[string]string{
+				"existing": "value",
+			},
+		},
+	}
+	objs := []client.Object{deployment}
+
+	objs, err := applier.ApplyOverlays(objs)
+	require.NoError(t, err)
+
+	result := objs[0].(*appsv1.Deployment)
+	assert.Contains(t, result.Labels, "new-empty",
+		"ptr.To empty string should create the label")
+	assert.Equal(t, "", result.Labels["new-empty"],
+		"label value should be empty string")
+	assert.Equal(t, "value", result.Labels["existing"],
+		"existing labels should be unaffected")
+	assert.Contains(t, result.Annotations, "new-empty",
+		"ptr.To empty string should create the annotation")
+	assert.Equal(t, "", result.Annotations["new-empty"],
+		"annotation value should be empty string")
+	assert.Equal(t, "value", result.Annotations["existing"],
+		"existing annotations should be unaffected")
+}
+
+func TestOverlayApplier_ApplyOverlays_EmptyStringExistingKey(t *testing.T) {
+	// ptr.To("") for an existing key sets it to empty string (does not delete).
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DeploymentOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{
+							Labels: map[string]*string{
+								"to-empty": new(""),
+							},
+							Annotations: map[string]*string{
+								"to-empty": new(""),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	applier := NewOverlayApplierFromGatewayParameters(params)
+	deployment := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "Deployment",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-deployment",
+			Labels: map[string]string{
+				"to-empty": "old-value",
+				"to-keep":  "keep-value",
+			},
+			Annotations: map[string]string{
+				"to-empty": "old-value",
+				"to-keep":  "keep-value",
+			},
+		},
+	}
+	objs := []client.Object{deployment}
+
+	objs, err := applier.ApplyOverlays(objs)
+	require.NoError(t, err)
+
+	result := objs[0].(*appsv1.Deployment)
+	assert.Contains(t, result.Labels, "to-empty",
+		"ptr.To empty string should keep the label")
+	assert.Equal(t, "", result.Labels["to-empty"],
+		"label should be set to empty string")
+	assert.Equal(t, "keep-value", result.Labels["to-keep"],
+		"other labels should be unaffected")
+	assert.Contains(t, result.Annotations, "to-empty",
+		"ptr.To empty string should keep the annotation")
+	assert.Equal(t, "", result.Annotations["to-empty"],
+		"annotation should be set to empty string")
+	assert.Equal(t, "keep-value", result.Annotations["to-keep"],
+		"other annotations should be unaffected")
 }
 
 func TestOverlayApplier_ApplyOverlays_MetadataAnnotations(t *testing.T) {
@@ -127,8 +295,8 @@ func TestOverlayApplier_ApplyOverlays_MetadataAnnotations(t *testing.T) {
 				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
 					ServiceOverlay: &shared.KubernetesResourceOverlay{
 						Metadata: &shared.ObjectMetadata{
-							Annotations: map[string]string{
-								"custom-annotation": "custom-value",
+							Annotations: map[string]*string{
+								"custom-annotation": new("custom-value"),
 							},
 						},
 					},
@@ -328,17 +496,17 @@ func TestOverlayApplier_ApplyOverlays_MultipleObjects(t *testing.T) {
 				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
 					DeploymentOverlay: &shared.KubernetesResourceOverlay{
 						Metadata: &shared.ObjectMetadata{
-							Labels: map[string]string{"app": "modified"},
+							Labels: map[string]*string{"app": new("modified")},
 						},
 					},
 					ServiceOverlay: &shared.KubernetesResourceOverlay{
 						Metadata: &shared.ObjectMetadata{
-							Labels: map[string]string{"svc": "modified"},
+							Labels: map[string]*string{"svc": new("modified")},
 						},
 					},
 					ServiceAccountOverlay: &shared.KubernetesResourceOverlay{
 						Metadata: &shared.ObjectMetadata{
-							Labels: map[string]string{"sa": "modified"},
+							Labels: map[string]*string{"sa": new("modified")},
 						},
 					},
 				},
