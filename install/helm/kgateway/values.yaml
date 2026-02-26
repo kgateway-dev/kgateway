@@ -61,6 +61,8 @@ controller:
   replicaCount: 1
   # -- Set the priority class name for the controller pod.
   priorityClassName: ""
+  # -- Set topology spread constraints for the controller pods.
+  topologySpreadConstraints: []
   # -- Set the log level for the controller.
   logLevel: info
   # -- Configure the controller container image.
