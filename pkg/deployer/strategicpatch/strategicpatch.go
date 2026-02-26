@@ -224,7 +224,6 @@ func stringMapToNullable(m map[string]string) map[string]any {
 	return result
 }
 
-
 // getDataObjectForGVK returns an empty object of the appropriate type for strategic merge patch.
 func getDataObjectForGVK(gvk schema.GroupVersionKind) (runtime.Object, error) {
 	switch gvk.Kind {

@@ -78,14 +78,16 @@ func TestOverlayApplier_ApplyOverlays_MetadataLabels(t *testing.T) {
 func TestOverlayApplier_ApplyOverlays_MetadataLabelDeletion(t *testing.T) {
 	// Empty string values in overlay labels should delete existing keys.
 	// This is how YAML null is represented in map[string]string.
-	params := &agentgateway.AgentgatewayParameters{
-		Spec: agentgateway.AgentgatewayParametersSpec{
-			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Deployment: &shared.KubernetesResourceOverlay{
-					Metadata: &shared.ObjectMetadata{
-						Labels: map[string]string{
-							"label-to-delete": "",
-							"new-label":       "new-value",
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DeploymentOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{
+							Labels: map[string]string{
+								"label-to-delete": "",
+								"new-label":       "new-value",
+							},
 						},
 					},
 				},
@@ -93,7 +95,7 @@ func TestOverlayApplier_ApplyOverlays_MetadataLabelDeletion(t *testing.T) {
 		},
 	}
 
-	applier := NewOverlayApplier(params)
+	applier := NewOverlayApplierFromGatewayParameters(params)
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
