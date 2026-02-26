@@ -281,15 +281,15 @@ func TestTracingConverter(t *testing.T) {
 								},
 								ServiceName: "my:service",
 								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
-									Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
-									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.EnvironmentResourceDetectorConfig{}),
-								}, {
 									Name: "envoy.tracers.opentelemetry.resource_detectors.static_config",
 									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
 										"service.namespace":   "default",
 										"service.instance.id": "test-uid-1234",
 										"service.version":     "v1.0.0-test",
 									}}),
+								}, {
+									Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
+									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.EnvironmentResourceDetectorConfig{}),
 								}},
 								Sampler: &envoycorev3.TypedExtensionConfig{
 									Name:        "envoy.tracers.opentelemetry.samplers.always_on",

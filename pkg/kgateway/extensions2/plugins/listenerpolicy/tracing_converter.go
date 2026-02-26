@@ -270,49 +270,29 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 }
 
 // addDefaultStaticResourceDetector adds default service attributes for service.namespace,
-// service.instance.id, service.version if not present in a StaticConfigResourceDetector
-// on the tracing provider. If a static detector already exists, missing attributes are
-// merged in without overriding user values.
+// service.instance.id, service.version in a StaticConfigResourceDetector on the tracing provider
 func addDefaultStaticResourceDetector(pCtx *ir.HcmContext, tracingProvider *envoytracev3.OpenTelemetryConfig) {
 	// Build default attributes for the static resource detector.
 	defaultAttrs := map[string]string{
 		serviceNamespaceKey: pCtx.Gateway.SourceObject.GetNamespace(),
-		serviceVersionKey:   version.Version,
 	}
 
-	if pCtx.Gateway.SourceObject.Obj != nil {
+	if pCtx.Gateway.SourceObject.Obj != nil && pCtx.Gateway.SourceObject.Obj.GetUID() != "" {
 		defaultAttrs[serviceInstanceIdKey] = string(pCtx.Gateway.SourceObject.Obj.GetUID())
 	}
 
-	// Look for an existing static config resource detector and merge attributes
-	for _, rd := range tracingProvider.GetResourceDetectors() {
-		if rd.GetName() == staticResourceDetectorName {
-			staticCfg := &resource_detectorsv3.StaticConfigResourceDetectorConfig{}
-			if err := rd.GetTypedConfig().UnmarshalTo(staticCfg); err == nil {
-				if staticCfg.Attributes == nil {
-					staticCfg.Attributes = make(map[string]string)
-				}
-				// Only set attributes that are not already configured
-				for k, v := range defaultAttrs {
-					if _, exists := staticCfg.Attributes[k]; !exists {
-						staticCfg.Attributes[k] = v
-					}
-				}
-				updated, _ := utils.MessageToAny(staticCfg)
-				rd.TypedConfig = updated
-			}
-			return
-		}
+	if version.Version != "" {
+		defaultAttrs[serviceVersionKey] = version.Version
 	}
 
-	// No existing static detector found — create one with defaults
 	detector, _ := utils.MessageToAny(&resource_detectorsv3.StaticConfigResourceDetectorConfig{
 		Attributes: defaultAttrs,
 	})
-	tracingProvider.ResourceDetectors = append(tracingProvider.ResourceDetectors, &envoycorev3.TypedExtensionConfig{
+	// Prepend the static detector so user-configured detectors will override default
+	tracingProvider.ResourceDetectors = append([]*envoycorev3.TypedExtensionConfig{{
 		Name:        staticResourceDetectorName,
 		TypedConfig: detector,
-	})
+	}}, tracingProvider.ResourceDetectors...)
 }
 
 // GenerateDefaultServiceName returns the default service name that matches the cluster name

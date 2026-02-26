@@ -48,12 +48,6 @@ Listeners:
               - key: service.namespace
                 value:
                   stringValue: default
-              - key: service.instance.id
-                value:
-                  stringValue: ""
-              - key: service.version
-                value:
-                  stringValue: ""
         httpFilters:
         - name: envoy.filters.http.health_check
           typedConfig:
@@ -98,16 +92,14 @@ Listeners:
                   authority: httpbin.example.com
                   clusterName: kube_default_opentelemetry-collector_4317
               resourceDetectors:
-              - name: envoy.tracers.opentelemetry.resource_detectors.environment
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig
               - name: envoy.tracers.opentelemetry.resource_detectors.static_config
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.StaticConfigResourceDetectorConfig
                   attributes:
-                    service.instance.id: ""
                     service.namespace: default
-                    service.version: ""
+              - name: envoy.tracers.opentelemetry.resource_detectors.environment
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig
               serviceName: my-gateway
           spawnUpstreamSpan: true
         upgradeConfigs:

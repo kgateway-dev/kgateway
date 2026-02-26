@@ -624,14 +624,16 @@ func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_teleme
 	// Set default service.namespace if not already present
 	addResourceAttributeIfMissing(config, serviceNamespaceKey, gatewayNamespace)
 
-	if pCtx.Gateway.SourceObject.Obj != nil {
-		// Set default service.instance.id from the Gateway CR UID if not already present
+	// Set default service.instance.id from the Gateway CR UID if not already present
+	if pCtx.Gateway.SourceObject.Obj != nil && pCtx.Gateway.SourceObject.Obj.GetUID() != "" {
 		uid := string(pCtx.Gateway.SourceObject.Obj.GetUID())
 		addResourceAttributeIfMissing(config, serviceInstanceIdKey, uid)
 	}
 
 	// Set default service.version from the kgateway controller version if not already present
-	addResourceAttributeIfMissing(config, serviceVersionKey, version.Version)
+	if version.Version != "" {
+		addResourceAttributeIfMissing(config, serviceVersionKey, version.Version)
+	}
 }
 
 // addResourceAttributeIfMissing adds a string resource attribute to the config
