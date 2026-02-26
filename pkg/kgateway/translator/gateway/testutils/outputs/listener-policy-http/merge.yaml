@@ -59,12 +59,19 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
         mergeSlashes: true
         normalizePath: true
+        originalIpDetectionExtensions:
+          - name: envoy.http.original_ip_detection.xff
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.http.original_ip_detection.xff.v3.XffConfig
+              xffNumTrustedHops: 2
+              skipXffAppend: false
         rds:
           configSource:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
         serverHeaderTransformation: APPEND_IF_ABSENT
+        skipXffAppend: false
         statPrefix: http
         streamIdleTimeout: 30s
         tracing:
@@ -92,7 +99,6 @@ Listeners:
         upgradeConfigs:
         - upgradeType: websocket
         useRemoteAddress: false
-        xffNumTrustedHops: 2
     name: listener~8080
   metadata:
     filterMetadata:
@@ -107,13 +113,15 @@ Listeners:
         - gateway.kgateway.dev/ListenerPolicy/default/misc
         default.httpSettings.serverHeaderTransformation:
         - gateway.kgateway.dev/ListenerPolicy/default/misc
+        default.httpSettings.skipXffAppend:
+          - gateway.kgateway.dev/ListenerPolicy/default/misc
         default.httpSettings.tracing:
         - gateway.kgateway.dev/ListenerPolicy/default/tracing
         default.httpSettings.upgradeConfig:
         - gateway.kgateway.dev/ListenerPolicy/default/misc
         default.httpSettings.useRemoteAddress:
         - gateway.kgateway.dev/ListenerPolicy/default/misc
-        default.httpSettings.xffNumTrustedHops:
+        default.httpSettings.xffConfig:
         - gateway.kgateway.dev/ListenerPolicy/default/misc
   name: listener~8080
 Routes:
@@ -131,13 +139,15 @@ Routes:
         - gateway.kgateway.dev/ListenerPolicy/default/misc
         default.httpSettings.serverHeaderTransformation:
         - gateway.kgateway.dev/ListenerPolicy/default/misc
+        default.httpSettings.skipXffAppend:
+          - gateway.kgateway.dev/ListenerPolicy/default/misc
         default.httpSettings.tracing:
         - gateway.kgateway.dev/ListenerPolicy/default/tracing
         default.httpSettings.upgradeConfig:
         - gateway.kgateway.dev/ListenerPolicy/default/misc
         default.httpSettings.useRemoteAddress:
         - gateway.kgateway.dev/ListenerPolicy/default/misc
-        default.httpSettings.xffNumTrustedHops:
+        default.httpSettings.xffConfig:
         - gateway.kgateway.dev/ListenerPolicy/default/misc
   name: listener~8080
 Statuses:
