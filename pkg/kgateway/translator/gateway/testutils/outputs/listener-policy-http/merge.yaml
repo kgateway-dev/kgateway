@@ -53,7 +53,7 @@ Listeners:
                   stringValue: ""
               - key: service.version
                 value:
-                  stringValue: "0"
+                  stringValue: ""
         httpFilters:
         - name: envoy.filters.http.health_check
           typedConfig:
@@ -106,7 +106,9 @@ Listeners:
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.StaticConfigResourceDetectorConfig
                   attributes:
+                    service.instance.id: ""
                     service.namespace: default
+                    service.version: ""
               serviceName: my-gateway
           spawnUpstreamSpan: true
         upgradeConfigs:

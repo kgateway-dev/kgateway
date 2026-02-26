@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -28,6 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 var ErrUnresolvedBackendRef = errors.New("unresolved backend reference")
@@ -628,10 +628,10 @@ func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_teleme
 		// Set default service.instance.id from the Gateway CR UID if not already present
 		uid := string(pCtx.Gateway.SourceObject.Obj.GetUID())
 		addResourceAttributeIfMissing(config, serviceInstanceIdKey, uid)
-		// Set default service.version from the Gateway CR generation if not already present
-		gen := pCtx.Gateway.SourceObject.Obj.GetGeneration()
-		addResourceAttributeIfMissing(config, serviceVersionKey, strconv.FormatInt(gen, 10))
 	}
+
+	// Set default service.version from the kgateway controller version if not already present
+	addResourceAttributeIfMissing(config, serviceVersionKey, version.Version)
 }
 
 // addResourceAttributeIfMissing adds a string resource attribute to the config

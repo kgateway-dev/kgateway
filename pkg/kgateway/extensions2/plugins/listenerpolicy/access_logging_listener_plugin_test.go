@@ -32,9 +32,15 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 func TestConvertJsonFormat_EdgeCases(t *testing.T) {
+	// Set version for testing (normally set via ldflags at build time)
+	origVersion := version.Version
+	version.Version = "v1.0.0-test"
+	t.Cleanup(func() { version.Version = origVersion })
+
 	t.Run("Access Log Conversion", func(t *testing.T) {
 		testCases := []struct {
 			name     string
@@ -821,7 +827,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											Key: "service.version",
 											Value: &otelv1.AnyValue{
 												Value: &otelv1.AnyValue_StringValue{
-													StringValue: "7",
+													StringValue: "v1.0.0-test",
 												},
 											},
 										},
@@ -1150,7 +1156,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											Key: "service.version",
 											Value: &otelv1.AnyValue{
 												Value: &otelv1.AnyValue_StringValue{
-													StringValue: "7",
+													StringValue: "v1.0.0-test",
 												},
 											},
 										},

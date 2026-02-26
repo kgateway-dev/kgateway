@@ -21,9 +21,15 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 func TestTracingConverter(t *testing.T) {
+	// Set version for testing (normally set via ldflags at build time)
+	origVersion := version.Version
+	version.Version = "v1.0.0-test"
+	t.Cleanup(func() { version.Version = origVersion })
+
 	t.Run("Tracing Conversion", func(t *testing.T) {
 		testCases := []struct {
 			name     string
@@ -68,7 +74,7 @@ func TestTracingConverter(t *testing.T) {
 									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
 										"service.namespace":   "default",
 										"service.instance.id": "test-uid-1234",
-										"service.version":     "7",
+										"service.version":     "v1.0.0-test",
 									}}),
 								}},
 							}),
@@ -110,7 +116,7 @@ func TestTracingConverter(t *testing.T) {
 									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
 										"service.namespace":   "default",
 										"service.instance.id": "test-uid-1234",
-										"service.version":     "7",
+										"service.version":     "v1.0.0-test",
 									}}),
 								}},
 							}),
@@ -152,7 +158,7 @@ func TestTracingConverter(t *testing.T) {
 									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
 										"service.namespace":   "default",
 										"service.instance.id": "test-uid-1234",
-										"service.version":     "7",
+										"service.version":     "v1.0.0-test",
 									}}),
 								}},
 							}),
@@ -282,7 +288,7 @@ func TestTracingConverter(t *testing.T) {
 									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
 										"service.namespace":   "default",
 										"service.instance.id": "test-uid-1234",
-										"service.version":     "7",
+										"service.version":     "v1.0.0-test",
 									}}),
 								}},
 								Sampler: &envoycorev3.TypedExtensionConfig{

@@ -2,7 +2,6 @@ package listenerpolicy
 
 import (
 	"fmt"
-	"strconv"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytracev3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
@@ -19,6 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 const (
@@ -274,19 +274,14 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 // on the tracing provider. If a static detector already exists, missing attributes are
 // merged in without overriding user values.
 func addDefaultStaticResourceDetector(pCtx *ir.HcmContext, tracingProvider *envoytracev3.OpenTelemetryConfig) {
-	// Build default attributes
+	// Build default attributes for the static resource detector.
 	defaultAttrs := map[string]string{
 		serviceNamespaceKey: pCtx.Gateway.SourceObject.GetNamespace(),
+		serviceVersionKey:   version.Version,
 	}
+
 	if pCtx.Gateway.SourceObject.Obj != nil {
-		uid := string(pCtx.Gateway.SourceObject.Obj.GetUID())
-		if uid != "" {
-			defaultAttrs[serviceInstanceIdKey] = uid
-		}
-		gen := pCtx.Gateway.SourceObject.Obj.GetGeneration()
-		if gen > 0 {
-			defaultAttrs[serviceVersionKey] = strconv.FormatInt(gen, 10)
-		}
+		defaultAttrs[serviceInstanceIdKey] = string(pCtx.Gateway.SourceObject.Obj.GetUID())
 	}
 
 	// Look for an existing static config resource detector and merge attributes

@@ -1572,7 +1572,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("ListenerPolicy with OTel access log service identity fields", func(t *testing.T) {
+	t.Run("ListenerPolicy with opentelemetry attributes", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/opentelemetry.yaml",
 			outputFile: "listener-policy-http/opentelemetry.yaml",
