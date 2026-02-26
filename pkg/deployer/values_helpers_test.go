@@ -3,12 +3,13 @@ package deployer
 import (
 	"testing"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 func TestComponentLogLevelsToString(t *testing.T) {
@@ -256,20 +257,20 @@ func TestGetServiceValues(t *testing.T) {
 			name: "fully populated service config",
 			input: &kgateway.Service{
 				Type:                     &lbType,
-				ClusterIP:                ptr.To("10.0.0.1"),
+				ClusterIP:                new("10.0.0.1"),
 				ExtraLabels:              map[string]string{"env": "test"},
 				ExtraAnnotations:         map[string]string{"note": "value"},
-				ExternalTrafficPolicy:    ptr.To("Local"),
-				LoadBalancerClass:        ptr.To("service.k8s.aws/nlb"),
+				ExternalTrafficPolicy:    new("Local"),
+				LoadBalancerClass:        new("service.k8s.aws/nlb"),
 				LoadBalancerSourceRanges: []string{"10.0.0.0/8", "192.168.0.0/16"},
 			},
 			want: &HelmService{
-				Type:                     ptr.To("LoadBalancer"),
-				ClusterIP:                ptr.To("10.0.0.1"),
+				Type:                     new("LoadBalancer"),
+				ClusterIP:                new("10.0.0.1"),
 				ExtraLabels:              map[string]string{"env": "test"},
 				ExtraAnnotations:         map[string]string{"note": "value"},
-				ExternalTrafficPolicy:    ptr.To("Local"),
-				LoadBalancerClass:        ptr.To("service.k8s.aws/nlb"),
+				ExternalTrafficPolicy:    new("Local"),
+				LoadBalancerClass:        new("service.k8s.aws/nlb"),
 				LoadBalancerSourceRanges: []string{"10.0.0.0/8", "192.168.0.0/16"},
 			},
 		},
