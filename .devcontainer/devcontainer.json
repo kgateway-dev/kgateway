@@ -1,10 +1,6 @@
 {
   "name": "kgateway build-tools",
-  // TODO: switch back to a published image tag (GHCR/GCR) once build-tools publishing is stable.
-  "build": {
-    "dockerfile": "../tools/build-tools/Dockerfile",
-    "context": ".."
-  },
+  "image": "ghcr.io/kgateway-dev/build-tools:main",
   "remoteEnv": {
     "USE_GKE_GCLOUD_AUTH_PLUGIN": "True",
     "BUILD_WITH_CONTAINER": "0",
