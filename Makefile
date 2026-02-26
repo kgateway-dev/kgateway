@@ -341,7 +341,7 @@ CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG := $(if $(filter $(GOARCH),$(CONTAINER_ST
 
 .PHONY: container-structure-test
 container-structure-test: ## Run container structure tests for all production images (uses goreleaser image tags)
-container-structure-test: container-structure-test-kgateway container-structure-test-agentgateway-controller container-structure-test-sds container-structure-test-envoy-wrapper
+container-structure-test: container-structure-test-kgateway container-structure-test-sds container-structure-test-envoy-wrapper
 
 .PHONY: container-structure-test-kgateway
 container-structure-test-kgateway: ## Run container structure tests for kgateway image
@@ -349,13 +349,6 @@ container-structure-test-kgateway: ## Run container structure tests for kgateway
 		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/kgateway.yaml
-
-.PHONY: container-structure-test-agentgateway-controller
-container-structure-test-agentgateway-controller: ## Run container structure tests for agentgateway-controller image
-	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(AGENTGATEWAY_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
-		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
-		--config $(CONTAINER_STRUCTURE_TEST_DIR)/agentgateway-controller.yaml
 
 .PHONY: container-structure-test-sds
 container-structure-test-sds: ## Run container structure tests for sds image

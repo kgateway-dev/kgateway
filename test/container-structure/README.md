@@ -16,7 +16,6 @@ Container structure tests verify that Docker images meet structural requirements
 | Image | Config File | Description |
 |-------|-------------|-------------|
 | kgateway | `kgateway.yaml` | Main controller image with envoy base |
-| agentgateway-controller | `agentgateway-controller.yaml` | AgentGateway controller on distroless base |
 | sds | `sds.yaml` | Secret Discovery Service on Alpine |
 | envoy-wrapper | `envoy-wrapper.yaml` | Envoy with Rust dynamic modules |
 
@@ -44,7 +43,6 @@ make container-structure-test
 
 # Run tests for a specific image
 make container-structure-test-kgateway
-make container-structure-test-agentgateway-controller
 make container-structure-test-sds
 make container-structure-test-envoy-wrapper
 ```

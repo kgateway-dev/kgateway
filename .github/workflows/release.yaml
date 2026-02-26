@@ -215,14 +215,14 @@ jobs:
 
       - name: Pull images
         run: |
-          for image in kgateway agentgateway-controller sds envoy-wrapper; do
+          for image in kgateway sds envoy-wrapper; do
             docker pull --platform "linux/${{ matrix.arch }}" \
               "${{ env.IMAGE_REGISTRY }}/${image}:${{ needs.setup.outputs.version }}-${{ matrix.arch }}"
           done
 
       - name: Run container structure tests
         run: |
-          for image in kgateway agentgateway-controller sds envoy-wrapper; do
+          for image in kgateway sds envoy-wrapper; do
             echo "Testing ${image} (${{ matrix.arch }})..."
             container-structure-test test \
               --image "${{ env.IMAGE_REGISTRY }}/${image}:${{ needs.setup.outputs.version }}-${{ matrix.arch }}" \
