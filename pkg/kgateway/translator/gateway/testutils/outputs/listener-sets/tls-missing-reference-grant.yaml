@@ -296,6 +296,8 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
   httpRoutes:
     ls-1-ns/ls-1-route:
       parents:
@@ -404,6 +406,8 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
     ls-2-ns/ls-2:
       conditions:
       - lastTransitionTime: null
@@ -473,3 +477,5 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute

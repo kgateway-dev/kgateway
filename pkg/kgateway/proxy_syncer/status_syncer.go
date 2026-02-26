@@ -36,11 +36,10 @@ var _ manager.LeaderElectionRunnable = &StatusSyncer{}
 
 // StatusSyncer runs only on the leader and syncs the status of resources.
 type StatusSyncer struct {
-	mgr                   manager.Manager
-	plugins               plug.Plugin
-	controllerName        string
-	agentgatewayClassName string
-	istioClient           apiclient.Client
+	mgr            manager.Manager
+	plugins        plug.Plugin
+	controllerName string
+	istioClient    apiclient.Client
 
 	latestReportQueue              utils.AsyncQueue[reports.ReportMap]
 	latestBackendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
@@ -53,7 +52,6 @@ func NewStatusSyncer(
 	mgr manager.Manager,
 	plugins plug.Plugin,
 	controllerName string,
-	agentgatewayClassName string,
 	client apiclient.Client,
 	commonCols *collections.CommonCollections,
 	reportQueue utils.AsyncQueue[reports.ReportMap],
@@ -67,7 +65,6 @@ func NewStatusSyncer(
 		plugins:                        plugins,
 		istioClient:                    client,
 		controllerName:                 controllerName,
-		agentgatewayClassName:          agentgatewayClassName,
 		latestReportQueue:              reportQueue,
 		latestBackendPolicyReportQueue: backendPolicyReportQueue,
 		cacheSyncs:                     cacheSyncs,

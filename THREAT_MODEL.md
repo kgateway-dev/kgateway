@@ -21,7 +21,7 @@ This threat model is intended for **deployers and security engineers** responsib
 
 * Kubernetes control plane and RBAC enforcement
 * Other cluster controllers (e.g., cert-manager)
-* Envoy and agentgateway internals deployed by kgateway
+* Envoy internals deployed by kgateway
 * Operator-applied configuration
 
 ## Key Assets at Risk
@@ -43,7 +43,7 @@ This threat model is intended for **deployers and security engineers** responsib
 
 * RBAC & namespace isolation: Enforce fine-grained permissions
 * Gateway API validations: Schema checks, allowed fields, limits
-* Rate limiting / circuit breakers: Prevent DoS in Envoy and agentgateway
+* Rate limiting / circuit breakers: Prevent DoS
 * TLS management: Use PKI best practices, cert-manager, rotate keys
 * Logging & observability: Detect anomalous behavior
 * Deployment best practices: Dedicated gateways per tenant, GitOps, CI/CD security checks, latest images, Pod Security Admission

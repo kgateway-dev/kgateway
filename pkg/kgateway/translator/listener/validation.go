@@ -50,6 +50,7 @@ func getSupportedProtocolsRoutes() map[protocol]map[groupName][]routeKind {
 		string(gwv1.HTTPSProtocolType): {
 			gwv1.GroupName: []string{
 				wellknown.HTTPRouteKind,
+				wellknown.GRPCRouteKind,
 			},
 		},
 		string(gwv1.TCPProtocolType): {

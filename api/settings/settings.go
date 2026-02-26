@@ -166,16 +166,7 @@ type Settings struct {
 	// By default, this is disabled.
 	XdsTLS bool `split_words:"true" default:"false"`
 
-	// AgentgatewayXdsServicePort is the port of the Kubernetes Service that serves xDS config for agentgateway.
-	// This corresponds to the value of the `grpc-xds-agw` port in the service.
-	AgentgatewayXdsServicePort uint32 `split_words:"true" default:"9978"`
-
 	UseRustFormations bool `split_words:"true" default:"true"`
-
-	// EnableInferExt defines whether to enable/disable support for Gateway API inference extension.
-	// If enabled, EnableAgentgateway should also be set to true. Enabling inference extension without agentgateway
-	// is deprecated in v2.1 and will not be supported in v2.2.
-	EnableInferExt bool `split_words:"true"`
 
 	// DefaultImageRegistry is the default image registry to use for the kgateway image.
 	DefaultImageRegistry string `split_words:"true" default:"cr.kgateway.dev"`
@@ -206,9 +197,6 @@ type Settings struct {
 
 	// EnableEnvoy enables kgateway to send config to Envoy
 	EnableEnvoy bool `split_words:"true" default:"true"`
-
-	// EnableAgentgateway enables kgateway to send config to Agentgateway
-	EnableAgentgateway bool `split_words:"true" default:"true"`
 
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.

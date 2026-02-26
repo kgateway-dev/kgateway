@@ -1,0 +1,31 @@
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-for-model-extraction
+spec:
+  parentRefs:
+    - name: gw
+  hostnames:
+    - "example-route-for-model-extraction.com"
+  rules:
+    - backendRefs:
+        - name: simple-svc
+          port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-traffic-policy-for-model-extraction
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: example-route-for-model-extraction
+  transformation:
+    request:
+      body:
+        parseAs: AsJson
+      set:
+        - name: "Body-Extracted-Model"
+          value: "{{ model }}"

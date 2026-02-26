@@ -75,7 +75,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      ptr.To("203.0.113.10"),
+			wantIP:      new("203.0.113.10"),
 			wantErr:     nil,
 		},
 		{
@@ -84,7 +84,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 				{Type: ptr.To(gwv1.IPAddressType), Value: "2001:db8::1"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      ptr.To("2001:db8::1"),
+			wantIP:      new("2001:db8::1"),
 			wantErr:     nil,
 		},
 		{
@@ -93,7 +93,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 				{Type: nil, Value: "192.0.2.1"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      ptr.To("192.0.2.1"),
+			wantIP:      new("192.0.2.1"),
 			wantErr:     nil,
 		},
 		{
@@ -120,7 +120,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      ptr.To("203.0.113.10"),
+			wantIP:      new("203.0.113.10"),
 			wantErr:     nil,
 		},
 		{
@@ -156,7 +156,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 				{Type: nil, Value: "203.0.113.10"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      ptr.To("203.0.113.10"),
+			wantIP:      new("203.0.113.10"),
 			wantErr:     nil,
 		},
 		{

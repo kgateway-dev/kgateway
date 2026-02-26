@@ -128,6 +128,7 @@ func mergePerConnectionBufferLimitBytes(
 	p1.perConnectionBufferLimitBytes = p2.perConnectionBufferLimitBytes
 	mergeOrigins.SetOne(origin+"perConnectionBufferLimitBytes", p2Ref, p2MergeOrigins)
 }
+
 func mergeHttpSettings(
 	origin string,
 	p1, p2 *listenerPolicy,

@@ -12,17 +12,13 @@ import (
 )
 
 var _ = Describe("Client", func() {
-
-	var (
-		ctx context.Context
-	)
+	var ctx context.Context
 
 	BeforeEach(func() {
 		ctx = context.Background()
 	})
 
 	Context("Client tests", func() {
-
 		It("WithCurlOptions can append and override default curl.Option", func() {
 			client := admincli.NewClient().WithCurlOptions(
 				curl.WithRetries(1, 1, 1), // override
@@ -37,17 +33,12 @@ var _ = Describe("Client", func() {
 				ContainSubstring(" \"-s\""),
 			))
 		})
-
 	})
 
 	Context("Integration tests", func() {
-
 		When("Admin API is not reachable", func() {
-
 			It("emits an error to configured locations", func() {
-				var (
-					defaultOutputLocation, errLocation, outLocation threadsafe.Buffer
-				)
+				var defaultOutputLocation, errLocation, outLocation threadsafe.Buffer
 
 				// Create a client that points to an address where kgateway is NOT running
 				client := admincli.NewClient().

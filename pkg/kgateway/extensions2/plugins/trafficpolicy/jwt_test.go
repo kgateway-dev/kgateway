@@ -222,7 +222,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer: "test-issuer",
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
 						ClaimsToHeaders: []kgateway.JWTClaimToHeader{
@@ -231,7 +231,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 								Header: "X-Subject",
 							},
 						},
-						ForwardToken: ptr.To(true),
+						ForwardToken: new(true),
 					},
 				},
 			},
@@ -263,7 +263,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer: "test-issuer",
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To("abc"),
+								Inline: new("abc"),
 							},
 						},
 					},
@@ -281,7 +281,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer: "test-issuer-1",
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
 							},
 						},
 					},
@@ -292,7 +292,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer: "test-issuer-2",
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
 							},
 						},
 					},
@@ -324,7 +324,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Audiences: []string{"aud1", "aud2"},
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
 					},
@@ -355,7 +355,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						},
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
 					},
@@ -380,11 +380,11 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 					JWTProvider: kgateway.JWTProvider{
 						Issuer: "test-issuer",
 						TokenSource: &kgateway.JWTTokenSource{
-							QueryParameter: ptr.To("jwt"),
+							QueryParameter: new("jwt"),
 						},
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
 					},
@@ -411,10 +411,10 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer: "test-issuer",
 						JWKS: kgateway.JWKS{
 							LocalJWKS: &kgateway.LocalJWKS{
-								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
-						ForwardToken: ptr.To(false),
+						ForwardToken: new(false),
 					},
 				},
 			},
@@ -503,7 +503,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 							Issuer: "test-issuer",
 							JWKS: kgateway.JWKS{
 								LocalJWKS: &kgateway.LocalJWKS{
-									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+									Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 								},
 							},
 						},
@@ -523,7 +523,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 							Issuer: "test-issuer",
 							JWKS: kgateway.JWKS{
 								LocalJWKS: &kgateway.LocalJWKS{
-									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+									Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 								},
 							},
 						},
@@ -543,7 +543,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 							Issuer: "test-issuer-1",
 							JWKS: kgateway.JWKS{
 								LocalJWKS: &kgateway.LocalJWKS{
-									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
+									Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
 								},
 							},
 						},
@@ -554,7 +554,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 							Issuer: "test-issuer-2",
 							JWKS: kgateway.JWKS{
 								LocalJWKS: &kgateway.LocalJWKS{
-									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
+									Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
 								},
 							},
 						},

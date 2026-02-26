@@ -13,13 +13,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
-var (
-	// Response is forbidden
-	isForbidden = matchers.HttpResponse{
-		StatusCode: http.StatusForbidden,
-		Body:       gstruct.Ignore(),
-	}
-)
+// Response is forbidden
+var isForbidden = matchers.HttpResponse{
+	StatusCode: http.StatusForbidden,
+	Body:       gstruct.Ignore(),
+}
 
 func (s *testingSuite) TestAuthzNoCurlSvcB() {
 	s.setNamespaceWaypointOrFail(testNamespace)

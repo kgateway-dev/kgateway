@@ -6,7 +6,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/agentgateway/agentgateway/go/api"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -194,45 +193,9 @@ type ProxyTranslationPass interface {
 	ResourcesToAdd() Resources
 }
 
-type AgentgatewayRouteContext struct {
-	Rule *gwv1.HTTPRouteRule
-}
-
-type AgentgatewayTranslationBackendContext struct {
-	Backend        *BackendObjectIR
-	GatewayContext GatewayContext
-}
-
-type AgentgatewayTranslationPass interface {
-	// ApplyForRoute processes route-level configuration
-	ApplyForRoute(pCtx *AgentgatewayRouteContext, out *api.Route) error
-
-	// ApplyForBackend processes backend-level configuration for each backend referenced in routes
-	ApplyForBackend(pCtx *AgentgatewayTranslationBackendContext, out *api.Backend) error
-
-	// ApplyForRouteBackend processes route-specific backend configuration
-	ApplyForRouteBackend(policy PolicyIR, pCtx *AgentgatewayTranslationBackendContext) error
-}
-
 type UnimplementedProxyTranslationPass struct{}
 
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
-
-type UnimplementedAgentgatewayTranslationPass struct{}
-
-var _ AgentgatewayTranslationPass = UnimplementedAgentgatewayTranslationPass{}
-
-func (s UnimplementedAgentgatewayTranslationPass) ApplyForRoute(pCtx *AgentgatewayRouteContext, out *api.Route) error {
-	return nil
-}
-
-func (s UnimplementedAgentgatewayTranslationPass) ApplyForBackend(pCtx *AgentgatewayTranslationBackendContext, out *api.Backend) error {
-	return nil
-}
-
-func (s UnimplementedAgentgatewayTranslationPass) ApplyForRouteBackend(policy PolicyIR, pCtx *AgentgatewayTranslationBackendContext) error {
-	return nil
-}
 
 func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }

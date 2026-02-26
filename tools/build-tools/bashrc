@@ -1,0 +1,21 @@
+# Based on Istio's build-tools image: https://github.com/istio/tools/tree/228d21452fd640bf7389d7d41fecaa715ce73249/docker/build-tools
+PS1="build-tools:\w\\$ \[$(tput sgr0)\]"
+export PS1
+
+# Tab completion for make that works with monorepos.
+# In Codespaces the repo is typically under /workspaces/<repo>.
+root="${REPO_ROOT:-}"
+if [[ -z "${root}" ]]; then
+  if [[ -d /work ]]; then
+    root="/work"
+  elif [[ -d /workspaces ]]; then
+    root="/workspaces"
+  else
+    root="/"
+  fi
+fi
+
+make_options=$(find "${root}" -maxdepth 6 -iname "Makefile*" 2>/dev/null | xargs -r -I {} grep -hoE '^[a-zA-Z0-9_.-]+:([^=]|$)' {} | sed 's/[^a-zA-Z0-9_.-]*$//' | sort -u)
+complete -W "$make_options" make
+
+

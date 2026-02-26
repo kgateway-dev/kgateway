@@ -165,17 +165,10 @@ func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
 	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
 }
 
-// InstallKgatewayFromLocalChart installs the controller and CRD chart based on the `ChartType` of the underlying
-// TestInstallation. By default `kgateway` will be installed but can be set to `agentgateway`
+// InstallKgatewayFromLocalChart installs the controller and CRD chart from the local filesystem
 func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context, t *testing.T) {
-	chartType := i.Metadata.GetChartType()
-	if chartType == "agentgateway" {
-		i.InstallAgentgatewayCRDsFromLocalChart(ctx, t)
-		i.InstallAgentgatewayCoreFromLocalChart(ctx, t)
-	} else {
-		i.InstallKgatewayCRDsFromLocalChart(ctx, t)
-		i.InstallKgatewayCoreFromLocalChart(ctx, t)
-	}
+	i.InstallKgatewayCRDsFromLocalChart(ctx, t)
+	i.InstallKgatewayCoreFromLocalChart(ctx, t)
 }
 
 func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context, t *testing.T) {
@@ -233,67 +226,6 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 	i.AssertionsT(t).EventuallyGatewayInstallSucceeded(ctx)
 }
 
-// InstallAgentgatewayCRDsFromLocalChart installs the agentgateway CRD chart from the local filesystem
-func (i *TestInstallation) InstallAgentgatewayCRDsFromLocalChart(ctx context.Context, t *testing.T) {
-	if testutils.ShouldSkipInstallAndTeardown() {
-		return
-	}
-
-	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
-	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
-		if i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayCRDChartName, i.Metadata.InstallNamespace) {
-			return
-		}
-	}
-
-	// install the CRD chart first
-	crdChartURI, err := helper.GetLocalChartPath(helmutils.AgentgatewayCRDChartName, "")
-	i.AssertionsT(t).Require.NoError(err)
-	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
-		ctx,
-		helmutils.InstallOpts{
-			CreateNamespace: true,
-			ReleaseName:     helmutils.AgentgatewayCRDChartName,
-			Namespace:       i.Metadata.InstallNamespace,
-			ChartUri:        crdChartURI,
-		})
-	i.AssertionsT(t).Require.NoError(err)
-}
-
-// InstallAgentgatewayCoreFromLocalChart installs the agentgateway main chart from the local filesystem
-func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Context, t *testing.T) {
-	if testutils.ShouldSkipInstallAndTeardown() {
-		return
-	}
-
-	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
-	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
-		if i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayChartName, i.Metadata.InstallNamespace) {
-			return
-		}
-	}
-
-	// and then install the main chart
-	chartUri, err := helper.GetLocalChartPath(helmutils.AgentgatewayChartName, "")
-	i.AssertionsT(t).Require.NoError(err)
-	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
-		ctx,
-		helmutils.InstallOpts{
-			Namespace:       i.Metadata.InstallNamespace,
-			CreateNamespace: true,
-			ValuesFiles: []string{
-				i.Metadata.ProfileValuesManifestFile,
-				i.Metadata.ValuesManifestFile,
-				ManifestPath("agent-gateway-integration.yaml"),
-			},
-			ReleaseName: helmutils.AgentgatewayChartName,
-			ChartUri:    chartUri,
-			ExtraArgs:   i.Metadata.ExtraHelmArgs,
-		})
-	i.AssertionsT(t).Require.NoError(err)
-	i.AssertionsT(t).EventuallyGatewayInstallSucceeded(ctx)
-}
-
 // TODO implement this when we add upgrade tests
 // func (i *TestInstallation) InstallKgatewayFromRelease(ctx context.Context, version string) {
 // 	if testutils.ShouldSkipInstall() {
@@ -302,14 +234,8 @@ func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Con
 // }
 
 func (i *TestInstallation) UninstallKgateway(ctx context.Context, t *testing.T) {
-	chartType := i.Metadata.GetChartType()
-	if chartType == "agentgateway" {
-		i.UninstallAgentgatewayCore(ctx, t)
-		i.UninstallAgentgatewayCRDs(ctx, t)
-	} else {
-		i.UninstallKgatewayCore(ctx, t)
-		i.UninstallKgatewayCRDs(ctx, t)
-	}
+	i.UninstallKgatewayCore(ctx, t)
+	i.UninstallKgatewayCRDs(ctx, t)
 }
 
 func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context, t *testing.T) {
@@ -353,55 +279,6 @@ func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context, t *testing
 		helmutils.UninstallOpts{
 			Namespace:   i.Metadata.InstallNamespace,
 			ReleaseName: helmutils.CRDChartName,
-			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
-		},
-	)
-	i.AssertionsT(t).Require.NoError(err, "failed to uninstall CRD chart")
-}
-
-// UninstallAgentgatewayCore uninstalls the agentgateway main chart
-func (i *TestInstallation) UninstallAgentgatewayCore(ctx context.Context, t *testing.T) {
-	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
-		return
-	}
-
-	// Check if the release exists before attempting to uninstall
-	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayChartName, i.Metadata.InstallNamespace) {
-		// Release doesn't exist, nothing to uninstall
-		return
-	}
-
-	// uninstall the main chart first
-	err := i.Actions.Helm().Uninstall(
-		ctx,
-		helmutils.UninstallOpts{
-			Namespace:   i.Metadata.InstallNamespace,
-			ReleaseName: helmutils.AgentgatewayChartName,
-			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
-		},
-	)
-	i.AssertionsT(t).Require.NoError(err, "failed to uninstall main chart")
-	i.AssertionsT(t).EventuallyGatewayUninstallSucceeded(ctx)
-}
-
-// UninstallAgentgatewayCRDs uninstalls the agentgateway CRD chart
-func (i *TestInstallation) UninstallAgentgatewayCRDs(ctx context.Context, t *testing.T) {
-	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
-		return
-	}
-
-	// Check if the release exists before attempting to uninstall
-	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayCRDChartName, i.Metadata.InstallNamespace) {
-		// Release doesn't exist, nothing to uninstall
-		return
-	}
-
-	// uninstall the CRD chart
-	err := i.Actions.Helm().Uninstall(
-		ctx,
-		helmutils.UninstallOpts{
-			Namespace:   i.Metadata.InstallNamespace,
-			ReleaseName: helmutils.AgentgatewayCRDChartName,
 			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
 		},
 	)

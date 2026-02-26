@@ -12,7 +12,7 @@ import (
 
 func TestWithCustomStatusSync(t *testing.T) {
 	customStatusSync := func(ctx context.Context, rm reports.ReportMap) {}
-	statusSyncer := NewStatusSyncer(nil, pluginsdk.Plugin{}, "controller-name", "agw-controller-name", nil, nil, nil, nil, nil,
+	statusSyncer := NewStatusSyncer(nil, pluginsdk.Plugin{}, "controller-name", nil, nil, nil, nil, nil,
 		WithCustomStatusSync(customStatusSync))
 
 	assert.NotNil(t, statusSyncer.customStatusSync)

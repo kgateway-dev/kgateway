@@ -48,7 +48,7 @@ type LocalCmd struct {
 
 // WithEnv sets env
 func (cmd *LocalCmd) WithEnv(env ...string) Cmd {
-	//disable DEBUG=1 from getting through to command
+	// disable DEBUG=1 from getting through to command
 	for i, pair := range env {
 		if strings.HasPrefix(pair, "DEBUG") {
 			env = append(env[:i], env[i+1:]...)

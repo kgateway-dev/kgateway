@@ -2,7 +2,8 @@ name: Kgateway Conformance Tests
 description: Run Kgateway conformance tests
 inputs:
   test-type:
-    description: "Type of test to run: gateway-api, agentgateway, inference-extension"
+    # There were more types once upon a time.
+    description: "Type of test to run: gateway-api"
     required: true
   api-version:
     description: "Override of the sig Gateway API to test against."
@@ -13,10 +14,6 @@ inputs:
   additional-helm-values:
     description: "Path to additional Helm values file"
     required: false
-  enable-inference-extension:
-    description: "Enable inference extension (default: false)"
-    required: false
-    default: "false"
   kubectl-version:
     description: "Version of Kubectl to use"
     required: true
@@ -68,7 +65,6 @@ runs:
       CLUSTER_NODE_VERSION: ${{ inputs.kind-node-version }}
       CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
       CONFORMANCE_CHANNEL: ${{ env.CONFORMANCE_CHANNEL }}
-      AGENTGATEWAY: ${{ inputs.test-type == 'agentgateway' && 'true' || 'false' }}
     run: ./hack/kind/setup-kind.sh
 
   - name: Install kgateway via helm
@@ -82,12 +78,6 @@ runs:
 
       echo "EXPERIMENTAL_FLAG: $EXPERIMENTAL_FLAG"
 
-      # Set inference extension flag
-      INFERENCE_EXT_FLAG=""
-      if [[ "${{ inputs.enable-inference-extension }}" == "true" ]]; then
-        INFERENCE_EXT_FLAG="--set inferenceExtension.enabled=true"
-      fi
-
       # Check if additional Helm values file is provided
       ADDITIONAL_VALUES=""
       if [[ -n "${{ inputs.additional-helm-values }}" && -f "${{ inputs.additional-helm-values }}" ]]; then
@@ -98,58 +88,25 @@ runs:
       if [[ -z "${{ inputs.version }}" ]]; then
         # If inputs.version is empty, use the local chart path specified in the Makefile.
         helm upgrade -i -n kgateway-system kgateway-crds ./install/helm/kgateway-crds/ \
-          --create-namespace \
-          ${INFERENCE_EXT_FLAG}
+          --create-namespace
         helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
           --create-namespace \
           ${EXPERIMENTAL_FLAG} \
           --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
-          ${INFERENCE_EXT_FLAG} \
           ${ADDITIONAL_VALUES}
-        
-        # For agentgateway and inference-extension tests, also install the agentgateway chart
-        if [[ "${{ inputs.test-type }}" == "agentgateway" || "${{ inputs.test-type }}" == "inference-extension" ]]; then
-          helm upgrade -i -n agentgateway-system agentgateway-crds ./install/helm/agentgateway-crds/ \
-            --create-namespace
-          helm upgrade -i -n agentgateway-system agentgateway ./install/helm/agentgateway/ \
-            --create-namespace \
-            ${EXPERIMENTAL_FLAG} \
-            --set image.tag=${VERSION} \
-            --set image.registry=ghcr.io/kgateway-dev \
-            --set controller.image.repository=agentgateway-controller \
-            --wait \
-            ${INFERENCE_EXT_FLAG} \
-            ${ADDITIONAL_VALUES}
-        fi
       else
         # TODO(tim): this will require changes once the new helm chart is integrated
         # and published with the release pipeline.
         # Else, use the provided version to install kgateway from the helm repository.
         helm upgrade -i -n kgateway-system kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
           --version ${VERSION} \
-          --create-namespace \
-          ${INFERENCE_EXT_FLAG}
+          --create-namespace
         helm upgrade -i -n kgateway-system kgateway oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
           --version ${VERSION} \
           --create-namespace \
           ${EXPERIMENTAL_FLAG} \
           --set image.tag=${VERSION} \
-          ${INFERENCE_EXT_FLAG} \
           ${ADDITIONAL_VALUES}
-        
-        # For agentgateway and inference-extension tests, also install the agentgateway chart
-        if [[ "${{ inputs.test-type }}" == "agentgateway" || "${{ inputs.test-type }}" == "inference-extension" ]]; then
-          helm upgrade -i -n agentgateway-system agentgateway-crds oci://${{ env.AGW_VANITY_REGISTRY }}/charts/agentgateway-crds \
-            --version ${VERSION} \
-            --create-namespace
-          helm upgrade -i -n agentgateway-system agentgateway oci://${{ env.AGW_VANITY_REGISTRY }}/charts/agentgateway \
-            --version ${VERSION} \
-            --create-namespace \
-            ${EXPERIMENTAL_FLAG} \
-            --set image.tag=${VERSION} \
-            ${INFERENCE_EXT_FLAG} \
-            ${ADDITIONAL_VALUES}
-        fi
       fi
 
   - name: Run tests
@@ -158,12 +115,6 @@ runs:
       case "${{ inputs.test-type }}" in
         "gateway-api")
           make conformance
-          ;;
-        "agentgateway")
-          make agw-conformance
-          ;;
-        "inference-extension")
-          make gie-conformance
           ;;
         *)
           echo "Unknown test type: ${{ inputs.test-type }}"
@@ -184,15 +135,6 @@ runs:
       kubectl -n gateway-conformance-web-backend get events --sort-by='{.lastTimestamp}'
       echo
       kubectl -n kgateway-system logs deploy/kgateway
-      echo
-      # Capture agentgateway logs if they exist
-      if kubectl get namespace agentgateway-system &>/dev/null; then
-        echo "Agentgateway events:"
-        kubectl -n agentgateway-system get events --sort-by='{.lastTimestamp}'
-        echo
-        echo "Agentgateway logs:"
-        kubectl -n agentgateway-system logs deploy/agentgateway
-      fi
 
   - name: Set artifact name and path
     shell: bash
@@ -201,14 +143,6 @@ runs:
         "gateway-api")
           echo "ARTIFACT_NAME=conformance-kgateway-gateway-report@k8s${{ inputs.kubectl-version }}" >> $GITHUB_ENV
           echo "ARTIFACT_PATH=_test/conformance/${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
-          ;;
-        "agentgateway")
-          echo "ARTIFACT_NAME=conformance-kgateway-agentgateway-report@k8s${{ inputs.kubectl-version }}" >> $GITHUB_ENV
-          echo "ARTIFACT_PATH=_test/conformance/agw-${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
-          ;;
-        "inference-extension")
-          echo "ARTIFACT_NAME=conformance-kgateway-gateway-inference-extension-report@k8s${{ inputs.kubectl-version }}" >> $GITHUB_ENV
-          echo "ARTIFACT_PATH=_test/conformance/inference-${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
           ;;
         *)
           echo "Unknown test type: ${{ inputs.test-type }}"

@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	istiosets "istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -56,7 +54,6 @@ const (
 	altGatewayClassName         = "clsname-alt"
 	selfManagedGatewayClassName = "clsname-selfmanaged"
 	gatewayControllerName       = "kgateway.dev/kgateway"
-	agwControllerName           = "agentgateway.dev/agentgateway"
 	defaultNamespace            = "default"
 
 	localhost = "127.0.0.1"
@@ -67,7 +64,7 @@ var (
 	gwClasses           = []string{gatewayClassName, altGatewayClassName, selfManagedGatewayClassName}
 	gwClassToController = map[string]string{
 		gatewayClassName:            gatewayControllerName,
-		altGatewayClassName:         agwControllerName,
+		altGatewayClassName:         gatewayControllerName,
 		selfManagedGatewayClassName: gatewayControllerName,
 	}
 	// defaultPollTimeout is the default timeout for polling operations
@@ -94,14 +91,8 @@ func (s *ControllerSuite) SetupSuite() {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.suitCtxCancelFn = cancel
 
-	// Create a scheme and add both Gateway and InferencePool types.
+	// Create a scheme and add Gateway types.
 	scheme := schemes.GatewayScheme()
-	err := inf.Install(scheme)
-	s.Require().NoError(err)
-
-	// Required to deploy endpoint picker RBAC resources.
-	err = rbacv1.AddToScheme(scheme)
-	s.Require().NoError(err)
 
 	assetsDir, err := getAssetsDir()
 	s.Require().NoError(err)
@@ -110,7 +101,6 @@ func (s *ControllerSuite) SetupSuite() {
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
 			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
-			filepath.Join("..", "..", "..", "install", "helm", "agentgateway-crds", "templates"),
 		},
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
@@ -566,7 +556,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 		// Update it
 		original := gwc.DeepCopy()
 		updatedDesc := "updated description"
-		gwc.Spec.Description = ptr.To(updatedDesc)
+		gwc.Spec.Description = new(updatedDesc)
 		err := s.client.Patch(ctx, gwc, client.MergeFrom(original))
 		r.NoError(err)
 
@@ -719,7 +709,7 @@ func (s *ControllerSuite) startController(
 			// in short, our tests reuse the same name (reasonably so) and the controller-runtime
 			// package does not reset the stack of controller names between tests, so we disable
 			// the name validation here.
-			SkipNameValidation: ptr.To(true),
+			SkipNameValidation: new(true),
 		},
 		Metrics: metricsserver.Options{
 			BindAddress: "0",
@@ -747,12 +737,10 @@ func (s *ControllerSuite) startController(
 	}
 
 	gwCfg := GatewayConfig{
-		Client:             kubeClient,
-		Mgr:                mgr,
-		ControllerName:     gatewayControllerName,
-		AgwControllerName:  agwControllerName,
-		EnableEnvoy:        true,
-		EnableAgentgateway: true,
+		Client:         kubeClient,
+		Mgr:            mgr,
+		ControllerName: gatewayControllerName,
+		EnableEnvoy:    true,
 		ImageInfo: &deployer.ImageInfo{
 			Registry: "ghcr.io/kgateway-dev",
 			Tag:      "latest",
@@ -820,7 +808,7 @@ func newCommonCols(ctx context.Context, kubeClient apiclient.Client) (*collectio
 	if err != nil {
 		return nil, fmt.Errorf("error building Settings: %w", err)
 	}
-	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, gatewayControllerName, agwControllerName, *settings)
+	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, gatewayControllerName, *settings)
 	if err != nil {
 		return nil, fmt.Errorf("error building CommonCollections: %w", err)
 	}

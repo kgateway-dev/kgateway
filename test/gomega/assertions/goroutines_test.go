@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("GoRoutineMonitor", func() {
-
 	It("succeeds when there are no new go routines", func() {
 		monitor := assertions.NewGoRoutineMonitor()
 		monitor.AssertNoLeaks(&assertions.AssertNoLeaksArgs{})
@@ -44,7 +43,5 @@ var _ = Describe("GoRoutineMonitor", func() {
 				gleak.IgnoringInBacktrace("github.com/kgateway-dev/kgateway/v2/test/gomega/assertions_test.init"),
 			},
 		})
-
 	})
-
 })

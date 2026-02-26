@@ -17,28 +17,11 @@ var reservedPorts = sets.New[int32](
 	19000, // Envoy admin port
 )
 
-var agentGatewayReservedPorts = sets.New[int32](
-	15020, // Metrics port
-	15021, // Readiness port
-	15000, // Envoy admin port
-)
-
 // ListenerPort validates that the given listener port does not conflict with reserved ports.
 func ListenerPort(listener ir.Listener, port gwv1.PortNumber) error {
-	return ListenerPortForParent(port, false)
-}
-
-func ListenerPortForParent(port int32, agentgateway bool) error {
-	if agentgateway {
-		if agentGatewayReservedPorts.Has(port) {
-			return fmt.Errorf("invalid port %d in listener: %w",
-				port, ErrListenerPortReserved)
-		}
-	} else {
-		if reservedPorts.Has(port) {
-			return fmt.Errorf("invalid port %d in listener: %w",
-				port, ErrListenerPortReserved)
-		}
+	if reservedPorts.Has(port) {
+		return fmt.Errorf("invalid port %d in listener: %w",
+			port, ErrListenerPortReserved)
 	}
 	return nil
 }

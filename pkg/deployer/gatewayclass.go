@@ -52,13 +52,6 @@ func GetSupportedFeaturesForWaypointGateway() []gwv1.SupportedFeature {
 	return GetSupportedFeaturesForStandardGateway()
 }
 
-// GetSupportedFeaturesForAgentGateway returns the supported features for the agent Gateway class.
-// Agent gateways support additional features beyond the standard gateway class.
-func GetSupportedFeaturesForAgentGateway() []gwv1.SupportedFeature {
-	exemptFeatures := GetCommonExemptFeatures()
-	return getSupportedFeatures(exemptFeatures)
-}
-
 // GetCommonExemptFeatures returns the set of features that are commonly unsupported across all gateway classes.
 // Exported for use in the conformance test suite.
 func GetCommonExemptFeatures() sets.Set[features.Feature] {

@@ -28,12 +28,10 @@ type testingSuite struct {
 	*base.BaseTestingSuite
 }
 
-var (
-	testCases = map[string]*base.TestCase{
-		"TestRouteTimeout": {},
-		"TestRetries":      {},
-	}
-)
+var testCases = map[string]*base.TestCase{
+	"TestRouteTimeout": {},
+	"TestRetries":      {},
+}
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{

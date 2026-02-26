@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-	k8sptr "k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -181,7 +180,7 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 		}
 		backendObj.RequiresPolicyStatus = anyHasRef
 		backendObj.AttachedPolicies = ToAttachedPolicies(policies)
-		return ptr.Of(&backendObj)
+		return new(&backendObj)
 	}, i.krtopts.ToOptions("")...)
 	backendsRequiringPolicyStatus := krt.NewCollection(backendsWithPoliciesCol, func(ctx krt.HandlerContext, i *ir.BackendObjectIR) **ir.BackendObjectIR {
 		if i.RequiresPolicyStatus {
@@ -308,15 +307,6 @@ func (i *BackendIndex) GetBackendFromRef(kctx krt.HandlerContext, src ir.ObjectS
 		return nil, ErrMissingReferenceGrant
 	}
 
-	// Ignore user’s port and always use poolIR.Port for InferencePool backends.
-	// TODO [danehans]: Add a warning message to HTTPRoute status the required change is made per
-	// discussion in github.com/kubernetes-sigs/gateway-api-inference-extension/discussions/918
-	if strOr(ref.Kind, string(wellknown.ServiceKind)) == wellknown.InferencePoolKind {
-		if err := i.normalizeInfPoolBackendPort(kctx, src.Namespace, &ref); err != nil {
-			return nil, err
-		}
-	}
-
 	return i.getBackendFromRef(kctx, src.Namespace, ref)
 }
 
@@ -363,7 +353,7 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 
 func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
-		// only care about gateways use a class controlled by us (envoy or agentgateway)
+		// only care about gateways that use a class controlled by us
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, config.GatewayClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
 		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) {
 			return nil
@@ -437,7 +427,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			if err != nil {
 				logger.Error("failed to parse per connection buffer limit", "error", err)
 			} else {
-				gwIR.PerConnectionBufferLimitBytes = k8sptr.To(uint32(limit.Value())) //nolint:gosec // G115: Kubernetes resource quantities are always non-negative
+				gwIR.PerConnectionBufferLimitBytes = new(uint32(limit.Value())) //nolint:gosec // G115: Kubernetes resource quantities are always non-negative
 			}
 		}
 
@@ -452,10 +442,10 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 				Parent:           gw,
 				AttachedPolicies: ToAttachedPolicies(config.PolicyIndex.GetTargetingPolicies(kctx, gwIR.ObjectSource, string(l.Name), gw.GetLabels())),
 				PolicyAncestorRef: gwv1.ParentReference{
-					Group:     k8sptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
-					Kind:      k8sptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+					Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
+					Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
 					Name:      gwv1.ObjectName(gw.Name),
-					Namespace: k8sptr.To(gwv1.Namespace(gw.Namespace)),
+					Namespace: new(gwv1.Namespace(gw.Namespace)),
 				},
 			})
 		}
@@ -528,10 +518,10 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 					Parent:           ls,
 					AttachedPolicies: ToAttachedPolicies(listenerPolicies),
 					PolicyAncestorRef: gwv1.ParentReference{
-						Group:     k8sptr.To(gwv1.Group(wellknown.XListenerSetGVK.Group)),
-						Kind:      k8sptr.To(gwv1.Kind(wellknown.XListenerSetGVK.Kind)),
+						Group:     new(gwv1.Group(wellknown.XListenerSetGVK.Group)),
+						Kind:      new(gwv1.Kind(wellknown.XListenerSetGVK.Kind)),
 						Name:      gwv1.ObjectName(ls.Name),
-						Namespace: k8sptr.To(gwv1.Namespace(ls.Namespace)),
+						Namespace: new(gwv1.Namespace(ls.Namespace)),
 					},
 				})
 			}
@@ -1590,53 +1580,6 @@ func emptyIfCore(s string) string {
 		return ""
 	}
 	return s
-}
-
-// normalizeInfPoolBackendPort looks up the InferencePool IR for the given BackendObjectReference,
-// logs a warning if the user-supplied port doesn’t match the pool’s targetPort, and then
-// mutates ref.Port to the correct pool port.
-func (i *BackendIndex) normalizeInfPoolBackendPort(
-	kctx krt.HandlerContext,
-	srcNamespace string,
-	ref *gwv1.BackendObjectReference,
-) error {
-	// Build an ObjectSource for the pool (ignoring any port for lookup)
-	poolSrc := toFromBackendRef(srcNamespace, *ref)
-	poolGK := poolSrc.GetGroupKind()
-
-	// Fetch the collection for that kind
-	col, exists := i.availableBackends[poolGK]
-	if !exists {
-		return &NotFoundError{NotFoundObj: poolSrc}
-	}
-
-	// Find matching pool IR(s) by name/namespace
-	matches := krt.Fetch(kctx, col, krt.FilterGeneric(func(obj any) bool {
-		b, ok := obj.(ir.BackendObjectIR)
-		return ok &&
-			b.ObjectSource.Name == poolSrc.Name &&
-			b.ObjectSource.Namespace == poolSrc.Namespace
-	}))
-	if len(matches) == 0 {
-		return &NotFoundError{NotFoundObj: poolSrc}
-	}
-	poolIR := &matches[0]
-
-	// If the user gave a port and it doesn’t match, warn
-	resolvedPort := poolIR.Port
-	if ref.Port != nil && int32(*ref.Port) != resolvedPort {
-		logger.Warn(
-			"backendRef.port does not match InferencePool targetPort; overriding",
-			"provided_port", *ref.Port,
-			"pool_port", resolvedPort,
-			"inference_pool", types.NamespacedName{Namespace: poolSrc.Namespace, Name: poolSrc.Name},
-		)
-	}
-
-	// Overwrite ref.Port so downstream lookup is correct
-	correct := gwv1.PortNumber(resolvedPort)
-	ref.Port = &correct
-	return nil
 }
 
 func getInheritedPolicyPriority(annotations map[string]string) apiannotations.InheritedPolicyPriorityValue {

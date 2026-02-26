@@ -88,5 +88,4 @@ var _ = Describe("Template", func() {
 		err := interpolator.InterpolateString(&s, downwardMock)
 		Expect(err).To(HaveOccurred())
 	})
-
 })

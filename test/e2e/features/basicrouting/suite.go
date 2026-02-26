@@ -9,12 +9,12 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -28,16 +28,9 @@ var (
 	headlessServiceManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "headless-service.yaml")
 	gatewayWithRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-with-route.yaml")
 
-	// objects
-	proxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
-	}
-
 	// test cases
 	setup = base.TestCase{
 		Manifests: []string{
-			testdefaults.CurlPodManifest,
 			gatewayWithRouteManifest,
 		},
 	}
@@ -57,11 +50,31 @@ var (
 // testingSuite is a suite of basic routing / "happy path" tests
 type testingSuite struct {
 	*base.BaseTestingSuite
+	localGateway common.Gateway
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		common.Gateway{}, // initialized in SetupSuite
+	}
+}
+
+func (s *testingSuite) SetupSuite() {
+	s.BaseTestingSuite.SetupSuite()
+
+	// Initialize local gateway for this test
+	address := s.TestInstallation.Assertions.EventuallyGatewayAddress(
+		s.Ctx,
+		"gateway",
+		"default",
+	)
+	s.localGateway = common.Gateway{
+		NamespacedName: types.NamespacedName{
+			Name:      "gateway",
+			Namespace: "default",
+		},
+		Address: address,
 	}
 }
 
@@ -75,17 +88,14 @@ func (s *testingSuite) TestHeadlessService() {
 
 func (s *testingSuite) assertSuccessfulResponse() {
 	for _, port := range []int{listenerHighPort, listenerLowPort} {
-		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-			s.Ctx,
-			testdefaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-				curl.WithHostHeader("example.com"),
-				curl.WithPort(port),
-			},
+		s.localGateway.Send(
+			s.T(),
 			&testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
 				Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
-			})
+			},
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(port),
+		)
 	}
 }

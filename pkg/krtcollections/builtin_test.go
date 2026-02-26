@@ -169,7 +169,7 @@ func TestURLRewriteApply(t *testing.T) {
 
 func TestParseRedirectStatusCodeAnnotation(t *testing.T) {
 	sectionName := func(s string) *gwv1.SectionName {
-		return ptr.To(gwv1.SectionName(s))
+		return new(gwv1.SectionName(s))
 	}
 
 	tests := []struct {
@@ -183,43 +183,43 @@ func TestParseRedirectStatusCodeAnnotation(t *testing.T) {
 			name:     "valid status code 301",
 			value:    "301",
 			rule:     sectionName("rule1"),
-			wantCode: ptr.To(301),
+			wantCode: new(301),
 		},
 		{
 			name:     "valid status code 302",
 			value:    "302",
 			rule:     sectionName("rule1"),
-			wantCode: ptr.To(302),
+			wantCode: new(302),
 		},
 		{
 			name:     "valid status code 303",
 			value:    "303",
 			rule:     sectionName("rule1"),
-			wantCode: ptr.To(303),
+			wantCode: new(303),
 		},
 		{
 			name:     "valid status code 307",
 			value:    "307",
 			rule:     sectionName("rule1"),
-			wantCode: ptr.To(307),
+			wantCode: new(307),
 		},
 		{
 			name:     "valid status code 308",
 			value:    "308",
 			rule:     sectionName("rule1"),
-			wantCode: ptr.To(308),
+			wantCode: new(308),
 		},
 		{
 			name:     "valid status code with rule-specific format",
 			value:    "rule1=301,rule2=302",
 			rule:     sectionName("rule1"),
-			wantCode: ptr.To(301),
+			wantCode: new(301),
 		},
 		{
 			name:     "valid status code with rule-specific format with spaces",
 			value:    "rule1=301, rule2=302",
 			rule:     sectionName("rule2"),
-			wantCode: ptr.To(302),
+			wantCode: new(302),
 		},
 		{
 			name:     "rule-specific format but rule doesn't match",
@@ -252,7 +252,7 @@ func TestParseRedirectStatusCodeAnnotation(t *testing.T) {
 			name:     "nil rule with simple value",
 			value:    "301",
 			rule:     nil,
-			wantCode: ptr.To(301),
+			wantCode: new(301),
 		},
 		{
 			name:     "nil rule with rule-specific format",
@@ -296,7 +296,7 @@ func TestGetFractionPercent(t *testing.T) {
 				BackendRef: gwv1.BackendObjectReference{
 					Name: "test",
 				},
-				Percent: ptr.To(int32(50)),
+				Percent: new(int32(50)),
 			},
 			expectedNumerator:   50,
 			expectedDenominator: envoytype.FractionalPercent_HUNDRED,
@@ -307,7 +307,7 @@ func TestGetFractionPercent(t *testing.T) {
 				BackendRef: gwv1.BackendObjectReference{
 					Name: "test",
 				},
-				Percent: ptr.To(int32(10)),
+				Percent: new(int32(10)),
 			},
 			expectedNumerator:   10,
 			expectedDenominator: envoytype.FractionalPercent_HUNDRED,
@@ -318,7 +318,7 @@ func TestGetFractionPercent(t *testing.T) {
 				BackendRef: gwv1.BackendObjectReference{
 					Name: "test",
 				},
-				Percent: ptr.To(int32(100)),
+				Percent: new(int32(100)),
 			},
 			expectedNumerator:   100,
 			expectedDenominator: envoytype.FractionalPercent_HUNDRED,
@@ -331,7 +331,7 @@ func TestGetFractionPercent(t *testing.T) {
 				},
 				Fraction: &gwv1.Fraction{
 					Numerator:   1,
-					Denominator: ptr.To(int32(2)),
+					Denominator: new(int32(2)),
 				},
 			},
 			expectedNumerator:   500000,
@@ -345,7 +345,7 @@ func TestGetFractionPercent(t *testing.T) {
 				},
 				Fraction: &gwv1.Fraction{
 					Numerator:   1,
-					Denominator: ptr.To(int32(4)),
+					Denominator: new(int32(4)),
 				},
 			},
 			expectedNumerator:   250000,
@@ -688,7 +688,7 @@ func TestRequestRedirect(t *testing.T) {
 		{
 			name: "scheme http with port nil uses default 80",
 			filter: &gwv1.HTTPRequestRedirectFilter{
-				Scheme: ptr.To("http"),
+				Scheme: new("http"),
 				Port:   nil,
 			},
 			listenerPort: 8080,
@@ -703,7 +703,7 @@ func TestRequestRedirect(t *testing.T) {
 		{
 			name: "scheme https with port nil uses default 443",
 			filter: &gwv1.HTTPRequestRedirectFilter{
-				Scheme: ptr.To("https"),
+				Scheme: new("https"),
 				Port:   nil,
 			},
 			listenerPort: 8080,
@@ -730,7 +730,7 @@ func TestRequestRedirect(t *testing.T) {
 		{
 			name: "explicit port takes precedence over scheme default",
 			filter: &gwv1.HTTPRequestRedirectFilter{
-				Scheme: ptr.To("http"),
+				Scheme: new("http"),
 				Port:   ptr.To(gwv1.PortNumber(9090)),
 			},
 			listenerPort: 8080,
@@ -745,7 +745,7 @@ func TestRequestRedirect(t *testing.T) {
 		{
 			name: "scheme https with explicit port 8443",
 			filter: &gwv1.HTTPRequestRedirectFilter{
-				Scheme: ptr.To("https"),
+				Scheme: new("https"),
 				Port:   ptr.To(gwv1.PortNumber(8443)),
 			},
 			listenerPort: 8080,
@@ -773,7 +773,7 @@ func TestRequestRedirect(t *testing.T) {
 		{
 			name: "status code 302 found",
 			filter: &gwv1.HTTPRequestRedirectFilter{
-				StatusCode: ptr.To(302),
+				StatusCode: new(302),
 			},
 			listenerPort: 8080,
 			expectedRedirect: &envoyroutev3.RedirectAction{
@@ -785,13 +785,13 @@ func TestRequestRedirect(t *testing.T) {
 		{
 			name: "complete redirect with all fields",
 			filter: &gwv1.HTTPRequestRedirectFilter{
-				Scheme:     ptr.To("https"),
+				Scheme:     new("https"),
 				Hostname:   ptr.To(gwv1.PreciseHostname("secure.example.com")),
 				Port:       ptr.To(gwv1.PortNumber(8443)),
-				StatusCode: ptr.To(308),
+				StatusCode: new(308),
 				Path: &gwv1.HTTPPathModifier{
 					Type:            gwv1.FullPathHTTPPathModifier,
-					ReplaceFullPath: ptr.To("/new-path"),
+					ReplaceFullPath: new("/new-path"),
 				},
 			},
 			listenerPort: 8080,
@@ -812,7 +812,7 @@ func TestRequestRedirect(t *testing.T) {
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Path: &gwv1.HTTPPathModifier{
 					Type:               gwv1.PrefixMatchHTTPPathModifier,
-					ReplacePrefixMatch: ptr.To("/api"),
+					ReplacePrefixMatch: new("/api"),
 				},
 			},
 			listenerPort: 8080,

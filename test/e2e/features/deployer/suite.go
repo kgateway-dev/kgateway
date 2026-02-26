@@ -265,8 +265,8 @@ func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
 		// so the proposed patch should fail and the original values should be retained.
 		parameters.Spec.Kube.EnvoyContainer = &kgateway.EnvoyContainer{
 			SecurityContext: &corev1.SecurityContext{
-				Privileged:               ptr.To(true),
-				AllowPrivilegeEscalation: ptr.To(false),
+				Privileged:               new(true),
+				AllowPrivilegeEscalation: new(false),
 			},
 		}
 

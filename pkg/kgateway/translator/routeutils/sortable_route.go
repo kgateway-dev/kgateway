@@ -3,7 +3,6 @@ package routeutils
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -77,33 +76,33 @@ func lessPath(a, b *gwv1.HTTPPathMatch) *bool {
 		switch btype {
 		case gwv1.PathMatchPathPrefix:
 			if len(avalue) != len(bvalue) {
-				return ptr.To(len(avalue) < len(bvalue))
+				return new(len(avalue) < len(bvalue))
 			}
 		// Exact and Regex always takes precedence over prefix
 		case gwv1.PathMatchExact, gwv1.PathMatchRegularExpression:
-			return ptr.To(true)
+			return new(true)
 		}
 
 	case gwv1.PathMatchExact:
 		switch btype {
 		case gwv1.PathMatchExact:
 			if len(avalue) != len(bvalue) {
-				return ptr.To(len(avalue) < len(bvalue))
+				return new(len(avalue) < len(bvalue))
 			}
 
 		// Exact always takes precedence over regex and prefix
 		case gwv1.PathMatchRegularExpression, gwv1.PathMatchPathPrefix:
-			return ptr.To(false)
+			return new(false)
 		}
 
 	case gwv1.PathMatchRegularExpression:
 		switch btype {
 		// Regex always takes precedence over prefix
 		case gwv1.PathMatchPathPrefix:
-			return ptr.To(false)
+			return new(false)
 		// Exact always takes precedence over regex
 		case gwv1.PathMatchExact:
-			return ptr.To(true)
+			return new(true)
 		case gwv1.PathMatchRegularExpression:
 			// Don't prioritize one regex over another based on their lengths
 			// as it doesn't make sense to do so and would be quite arbitrary,

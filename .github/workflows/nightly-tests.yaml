@@ -91,7 +91,7 @@ jobs:
     - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
-    name: E2E (${{ matrix.controllers.agentgateway && 'AGW' || 'KGW' }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
+    name: E2E (k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
@@ -107,8 +107,7 @@ jobs:
                               { version: 'v1.2.1', channel: 'experimental' },
                               { version: 'v1.2.1', channel: 'standard' }]
         controllers: [
-          {regex: "^TestAgentgateway", agentgateway: true},
-          {regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestParallelControllers$$|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$", agentgateway: false}
+          {regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$"}
         ]
     steps:
     - uses: actions/checkout@v4
@@ -131,7 +130,6 @@ jobs:
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-        agentgateway: ${{ matrix.controllers.agentgateway }}
         localstack: "true"
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests

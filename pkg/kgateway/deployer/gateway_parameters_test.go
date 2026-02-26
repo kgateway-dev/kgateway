@@ -144,18 +144,15 @@ func defaultInputs(t *testing.T, objs ...client.Object) *deployer.Inputs {
 		CommonCollections: newCommonCols(t, objs...),
 		Dev:               false,
 		ControlPlane: deployer.ControlPlaneInfo{
-			XdsHost:    "something.cluster.local",
-			XdsPort:    1234,
-			AgwXdsPort: 5678,
+			XdsHost: "something.cluster.local",
+			XdsPort: 1234,
 		},
 		ImageInfo: &deployer.ImageInfo{
 			Registry: "foo",
 			Tag:      "bar",
 		},
-		GatewayClassName:           wellknown.DefaultGatewayClassName,
-		WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-		AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-		AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+		GatewayClassName:         wellknown.DefaultGatewayClassName,
+		WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 	}
 }
 
@@ -168,8 +165,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	mock := krttest.NewMock(t, anys)
 
 	settings := apisettings.Settings{
-		EnableEnvoy:        true,
-		EnableAgentgateway: true,
+		EnableEnvoy: true,
 	}
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, settings)

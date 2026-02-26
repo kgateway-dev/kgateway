@@ -19,9 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
-var (
-	UseDetailedUnmarshalling = !envutils.IsEnvTruthy("DISABLE_DETAILED_SNAP_UNMARSHALLING")
-)
+var UseDetailedUnmarshalling = !envutils.IsEnvTruthy("DISABLE_DETAILED_SNAP_UNMARSHALLING")
 
 type XdsSnapWrapper struct {
 	snap *envoycache.Snapshot

@@ -48,39 +48,3 @@ func TestZeroDowntimeRollout(t *testing.T) {
 
 	ZeroDowntimeRolloutSuiteRunner().Run(ctx, t, testInstallation)
 }
-
-func TestZeroDowntimeRolloutAgentgateway(t *testing.T) {
-	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "zero-downtime-agw")
-	testInstallation := e2e.CreateTestInstallation(
-		t,
-		&install.Context{
-			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ChartType:                 "agentgateway",
-			ValuesManifestFile:        e2e.ManifestPath("agent-gateway-integration.yaml"),
-		},
-	)
-
-	// Set the env to the install namespace if it is not already set.
-	if !nsEnvPredefined {
-		os.Setenv(testutils.InstallNamespace, installNs)
-	}
-
-	// We register the cleanup function _before_ we actually perform the installation.
-	// This allows us to uninstall, in case the original installation only completed partially.
-	testutils.Cleanup(t, func() {
-		if !nsEnvPredefined {
-			os.Unsetenv(testutils.InstallNamespace)
-		}
-		if t.Failed() {
-			testInstallation.PreFailHandler(ctx, t)
-		}
-
-		testInstallation.UninstallKgateway(ctx, t)
-	})
-
-	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
-
-	ZeroDowntimeRolloutAgentgatewaySuiteRunner().Run(ctx, t, testInstallation)
-}

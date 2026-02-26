@@ -444,7 +444,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Addresses: []string{"1.2.3.4"},
 							Conditions: discoveryv1.EndpointConditions{
-								Ready: ptr.To(true),
+								Ready: new(true),
 							},
 							TargetRef: &corev1.ObjectReference{
 								Kind:      "Pod",
@@ -455,8 +455,8 @@ func TestEndpoints(t *testing.T) {
 					},
 					Ports: []discoveryv1.EndpointPort{
 						{
-							Name:     ptr.To("http"),
-							Port:     ptr.To(int32(8080)),
+							Name:     new("http"),
+							Port:     new(int32(8080)),
 							Protocol: ptr.To(corev1.ProtocolTCP),
 						},
 					},
@@ -584,7 +584,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Addresses: []string{"1.2.3.4"},
 							Conditions: discoveryv1.EndpointConditions{
-								Ready: ptr.To(true),
+								Ready: new(true),
 							},
 							TargetRef: &corev1.ObjectReference{
 								Kind:      "Pod",
@@ -595,7 +595,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Addresses: []string{"1.2.3.5"},
 							Conditions: discoveryv1.EndpointConditions{
-								Ready: ptr.To(true),
+								Ready: new(true),
 							},
 							TargetRef: &corev1.ObjectReference{
 								Kind:      "Pod",
@@ -606,8 +606,8 @@ func TestEndpoints(t *testing.T) {
 					},
 					Ports: []discoveryv1.EndpointPort{
 						{
-							Name:     ptr.To("http"),
-							Port:     ptr.To(int32(8080)),
+							Name:     new("http"),
+							Port:     new(int32(8080)),
 							Protocol: ptr.To(corev1.ProtocolTCP),
 						},
 					},
@@ -746,7 +746,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Addresses: []string{"1.2.3.4"},
 							Conditions: discoveryv1.EndpointConditions{
-								Ready: ptr.To(true),
+								Ready: new(true),
 							},
 							TargetRef: &corev1.ObjectReference{
 								Kind:      "Pod",
@@ -757,8 +757,8 @@ func TestEndpoints(t *testing.T) {
 					},
 					Ports: []discoveryv1.EndpointPort{
 						{
-							Name:     ptr.To("http"),
-							Port:     ptr.To(int32(8080)),
+							Name:     new("http"),
+							Port:     new(int32(8080)),
 							Protocol: ptr.To(corev1.ProtocolTCP),
 						},
 					},
@@ -866,7 +866,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Addresses: []string{"1.2.3.4"},
 							Conditions: discoveryv1.EndpointConditions{
-								Ready: ptr.To(true),
+								Ready: new(true),
 							},
 							TargetRef: &corev1.ObjectReference{
 								Kind:      "Pod",
@@ -877,8 +877,8 @@ func TestEndpoints(t *testing.T) {
 					},
 					Ports: []discoveryv1.EndpointPort{
 						{
-							Name:     ptr.To("http"),
-							Port:     ptr.To(int32(8080)),
+							Name:     new("http"),
+							Port:     new(int32(8080)),
 							Protocol: ptr.To(corev1.ProtocolTCP),
 						},
 					},
@@ -896,7 +896,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Addresses: []string{"1.2.3.4"}, // Duplicate endpoint
 							Conditions: discoveryv1.EndpointConditions{
-								Ready: ptr.To(true),
+								Ready: new(true),
 							},
 							TargetRef: &corev1.ObjectReference{
 								Kind:      "Pod",
@@ -907,8 +907,8 @@ func TestEndpoints(t *testing.T) {
 					},
 					Ports: []discoveryv1.EndpointPort{
 						{
-							Name:     ptr.To("http"),
-							Port:     ptr.To(int32(8080)),
+							Name:     new("http"),
+							Port:     new(int32(8080)),
 							Protocol: ptr.To(corev1.ProtocolTCP),
 						},
 					},
@@ -1016,7 +1016,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Addresses: []string{"1.2.3.4"},
 							Conditions: discoveryv1.EndpointConditions{
-								Ready: ptr.To(false), // This endpoint is unready
+								Ready: new(false), // This endpoint is unready
 							},
 							TargetRef: &corev1.ObjectReference{
 								Kind:      "Pod",
@@ -1027,8 +1027,8 @@ func TestEndpoints(t *testing.T) {
 					},
 					Ports: []discoveryv1.EndpointPort{
 						{
-							Name:     ptr.To("http"),
-							Port:     ptr.To(int32(8080)),
+							Name:     new("http"),
+							Port:     new(int32(8080)),
 							Protocol: ptr.To(corev1.ProtocolTCP),
 						},
 					},
@@ -1102,7 +1102,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Addresses: []string{"1.2.3.4"},
 							Conditions: discoveryv1.EndpointConditions{
-								Ready: ptr.To(true),
+								Ready: new(true),
 							},
 							TargetRef: &corev1.ObjectReference{
 								Kind:      "Pod",
@@ -1113,18 +1113,18 @@ func TestEndpoints(t *testing.T) {
 					},
 					Ports: []discoveryv1.EndpointPort{
 						{
-							Name:     ptr.To("third-port"),
-							Port:     ptr.To(int32(3000)),
+							Name:     new("third-port"),
+							Port:     new(int32(3000)),
 							Protocol: ptr.To(corev1.ProtocolTCP),
 						},
 						{
-							Name:     ptr.To("first-port"),
-							Port:     ptr.To(int32(3000)),
+							Name:     new("first-port"),
+							Port:     new(int32(3000)),
 							Protocol: ptr.To(corev1.ProtocolTCP),
 						},
 						{
-							Name:     ptr.To("second-port"),
-							Port:     ptr.To(int32(3001)),
+							Name:     new("second-port"),
+							Port:     new(int32(3001)),
 							Protocol: ptr.To(corev1.ProtocolTCP),
 						},
 					},
