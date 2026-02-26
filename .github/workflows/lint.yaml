@@ -23,6 +23,8 @@ jobs:
       uses: ./.github/actions/prep-go-runner
     - name: Lint Go code
       run: make analyze
+    - name: Verify lint auto-fixes are checked in
+      run: git diff -U3 --exit-code
 
   # Lint Helm charts
   helm-lint:

@@ -170,6 +170,19 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"Service type should be LoadBalancer")
 			},
 		},
+		{
+			Name:      "gateway with loadBalancerSourceRanges via overlay",
+			InputFile: "loadbalancer-source-ranges",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "loadBalancerSourceRanges:",
+					"loadBalancerSourceRanges should be set on the Service via overlay")
+				assert.Contains(t, outputYaml, "- 10.0.0.0/8",
+					"first CIDR range should be present")
+				assert.Contains(t, outputYaml, "- 192.168.0.0/16",
+					"second CIDR range should be present")
+			},
+		},
 		// Envoy (kgateway) overlay test cases
 		{
 			Name:      "envoy with PodDisruptionBudget overlay",

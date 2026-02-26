@@ -15,8 +15,7 @@ const (
 
 // helmConfig stores the top-level helm values used by the deployer.
 type HelmConfig struct {
-	Gateway            *HelmGateway            `json:"gateway,omitempty"`
-	InferenceExtension *HelmInferenceExtension `json:"inferenceExtension,omitempty"`
+	Gateway *HelmGateway `json:"gateway,omitempty"`
 }
 
 type HelmGateway struct {
@@ -187,13 +186,4 @@ type HelmStringMatcher struct {
 	Contains   *string `json:"contains,omitempty"`
 	SafeRegex  *string `json:"safeRegex,omitempty"`
 	IgnoreCase *bool   `json:"ignoreCase,omitempty"`
-}
-
-type HelmInferenceExtension struct {
-	EndpointPicker *HelmEndpointPickerExtension `json:"endpointPicker,omitempty"`
-}
-
-type HelmEndpointPickerExtension struct {
-	PoolName      string `json:"poolName"`
-	PoolNamespace string `json:"poolNamespace"`
 }

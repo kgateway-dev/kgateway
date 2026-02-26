@@ -84,7 +84,7 @@ func flattenDelegatedRoutes(
 			Group:     ptr.To(gwv1.Group(wellknown.GatewayGroup)),
 			Kind:      ptr.To(gwv1.Kind(wellknown.HTTPRouteKind)),
 			Name:      gwv1.ObjectName(parentRef.Name),
-			Namespace: ptr.To(gwv1.Namespace(parentRef.Namespace)),
+			Namespace: new(gwv1.Namespace(parentRef.Namespace)),
 		})
 
 		if err := validateChildRoute(*childRoute); err != nil {

@@ -1330,6 +1330,12 @@ spec:
                 - AppendIfAbsent
                 - PassThrough
                 type: string
+              skipXFFAppend:
+                description: |-
+                  SkipXffAppend specifies whether to skip adding the downstream's remote IP address to the X-Forwarded-For HTTP header.
+                  Note: If omitted, this effectively will default to true when UseRemoteAddress is false, such that Envoy acts as a "transparent proxy".
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-skip-xff-append
+                type: boolean
               streamIdleTimeout:
                 description: |-
                   StreamIdleTimeout is the idle timeout for HTTP streams.
@@ -1826,7 +1832,7 @@ spec:
                   Note: If this field is omitted, it will fallback to the default value of 'true', which we set for all Envoy HCMs.
                   Thus, setting this explicitly to true is unnecessary (but will not cause any harm).
                   When true, Envoy will use the remote address of the connection as the client address.
-                  When false, Envoy will use the X-Forwarded-For header to determine the client address.
+                  When false, Envoy will use the X-Forwarded-For header to determine the client address. Furthermore, SkipXffAppend will implicitly be set to true unless explicitly configured.
                   See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address
                 type: boolean
               uuidRequestIdConfig:
@@ -1850,11 +1856,33 @@ spec:
               xffNumTrustedHops:
                 description: |-
                   XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.
+                  This is mutually exclusive with XffTrustedCIDRs.
                   See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
                 format: int32
                 minimum: 0
                 type: integer
+              xffTrustedCIDRs:
+                description: |-
+                  XffTrustedCIDRs are ranges of IPs that may appear in the X-Forwarded-For HTTP header and are trusted when determining the origin client's IP address.
+                  This is mutually exclusive with XffNumTrustedHops and requires UseRemoteAddress to be set to false.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/original_ip_detection/xff/v3/xff.proto#envoy-v3-api-field-extensions-http-original-ip-detection-xff-v3-xffconfig-xff-trusted-cidrs
+                items:
+                  description: |-
+                    CIDR can be used wherever an address range in CIDR notation is expected.
+                    Note: The regex for the IP validation patterns was taken from https://www.ditig.com/validating-ipv4-and-ipv6-addresses-with-regexp
+                  format: cidr
+                  pattern: ^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}\/([0-9]|[1-2][0-9]|3[0-2])$|^((?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,7}:|:(?::[0-9A-Fa-f]{1,4}){1,7}|(?:[0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,5}(?::[0-9A-Fa-f]{1,4}){1,2}|(?:[0-9A-Fa-f]{1,4}:){1,4}(?::[0-9A-Fa-f]{1,4}){1,3}|(?:[0-9A-Fa-f]{1,4}:){1,3}(?::[0-9A-Fa-f]{1,4}){1,4}|(?:[0-9A-Fa-f]{1,4}:){1,2}(?::[0-9A-Fa-f]{1,4}){1,5}|[0-9A-Fa-f]{1,4}:(?:(?::[0-9A-Fa-f]{1,4}){1,6})|:(?:(?::[0-9A-Fa-f]{1,4}){1,6}))\/(12[0-8]|1[0-1][0-9]|[1-9][0-9]|[0-9])$
+                  type: string
+                minItems: 1
+                type: array
             type: object
+            x-kubernetes-validations:
+            - message: useRemoteAddress must be set to false if xffTrustedCIDRs is
+                set
+              rule: '!has(self.xffTrustedCIDRs) || (has(self.useRemoteAddress) &&
+                !self.useRemoteAddress)'
+            - message: only one of xffNumTrustedHops and xffTrustedCIDRs may be set
+              rule: '!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)'
           status:
             description: |-
               PolicyStatus defines the common attributes that all Policies should include within

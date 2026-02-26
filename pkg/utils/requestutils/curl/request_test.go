@@ -10,9 +10,7 @@ import (
 )
 
 var _ = Describe("Curl", func() {
-
 	Context("BuildArgs", func() {
-
 		DescribeTable("it builds the args using the provided option",
 			func(option curl.Option, expectedMatcher types.GomegaMatcher) {
 				Expect(curl.BuildArgs(option)).To(expectedMatcher)
@@ -50,7 +48,5 @@ var _ = Describe("Curl", func() {
 				ContainElement("--custom-args"),
 			),
 		)
-
 	})
-
 })

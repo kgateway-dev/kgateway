@@ -89,6 +89,7 @@ func mergeListenerPolicy(
 	mergeFuncs := []func(string, *listenerPolicy, *listenerPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
 		mergeProxyProtocol,
 		mergePerConnectionBufferLimitBytes,
+		// Not merging ClientCertificateValidation since its only used for tls config.
 		mergeHttpSettings,
 	}
 
@@ -128,6 +129,7 @@ func mergePerConnectionBufferLimitBytes(
 	p1.perConnectionBufferLimitBytes = p2.perConnectionBufferLimitBytes
 	mergeOrigins.SetOne(origin+"perConnectionBufferLimitBytes", p2Ref, p2MergeOrigins)
 }
+
 func mergeHttpSettings(
 	origin string,
 	p1, p2 *listenerPolicy,

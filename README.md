@@ -5,7 +5,7 @@
     <img alt="kgateway" src="https://raw.githubusercontent.com/kgateway-dev/kgateway.dev/main/static/logo.svg">
   </picture>
   <br/>
-  The most widely deployed gateway in Kubernetes for microservices and AI agents
+  The most widely deployed gateway in Kubernetes for microservices
 </h1>
 <div align="center">
   <a href="https://github.com/kgateway-dev/kgateway/releases">
@@ -22,25 +22,25 @@
 
 ## About kgateway
 
-Kgateway is the most mature and widely deployed gateway in the market today. Built on open source and open standards, **kgateway is a dual control plane that implements the [Kubernetes Gateway API](https://gateway-api.sigs.k8s.io/) for both [Envoy](https://github.com/envoyproxy/envoy) and [agentgateway](https://github.com/agentgateway/agentgateway)**. This unique architecture enables kgateway to provide unified API connectivity spanning from traditional HTTP/gRPC workloads to advanced AI agent orchestration.
+Kgateway is the most mature and widely deployed gateway in the market today. Built on open source and open standards, **kgateway is a resilient and performance-oriented control plane that implements the [Kubernetes Gateway API](https://gateway-api.sigs.k8s.io/) for [Envoy](https://github.com/envoyproxy/envoy)**.
 
-With a control plane that scales from lightweight microgateway deployments between services, to massively parallel centralized gateways handling billions of API calls, to advanced AI gateway use cases for safety, security, and governance, kgateway brings omni-directional API connectivity to any cloud and any environment.
+With a control plane that scales from lightweight microgateway deployments between services to massively parallel centralized gateways handling billions of API calls, kgateway brings omni-directional API connectivity to any cloud and any environment.
 
 ### Use Cases
 
 Kgateway is designed for:
 
-* **Advanced Ingress Controller and Next-Gen API Gateway**: Aggregate web APIs and apply functions like authentication, authorization and rate limiting in one place. Powered by [Envoy](https://www.envoyproxy.io) or [agentgateway](https://github.com/agentgateway/agentgateway) and programmed with the [Gateway API](https://gateway-api.sigs.k8s.io/), kgateway is a world-leading Cloud Native ingress.
-
-* **AI Gateway for LLM Consumption**: Protect models, tools, agents, and data from inappropriate access. Manage traffic to LLM providers, enrich prompts at a system level, and apply prompt guards for safety and compliance.
-
-* **Inference Gateway for Generative Models**: Intelligently route to AI inference workloads in Kubernetes environments utilizing the [Inference Extension](https://gateway-api-inference-extension.sigs.k8s.io/) project.
-
-* **Native MCP and Agent-to-Agent Gateway**: Federate Model Context Protocol tool services and secure agent-to-agent communications with a single scalable endpoint powered by agentgateway.
+* **Next-Gen API Gateway**: Expose APIs and apply policies like authentication, authorization and rate limiting in one place. Powered by [Envoy](https://www.envoyproxy.io) and programmed with the [Gateway API](https://gateway-api.sigs.k8s.io/), kgateway is a world-leading Cloud Native API Gateway.
 
 * **Hybrid Application Migration**: Route to backends implemented as microservices, serverless functions or legacy apps. Gradually migrate from legacy code while maintaining existing systems.
 
+* **Complex Tenancy Environments**: Multiple personas and teams can work with kgateway to express their APIs, with concepts like route delegation and composable policies.
+
 Kgateway is feature-rich, fast, and flexible. It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds.
+
+> [!IMPORTANT]
+> Kgateway previously acted as a control plane for the agentgateway dataplane to enable several AI and agentic features.
+> Starting with version 2.3.0, the control plane for agentgateway has been migrated to the [agentgateway](https://github.com/agentgateway/agentgateway) repo, enabling a singular focus for kgateway to be a stable, robust, and battle-tested API Gateway powered by Envoy.
 
 ### History
 

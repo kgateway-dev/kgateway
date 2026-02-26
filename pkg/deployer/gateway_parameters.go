@@ -145,10 +145,10 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
 				},
 				PodTemplate: &kgateway.Pod{
-					TerminationGracePeriodSeconds: ptr.To(int64(60)),
+					TerminationGracePeriodSeconds: new(int64(60)),
 					GracefulShutdown: &kgateway.GracefulShutdownSpec{
-						Enabled:          ptr.To(true),
-						SleepTimeSeconds: ptr.To(int64(10)),
+						Enabled:          new(true),
+						SleepTimeSeconds: new(int64(10)),
 					},
 					ReadinessProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
@@ -176,21 +176,21 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 				},
 				EnvoyContainer: &kgateway.EnvoyContainer{
 					Bootstrap: &kgateway.EnvoyBootstrap{
-						LogLevel: ptr.To("info"),
+						LogLevel: new("info"),
 						DnsResolver: &kgateway.DnsResolver{
-							UdpMaxQueries: ptr.To(int32(100)),
+							UdpMaxQueries: new(int32(100)),
 						},
 					},
 					Image: &kgateway.Image{
-						Registry:   ptr.To(imageInfo.Registry),
-						Tag:        ptr.To(imageInfo.Tag),
-						Repository: ptr.To(EnvoyWrapperImage),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
+						Registry:   new(imageInfo.Registry),
+						Tag:        new(imageInfo.Tag),
+						Repository: new(EnvoyWrapperImage),
+						PullPolicy: (*corev1.PullPolicy)(new(imageInfo.PullPolicy)),
 					},
 					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: ptr.To(false),
-						ReadOnlyRootFilesystem:   ptr.To(true),
-						RunAsNonRoot:             ptr.To(true),
+						AllowPrivilegeEscalation: new(false),
+						ReadOnlyRootFilesystem:   new(true),
+						RunAsNonRoot:             new(true),
 						RunAsUser:                ptr.To[int64](10101),
 						Capabilities: &corev1.Capabilities{
 							Drop: []corev1.Capability{"ALL"},
@@ -198,34 +198,34 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 					},
 				},
 				Stats: &kgateway.StatsConfig{
-					Enabled:                 ptr.To(true),
-					RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
-					EnableStatsRoute:        ptr.To(true),
-					StatsRoutePrefixRewrite: ptr.To("/stats"),
+					Enabled:                 new(true),
+					RoutePrefixRewrite:      new("/stats/prometheus?usedonly"),
+					EnableStatsRoute:        new(true),
+					StatsRoutePrefixRewrite: new("/stats"),
 				},
 				SdsContainer: &kgateway.SdsContainer{
 					Image: &kgateway.Image{
-						Registry:   ptr.To(imageInfo.Registry),
-						Tag:        ptr.To(imageInfo.Tag),
-						Repository: ptr.To(SdsImage),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
+						Registry:   new(imageInfo.Registry),
+						Tag:        new(imageInfo.Tag),
+						Repository: new(SdsImage),
+						PullPolicy: (*corev1.PullPolicy)(new(imageInfo.PullPolicy)),
 					},
 					Bootstrap: &kgateway.SdsBootstrap{
-						LogLevel: ptr.To("info"),
+						LogLevel: new("info"),
 					},
 				},
 				Istio: &kgateway.IstioIntegration{
 					IstioProxyContainer: &kgateway.IstioContainer{
 						Image: &kgateway.Image{
-							Registry:   ptr.To("docker.io/istio"),
-							Repository: ptr.To("proxyv2"),
-							Tag:        ptr.To("1.22.0"),
-							PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
+							Registry:   new("docker.io/istio"),
+							Repository: new("proxyv2"),
+							Tag:        new("1.22.0"),
+							PullPolicy: (*corev1.PullPolicy)(new(imageInfo.PullPolicy)),
 						},
-						LogLevel:              ptr.To("warning"),
-						IstioDiscoveryAddress: ptr.To("istiod.istio-system.svc:15012"),
-						IstioMetaMeshId:       ptr.To("cluster.local"),
-						IstioMetaClusterId:    ptr.To("Kubernetes"),
+						LogLevel:              new("warning"),
+						IstioDiscoveryAddress: new("istiod.istio-system.svc:15012"),
+						IstioMetaMeshId:       new("cluster.local"),
+						IstioMetaClusterId:    new("Kubernetes"),
 					},
 				},
 			},

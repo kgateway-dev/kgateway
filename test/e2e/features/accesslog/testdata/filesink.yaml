@@ -2,12 +2,12 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: HTTPListenerPolicy
 metadata:
   name: access-logs
-  namespace: default
+  namespace: kgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
-    name: gw
+    name: gateway
   accessLog:
   - fileSink:
       path: /dev/stdout

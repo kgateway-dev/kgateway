@@ -126,10 +126,10 @@ func mergeParentChildRouteMatch(
 	if child.Path == nil {
 		child.Path = &gwv1.HTTPPathMatch{
 			Type:  ptr.To(gwv1.PathMatchPathPrefix),
-			Value: ptr.To(""),
+			Value: new(""),
 		}
 	}
-	child.Path.Value = ptr.To(path.Join(*parent.Path.Value, *child.Path.Value))
+	child.Path.Value = new(path.Join(*parent.Path.Value, *child.Path.Value))
 
 	// Inherit parent and child headers and query parameters while augmenting the merge
 	// with additions specified on the child
@@ -138,7 +138,7 @@ func mergeParentChildRouteMatch(
 
 	// If parent specifies a method, inherit it (this will overwrite any method specified on the child)
 	if parent.Method != nil {
-		child.Method = ptr.To(*parent.Method)
+		child.Method = new(*parent.Method)
 	}
 }
 

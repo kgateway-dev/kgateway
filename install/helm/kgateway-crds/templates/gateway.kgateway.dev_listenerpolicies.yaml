@@ -62,6 +62,90 @@ spec:
                   Default specifies default listener configuration for all Listeners, unless a per-port
                   configuration is defined.
                 properties:
+                  clientCertificateValidation:
+                    description: |-
+                      ClientCertificateValidation configures mutual TLS (mTLS) client certificate validation for the listener.
+                      This enables per-listener configuration of CA certificates for client certificate validation,
+                      allowing different listeners on the same port to enforce different mTLS trust boundaries.
+                      When configured on a ListenerPolicy targeting a specific listener (via sectionName),
+                      it overrides any Gateway-level mTLS configuration for that listener.
+
+                      Security Note: Per-listener CA certificate validation can be bypassed in scenarios where
+                      wildcard listeners (e.g., *.example.com) overlap with more specific hostnames on the same port,
+                      due to TLS connection coalescing. For deployments with non-overlapping hostnames per listener,
+                      this security concern does not apply. See GEP-91 and GEP-3567 for more details.
+                      Reference: https://gateway-api.sigs.k8s.io/geps/gep-91/
+                      Reference: https://github.com/kubernetes-sigs/gateway-api/issues/3567
+                    properties:
+                      caCertificateRefs:
+                        description: |-
+                          CACertificateRefs contains references to Kubernetes Secrets or ConfigMaps containing
+                          CA certificates. Multiple references will be combined into a single trusted CA pool for the listener.
+                          The referenced Secrets/ConfigMaps must have a ca.crt key containing the PEM data
+                        items:
+                          description: |-
+                            ObjectReference identifies an API object including its namespace.
+
+                            The API object must be valid in the cluster; the Group and Kind must
+                            be registered in the cluster for this reference to be valid.
+
+                            References to objects with invalid Group and Kind are not valid, and must
+                            be rejected by the implementation, with appropriate Conditions set
+                            on the containing object.
+                          properties:
+                            group:
+                              description: |-
+                                Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                When set to the empty string, core API group is inferred.
+                              maxLength: 253
+                              pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                            kind:
+                              description: Kind is kind of the referent. For example
+                                "ConfigMap" or "Service".
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                              type: string
+                            name:
+                              description: Name is the name of the referent.
+                              maxLength: 253
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: |-
+                                Namespace is the namespace of the referenced object. When unspecified, the local
+                                namespace is inferred.
+
+                                Note that when a namespace different than the local namespace is specified,
+                                a ReferenceGrant object is required in the referent namespace to allow that
+                                namespace's owner to accept the reference. See the ReferenceGrant
+                                documentation for details.
+
+                                Support: Core
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                              type: string
+                          required:
+                          - group
+                          - kind
+                          - name
+                          type: object
+                        maxItems: 8
+                        minItems: 1
+                        type: array
+                      mode:
+                        description: Mode specifies how the listener should enforce
+                          client certificate validation.
+                        enum:
+                        - Require
+                        - Optional
+                        type: string
+                    required:
+                    - caCertificateRefs
+                    - mode
+                    type: object
                   httpSettings:
                     description: |-
                       HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
@@ -1351,6 +1435,12 @@ spec:
                         - AppendIfAbsent
                         - PassThrough
                         type: string
+                      skipXFFAppend:
+                        description: |-
+                          SkipXffAppend specifies whether to skip adding the downstream's remote IP address to the X-Forwarded-For HTTP header.
+                          Note: If omitted, this effectively will default to true when UseRemoteAddress is false, such that Envoy acts as a "transparent proxy".
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-skip-xff-append
+                        type: boolean
                       streamIdleTimeout:
                         description: |-
                           StreamIdleTimeout is the idle timeout for HTTP streams.
@@ -1770,7 +1860,7 @@ spec:
                           Note: If this field is omitted, it will fallback to the default value of 'true', which we set for all Envoy HCMs.
                           Thus, setting this explicitly to true is unnecessary (but will not cause any harm).
                           When true, Envoy will use the remote address of the connection as the client address.
-                          When false, Envoy will use the X-Forwarded-For header to determine the client address.
+                          When false, Envoy will use the X-Forwarded-For header to determine the client address. Furthermore, SkipXffAppend will implicitly be set to true unless explicitly configured.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address
                         type: boolean
                       uuidRequestIdConfig:
@@ -1794,11 +1884,34 @@ spec:
                       xffNumTrustedHops:
                         description: |-
                           XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.
+                          This is mutually exclusive with XffTrustedCIDRs.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
                         format: int32
                         minimum: 0
                         type: integer
+                      xffTrustedCIDRs:
+                        description: |-
+                          XffTrustedCIDRs are ranges of IPs that may appear in the X-Forwarded-For HTTP header and are trusted when determining the origin client's IP address.
+                          This is mutually exclusive with XffNumTrustedHops and requires UseRemoteAddress to be set to false.
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/original_ip_detection/xff/v3/xff.proto#envoy-v3-api-field-extensions-http-original-ip-detection-xff-v3-xffconfig-xff-trusted-cidrs
+                        items:
+                          description: |-
+                            CIDR can be used wherever an address range in CIDR notation is expected.
+                            Note: The regex for the IP validation patterns was taken from https://www.ditig.com/validating-ipv4-and-ipv6-addresses-with-regexp
+                          format: cidr
+                          pattern: ^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}\/([0-9]|[1-2][0-9]|3[0-2])$|^((?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,7}:|:(?::[0-9A-Fa-f]{1,4}){1,7}|(?:[0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,5}(?::[0-9A-Fa-f]{1,4}){1,2}|(?:[0-9A-Fa-f]{1,4}:){1,4}(?::[0-9A-Fa-f]{1,4}){1,3}|(?:[0-9A-Fa-f]{1,4}:){1,3}(?::[0-9A-Fa-f]{1,4}){1,4}|(?:[0-9A-Fa-f]{1,4}:){1,2}(?::[0-9A-Fa-f]{1,4}){1,5}|[0-9A-Fa-f]{1,4}:(?:(?::[0-9A-Fa-f]{1,4}){1,6})|:(?:(?::[0-9A-Fa-f]{1,4}){1,6}))\/(12[0-8]|1[0-1][0-9]|[1-9][0-9]|[0-9])$
+                          type: string
+                        minItems: 1
+                        type: array
                     type: object
+                    x-kubernetes-validations:
+                    - message: useRemoteAddress must be set to false if xffTrustedCIDRs
+                        is set
+                      rule: '!has(self.xffTrustedCIDRs) || (has(self.useRemoteAddress)
+                        && !self.useRemoteAddress)'
+                    - message: only one of xffNumTrustedHops and xffTrustedCIDRs may
+                        be set
+                      rule: '!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)'
                   perConnectionBufferLimitBytes:
                     description: |-
                       PerConnectionBufferLimitBytes sets the per-connection buffer limit for all listeners on the gateway.
@@ -3135,6 +3248,12 @@ spec:
                               - AppendIfAbsent
                               - PassThrough
                               type: string
+                            skipXFFAppend:
+                              description: |-
+                                SkipXffAppend specifies whether to skip adding the downstream's remote IP address to the X-Forwarded-For HTTP header.
+                                Note: If omitted, this effectively will default to true when UseRemoteAddress is false, such that Envoy acts as a "transparent proxy".
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-skip-xff-append
+                              type: boolean
                             streamIdleTimeout:
                               description: |-
                                 StreamIdleTimeout is the idle timeout for HTTP streams.
@@ -3570,7 +3689,7 @@ spec:
                                 Note: If this field is omitted, it will fallback to the default value of 'true', which we set for all Envoy HCMs.
                                 Thus, setting this explicitly to true is unnecessary (but will not cause any harm).
                                 When true, Envoy will use the remote address of the connection as the client address.
-                                When false, Envoy will use the X-Forwarded-For header to determine the client address.
+                                When false, Envoy will use the X-Forwarded-For header to determine the client address. Furthermore, SkipXffAppend will implicitly be set to true unless explicitly configured.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address
                               type: boolean
                             uuidRequestIdConfig:
@@ -3594,11 +3713,34 @@ spec:
                             xffNumTrustedHops:
                               description: |-
                                 XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.
+                                This is mutually exclusive with XffTrustedCIDRs.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
                               format: int32
                               minimum: 0
                               type: integer
+                            xffTrustedCIDRs:
+                              description: |-
+                                XffTrustedCIDRs are ranges of IPs that may appear in the X-Forwarded-For HTTP header and are trusted when determining the origin client's IP address.
+                                This is mutually exclusive with XffNumTrustedHops and requires UseRemoteAddress to be set to false.
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/original_ip_detection/xff/v3/xff.proto#envoy-v3-api-field-extensions-http-original-ip-detection-xff-v3-xffconfig-xff-trusted-cidrs
+                              items:
+                                description: |-
+                                  CIDR can be used wherever an address range in CIDR notation is expected.
+                                  Note: The regex for the IP validation patterns was taken from https://www.ditig.com/validating-ipv4-and-ipv6-addresses-with-regexp
+                                format: cidr
+                                pattern: ^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}\/([0-9]|[1-2][0-9]|3[0-2])$|^((?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,7}:|:(?::[0-9A-Fa-f]{1,4}){1,7}|(?:[0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,5}(?::[0-9A-Fa-f]{1,4}){1,2}|(?:[0-9A-Fa-f]{1,4}:){1,4}(?::[0-9A-Fa-f]{1,4}){1,3}|(?:[0-9A-Fa-f]{1,4}:){1,3}(?::[0-9A-Fa-f]{1,4}){1,4}|(?:[0-9A-Fa-f]{1,4}:){1,2}(?::[0-9A-Fa-f]{1,4}){1,5}|[0-9A-Fa-f]{1,4}:(?:(?::[0-9A-Fa-f]{1,4}){1,6})|:(?:(?::[0-9A-Fa-f]{1,4}){1,6}))\/(12[0-8]|1[0-1][0-9]|[1-9][0-9]|[0-9])$
+                                type: string
+                              minItems: 1
+                              type: array
                           type: object
+                          x-kubernetes-validations:
+                          - message: useRemoteAddress must be set to false if xffTrustedCIDRs
+                              is set
+                            rule: '!has(self.xffTrustedCIDRs) || (has(self.useRemoteAddress)
+                              && !self.useRemoteAddress)'
+                          - message: only one of xffNumTrustedHops and xffTrustedCIDRs
+                              may be set
+                            rule: '!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)'
                         perConnectionBufferLimitBytes:
                           description: |-
                             PerConnectionBufferLimitBytes sets the per-connection buffer limit for all listeners on the gateway.
@@ -3646,7 +3788,7 @@ spec:
                   Only supports `Gateway` resources
                 items:
                   description: |-
-                    Select the object to attach the policy by Group, Kind, and Name.
+                    Select the object to attach the policy by Group, Kind, Name and SectionName.
                     The object must be in the same namespace as the policy.
                     You can target only one object at a time.
                   properties:
@@ -3670,6 +3812,12 @@ spec:
                       maxLength: 253
                       minLength: 1
                       type: string
+                    sectionName:
+                      description: The section name of the target resource.
+                      maxLength: 253
+                      minLength: 1
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                      type: string
                   required:
                   - group
                   - kind
@@ -3687,7 +3835,7 @@ spec:
                   `Gateway` resources to attach the policy to.
                 items:
                   description: |-
-                    LocalPolicyTargetSelector selects the object to attach the policy by Group, Kind, and MatchLabels.
+                    LocalPolicyTargetSelectorWithSectionName the object to attach the policy by Group, Kind, MatchLabels, and optionally SectionName.
                     The object must be in the same namespace as the policy and match the
                     specified labels.
                     Do not use targetSelectors when reconciliation times are critical, especially if you
@@ -3714,6 +3862,12 @@ spec:
                         type: string
                       description: Label selector to select the target resource.
                       type: object
+                    sectionName:
+                      description: The section name of the target resource.
+                      maxLength: 253
+                      minLength: 1
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                      type: string
                   required:
                   - group
                   - kind

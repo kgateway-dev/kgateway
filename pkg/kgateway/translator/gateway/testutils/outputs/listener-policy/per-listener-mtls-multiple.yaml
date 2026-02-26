@@ -1,0 +1,405 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_example-svc_80
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8443
+  filterChains:
+  - filterChainMatch:
+      serverNames:
+      - tenant-a.example.com
+    filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: tenant-a-https
+        statPrefix: http
+        useRemoteAddress: true
+    name: tenant-a-https
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - h2
+          - http/1.1
+          tlsCertificates:
+          - certificateChain:
+              inlineBytes: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVQVENDQWlXZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFiTVFvd0NBWURWUVFEREFFcU1RMHcKQ3dZRFZRUUtEQVJ5YjI5ME1CNFhEVEl6TVRFd09ERTJORFExTjFvWERUTXpNVEV3TlRFMk5EUTFOMW93SGpFSwpNQWdHQTFVRUF3d0JLakVRTUE0R0ExVUVDZ3dIWjJGMFpYZGhlVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFECmdnRVBBRENDQVFvQ2dnRUJBTit0V2hoa3QvNVFQTUw4UGorZ1JScUM1blp5TG9Sem5iK3hPazdQTVozRndtYUcKNThvbVhPRm16ZmJlK0VaaGE0UlBhK1BpdFhFbitjZkM5allYRU42dGM1WExWUjlKK1dCRXRhSUpoZlh2VzAvbgpraEg0MWFZa2NCQVMyTEh1U3l4WWd3VERMRzI1OUxVdVJFT3VGSVhtWUZJaGVlZTZ6V3dRMXk0Ujk1VzRoVGFzCi9JVk9wYmttbSsyM0ZVQ1Q3RTcvNzN0RFh3Q1dpekc3UnUyZ1p2aS9tK0ZRVUJCZmFPTGxzelQvVHNwNTB3YmUKY0hxY29UbWJNWUJpWDk1RFBYTWtnZ2g5M1R2bnBWb0taYVZhWDNOdHlGRGJOZnEyLzZaT2daNFlNZVgzb0VMUgpiVllpY01rU3lZRHJWbW9jeHZBMWdQQUsxd2NkVE1OcjlnY0F1b0VDQXdFQUFhT0JpRENCaFRBSkJnTlZIUk1FCkFqQUFNQXNHQTFVZER3UUVBd0lGNERBZEJnTlZIU1VFRmpBVUJnZ3JCZ0VGQlFjREFnWUlLd1lCQlFVSEF3RXcKREFZRFZSMFJCQVV3QTRJQktqQWRCZ05WSFE0RUZnUVVxaW40SEhXN08wR3NLbGgwUEJ2SFFZSzRQT013SHdZRApWUjBqQkJnd0ZvQVVZb3l3TXpJN1BpWGtJd3FMSTdkNzA5SmJnVmN3RFFZSktvWklodmNOQVFFTEJRQURnZ0lCCkFCQ3p2NUUrb3hYT3RBUi9UWWE2YWJMVm94WENPWFZVeVFRell5VFJoekJOY0Vjbk1NeDBHc2V1NHRXeUlmem8KNmQ5LzRkOWdmdDlRNnVTS1RZUkhYU0VIQUFsMmlEWGdQTTZoSk0vNmpxQlE2N1ErVkVrUTJWVUMySDZEYjF1Qwo2VGdldk9MdlA1eDhrS2FjZVNnYTdmSHZJcW95OHVmbm1BSzlhd2ZobE9hajBjUWcxQXV6aW14blhzTVQvdkNVCm9Xa2xPZSt0TDA2OEd3LytIMFJQMTJ6N2t6VGJDbXZuRWU4bk1QSXNrU21NZTcvUnZLcUFuYTd0NHFDOVdyRXgKWlFZK0NlOVhrTnI3RGJaZnprTmpqUFV2OEozdHN2dzY5Zm1HcVBEWVpHMm1HQjRzeGFyNy9mZG4rbGd3MDVsRwpBbEhhaWpXTlVGTWtmcXgvUzZnampEL0NPZVpRcVltM1hLY3RCWkFSUjNJRUR0RWNEUkRzNllvczhCUTBzbS9ECkhnNG1XWWR4Y283WlpnUzF6ZWlhdkNwRWxDaXEzWnB5c0EvS1NLS056Y1RIRk5acXBxYWFNdVQvaTBuaUI1MmEKZmpFSDUzdk1wYXhUK1IvcFIxQ1NMREZ6VDI3OTFMaEprZkJWVWwzQkdnOVY2VCt6bkl1Nkk1aVU1RlZZbVl3UApubS9EYitncE9JalEyU0w5Wm1nVkNvdjFvNTBTU3ZLN1RYSFVIaXFoZXlucDAyR1ZYYXpFT295ODBWcG04dW9JCklvS2NFOS9IUldOT0F5Uk41cWtYRDBnalpJOWM1aUtjV25kQ1B1cnBFZENNZUdiems1cWRUNGhZSFFsM2RKeW8KNHJoZm9MN051R1VUa0o1ZCtGdFBwaXRISkNEVGdUb05LTVNGcTcxbzRoMXkKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+            privateKey:
+              inlineBytes: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV1d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktVd2dnU2hBZ0VBQW9JQkFRRGZyVm9ZWkxmK1VEekMKL0Q0L29FVWFndVoyY2k2RWM1Mi9zVHBPenpHZHhjSm1odWZLSmx6aFpzMzIzdmhHWVd1RVQydmo0clZ4Si9uSAp3dlkyRnhEZXJYT1Z5MVVmU2ZsZ1JMV2lDWVgxNzF0UDU1SVIrTldtSkhBUUV0aXg3a3NzV0lNRXd5eHR1ZlMxCkxrUkRyaFNGNW1CU0lYbm51czFzRU5jdUVmZVZ1SVUyclB5RlRxVzVKcHZ0dHhWQWsreE8vKzk3UTE4QWxvc3gKdTBidG9HYjR2NXZoVUZBUVgyamk1Yk0wLzA3S2VkTUczbkI2bktFNW16R0FZbC9lUXoxekpJSUlmZDA3NTZWYQpDbVdsV2w5emJjaFEyelg2dHYrbVRvR2VHREhsOTZCQzBXMVdJbkRKRXNtQTYxWnFITWJ3TllEd0N0Y0hIVXpECmEvWUhBTHFCQWdNQkFBRUNnZjhQVjFhUUwxaEVteTl0amc1WkR0SFFxRGFJZGZ0UUhwVmdCY0ZtMVVyZzBnSzAKWjZHa204V0REZ2ZqYlNlTlZ1RXhlRnFqV2RwWDkyeFhHbGNJdUV4SFgvZStsTXNRdnBWUllMcGhQblRuQU1YVgp0MG9rN1NYTFBVRll4OC8vcUcvWkZHTzA0UHJYNmFMRFNuZ0NBYXhxOFpNbFpFUkMyaUJKaTAwVXhGNHNKR25WCklJeHFLeVRnbWpBcFV6c1BDWXF5ci9aNmJTRkVnbVNxNzJobmt2Rm1PV3NYcldzRlZLY05iUUplWTRMMEJuWUsKWk5xODNmemt6ekpxbVh3OEVncWFPNlhWMmJtVmYrM1hSL3ViMDRGeXRya0Y5bE1JU0pWOUhkQmtRaGV2VzZhVApoSG5pblV6VkgyUlh4M1piYWw3ck1ZL0lOMWNmaFVlWm9BZDQ0ZGtDZ1lFQTh1bHorbXpPWXg0QVNnWUo0eVNICkdmc1VQeXpJUU9vaEVJQmtxMWNrUHJlbVhsdEdoWTcrRmtYYmh5cnVuOTRIREJJZWR0RWt0YjlZSDkvT0xNME8KK056TlhTYnlaQ3ZTa1U1ZlNNeUpDc3E3L01JTlVpNUxGN1FLQVF1ZXk3WDgvUGU3NHhFQ29hN1AvSlJkTnYrdgpjUnkyUEZOSlNGbTJGdkxGeDA4TDFWa0NnWUVBNjdxV3Q5dENpQ24zRXVPM2hEeFptZ3VSWU55Tk9TWkowdjR5Cm9zaXZ0WFl2ZGVYWGxGZWFWSEJtZG5vZUYrVTZ6TXpUQUY0d09jNmZpenpCMjlGVkxjWjJmTE5tWXc0RmxENFEKR0wzMHVJckQ5WXJraGZWZm85TW9aVHo2cWJnc0xQQnNZTXljelpFOThyb3dmZVp2MkUzQ1lRaDhOL1lGbXRmOQptWTViNFdrQ2dZQkQyc2pHQkl6bWpTUGhpYXhMWWhISFJTYlR1dXU1am0xc0VhR05aMHM5cGNsNGhDREFBRUNqCjhpR3ZzV04xRHUyREJyQ3gyaHhhRkxoR054dDkwazVEWUZLUm1lYU42dHZvTVM5V3c2UG9ldGRtZE1LSjJWcXEKcFdWQ0EzLzVRYjRJNEI4QS8raHZSOGpic29vVGFmc1ZLc01ST09hNHFpNitYRlM1SnpDVUNRS0JnRmZLN2tjYgpTZlFjYlFDRC90MG8vTlg2YVBLQ01iYVBJLytJM0tMenl6engvMHNSaHZDZ2o4SFMrdFkxTlBBQlY1emV5OWJmClBXYktKWEZkOTNVK3lWSjdEN1h4dXJnNWlLcGxVdWxrRmJpRk5lWkZERWMzMDU3WURidG1zcFJ6RzBEQmFodkQKR01NV3pOT1J0RzJ2WFFoYUxZS2wvbDE1S3kwNE5DTDBlaFBCQW9HQkFMK2RmaVFmUjhYVGMwMzF6R0xwQm1kdQpOMU81aDM1cUdIT0s4M25MY1VQSnhzc0JTSGVxNTZEVHBic3VMRjY0V1c2bk5KSWRwckdRLzNpOFZldzhDa05ZCmtXY2ZGWkdUTGM4b2g4Tkw4bWpiZGtITCs3M3ZuVy9FbEZRRDlWZTE3WWN0cEZKbUcwcVBSaFVWQzhkSG5RYnAKWXRMTTQxb01qQlQ3NUdjRjBZZ2wKLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLQo=
+          tlsParams: {}
+          validationContext:
+            trustedCa:
+              inlineBytes: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURLekNDQWhPZ0F3SUJBZ0lVVWU5UkFsSzNhUW02dUF3SzZFdmxISWVSU1RJd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0pURVFNQTRHQTFVRUF3d0hWR1Z6ZENCRFFURVJNQThHQTFVRUNnd0lWR1Z6ZENCUGNtY3dIaGNOTWpVeApNakF6TVRreU1EQXdXaGNOTWpZeE1qQXpNVGt5TURBd1dqQWxNUkF3RGdZRFZRUUREQWRVWlhOMElFTkJNUkV3CkR3WURWUVFLREFoVVpYTjBJRTl5WnpDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUIKQUxLZExjSGxXMXBxY3RmdTJQVk51dVVTZlgxOFFmbktzUFprNldIbHBScHpQaXVkVDkwc2xlSFl0L21JV3prMgorN0R4M0RyakNuTmo4YlVMa3JZQVJwNmM2ZE81cjRrOEJCdXp4RTB3ZTdSUG9SVmtCeklHa3pLMjJaMnl6L2NzCkxJT3FLZ1NWWGJuZXFZeUpCbFZZYUpZUFozdUpIMVFUY0c5Yk9zbGNrTlZZUER0WnVEMFBHRzhKemllTklUU1kKc21tNXB4NjhwL0VWSXIzT1A1ZWNVTWhDY0VnV0lvKzk5Mmg1dGVJbE9NcFhwWmIyV20xQUJwcjhqYUdKVmd0Twp2bjY3bXpSYzdQQmw1aVQ2Y2RVbkc5OUxVTUloajczY0t5MVcrOWkzZWxGOHc0U0VXLzd1TXZOSzBXd2tGYUZsCmw4SHppOHlmc1YzRUMwV1BSdXFwM2pjQ0F3RUFBYU5UTUZFd0hRWURWUjBPQkJZRUZOWnJveTNTaUZSK2wzSEkKdHcrbnBQUGw1TTVtTUI4R0ExVWRJd1FZTUJhQUZOWnJveTNTaUZSK2wzSEl0dytucFBQbDVNNW1NQThHQTFVZApFd0VCL3dRRk1BTUJBZjh3RFFZSktvWklodmNOQVFFTEJRQURnZ0VCQUlwbmV4MGlXOWp0YllKaGZ4ekU0V21tCmZORzNuMTN3WmFlL2JyT25qNjlWa0s2WkozNU9nanY5ZXliSklhaWNZQ3BrUWhhaUE1WDdCVTZjQWM5MElXZHYKYjd0dXJ5OHFUMXp3YlR4enhlR3B2Y3Q2ODc3T3RjQ2xrMUJOYjlPcWRCZFpuY0RnK1dlUzlaa1FtL2FxRWFwQQpRdUpjaTcwWW5rcmUwdWRRdGVuYXpGOG5qbHZuZ2F3M0dKZFE2b2daMW01VzBQUFZhQU1DL0llODhlb2xIMHg4CkVIaytXSTdPUEZSWXJqN21nbC9uM1pTRS9HVDNFci9pejZLU0JSaVIzTU84b1gwRXBCSW9Bb2xpcXpOM2NtWVgKWVZpWXhhWGVSMHAzZEloZ0hJOXRvTlhjMEF0NTc1WlBtakpjaExkV3pralBkVGh5N1ZZS2FLNnl4aWNZVkxJPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+        requireClientCertificate: true
+  listenerFilters:
+  - name: envoy.filters.listener.tls_inspector
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+  name: listener~8443
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8444
+  filterChains:
+  - filterChainMatch:
+      serverNames:
+      - tenant-b.example.com
+    filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: tenant-b-https
+        statPrefix: http
+        useRemoteAddress: true
+    name: tenant-b-https
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - h2
+          - http/1.1
+          tlsCertificates:
+          - certificateChain:
+              inlineBytes: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVQVENDQWlXZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFiTVFvd0NBWURWUVFEREFFcU1RMHcKQ3dZRFZRUUtEQVJ5YjI5ME1CNFhEVEl6TVRFd09ERTJORFExTjFvWERUTXpNVEV3TlRFMk5EUTFOMW93SGpFSwpNQWdHQTFVRUF3d0JLakVRTUE0R0ExVUVDZ3dIWjJGMFpYZGhlVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFECmdnRVBBRENDQVFvQ2dnRUJBTit0V2hoa3QvNVFQTUw4UGorZ1JScUM1blp5TG9Sem5iK3hPazdQTVozRndtYUcKNThvbVhPRm16ZmJlK0VaaGE0UlBhK1BpdFhFbitjZkM5allYRU42dGM1WExWUjlKK1dCRXRhSUpoZlh2VzAvbgpraEg0MWFZa2NCQVMyTEh1U3l4WWd3VERMRzI1OUxVdVJFT3VGSVhtWUZJaGVlZTZ6V3dRMXk0Ujk1VzRoVGFzCi9JVk9wYmttbSsyM0ZVQ1Q3RTcvNzN0RFh3Q1dpekc3UnUyZ1p2aS9tK0ZRVUJCZmFPTGxzelQvVHNwNTB3YmUKY0hxY29UbWJNWUJpWDk1RFBYTWtnZ2g5M1R2bnBWb0taYVZhWDNOdHlGRGJOZnEyLzZaT2daNFlNZVgzb0VMUgpiVllpY01rU3lZRHJWbW9jeHZBMWdQQUsxd2NkVE1OcjlnY0F1b0VDQXdFQUFhT0JpRENCaFRBSkJnTlZIUk1FCkFqQUFNQXNHQTFVZER3UUVBd0lGNERBZEJnTlZIU1VFRmpBVUJnZ3JCZ0VGQlFjREFnWUlLd1lCQlFVSEF3RXcKREFZRFZSMFJCQVV3QTRJQktqQWRCZ05WSFE0RUZnUVVxaW40SEhXN08wR3NLbGgwUEJ2SFFZSzRQT013SHdZRApWUjBqQkJnd0ZvQVVZb3l3TXpJN1BpWGtJd3FMSTdkNzA5SmJnVmN3RFFZSktvWklodmNOQVFFTEJRQURnZ0lCCkFCQ3p2NUUrb3hYT3RBUi9UWWE2YWJMVm94WENPWFZVeVFRell5VFJoekJOY0Vjbk1NeDBHc2V1NHRXeUlmem8KNmQ5LzRkOWdmdDlRNnVTS1RZUkhYU0VIQUFsMmlEWGdQTTZoSk0vNmpxQlE2N1ErVkVrUTJWVUMySDZEYjF1Qwo2VGdldk9MdlA1eDhrS2FjZVNnYTdmSHZJcW95OHVmbm1BSzlhd2ZobE9hajBjUWcxQXV6aW14blhzTVQvdkNVCm9Xa2xPZSt0TDA2OEd3LytIMFJQMTJ6N2t6VGJDbXZuRWU4bk1QSXNrU21NZTcvUnZLcUFuYTd0NHFDOVdyRXgKWlFZK0NlOVhrTnI3RGJaZnprTmpqUFV2OEozdHN2dzY5Zm1HcVBEWVpHMm1HQjRzeGFyNy9mZG4rbGd3MDVsRwpBbEhhaWpXTlVGTWtmcXgvUzZnampEL0NPZVpRcVltM1hLY3RCWkFSUjNJRUR0RWNEUkRzNllvczhCUTBzbS9ECkhnNG1XWWR4Y283WlpnUzF6ZWlhdkNwRWxDaXEzWnB5c0EvS1NLS056Y1RIRk5acXBxYWFNdVQvaTBuaUI1MmEKZmpFSDUzdk1wYXhUK1IvcFIxQ1NMREZ6VDI3OTFMaEprZkJWVWwzQkdnOVY2VCt6bkl1Nkk1aVU1RlZZbVl3UApubS9EYitncE9JalEyU0w5Wm1nVkNvdjFvNTBTU3ZLN1RYSFVIaXFoZXlucDAyR1ZYYXpFT295ODBWcG04dW9JCklvS2NFOS9IUldOT0F5Uk41cWtYRDBnalpJOWM1aUtjV25kQ1B1cnBFZENNZUdiems1cWRUNGhZSFFsM2RKeW8KNHJoZm9MN051R1VUa0o1ZCtGdFBwaXRISkNEVGdUb05LTVNGcTcxbzRoMXkKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+            privateKey:
+              inlineBytes: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV1d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktVd2dnU2hBZ0VBQW9JQkFRRGZyVm9ZWkxmK1VEekMKL0Q0L29FVWFndVoyY2k2RWM1Mi9zVHBPenpHZHhjSm1odWZLSmx6aFpzMzIzdmhHWVd1RVQydmo0clZ4Si9uSAp3dlkyRnhEZXJYT1Z5MVVmU2ZsZ1JMV2lDWVgxNzF0UDU1SVIrTldtSkhBUUV0aXg3a3NzV0lNRXd5eHR1ZlMxCkxrUkRyaFNGNW1CU0lYbm51czFzRU5jdUVmZVZ1SVUyclB5RlRxVzVKcHZ0dHhWQWsreE8vKzk3UTE4QWxvc3gKdTBidG9HYjR2NXZoVUZBUVgyamk1Yk0wLzA3S2VkTUczbkI2bktFNW16R0FZbC9lUXoxekpJSUlmZDA3NTZWYQpDbVdsV2w5emJjaFEyelg2dHYrbVRvR2VHREhsOTZCQzBXMVdJbkRKRXNtQTYxWnFITWJ3TllEd0N0Y0hIVXpECmEvWUhBTHFCQWdNQkFBRUNnZjhQVjFhUUwxaEVteTl0amc1WkR0SFFxRGFJZGZ0UUhwVmdCY0ZtMVVyZzBnSzAKWjZHa204V0REZ2ZqYlNlTlZ1RXhlRnFqV2RwWDkyeFhHbGNJdUV4SFgvZStsTXNRdnBWUllMcGhQblRuQU1YVgp0MG9rN1NYTFBVRll4OC8vcUcvWkZHTzA0UHJYNmFMRFNuZ0NBYXhxOFpNbFpFUkMyaUJKaTAwVXhGNHNKR25WCklJeHFLeVRnbWpBcFV6c1BDWXF5ci9aNmJTRkVnbVNxNzJobmt2Rm1PV3NYcldzRlZLY05iUUplWTRMMEJuWUsKWk5xODNmemt6ekpxbVh3OEVncWFPNlhWMmJtVmYrM1hSL3ViMDRGeXRya0Y5bE1JU0pWOUhkQmtRaGV2VzZhVApoSG5pblV6VkgyUlh4M1piYWw3ck1ZL0lOMWNmaFVlWm9BZDQ0ZGtDZ1lFQTh1bHorbXpPWXg0QVNnWUo0eVNICkdmc1VQeXpJUU9vaEVJQmtxMWNrUHJlbVhsdEdoWTcrRmtYYmh5cnVuOTRIREJJZWR0RWt0YjlZSDkvT0xNME8KK056TlhTYnlaQ3ZTa1U1ZlNNeUpDc3E3L01JTlVpNUxGN1FLQVF1ZXk3WDgvUGU3NHhFQ29hN1AvSlJkTnYrdgpjUnkyUEZOSlNGbTJGdkxGeDA4TDFWa0NnWUVBNjdxV3Q5dENpQ24zRXVPM2hEeFptZ3VSWU55Tk9TWkowdjR5Cm9zaXZ0WFl2ZGVYWGxGZWFWSEJtZG5vZUYrVTZ6TXpUQUY0d09jNmZpenpCMjlGVkxjWjJmTE5tWXc0RmxENFEKR0wzMHVJckQ5WXJraGZWZm85TW9aVHo2cWJnc0xQQnNZTXljelpFOThyb3dmZVp2MkUzQ1lRaDhOL1lGbXRmOQptWTViNFdrQ2dZQkQyc2pHQkl6bWpTUGhpYXhMWWhISFJTYlR1dXU1am0xc0VhR05aMHM5cGNsNGhDREFBRUNqCjhpR3ZzV04xRHUyREJyQ3gyaHhhRkxoR054dDkwazVEWUZLUm1lYU42dHZvTVM5V3c2UG9ldGRtZE1LSjJWcXEKcFdWQ0EzLzVRYjRJNEI4QS8raHZSOGpic29vVGFmc1ZLc01ST09hNHFpNitYRlM1SnpDVUNRS0JnRmZLN2tjYgpTZlFjYlFDRC90MG8vTlg2YVBLQ01iYVBJLytJM0tMenl6engvMHNSaHZDZ2o4SFMrdFkxTlBBQlY1emV5OWJmClBXYktKWEZkOTNVK3lWSjdEN1h4dXJnNWlLcGxVdWxrRmJpRk5lWkZERWMzMDU3WURidG1zcFJ6RzBEQmFodkQKR01NV3pOT1J0RzJ2WFFoYUxZS2wvbDE1S3kwNE5DTDBlaFBCQW9HQkFMK2RmaVFmUjhYVGMwMzF6R0xwQm1kdQpOMU81aDM1cUdIT0s4M25MY1VQSnhzc0JTSGVxNTZEVHBic3VMRjY0V1c2bk5KSWRwckdRLzNpOFZldzhDa05ZCmtXY2ZGWkdUTGM4b2g4Tkw4bWpiZGtITCs3M3ZuVy9FbEZRRDlWZTE3WWN0cEZKbUcwcVBSaFVWQzhkSG5RYnAKWXRMTTQxb01qQlQ3NUdjRjBZZ2wKLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLQo=
+          tlsParams: {}
+          validationContext:
+            trustedCa:
+              inlineBytes: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURLekNDQWhPZ0F3SUJBZ0lVVWU5UkFsSzNhUW02dUF3SzZFdmxISWVSU1RJd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0pURVFNQTRHQTFVRUF3d0hWR1Z6ZENCRFFURVJNQThHQTFVRUNnd0lWR1Z6ZENCUGNtY3dIaGNOTWpVeApNakF6TVRreU1EQXdXaGNOTWpZeE1qQXpNVGt5TURBd1dqQWxNUkF3RGdZRFZRUUREQWRVWlhOMElFTkJNUkV3CkR3WURWUVFLREFoVVpYTjBJRTl5WnpDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUIKQUxLZExjSGxXMXBxY3RmdTJQVk51dVVTZlgxOFFmbktzUFprNldIbHBScHpQaXVkVDkwc2xlSFl0L21JV3prMgorN0R4M0RyakNuTmo4YlVMa3JZQVJwNmM2ZE81cjRrOEJCdXp4RTB3ZTdSUG9SVmtCeklHa3pLMjJaMnl6L2NzCkxJT3FLZ1NWWGJuZXFZeUpCbFZZYUpZUFozdUpIMVFUY0c5Yk9zbGNrTlZZUER0WnVEMFBHRzhKemllTklUU1kKc21tNXB4NjhwL0VWSXIzT1A1ZWNVTWhDY0VnV0lvKzk5Mmg1dGVJbE9NcFhwWmIyV20xQUJwcjhqYUdKVmd0Twp2bjY3bXpSYzdQQmw1aVQ2Y2RVbkc5OUxVTUloajczY0t5MVcrOWkzZWxGOHc0U0VXLzd1TXZOSzBXd2tGYUZsCmw4SHppOHlmc1YzRUMwV1BSdXFwM2pjQ0F3RUFBYU5UTUZFd0hRWURWUjBPQkJZRUZOWnJveTNTaUZSK2wzSEkKdHcrbnBQUGw1TTVtTUI4R0ExVWRJd1FZTUJhQUZOWnJveTNTaUZSK2wzSEl0dytucFBQbDVNNW1NQThHQTFVZApFd0VCL3dRRk1BTUJBZjh3RFFZSktvWklodmNOQVFFTEJRQURnZ0VCQUlwbmV4MGlXOWp0YllKaGZ4ekU0V21tCmZORzNuMTN3WmFlL2JyT25qNjlWa0s2WkozNU9nanY5ZXliSklhaWNZQ3BrUWhhaUE1WDdCVTZjQWM5MElXZHYKYjd0dXJ5OHFUMXp3YlR4enhlR3B2Y3Q2ODc3T3RjQ2xrMUJOYjlPcWRCZFpuY0RnK1dlUzlaa1FtL2FxRWFwQQpRdUpjaTcwWW5rcmUwdWRRdGVuYXpGOG5qbHZuZ2F3M0dKZFE2b2daMW01VzBQUFZhQU1DL0llODhlb2xIMHg4CkVIaytXSTdPUEZSWXJqN21nbC9uM1pTRS9HVDNFci9pejZLU0JSaVIzTU84b1gwRXBCSW9Bb2xpcXpOM2NtWVgKWVZpWXhhWGVSMHAzZEloZ0hJOXRvTlhjMEF0NTc1WlBtakpjaExkV3pralBkVGh5N1ZZS2FLNnl4aWNZVkxBPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+        requireClientCertificate: true
+  listenerFilters:
+  - name: envoy.filters.listener.tls_inspector
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+  name: listener~8444
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8445
+  filterChains:
+  - filterChainMatch:
+      serverNames:
+      - tenant-c.example.com
+    filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: tenant-c-https
+        statPrefix: http
+        useRemoteAddress: true
+    name: tenant-c-https
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - h2
+          - http/1.1
+          tlsCertificates:
+          - certificateChain:
+              inlineBytes: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVQVENDQWlXZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFiTVFvd0NBWURWUVFEREFFcU1RMHcKQ3dZRFZRUUtEQVJ5YjI5ME1CNFhEVEl6TVRFd09ERTJORFExTjFvWERUTXpNVEV3TlRFMk5EUTFOMW93SGpFSwpNQWdHQTFVRUF3d0JLakVRTUE0R0ExVUVDZ3dIWjJGMFpYZGhlVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFECmdnRVBBRENDQVFvQ2dnRUJBTit0V2hoa3QvNVFQTUw4UGorZ1JScUM1blp5TG9Sem5iK3hPazdQTVozRndtYUcKNThvbVhPRm16ZmJlK0VaaGE0UlBhK1BpdFhFbitjZkM5allYRU42dGM1WExWUjlKK1dCRXRhSUpoZlh2VzAvbgpraEg0MWFZa2NCQVMyTEh1U3l4WWd3VERMRzI1OUxVdVJFT3VGSVhtWUZJaGVlZTZ6V3dRMXk0Ujk1VzRoVGFzCi9JVk9wYmttbSsyM0ZVQ1Q3RTcvNzN0RFh3Q1dpekc3UnUyZ1p2aS9tK0ZRVUJCZmFPTGxzelQvVHNwNTB3YmUKY0hxY29UbWJNWUJpWDk1RFBYTWtnZ2g5M1R2bnBWb0taYVZhWDNOdHlGRGJOZnEyLzZaT2daNFlNZVgzb0VMUgpiVllpY01rU3lZRHJWbW9jeHZBMWdQQUsxd2NkVE1OcjlnY0F1b0VDQXdFQUFhT0JpRENCaFRBSkJnTlZIUk1FCkFqQUFNQXNHQTFVZER3UUVBd0lGNERBZEJnTlZIU1VFRmpBVUJnZ3JCZ0VGQlFjREFnWUlLd1lCQlFVSEF3RXcKREFZRFZSMFJCQVV3QTRJQktqQWRCZ05WSFE0RUZnUVVxaW40SEhXN08wR3NLbGgwUEJ2SFFZSzRQT013SHdZRApWUjBqQkJnd0ZvQVVZb3l3TXpJN1BpWGtJd3FMSTdkNzA5SmJnVmN3RFFZSktvWklodmNOQVFFTEJRQURnZ0lCCkFCQ3p2NUUrb3hYT3RBUi9UWWE2YWJMVm94WENPWFZVeVFRell5VFJoekJOY0Vjbk1NeDBHc2V1NHRXeUlmem8KNmQ5LzRkOWdmdDlRNnVTS1RZUkhYU0VIQUFsMmlEWGdQTTZoSk0vNmpxQlE2N1ErVkVrUTJWVUMySDZEYjF1Qwo2VGdldk9MdlA1eDhrS2FjZVNnYTdmSHZJcW95OHVmbm1BSzlhd2ZobE9hajBjUWcxQXV6aW14blhzTVQvdkNVCm9Xa2xPZSt0TDA2OEd3LytIMFJQMTJ6N2t6VGJDbXZuRWU4bk1QSXNrU21NZTcvUnZLcUFuYTd0NHFDOVdyRXgKWlFZK0NlOVhrTnI3RGJaZnprTmpqUFV2OEozdHN2dzY5Zm1HcVBEWVpHMm1HQjRzeGFyNy9mZG4rbGd3MDVsRwpBbEhhaWpXTlVGTWtmcXgvUzZnampEL0NPZVpRcVltM1hLY3RCWkFSUjNJRUR0RWNEUkRzNllvczhCUTBzbS9ECkhnNG1XWWR4Y283WlpnUzF6ZWlhdkNwRWxDaXEzWnB5c0EvS1NLS056Y1RIRk5acXBxYWFNdVQvaTBuaUI1MmEKZmpFSDUzdk1wYXhUK1IvcFIxQ1NMREZ6VDI3OTFMaEprZkJWVWwzQkdnOVY2VCt6bkl1Nkk1aVU1RlZZbVl3UApubS9EYitncE9JalEyU0w5Wm1nVkNvdjFvNTBTU3ZLN1RYSFVIaXFoZXlucDAyR1ZYYXpFT295ODBWcG04dW9JCklvS2NFOS9IUldOT0F5Uk41cWtYRDBnalpJOWM1aUtjV25kQ1B1cnBFZENNZUdiems1cWRUNGhZSFFsM2RKeW8KNHJoZm9MN051R1VUa0o1ZCtGdFBwaXRISkNEVGdUb05LTVNGcTcxbzRoMXkKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+            privateKey:
+              inlineBytes: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV1d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktVd2dnU2hBZ0VBQW9JQkFRRGZyVm9ZWkxmK1VEekMKL0Q0L29FVWFndVoyY2k2RWM1Mi9zVHBPenpHZHhjSm1odWZLSmx6aFpzMzIzdmhHWVd1RVQydmo0clZ4Si9uSAp3dlkyRnhEZXJYT1Z5MVVmU2ZsZ1JMV2lDWVgxNzF0UDU1SVIrTldtSkhBUUV0aXg3a3NzV0lNRXd5eHR1ZlMxCkxrUkRyaFNGNW1CU0lYbm51czFzRU5jdUVmZVZ1SVUyclB5RlRxVzVKcHZ0dHhWQWsreE8vKzk3UTE4QWxvc3gKdTBidG9HYjR2NXZoVUZBUVgyamk1Yk0wLzA3S2VkTUczbkI2bktFNW16R0FZbC9lUXoxekpJSUlmZDA3NTZWYQpDbVdsV2w5emJjaFEyelg2dHYrbVRvR2VHREhsOTZCQzBXMVdJbkRKRXNtQTYxWnFITWJ3TllEd0N0Y0hIVXpECmEvWUhBTHFCQWdNQkFBRUNnZjhQVjFhUUwxaEVteTl0amc1WkR0SFFxRGFJZGZ0UUhwVmdCY0ZtMVVyZzBnSzAKWjZHa204V0REZ2ZqYlNlTlZ1RXhlRnFqV2RwWDkyeFhHbGNJdUV4SFgvZStsTXNRdnBWUllMcGhQblRuQU1YVgp0MG9rN1NYTFBVRll4OC8vcUcvWkZHTzA0UHJYNmFMRFNuZ0NBYXhxOFpNbFpFUkMyaUJKaTAwVXhGNHNKR25WCklJeHFLeVRnbWpBcFV6c1BDWXF5ci9aNmJTRkVnbVNxNzJobmt2Rm1PV3NYcldzRlZLY05iUUplWTRMMEJuWUsKWk5xODNmemt6ekpxbVh3OEVncWFPNlhWMmJtVmYrM1hSL3ViMDRGeXRya0Y5bE1JU0pWOUhkQmtRaGV2VzZhVApoSG5pblV6VkgyUlh4M1piYWw3ck1ZL0lOMWNmaFVlWm9BZDQ0ZGtDZ1lFQTh1bHorbXpPWXg0QVNnWUo0eVNICkdmc1VQeXpJUU9vaEVJQmtxMWNrUHJlbVhsdEdoWTcrRmtYYmh5cnVuOTRIREJJZWR0RWt0YjlZSDkvT0xNME8KK056TlhTYnlaQ3ZTa1U1ZlNNeUpDc3E3L01JTlVpNUxGN1FLQVF1ZXk3WDgvUGU3NHhFQ29hN1AvSlJkTnYrdgpjUnkyUEZOSlNGbTJGdkxGeDA4TDFWa0NnWUVBNjdxV3Q5dENpQ24zRXVPM2hEeFptZ3VSWU55Tk9TWkowdjR5Cm9zaXZ0WFl2ZGVYWGxGZWFWSEJtZG5vZUYrVTZ6TXpUQUY0d09jNmZpenpCMjlGVkxjWjJmTE5tWXc0RmxENFEKR0wzMHVJckQ5WXJraGZWZm85TW9aVHo2cWJnc0xQQnNZTXljelpFOThyb3dmZVp2MkUzQ1lRaDhOL1lGbXRmOQptWTViNFdrQ2dZQkQyc2pHQkl6bWpTUGhpYXhMWWhISFJTYlR1dXU1am0xc0VhR05aMHM5cGNsNGhDREFBRUNqCjhpR3ZzV04xRHUyREJyQ3gyaHhhRkxoR054dDkwazVEWUZLUm1lYU42dHZvTVM5V3c2UG9ldGRtZE1LSjJWcXEKcFdWQ0EzLzVRYjRJNEI4QS8raHZSOGpic29vVGFmc1ZLc01ST09hNHFpNitYRlM1SnpDVUNRS0JnRmZLN2tjYgpTZlFjYlFDRC90MG8vTlg2YVBLQ01iYVBJLytJM0tMenl6engvMHNSaHZDZ2o4SFMrdFkxTlBBQlY1emV5OWJmClBXYktKWEZkOTNVK3lWSjdEN1h4dXJnNWlLcGxVdWxrRmJpRk5lWkZERWMzMDU3WURidG1zcFJ6RzBEQmFodkQKR01NV3pOT1J0RzJ2WFFoYUxZS2wvbDE1S3kwNE5DTDBlaFBCQW9HQkFMK2RmaVFmUjhYVGMwMzF6R0xwQm1kdQpOMU81aDM1cUdIT0s4M25MY1VQSnhzc0JTSGVxNTZEVHBic3VMRjY0V1c2bk5KSWRwckdRLzNpOFZldzhDa05ZCmtXY2ZGWkdUTGM4b2g4Tkw4bWpiZGtITCs3M3ZuVy9FbEZRRDlWZTE3WWN0cEZKbUcwcVBSaFVWQzhkSG5RYnAKWXRMTTQxb01qQlQ3NUdjRjBZZ2wKLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLQo=
+          tlsParams: {}
+          validationContext:
+            trustedCa:
+              inlineBytes: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN4RENDQWF5Z0F3SUJBZ0lFU1p3dUJEQU5CZ2txaGtpRzl3MEJBUXNGQURBVk1STXdFUVlEVlFRRERBcEoKYm5SbGNtMWxaRU5CTUI0WERUSTJNREl5TXpFMk1URXpORm9YRFRJMU1USXpNVEF3TURBd01Gb3dGREVTTUJBRwpBMVVFQXd3SmJHOWpZV3hvYjNOME1JSUJJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBUThBTUlJQkNnS0NBUUVBCnpxczFhSVJITzdYTVpzdzZzeUFhL0hsN0NZSFlSOGxEc21pQkZKemF6RFgybGhTbmRUdGwwRzgzaVE2TXVtaXcKQ1V0MnRvNDE4QzNISjZqVHZRbldLMUVGZWdiN1dmRmxSTWNGQ01OVDRibFRkRUpPY1lpNkxoVS9Vb0R6dCt4Ygp6Nzd2TWw3eXdJaUpxKzFYMklkMVlsNVFlZjYvMDNxZ21WTlowUENxYVZFcERVWStsT3JwTXVKZUw1bkc2TEt5CkE4OGZhSG8veDN0MkVMeStpaStuWFZxZkc3ZVcxK1NJRUdxblhuWm1Gc09yVXVyK2gzMlRQelJ3aUdlaEpadkIKWW5zaWZqT0VYU3ZIL1pMbzRoYU1vWFdLZXpvMm5OS3pJbnErQk01SFRsMmlZbWY2MElkVW5KYkM3Z2FmVGg1aQphYjh3bkZGUTBnVXRFQmphVy9tL0x3SURBUUFCb3gwd0d6QU9CZ05WSFE4QkFmOEVCQU1DQjRBd0NRWURWUjBUCkJBSXdBREFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBQ3lOb29sYW9rNUVzV1piTFd5Tkc5Z0k3WXpxYldPQWMKMzNleEhDM3JXUVlkbXZoNGIzT3E5UlI4ajErUG5kY054S0RITm5MaGZhdEZjYmZzVEdoMDgvV3pyUlpJT05kawpTcFppNU10SDlVbnlkbUlSMTAxNzFqNml5c3MrdnJQOVJXakdjUHhnSFk2ZTVMWmttbWk0bXFpTWhjUDNDWUpECm81aElCMUpvbUFPTGR2bzU2b1dUbHZKVFozVUl4K0E2RlZNNEwxbmFyK2pTdDJXNjhscUJpL0h2VVQzRGlwV0cKOHFSbG0vdWNFdTNvZXVTUVpXa1lIdGFFK3EyRGZZenZWNExiaUpFaDBEejBwTC9jbEg0MGNJaTFXZkdWNXNLeQpPMGRtWG45RVUzc3pISnpQMTRiVkwwKzl6VmRTSzg1SFhDMjNjNWJlLzIyMFMvY05wM0dhdkE9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCgotLS0tLUJFR0lOIENFUlRJRklDQVRFLS0tLS0KTUlJQ3hEQ0NBYXlnQXdJQkFnSUVlY0dFK2pBTkJna3Foa2lHOXcwQkFRc0ZBREFSTVE4d0RRWURWUVFEREFaeQpiMjkwUTBFd0hoY05Nall3TWpJek1UWXhNVE0wV2hjTk1qVXhNak14TURBd01EQXdXakFWTVJNd0VRWURWUVFECkRBcEpiblJsY20xbFpFTkJNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXgza1MKNHpzQzVvOGVyTTd3LzI4Ky9KTUF5c1dJSUVQc3pKMHRXa29wcjE1RUhuK0VZRzROSXVsT2RpemR2bGRFcHA0cApMQ2Z2d0p1VjQ5QUkreGdiMkRsbjRQWWxRYWFpcWVTbXp1TGJTZXdBYldHZGg1djBNcU93RGFKWm9KV1lUMUZoCld2Y3FpTkNneVBVVVpIMElWQmVzNGV3MFBON2lvYi96cTU3RmQySDZiMHZvZEQ4WXhSY05lakFGR0I5VnYyN3YKclBUdDFxcHN4bnh0UGc4bGxpQ0hrdjRiN1BySjhtbnFhN0k5VFlhc3Q1NUhkVEg3aG1jSmZHUFRBeWdwNm9GRwpiU28yNmhES0lUSVVVcjMrQW42cWpzVXlCdWpEUWJheEpUcWVBVXFMcGxJQ3c3RkFVdHdsd3k2cVBDVnUyMW1WCmkxVE1WN2NNWjVFT0k1QVE1UUlEQVFBQm95QXdIakFPQmdOVkhROEJBZjhFQkFNQ0FnUXdEQVlEVlIwVEJBVXcKQXdFQi96QU5CZ2txaGtpRzl3MEJBUXNGQUFPQ0FRRUFUTURBM0RPUkVZa0Q4anR6Z2JSTXFZVW85NnNhWGh4QgpzTG1ZZ2RXZmtRc1NCYXdxcTJzdzlURm1QNlR5VU1xQ1lDZ2czZ1FIUkQ0QWZId3MxMGZlMmUrcnZWMWprakNTCll0S0x6WDRiWnhEZnplNGhYNDllOTEwZlhJQzRmTHd5UmRrZFpuQml2MmJyRUJPdGxKSUpldHpHRDdkQmlEbVAKeTJQa21Eb0taRWZLY01jbi9HZHRLOEdTU2pWMFphbnh3Wm14bnFIblROMkh0Ylh3ZXducGVmeXNlclhDbE13Mgp0emxNS3lyVFV0T3dPRC9hbEpqV28ydnQ3dGpid1NOWTBBOUJRdjFwczljOFRScjExRUhuYWhSUFpaZis2aWNZCjhaeWxrellzaXhWOVM4WkFzeXRqU2dqMmtPNnhtcFpvRllyUFMxSGk5VDAwZURzQzZCT3JzZz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+        requireClientCertificate: true
+  listenerFilters:
+  - name: envoy.filters.listener.tls_inspector
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+  name: listener~8445
+Routes:
+- ignorePortInHostMatching: true
+  name: tenant-a-https
+  virtualHosts:
+  - domains:
+    - tenant-a.example.com
+    name: tenant-a-https~tenant-a_example_com
+    requireTls: ALL
+    routes:
+    - match:
+        prefix: /
+      name: tenant-a-https~tenant-a_example_com-route-0-httproute-tenant-a-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+- ignorePortInHostMatching: true
+  name: tenant-b-https
+  virtualHosts:
+  - domains:
+    - tenant-b.example.com
+    name: tenant-b-https~tenant-b_example_com
+    requireTls: ALL
+    routes:
+    - match:
+        prefix: /
+      name: tenant-b-https~tenant-b_example_com-route-0-httproute-tenant-b-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+- ignorePortInHostMatching: true
+  name: tenant-c-https
+  virtualHosts:
+  - domains:
+    - tenant-c.example.com
+    name: tenant-c-https~tenant-c_example_com
+    requireTls: ALL
+    routes:
+    - match:
+        prefix: /
+      name: tenant-c-https~tenant-c_example_com-route-0-httproute-tenant-c-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: tenant-a-https
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: tenant-b-https
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: tenant-c-https
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+  httpRoutes:
+    default/tenant-a-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+    default/tenant-b-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+    default/tenant-c-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+  policies:
+    ListenerPolicy/default/per-listener-mtls-a:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    ListenerPolicy/default/per-listener-mtls-b:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

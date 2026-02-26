@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [[ -z $GITHUB_TOKEN ]]; then echo "❌ env var GITHUB_TOKEN not set"; exit 1; fi
 if [[ -z $GH_ORG_REPO ]]; then echo "❌ env var GH_ORG_REPO not set"; exit 1; fi

@@ -13,7 +13,6 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -242,7 +241,7 @@ func parseAppProtocol(b *kgateway.Backend) ir.AppProtocol {
 	if b.Spec.Static != nil {
 		appProtocol := b.Spec.Static.AppProtocol
 		if appProtocol != nil {
-			return ir.ParseAppProtocol(ptr.To(string(*appProtocol)))
+			return ir.ParseAppProtocol(new(string(*appProtocol)))
 		}
 	}
 	return ir.DefaultAppProtocol

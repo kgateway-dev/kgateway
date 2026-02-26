@@ -59,6 +59,11 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
         mergeSlashes: true
         normalizePath: true
+        originalIpDetectionExtensions:
+          - name: envoy.http.original_ip_detection.xff
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.http.original_ip_detection.xff.v3.XffConfig
+              xffNumTrustedHops: 2
         rds:
           configSource:
             ads: {}
@@ -92,7 +97,6 @@ Listeners:
         upgradeConfigs:
         - upgradeType: websocket
         useRemoteAddress: false
-        xffNumTrustedHops: 2
     name: listener~8080
   metadata:
     filterMetadata:
@@ -113,7 +117,7 @@ Listeners:
         - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
         useRemoteAddress:
         - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
-        xffNumTrustedHops:
+        xffConfig:
         - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
   name: listener~8080
 Routes:
@@ -137,7 +141,7 @@ Routes:
         - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
         useRemoteAddress:
         - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
-        xffNumTrustedHops:
+        xffConfig:
         - gateway.kgateway.dev/HTTPListenerPolicy/default/misc
   name: listener~8080
 Statuses:

@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("ContainSubstrings", func() {
-
 	DescribeTable("contains substrings",
 		func(expectedSubstrings []string) {
 			actualString := "this is the string"
@@ -28,5 +27,4 @@ var _ = Describe("ContainSubstrings", func() {
 		Entry("missing substring", []string{"missing"}),
 		Entry("substring and missing substring", []string{"this", "missing"}),
 	)
-
 })

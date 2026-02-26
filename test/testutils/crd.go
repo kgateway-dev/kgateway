@@ -34,7 +34,6 @@ var AllCRDs = []schema.GroupVersionResource{
 	gvr.ReferenceGrant,
 	gvr.BackendTLSPolicy,
 	gvr.XListenerSet,
-	wellknown.InferencePoolGVR,
 	wellknown.BackendTLSPolicyGVR,
 	// K8s API
 	gvr.Service,
