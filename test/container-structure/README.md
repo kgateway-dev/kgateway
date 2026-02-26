@@ -31,6 +31,7 @@ brew install container-structure-test
 
 # Linux
 curl -LO https://github.com/GoogleContainerTools/container-structure-test/releases/download/v1.19.3/container-structure-test-linux-amd64
+echo "fa0fa333bb6ba5c14065e7468d2904f5c82d021d7e1c763c9a45c5f2fbe9ff5f  container-structure-test-linux-amd64" | sha256sum --check
 chmod +x container-structure-test-linux-amd64
 sudo mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
 ```
