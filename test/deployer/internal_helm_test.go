@@ -434,99 +434,24 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"istio-proxy container should be present when Istio is enabled")
 			},
 		},
-		// agentgateway cookbook recipe test cases, but transformed to use
-		// envoy, here to prevent regression of a strategic-merge-patch bug
-		// where overlays could not delete labels. TODO(chandler): DLC:
-		// validate func do not show this, and minimize the set of such test
-		// cases
 		{
-			Name:      "envoy with replicas overlay",
-			InputFile: "envoy-replicas",
-			Validate: func(t *testing.T, outputYaml string) {
-				t.Helper()
-				assert.Contains(t, outputYaml, "replicas: 3",
-					"deployment should have 3 replicas from overlay")
-			},
-		},
-		{
-			Name:      "envoy with image pull secrets overlay",
-			InputFile: "envoy-image-pull-secrets",
-			Validate: func(t *testing.T, outputYaml string) {
-				t.Helper()
-				assert.Contains(t, outputYaml, "name: my-registry-secret",
-					"imagePullSecrets should contain my-registry-secret")
-				assert.Contains(t, outputYaml, "name: another-registry-secret",
-					"imagePullSecrets should contain another-registry-secret")
-			},
-		},
-		{
-			Name:      "envoy with AWS EKS load balancer annotations",
-			InputFile: "envoy-aws-annotations",
-			Validate: func(t *testing.T, outputYaml string) {
-				t.Helper()
-				assert.Contains(t, outputYaml, "service.beta.kubernetes.io/aws-load-balancer-type: nlb",
-					"service should have AWS NLB annotation")
-				assert.Contains(t, outputYaml, "service.beta.kubernetes.io/aws-load-balancer-internal: \"true\"",
-					"service should have AWS internal annotation")
-				assert.Contains(t, outputYaml, "service.beta.kubernetes.io/aws-load-balancer-subnets: subnet-abc123,subnet-def456",
-					"service should have AWS subnets annotation")
-			},
-		},
-		{
-			Name:      "envoy with Azure AKS load balancer annotations",
-			InputFile: "envoy-azure-annotations",
-			Validate: func(t *testing.T, outputYaml string) {
-				t.Helper()
-				assert.Contains(t, outputYaml, "service.beta.kubernetes.io/azure-load-balancer-internal: \"true\"",
-					"service should have Azure internal annotation")
-				assert.Contains(t, outputYaml, "service.beta.kubernetes.io/azure-load-balancer-resource-group: my-resource-group",
-					"service should have Azure resource group annotation")
-			},
-		},
-		{
-			Name:      "envoy with init containers overlay",
-			InputFile: "envoy-init-containers",
-			Validate: func(t *testing.T, outputYaml string) {
-				t.Helper()
-				assert.Contains(t, outputYaml, "name: wait-for-config",
-					"init container should be present")
-				assert.Contains(t, outputYaml, "image: busybox:1.36",
-					"init container should have correct image")
-				assert.Contains(t, outputYaml, "initContainers:",
-					"initContainers section should be present")
-			},
-		},
-		{
-			Name:      "envoy with sidecar containers overlay",
-			InputFile: "envoy-sidecar-containers",
-			Validate: func(t *testing.T, outputYaml string) {
-				t.Helper()
-				assert.Contains(t, outputYaml, "name: log-shipper",
-					"sidecar container should be present")
-				assert.Contains(t, outputYaml, "name: kgateway-proxy",
-					"main kgateway-proxy container should still be present")
-			},
-		},
-		{
-			Name:      "envoy with ServiceAccount IAM annotations",
+			// Regression test: null values in overlay labels/annotations should
+			// delete the key from the rendered resource, not set it to "".
+			Name:      "envoy overlay null label deletes key",
 			InputFile: "envoy-sa-iam-annotations",
 			Validate: func(t *testing.T, outputYaml string) {
 				t.Helper()
 				assert.Contains(t, outputYaml, "eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/kgateway-role",
 					"ServiceAccount should have AWS IRSA annotation")
-			},
-		},
-		{
-			Name:      "envoy with custom pod security context",
-			InputFile: "envoy-security-context",
-			Validate: func(t *testing.T, outputYaml string) {
-				t.Helper()
-				assert.Contains(t, outputYaml, "runAsUser: 1000",
-					"pod security context should have runAsUser")
-				assert.Contains(t, outputYaml, "runAsGroup: 2000",
-					"pod security context should have runAsGroup")
-				assert.Contains(t, outputYaml, "fsGroup: 3000",
-					"pod security context should have fsGroup")
+				// The overlay sets app.kubernetes.io/instance: null on the
+				// Deployment. Verify the label is fully removed (not set to "").
+				assert.NotContains(t, outputYaml, "app.kubernetes.io/instance: \"\"",
+					"null overlay value must not produce empty-string label")
+				// The Deployment metadata labels should skip straight from
+				// managed-by to name, with no instance label between them.
+				assert.Contains(t, outputYaml,
+					"app.kubernetes.io/managed-by: kgateway\n    app.kubernetes.io/name: gw",
+					"instance label should be absent from Deployment metadata")
 			},
 		},
 		// TLS test cases
