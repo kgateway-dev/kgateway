@@ -9,9 +9,11 @@ import (
 	"sync"
 	"testing"
 
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -157,10 +159,13 @@ func VerifyAllEnvoyBootstrapAreValid(t *testing.T, testDataDir string) {
 			}
 			envoyJsn, err := yaml.YAMLToJSON([]byte(envoyYaml))
 			require.NoErrorf(t, err, "failed to convert envoy.yaml to JSON for document %d in %s", i+1, yamlFile)
+			var bootstrap envoybootstrapv3.Bootstrap
+			err = protojson.Unmarshal(envoyJsn, &bootstrap)
+			require.NoErrorf(t, err, "failed to unmarshal envoy.yaml as Envoy bootstrap config for document %d in %s", i+1, yamlFile)
 
 			wg.Go(func() {
 				// validate envoy bootstrap
-				err := validator.Validate(t.Context(), string(envoyJsn))
+				err := validator.Validate(t.Context(), &bootstrap)
 				if err != nil {
 					once.Do(func() {
 						envoyErr = fmt.Errorf("envoy bootstrap validation failed for document %d in %s: %w", i+1, yamlFile, err)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -72,11 +71,7 @@ func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator) e
 	if err != nil {
 		return err
 	}
-	data, err := protojson.Marshal(bootstrapCfg)
-	if err != nil {
-		return err
-	}
 
 	// shell out to envoy to validate the partial bootstrap config.
-	return v.Validate(ctx, string(data))
+	return v.Validate(ctx, bootstrapCfg)
 }

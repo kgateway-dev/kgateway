@@ -89,6 +89,7 @@ func mergeListenerPolicy(
 	mergeFuncs := []func(string, *listenerPolicy, *listenerPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
 		mergeProxyProtocol,
 		mergePerConnectionBufferLimitBytes,
+		// Not merging ClientCertificateValidation since its only used for tls config.
 		mergeHttpSettings,
 	}
 

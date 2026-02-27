@@ -1,0 +1,28 @@
+schemaVersion: 2.0.0
+
+# Container structure tests for the sds (Secret Discovery Service) image
+# Built on Alpine base
+
+# UID 10101 must match the helm chart's securityContext.runAsUser
+# (see pkg/deployer/gateway_parameters.go)
+metadataTest:
+  user: "10101"
+  entrypoint: ["/usr/local/bin/sds"]
+
+fileExistenceTests:
+  - name: "sds binary exists"
+    path: "/usr/local/bin/sds"
+    shouldExist: true
+    permissions: "-rwxr-xr-x"
+    isExecutableBy: "owner"
+
+commandTests:
+  - name: "sds binary is a valid executable"
+    command: "/usr/local/bin/sds"
+    exitCode: 1
+    expectedError: ["invalid config"]
+
+  - name: "running as non-root user"
+    command: "id"
+    args: ["-u"]
+    expectedOutput: ["10101"]

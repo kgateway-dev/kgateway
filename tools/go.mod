@@ -7,7 +7,7 @@ tool (
 	sigs.k8s.io/controller-runtime/tools/setup-envtest
 )
 
-require golang.org/x/mod v0.32.0
+require golang.org/x/mod v0.32.0 // indirect
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0 // indirect

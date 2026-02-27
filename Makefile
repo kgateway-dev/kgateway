@@ -327,6 +327,44 @@ view-test-coverage:
 	go tool cover -html $(OUTPUT_DIR)/cover.out
 
 #----------------------------------------------------------------------------------
+# Container Structure Tests
+#----------------------------------------------------------------------------------
+# Tests Docker images using container-structure-test from GoogleContainerTools
+# https://github.com/GoogleContainerTools/container-structure-test
+
+CONTAINER_STRUCTURE_TEST ?= container-structure-test
+CONTAINER_STRUCTURE_TEST_DIR := test/container-structure
+# Architecture suffix used by goreleaser image tags (e.g. -amd64, -arm64)
+CONTAINER_STRUCTURE_TEST_ARCH ?= $(GOARCH)
+# Platform flag for cross-arch testing via QEMU (only needed when testing non-native arch)
+CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG := $(if $(filter $(GOARCH),$(CONTAINER_STRUCTURE_TEST_ARCH)),,--platform linux/$(CONTAINER_STRUCTURE_TEST_ARCH))
+
+.PHONY: container-structure-test
+container-structure-test: ## Run container structure tests for all production images (uses goreleaser image tags)
+container-structure-test: container-structure-test-kgateway container-structure-test-sds container-structure-test-envoy-wrapper
+
+.PHONY: container-structure-test-kgateway
+container-structure-test-kgateway: ## Run container structure tests for kgateway image
+	$(CONTAINER_STRUCTURE_TEST) test \
+		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
+		--config $(CONTAINER_STRUCTURE_TEST_DIR)/kgateway.yaml
+
+.PHONY: container-structure-test-sds
+container-structure-test-sds: ## Run container structure tests for sds image
+	$(CONTAINER_STRUCTURE_TEST) test \
+		--image $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
+		--config $(CONTAINER_STRUCTURE_TEST_DIR)/sds.yaml
+
+.PHONY: container-structure-test-envoy-wrapper
+container-structure-test-envoy-wrapper: ## Run container structure tests for envoy-wrapper image
+	$(CONTAINER_STRUCTURE_TEST) test \
+		--image $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
+		--config $(CONTAINER_STRUCTURE_TEST_DIR)/envoy-wrapper.yaml
+
+#----------------------------------------------------------------------------------
 # MARK: Clean
 #----------------------------------------------------------------------------------
 

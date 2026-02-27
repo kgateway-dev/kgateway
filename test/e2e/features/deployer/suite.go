@@ -58,6 +58,9 @@ var (
 		"TestSelfManagedGateway": {
 			Manifests: []string{selfManagedGateway},
 		},
+		"TestGatewayParametersUpdateTriggersReconciliation": {
+			Manifests: []string{gatewayWithParameters},
+		},
 	}
 )
 
@@ -318,6 +321,36 @@ func (s *testingSuite) TestSelfManagedGateway() {
 		&corev1.Service{ObjectMeta: proxyObjectMeta},
 		&corev1.ServiceAccount{ObjectMeta: proxyObjectMeta},
 	)
+}
+
+func (s *testingSuite) TestGatewayParametersUpdateTriggersReconciliation() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+
+	// Patch GatewayParameters to add a new pod annotation
+	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *kgateway.GatewayParameters) {
+		if parameters.Spec.Kube.PodTemplate == nil {
+			parameters.Spec.Kube.PodTemplate = &kgateway.Pod{}
+		}
+		if parameters.Spec.Kube.PodTemplate.ExtraAnnotations == nil {
+			parameters.Spec.Kube.PodTemplate.ExtraAnnotations = map[string]string{}
+		}
+		parameters.Spec.Kube.PodTemplate.ExtraAnnotations["test-reconcile-annotation"] = "updated"
+	})
+
+	// Verify that the deployment's pod template annotations are updated,
+	// which proves that the GatewayParameters change triggered reconciliation
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		proxyDeployment := &appsv1.Deployment{}
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		}, proxyDeployment)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+		g.Expect(proxyDeployment.Spec.Template.Annotations).To(
+			gomega.HaveKeyWithValue("test-reconcile-annotation", "updated"),
+			"pod template should have the annotation added via GatewayParameters patch",
+		)
+	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
 }
 
 // patchGateway accepts a reference to an object, and a patch function. It then queries the object,
