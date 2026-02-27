@@ -396,6 +396,9 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 		if realObj, err := scheme.New(gvk); err == nil {
 			if realObj, ok := realObj.(client.Object); ok {
 				if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, realObj); err == nil {
+					// FromUnstructured does not preserve TypeMeta on typed objects,
+					// so explicitly set the GVK to ensure it's available for sorting/filtering.
+					realObj.GetObjectKind().SetGroupVersionKind(gvk)
 					objs = append(objs, realObj)
 					continue
 				}
