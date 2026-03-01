@@ -10,8 +10,8 @@ spec:
   hostnames:
   - "www.example.com"
   parentRefs:
-  - name: gw
-    namespace: default
+  - name: gateway
+    namespace: kgateway-base
   rules:
   - matches:
     - path:
