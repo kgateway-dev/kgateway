@@ -193,6 +193,14 @@ type AuthorizationResponse struct {
 	// Common examples: ["x-current-user", "x-user-id", "x-auth-request-email"]
 	// +optional
 	HeadersToBackend []string `json:"headersToBackend,omitempty"`
+
+	// HeadersToClient specifies which headers from the authorization response
+	// should be forwarded back to the downstream client when the request is denied.
+	// This is required for redirect-based flows (e.g. oauth2-proxy returning 302 + Location)
+	// so that the redirect Location header reaches the browser.
+	// Common examples: ["location", "set-cookie", "www-authenticate"]
+	// +optional
+	HeadersToClient []string `json:"headersToClient,omitempty"`
 }
 
 type ExtSvcRetryPolicy struct {
