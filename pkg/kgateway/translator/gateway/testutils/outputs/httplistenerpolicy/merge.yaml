@@ -48,6 +48,9 @@ Listeners:
               - key: service.namespace
                 value:
                   stringValue: default
+              - key: service.version
+                value:
+                  stringValue: v1.0.0-ci1
         httpFilters:
         - name: envoy.filters.http.health_check
           typedConfig:
@@ -97,6 +100,7 @@ Listeners:
                   '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.StaticConfigResourceDetectorConfig
                   attributes:
                     service.namespace: default
+                    service.version: v1.0.0-ci1
               - name: envoy.tracers.opentelemetry.resource_detectors.environment
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig

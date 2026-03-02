@@ -14,6 +14,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
@@ -28,6 +29,12 @@ func TestBasic(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
+
+		prevVersion := version.Version
+		version.Version = "v1.0.0-ci1"
+		defer func() {
+			version.Version = prevVersion
+		}()
 
 		// Prepend setting EnableExperimentalGatewayAPIFeatures to true so it can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
