@@ -350,8 +350,8 @@ func (ml *MergedListener) TranslateListener(
 	// Translate TCP listeners (if any exist)
 	var matchedTcpListeners []ir.TcpIR
 	for _, tfc := range ml.TcpFilterChains {
-		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, queries, ml.name, reporter, ml.gateway.FrontendTLSConfig); tcpListener != nil {
-			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
+		if tcpListeners := tfc.translateTcpFilterChain(kctx, ctx, queries, ml.name, reporter, ml.gateway.FrontendTLSConfig); len(tcpListeners) > 0 {
+			matchedTcpListeners = append(matchedTcpListeners, tcpListeners...)
 		}
 	}
 
@@ -411,28 +411,36 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	parentName string,
 	reporter reports.Reporter,
 	frontendTLSConfig *ir.FrontendTLSConfigIR,
-) *ir.TcpIR {
+) []ir.TcpIR {
 	parent := tc.parents
 	if len(parent.routesWithHosts) == 0 {
 		return nil
 	}
 
-	if len(parent.routesWithHosts) > 1 {
-		// Only one route per listener is supported
-		// TODO: report error on the listener
-		//	reporter.Gateway(gw).SetCondition(reports.RouteCondition{
-		//		Type:   gwv1.RouteConditionPartiallyInvalid,
-		//		Status: metav1.ConditionTrue,
-		//		Reason: gwv1.RouteReasonUnsupportedValue,
-		//	})
-	}
-	r := slices.MinFunc(parent.routesWithHosts, func(a, b *query.RouteInfo) int {
-		return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
-	})
+	var hasTcpRoutes bool
+	var hasTlsRoutes bool
 
-	switch r.Object.(type) {
-	case *ir.TcpRouteIR:
-		tRoute := r.Object.(*ir.TcpRouteIR)
+	for _, r := range parent.routesWithHosts {
+		switch r.Object.(type) {
+		case *ir.TcpRouteIR:
+			hasTcpRoutes = true
+		case *ir.TlsRouteIR:
+			hasTlsRoutes = true
+		}
+	}
+
+	if hasTcpRoutes {
+		if len(parent.routesWithHosts) > 1 {
+			// Only one TCP route per listener is supported, warn or report error
+		}
+		r := slices.MinFunc(parent.routesWithHosts, func(a, b *query.RouteInfo) int {
+			return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
+		})
+
+		tRoute, ok := r.Object.(*ir.TcpRouteIR)
+		if !ok {
+			return nil
+		}
 
 		var condition reports.RouteCondition
 		if len(tRoute.SourceObject.Spec.Rules) == 1 {
@@ -486,8 +494,6 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		resolvedValidation, err := resolveFrontendTLSConfig(tc.parents.listener.Port, frontendTLSConfig)
 		if err != nil {
 			reportTLSConfigError(err, tc.listenerReporter, resolvedValidation != nil)
-			// An error and a non-nil validation means that the listener is partially valid,
-			// and we should continue to translate the listener after writing the error to status
 			if resolvedValidation == nil {
 				return nil
 			}
@@ -495,8 +501,6 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 
 		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
 		if err != nil {
-			// An error and a non-nil tlsConfig means that the listener is partially valid,
-			// and we should continue to translate the listener after writing the error to status
 			reportTLSConfigError(err, tc.listenerReporter, tlsConfig != nil)
 			if tlsConfig == nil {
 				return nil
@@ -507,105 +511,136 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			tlsConfig.AlpnProtocols = []string{string(annotations.AllowEmptyAlpnProtocols)}
 		}
 
-		return &ir.TcpIR{
+		return []ir.TcpIR{{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
 				TLS:             tlsConfig,
 			},
 			BackendRefs: backends,
-		}
-	case *ir.TlsRouteIR:
-		tRoute := r.Object.(*ir.TlsRouteIR)
-
-		var condition reports.RouteCondition
-		if len(tRoute.SourceObject.Spec.Rules) == 1 {
-			condition = reports.RouteCondition{
-				Type:   gwv1.RouteConditionAccepted,
-				Status: metav1.ConditionTrue,
-				Reason: gwv1.RouteReasonAccepted,
-			}
-		} else {
-			condition = reports.RouteCondition{
-				Type:   gwv1.RouteConditionAccepted,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.RouteReasonUnsupportedValue,
-			}
-		}
-		if condition.Status != metav1.ConditionTrue {
-			return nil
-		}
-
-		parentRefReporters := make([]reports.ParentRefReporter, 0, len(tRoute.ParentRefs))
-		for _, parentRef := range tRoute.ParentRefs {
-			parentRefReporter := reporter.Route(tRoute.SourceObject).ParentRef(&parentRef)
-			parentRefReporter.SetCondition(condition)
-			parentRefReporters = append(parentRefReporters, parentRefReporter)
-		}
-
-		// Ensure unique names by appending the rule index to the TLSRoute name
-		tcpHostName := fmt.Sprintf("%s-%s.%s-rule-%d", parentName, tRoute.Namespace, tRoute.Name, 0)
-		var backends []ir.BackendRefIR
-		for _, backend := range tRoute.Backends {
-			// validate that we don't have an error:
-			if backend.Err != nil || backend.BackendObject == nil {
-				err := backend.Err
-				if err == nil {
-					err = errors.New("not found")
-				}
-				for _, parentRefReporter := range parentRefReporters {
-					query.ProcessBackendError(err, parentRefReporter)
-				}
-			}
-			// add backend even if we have errors, as according to spec, with multiple destinations,
-			// they should fail based of the weights.
-			backends = append(backends, backend)
-		}
-		// Avoid creating a TcpListener if there are no TcpHosts
-		if len(backends) == 0 {
-			return nil
-		}
-
-		// Resolve and translate TLS config for TLS termination (same as TCPRoute)
-		resolvedValidation, err := resolveFrontendTLSConfig(tc.parents.listener.Port, frontendTLSConfig)
-		if err != nil {
-			// An error and a non-nil validation means that the listener is partially valid,
-			// and we should continue to translate the listener after writing the error to status
-			reportTLSConfigError(err, tc.listenerReporter, resolvedValidation != nil)
-			if resolvedValidation == nil {
-				return nil
-			}
-		}
-
-		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
-		if err != nil {
-			// An error and a non-nil tlsConfig means that the listener is partially valid,
-			// and we should continue to translate the listener after writing the error to status
-			reportTLSConfigError(err, tc.listenerReporter, tlsConfig != nil)
-			if tlsConfig == nil {
-				return nil
-			}
-		}
-
-		if tlsConfig != nil && len(tlsConfig.AlpnProtocols) == 0 {
-			tlsConfig.AlpnProtocols = []string{string(annotations.AllowEmptyAlpnProtocols)}
-		}
-
-		var matcher ir.FilterChainMatch
-		if tc.sniDomain != nil {
-			matcher.SniDomains = []string{string(*tc.sniDomain)}
-		}
-
-		return &ir.TcpIR{
-			FilterChainCommon: ir.FilterChainCommon{
-				FilterChainName: tcpHostName,
-				Matcher:         matcher,
-				TLS:             tlsConfig,
-			},
-			BackendRefs: backends,
-		}
-	default:
-		return nil
+		}}
 	}
+
+	if hasTlsRoutes {
+		var results []ir.TcpIR
+		for _, r := range parent.routesWithHosts {
+			tRoute, ok := r.Object.(*ir.TlsRouteIR)
+			if !ok {
+				continue
+			}
+
+			var condition reports.RouteCondition
+			if len(tRoute.SourceObject.Spec.Rules) == 1 {
+				condition = reports.RouteCondition{
+					Type:   gwv1.RouteConditionAccepted,
+					Status: metav1.ConditionTrue,
+					Reason: gwv1.RouteReasonAccepted,
+				}
+			} else {
+				condition = reports.RouteCondition{
+					Type:   gwv1.RouteConditionAccepted,
+					Status: metav1.ConditionFalse,
+					Reason: gwv1.RouteReasonUnsupportedValue,
+				}
+			}
+			if condition.Status != metav1.ConditionTrue {
+				continue
+			}
+
+			parentRefReporters := make([]reports.ParentRefReporter, 0, len(tRoute.ParentRefs))
+			for _, parentRef := range tRoute.ParentRefs {
+				parentRefReporter := reporter.Route(tRoute.SourceObject).ParentRef(&parentRef)
+				parentRefReporter.SetCondition(condition)
+				parentRefReporters = append(parentRefReporters, parentRefReporter)
+			}
+
+			// Ensure unique names by appending the rule index to the TLSRoute name
+			tcpHostName := fmt.Sprintf("%s-%s.%s-rule-%d", parentName, tRoute.Namespace, tRoute.Name, 0)
+			var backends []ir.BackendRefIR
+			for _, backend := range tRoute.Backends {
+				// validate that we don't have an error:
+				if backend.Err != nil || backend.BackendObject == nil {
+					err := backend.Err
+					if err == nil {
+						err = errors.New("not found")
+					}
+					for _, parentRefReporter := range parentRefReporters {
+						query.ProcessBackendError(err, parentRefReporter)
+					}
+				}
+				// add backend even if we have errors, as according to spec, with multiple destinations,
+				// they should fail based of the weights.
+				backends = append(backends, backend)
+			}
+			// Avoid creating a TcpListener if there are no TcpHosts
+			if len(backends) == 0 {
+				continue
+			}
+
+			// Resolve and translate TLS config for TLS termination (same as TCPRoute)
+			resolvedValidation, err := resolveFrontendTLSConfig(tc.parents.listener.Port, frontendTLSConfig)
+			if err != nil {
+				// An error and a non-nil validation means that the listener is partially valid,
+				// and we should continue to translate the listener after writing the error to status
+				reportTLSConfigError(err, tc.listenerReporter, resolvedValidation != nil)
+				if resolvedValidation == nil {
+					continue
+				}
+			}
+
+			tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
+			if err != nil {
+				// An error and a non-nil tlsConfig means that the listener is partially valid,
+				// and we should continue to translate the listener after writing the error to status
+				reportTLSConfigError(err, tc.listenerReporter, tlsConfig != nil)
+				if tlsConfig == nil {
+					continue
+				}
+			}
+
+			if tlsConfig != nil && len(tlsConfig.AlpnProtocols) == 0 {
+				tlsConfig.AlpnProtocols = []string{string(annotations.AllowEmptyAlpnProtocols)}
+			}
+
+			var matcher ir.FilterChainMatch
+
+			// Compute SniDomains from TLSRoute
+			// A TLSRoute has hostnames we should use for SNI matching in the filter chain
+			var sniDomains []string
+			if len(tRoute.SourceObject.Spec.Hostnames) > 0 {
+				for _, h := range tRoute.SourceObject.Spec.Hostnames {
+					// Only add if it's contained within the listener's hostname
+					if isHostContained(string(h), tc.sniDomain) {
+						sniDomains = append(sniDomains, string(h))
+					}
+				}
+			} else if tc.sniDomain != nil {
+				sniDomains = append(sniDomains, string(*tc.sniDomain))
+			}
+
+			if len(sniDomains) > 0 {
+				matcher.SniDomains = sniDomains
+			} else {
+				// No valid matching SNI domains for this route, so skip it?
+				// Gateway API specifies if route has no hostnames, it matches the listener hostname
+				if len(tRoute.SourceObject.Spec.Hostnames) > 0 {
+					// Has hostnames but none match the listener
+					continue
+				}
+			}
+
+			results = append(results, ir.TcpIR{
+				FilterChainCommon: ir.FilterChainCommon{
+					FilterChainName: tcpHostName,
+					Matcher:         matcher,
+					TLS:             tlsConfig,
+				},
+				BackendRefs: backends,
+			})
+		}
+		return results
+	}
+
+	return nil
 }
 
 // httpFilterChain each one represents a GW Listener that has been merged into a single Listener (with distinct filter chains).
