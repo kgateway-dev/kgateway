@@ -62,21 +62,11 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("Transforms", transformation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("ExtProc", extproc.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Tracing", tracing.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("AttachedRoutes", loadtesting.NewAttachedRoutesSuite)
 	// kubeGatewaySuiteRunner.Register("RouteProbe", loadtesting.NewRouteProbeSuite)
 	// kubeGatewaySuiteRunner.Register("RouteChange", loadtesting.NewRouteChangeSuite)
-	kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("PathMatching", path_matching.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("LeaderElection", leaderelection.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HeaderModifiers", header_modifiers.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("APIKeyAuth", apikeyauth.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("FrontendTLS", frontendtls.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
 
 	// Fast tests
 	kubeGatewaySuiteRunner.Register("AccessLog", accesslog.NewTestingSuite)
@@ -95,6 +85,16 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("AttachedRoutes", loadtesting.NewAttachedRoutesSuite)
+	kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("PathMatching", path_matching.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("APIKeyAuth", apikeyauth.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }
