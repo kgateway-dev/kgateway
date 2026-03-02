@@ -430,10 +430,17 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	}
 
 	if hasTcpRoutes {
-		if len(parent.routesWithHosts) > 1 {
+		var tcpRoutes []*query.RouteInfo
+		for _, r := range parent.routesWithHosts {
+			if _, ok := r.Object.(*ir.TcpRouteIR); ok {
+				tcpRoutes = append(tcpRoutes, r)
+			}
+		}
+
+		if len(tcpRoutes) > 1 {
 			// Only one TCP route per listener is supported, warn or report error
 		}
-		r := slices.MinFunc(parent.routesWithHosts, func(a, b *query.RouteInfo) int {
+		r := slices.MinFunc(tcpRoutes, func(a, b *query.RouteInfo) int {
 			return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
 		})
 
@@ -522,6 +529,32 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 
 	if hasTlsRoutes {
 		var results []ir.TcpIR
+
+		// Resolve and translate TLS config for TLS termination (same as TCPRoute)
+		resolvedValidation, err := resolveFrontendTLSConfig(tc.parents.listener.Port, frontendTLSConfig)
+		if err != nil {
+			// An error and a non-nil validation means that the listener is partially valid,
+			// and we should continue to translate the listener after writing the error to status
+			reportTLSConfigError(err, tc.listenerReporter, resolvedValidation != nil)
+			if resolvedValidation == nil {
+				return nil
+			}
+		}
+
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
+		if err != nil {
+			// An error and a non-nil tlsConfig means that the listener is partially valid,
+			// and we should continue to translate the listener after writing the error to status
+			reportTLSConfigError(err, tc.listenerReporter, tlsConfig != nil)
+			if tlsConfig == nil {
+				return nil
+			}
+		}
+
+		if tlsConfig != nil && len(tlsConfig.AlpnProtocols) == 0 {
+			tlsConfig.AlpnProtocols = []string{string(annotations.AllowEmptyAlpnProtocols)}
+		}
+
 		for _, r := range parent.routesWithHosts {
 			tRoute, ok := r.Object.(*ir.TlsRouteIR)
 			if !ok {
@@ -576,42 +609,14 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 				continue
 			}
 
-			// Resolve and translate TLS config for TLS termination (same as TCPRoute)
-			resolvedValidation, err := resolveFrontendTLSConfig(tc.parents.listener.Port, frontendTLSConfig)
-			if err != nil {
-				// An error and a non-nil validation means that the listener is partially valid,
-				// and we should continue to translate the listener after writing the error to status
-				reportTLSConfigError(err, tc.listenerReporter, resolvedValidation != nil)
-				if resolvedValidation == nil {
-					continue
-				}
-			}
-
-			tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
-			if err != nil {
-				// An error and a non-nil tlsConfig means that the listener is partially valid,
-				// and we should continue to translate the listener after writing the error to status
-				reportTLSConfigError(err, tc.listenerReporter, tlsConfig != nil)
-				if tlsConfig == nil {
-					continue
-				}
-			}
-
-			if tlsConfig != nil && len(tlsConfig.AlpnProtocols) == 0 {
-				tlsConfig.AlpnProtocols = []string{string(annotations.AllowEmptyAlpnProtocols)}
-			}
-
 			var matcher ir.FilterChainMatch
 
 			// Compute SniDomains from TLSRoute
-			// A TLSRoute has hostnames we should use for SNI matching in the filter chain
+			// The query layer has already ensured these hostnames are compatible with the listener.
 			var sniDomains []string
 			if len(tRoute.SourceObject.Spec.Hostnames) > 0 {
 				for _, h := range tRoute.SourceObject.Spec.Hostnames {
-					// Only add if it's contained within the listener's hostname
-					if isHostContained(string(h), tc.sniDomain) {
-						sniDomains = append(sniDomains, string(h))
-					}
+					sniDomains = append(sniDomains, string(h))
 				}
 			} else if tc.sniDomain != nil {
 				sniDomains = append(sniDomains, string(*tc.sniDomain))
