@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/stretchr/testify/assert"
@@ -178,7 +179,7 @@ func TestBackendTranslatorPropagatesPolicyErrors(t *testing.T) {
 func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 	// Create a mock validator that always returns an error
 	mockValidator := &mockValidator{
-		validateFunc: func(ctx context.Context, config string) error {
+		validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
 			return errors.New("envoy validation failed: invalid cluster configuration")
 		},
 	}
@@ -235,12 +236,12 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 
 // mockValidator is a test implementation of validator.Validator for testing xDS validation errors
 type mockValidator struct {
-	validateFunc func(ctx context.Context, config string) error
+	validateFunc func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error
 }
 
 var _ validator.Validator = &mockValidator{}
 
-func (m *mockValidator) Validate(ctx context.Context, config string) error {
+func (m *mockValidator) Validate(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
 	if m.validateFunc != nil {
 		return m.validateFunc(ctx, config)
 	}

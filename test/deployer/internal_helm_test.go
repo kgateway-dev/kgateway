@@ -137,6 +137,14 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "envoy-dns-resolver-zero",
 		},
 		{
+			Name:      "envoy JSON log",
+			InputFile: "envoy-log-json",
+		},
+		{
+			Name:      "envoy text log",
+			InputFile: "envoy-log-text",
+		},
+		{
 			// The GW parametersRef merges with the GWC parametersRef.
 			// GWC has replicas:2, GW has omitDefaultSecurityContext:true.
 			// Both settings should appear in the output.
@@ -166,6 +174,21 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 				t.Helper()
 				assert.Contains(t, outputYaml, "loadBalancerClass: service.k8s.aws/nlb",
 					"loadBalancerClass should be set on the Service")
+				assert.Contains(t, outputYaml, "type: LoadBalancer",
+					"Service type should be LoadBalancer")
+			},
+		},
+		{
+			Name:      "gateway with loadBalancerSourceRanges",
+			InputFile: "loadbalancer-source-ranges-api",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "loadBalancerSourceRanges:",
+					"loadBalancerSourceRanges should be set on the Service")
+				assert.Contains(t, outputYaml, "- 10.0.0.0/8",
+					"first CIDR range should be present")
+				assert.Contains(t, outputYaml, "- 192.168.0.0/16",
+					"second CIDR range should be present")
 				assert.Contains(t, outputYaml, "type: LoadBalancer",
 					"Service type should be LoadBalancer")
 			},

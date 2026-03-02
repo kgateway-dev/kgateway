@@ -18,6 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
@@ -2602,5 +2603,145 @@ var _ = Describe("DeployObjs", func() {
 		err := d.DeployObjs(ctx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
+	})
+})
+
+var _ = Describe("SortByKindPriority", func() {
+	makeObj := func(kind string) *unstructured.Unstructured {
+		obj := &unstructured.Unstructured{}
+		obj.SetGroupVersionKind(schema.GroupVersionKind{Kind: kind})
+		return obj
+	}
+
+	It("sorts infrastructure resources before workload resources", func() {
+		objs := []client.Object{
+			makeObj("Deployment"),
+			makeObj("ClusterRole"),
+			makeObj("ServiceAccount"),
+			makeObj("Service"),
+			makeObj("ClusterRoleBinding"),
+			makeObj("ConfigMap"),
+			makeObj("Secret"),
+			makeObj("RoleBinding"),
+			makeObj("Role"),
+		}
+
+		deployer.SortByKindPriority(objs)
+
+		var kinds []string
+		for _, obj := range objs {
+			kinds = append(kinds, obj.GetObjectKind().GroupVersionKind().Kind)
+		}
+
+		Expect(kinds).To(Equal([]string{
+			"ServiceAccount",
+			"ConfigMap",
+			"Secret",
+			"ClusterRole",
+			"Role",
+			"ClusterRoleBinding",
+			"RoleBinding",
+			"Service",
+			"Deployment",
+		}))
+	})
+
+	It("sorts typed objects from ConvertYAMLToObjects correctly", func() {
+		// ConvertYAMLToObjects converts unstructured objects to typed objects via
+		// runtime.DefaultUnstructuredConverter.FromUnstructured, which does not preserve
+		// TypeMeta. Without explicitly setting the GVK after conversion, typed objects
+		// would have empty GVKs and all get default priority, defeating the sort.
+		yamlData := []byte(`
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-sa
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deploy
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: test
+  template:
+    metadata:
+      labels:
+        app: test
+    spec:
+      containers:
+      - name: test
+        image: test:latest
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-cm
+  namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-svc
+  namespace: default
+spec:
+  ports:
+  - port: 80
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: my-cr
+rules: []
+`)
+		objs, err := deployer.ConvertYAMLToObjects(scheme, yamlData)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(objs).To(HaveLen(5))
+
+		// Verify all objects have their GVK set (this is the core bug being tested)
+		for _, obj := range objs {
+			Expect(obj.GetObjectKind().GroupVersionKind().Kind).NotTo(BeEmpty(),
+				"object %T should have GVK set after ConvertYAMLToObjects", obj)
+		}
+
+		deployer.SortByKindPriority(objs)
+
+		var kinds []string
+		for _, obj := range objs {
+			kinds = append(kinds, obj.GetObjectKind().GroupVersionKind().Kind)
+		}
+
+		Expect(kinds).To(Equal([]string{
+			"ServiceAccount",
+			"ConfigMap",
+			"ClusterRole",
+			"Service",
+			"Deployment",
+		}))
+	})
+
+	It("preserves relative order of objects with the same priority", func() {
+		objs := []client.Object{
+			makeObj("ConfigMap"),
+			makeObj("Secret"),
+			makeObj("Deployment"),
+		}
+
+		deployer.SortByKindPriority(objs)
+
+		var kinds []string
+		for _, obj := range objs {
+			kinds = append(kinds, obj.GetObjectKind().GroupVersionKind().Kind)
+		}
+
+		// ConfigMap and Secret have the same priority, so their relative order is preserved
+		Expect(kinds).To(Equal([]string{
+			"ConfigMap",
+			"Secret",
+			"Deployment",
+		}))
 	})
 })

@@ -44,6 +44,17 @@ tolerations: []
 # -- Set affinity rules for pod scheduling, such as 'nodeAffinity:'.
 affinity: {}
 
+# -- Set topology spread constraints for pod scheduling.
+# E.g.:
+# topologySpreadConstraints:
+#   - maxSkew: 1
+#     topologyKey: topology.kubernetes.io/zone
+#     whenUnsatisfiable: DoNotSchedule
+#     labelSelector:
+#       matchLabels:
+#         app.kubernetes.io/name: kgateway
+topologySpreadConstraints: []
+
 # -- Configure the kgateway control plane deployment.
 controller:
   # -- Set the number of controller pod replicas.

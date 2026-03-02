@@ -27,6 +27,10 @@ spec:
   {{- with $gateway.service.loadBalancerIP }}
   loadBalancerIP: {{ . }}
   {{- end }}
+  {{- with $gateway.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   ports:
   {{- range $p := $gateway.ports }}
   - name: {{ $p.name }}

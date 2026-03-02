@@ -7,8 +7,8 @@ metadata:
     example: httpbin-route
 spec:
   parentRefs:
-    - name: gw
-      namespace: default
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:

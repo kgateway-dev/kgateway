@@ -9,7 +9,6 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -161,11 +160,7 @@ func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *
 	if err != nil {
 		return err
 	}
-	data, err := protojson.Marshal(bootstrap)
-	if err != nil {
-		return err
-	}
-	if err := t.Validator.Validate(ctx, string(data)); err != nil {
+	if err := t.Validator.Validate(ctx, bootstrap); err != nil {
 		return err
 	}
 	return nil

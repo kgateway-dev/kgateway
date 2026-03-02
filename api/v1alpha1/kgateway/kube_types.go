@@ -120,6 +120,15 @@ type Service struct {
 	//
 	// +optional
 	LoadBalancerClass *string `json:"loadBalancerClass,omitempty"`
+
+	// LoadBalancerSourceRanges restricts traffic through the cloud-provider load-balancer
+	// to the specified client IPs. This field will be ignored if the cloud-provider does
+	// not support the feature.
+	// More info: https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/
+	//
+	// +optional
+	// +listType=atomic
+	LoadBalancerSourceRanges []string `json:"loadBalancerSourceRanges,omitempty"`
 }
 
 func (in *Service) GetPorts() []Port {
@@ -200,6 +209,13 @@ func (in *Service) GetLoadBalancerClass() *string {
 		return nil
 	}
 	return in.LoadBalancerClass
+}
+
+func (in *Service) GetLoadBalancerSourceRanges() []string {
+	if in == nil {
+		return nil
+	}
+	return in.LoadBalancerSourceRanges
 }
 
 type ServiceAccount struct {

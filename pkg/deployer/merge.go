@@ -460,6 +460,10 @@ func deepMergeService(dst, src *kgateway.Service) *kgateway.Service {
 		dst.LoadBalancerClass = src.GetLoadBalancerClass()
 	}
 
+	if src.GetLoadBalancerSourceRanges() != nil {
+		dst.LoadBalancerSourceRanges = src.GetLoadBalancerSourceRanges()
+	}
+
 	dst.ExtraLabels = DeepMergeMaps(dst.GetExtraLabels(), src.GetExtraLabels())
 	dst.ExtraAnnotations = DeepMergeMaps(dst.GetExtraAnnotations(), src.GetExtraAnnotations())
 	dst.Ports = DeepMergeSlices(dst.GetPorts(), src.GetPorts())
@@ -642,6 +646,11 @@ func deepMergeEnvoyBootstrap(dst, src *kgateway.EnvoyBootstrap) *kgateway.EnvoyB
 	if dst == nil {
 		return src
 	}
+
+	if src.GetLogFormat() != nil {
+		dst.LogFormat = src.GetLogFormat()
+	}
+
 	if src.GetLogLevel() != nil {
 		dst.LogLevel = src.GetLogLevel()
 	}
