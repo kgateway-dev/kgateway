@@ -1128,6 +1128,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("DirectResponse with text body format", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "directresponse/body-format-text.yaml",
+			outputFile: "directresponse/body-format-text.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("DirectResponse with JSON body format", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "directresponse/body-format-json.yaml",
+			outputFile: "directresponse/body-format-json.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("DirectResponse with content type in body format", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "directresponse/body-format-content-type.yaml",
+			outputFile: "directresponse/body-format-content-type.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("HTTPRoutes with builtin timeout and retry", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "httproute-timeout-retry/builtin.yaml",
