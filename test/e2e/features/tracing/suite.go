@@ -77,6 +77,8 @@ func (s *testingSuite) testOTelTracing() {
 			// Default service identity resource attributes auto-injected by the static resource detector
 			`-> service.name: Str(my:service)`,
 			`-> service.namespace: Str(default)`,
+			// verify the field is present as the id will be different each run
+			`-> service.instance.id: Str(`,
 			// Resource attributes specified via the environmentResourceDetector
 			`-> environment: Str(detector)`,
 			`-> resource: Str(attribute)`,
