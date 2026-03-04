@@ -121,11 +121,18 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 			return nil
 		}
 
+		// Initialize the returned EndpointsForBackend. When a matching backend
+		// port exists for a kube Service, we always return a value (even when
+		// there are no EndpointSlices or ready endpoints) so that Envoy gets an
+		// explicit empty ClusterLoadAssignment instead of retaining stale endpoints.
+		enableAutoMtls := inputs.EndpointsSettings.EnableAutoMtls
+		ret := ir.NewEndpointsForBackend(backend)
+
 		// Fetch all EndpointSlices for the backend service
 		endpointSlices := krt.Fetch(kctx, inputs.EndpointSlices, krt.FilterIndex(inputs.EndpointSlicesByService, key))
 		if len(endpointSlices) == 0 {
 			kubeSvcLogger.Debug("no endpointslices found for service", "name", key.Name, "namespace", key.Namespace)
-			return nil
+			return ret
 		}
 
 		// Handle potential eventually consistency of EndpointSlices for the backend service
@@ -138,12 +145,8 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 		}
 		if !found {
 			kubeSvcLogger.Debug("no ports found in endpointslices for service", "name", key.Name, "namespace", key.Namespace)
-			return nil
+			return ret
 		}
-
-		// Initialize the returned EndpointsForBackend
-		enableAutoMtls := inputs.EndpointsSettings.EnableAutoMtls
-		ret := ir.NewEndpointsForBackend(backend)
 
 		// Handle deduplication of endpoint addresses
 		seenAddresses := make(map[string]struct{})

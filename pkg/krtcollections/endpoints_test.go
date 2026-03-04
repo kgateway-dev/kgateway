@@ -523,6 +523,98 @@ func TestEndpoints(t *testing.T) {
 			},
 		},
 		{
+			name: "no endpoint slices returns empty endpoints",
+			// no EndpointSlice objects in inputs; only the Service backend is present
+			inputs: []any{},
+			upstream: newBackendObjectIR(ir.BackendObjectIR{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "svc",
+					Group:     "",
+					Kind:      "Service",
+				},
+				Port: 8080,
+				Obj: &corev1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc",
+						Namespace: "ns",
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{
+							{
+								Name: "http",
+								Port: 8080,
+							},
+						},
+					},
+				},
+			}),
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
+				// When there are no EndpointSlices, we still expect an EndpointsForBackend
+				// instance, but with no endpoints populated.
+				return ir.NewEndpointsForBackend(us)
+			},
+		},
+		{
+			name: "endpoint slice without matching port returns empty endpoints",
+			// EndpointSlice exists for the Service, but no port matches the Service port.
+			inputs: []any{
+				&discoveryv1.EndpointSlice{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc-abcde",
+						Namespace: "ns",
+						Labels: map[string]string{
+							"kubernetes.io/service-name": "svc",
+						},
+					},
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
+						{
+							Addresses: []string{"1.2.3.4"},
+							Conditions: discoveryv1.EndpointConditions{
+								Ready: new(true),
+							},
+						},
+					},
+					Ports: []discoveryv1.EndpointPort{
+						{
+							Name:     new("other"),
+							Port:     new(int32(9090)),
+							Protocol: ptr.To(corev1.ProtocolTCP),
+						},
+					},
+				},
+			},
+			upstream: newBackendObjectIR(ir.BackendObjectIR{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "svc",
+					Group:     "",
+					Kind:      "Service",
+				},
+				Port: 8080,
+				Obj: &corev1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc",
+						Namespace: "ns",
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{
+							{
+								Name: "http",
+								Port: 8080,
+							},
+						},
+					},
+				},
+			}),
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
+				// EndpointSlice exists but does not expose a matching port; we still expect
+				// a non-nil EndpointsForBackend with no endpoints.
+				return ir.NewEndpointsForBackend(us)
+			},
+		},
+		{
 			name: "two pods two zones",
 			inputs: []any{
 				&corev1.Pod{
