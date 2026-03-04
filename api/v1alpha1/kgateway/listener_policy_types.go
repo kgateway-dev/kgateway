@@ -779,11 +779,16 @@ type OpenTelemetryTracingConfig struct {
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
 type ResourceDetector struct {
+	// Deprecated: The EnvironmentResourceDetector is now always enabled by default to populate
+	// per-pod Kubernetes resource attributes (k8s.pod.name, k8s.pod.uid, k8s.node.name, etc.)
+	// from the OTEL_RESOURCE_ATTRIBUTES environment variable. Explicitly configuring this field
+	// has no additional effect, as the detector will be included regardless. This field is
+	// retained for backward compatibility and may be removed in a future release.
 	// +optional
 	EnvironmentResourceDetector *EnvironmentResourceDetectorConfig `json:"environmentResourceDetector,omitempty"`
 }
 
-// EnvironmentResourceDetectorConfig specified the EnvironmentResourceDetector
+// EnvironmentResourceDetectorConfig specifies the EnvironmentResourceDetector
 type EnvironmentResourceDetectorConfig struct{}
 
 // Sampler defines the list of supported Samplers

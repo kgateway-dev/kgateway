@@ -831,6 +831,22 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 												},
 											},
 										},
+										{
+											Key: "k8s.namespace.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "k8s.container.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "kgateway-proxy",
+												},
+											},
+										},
 									},
 								},
 							}),
@@ -1157,6 +1173,22 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											Value: &otelv1.AnyValue{
 												Value: &otelv1.AnyValue_StringValue{
 													StringValue: "v1.0.0-test",
+												},
+											},
+										},
+										{
+											Key: "k8s.namespace.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "k8s.container.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "kgateway-proxy",
 												},
 											},
 										},

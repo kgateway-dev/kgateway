@@ -95,6 +95,9 @@ func (s *testingSuite) TestAccessLogWithOTelSink() {
 		assert.Contains(c, logs, `-> service.namespace: Str(kgateway-base)`)
 		// verify the field is present as the id will be different each run
 		assert.Contains(c, logs, `-> service.instance.id: Str(`)
+		// Static k8s resource attributes set by the control plane
+		assert.Contains(c, logs, `-> k8s.namespace.name: Str(kgateway-base)`)
+		assert.Contains(c, logs, `-> k8s.container.name: Str(kgateway-proxy)`)
 		assert.Contains(c, logs, `GET /status/200 200`)
 		assert.Contains(c, logs, `www.example.com`)
 		assert.Contains(c, logs, `kube_kgateway-base_httpbin_8000`)

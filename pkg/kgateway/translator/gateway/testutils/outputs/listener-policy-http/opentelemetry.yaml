@@ -48,6 +48,12 @@ Listeners:
               - key: service.version
                 value:
                   stringValue: v1.0.0-ci1
+              - key: k8s.namespace.name
+                value:
+                  stringValue: default
+              - key: k8s.container.name
+                value:
+                  stringValue: kgateway-proxy
         httpFilters:
         - name: envoy.filters.http.router
           typedConfig:
@@ -73,9 +79,14 @@ Listeners:
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.StaticConfigResourceDetectorConfig
                   attributes:
+                    k8s.container.name: kgateway-proxy
+                    k8s.namespace.name: default
                     service.instance.id: 12345678-abcd-1234-efgh-123456789012
                     service.namespace: default
                     service.version: v1.0.0-ci1
+              - name: envoy.tracers.opentelemetry.resource_detectors.environment
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig
               serviceName: example-gateway.default
         useRemoteAddress: true
     name: listener~8080

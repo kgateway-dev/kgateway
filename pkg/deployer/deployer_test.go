@@ -1075,7 +1075,7 @@ var _ = Describe("Deployer", func() {
 				Expect(objs.findConfigMap(defaultNamespace, "foo")).NotTo(BeNil())
 
 				By("validating the default values are used")
-				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, deployer.EnvoyWrapperImage, tag)))
+				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, wellknown.EnvoyWrapperImage, tag)))
 			})
 		})
 
@@ -1163,7 +1163,7 @@ var _ = Describe("Deployer", func() {
 				Expect(objs.findConfigMap(defaultNamespace, "foo")).NotTo(BeNil())
 
 				By("validating the image overrides the default")
-				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("bar/%s:2.3.4", deployer.EnvoyWrapperImage)))
+				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("bar/%s:2.3.4", wellknown.EnvoyWrapperImage)))
 			})
 		})
 
@@ -1280,7 +1280,7 @@ var _ = Describe("Deployer", func() {
 				Expect(port.PortValue).To(Equal(uint32(9091)))
 
 				By("verifying image registry and tag were inherited")
-				Expect(envoyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, deployer.EnvoyWrapperImage, tag)))
+				Expect(envoyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, wellknown.EnvoyWrapperImage, tag)))
 			})
 		})
 	})

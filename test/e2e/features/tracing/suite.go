@@ -74,12 +74,20 @@ func (s *testingSuite) testOTelTracing() {
 			`-> http.method: Str(GET)`,
 			`-> http.status_code: Str(200)`,
 			`-> upstream_cluster: Str(kube_httpbin_httpbin_8000)`,
-			// Default service identity resource attributes auto-injected by the static resource detector
+			// User provided in the HTTPListenerPolicy
 			`-> service.name: Str(my:service)`,
-			`-> service.namespace: Str(default)`,
-			// verify the field is present as the id will be different each run
+			// Static resource attributes set by the control plane
+			`-> k8s.namespace.name: Str(default)`,
+			`-> k8s.container.name: Str(kgateway-proxy)`,
+			// Per-pod k8s resource attributes
+			// These are set at runtime so partial match to verify the field is present
 			`-> service.instance.id: Str(`,
-			// Resource attributes specified via the environmentResourceDetector
+			`-> k8s.pod.name: Str(`,
+			`-> k8s.pod.uid: Str(`,
+			`-> k8s.node.name: Str(`,
+			`-> k8s.deployment.name: Str(`,
+			// User provided resource attributes specified via the environmentResourceDetector
+			`-> service.namespace: Str(test)`,
 			`-> environment: Str(detector)`,
 			`-> resource: Str(attribute)`,
 			// Custom tag passed in the config
