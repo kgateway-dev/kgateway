@@ -36,12 +36,11 @@ const (
 	// resource attribute keys per OTel semantic conventions
 	// https://opentelemetry.io/docs/specs/semconv/resource/k8s/
 
-	// Note: k8s.pod.name, k8s.pod.uid, k8s.node.name, and k8s.cluster.name cannot be
-	// set for access logs because Envoy's OTel access log does not support OTEL_RESOURCE_ATTRIBUTES
-	serviceNameKey       = "service.name"
-	serviceNamespaceKey  = "service.namespace"
-	serviceVersionKey    = "service.version"
-	serviceInstanceIdKey = "service.instance.id"
+	// Note: attributes such as k8s.pod.name, k8s.pod.uid, etc. cannot be set for access
+	// logs because Envoy's OTel access log does not support OTEL_RESOURCE_ATTRIBUTES
+	serviceNameKey      = "service.name"
+	serviceNamespaceKey = "service.namespace"
+	serviceVersionKey   = "service.version"
 
 	k8sNamespaceNameKey = "k8s.namespace.name"
 	k8sContainerNameKey = "k8s.container.name"
@@ -629,11 +628,6 @@ func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_teleme
 	// Set default resource attributes if not already present
 	addResourceAttributeIfMissing(config, serviceNameKey, GenerateDefaultServiceName(gatewayName, gatewayNamespace))
 	addResourceAttributeIfMissing(config, serviceNamespaceKey, gatewayNamespace)
-
-	if pCtx.Gateway.SourceObject.Obj != nil && pCtx.Gateway.SourceObject.Obj.GetUID() != "" {
-		uid := string(pCtx.Gateway.SourceObject.Obj.GetUID())
-		addResourceAttributeIfMissing(config, serviceInstanceIdKey, uid)
-	}
 
 	if version.Version != "" {
 		addResourceAttributeIfMissing(config, serviceVersionKey, version.Version)

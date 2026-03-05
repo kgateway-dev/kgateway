@@ -103,7 +103,7 @@ spec:
         - name: ENVOY_UID
           value: "0"
         - name: OTEL_RESOURCE_ATTRIBUTES
-          value: "k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.node.name=$(NODE_NAME),k8s.deployment.name={{ include "kgateway.gateway.fullname" . }},k8s.container.name={{ .Chart.Name }}{{- range $gateway.env }}{{- if and (eq .name "OTEL_RESOURCE_ATTRIBUTES") .value }},{{ .value }}{{- end }}{{- end }}"
+          value: "service.namespace=$(POD_NAMESPACE),service.instance.id=$(POD_UID),{{- if .Chart.AppVersion }}service.version={{ .Chart.AppVersion }},{{- end }}k8s.namespace.name=$(POD_NAMESPACE),k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.node.name=$(NODE_NAME),k8s.deployment.name={{ include "kgateway.gateway.fullname" . }},k8s.container.name={{ .Chart.Name }}{{- range $gateway.env }}{{- if and (eq .name "OTEL_RESOURCE_ATTRIBUTES") .value }},{{ .value }}{{- end }}{{- end }}"
 {{- if $gateway.env }}
 {{- $filteredEnv := list }}
 {{- range $gateway.env }}

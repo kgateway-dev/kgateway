@@ -42,9 +42,6 @@ Listeners:
               - key: service.namespace
                 value:
                   stringValue: default
-              - key: service.instance.id
-                value:
-                  stringValue: 12345678-abcd-1234-efgh-123456789012
               - key: service.version
                 value:
                   stringValue: v1.0.0-ci1
@@ -75,15 +72,6 @@ Listeners:
                 envoyGrpc:
                   clusterName: kube_default_opentelemetry-collector_4317
               resourceDetectors:
-              - name: envoy.tracers.opentelemetry.resource_detectors.static_config
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.StaticConfigResourceDetectorConfig
-                  attributes:
-                    k8s.container.name: kgateway-proxy
-                    k8s.namespace.name: default
-                    service.instance.id: 12345678-abcd-1234-efgh-123456789012
-                    service.namespace: default
-                    service.version: v1.0.0-ci1
               - name: envoy.tracers.opentelemetry.resource_detectors.environment
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig

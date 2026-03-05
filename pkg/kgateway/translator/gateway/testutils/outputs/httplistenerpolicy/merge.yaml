@@ -101,14 +101,6 @@ Listeners:
                   authority: httpbin.example.com
                   clusterName: kube_default_opentelemetry-collector_4317
               resourceDetectors:
-              - name: envoy.tracers.opentelemetry.resource_detectors.static_config
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.StaticConfigResourceDetectorConfig
-                  attributes:
-                    k8s.container.name: kgateway-proxy
-                    k8s.namespace.name: default
-                    service.namespace: default
-                    service.version: v1.0.0-ci1
               - name: envoy.tracers.opentelemetry.resource_detectors.environment
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig

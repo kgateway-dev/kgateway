@@ -816,14 +816,6 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											},
 										},
 										{
-											Key: "service.instance.id",
-											Value: &otelv1.AnyValue{
-												Value: &otelv1.AnyValue_StringValue{
-													StringValue: "test-uid-1234",
-												},
-											},
-										},
-										{
 											Key: "service.version",
 											Value: &otelv1.AnyValue{
 												Value: &otelv1.AnyValue_StringValue{
@@ -1157,14 +1149,6 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											Value: &otelv1.AnyValue{
 												Value: &otelv1.AnyValue_StringValue{
 													StringValue: "default",
-												},
-											},
-										},
-										{
-											Key: "service.instance.id",
-											Value: &otelv1.AnyValue{
-												Value: &otelv1.AnyValue_StringValue{
-													StringValue: "test-uid-1234",
 												},
 											},
 										},

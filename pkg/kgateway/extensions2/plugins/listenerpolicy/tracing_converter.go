@@ -16,15 +16,12 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 const (
 	otelTracerName                  = "envoy.tracers.opentelemetry"
-	staticResourceDetectorName      = "envoy.tracers.opentelemetry.resource_detectors.static_config"
 	environmentResourceDetectorName = "envoy.tracers.opentelemetry.resource_detectors.environment"
 	alwaysOnSamplerName             = "envoy.tracers.opentelemetry.samplers.always_on"
 )
@@ -223,22 +220,21 @@ func convertOTelTracingConfig(
 		tracingCfg.ServiceName = *config.ServiceName
 	}
 
-	// Currently only environment resource detector is supported, which has no effect since env detector is default enabled
-	// for open telemetry attributes. Add support for other types of resource detectors here in the future.
-
-	// if len(config.ResourceDetectors) != 0 {
-	// 	translatedResourceDetectors := make([]*envoycorev3.TypedExtensionConfig, len(config.ResourceDetectors))
-	// 	for i, rd := range config.ResourceDetectors {
-	// 		if rd.EnvironmentResourceDetector != nil {
-	// 			detector, _ := utils.MessageToAny(&resource_detectorsv3.EnvironmentResourceDetectorConfig{})
-	// 			translatedResourceDetectors[i] = &envoycorev3.TypedExtensionConfig{
-	// 				Name:        environmentResourceDetectorName,
-	// 				TypedConfig: detector,
-	// 			}
-	// 		}
-	// 	}
-	// 	tracingCfg.ResourceDetectors = translatedResourceDetectors
-	// }
+	envDetectorEnabled := true
+	if len(config.ResourceDetectors) != 0 {
+		for _, rd := range config.ResourceDetectors {
+			if rd.EnvironmentResourceDetector != nil && rd.EnvironmentResourceDetector.Enable != nil {
+				envDetectorEnabled = *rd.EnvironmentResourceDetector.Enable
+			}
+		}
+	}
+	if envDetectorEnabled {
+		detector, _ := utils.MessageToAny(&resource_detectorsv3.EnvironmentResourceDetectorConfig{})
+		tracingCfg.ResourceDetectors = []*envoycorev3.TypedExtensionConfig{{
+			Name:        environmentResourceDetectorName,
+			TypedConfig: detector,
+		}}
+	}
 
 	if config.Sampler != nil {
 		if config.Sampler.AlwaysOn != nil {
@@ -261,9 +257,6 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 		tracingProvider.ServiceName = GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace())
 	}
 
-	// Add default service attributes
-	addDefaultStaticResourceDetector(pCtx, tracingProvider)
-
 	otelCfg := utils.MustMessageToAny(tracingProvider)
 
 	tracingConfig.Provider = &envoytracev3.Tracing_Http{
@@ -272,49 +265,6 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 			TypedConfig: otelCfg,
 		},
 	}
-}
-
-// addDefaultStaticResourceDetector adds default service and k8s resource attributes
-func addDefaultStaticResourceDetector(pCtx *ir.HcmContext, tracingProvider *envoytracev3.OpenTelemetryConfig) {
-	gatewayNamespace := pCtx.Gateway.SourceObject.GetNamespace()
-
-	// Build default attributes for the static resource detector
-	defaultAttrs := map[string]string{
-		serviceNamespaceKey: gatewayNamespace,
-		k8sNamespaceNameKey: gatewayNamespace,
-		k8sContainerNameKey: wellknown.KgatewayContainerName,
-	}
-
-	if pCtx.Gateway.SourceObject.Obj != nil && pCtx.Gateway.SourceObject.Obj.GetUID() != "" {
-		defaultAttrs[serviceInstanceIdKey] = string(pCtx.Gateway.SourceObject.Obj.GetUID())
-	}
-
-	if version.Version != "" {
-		defaultAttrs[serviceVersionKey] = version.Version
-	}
-
-	staticDetector, _ := utils.MessageToAny(&resource_detectorsv3.StaticConfigResourceDetectorConfig{
-		Attributes: defaultAttrs,
-	})
-
-	// EnvironmentResourceDetector to read k8s attributes from the OTEL_RESOURCE_ATTRIBUTES
-	// env var set in the Envoy container by the deployer Helm chart
-	envDetector, _ := utils.MessageToAny(&resource_detectorsv3.EnvironmentResourceDetectorConfig{})
-
-	// envDetector after staticDetector so environment variables will override static defaults
-	defaultDetectors := []*envoycorev3.TypedExtensionConfig{
-		{
-			Name:        staticResourceDetectorName,
-			TypedConfig: staticDetector,
-		},
-		{
-			Name:        environmentResourceDetectorName,
-			TypedConfig: envDetector,
-		},
-	}
-
-	// Prepend the default detectors so user-configured detectors will override defaults
-	tracingProvider.ResourceDetectors = append(defaultDetectors, tracingProvider.ResourceDetectors...)
 }
 
 // GenerateDefaultServiceName returns the default service name that matches the cluster name

@@ -76,17 +76,15 @@ func (s *testingSuite) testOTelTracing() {
 			`-> upstream_cluster: Str(kube_httpbin_httpbin_8000)`,
 			// User provided in the HTTPListenerPolicy
 			`-> service.name: Str(my:service)`,
-			// Static resource attributes set by the control plane
+			// Default resource attributes set via OTEL_RESOURCE_ATTRIBUTES env var in the Helm chart
 			`-> k8s.namespace.name: Str(default)`,
 			`-> k8s.container.name: Str(kgateway-proxy)`,
-			// Per-pod k8s resource attributes
-			// These are set at runtime so partial match to verify the field is present
 			`-> service.instance.id: Str(`,
 			`-> k8s.pod.name: Str(`,
 			`-> k8s.pod.uid: Str(`,
 			`-> k8s.node.name: Str(`,
 			`-> k8s.deployment.name: Str(`,
-			// User provided resource attributes specified via the environmentResourceDetector
+			// User-appended resource attributes from GatewayParameters
 			`-> service.namespace: Str(test)`,
 			`-> environment: Str(detector)`,
 			`-> resource: Str(attribute)`,

@@ -1794,11 +1794,16 @@ spec:
                                       properties:
                                         environmentResourceDetector:
                                           description: |-
-                                            Deprecated: The EnvironmentResourceDetector is now always enabled by default to populate
-                                            per-pod Kubernetes resource attributes (k8s.pod.name, k8s.pod.uid, k8s.node.name, etc.)
-                                            from the OTEL_RESOURCE_ATTRIBUTES environment variable. Explicitly configuring this field
-                                            has no additional effect, as the detector will be included regardless. This field is
-                                            retained for backward compatibility and may be removed in a future release.
+                                            EnvironmentResourceDetector sets OpenTelemetry resource attributes from the OTEL_RESOURCE_ATTRIBUTES
+                                            environment variable in the Envoy container.
+                                            Default enabled if not set. If multiple are set, the last will take precedence.
+                                          properties:
+                                            enable:
+                                              default: true
+                                              description: Enable controls whether
+                                                the EnvironmentResourceDetector is
+                                                used.
+                                              type: boolean
                                           type: object
                                       type: object
                                     type: array
@@ -3627,11 +3632,16 @@ spec:
                                             properties:
                                               environmentResourceDetector:
                                                 description: |-
-                                                  Deprecated: The EnvironmentResourceDetector is now always enabled by default to populate
-                                                  per-pod Kubernetes resource attributes (k8s.pod.name, k8s.pod.uid, k8s.node.name, etc.)
-                                                  from the OTEL_RESOURCE_ATTRIBUTES environment variable. Explicitly configuring this field
-                                                  has no additional effect, as the detector will be included regardless. This field is
-                                                  retained for backward compatibility and may be removed in a future release.
+                                                  EnvironmentResourceDetector sets OpenTelemetry resource attributes from the OTEL_RESOURCE_ATTRIBUTES
+                                                  environment variable in the Envoy container.
+                                                  Default enabled if not set. If multiple are set, the last will take precedence.
+                                                properties:
+                                                  enable:
+                                                    default: true
+                                                    description: Enable controls whether
+                                                      the EnvironmentResourceDetector
+                                                      is used.
+                                                    type: boolean
                                                 type: object
                                             type: object
                                           type: array
