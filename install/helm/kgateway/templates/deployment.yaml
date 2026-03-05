@@ -35,6 +35,9 @@ spec:
       priorityClassName: {{ .Values.controller.priorityClassName | quote }}
       {{- end }}
       serviceAccountName: {{ include "kgateway.serviceAccountName" . }}
+      {{- if .Values.controller.automountServiceAccountToken }}
+      automountServiceAccountToken: {{ .Values.controller.automountServiceAccountToken }}
+      {{- end }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}

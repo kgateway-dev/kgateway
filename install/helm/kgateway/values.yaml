@@ -59,6 +59,9 @@ topologySpreadConstraints: []
 controller:
   # -- Set the number of controller pod replicas.
   replicaCount: 1
+  # -- Ensure the controller pod always has a service account token mounted so it can use in-cluster
+  #    config, even if the bound ServiceAccount disables automount by default.
+  automountServiceAccountToken: true
   # -- Set the priority class name for the controller pod.
   priorityClassName: ""
   # -- Set the log level for the controller.

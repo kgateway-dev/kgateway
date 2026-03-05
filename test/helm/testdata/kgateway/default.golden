@@ -321,6 +321,7 @@ spec:
         app.kubernetes.io/instance: test-release
     spec:
       serviceAccountName: test-release-kgateway
+      automountServiceAccountToken: true
       containers:
         - name: controller
           image: "cr.kgateway.dev/kgateway-dev/kgateway:v0.0.1"
