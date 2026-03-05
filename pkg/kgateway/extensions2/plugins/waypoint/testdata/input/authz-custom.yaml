@@ -66,12 +66,13 @@ spec:
   selector:
     app: helloworld
 ---
-# # we should get a filter chain with two filters that reflect this policy
-# that denies GET port 8080 requests to svc-a and svc-b services
+# This policy uses action: CUSTOM, which is intentionally ignored by this PR.
+# As a result, it should be dropped and no RBAC filters should be generated
+# for the svc-a and svc-b Services.
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: authz-multi-service
+  name: authz-custom
   namespace: infra
 spec:
   action: CUSTOM

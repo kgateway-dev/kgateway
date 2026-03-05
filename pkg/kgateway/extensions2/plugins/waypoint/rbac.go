@@ -42,7 +42,7 @@ func BuildRBAC(
 	// Log and drop CUSTOM policies - they require an ext_authz provider which is not yet supported
 	if len(policyResult.Custom) > 0 {
 		for _, p := range policyResult.Custom {
-			logger.Warn("ignoring CUSTOM action AuthorizationPolicy (not supported)",
+			logger.Info("ignoring CUSTOM action AuthorizationPolicy (not supported)",
 				"namespace", p.Namespace,
 				"name", p.Name,
 			)
