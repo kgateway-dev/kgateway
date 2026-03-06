@@ -1,14 +1,14 @@
 Name|Version|License
 ---|---|---
-[cel.dev/expr](https://cel.dev/expr)|v0.24.0|Apache License 2.0
+[cel.dev/expr](https://cel.dev/expr)|v0.25.1|Apache License 2.0
 [agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.10.3|Apache License 2.0
 [anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go)|v1.13.0|MIT License
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
-[xds/go](https://github.com/cncf/xds)|v0.0.0-20250501225837-2ac532fd4443|Apache License 2.0
-[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20250811224534-421509affe26|Apache License 2.0
+[xds/go](https://github.com/cncf/xds)|v0.0.0-20251210132809-ee656c7534f5|Apache License 2.0
+[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.14.0|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250627145903-197b96a9c7f8|Apache License 2.0
-[go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.35.1-0.20251010000747-50f0b197aa55|Apache License 2.0
+[go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.36.0|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.9.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
@@ -27,7 +27,7 @@ Name|Version|License
 [openai/openai-go](https://github.com/openai/openai-go)|v1.12.0|Apache License 2.0
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.23.2|Apache License 2.0
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
-[prometheus/common](https://github.com/prometheus/common)|v0.67.1|Apache License 2.0
+[prometheus/common](https://github.com/prometheus/common)|v0.67.5|Apache License 2.0
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.3.2-0.20230802210424-5b0b94c5c0d3|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.14.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.1|Apache License 2.0
@@ -36,9 +36,9 @@ Name|Version|License
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.7.1|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20250808145144-a408d31f581a|BSD 3-clause "New" or "Revised" License
-[x/net](https://golang.org/x/net)|v0.44.0|BSD 3-clause "New" or "Revised" License
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.76.0|Apache License 2.0
-[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.10|BSD 3-clause "New" or "Revised" License
+[x/net](https://golang.org/x/net)|v0.51.0|BSD 3-clause "New" or "Revised" License
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.79.2|Apache License 2.0
+[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.11|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.18.6|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.26.0-alpha.0.0.20251002142010-859b66f07fad|Apache License 2.0
 [istio.io/client-go](https://istio.io/client-go)|v1.26.0-alpha.0.0.20251002142408-752760d8f171|Apache License 2.0
