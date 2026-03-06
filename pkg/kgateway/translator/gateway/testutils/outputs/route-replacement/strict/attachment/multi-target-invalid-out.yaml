@@ -245,6 +245,8 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
   httpRoutes:
     gwtest/test-route-gateway:
       parents:
@@ -354,6 +356,8 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
   policies:
     TrafficPolicy/gwtest/gateway-wide-invalid-policy:
       ancestors:

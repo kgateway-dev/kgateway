@@ -8,6 +8,10 @@ import (
 	"os/exec"
 	"slices"
 	"strings"
+
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	protojson "google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -24,11 +28,11 @@ var (
 // ErrInvalidXDS is returned when Envoy rejects the supplied JSON.
 var ErrInvalidXDS = errors.New("invalid xds configuration")
 
-// Validator validates an Envoy bootstrap/partial JSON.
+// Validator validates an Envoy bootstrap config.
 type Validator interface {
-	// Validate validates the given JSON configuration. Returns an error
+	// Validate validates the given bootstrap configuration. Returns an error
 	// if the configuration is invalid.
-	Validate(context.Context, string) error
+	Validate(context.Context, *envoybootstrapv3.Bootstrap) error
 }
 
 // binaryValidator validates envoy using the binary.
@@ -46,10 +50,14 @@ func NewBinary(path ...string) Validator {
 	return &binaryValidator{path: path[0]}
 }
 
-func (b *binaryValidator) Validate(ctx context.Context, json string) error {
+func (b *binaryValidator) Validate(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) error {
+	marshalled, err := prepareBootstrapConfig(bootstrap)
+	if err != nil {
+		return fmt.Errorf("could not marshal bootstrap config: %w", err)
+	}
 	cmd := exec.CommandContext(ctx, b.path, "--mode", "validate", "--config-path", "/dev/fd/0", "-l", "critical", "--log-format", "%v") //nolint:gosec // G204: envoy binary with controlled args for config validation
 	cmd.Env = append(cmd.Env, "ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib")
-	cmd.Stdin = strings.NewReader(json)
+	cmd.Stdin = bytes.NewReader(marshalled)
 	var e bytes.Buffer
 	cmd.Stderr = &e
 	if err := cmd.Run(); err != nil {
@@ -66,39 +74,77 @@ func (b *binaryValidator) Validate(ctx context.Context, json string) error {
 }
 
 type dockerValidator struct {
-	img string
+	img      string
+	etcEnvoy string
+}
+
+type DockerValidatorOptions func(*dockerValidator)
+
+func Image(img string) func(*dockerValidator) {
+	return func(d *dockerValidator) {
+		d.img = img
+	}
+}
+
+func EtcEnvoyVolume(etcEnvoy string) func(*dockerValidator) {
+	return func(d *dockerValidator) {
+		d.etcEnvoy = etcEnvoy
+	}
 }
 
 var _ Validator = &dockerValidator{}
 
 // NewDocker creates a new docker validator. If img is empty, the default image is used.
-func NewDocker(img ...string) Validator {
-	if len(img) == 0 {
-		img = []string{defaultEnvoyImage}
+func NewDocker(opts ...DockerValidatorOptions) Validator {
+	ret := &dockerValidator{
+		img: defaultEnvoyImage,
 	}
-	return &dockerValidator{img: img[0]}
+
+	for _, opt := range opts {
+		opt(ret)
+	}
+
+	return ret
 }
 
-func (d *dockerValidator) Validate(ctx context.Context, json string) error {
-	cmd := exec.CommandContext( //nolint:gosec // G204: docker command with controlled args for config validation
-		ctx,
-		"docker", "run",
+func (d *dockerValidator) args() []string {
+	args := []string{
+		"run",
 		"--rm",
 		"-i",
+		"--pull", "always",
+	}
+	if d.etcEnvoy != "" {
+		args = append(args, "-v", fmt.Sprintf("%s:/etc/envoy/:ro", d.etcEnvoy))
+	}
+	args = append(args,
 		"--entrypoint", "/usr/local/bin/envoy",
 		d.img,
 		"--mode",
 		"validate",
+		"--service-node", "dummy-node",
 		"--config-path", "/dev/fd/0",
 		"-l", "critical",
 		"--log-format", "%v",
 	)
-	cmd.Stdin = strings.NewReader(json)
+	return args
+}
+
+func (d *dockerValidator) Validate(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) error {
+	marshalled, err := prepareBootstrapConfig(bootstrap)
+	if err != nil {
+		return fmt.Errorf("could not marshal bootstrap config: %w", err)
+	}
+	cmd := exec.CommandContext( //nolint:gosec // G204: docker command with controlled args for config validation
+		ctx,
+		"docker", d.args()...)
+
+	cmd.Stdin = bytes.NewReader(marshalled)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
+	err = cmd.Run()
 	if err == nil {
 		return nil
 	}
@@ -137,4 +183,13 @@ func extractEnvoyError(stderr string) string {
 		}
 	}
 	return strings.Join(remainingLines, " ")
+}
+
+func prepareBootstrapConfig(bootstrap *envoybootstrapv3.Bootstrap) ([]byte, error) {
+	// Deep copy to perform "destructive" operations on the data
+	clone := proto.CloneOf(bootstrap)
+	// We set a custom log format that outputs a "raw" error message for validation purposes, so we do not want any user-provided log format.
+	clone.ApplicationLogConfig = nil
+
+	return protojson.Marshal(clone)
 }

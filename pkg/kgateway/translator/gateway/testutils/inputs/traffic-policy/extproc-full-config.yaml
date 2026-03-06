@@ -103,6 +103,14 @@ spec:
       responseBodyMode: BUFFERED
       requestTrailerMode: SEND
       responseTrailerMode: SEND
+    allowProcessingModeOverride: true
+    allowedProcessingModeOverrides:
+      - requestHeaderMode: SEND
+        responseHeaderMode: SEND
+        requestBodyMode: NONE
+        responseBodyMode: BUFFERED
+        requestTrailerMode: SKIP
+        responseTrailerMode: SKIP
     messageTimeout: 100ms
     maxMessageTimeout: 500ms
     statPrefix: my_extproc

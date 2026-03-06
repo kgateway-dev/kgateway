@@ -38,9 +38,21 @@ func BuildRBAC(
 ) {
 	// Deduplicate and separate policies by action
 	policyResult := separateAndDeduplicatePolicies(authzPolicies)
+
+	// Log and drop CUSTOM policies - they require an ext_authz provider which is not yet supported
+	if len(policyResult.Custom) > 0 {
+		for _, p := range policyResult.Custom {
+			logger.Info("ignoring CUSTOM action AuthorizationPolicy (not supported)",
+				"namespace", p.Namespace,
+				"name", p.Name,
+			)
+		}
+		policyResult.Custom = nil
+	}
+
 	// If no policies are applicable, return early
 	if len(policyResult.Deny) == 0 && len(policyResult.Allow) == 0 &&
-		len(policyResult.Audit) == 0 && len(policyResult.Custom) == 0 {
+		len(policyResult.Audit) == 0 {
 		return nil, nil
 	}
 
@@ -50,6 +62,9 @@ func BuildRBAC(
 		IsCustomBuilder: false,
 		UseFilterState:  true,
 	})
+	if authzBuilder == nil {
+		return nil, nil
+	}
 
 	const stage = filters.FilterStage_AuthZStage
 	const predicate = filters.FilterStage_After

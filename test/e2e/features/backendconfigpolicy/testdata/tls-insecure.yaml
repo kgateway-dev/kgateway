@@ -2,6 +2,7 @@ kind: BackendConfigPolicy
 apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
   name: backend-tls-policy
+  namespace: kgateway-base
 spec:
   targetRefs:
     - name: nginx

@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         **Note**: Use this template to report flaky or non-deterministic tests that are causing CI failures.
-        **Labeling**: Please add the appropriate `Area:` label after creating the issue based on the test area (e.g., `Area: agentgateway`).
+        **Labeling**: Please add the appropriate `Area:` label after creating the issue based on the test area (e.g., `Area: conformance`).
 
   - type: input
     id: github-actions-link

@@ -2,6 +2,7 @@ package listener
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -16,6 +17,7 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/httproute"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
@@ -483,13 +485,22 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 
 		resolvedValidation, err := resolveFrontendTLSConfig(tc.parents.listener.Port, frontendTLSConfig)
 		if err != nil {
-			reportTLSConfigError(err, tc.listenerReporter)
-			return nil
+			reportTLSConfigError(err, tc.listenerReporter, resolvedValidation != nil)
+			// An error and a non-nil validation means that the listener is partially valid,
+			// and we should continue to translate the listener after writing the error to status
+			if resolvedValidation == nil {
+				return nil
+			}
 		}
+
 		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
 		if err != nil {
-			reportTLSConfigError(err, tc.listenerReporter)
-			return nil
+			// An error and a non-nil tlsConfig means that the listener is partially valid,
+			// and we should continue to translate the listener after writing the error to status
+			reportTLSConfigError(err, tc.listenerReporter, tlsConfig != nil)
+			if tlsConfig == nil {
+				return nil
+			}
 		}
 
 		if tlsConfig != nil && len(tlsConfig.AlpnProtocols) == 0 {
@@ -554,6 +565,31 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			return nil
 		}
 
+		// Resolve and translate TLS config for TLS termination (same as TCPRoute)
+		resolvedValidation, err := resolveFrontendTLSConfig(tc.parents.listener.Port, frontendTLSConfig)
+		if err != nil {
+			// An error and a non-nil validation means that the listener is partially valid,
+			// and we should continue to translate the listener after writing the error to status
+			reportTLSConfigError(err, tc.listenerReporter, resolvedValidation != nil)
+			if resolvedValidation == nil {
+				return nil
+			}
+		}
+
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
+		if err != nil {
+			// An error and a non-nil tlsConfig means that the listener is partially valid,
+			// and we should continue to translate the listener after writing the error to status
+			reportTLSConfigError(err, tc.listenerReporter, tlsConfig != nil)
+			if tlsConfig == nil {
+				return nil
+			}
+		}
+
+		if tlsConfig != nil && len(tlsConfig.AlpnProtocols) == 0 {
+			tlsConfig.AlpnProtocols = []string{string(annotations.AllowEmptyAlpnProtocols)}
+		}
+
 		var matcher ir.FilterChainMatch
 		if tc.sniDomain != nil {
 			matcher.SniDomains = []string{string(*tc.sniDomain)}
@@ -563,6 +599,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
 				Matcher:         matcher,
+				TLS:             tlsConfig,
 			},
 			BackendRefs: backends,
 		}
@@ -733,9 +770,14 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 
 	resolvedValidation, err := resolveFrontendTLSConfig(hfc.listener.Port, frontendTLSConfig)
 	if err != nil {
-		reportTLSConfigError(err, hfc.listenerReporter)
-		return nil, err
+		reportTLSConfigError(err, hfc.listenerReporter, resolvedValidation != nil)
+		// An error and a non-nil validation means that the listener is partially valid,
+		// and we should continue to translate the listener after writing the error to status
+		if resolvedValidation == nil {
+			return nil, err
+		}
 	}
+
 	tlsConfig, err := translateTLSConfig(
 		kctx,
 		ctx,
@@ -745,8 +787,12 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		resolvedValidation,
 	)
 	if err != nil {
-		reportTLSConfigError(err, hfc.listenerReporter)
-		return nil, err
+		// An error and a non-nil tlsConfig means that the listener is partially valid,
+		// and we should continue to translate the listener after writing the error to status
+		reportTLSConfigError(err, hfc.listenerReporter, tlsConfig != nil)
+		if tlsConfig == nil {
+			return nil, err
+		}
 	}
 	sort.Slice(virtualHosts, func(i, j int) bool {
 		return virtualHosts[i].Name < virtualHosts[j].Name
@@ -796,19 +842,31 @@ func buildRoutesPerHost(
 // Per-port configuration takes precedence over default configuration.
 // Returns nil if no FrontendTLSConfig is present or no validation is configured.
 // Returns an error if the FrontendTLSConfig contains an error from processing.
+// NOTE: Because a listener can be partially valid when there are multiple certificate references, this function can return both a
+// ClientCertificateValidationIR and an error.
+// The validationIR represents the validation configuration that could be successfully translated, and the error can be used to write status about the config that couldn't.
 func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.FrontendTLSConfigIR) (*ir.ClientCertificateValidationIR, error) {
 	if frontendTLSConfig == nil {
 		return nil, nil
 	}
-	if frontendTLSConfig.Err != nil {
-		return nil, frontendTLSConfig.Err
+
+	// Check and return in order:
+	// 1. Per-port errors
+	// 2. Per-port validation
+	// 3. Default errors/validation
+	if frontendTLSConfig.PortErrors[port] != nil {
+		return frontendTLSConfig.PerPortValidation[port], frontendTLSConfig.PortErrors[port]
 	}
+
 	if perPortConfig, ok := frontendTLSConfig.PerPortValidation[port]; ok {
 		return perPortConfig, nil
 	}
-	return frontendTLSConfig.DefaultValidation, nil
+
+	return frontendTLSConfig.DefaultValidation, frontendTLSConfig.DefaultError
 }
 
+// NOTE: Because a listener can be partially valid when there are multiple certificate references, this function can return both a ClientCertificateValidationIR
+// and an error. The IR respresents the TLS config that could be successfully translated, and the error can be used to write status about the config that couldn't.
 func translateTLSConfig(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -887,27 +945,57 @@ func translateTLSConfig(
 
 	// Apply client certificate validation if present
 	// Skip if CA cert refs are empty (no validation possible)
+	var caErr error
+	var generated bool
 	if hasTrustedCA {
 		// For AllowInsecureFallback mode, if CA cert fetching fails, skip validation rather than failing the listener
 		// This allows the listener to work without client certs even if the CA cert ConfigMap is missing
-		if err := applyClientCertificateValidation(kctx, ctx, queries, listener, resolvedValidation, tlsConfig); err != nil {
-			// If client certs are not required (AllowInsecureFallback), log the error but don't fail the listener
-			// The listener will still work for connections without client certs
-			if !resolvedValidation.RequireClientCertificate {
-				logger.Warn("failed to fetch CA certificate for client validation, skipping validation",
+		generated, caErr = applyClientCertificateValidation(kctx, ctx, queries, listener, resolvedValidation, tlsConfig)
+		if !generated {
+			if resolvedValidation.RequireClientCertificate {
+				// If client certs are required (AllowValidOnly), fail the listener
+				logger.Error("failed to fetch CA certificate for client validation, failing listener",
 					"listener", listener.Name,
 					"port", listener.Port,
-					"error", err,
-					"mode", "AllowInsecureFallback")
-				// Don't set ClientCertificateValidation - listener will work without client cert validation
-				return tlsConfig, nil
+					"error", caErr,
+					"mode", "AllowValidOnly")
+				return nil, caErr
 			}
-			// If client certs are required (AllowValidOnly), fail the listener
-			return nil, err
+			// If client certs are not required (AllowInsecureFallback), log the error but don't fail the listener
+			// The listener will still work for connections without client certs
+			// Skip setting Gateway-level ClientCertificateValidation - per-listener validation will be attempted if exists
+			logger.Warn("failed to fetch CA certificate for client validation, skipping validation",
+				"listener", listener.Name,
+				"port", listener.Port,
+				"error", caErr,
+				"mode", "AllowInsecureFallback")
 		}
 	}
 
-	return tlsConfig, nil
+	// Check if ListenerPolicy has clientCertificateValidation override
+	if listenerPolCertVal := getCertValidationFromAttached(listener); listenerPolCertVal != nil {
+		// Apply ListenerPolicy override, which takes precedence over Gateway-level config
+		generated, caErr := applyClientCertificateValidation(kctx, ctx, queries, listener, listenerPolCertVal, tlsConfig)
+		if !generated {
+			if !listenerPolCertVal.RequireClientCertificate {
+				logger.Warn("failed to fetch CA certificate for ListenerPolicy client validation override, skipping validation",
+					"listener", listener.Name,
+					"port", listener.Port,
+					"error", caErr,
+					"mode", "optional")
+				// Keep Gateway-level validation if ListenerPolicy fetch fails
+				return tlsConfig, nil
+			}
+			logger.Error("failed to fetch CA certificate for ListenerPolicy client validation override, failing listener",
+				"listener", listener.Name,
+				"port", listener.Port,
+				"error", caErr,
+				"mode", "required")
+			return nil, caErr
+		}
+	}
+
+	return tlsConfig, caErr
 }
 
 // buildCaCertificateReference fetches and extracts a CA certificate from either a ConfigMap or Secret
@@ -931,7 +1019,12 @@ func buildCaCertificateReference(
 			caCertRef,
 		)
 		if err != nil {
-			return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, err)
+			// If its a missing reference grant error, return the CA Certificate specific error
+			if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
+				return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, sslutils.ErrMissingCaCertificateRefGrant)
+			}
+			// If its not a missing reference grant error, return the invalid certificate ref error
+			return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, sslutils.ErrInvalidCACertificateRef)
 		}
 
 		// Extract CA certificate from ConfigMap
@@ -980,8 +1073,64 @@ func buildCaCertificateReference(
 	}
 }
 
+// getCertValidationFromAttached aggregates ClientCertificateValidation from all attached ListenerPolicies.
+// Returns nil if no ListenerPolicy is found or if none have clientCertificateValidation configured.
+func getCertValidationFromAttached(listener ir.Listener) *ir.ClientCertificateValidationIR {
+	if listener.AttachedPolicies.Policies == nil {
+		return nil
+	}
+
+	// Extract ListenerPolicyIR from attached policies
+	polAttachments := listener.AttachedPolicies.Policies[wellknown.ListenerPolicyGVK.GroupKind()]
+	if len(polAttachments) == 0 {
+		return nil
+	}
+
+	// Aggregate ClientCertificateValidation from all attached ListenerPolicies.
+	// Collect unique CA cert refs and mark required if any policy requires it.
+	var aggregatedCerts []gwv1.ObjectReference
+	certSet := make(map[string]bool)
+	requireClientCert := false
+
+	for _, polAtt := range polAttachments {
+		listenerPol, ok := polAtt.PolicyIr.(*listenerpolicy.ListenerPolicyIR)
+		if !ok || listenerPol == nil {
+			continue
+		}
+		certVal := listenerPol.GetClientCertificateValidation()
+		if certVal == nil {
+			continue
+		}
+
+		for _, certRef := range certVal.CACertificateRefs {
+			key, err := json.Marshal(certRef)
+			if err != nil {
+				continue
+			}
+
+			if !certSet[string(key)] {
+				certSet[string(key)] = true
+				aggregatedCerts = append(aggregatedCerts, certRef)
+			}
+		}
+
+		requireClientCert = requireClientCert || certVal.RequireClientCertificate
+	}
+
+	// Return nil if no certs were found
+	if len(aggregatedCerts) == 0 {
+		return nil
+	}
+
+	return &ir.ClientCertificateValidationIR{
+		CACertificateRefs:        aggregatedCerts,
+		RequireClientCertificate: requireClientCert,
+	}
+}
+
 // applyClientCertificateValidation applies the resolved client certificate validation configuration
 // to the TLS config by fetching CA certificates and setting validation parameters.
+// Returns a boolean indicating if any client certificate validation was applied successfully and an error if any errors were encountered.
 func applyClientCertificateValidation(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -989,9 +1138,9 @@ func applyClientCertificateValidation(
 	listener ir.Listener,
 	validationConfig *ir.ClientCertificateValidationIR,
 	tlsConfig *ir.TLSConfig,
-) error {
+) (bool, error) {
 	if validationConfig == nil {
-		return nil
+		return true, nil
 	}
 
 	// Fetch CA certificates from ConfigMaps or Secrets
@@ -1004,10 +1153,11 @@ func applyClientCertificateValidation(
 		case *gwxv1a1.XListenerSet:
 			parentGVK = wellknown.XListenerSetGVK
 		default:
-			return fmt.Errorf("unsupported parent type: %T", listener.Parent)
+			return false, fmt.Errorf("unsupported parent type: %T", listener.Parent)
 		}
 	}
 
+	var certErr error
 	for _, caCertRef := range validationConfig.CACertificateRefs {
 		caCertData, err := buildCaCertificateReference(
 			kctx,
@@ -1018,7 +1168,8 @@ func applyClientCertificateValidation(
 			listener.Parent.GetNamespace(),
 		)
 		if err != nil {
-			return err
+			certErr = errors.Join(certErr, err)
+			continue
 		}
 
 		caCertificates = append(caCertificates, []byte(caCertData))
@@ -1026,7 +1177,7 @@ func applyClientCertificateValidation(
 
 	// Only set ClientCertificateValidation if we successfully fetched at least one CA cert
 	if len(caCertificates) == 0 {
-		return fmt.Errorf("no CA certificates were successfully fetched")
+		return false, certErr
 	}
 
 	// Set client certificate validation in TLS config
@@ -1035,21 +1186,34 @@ func applyClientCertificateValidation(
 		RequireClientCertificate: validationConfig.RequireClientCertificate,
 	}
 
-	return nil
+	return true, certErr
 }
 
 // reportTLSConfigError reports TLS configuration errors by setting appropriate listener conditions.
-func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) {
+func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, partiallyValid bool) {
 	reason := gwv1.ListenerReasonInvalidCertificateRef
 	message := "Invalid certificate ref(s)."
+	acceptedReason := gwv1.ListenerReasonInvalid
 
 	switch {
 	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
 		reason = gwv1.ListenerReasonRefNotPermitted
 		message = "Reference not permitted by ReferenceGrant."
+	case errors.Is(err, sslutils.ErrMissingCaCertificateRefGrant):
+		reason = gwv1.ListenerReasonRefNotPermitted
+		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
+		message = err.Error()
 	case errors.Is(err, sslutils.ErrInvalidTlsSecret):
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA):
+		message = err.Error()
+	case errors.Is(err, sslutils.ErrInvalidCACertificateRef):
+		reason = sslutils.ListenerReasonInvalidCACertificateRef
+		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
+		message = err.Error()
+	case errors.Is(err, sslutils.ErrInvalidCACertificateKind):
+		reason = sslutils.ListenerReasonInvalidCACertificateKind
+		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		message = err.Error()
 	}
 
@@ -1061,17 +1225,31 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) 
 		}
 		message = fmt.Sprintf(ResourceNotFoundMessageTemplate, resourceType, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 	}
+
 	listenerReporter.SetCondition(reports.ListenerCondition{
 		Type:    gwv1.ListenerConditionResolvedRefs,
 		Status:  metav1.ConditionFalse,
 		Reason:  reason,
 		Message: message,
 	})
-	// listener with no ssl is invalid. We return nil so set programmed to false
+
+	// Accepted and Programmed conditions are set to true if the listener is partially valid
+	acceptedProgrammedStatus := metav1.ConditionFalse
+	if partiallyValid {
+		acceptedProgrammedStatus = metav1.ConditionTrue
+	}
+
 	listenerReporter.SetCondition(reports.ListenerCondition{
 		Type:    gwv1.ListenerConditionProgrammed,
-		Status:  metav1.ConditionFalse,
+		Status:  acceptedProgrammedStatus,
 		Reason:  gwv1.ListenerReasonInvalid,
+		Message: message,
+	})
+
+	listenerReporter.SetCondition(reports.ListenerCondition{
+		Type:    gwv1.ListenerConditionAccepted,
+		Status:  acceptedProgrammedStatus,
+		Reason:  acceptedReason,
 		Message: message,
 	})
 }

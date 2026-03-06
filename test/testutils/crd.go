@@ -34,7 +34,6 @@ var AllCRDs = []schema.GroupVersionResource{
 	gvr.ReferenceGrant,
 	gvr.BackendTLSPolicy,
 	gvr.XListenerSet,
-	wellknown.InferencePoolGVR,
 	wellknown.BackendTLSPolicyGVR,
 	// K8s API
 	gvr.Service,
@@ -52,19 +51,13 @@ var AllCRDs = []schema.GroupVersionResource{
 	wellknown.DirectResponseGVR,
 	wellknown.GatewayExtensionGVR,
 	wellknown.GatewayParametersGVR,
-	// agentgateway api
-	wellknown.AgentgatewayBackendGVR,
-	wellknown.AgentgatewayParametersGVR,
-	wellknown.AgentgatewayPolicyGVR,
 }
 
 const (
-	CRDPath    = "install/helm/kgateway-crds/templates"
-	AgwCRDPath = "install/helm/agentgateway-crds/templates"
+	CRDPath = "install/helm/kgateway-crds/templates"
 )
 
-// GetStructuralSchemas returns a map of GroupVersionKind to Structural schemas for all CRDs in the given directories.
-// Deprecated: Use GetStructuralSchemasForBothCharts instead to load both kgateway and agentgateway CRDs.
+// GetStructuralSchemas returns a map of GroupVersionKind to Structural schemas for all CRDs in the given directory.
 func GetStructuralSchemas(
 	crdDir string,
 ) (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
@@ -75,28 +68,18 @@ func GetStructuralSchemas(
 	return buildStructuralSchemaMap(crds)
 }
 
-// GetStructuralSchemasForBothCharts returns a map of GroupVersionKind to Structural schemas for all CRDs
-// from both kgateway-crds and agentgateway-crds charts.
-func GetStructuralSchemasForBothCharts() (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
+// GetStructuralSchemasForAllCharts returns a map of GroupVersionKind to Structural schemas for all CRDs
+// from the kgateway-crds chart.
+func GetStructuralSchemasForAllCharts() (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
 	gitRoot := GitRootDirectory()
 	kgatewayCRDDir := filepath.Join(gitRoot, CRDPath)
-	agwCRDDir := filepath.Join(gitRoot, AgwCRDPath)
 
-	// Load CRDs from both directories
-	kgatewayCRDs, err := getCRDs(kgatewayCRDDir)
+	crds, err := getCRDs(kgatewayCRDDir)
 	if err != nil {
 		return nil, fmt.Errorf("error loading kgateway CRDs: %w", err)
 	}
 
-	agwCRDs, err := getCRDs(agwCRDDir)
-	if err != nil {
-		return nil, fmt.Errorf("error loading agentgateway CRDs: %w", err)
-	}
-
-	// Combine both sets of CRDs
-	allCRDs := append(kgatewayCRDs, agwCRDs...)
-
-	return buildStructuralSchemaMap(allCRDs)
+	return buildStructuralSchemaMap(crds)
 }
 
 // buildStructuralSchemaMap converts a list of CRDs to a map of GVK to structural schemas

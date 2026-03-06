@@ -8,10 +8,7 @@ import (
 )
 
 var _ = Describe("Namespaces", func() {
-
-	var (
-		allNamespaces = [][]string{nil, {}, {""}}
-	)
+	allNamespaces := [][]string{nil, {}, {""}}
 
 	Context("all namespaces", func() {
 		It("should consider empty list as all namespaces", func() {
@@ -29,7 +26,6 @@ var _ = Describe("Namespaces", func() {
 		})
 	})
 	Context("process namespaces", func() {
-
 		It("should not change all namespaces", func() {
 			for _, testCase := range allNamespaces {
 				Expect(namespaces.ProcessWatchNamespaces(testCase, "test")).To(Equal(testCase))
@@ -44,7 +40,5 @@ var _ = Describe("Namespaces", func() {
 			ns := []string{"ns1"}
 			Expect(namespaces.ProcessWatchNamespaces(ns, "ns1")).To(Equal([]string{"ns1"}))
 		})
-
 	})
-
 })

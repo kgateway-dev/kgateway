@@ -4,17 +4,15 @@ package local_rate_limit
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -46,19 +44,11 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) SetupSuite() {
 	s.commonManifests = []string{
-		testdefaults.CurlPodManifest,
 		simpleServiceManifest,
-		commonManifest,
 	}
 	s.commonResources = []client.Object{
-		// resources from curl manifest
-		testdefaults.CurlPod,
 		// resources from service manifest
 		simpleSvc, simpleDeployment,
-		// resources from gateway manifest
-		gateway,
-		// deployer-generated resources
-		proxyDeployment, proxyService, proxyServiceAccount,
 	}
 
 	// set up common resources once
@@ -66,17 +56,10 @@ func (s *testingSuite) SetupSuite() {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err, "can apply "+manifest)
 	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.commonResources...)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, s.commonResources...)
 
-	// make sure pods are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=backend-0,version=v1",
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 }
 
@@ -89,17 +72,11 @@ func (s *testingSuite) TearDownSuite() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 		s.Require().NoError(err, "can delete "+manifest)
 	}
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.commonResources...)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, s.commonResources...)
 
 	// make sure pods are gone
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=backend-0,version=v1",
-	})
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 }
 
@@ -187,58 +164,48 @@ func (s *testingSuite) setupTest(manifests []string, resources []client.Object) 
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
 		}
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, resources...)
+		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, resources...)
 	})
 
 	for _, manifest := range manifests {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err, "can apply "+manifest)
 	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, resources...)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, resources...)
 }
 
 func (s *testingSuite) assertResponse(path string) {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
-		})
+		},
+		curl.WithPath(path),
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(80),
+	)
 }
 
 func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: expectedStatus,
-		})
+		},
+		curl.WithPath(path),
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(80),
+	)
 }
 
 func (s *testingSuite) assertEventualResponse(path string, expectedStatus int) {
-	resp := s.testInstallation.Assertions.AssertEventualCurlReturnResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: expectedStatus,
-		})
-	defer resp.Body.Close()
+		},
+		curl.WithPath(path),
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(80),
+	)
 }

@@ -50,12 +50,12 @@ type TrafficPolicySpec struct {
 	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet')))",message="targetRefs may only reference Gateway, HTTPRoute, or ListenerSet resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute' || r.kind.endsWith('ListenerSet')))",message="targetRefs may only reference Gateway, HTTPRoute, GRPCRoute, or ListenerSet resources"
 	TargetRefs []shared.LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
 
 	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet')))",message="targetSelectors may only reference Gateway, HTTPRoute, or ListenerSet resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute' || r.kind.endsWith('ListenerSet')))",message="targetSelectors may only reference Gateway, HTTPRoute, GRPCRoute, or ListenerSet resources"
 	TargetSelectors []shared.LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
 
 	// Transformation is used to mutate and transform requests and responses
@@ -206,6 +206,7 @@ type Transform struct {
 
 	// Add is a list of headers to add to the request and what that value should be set to.
 	// If there is already a header with these values then append the value as an extra entry.
+	// Add is not supported on arm64 build, see docs/guides/transformation.md for details
 	// +optional
 	// +listType=map
 	// +listMapKey=name

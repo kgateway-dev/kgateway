@@ -4,7 +4,7 @@ update_settings(k8s_upsert_timeout_secs = 600)
 load('ext://helm_resource', 'helm_resource')
 load("ext://uibutton", "cmd_button", "location")
 
-image_tag = "1.0.0-ci1"
+image_tag = "v1.0.0-ci1"
 
 kubectl_cmd = "kubectl"
 helm_cmd = "helm"
@@ -17,14 +17,30 @@ if str(local("command -v " + helm_cmd + " || true", quiet = True)) == "":
 settings = {
     "helm_installation_name": "kgateway",
     "helm_installation_namespace": "kgateway-system",
-    "helm_values_files": ["./test/kubernetes/e2e/tests/manifests/common-recommendations.yaml"],
+    "helm_values_files": ["./test/e2e/tests/manifests/common-recommendations.yaml"],
+    "helm_flags": {
+        "image.pullPolicy": "Never",
+        "image.registry": "ghcr.io/kgateway-dev",
+        "image.tag": image_tag,
+        "controller.extraEnv.KGW_DISABLE_LEADER_ELECTION": "true",
+    },
 }
 
 tilt_file = "./tilt-settings.yaml" if os.path.exists("./tilt-settings.yaml") else "./tilt-settings.json"
-settings.update((read_yaml(
-    tilt_file,
-    default = {},
-)))
+user_settings = read_yaml(tilt_file, default = {})
+# Manually merge helm_flags to allow users to override specific flags
+# without losing the defaults defined above (e.g. image registry).
+if "helm_flags" in user_settings:
+    settings["helm_flags"].update(user_settings["helm_flags"])
+    user_settings.pop("helm_flags")
+
+# Append user-provided values files to the default list (e.g. common-recommendations.yaml)
+# so that both sets of values are applied.
+if "helm_values_files" in user_settings:
+    settings["helm_values_files"].extend(user_settings["helm_values_files"] or [])
+    user_settings.pop("helm_values_files")
+
+settings.update(user_settings)
 
 kgateway_installed_cmd = "{0} -n {1} status {2} || true".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
 kgateway_status = str(local(kgateway_installed_cmd, quiet = True))
@@ -57,9 +73,28 @@ RUN chmod 777 ./$binary_name
 standard_entrypoint = "ENTRYPOINT /app/start.sh /app/$binary_name"
 debug_entrypoint = "ENTRYPOINT /app/start.sh /go/bin/dlv --listen=0.0.0.0:$debug_port --api-version=2 --headless=true --only-same-user=false --accept-multiclient --check-go-version=false exec --continue /app/$binary_name"
 
-get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/kgateway/ --set image.pullPolicy='Never' --set image.registry=ghcr.io/kgateway-dev --set image.tag='{3}'".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), image_tag)
-for f in settings.get("helm_values_files") :
-    get_resources_cmd = get_resources_cmd + " --values=" + f
+def _shell_escape_single_quotes(value):
+    """Escape a value for safe inclusion in a single-quoted shell string.
+    In POSIX shells, a single quote inside a single-quoted string is represented as: '"'"'
+    """
+    return str(value).replace("'", "'\"'\"'")
+
+
+# Build common Helm arguments
+helm_args = ""
+for f in settings.get("helm_values_files"):
+    helm_args = helm_args + " --values=" + f
+
+for key, value in settings["helm_flags"].items():
+    escaped_value = _shell_escape_single_quotes(value)
+    helm_args = helm_args + " --set {0}='{1}'".format(key, escaped_value)
+
+get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/kgateway/ {3}".format(
+    helm_cmd, 
+    settings.get("helm_installation_namespace"), 
+    settings.get("helm_installation_name"), 
+    helm_args
+)
 
 arch = str(local("make print-GOARCH", quiet = True)).strip()
 
@@ -104,10 +139,12 @@ def build_docker_image(provider):
             tilt_helper_dockerfile,
             tilt_dockerfile,
         ])
-        if provider.get("debug_port") :
-            dockerfile_contents = dockerfile_contents + debug_entrypoint
-        else :
-            dockerfile_contents = dockerfile_contents + standard_entrypoint
+    
+    # Append the appropriate entrypoint based on whether debug_port is set
+    if provider.get("debug_port") :
+        dockerfile_contents = dockerfile_contents + debug_entrypoint
+    else :
+        dockerfile_contents = dockerfile_contents + standard_entrypoint
 
     dockerfile_contents = dockerfile_contents.replace("$binary_name", provider.get("binary_name"))
     dockerfile_contents = dockerfile_contents.replace("$debug_port", str(provider.get("debug_port")))
@@ -205,9 +242,12 @@ def install_kgateway():
         install_helm_cmd = """
             kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || {{ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml; }} ;
             {0} upgrade --install -n {1} --create-namespace kgateway-crds install/helm/kgateway-crds ;
-            {0} upgrade --install -n {1} --create-namespace {2} install/helm/kgateway/ --set controller.image.pullPolicy='Never' --set image.registry=ghcr.io/kgateway-dev --set image.tag='{3}'""".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), image_tag)
-        for f in settings.get("helm_values_files") :
-            install_helm_cmd = install_helm_cmd + " --values=" + f
+            {0} upgrade --install -n {1} --create-namespace {2} install/helm/kgateway/ {3}""".format(
+                helm_cmd, 
+                settings.get("helm_installation_namespace"), 
+                settings.get("helm_installation_name"), 
+                helm_args
+            )
         local_resource(
             name = settings.get("helm_installation_name") + "_helm",
             cmd = ["bash", "-c", install_helm_cmd],

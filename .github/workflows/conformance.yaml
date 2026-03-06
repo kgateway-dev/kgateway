@@ -6,7 +6,7 @@ on:
     types: [checks_requested]
 
 env:
-  VERSION: '1.0.0-ci1'
+  VERSION: 'v1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }} # necessary to pass upgrade tests
   ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
 
@@ -16,15 +16,16 @@ concurrency:
 
 jobs:
   gw_api_conformance_tests:
-    name: K8s Gw Api Conformance Tests (${{ matrix.test-type }}, ${{ matrix.gateway-api-channel }})
-    runs-on: ubuntu-22.04
+    name: K8s Gw Api Conformance Tests (${{ matrix.test-type }}, ${{ matrix.gateway-api-channel }}, ${{ matrix.arch }})
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
     strategy:
       fail-fast: false
       matrix:
         gateway-api-channel: [ 'experimental', 'standard' ]
-        test-type: [ gateway-api, agentgateway ]
+        test-type: [ gateway-api ]
+        arch: [ 'amd64', 'arm64' ]
     steps:
     - uses: actions/checkout@v4
     - name: Dotenv Action
@@ -40,26 +41,8 @@ jobs:
         api-channel: ${{ matrix.gateway-api-channel }}
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-
-  # gie_conformance_tests:
-  #   name: Kubernetes Gateway API Inference Extension Conformance Tests
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #   - name: Dotenv Action
-  #     uses: falti/dotenv-action@v1.1.4
-  #     id: dotenv
-  #     with:
-  #       path: "./.github/workflows/.env/pr-tests/versions.env"
-  #       log-variables: true
-  #   - name: Run GIE Conformance Tests
-  #     uses: ./.github/actions/kube-conformance-tests
-  #     with:
-  #       test-type: inference-extension
-  #       api-channel: experimental
-  #       enable-inference-extension: true
-  #       kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-  #       kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+        # Only summarize one architecture to avoid spamming the summary
+        summarize-report: ${{matrix.arch == 'arm64'}} 
 
   conformance:
     if: always()

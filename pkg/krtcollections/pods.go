@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
@@ -36,7 +37,7 @@ var (
 	_ krt.Equaler[NodeMetadata] = NodeMetadata{}
 )
 
-// WrappedPod is used by agentgateway as a stripped down representation of the pod
+// WrappedPod is a stripped down representation of the pod
 type WrappedPod struct {
 	krt.Named
 	HostNetwork        bool
@@ -280,6 +281,11 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 		// Augment the labels with the ambient redirection annotation
 		if redirectionValue, exists := pod.Annotations[istioannot.AmbientRedirection.Name]; exists {
 			labels[istioannot.AmbientRedirection.Name] = redirectionValue
+		}
+
+		// Augment the labels with the gateway name annotation (for long gateway names > 63 chars)
+		if gwName, exists := pod.Annotations[wellknown.GatewayNameAnnotation]; exists {
+			labels[wellknown.GatewayNameAnnotation] = gwName
 		}
 
 		return &LocalityPod{

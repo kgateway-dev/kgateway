@@ -30,18 +30,16 @@ import (
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stopwatch"
 )
 
 var _ manager.LeaderElectionRunnable = &StatusSyncer{}
 
 // StatusSyncer runs only on the leader and syncs the status of resources.
 type StatusSyncer struct {
-	mgr                   manager.Manager
-	plugins               plug.Plugin
-	controllerName        string
-	agentgatewayClassName string
-	istioClient           apiclient.Client
+	mgr            manager.Manager
+	plugins        plug.Plugin
+	controllerName string
+	istioClient    apiclient.Client
 
 	latestReportQueue              utils.AsyncQueue[reports.ReportMap]
 	latestBackendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
@@ -54,7 +52,6 @@ func NewStatusSyncer(
 	mgr manager.Manager,
 	plugins plug.Plugin,
 	controllerName string,
-	agentgatewayClassName string,
 	client apiclient.Client,
 	commonCols *collections.CommonCollections,
 	reportQueue utils.AsyncQueue[reports.ReportMap],
@@ -68,7 +65,6 @@ func NewStatusSyncer(
 		plugins:                        plugins,
 		istioClient:                    client,
 		controllerName:                 controllerName,
-		agentgatewayClassName:          agentgatewayClassName,
 		latestReportQueue:              reportQueue,
 		latestBackendPolicyReportQueue: backendPolicyReportQueue,
 		cacheSyncs:                     cacheSyncs,
@@ -135,10 +131,6 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 }
 
 func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
-	stopwatch := stopwatch.NewTranslatorStopWatch("RouteStatusSyncer")
-	stopwatch.Start()
-	defer stopwatch.Stop(ctx)
-
 	// Helper function to sync route status with retry
 	syncStatusWithRetry := func(
 		routeType string,
@@ -353,9 +345,6 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 
 // syncGatewayStatus will build and update status for all Gateways in a reportMap
 func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
-	stopwatch := stopwatch.NewTranslatorStopWatch("GatewayStatusSyncer")
-	stopwatch.Start()
-
 	for gwnn := range rm.Gateways {
 		finishMetrics := CollectStatusSyncMetrics(StatusSyncMetricLabels{
 			Name:      gwnn.Name,
@@ -451,15 +440,11 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 		finishMetrics(errors.Join(err, statusErr))
 	}
 
-	duration := stopwatch.Stop(ctx)
-	logger.Debug("synced gw status for gateways", "count", len(rm.Gateways), "duration", duration)
+	logger.Debug("synced gw status for gateways", "count", len(rm.Gateways))
 }
 
 // syncListenerSetStatus will build and update status for all Listener Sets in a reportMap
 func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
-	stopwatch := stopwatch.NewTranslatorStopWatch("ListenerSetStatusSyncer")
-	stopwatch.Start()
-
 	// TODO: retry within loop per LS rather than as a full block
 	err := retry.Do(func() (rErr error) {
 		for lsnn := range rm.ListenerSets[wellknown.XListenerSetGVK] {
@@ -528,15 +513,10 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 	if err != nil {
 		logger.Error("all attempts failed at updating listener set statuses", "error", err)
 	}
-	duration := stopwatch.Stop(ctx)
-	logger.Debug("synced listener sets status for listener set", "count", len(rm.ListenerSets), "duration", duration.String())
+	logger.Debug("synced listener sets status for listener set", "count", len(rm.ListenerSets))
 }
 
 func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
-	stopwatch := stopwatch.NewTranslatorStopWatch("RouteStatusSyncer")
-	stopwatch.Start()
-	defer stopwatch.Stop(ctx)
-
 	// Sync Policy statuses
 	for key := range rm.Policies {
 		gk := schema.GroupKind{Group: key.Group, Kind: key.Kind}

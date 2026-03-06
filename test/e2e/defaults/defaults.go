@@ -116,4 +116,6 @@ Commercial support is available at
 	KGatewayPodLabel   = "kgateway=kgateway"
 
 	AIGuardrailsWebhookManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "ai_guardrails_webhook.yaml")
+
+	ExtProcManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "extproc-service.yaml")
 )

@@ -44,7 +44,7 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	}
 	if caPath != "" {
 		log.Printf("Using OS CA certificate for proxy: %s", caPath)
-		//If the CA cert path is set, we need to set the CA cert path in the bootstrap config
+		// If the CA cert path is set, we need to set the CA cert path in the bootstrap config
 		var bootstrap envoybootstrapv3.Bootstrap
 		err := protoutils.UnmarshalYaml([]byte(bootstrapConfig), &bootstrap)
 		if err != nil {
@@ -73,7 +73,7 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	// 2. Write to a file for debug purposes
 	// since this operation is meant only for debug purposes, we ignore the error
 	// this might fail if root fs is read only
-	_ = os.WriteFile(outputPath, []byte(bootstrapConfig), 0444) //nolint:gosec // G306: Debug file with read-only permissions is intentional
+	_ = os.WriteFile(outputPath, []byte(bootstrapConfig), 0o444) //nolint:gosec // G306: Debug file with read-only permissions is intentional
 
 	// 3. Execute Envoy with the provided configuration
 	args := []string{envoyExecutable, "--config-yaml", bootstrapConfig}

@@ -1,12 +1,12 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  namespace: kgateway-test
+  namespace: kgateway-base
   name: hey-its-a-route
 spec:
   parentRefs:
-    - name: super-gateway
-      namespace: kgateway-test
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "example.com"
   rules:
@@ -17,7 +17,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: kgateway-test
+  namespace: kgateway-base
   name: simple-svc
   labels:
     app: simple-svc
@@ -32,7 +32,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: kgateway-test
+  namespace: kgateway-base
   name: backend-0
 spec:
   replicas: 1

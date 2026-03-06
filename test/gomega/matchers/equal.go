@@ -9,9 +9,7 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
-var (
-	_ types.GomegaMatcher = new(BeEquivalentToDiffMatcher)
-)
+var _ types.GomegaMatcher = new(BeEquivalentToDiffMatcher)
 
 // BeEquivalentToDiff is the same as BeEquivalentTo
 // but prints a nice diff on failure best effect use ginkgo with -noColor

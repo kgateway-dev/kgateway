@@ -1,24 +1,70 @@
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
+apiVersion: v1
+kind: ServiceAccount
 metadata:
-  name: test
+  name: httpbin
+  namespace: kgateway-base
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: kgateway-base
+  labels:
+    app.kubernetes.io/name: httpbin
+    service: httpbin
 spec:
-  gatewayClassName: kgateway
-  listeners:
-  - protocol: HTTP
-    port: 8080
-    name: http
-    allowedRoutes:
-      namespaces:
-        from: All
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8080
+  selector:
+    app.kubernetes.io/name: httpbin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: kgateway-base
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: httpbin
+      version: v1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: httpbin
+        version: v1
+    spec:
+      serviceAccountName: httpbin
+      containers:
+        - image: docker.io/mccutchen/go-httpbin:v2.6.0
+          imagePullPolicy: IfNotPresent
+          name: httpbin
+          command: [ go-httpbin ]
+          args:
+            - "-port"
+            - "8080"
+            - "-max-duration"
+            - "600s" # override default 10s
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+            limits:
+              cpu: "200m"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: test
+  namespace: kgateway-base
 spec:
   parentRefs:
-    - name: test
+    - name: gateway
+      namespace: kgateway-base
   rules:
     - name: timeout
       matches:
@@ -52,6 +98,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: timeout
+  namespace: kgateway-base
 spec:
   targetRefs:
   - kind: HTTPRoute
@@ -65,6 +112,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: retry
+  namespace: kgateway-base
 spec:
   targetRefs:
   - kind: HTTPRoute
@@ -84,11 +132,12 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: retry-listener
+  namespace: kgateway-base
 spec:
   targetRefs:
   - kind: Gateway
     group: gateway.networking.k8s.io
-    name: test
+    name: gateway
     sectionName: http
   retry:
     attempts: 2

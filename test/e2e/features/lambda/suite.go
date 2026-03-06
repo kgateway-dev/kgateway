@@ -53,11 +53,11 @@ func (s *testingSuite) SetupSuite() {
 	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, awsCliPodManifest)
 	s.NoError(err, "can apply aws-cli pod manifest")
 
-	s.ti.Assertions.EventuallyObjectsExist(s.ctx, testdefaults.CurlPod)
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, testdefaults.CurlPod)
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=curl",
 	})
-	s.ti.Assertions.EventuallyPodReady(s.ctx, "lambda-test", "aws-cli", 30*time.Second)
+	s.ti.AssertionsT(s.T()).EventuallyPodReady(s.ctx, "lambda-test", "aws-cli", 30*time.Second)
 
 	s.manifests = map[string][]string{
 		"TestLambdaBackendRouting":      {lambdaBackendManifest},
@@ -105,14 +105,14 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 		s.Require().NoError(err, "can apply manifest "+manifest)
 	}
 
-	s.ti.Assertions.EventuallyObjectsExist(s.ctx, testdefaults.CurlPod)
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, testdefaults.CurlPod)
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=curl",
 	})
 
-	s.ti.Assertions.EventuallyObjectsExist(s.ctx, proxyServiceMeta)
-	s.ti.Assertions.EventuallyObjectsExist(s.ctx, proxyDeploymentMeta)
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, proxyDeploymentMeta.GetNamespace(), metav1.ListOptions{
+	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyServiceMeta)
+	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyDeploymentMeta)
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyDeploymentMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, gatewayName),
 	})
 }
@@ -130,7 +130,7 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 
 func (s *testingSuite) TestLambdaBackendRouting() {
 	// Test Lambda backend with custom endpoint
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -146,7 +146,7 @@ func (s *testingSuite) TestLambdaBackendRouting() {
 	)
 
 	// Test Lambda backend with Envoy payload transformation disabled
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -174,7 +174,7 @@ func (s *testingSuite) TestLambdaBackendRouting() {
 
 func (s *testingSuite) TestLambdaBackendAsyncRouting() {
 	// Test Lambda backend with custom endpoint
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -192,7 +192,7 @@ func (s *testingSuite) TestLambdaBackendAsyncRouting() {
 
 func (s *testingSuite) TestLambdaBackendQualifier() {
 	// Test Lambda backend with the prod qualifier
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -208,7 +208,7 @@ func (s *testingSuite) TestLambdaBackendQualifier() {
 	)
 
 	// Test Lambda backend with the dev qualifier
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -224,7 +224,7 @@ func (s *testingSuite) TestLambdaBackendQualifier() {
 	)
 
 	// Test Lambda backend with the latest qualifier
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -240,7 +240,7 @@ func (s *testingSuite) TestLambdaBackendQualifier() {
 	)
 
 	// Test non-existent qualifier returns 404
-	s.ti.Assertions.AssertEventualCurlResponse(
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{

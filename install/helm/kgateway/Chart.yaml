@@ -3,7 +3,5 @@ name: kgateway
 description: A Helm chart for the kgateway project
 icon: https://raw.githubusercontent.com/kgateway-dev/kgateway.dev/main/static/favicon.svg
 type: application
-# Note that, for legacy reasons, this has a "v" prefix and thus does not strictly follow
-# Semantic Versioning (https://semver.org/)
-version: "v0.0.1"
-appVersion: "v0.0.2"
+version: "0.0.2"
+appVersion: "0.0.1"

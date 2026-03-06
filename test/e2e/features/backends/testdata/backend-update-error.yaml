@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: lambda-secret
-  namespace: default
+  namespace: kgateway-base
 type: Opaque
 data:
   # purposefully use unsupported key to surface status update error

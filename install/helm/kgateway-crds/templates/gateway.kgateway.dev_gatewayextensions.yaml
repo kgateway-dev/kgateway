@@ -479,6 +479,83 @@ spec:
               extProc:
                 description: ExtProc configuration for ExtProc extension type.
                 properties:
+                  allowProcessingModeOverride:
+                    default: false
+                    description: |-
+                      AllowProcessingModeOverride determines if the processing mode can be overridden.
+                      Defaults to false, meaning the processing mode cannot be overridden.
+                    type: boolean
+                  allowedProcessingModeOverrides:
+                    description: |-
+                      AllowedProcessingModeOverrides specifies which processing modes are allowed to override the default.
+                      Empty or unspecified means all overrides are allowed (if AllowProcessingModeOverride is true).
+                      This is an allowlist; any processing mode in this list will allow the override to the specified mode.
+                      If AllowProcessingModeOverride is false, this field is ignored.
+                      See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#envoy-v3-api-field-extensions-filters-http-ext-proc-v3-externalprocessor-allowed-override-modes
+                    items:
+                      description: ProcessingMode defines how the filter should interact
+                        with the request/response streams
+                      properties:
+                        requestBodyMode:
+                          default: NONE
+                          description: RequestBodyMode determines how to handle the
+                            request body
+                          enum:
+                          - NONE
+                          - STREAMED
+                          - BUFFERED
+                          - BUFFERED_PARTIAL
+                          - FULL_DUPLEX_STREAMED
+                          type: string
+                        requestHeaderMode:
+                          default: SEND
+                          description: RequestHeaderMode determines how to handle
+                            the request headers
+                          enum:
+                          - DEFAULT
+                          - SEND
+                          - SKIP
+                          type: string
+                        requestTrailerMode:
+                          default: SKIP
+                          description: RequestTrailerMode determines how to handle
+                            the request trailers
+                          enum:
+                          - DEFAULT
+                          - SEND
+                          - SKIP
+                          type: string
+                        responseBodyMode:
+                          default: NONE
+                          description: ResponseBodyMode determines how to handle the
+                            response body
+                          enum:
+                          - NONE
+                          - STREAMED
+                          - BUFFERED
+                          - BUFFERED_PARTIAL
+                          - FULL_DUPLEX_STREAMED
+                          type: string
+                        responseHeaderMode:
+                          default: SEND
+                          description: ResponseHeaderMode determines how to handle
+                            the response headers
+                          enum:
+                          - DEFAULT
+                          - SEND
+                          - SKIP
+                          type: string
+                        responseTrailerMode:
+                          default: SKIP
+                          description: ResponseTrailerMode determines how to handle
+                            the response trailers
+                          enum:
+                          - DEFAULT
+                          - SEND
+                          - SKIP
+                          type: string
+                      type: object
+                    type: array
                   failOpen:
                     default: true
                     description: |-
@@ -1130,6 +1207,24 @@ spec:
                     description: Cookies specifies the configuration for the OAuth2
                       cookies.
                     properties:
+                      disableAccessTokenSetCookie:
+                        description: |-
+                          DisableAccessTokenSetCookie specifies whether to disable setting the access token cookie.
+                          This can be used when the access token is too large to fit in a cookie. When true, the
+                          set-cookie response header for the access token will be omitted.
+                        type: boolean
+                      disableIDTokenSetCookie:
+                        description: |-
+                          DisableIDTokenSetCookie specifies whether to disable setting the ID token cookie.
+                          This can be used when the ID token is too large to fit in a cookie. When true, the
+                          set-cookie response header for the ID token will be omitted.
+                        type: boolean
+                      disableRefreshTokenSetCookie:
+                        description: |-
+                          DisableRefreshTokenSetCookie specifies whether to disable setting the refresh token cookie.
+                          This can be used when the refresh token is too large to fit in a cookie. When true, the
+                          set-cookie response header for the refresh token will be omitted.
+                        type: boolean
                       domain:
                         description: |-
                           CookieDomain specifies the domain to set on the access and ID token cookies.

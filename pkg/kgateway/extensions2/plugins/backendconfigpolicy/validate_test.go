@@ -11,7 +11,6 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -20,12 +19,12 @@ import (
 
 // mockValidator implements validator.Validator for testing
 type mockValidator struct {
-	validateFunc func(ctx context.Context, config string) error
+	validateFunc func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error
 }
 
 var _ validator.Validator = &mockValidator{}
 
-func (m *mockValidator) Validate(ctx context.Context, config string) error {
+func (m *mockValidator) Validate(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
 	if m.validateFunc != nil {
 		return m.validateFunc(ctx, config)
 	}
@@ -47,7 +46,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 				connectTimeout: durationpb.New(5 * time.Second),
 			},
 			validator: &mockValidator{
-				validateFunc: func(ctx context.Context, config string) error {
+				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
 					return nil // Successful validation
 				},
 			},
@@ -67,7 +66,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 				},
 			},
 			validator: &mockValidator{
-				validateFunc: func(ctx context.Context, config string) error {
+				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
 					return errors.New("Failed to initialize cipher suites BOGUS_CIPHER_SUITE_1:INVALID_AES_256_GCM_SHA384")
 				},
 			},
@@ -87,7 +86,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 				},
 			},
 			validator: &mockValidator{
-				validateFunc: func(ctx context.Context, config string) error {
+				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
 					return errors.New("Failed to initialize ECDH curves")
 				},
 			},
@@ -107,7 +106,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 				},
 			},
 			validator: &mockValidator{
-				validateFunc: func(ctx context.Context, config string) error {
+				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
 					return errors.New("should not be called in standard mode")
 				},
 			},
@@ -123,16 +122,12 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 				},
 			},
 			validator: &mockValidator{
-				validateFunc: func(ctx context.Context, config string) error {
+				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
 					// Verify that the cluster uses STRICT_DNS when useHostnameForHashing is enabled
-					var bootstrap envoybootstrapv3.Bootstrap
-					if err := protojson.Unmarshal([]byte(config), &bootstrap); err != nil {
-						return err
-					}
-					if len(bootstrap.StaticResources.Clusters) != 1 {
+					cluster := config.StaticResources.Clusters[0]
+					if len(config.StaticResources.Clusters) != 1 {
 						return errors.New("expected exactly one cluster in bootstrap")
 					}
-					cluster := bootstrap.StaticResources.Clusters[0]
 					if cluster.GetType() != envoyclusterv3.Cluster_STRICT_DNS {
 						return fmt.Errorf("expected STRICT_DNS cluster type, got %v", cluster.GetType())
 					}
@@ -149,16 +144,12 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 				connectTimeout: durationpb.New(10 * time.Second),
 			},
 			validator: &mockValidator{
-				validateFunc: func(ctx context.Context, config string) error {
+				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
 					// Verify that the cluster uses STATIC when useHostnameForHashing is not enabled
-					var bootstrap envoybootstrapv3.Bootstrap
-					if err := protojson.Unmarshal([]byte(config), &bootstrap); err != nil {
-						return err
-					}
-					if len(bootstrap.StaticResources.Clusters) != 1 {
+					if len(config.StaticResources.Clusters) != 1 {
 						return errors.New("expected exactly one cluster in bootstrap")
 					}
-					cluster := bootstrap.StaticResources.Clusters[0]
+					cluster := config.StaticResources.Clusters[0]
 					if cluster.GetType() != envoyclusterv3.Cluster_STATIC {
 						return fmt.Errorf("expected STATIC cluster type, got %v", cluster.GetType())
 					}

@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -219,9 +218,9 @@ func (t *Translator) runListenerPlugins(
 				Port:   l.BindPort,
 				Policy: pol.PolicyIr,
 				PolicyAncestorRef: gwv1.ParentReference{
-					Group:     ptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
-					Kind:      ptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
-					Namespace: ptr.To(gwv1.Namespace(gw.SourceObject.GetNamespace())),
+					Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
+					Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+					Namespace: new(gwv1.Namespace(gw.SourceObject.GetNamespace())),
 					Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
 				},
 			}

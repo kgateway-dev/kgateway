@@ -8,6 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 func TestComponentLogLevelsToString(t *testing.T) {
@@ -75,7 +77,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      ptr.To("203.0.113.10"),
+			wantIP:      new("203.0.113.10"),
 			wantErr:     nil,
 		},
 		{
@@ -84,7 +86,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 				{Type: ptr.To(gwv1.IPAddressType), Value: "2001:db8::1"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      ptr.To("2001:db8::1"),
+			wantIP:      new("2001:db8::1"),
 			wantErr:     nil,
 		},
 		{
@@ -93,7 +95,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 				{Type: nil, Value: "192.0.2.1"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      ptr.To("192.0.2.1"),
+			wantIP:      new("192.0.2.1"),
 			wantErr:     nil,
 		},
 		{
@@ -120,7 +122,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      ptr.To("203.0.113.10"),
+			wantIP:      new("203.0.113.10"),
 			wantErr:     nil,
 		},
 		{
@@ -156,7 +158,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 				{Type: nil, Value: "203.0.113.10"},
 			},
 			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
-			wantIP:      ptr.To("203.0.113.10"),
+			wantIP:      new("203.0.113.10"),
 			wantErr:     nil,
 		},
 		{
@@ -229,6 +231,64 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 					assert.Equal(t, *tt.wantIP, *svc.LoadBalancerIP, "IP address mismatch")
 				}
 			}
+		})
+	}
+}
+
+func TestGetServiceValues(t *testing.T) {
+	lbType := corev1.ServiceTypeLoadBalancer
+
+	tests := []struct {
+		name  string
+		input *kgateway.Service
+		want  *HelmService
+	}{
+		{
+			name:  "nil service config returns empty HelmService",
+			input: nil,
+			want:  &HelmService{},
+		},
+		{
+			name:  "empty service config returns empty HelmService",
+			input: &kgateway.Service{},
+			want:  &HelmService{},
+		},
+		{
+			name: "fully populated service config",
+			input: &kgateway.Service{
+				Type:                     &lbType,
+				ClusterIP:                new("10.0.0.1"),
+				ExtraLabels:              map[string]string{"env": "test"},
+				ExtraAnnotations:         map[string]string{"note": "value"},
+				ExternalTrafficPolicy:    new("Local"),
+				LoadBalancerClass:        new("service.k8s.aws/nlb"),
+				LoadBalancerSourceRanges: []string{"10.0.0.0/8", "192.168.0.0/16"},
+			},
+			want: &HelmService{
+				Type:                     new("LoadBalancer"),
+				ClusterIP:                new("10.0.0.1"),
+				ExtraLabels:              map[string]string{"env": "test"},
+				ExtraAnnotations:         map[string]string{"note": "value"},
+				ExternalTrafficPolicy:    new("Local"),
+				LoadBalancerClass:        new("service.k8s.aws/nlb"),
+				LoadBalancerSourceRanges: []string{"10.0.0.0/8", "192.168.0.0/16"},
+			},
+		},
+		{
+			name: "service config with only loadBalancerSourceRanges",
+			input: &kgateway.Service{
+				LoadBalancerSourceRanges: []string{"172.16.0.0/12"},
+			},
+			want: &HelmService{
+				LoadBalancerSourceRanges: []string{"172.16.0.0/12"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GetServiceValues(tt.input)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

@@ -14,7 +14,6 @@ func funcMap() template.FuncMap {
 }
 
 func convert(a reflect.Value) (int64, error) {
-
 	switch a.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return a.Int(), nil
@@ -23,7 +22,6 @@ func convert(a reflect.Value) (int64, error) {
 	default:
 		return 0, fmt.Errorf("unsupported type: %T", a)
 	}
-
 }
 
 func add(a, b reflect.Value) (interface{}, error) {

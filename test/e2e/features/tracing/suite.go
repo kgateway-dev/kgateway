@@ -45,13 +45,13 @@ func (s *testingSuite) TestOTelTracingSecure() {
 // testOTelTracing makes a request to the httpbin service
 // and checks if the collector pod logs contain the expected lines
 func (s *testingSuite) testOTelTracing() {
-	s.TestInstallation.Assertions.EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
 	// The headerValue passed is used to differentiate between multiple calls by identifying a unique trace per call
 	headerValue := fmt.Sprintf("%v", rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		// make curl request to httpbin service with the custom header
-		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 			s.Ctx,
 			defaults.CurlPodExecOpt,
 			[]curl.Option{
@@ -74,6 +74,11 @@ func (s *testingSuite) testOTelTracing() {
 			`-> http.method: Str(GET)`,
 			`-> http.status_code: Str(200)`,
 			`-> upstream_cluster: Str(kube_httpbin_httpbin_8000)`,
+			// Default service identity resource attributes auto-injected by the static resource detector
+			`-> service.name: Str(my:service)`,
+			`-> service.namespace: Str(default)`,
+			// verify the field is present as the id will be different each run
+			`-> service.instance.id: Str(`,
 			// Resource attributes specified via the environmentResourceDetector
 			`-> environment: Str(detector)`,
 			`-> resource: Str(attribute)`,

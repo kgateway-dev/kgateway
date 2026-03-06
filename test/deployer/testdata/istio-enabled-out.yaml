@@ -199,6 +199,11 @@ data:
                       socket_address:
                         address: 127.0.0.1
                         port_value: 8234
+    typed_dns_resolver_config:
+      name: envoy.network.dns_resolver.cares
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
+        udp_max_queries: 100
     dynamic_resources:
       ads_config:
         transport_api_version: V3
@@ -249,6 +254,10 @@ spec:
     port: 8080
     protocol: TCP
     targetPort: 8080
+  - name: http-monitoring
+    port: 9091
+    protocol: TCP
+    targetPort: 9091
   selector:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/name: gw
@@ -279,6 +288,7 @@ spec:
   template:
     metadata:
       annotations:
+        gateway.kgateway.dev/gateway-full-name: gw
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"

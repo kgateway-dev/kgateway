@@ -46,7 +46,7 @@ func (s *tsuite) AfterTest(suiteName, testName string) {
 
 func (s *tsuite) TestPolicies() {
 	// Verify response transformation with TrafficPolicy
-	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
+	s.ti.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{curl.WithHostPort(ProxyHostPort(s.namespace)), curl.WithPath("/get")},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Headers: map[string]any{"x-foo": "bar"}})
 

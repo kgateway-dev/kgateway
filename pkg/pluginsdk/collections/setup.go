@@ -75,7 +75,7 @@ func (c *CommonCollections) InitCollections(
 	)
 
 	if !globalSettings.EnableEnvoy {
-		// For now, the gateway index is used by Agentgateway as well in the deployer
+		// When Envoy is disabled, only the gateway index is needed for the deployer
 		return gateways, nil, nil, nil
 	}
 

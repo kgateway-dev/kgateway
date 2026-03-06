@@ -1,4 +1,4 @@
-Based on agentgateway auth0 example: https://github.com/agentgateway/agentgateway/tree/485a299d2199cf7f792a8f7e55677f1a4898013b/examples/mcp-authentication
+Based on a mock Auth0-style OAuth2 flow for MCP authentication testing.
 
 ## Building and Deploying
 
@@ -8,10 +8,10 @@ Based on agentgateway auth0 example: https://github.com/agentgateway/agentgatewa
 VERSION=<version> make kind-build-and-load-dummy-idp
 ```
 
-2. Apply the mock IDP deployment 
+2. Apply a Kubernetes Deployment and Service manifest for `dummy-idp`.
 
 ```shell
-kubectl apply -f test/e2e/features/agentgateway/mcp/testdata/auth0-mock-server.yaml
+kubectl apply -f <path-to-dummy-idp-manifest.yaml>
 ```
 
 ## Running Locally

@@ -48,7 +48,7 @@ spec:
     - host: example.com
       port: 80
 `,
-			wantErrors: []string{`exactly one of the fields in \[aws static dynamicForwardProxy\] must be set`},
+			wantErrors: []string{`exactly one of the fields in \[aws static dynamicForwardProxy gcp\] must be set`},
 		},
 		{
 			name: "Backend: empty lambda qualifier does not match pattern",
@@ -178,7 +178,7 @@ spec:
     kind: Deployment
     name: test-deployment
 `,
-			wantErrors: []string{"TargetRefs must reference either a Kubernetes Service or a Backend API"},
+			wantErrors: []string{"TargetRefs must reference either a Kubernetes Service, a Backend, or an Istio Hostname"},
 		},
 		{
 			name: "BackendConfigPolicy: invalid target selector",
@@ -194,7 +194,7 @@ spec:
     matchLabels:
       app: myapp
 `,
-			wantErrors: []string{"TargetSelectors must reference either a Kubernetes Service or a Backend API"},
+			wantErrors: []string{"TargetSelectors must reference either a Kubernetes Service, a Backend, or an Istio Hostname"},
 		},
 		{
 			name: "BackendConfigPolicy: invalid aggression",
@@ -274,6 +274,9 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: test-route
+  - group: gateway.networking.k8s.io
+    kind: GRPCRoute
+    name: test-grpc-route
   - group: gateway.networking.x-k8s.io
     kind: XListenerSet
     name: test-listener
@@ -297,7 +300,7 @@ spec:
     kind: Deployment
     name: test-deployment
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, or ListenerSet resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, GRPCRoute, or ListenerSet resources"},
 		},
 		{
 			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",
@@ -685,9 +688,9 @@ spec:
 
 	testutils.Cleanup(t, func() {
 		ctx := context.Background()
-		ti.UninstallKgatewayCRDs(ctx)
+		ti.UninstallKgatewayCRDs(ctx, t)
 	})
-	ti.InstallKgatewayCRDsFromLocalChart(ctx)
+	ti.InstallKgatewayCRDsFromLocalChart(ctx, t)
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
