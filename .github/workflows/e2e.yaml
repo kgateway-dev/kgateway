@@ -16,11 +16,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Validate that all e2e tests are covered by workflow regex patterns
+  # This prevents newly added tests from being silently skipped in CI
+  validate_e2e_coverage:
+    name: Validate E2E Test Coverage
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    if: ${{ !github.event.pull_request.draft }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+        cache-dependency-path: go.sum
+    - name: Run E2E Coverage Validation
+      run: go run hack/ci/validate_e2e_coverage.go
+
   end_to_end_tests:
     name: End-to-End (${{ matrix.test.cluster-name }})
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
+    needs: validate_e2e_coverage
     strategy:
       fail-fast: false
       matrix:
@@ -65,7 +83,7 @@ jobs:
         # December 4, 2025: ~9 minutes
         - cluster-name: 'api-validation' # TODO: rename to cluster-seven
           go-test-args: '-timeout=15m'
-          go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$'
+          go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestInferenceExtension$$'
           localstack: 'false'
         # December 4, 2025: ~15 minutes
         - cluster-name: 'cluster-metrics'
