@@ -129,7 +129,7 @@ func (s *testingSuite) TestHttpListenerPolicyAllFields() {
 func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 	// Test that the HTTPListenerPolicy with serverHeaderTransformation field is applied correctly
 	// The test verifies that the server header is transformed as expected
-	// With PassThrough, the server header should be the backend server's header (nginx/1.28.0)
+	// With PassThrough, the server header should be the backend server's header (nginx/1.28.x)
 	// instead of Envoy's default (envoy)
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
@@ -142,7 +142,7 @@ func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("Welcome to nginx!"),
 			Headers: map[string]any{
-				"server": "nginx/1.28.0", // Should be the backend server header, not "envoy"
+				"server": gomega.MatchRegexp(`^nginx/1\.28\.\d+$`), // Should be the backend server header, not "envoy"
 			},
 		})
 }
