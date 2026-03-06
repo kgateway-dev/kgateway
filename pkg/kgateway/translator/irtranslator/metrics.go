@@ -8,15 +8,13 @@ const (
 	routingSubsystem = "routing"
 )
 
-var (
-	domainsPerListener = metrics.NewGauge(
-		metrics.GaugeOpts{
-			Subsystem: routingSubsystem,
-			Name:      "domains",
-			Help:      "Number of domains per listener",
-		},
-		[]string{"namespace", "gateway", "port"},
-	)
+var domainsPerListener = metrics.NewGauge(
+	metrics.GaugeOpts{
+		Subsystem: routingSubsystem,
+		Name:      "domains",
+		Help:      "Number of domains per listener",
+	},
+	[]string{"namespace", "gateway", "port"},
 )
 
 // domainsPerListenerMetricLabels is used as an argument to SetDomainPerListener

@@ -9,7 +9,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
@@ -56,9 +55,9 @@ func TestTranslateHealthCheck(t *testing.T) {
 				UnhealthyThreshold: 3,
 				HealthyThreshold:   2,
 				Http: &kgateway.HealthCheckHttp{
-					Host:   ptr.To("example.com"),
+					Host:   new("example.com"),
 					Path:   "/health",
-					Method: ptr.To("GET"),
+					Method: new("GET"),
 				},
 			},
 			expected: &envoycorev3.HealthCheck{
@@ -83,8 +82,8 @@ func TestTranslateHealthCheck(t *testing.T) {
 				UnhealthyThreshold: 4,
 				HealthyThreshold:   1,
 				Grpc: &kgateway.HealthCheckGrpc{
-					ServiceName: ptr.To("grpc.health.v1.Health"),
-					Authority:   ptr.To("example.com"),
+					ServiceName: new("grpc.health.v1.Health"),
+					Authority:   new("example.com"),
 				},
 			},
 			expected: &envoycorev3.HealthCheck{
@@ -108,7 +107,7 @@ func TestTranslateHealthCheck(t *testing.T) {
 				UnhealthyThreshold: 2,
 				HealthyThreshold:   3,
 				Http: &kgateway.HealthCheckHttp{
-					Host: ptr.To("example.com"),
+					Host: new("example.com"),
 					Path: "/health",
 				},
 			},

@@ -38,13 +38,11 @@ type Applier struct {
 func (a *Applier) Apply(dynamicClient dynamic.Interface, factory cmdutil.Factory, fo resource.FilenameOptions, validator validation.Schema) error {
 	ctx := context.Background()
 	templateObjects, err := a.getobjects(ctx, factory, fo, validator)
-
 	if err != nil {
 		return err
 	}
 
 	if a.DryRun {
-
 		for i := a.Start; i < a.End; i++ {
 			for _, obj := range templateObjects {
 				u := obj.Get(i)
@@ -53,7 +51,6 @@ func (a *Applier) Apply(dynamicClient dynamic.Interface, factory cmdutil.Factory
 				fmt.Fprintln(os.Stdout, "---")
 			}
 		}
-
 	} else {
 
 		errs := []error{}
@@ -144,7 +141,6 @@ func (a *Applier) getobjects(ctx context.Context, factory cmdutil.Factory, fo re
 }
 
 func (a *Applier) applyOne(ctx context.Context, i int, obj *TemplateInfo, dynamicClient dynamic.Interface) error {
-
 	a.getLock.Lock()
 	objToCreate := obj.Get(i).DeepCopy()
 	a.getLock.Unlock()
@@ -224,7 +220,6 @@ func NewTemplateInfo(info *resource.Info) *TemplateInfo {
 }
 
 func (ti *TemplateInfo) addModifiers(obj map[string]interface{}) {
-
 	// Object is a JSON compatible map with string, float, int, bool, []interface{}, or
 	// map[string]interface{}
 	// children.

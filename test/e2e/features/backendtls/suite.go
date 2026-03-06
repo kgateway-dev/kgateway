@@ -10,11 +10,9 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -22,9 +20,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -35,25 +33,19 @@ var (
 	configMapManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata/configmap.yaml")
 	backendTLSPolicyMissingTargetManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/missing-target.yaml")
 
-	proxyObjMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
-	}
-
-	proxyService     = &corev1.Service{ObjectMeta: proxyObjMeta}
 	backendTlsPolicy = &gwv1.BackendTLSPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tls-policy",
-			Namespace: "default",
+			Namespace: "kgateway-base",
 		},
 	}
 	nginxMeta = metav1.ObjectMeta{
 		Name:      "nginx",
-		Namespace: "default",
+		Namespace: "kgateway-base",
 	}
 	nginx2Meta = metav1.ObjectMeta{
 		Name:      "nginx2",
-		Namespace: "default",
+		Namespace: "kgateway-base",
 	}
 	svcGroup = ""
 	svcKind  = "Service"
@@ -61,7 +53,6 @@ var (
 	// base setup manifests
 	baseSetupManifests = []string{
 		filepath.Join(fsutils.MustGetThisDir(), "testdata/nginx.yaml"),
-		defaults.CurlPodManifest,
 		configMapManifest,
 	}
 
@@ -100,33 +91,27 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		},
 	}
 	for _, tc := range tt {
-		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-			s.Ctx,
-			defaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-				curl.WithHostHeader(tc.host),
-				curl.WithPath("/"),
-			},
+		common.BaseGateway.Send(
+			s.T(),
 			&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
 				Body:       gomega.ContainSubstring(defaults.NginxResponse),
 			},
+			curl.WithPort(80),
+			curl.WithHostHeader(tc.host),
+			curl.WithPath("/"),
 		)
 	}
 
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("foo.com"),
-			curl.WithPath("/"),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&matchers.HttpResponse{
 			// google returns 404 when going to google.com with host header of "foo.com"
 			StatusCode: http.StatusNotFound,
 		},
+		curl.WithPort(80),
+		curl.WithHostHeader("foo.com"),
+		curl.WithPath("/"),
 	)
 
 	s.assertPolicyStatus(metav1.Condition{
@@ -152,7 +137,7 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		Type:               string(gwv1.PolicyConditionAccepted),
 		Status:             metav1.ConditionFalse,
 		Reason:             string(gwv1.PolicyReasonInvalid),
-		Message:            fmt.Sprintf("%s: default/ca", backendtlspolicy.ErrConfigMapNotFound),
+		Message:            fmt.Sprintf("%s: kgateway-base/ca", backendtlspolicy.ErrConfigMapNotFound),
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 }
@@ -172,13 +157,13 @@ func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 			{
 				Group:     (*gwv1.Group)(&svcGroup),
 				Kind:      (*gwv1.Kind)(&svcKind),
-				Namespace: ptr.To(gwv1.Namespace(nginxMeta.Namespace)),
+				Namespace: new(gwv1.Namespace(nginxMeta.Namespace)),
 				Name:      gwv1.ObjectName(nginxMeta.Name),
 			},
 			{
 				Group:     (*gwv1.Group)(&svcGroup),
 				Kind:      (*gwv1.Kind)(&svcKind),
-				Namespace: ptr.To(gwv1.Namespace(nginx2Meta.Namespace)),
+				Namespace: new(gwv1.Namespace(nginx2Meta.Namespace)),
 				Name:      gwv1.ObjectName(nginx2Meta.Name),
 			},
 		}
@@ -207,7 +192,7 @@ const (
 func (s *tsuite) TestBackendTLSPolicyClearStaleStatus() {
 	// Test applies base.yaml via setup which includes "tls-policy" targeting Services "nginx" and "nginx2"
 	// Add fake ancestor status from another controller
-	s.addAncestorStatus("tls-policy", "default", otherControllerName)
+	s.addAncestorStatus("tls-policy", "kgateway-base", otherControllerName)
 
 	// Verify both kgateway and other controller statuses exist
 	s.assertAncestorStatuses("nginx", map[string]bool{
@@ -246,7 +231,7 @@ func (s *tsuite) addAncestorStatus(policyName, policyNamespace, controllerName s
 			AncestorRef: gwv1.ParentReference{
 				Group:     (*gwv1.Group)(&svcGroup),
 				Kind:      (*gwv1.Kind)(&svcKind),
-				Namespace: ptr.To(gwv1.Namespace(nginxMeta.Namespace)),
+				Namespace: new(gwv1.Namespace(nginxMeta.Namespace)),
 				Name:      gwv1.ObjectName(nginxMeta.Name),
 			},
 			ControllerName: gwv1.GatewayController(controllerName),
@@ -273,7 +258,7 @@ func (s *tsuite) assertAncestorStatuses(ancestorName string, expectedControllers
 		policy := &gwv1.BackendTLSPolicy{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,
-			types.NamespacedName{Name: "tls-policy", Namespace: "default"},
+			types.NamespacedName{Name: "tls-policy", Namespace: "kgateway-base"},
 			policy,
 		)
 		g.Expect(err).NotTo(gomega.HaveOccurred())

@@ -18,6 +18,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
+)
+
+const (
+	otelTracerName                  = "envoy.tracers.opentelemetry"
+	staticResourceDetectorName      = "envoy.tracers.opentelemetry.resource_detectors.static_config"
+	environmentResourceDetectorName = "envoy.tracers.opentelemetry.resource_detectors.environment"
+	alwaysOnSamplerName             = "envoy.tracers.opentelemetry.samplers.always_on"
 )
 
 func convertTracingConfig(
@@ -219,7 +227,7 @@ func convertOTelTracingConfig(
 			if rd.EnvironmentResourceDetector != nil {
 				detector, _ := utils.MessageToAny(&resource_detectorsv3.EnvironmentResourceDetectorConfig{})
 				translatedResourceDetectors[i] = &envoycorev3.TypedExtensionConfig{
-					Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
+					Name:        environmentResourceDetectorName,
 					TypedConfig: detector,
 				}
 			}
@@ -231,7 +239,7 @@ func convertOTelTracingConfig(
 		if config.Sampler.AlwaysOn != nil {
 			alwaysOnSampler, _ := utils.MessageToAny(&samplersv3.AlwaysOnSamplerConfig{})
 			tracingCfg.Sampler = &envoycorev3.TypedExtensionConfig{
-				Name:        "envoy.tracers.opentelemetry.samplers.always_on",
+				Name:        alwaysOnSamplerName,
 				TypedConfig: alwaysOnSampler,
 			}
 		}
@@ -247,14 +255,44 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 	if tracingProvider.ServiceName == "" {
 		tracingProvider.ServiceName = GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace())
 	}
+
+	// Add default service attributes to a static resource detector.
+	addDefaultStaticResourceDetector(pCtx, tracingProvider)
+
 	otelCfg := utils.MustMessageToAny(tracingProvider)
 
 	tracingConfig.Provider = &envoytracev3.Tracing_Http{
-		Name: "envoy.tracers.opentelemetry",
+		Name: otelTracerName,
 		ConfigType: &envoytracev3.Tracing_Http_TypedConfig{
 			TypedConfig: otelCfg,
 		},
 	}
+}
+
+// addDefaultStaticResourceDetector adds default service attributes for service.namespace,
+// service.instance.id, service.version in a StaticConfigResourceDetector on the tracing provider
+func addDefaultStaticResourceDetector(pCtx *ir.HcmContext, tracingProvider *envoytracev3.OpenTelemetryConfig) {
+	// Build default attributes for the static resource detector.
+	defaultAttrs := map[string]string{
+		serviceNamespaceKey: pCtx.Gateway.SourceObject.GetNamespace(),
+	}
+
+	if pCtx.Gateway.SourceObject.Obj != nil && pCtx.Gateway.SourceObject.Obj.GetUID() != "" {
+		defaultAttrs[serviceInstanceIdKey] = string(pCtx.Gateway.SourceObject.Obj.GetUID())
+	}
+
+	if version.Version != "" {
+		defaultAttrs[serviceVersionKey] = version.Version
+	}
+
+	detector, _ := utils.MessageToAny(&resource_detectorsv3.StaticConfigResourceDetectorConfig{
+		Attributes: defaultAttrs,
+	})
+	// Prepend the static detector so user-configured detectors will override default
+	tracingProvider.ResourceDetectors = append([]*envoycorev3.TypedExtensionConfig{{
+		Name:        staticResourceDetectorName,
+		TypedConfig: detector,
+	}}, tracingProvider.ResourceDetectors...)
 }
 
 // GenerateDefaultServiceName returns the default service name that matches the cluster name

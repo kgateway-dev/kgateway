@@ -12,7 +12,6 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
@@ -281,35 +280,6 @@ func (p *Provider) EventuallyGRPCRouteCondition(
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get GRPCRoute %s/%s", routeNamespace, routeName))
 		g.Expect(extractParentConditions(route.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
-}
-
-// extractInferencePoolParentConditions extracts conditions from InferencePool parent statuses.
-func extractInferencePoolParentConditions(parents []inf.ParentStatus) [][]metav1.Condition {
-	result := make([][]metav1.Condition, len(parents))
-	for i, p := range parents {
-		result[i] = p.Conditions
-	}
-	return result
-}
-
-// EventuallyInferencePoolCondition checks that the specified InferencePool condition
-// eventually has the desired status on any parent managed by Kgateway.
-func (p *Provider) EventuallyInferencePoolCondition(
-	ctx context.Context,
-	poolName string,
-	poolNamespace string,
-	cond inf.InferencePoolConditionType,
-	expect metav1.ConditionStatus,
-	timeout ...time.Duration,
-) {
-	ginkgo.GinkgoHelper()
-	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
-	p.Gomega.Eventually(func(g gomega.Gomega) {
-		pool := &inf.InferencePool{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: poolName, Namespace: poolNamespace}, pool)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get InferencePool %s/%s", poolNamespace, poolName))
-		g.Expect(extractInferencePoolParentConditions(pool.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 

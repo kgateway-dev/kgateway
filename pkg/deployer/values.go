@@ -15,8 +15,7 @@ const (
 
 // helmConfig stores the top-level helm values used by the deployer.
 type HelmConfig struct {
-	Gateway            *HelmGateway            `json:"gateway,omitempty"`
-	InferenceExtension *HelmInferenceExtension `json:"inferenceExtension,omitempty"`
+	Gateway *HelmGateway `json:"gateway,omitempty"`
 }
 
 type HelmGateway struct {
@@ -71,6 +70,7 @@ type HelmGateway struct {
 	ComponentLogLevel *string `json:"componentLogLevel,omitempty"`
 
 	// envoy container values (mapped to the proxy container)
+	LogFormat         *kgateway.LogFormat          `json:"logFormat,omitempty"`
 	LogLevel          *string                      `json:"logLevel,omitempty"`
 	Image             *HelmImage                   `json:"image,omitempty"`
 	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
@@ -106,13 +106,14 @@ type HelmImage struct {
 }
 
 type HelmService struct {
-	Type                  *string           `json:"type,omitempty"`
-	ClusterIP             *string           `json:"clusterIP,omitempty"`
-	LoadBalancerClass     *string           `json:"loadBalancerClass,omitempty"`
-	LoadBalancerIP        *string           `json:"loadBalancerIP,omitempty"`
-	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
-	ExtraLabels           map[string]string `json:"extraLabels,omitempty"`
-	ExternalTrafficPolicy *string           `json:"externalTrafficPolicy,omitempty"`
+	Type                     *string           `json:"type,omitempty"`
+	ClusterIP                *string           `json:"clusterIP,omitempty"`
+	LoadBalancerClass        *string           `json:"loadBalancerClass,omitempty"`
+	LoadBalancerIP           *string           `json:"loadBalancerIP,omitempty"`
+	LoadBalancerSourceRanges []string          `json:"loadBalancerSourceRanges,omitempty"`
+	ExtraAnnotations         map[string]string `json:"extraAnnotations,omitempty"`
+	ExtraLabels              map[string]string `json:"extraLabels,omitempty"`
+	ExternalTrafficPolicy    *string           `json:"externalTrafficPolicy,omitempty"`
 }
 
 type HelmServiceAccount struct {
@@ -187,13 +188,4 @@ type HelmStringMatcher struct {
 	Contains   *string `json:"contains,omitempty"`
 	SafeRegex  *string `json:"safeRegex,omitempty"`
 	IgnoreCase *bool   `json:"ignoreCase,omitempty"`
-}
-
-type HelmInferenceExtension struct {
-	EndpointPicker *HelmEndpointPickerExtension `json:"endpointPicker,omitempty"`
-}
-
-type HelmEndpointPickerExtension struct {
-	PoolName      string `json:"poolName"`
-	PoolNamespace string `json:"poolNamespace"`
 }

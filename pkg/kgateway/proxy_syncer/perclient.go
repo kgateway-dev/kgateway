@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"maps"
 
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"istio.io/istio/pkg/kube/controllers"
@@ -158,8 +160,10 @@ func snapshotPerClient(
 		snap.erroredClusters = clustersForUcc.erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
-		snapshot.Resources[envoycachetypes.Cluster] = clusterResources // envoycache.NewResources(version, resource)
-		snapshot.Resources[envoycachetypes.Endpoint] = clientEndpointResources.endpoints
+		snapshot.Resources[envoycachetypes.Cluster] = clusterResources
+		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
+		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
+		snapshot.Resources[envoycachetypes.Endpoint] = endpointRes
 		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
 		snapshot.Resources[envoycachetypes.Listener] = listenerRouteSnapshot.Listeners
 		snapshot.Resources[envoycachetypes.Secret] = listenerRouteSnapshot.Secrets
@@ -169,7 +173,7 @@ func snapshotPerClient(
 			"listeners", resourcesStringer(listenerRouteSnapshot.Listeners).String(),
 			"clusters", resourcesStringer(clusterResources).String(),
 			"routes", resourcesStringer(listenerRouteSnapshot.Routes).String(),
-			"endpoints", resourcesStringer(clientEndpointResources.endpoints).String(),
+			"endpoints", resourcesStringer(endpointRes).String(),
 			"secrets", resourcesStringer(listenerRouteSnapshot.Secrets).String(),
 		)
 
@@ -250,4 +254,34 @@ func snapshotPerClient(
 	})
 
 	return xdsSnapshotsForUcc
+}
+
+// filterEndpointResourcesForStaticClusters returns endpoint resources excluding CLAs for clusters
+// that are STATIC (inline endpoints). Envoy does not request EDS for those; including them in the
+// snapshot triggers the ADS cache "not listed" warning when responding to EDS requests.
+func filterEndpointResourcesForStaticClusters(clusters envoycache.Resources, endpoints envoycache.Resources) envoycache.Resources {
+	staticClusterNames := make(map[string]struct{})
+	for _, item := range clusters.Items {
+		if c, ok := item.Resource.(*envoyclusterv3.Cluster); ok && c.GetType() == envoyclusterv3.Cluster_STATIC {
+			staticClusterNames[c.GetName()] = struct{}{}
+		}
+	}
+	if len(staticClusterNames) == 0 {
+		return endpoints
+	}
+	filteredEndpoints := make([]envoycachetypes.ResourceWithTTL, 0, len(endpoints.Items))
+	for _, item := range endpoints.Items {
+		cla, ok := item.Resource.(*envoyendpointv3.ClusterLoadAssignment)
+		if !ok {
+			continue
+		}
+		if _, isStatic := staticClusterNames[cla.GetClusterName()]; isStatic {
+			continue
+		}
+		filteredEndpoints = append(filteredEndpoints, item)
+	}
+	if len(filteredEndpoints) == len(endpoints.Items) {
+		return endpoints
+	}
+	return envoycache.NewResourcesWithTTL(endpoints.Version, filteredEndpoints)
 }

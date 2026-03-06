@@ -49,8 +49,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			}
 		}
 		spec := kgateway.ListenerPolicySpec{
-			Default: &kgateway.ListenerConfig{
-				HTTPSettings: &i.Spec.HTTPSettings,
+			Default: &kgateway.ListenerDefaultConfig{
+				ListenerConfig: kgateway.ListenerConfig{
+					HTTPSettings: &i.Spec.HTTPSettings,
+				},
 			},
 		}
 		polIr, errs := listenerpolicy.NewListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &spec, objSrc)

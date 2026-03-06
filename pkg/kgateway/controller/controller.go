@@ -24,7 +24,6 @@ var rateLimiter = workqueue.NewTypedMaxOfRateLimiter(
 	&workqueue.TypedBucketRateLimiter[any]{Limiter: rate.NewLimiter(rate.Limit(10), 100)},
 )
 
-// TODO [danehans]: Refactor so controller config is organized into shared and Gateway/InferencePool-specific controllers.
 type GatewayConfig struct {
 	Client apiclient.Client
 	Mgr    manager.Manager

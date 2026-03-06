@@ -352,7 +352,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
-							LoadBalancerClass: ptr.To("service.k8s.aws/nlb"),
+							LoadBalancerClass: new("service.k8s.aws/nlb"),
 						},
 					},
 				},
@@ -362,7 +362,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
 							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
-							LoadBalancerClass: ptr.To("service.k8s.aws/nlb"),
+							LoadBalancerClass: new("service.k8s.aws/nlb"),
 						},
 					},
 				},
@@ -375,7 +375,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
 							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
-							LoadBalancerClass: ptr.To("default-class"),
+							LoadBalancerClass: new("default-class"),
 						},
 					},
 				},
@@ -384,7 +384,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
-							LoadBalancerClass: ptr.To("service.k8s.aws/nlb"),
+							LoadBalancerClass: new("service.k8s.aws/nlb"),
 						},
 					},
 				},
@@ -394,7 +394,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
 							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
-							LoadBalancerClass: ptr.To("service.k8s.aws/nlb"),
+							LoadBalancerClass: new("service.k8s.aws/nlb"),
 						},
 					},
 				},
@@ -407,7 +407,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
 							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
-							LoadBalancerClass: ptr.To("default-class"),
+							LoadBalancerClass: new("default-class"),
 						},
 					},
 				},
@@ -424,7 +424,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
 							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
-							LoadBalancerClass: ptr.To("default-class"),
+							LoadBalancerClass: new("default-class"),
 						},
 					},
 				},

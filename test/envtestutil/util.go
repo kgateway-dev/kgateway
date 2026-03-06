@@ -19,7 +19,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -140,7 +139,7 @@ func RunController(
 						// 	// in short, our tests reuse the same name (reasonably so) and the controller-runtime
 						// 	// package does not reset the stack of controller names between tests, so we disable
 						// 	// the name validation here.
-						SkipNameValidation: ptr.To(true),
+						SkipNameValidation: new(true),
 					},
 				}
 			}),

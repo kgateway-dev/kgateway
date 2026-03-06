@@ -18,4 +18,12 @@ fi
 make_options=$(find "${root}" -maxdepth 6 -iname "Makefile*" 2>/dev/null | xargs -r -I {} grep -hoE '^[a-zA-Z0-9_.-]+:([^=]|$)' {} | sed 's/[^a-zA-Z0-9_.-]*$//' | sort -u)
 complete -W "$make_options" make
 
-
+# Auto-negotiate Docker API version to avoid "client version X is too new" errors
+# when the Docker CLI inside the container is newer than the host Docker daemon.
+if [[ -z "${DOCKER_API_VERSION:-}" ]] && command -v docker &>/dev/null; then
+  _server_api=$(docker version --format '{{.Server.APIVersion}}' 2>/dev/null || true)
+  if [[ -n "${_server_api}" ]]; then
+    export DOCKER_API_VERSION="${_server_api}"
+  fi
+  unset _server_api
+fi

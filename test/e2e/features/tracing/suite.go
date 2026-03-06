@@ -74,6 +74,11 @@ func (s *testingSuite) testOTelTracing() {
 			`-> http.method: Str(GET)`,
 			`-> http.status_code: Str(200)`,
 			`-> upstream_cluster: Str(kube_httpbin_httpbin_8000)`,
+			// Default service identity resource attributes auto-injected by the static resource detector
+			`-> service.name: Str(my:service)`,
+			`-> service.namespace: Str(default)`,
+			// verify the field is present as the id will be different each run
+			`-> service.instance.id: Str(`,
 			// Resource attributes specified via the environmentResourceDetector
 			`-> environment: Str(detector)`,
 			`-> resource: Str(attribute)`,

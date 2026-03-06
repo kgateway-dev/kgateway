@@ -21,22 +21,22 @@ var (
 	systemCAManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "system-ca.yaml")
 	outlierDetectionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
 	missingTargetManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "missing-target.yaml")
+
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
+		Name:      "gateway",
+		Namespace: "kgateway-base",
 	}
-	proxyService = &corev1.Service{ObjectMeta: proxyObjectMeta}
 
 	nginxPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx",
-			Namespace: "default",
+			Namespace: "kgateway-base",
 		},
 	}
 	httpbinMeta = metav1.ObjectMeta{
 		Name:      "httpbin",
-		Namespace: "default",
+		Namespace: "kgateway-base",
 	}
 	httpbinDeployment = &appsv1.Deployment{ObjectMeta: httpbinMeta}
 )

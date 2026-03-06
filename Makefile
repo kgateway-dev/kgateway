@@ -2,7 +2,7 @@
 
 # https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
 .DEFAULT_GOAL := help
-SHELL := /bin/bash
+SHELL := bash
 
 #----------------------------------------------------------------------------------
 # Help
@@ -83,13 +83,13 @@ else
 endif
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-# For v2.2, we use vanilla upstream envoy for arm build and envoy-gloo for x86 build. These are used by goreleaser 
+# For v2.2, we use vanilla upstream envoy for arm build and envoy-gloo for x86 build. These are used by goreleaser
 # directly when building the images for the respective architecture.
 # TODO: Consolidate to just upstream image in v2.3
 export ENVOY_IMAGE_ARM64 = envoyproxy/envoy:v1.36.4
 export ENVOY_IMAGE_AMD64 = quay.io/solo-io/envoy-gloo:1.36.4-patch1
 
-# ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image 
+# ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
 ifeq ($(GOARCH), arm64)
 	RUST_BUILD_ARCH := aarch64
@@ -159,21 +159,19 @@ fmt:  ## Format the code with golangci-lint
 fmt-changed: ## Format only the changed code with golangci-lint (skip deleted files)
 	git status -s -uno | awk '{print $$2}' | grep '.*.go$$' | xargs -r -I{} bash -lc '[ -f "{}" ] && $(CUSTOM_GOLANGCI_LINT_FMT) "{}" || true'
 
-# must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
-mod-download:  ## Download the dependencies
-	go mod download all
-	cd tools && go mod download all
+mod-download:  ## Download transitive dependencies
+	go mod download
+	cd hack/utils/applier && go mod download
+	cd tools && go mod download
+	cd test/e2e/defaults/extproc && go mod download
 
-.PHONY: mod-tidy-nested
-mod-tidy-nested:  ## Tidy go mod files in nested modules
+.PHONY: mod-tidy
+mod-tidy: ## Tidy the go mod file
 	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
 	@echo "Tidying tools..." && cd tools && go mod tidy
 	@echo "Tidying test/e2e/defaults/extproc..." && cd test/e2e/defaults/extproc && go mod tidy
-
-.PHONY: mod-tidy
-mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
-	go mod tidy
+	@echo "Tidying top level" && go mod tidy
 
 #----------------------------------------------------------------------------
 # Analyze
@@ -329,6 +327,44 @@ view-test-coverage:
 	go tool cover -html $(OUTPUT_DIR)/cover.out
 
 #----------------------------------------------------------------------------------
+# Container Structure Tests
+#----------------------------------------------------------------------------------
+# Tests Docker images using container-structure-test from GoogleContainerTools
+# https://github.com/GoogleContainerTools/container-structure-test
+
+CONTAINER_STRUCTURE_TEST ?= container-structure-test
+CONTAINER_STRUCTURE_TEST_DIR := test/container-structure
+# Architecture suffix used by goreleaser image tags (e.g. -amd64, -arm64)
+CONTAINER_STRUCTURE_TEST_ARCH ?= $(GOARCH)
+# Platform flag for cross-arch testing via QEMU (only needed when testing non-native arch)
+CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG := $(if $(filter $(GOARCH),$(CONTAINER_STRUCTURE_TEST_ARCH)),,--platform linux/$(CONTAINER_STRUCTURE_TEST_ARCH))
+
+.PHONY: container-structure-test
+container-structure-test: ## Run container structure tests for all production images (uses goreleaser image tags)
+container-structure-test: container-structure-test-kgateway container-structure-test-sds container-structure-test-envoy-wrapper
+
+.PHONY: container-structure-test-kgateway
+container-structure-test-kgateway: ## Run container structure tests for kgateway image
+	$(CONTAINER_STRUCTURE_TEST) test \
+		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
+		--config $(CONTAINER_STRUCTURE_TEST_DIR)/kgateway.yaml
+
+.PHONY: container-structure-test-sds
+container-structure-test-sds: ## Run container structure tests for sds image
+	$(CONTAINER_STRUCTURE_TEST) test \
+		--image $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
+		--config $(CONTAINER_STRUCTURE_TEST_DIR)/sds.yaml
+
+.PHONY: container-structure-test-envoy-wrapper
+container-structure-test-envoy-wrapper: ## Run container structure tests for envoy-wrapper image
+	$(CONTAINER_STRUCTURE_TEST) test \
+		--image $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
+		--config $(CONTAINER_STRUCTURE_TEST_DIR)/envoy-wrapper.yaml
+
+#----------------------------------------------------------------------------------
 # MARK: Clean
 #----------------------------------------------------------------------------------
 
@@ -388,7 +424,10 @@ API_SOURCE_FILES += hack/generate.sh hack/generate.go
 MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go
 
 # Files that track dependency changes
-MOD_FILES := go.mod go.sum
+MOD_FILES := go.mod go.sum \
+	hack/utils/applier/go.mod hack/utils/applier/go.sum \
+	tools/go.mod tools/go.sum \
+	test/e2e/defaults/extproc/go.mod test/e2e/defaults/extproc/go.sum
 
 # Clean generated code
 .PHONY: clean-gen
@@ -423,10 +462,7 @@ $(STAMP_DIR)/go-generate-all: $(STAMP_DIR)/go-generate-apis $(STAMP_DIR)/go-gene
 
 # Module tidy with dependency tracking
 $(STAMP_DIR)/mod-tidy: $(MOD_FILES) | $(STAMP_DIR)
-	@echo "Running mod tidy..."
-	@$(MAKE) --no-print-directory mod-download
-	@$(MAKE) --no-print-directory mod-tidy-nested
-	go mod tidy
+	@$(MAKE) --no-print-directory mod-tidy
 	@touch $@
 
 # License generation with dependency tracking

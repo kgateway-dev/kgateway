@@ -16,14 +16,20 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"k8s.io/utils/ptr"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 func TestTracingConverter(t *testing.T) {
+	// Set version for testing (normally set via ldflags at build time)
+	origVersion := version.Version
+	version.Version = "v1.0.0-test"
+	t.Cleanup(func() { version.Version = origVersion })
+
 	t.Run("Tracing Conversion", func(t *testing.T) {
 		testCases := []struct {
 			name     string
@@ -63,6 +69,14 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 								ServiceName: "gw.default",
+								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
+									Name: "envoy.tracers.opentelemetry.resource_detectors.static_config",
+									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
+										"service.namespace":   "default",
+										"service.instance.id": "test-uid-1234",
+										"service.version":     "v1.0.0-test",
+									}}),
+								}},
 							}),
 						},
 					},
@@ -97,6 +111,14 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 								ServiceName: "gw.default",
+								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
+									Name: "envoy.tracers.opentelemetry.resource_detectors.static_config",
+									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
+										"service.namespace":   "default",
+										"service.instance.id": "test-uid-1234",
+										"service.version":     "v1.0.0-test",
+									}}),
+								}},
 							}),
 						},
 					},
@@ -131,6 +153,14 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 								ServiceName: "gw.default",
+								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
+									Name: "envoy.tracers.opentelemetry.resource_detectors.static_config",
+									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
+										"service.namespace":   "default",
+										"service.instance.id": "test-uid-1234",
+										"service.version":     "v1.0.0-test",
+									}}),
+								}},
 							}),
 						},
 					},
@@ -149,7 +179,7 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 							},
-							ServiceName: ptr.To("my:service"),
+							ServiceName: new("my:service"),
 							ResourceDetectors: []kgateway.ResourceDetector{{
 								EnvironmentResourceDetector: &kgateway.EnvironmentResourceDetectorConfig{},
 							}},
@@ -158,11 +188,11 @@ func TestTracingConverter(t *testing.T) {
 							},
 						},
 					},
-					ClientSampling:   ptr.To(int32(45)),
-					RandomSampling:   ptr.To(int32(55)),
-					OverallSampling:  ptr.To(int32(65)),
-					Verbose:          ptr.To(true),
-					MaxPathTagLength: ptr.To(int32(127)),
+					ClientSampling:   new(int32(45)),
+					RandomSampling:   new(int32(55)),
+					OverallSampling:  new(int32(65)),
+					Verbose:          new(true),
+					MaxPathTagLength: new(int32(127)),
 					Attributes: []kgateway.CustomAttribute{
 						{
 							Name: "Literal",
@@ -174,14 +204,14 @@ func TestTracingConverter(t *testing.T) {
 							Name: "Environment",
 							Environment: &kgateway.CustomAttributeEnvironment{
 								Name:         "Env",
-								DefaultValue: ptr.To("Environment Value"),
+								DefaultValue: new("Environment Value"),
 							},
 						},
 						{
 							Name: "Request Header",
 							RequestHeader: &kgateway.CustomAttributeHeader{
 								Name:         "Header",
-								DefaultValue: ptr.To("Request"),
+								DefaultValue: new("Request"),
 							},
 						},
 						{
@@ -235,7 +265,7 @@ func TestTracingConverter(t *testing.T) {
 							},
 						},
 					},
-					SpawnUpstreamSpan: ptr.To(true),
+					SpawnUpstreamSpan: new(true),
 				},
 				expected: &envoy_hcm.HttpConnectionManager_Tracing{
 					Provider: &envoytracev3.Tracing_Http{
@@ -251,6 +281,13 @@ func TestTracingConverter(t *testing.T) {
 								},
 								ServiceName: "my:service",
 								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
+									Name: "envoy.tracers.opentelemetry.resource_detectors.static_config",
+									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
+										"service.namespace":   "default",
+										"service.instance.id": "test-uid-1234",
+										"service.version":     "v1.0.0-test",
+									}}),
+								}, {
 									Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
 									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.EnvironmentResourceDetectorConfig{}),
 								}},
@@ -364,13 +401,16 @@ func TestTracingConverter(t *testing.T) {
 									},
 									MetadataKey: &metadatav3.MetadataKey{
 										Key: "Host",
-										Path: []*metadatav3.MetadataKey_PathSegment{{
-											Segment: &metadatav3.MetadataKey_PathSegment_Key{
-												Key: "Host-key-1",
-											}}, {
-											Segment: &metadatav3.MetadataKey_PathSegment_Key{
-												Key: "Host-key-2",
-											}},
+										Path: []*metadatav3.MetadataKey_PathSegment{
+											{
+												Segment: &metadatav3.MetadataKey_PathSegment_Key{
+													Key: "Host-key-1",
+												},
+											}, {
+												Segment: &metadatav3.MetadataKey_PathSegment_Key{
+													Key: "Host-key-2",
+												},
+											},
 										},
 									},
 								},
@@ -402,6 +442,12 @@ func TestTracingConverter(t *testing.T) {
 							ObjectSource: ir.ObjectSource{
 								Namespace: "default",
 								Name:      "gw",
+							},
+							Obj: &gwv1.Gateway{
+								ObjectMeta: metav1.ObjectMeta{
+									UID:        "test-uid-1234",
+									Generation: 7,
+								},
 							},
 						},
 					},

@@ -28,6 +28,8 @@ func MergeHttpPolicies(
 		mergePreserveExternalRequestId,
 		mergeGenerateRequestId,
 		mergeXffNumTrustedHops,
+		mergeXffConfig,
+		mergeSkipXffAppend,
 		mergeServerHeaderTransformation,
 		mergeStreamIdleTimeout,
 		mergeIdleTimeout,
@@ -211,6 +213,38 @@ func mergeXffNumTrustedHops(
 
 	p1.xffNumTrustedHops = p2.xffNumTrustedHops
 	mergeOrigins.SetOne(origin+"xffNumTrustedHops", p2Ref, p2MergeOrigins)
+}
+
+func mergeXffConfig(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.xffConfig, p2.xffConfig, opts) {
+		return
+	}
+
+	p1.xffConfig = p2.xffConfig
+	mergeOrigins.SetOne(origin+"xffConfig", p2Ref, p2MergeOrigins)
+}
+
+func mergeSkipXffAppend(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.skipXffAppend, p2.skipXffAppend, opts) {
+		return
+	}
+
+	p1.skipXffAppend = p2.skipXffAppend
+	mergeOrigins.SetOne(origin+"skipXffAppend", p2Ref, p2MergeOrigins)
 }
 
 func mergeServerHeaderTransformation(

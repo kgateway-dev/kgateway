@@ -2,6 +2,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: route-rl-policy
+  namespace: kgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io

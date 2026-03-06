@@ -12,7 +12,6 @@ import (
 
 // KubeGatewayRouteStatus defines the set of properties that we can validate from a k8s gateway RouteStatus
 type KubeGatewayRouteStatus struct {
-
 	// Custom is a generic matcher that can be applied to validate any other properties of a k8s gateway RouteStatus
 	// Optional: If not provided, does not perform additional validation
 	Custom types.GomegaMatcher

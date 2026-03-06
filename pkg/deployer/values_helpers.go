@@ -10,7 +10,6 @@ import (
 
 	"istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -123,25 +122,28 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 	var extraLabels map[string]string
 	var externalTrafficPolicy *string
 	var loadBalancerClass *string
+	var loadBalancerSourceRanges []string
 
 	if svcConfig != nil {
 		if svcConfig.GetType() != nil {
-			svcType = ptr.To(string(*svcConfig.GetType()))
+			svcType = new(string(*svcConfig.GetType()))
 		}
 		clusterIP = svcConfig.GetClusterIP()
 		extraAnnotations = svcConfig.GetExtraAnnotations()
 		extraLabels = svcConfig.GetExtraLabels()
 		externalTrafficPolicy = svcConfig.GetExternalTrafficPolicy()
 		loadBalancerClass = svcConfig.GetLoadBalancerClass()
+		loadBalancerSourceRanges = svcConfig.GetLoadBalancerSourceRanges()
 	}
 
 	return &HelmService{
-		Type:                  svcType,
-		ClusterIP:             clusterIP,
-		ExtraAnnotations:      extraAnnotations,
-		ExtraLabels:           extraLabels,
-		ExternalTrafficPolicy: externalTrafficPolicy,
-		LoadBalancerClass:     loadBalancerClass,
+		Type:                     svcType,
+		ClusterIP:                clusterIP,
+		ExtraAnnotations:         extraAnnotations,
+		ExtraLabels:              extraLabels,
+		ExternalTrafficPolicy:    externalTrafficPolicy,
+		LoadBalancerClass:        loadBalancerClass,
+		LoadBalancerSourceRanges: loadBalancerSourceRanges,
 	}
 }
 
@@ -248,12 +250,12 @@ func GetIstioValues(istioIntegrationEnabled bool, istioConfig *kgateway.IstioInt
 	// if istioConfig is nil, istio sds is disabled and values can be ignored
 	if istioConfig == nil {
 		return &HelmIstio{
-			Enabled: ptr.To(istioIntegrationEnabled),
+			Enabled: new(istioIntegrationEnabled),
 		}
 	}
 
 	return &HelmIstio{
-		Enabled: ptr.To(istioIntegrationEnabled),
+		Enabled: new(istioIntegrationEnabled),
 	}
 }
 
@@ -270,7 +272,7 @@ func GetImageValues(image *kgateway.Image) *HelmImage {
 		Digest:     image.GetDigest(),
 	}
 	if image.GetPullPolicy() != nil {
-		HelmImage.PullPolicy = ptr.To(string(*image.GetPullPolicy()))
+		HelmImage.PullPolicy = new(string(*image.GetPullPolicy()))
 	}
 
 	return HelmImage
