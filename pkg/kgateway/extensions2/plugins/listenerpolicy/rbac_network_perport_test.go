@@ -18,14 +18,16 @@ import (
 // TestPerPortRBAC_DefaultOnly tests that default RBAC is applied when no per-port config exists
 func TestPerPortRBAC_DefaultOnly(t *testing.T) {
 	spec := &kgateway.ListenerPolicySpec{
-		Default: &kgateway.ListenerConfig{
-			RBAC: &sharedv1alpha1.Authorization{
-				Policy: sharedv1alpha1.AuthorizationPolicy{
-					MatchExpressions: []sharedv1alpha1.CELExpression{
-						`source.address.startsWith("10.0.0.")`,
+		Default: &kgateway.ListenerDefaultConfig{
+			ListenerConfig: kgateway.ListenerConfig{
+				RBAC: &sharedv1alpha1.Authorization{
+					Policy: sharedv1alpha1.AuthorizationPolicy{
+						MatchExpressions: []sharedv1alpha1.CELExpression{
+							`source.address.startsWith("10.0.0.")`,
+						},
 					},
+					Action: sharedv1alpha1.AuthorizationPolicyActionAllow,
 				},
-				Action: sharedv1alpha1.AuthorizationPolicyActionAllow,
 			},
 		},
 	}
@@ -57,14 +59,16 @@ func TestPerPortRBAC_DefaultOnly(t *testing.T) {
 // TestPerPortRBAC_PerPortOverride tests that per-port RBAC overrides default
 func TestPerPortRBAC_PerPortOverride(t *testing.T) {
 	spec := &kgateway.ListenerPolicySpec{
-		Default: &kgateway.ListenerConfig{
-			RBAC: &sharedv1alpha1.Authorization{
-				Policy: sharedv1alpha1.AuthorizationPolicy{
-					MatchExpressions: []sharedv1alpha1.CELExpression{
-						`source.address.startsWith("10.0.0.")`,
+		Default: &kgateway.ListenerDefaultConfig{
+			ListenerConfig: kgateway.ListenerConfig{
+				RBAC: &sharedv1alpha1.Authorization{
+					Policy: sharedv1alpha1.AuthorizationPolicy{
+						MatchExpressions: []sharedv1alpha1.CELExpression{
+							`source.address.startsWith("10.0.0.")`,
+						},
 					},
+					Action: sharedv1alpha1.AuthorizationPolicyActionAllow,
 				},
-				Action: sharedv1alpha1.AuthorizationPolicyActionAllow,
 			},
 		},
 		PerPort: []kgateway.ListenerPortConfig{
@@ -210,14 +214,16 @@ func TestPerPortRBAC_MultiplePorts(t *testing.T) {
 // TestPerPortRBAC_FilterApplication tests that filters are correctly applied to listeners
 func TestPerPortRBAC_FilterApplication(t *testing.T) {
 	spec := &kgateway.ListenerPolicySpec{
-		Default: &kgateway.ListenerConfig{
-			RBAC: &sharedv1alpha1.Authorization{
-				Policy: sharedv1alpha1.AuthorizationPolicy{
-					MatchExpressions: []sharedv1alpha1.CELExpression{
-						`source.address.startsWith("10.0.0.")`,
+		Default: &kgateway.ListenerDefaultConfig{
+			ListenerConfig: kgateway.ListenerConfig{
+				RBAC: &sharedv1alpha1.Authorization{
+					Policy: sharedv1alpha1.AuthorizationPolicy{
+						MatchExpressions: []sharedv1alpha1.CELExpression{
+							`source.address.startsWith("10.0.0.")`,
+						},
 					},
+					Action: sharedv1alpha1.AuthorizationPolicyActionAllow,
 				},
-				Action: sharedv1alpha1.AuthorizationPolicyActionAllow,
 			},
 		},
 	}
@@ -272,7 +278,7 @@ func TestPerPortRBAC_FilterApplication(t *testing.T) {
 // TestPerPortRBAC_NoRBAC tests that listeners without RBAC don't get filters
 func TestPerPortRBAC_NoRBAC(t *testing.T) {
 	spec := &kgateway.ListenerPolicySpec{
-		Default: &kgateway.ListenerConfig{
+		Default: &kgateway.ListenerDefaultConfig{
 			// No RBAC configured
 		},
 	}

@@ -54,7 +54,9 @@ type ListenerPolicyIR struct {
 type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
 	perConnectionBufferLimitBytes *uint32
-	rbacNetworkFilter             *anypb.Any
+	// only for default policy
+	clientCertificateValidation *ir.ClientCertificateValidationIR
+	rbacNetworkFilter           *anypb.Any
 	// +noKrtEquals
 	http *HttpListenerPolicyIr
 }
@@ -151,11 +153,15 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 		return false
 	}
 
-	// Compare RBAC network filter
 	if !proto.Equal(d.rbacNetworkFilter, d2.rbacNetworkFilter) {
 		return false
 	}
-
+	if (d.clientCertificateValidation == nil) != (d2.clientCertificateValidation == nil) {
+		return false
+	}
+	if d.clientCertificateValidation != nil && !d.clientCertificateValidation.Equals(d2.clientCertificateValidation) {
+		return false
+	}
 	if (d.http == nil) != (d2.http == nil) {
 		return false
 	}
