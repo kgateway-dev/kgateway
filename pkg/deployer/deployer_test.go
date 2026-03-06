@@ -40,6 +40,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.
@@ -2037,10 +2038,22 @@ var _ = Describe("Deployer", func() {
 					svc := objs.findService(defaultServiceName)
 					Expect(svc).NotTo(BeNil())
 
-					Expect(svc.Spec.Ports).To(HaveLen(1))
-					port := svc.Spec.Ports[0]
-					Expect(port.Port).To(Equal(int32(80)))
-					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
+					Expect(svc.Spec.Ports).To(HaveLen(2))
+					listenerPortIdx := slices.IndexFunc(svc.Spec.Ports, func(port corev1.ServicePort) bool {
+						return port.Name == "listener-80"
+					})
+					Expect(listenerPortIdx).NotTo(Equal(-1))
+					listenerPort := svc.Spec.Ports[listenerPortIdx]
+					Expect(listenerPort.Port).To(Equal(int32(80)))
+					Expect(listenerPort.TargetPort).To(Equal(intstr.FromInt32(80)))
+
+					monitoringPortIdx := slices.IndexFunc(svc.Spec.Ports, func(port corev1.ServicePort) bool {
+						return port.Name == "http-monitoring"
+					})
+					Expect(monitoringPortIdx).NotTo(Equal(-1))
+					monitoringPort := svc.Spec.Ports[monitoringPortIdx]
+					Expect(monitoringPort.Port).To(Equal(int32(9091)))
+					Expect(monitoringPort.TargetPort).To(Equal(intstr.FromInt32(9091)))
 				},
 			}),
 			Entry("object owner refs are set", defaultInput(), &expectedOutput{
