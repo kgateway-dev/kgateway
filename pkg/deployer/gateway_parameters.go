@@ -8,6 +8,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
@@ -112,7 +113,7 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityC
 
 	// Similar to labeling in kubernetes, this is used to identify the service as a waypoint service.
 	meshPort := kgateway.Port{
-		Port: IstioWaypointPort,
+		Port: wellknown.IstioWaypointPort,
 	}
 	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
 
@@ -184,7 +185,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 					Image: &kgateway.Image{
 						Registry:   new(imageInfo.Registry),
 						Tag:        new(imageInfo.Tag),
-						Repository: new(EnvoyWrapperImage),
+						Repository: new(wellknown.EnvoyWrapperImage),
 						PullPolicy: (*corev1.PullPolicy)(new(imageInfo.PullPolicy)),
 					},
 					SecurityContext: &corev1.SecurityContext{
@@ -207,7 +208,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 					Image: &kgateway.Image{
 						Registry:   new(imageInfo.Registry),
 						Tag:        new(imageInfo.Tag),
-						Repository: new(SdsImage),
+						Repository: new(wellknown.SdsImage),
 						PullPolicy: (*corev1.PullPolicy)(new(imageInfo.PullPolicy)),
 					},
 					Bootstrap: &kgateway.SdsBootstrap{

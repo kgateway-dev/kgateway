@@ -303,8 +303,18 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         - name: ENVOY_UID
           value: "0"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.namespace=$(POD_NAMESPACE),service.instance.id=$(POD_UID),service.version=1.0.0-ci1,k8s.namespace.name=$(POD_NAMESPACE),k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.node.name=$(NODE_NAME),k8s.deployment.name=extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097,k8s.container.name=kgateway-proxy
         image: ghcr.io/envoy-wrapper:v2.1.0-dev
         lifecycle:
           preStop:

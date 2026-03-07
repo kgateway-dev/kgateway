@@ -1,6 +1,5 @@
-package deployer
+package wellknown
 
-// TODO(tim): Consolidate with the other wellknown packages?
 const (
 	// KgatewayContainerName is the name of the container in the proxy deployment.
 	KgatewayContainerName = "kgateway-proxy"

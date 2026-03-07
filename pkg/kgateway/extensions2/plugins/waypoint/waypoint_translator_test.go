@@ -62,6 +62,7 @@ func TestWaypointTranslator(t *testing.T) {
 			}
 			settingOpt := func(s *apisettings.Settings) {
 				s.EnableExperimentalGatewayAPIFeatures = true
+				s.EnableIstioIntegration = true
 			}
 			extraConfig := translatortest.ExtraConfig{
 				PluginsFn: extraPluginsFn,

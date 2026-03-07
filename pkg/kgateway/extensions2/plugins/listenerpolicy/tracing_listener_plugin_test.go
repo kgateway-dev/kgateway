@@ -25,7 +25,7 @@ import (
 )
 
 func TestTracingConverter(t *testing.T) {
-	// Set version for testing (normally set via ldflags at build time)
+	// Set version for testing (normally set at build time)
 	origVersion := version.Version
 	version.Version = "v1.0.0-test"
 	t.Cleanup(func() { version.Version = origVersion })
@@ -70,13 +70,45 @@ func TestTracingConverter(t *testing.T) {
 								},
 								ServiceName: "gw.default",
 								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
-									Name: "envoy.tracers.opentelemetry.resource_detectors.static_config",
-									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
-										"service.namespace":   "default",
-										"service.instance.id": "test-uid-1234",
-										"service.version":     "v1.0.0-test",
-									}}),
+									Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
+									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.EnvironmentResourceDetectorConfig{}),
 								}},
+							}),
+						},
+					},
+				},
+			},
+			{
+				name: "OTel Tracing disabled env detector",
+				config: &kgateway.Tracing{
+					Provider: kgateway.TracingProvider{
+						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
+							GrpcService: kgateway.CommonGrpcService{
+								BackendRef: gwv1.BackendRef{
+									BackendObjectReference: gwv1.BackendObjectReference{
+										Name: "test-service",
+									},
+								},
+							},
+							ResourceDetectors: []kgateway.ResourceDetector{{
+								EnvironmentResourceDetector: &kgateway.EnvironmentResourceDetectorConfig{Enable: new(false)},
+							}},
+						},
+					},
+				},
+				expected: &envoy_hcm.HttpConnectionManager_Tracing{
+					Provider: &envoytracev3.Tracing_Http{
+						Name: "envoy.tracers.opentelemetry",
+						ConfigType: &envoytracev3.Tracing_Http_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoytracev3.OpenTelemetryConfig{
+								GrpcService: &envoycorev3.GrpcService{
+									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+											ClusterName: "backend_default_test-service_0",
+										},
+									},
+								},
+								ServiceName: "gw.default",
 							}),
 						},
 					},
@@ -112,12 +144,8 @@ func TestTracingConverter(t *testing.T) {
 								},
 								ServiceName: "gw.default",
 								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
-									Name: "envoy.tracers.opentelemetry.resource_detectors.static_config",
-									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
-										"service.namespace":   "default",
-										"service.instance.id": "test-uid-1234",
-										"service.version":     "v1.0.0-test",
-									}}),
+									Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
+									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.EnvironmentResourceDetectorConfig{}),
 								}},
 							}),
 						},
@@ -154,12 +182,8 @@ func TestTracingConverter(t *testing.T) {
 								},
 								ServiceName: "gw.default",
 								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
-									Name: "envoy.tracers.opentelemetry.resource_detectors.static_config",
-									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
-										"service.namespace":   "default",
-										"service.instance.id": "test-uid-1234",
-										"service.version":     "v1.0.0-test",
-									}}),
+									Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
+									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.EnvironmentResourceDetectorConfig{}),
 								}},
 							}),
 						},
@@ -281,13 +305,6 @@ func TestTracingConverter(t *testing.T) {
 								},
 								ServiceName: "my:service",
 								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
-									Name: "envoy.tracers.opentelemetry.resource_detectors.static_config",
-									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.StaticConfigResourceDetectorConfig{Attributes: map[string]string{
-										"service.namespace":   "default",
-										"service.instance.id": "test-uid-1234",
-										"service.version":     "v1.0.0-test",
-									}}),
-								}, {
 									Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
 									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.EnvironmentResourceDetectorConfig{}),
 								}},

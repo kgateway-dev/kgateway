@@ -1765,8 +1765,16 @@ spec:
                               minProperties: 1
                               properties:
                                 environmentResourceDetector:
-                                  description: EnvironmentResourceDetectorConfig specified
-                                    the EnvironmentResourceDetector
+                                  description: |-
+                                    EnvironmentResourceDetector sets OpenTelemetry resource attributes from the OTEL_RESOURCE_ATTRIBUTES
+                                    environment variable in the Envoy container.
+                                    Default enabled if not set. If multiple are set, the last will take precedence.
+                                  properties:
+                                    enable:
+                                      default: true
+                                      description: Enable controls whether the EnvironmentResourceDetector
+                                        is used.
+                                      type: boolean
                                   type: object
                               type: object
                             type: array
