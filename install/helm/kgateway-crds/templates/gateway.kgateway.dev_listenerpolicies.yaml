@@ -1937,9 +1937,6 @@ spec:
                       This allows filtering based on connection attributes such as source IP address, destination port,
                       and TLS client certificate information.
 
-                      Network RBAC (ListenerPolicy) is evaluated BEFORE HTTP RBAC (TrafficPolicy).
-                      Both policies must pass for a request to be allowed - network RBAC acts as an early filter.
-
                       Available CEL attributes for network RBAC include:
                         - source.address: Source IP address (e.g., "192.168.1.100")
                         - source.port: Source port number
@@ -1973,7 +1970,7 @@ spec:
                           matchExpressions:
                             description: |-
                               MatchExpressions defines a set of conditions that must be satisfied for the rule to match.
-                              These expressions should be in the form of a Common Expression Language (CEL) expression.
+                              These expression should be in the form of a Common Expression Language (CEL) expression.
                             items:
                               description: CELExpression represents a Common Expression
                                 Language (CEL) expression.
@@ -3824,9 +3821,6 @@ spec:
                             Network RBAC is evaluated at the TCP connection level, before any HTTP processing begins.
                             This allows filtering based on connection attributes such as source IP address, destination port,
                             and TLS client certificate information.
-
-                            Network RBAC (ListenerPolicy) is evaluated BEFORE HTTP RBAC (TrafficPolicy).
-                            Both policies must pass for a request to be allowed - network RBAC acts as an early filter.
 
                             Available CEL attributes for network RBAC include:
                               - source.address: Source IP address (e.g., "192.168.1.100")

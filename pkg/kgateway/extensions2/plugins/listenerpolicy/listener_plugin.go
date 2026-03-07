@@ -214,6 +214,7 @@ type listenerPolicyPluginGwPass struct {
 
 	healthCheckPolicy  map[uint32]*healthcheckv3.HealthCheck
 	rbacNetworkFilters map[uint32]*anypb.Any // Track RBAC filters per port
+	currentPort        uint32                // Current listener port being translated
 }
 
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
@@ -361,24 +362,39 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	if cfg.perConnectionBufferLimitBytes != nil {
 		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *cfg.perConnectionBufferLimitBytes}
 	}
+	// Store RBAC network filter for this port; apply it during filter chain construction via NetworkFilters()
+
 	if cfg.rbacNetworkFilter != nil {
 		p.rbacNetworkFilters[pCtx.Port] = cfg.rbacNetworkFilter
-		// Apply RBAC network filter to all filter chains on this listener
-		// Network RBAC must be added BEFORE the HttpConnectionManager filter
-		rbacFilter := &envoylistenerv3.Filter{
-			Name: "envoy.filters.network.rbac",
-			ConfigType: &envoylistenerv3.Filter_TypedConfig{
-				TypedConfig: cfg.rbacNetworkFilter,
-			},
-		}
-		for _, fc := range out.FilterChains {
-			// Prepend RBAC filter to the beginning of the filter chain making sure it runs before HTTP processing
-			fc.Filters = append([]*envoylistenerv3.Filter{rbacFilter}, fc.Filters...)
-		}
 	}
+
+	// Track the current port being translated
+	p.currentPort = pCtx.Port
 	if http := cfg.http; http != nil {
 		p.healthCheckPolicy[pCtx.Port] = http.healthCheckPolicy
 	}
+}
+
+// NetworkFilters returns the RBAC network filter for the current listener port.
+func (p *listenerPolicyPluginGwPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
+	rbacFilter := p.rbacNetworkFilters[p.currentPort]
+	if rbacFilter == nil {
+		return nil, nil
+	}
+
+	envoyFilter := &envoylistenerv3.Filter{
+		Name: "envoy.filters.network.rbac",
+		ConfigType: &envoylistenerv3.Filter_TypedConfig{
+			TypedConfig: rbacFilter,
+		},
+	}
+
+	return []filters.StagedNetworkFilter{
+		{
+			Filter: envoyFilter,
+			Stage:  filters.BeforeStage(filters.AuthZStage),
+		},
+	}, nil
 }
 
 func (p *listenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
