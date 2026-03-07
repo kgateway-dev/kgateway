@@ -36,12 +36,14 @@ func gwToIr(gw *gwv1.Gateway, allowedLS, deniedLS *gwxv1a1.XListenerSet) *ir.Gat
 	}
 	if deniedLS != nil {
 		out.DeniedListenerSets = map[schema.GroupVersionKind]ir.ListenerSets{
-			wellknown.XListenerSetGVK: []ir.ListenerSet{lsToIR(deniedLS)}}
+			wellknown.XListenerSetGVK: []ir.ListenerSet{lsToIR(deniedLS)},
+		}
 	}
 	if allowedLS != nil {
 		allowedIrLs := lsToIR(allowedLS)
 		out.AllowedListenerSets = map[schema.GroupVersionKind]ir.ListenerSets{
-			wellknown.XListenerSetGVK: []ir.ListenerSet{allowedIrLs}}
+			wellknown.XListenerSetGVK: []ir.ListenerSet{allowedIrLs},
+		}
 		out.Listeners = append(out.Listeners, allowedIrLs.Listeners...)
 	}
 	return out
@@ -470,6 +472,10 @@ func TestProtocolConflict(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 			Conditions: []metav1.Condition{
 				{
@@ -528,6 +534,10 @@ func TestProtocolConflictInvalidRoutes(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 		},
 	}
@@ -576,6 +586,10 @@ func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 			Conditions: []metav1.Condition{

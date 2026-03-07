@@ -1,24 +1,11 @@
-kind: Gateway
-apiVersion: gateway.networking.k8s.io/v1
-metadata:
-  name: gw
-spec:
-  gatewayClassName: kgateway
-  listeners:
-  - protocol: HTTP
-    port: 8080
-    name: http
-    allowedRoutes:
-      namespaces:
-        from: All
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: nginx-route
+  namespace: kgateway-base
 spec:
   parentRefs:
-  - name: gw
+  - name: gateway
   hostnames:
   - "example.com"
   rules:
@@ -30,9 +17,10 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: nginx2-route
+  namespace: kgateway-base
 spec:
   parentRefs:
-  - name: gw
+  - name: gateway
   hostnames:
   - "example2.com"
   rules:
@@ -44,6 +32,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: tls-policy
+  namespace: kgateway-base
 spec:
   targetRefs:
   - group: ""
@@ -63,9 +52,10 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: google-route
+  namespace: kgateway-base
 spec:
   parentRefs:
-  - name: gw
+  - name: gateway
   hostnames:
   - "foo.com"
   rules:
@@ -78,6 +68,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
   name: google
+  namespace: kgateway-base
 spec:
   type: Static
   static:
@@ -89,6 +80,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: wellknown-tls-policy
+  namespace: kgateway-base
 spec:
   targetRefs:
   - group: gateway.kgateway.dev

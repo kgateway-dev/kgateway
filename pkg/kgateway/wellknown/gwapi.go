@@ -4,7 +4,6 @@ import (
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -31,9 +30,6 @@ const (
 
 	// Kind string for XListenerSet resource
 	XListenerSetKind = "XListenerSet"
-
-	// Kind string for InferencePool resource
-	InferencePoolKind = "InferencePool"
 
 	// List Kind strings
 	HTTPRouteListKind      = "HTTPRouteList"
@@ -121,16 +117,6 @@ var (
 		Version: gwv1.GroupVersion.Version,
 		Kind:    BackendTLSPolicyKind,
 	}
-	InferencePoolGVK = schema.GroupVersionKind{
-		Group:   inf.GroupVersion.Group,
-		Version: inf.GroupVersion.Version,
-		Kind:    InferencePoolKind,
-	}
-	InferencePoolGVR = schema.GroupVersionResource{
-		Group:    inf.GroupVersion.Group,
-		Version:  inf.GroupVersion.Version,
-		Resource: "inferencepools",
-	}
 	BackendTLSPolicyGVR = schema.GroupVersionResource{
 		Group:    GatewayGroup,
 		Version:  gwv1.GroupVersion.Version,
@@ -154,10 +140,3 @@ var (
 		Resource: "xlistenersets",
 	}
 )
-
-// IsInferencePoolGK returns true if the given group and kind match
-// the InferencePool Group, Version, and Kind.
-func IsInferencePoolGK(group, kind string) bool {
-	return InferencePoolGVK.Group == group &&
-		InferencePoolGVK.Kind == kind
-}

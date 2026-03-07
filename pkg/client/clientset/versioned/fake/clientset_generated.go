@@ -4,8 +4,6 @@ package fake
 
 import (
 	clientset "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
-	gatewayagentgateway "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/v1alpha1/agentgateway"
-	fakegatewayagentgateway "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/v1alpha1/agentgateway/fake"
 	gatewaykgateway "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/v1alpha1/kgateway"
 	fakegatewaykgateway "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/v1alpha1/kgateway/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,9 +75,4 @@ var (
 // GatewayKgateway retrieves the GatewayKgatewayClient
 func (c *Clientset) GatewayKgateway() gatewaykgateway.GatewayKgatewayInterface {
 	return &fakegatewaykgateway.FakeGatewayKgateway{Fake: &c.Fake}
-}
-
-// GatewayAgentgateway retrieves the GatewayAgentgatewayClient
-func (c *Clientset) GatewayAgentgateway() gatewayagentgateway.GatewayAgentgatewayInterface {
-	return &fakegatewayagentgateway.FakeGatewayAgentgateway{Fake: &c.Fake}
 }

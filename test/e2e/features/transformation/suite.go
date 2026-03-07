@@ -45,20 +45,22 @@ const (
 
 var (
 	// manifests
-	simpleServiceManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
-	gatewayManifest                      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
-	transformForCustomFunctionsManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-custom-functions.yaml")
-	transformForHeadersManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-headers.yaml")
-	transformForPseudoHeadersManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-pseudo-headers.yaml")
-	transformForBodyJsonManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json.yaml")
-	rustformationForBodyJsonManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json-rust.yaml")
-	transformForBodyAsStringManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-as-string.yaml")
-	gatewayAttachedTransformManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-attached-transform.yaml")
-	transformForMatchPathManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-path.yaml")
-	transformForMatchHeaderManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-header.yaml")
-	transformForMatchQueryManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-query.yaml")
-	transformForMatchMethodManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-method.yaml")
-	transformForHeaderToBodyJsonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-header-to-body-json.yaml")
+	simpleServiceManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	gatewayManifest                         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
+	transformForCustomFunctionsManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-custom-functions.yaml")
+	transformForHeadersManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-headers.yaml")
+	transformForPseudoHeadersManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-pseudo-headers.yaml")
+	transformForBodyJsonManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json.yaml")
+	rustformationForBodyJsonManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json-rust.yaml")
+	rustformationForModelExtractionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-model-extraction-rust.yaml")
+	transformForBodyAsStringManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-as-string.yaml")
+	gatewayAttachedTransformManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-attached-transform.yaml")
+	transformForMatchPathManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-path.yaml")
+	transformForMatchHeaderManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-header.yaml")
+	transformForMatchQueryManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-query.yaml")
+	transformForMatchMethodManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-method.yaml")
+	transformForHeaderToBodyJsonManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-header-to-body-json.yaml")
+	transformForBodyLocalReplyManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-local-reply.yaml")
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -81,6 +83,7 @@ var (
 			transformForMatchPathManifest,
 			transformForMatchQueryManifest,
 			transformForHeaderToBodyJsonManifest,
+			transformForBodyLocalReplyManifest,
 		},
 	}
 
@@ -107,6 +110,11 @@ var (
 		"TestGatewayRustformationsWithTransformedRoute": {
 			Manifests: []string{
 				rustformationForBodyJsonManifest,
+			},
+		},
+		"TestRustformationModelExtraction": {
+			Manifests: []string{
+				rustformationForModelExtractionManifest,
 			},
 		},
 	}
@@ -662,6 +670,39 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 				Method: "POST",
 			},
 		},
+		{
+			// test 17
+			name:      "body transform for local reply",
+			routeName: "route-for-body-local-reply",
+			opts: []curl.Option{
+				curl.WithBody(strings.Repeat("x", 1500)),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusRequestEntityTooLarge,
+				Headers: map[string]any{
+					"content-length": "17",
+				},
+				Body: gomega.HaveLen(17), // The body should have the string "Payload Too Large" (17 bytes)
+			},
+			req: &testmatchers.HttpRequest{},
+		},
+		{
+			// test 18
+			name:      "body transform for local reply no body()",
+			routeName: "route-for-body-local-reply",
+			url:       "/foobar",
+			opts: []curl.Option{
+				curl.WithBody(strings.Repeat("x", 1500)),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusRequestEntityTooLarge,
+				Headers: map[string]any{
+					"content-length": "6",
+				},
+				Body: "foobar",
+			},
+			req: &testmatchers.HttpRequest{},
+		},
 	}
 
 	// If no indices are provided, return the full original slice.
@@ -800,6 +841,54 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 	s.runTestCases((testCases))
 }
 
+// TestRustformationModelExtraction is a regression test for the bug where
+// Rustformations failed to parse a JSON request body arriving in a single chunk.
+// The body data sat in the "received" buffer rather than the "buffered" buffer,
+// causing parse_request_json_body to return Null and the undeclared-variables
+// safety check to fire a 400.  The fix adds a get_received_request_body fallback.
+//
+// This mirrors the production TrafficPolicy pattern: parse the JSON request body
+// and extract the "model" field into a request header.
+func (s *testingSuite) TestRustformationModelExtraction() {
+	s.SetRustformationInController(true)
+
+	// wait for pods to be running again, since controller deployment was patched
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
+		LabelSelector: defaults.ControllerLabelSelector,
+	})
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
+	})
+
+	// assert the policy is accepted
+	s.assertModelExtractionResourceStatus()
+
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.Ctx,
+		proxyObjectMeta,
+		s.dynamicModuleAssertion(true),
+	)
+
+	// Send a JSON body with a "model" field and verify it gets extracted into a header.
+	s.runTestCases([]transformationTestCase{
+		{
+			name:      "model-field-extracted-from-json-body",
+			routeName: "route-for-model-extraction",
+			opts: []curl.Option{
+				curl.WithPostBody(`{"model": "gpt-4", "messages": [{"role": "user", "content": "hello"}]}`),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+			},
+			req: &testmatchers.HttpRequest{
+				Headers: map[string]any{
+					"Body-Extracted-Model": "gpt-4",
+				},
+			},
+		},
+	})
+}
+
 func (s *testingSuite) runTestCases(testCases []transformationTestCase) {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
@@ -911,6 +1000,16 @@ func (s *testingSuite) assertTestResourceStatus() {
 	}
 	trafficPoliciesToCheck := []string{
 		"example-traffic-policy-for-body-json",
+	}
+	s.assertRouteAndTrafficPolicyStatus(routesToCheck, trafficPoliciesToCheck)
+}
+
+func (s *testingSuite) assertModelExtractionResourceStatus() {
+	routesToCheck := []string{
+		"example-route-for-model-extraction",
+	}
+	trafficPoliciesToCheck := []string{
+		"example-traffic-policy-for-model-extraction",
 	}
 	s.assertRouteAndTrafficPolicyStatus(routesToCheck, trafficPoliciesToCheck)
 }

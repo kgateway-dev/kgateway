@@ -15,6 +15,29 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+func TestClonePreservesHostnameOverrides(t *testing.T) {
+	original := &query.RouteInfo{
+		Object: &ir.HttpRouteIR{
+			ObjectSource: ir.ObjectSource{
+				Name:      "test-route",
+				Namespace: "default",
+			},
+		},
+		HostnameOverrides: []string{"foo.com", "bar.com"},
+	}
+
+	clone := original.Clone()
+
+	// The clone must have the same HostnameOverrides values.
+	assert.Equal(t, original.HostnameOverrides, clone.HostnameOverrides,
+		"clone should preserve HostnameOverrides")
+
+	// Mutating the clone's HostnameOverrides must not affect the original.
+	clone.HostnameOverrides[0] = "mutated.com"
+	assert.Equal(t, "foo.com", original.HostnameOverrides[0],
+		"mutating clone's HostnameOverrides should not affect original")
+}
+
 func TestGetRouteChain(t *testing.T) {
 	tests := []struct {
 		name         string

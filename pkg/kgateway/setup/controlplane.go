@@ -25,8 +25,6 @@ import (
 	"istio.io/istio/pkg/security"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/krtxds"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/nack"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
@@ -131,39 +129,6 @@ func NewControlPlane(
 	}()
 
 	return snapshotCache
-}
-
-func NewAgwControlPlane(
-	ctx context.Context,
-	lis net.Listener,
-	authenticators []security.Authenticator,
-	xdsAuth bool,
-	certWatcher *certwatcher.CertWatcher,
-	nackPublisher *nack.Publisher,
-	reg ...krtxds.Registration,
-) {
-	baseLogger := slog.Default().With("component", "agentgateway-controlplane")
-
-	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher, baseLogger)
-	grpcServer := grpc.NewServer(serverOpts...)
-
-	ds := krtxds.NewDiscoveryServer(nil, nackPublisher, reg...)
-	stop := make(chan struct{})
-	context.AfterFunc(ctx, func() {
-		close(stop)
-	})
-	ds.Start(stop)
-
-	reflection.Register(grpcServer)
-	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, ds)
-
-	baseLogger.Info("starting server", "address", lis.Addr().String())
-	go grpcServer.Serve(lis)
-
-	go func() {
-		<-ctx.Done()
-		grpcServer.GracefulStop()
-	}()
 }
 
 func getGRPCServerOpts(

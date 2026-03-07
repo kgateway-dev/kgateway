@@ -5,10 +5,14 @@ package tests_test
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -46,6 +50,12 @@ func TestKgateway(t *testing.T) {
 
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
+
+	common.SetupBaseConfig(ctx, t, testInstallation, filepath.Join("manifests", "kgateway-base.yaml"))
+	common.SetupBaseGateway(ctx, testInstallation, types.NamespacedName{
+		Namespace: "kgateway-base",
+		Name:      "gateway",
+	})
 
 	KubeGatewaySuiteRunner().Run(ctx, t, testInstallation)
 }

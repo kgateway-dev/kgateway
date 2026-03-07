@@ -62,9 +62,6 @@ type PolicyPlugin struct {
 	PerClientProcessBackend   PerClientProcessBackend
 	PerClientProcessEndpoints EndpointPlugin
 
-	// Backend processing for agent gateway
-	ProcessAgentBackend func(pol ir.PolicyIR, in ir.BackendObjectIR) error
-
 	Policies krt.Collection[ir.PolicyWrapper]
 	// ProcessPolicyStaleStatusMarkers add empty reports for policies to clear stale status
 	ProcessPolicyStaleStatusMarkers func(krt.HandlerContext, *reports.ReportMap)

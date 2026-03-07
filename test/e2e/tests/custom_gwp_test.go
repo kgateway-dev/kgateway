@@ -52,19 +52,6 @@ spec:
         another: label
 `
 
-var agentgatewayAGWP = `
-apiVersion: agentgateway.dev/v1alpha1
-kind: AgentgatewayParameters
-metadata:
-  name: custom-agwp
-  namespace: kgateway-test
-spec:
-  deployment:
-    metadata:
-      labels:
-        custom-agw: custom-agw-label
-`
-
 var kgatewayGateway = `
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -124,13 +111,10 @@ func TestCustomGWP(t *testing.T) {
 		}
 
 		testInstallation.UninstallKgateway(ctx, t)
-		// Also uninstall agentgateway CRDs since we installed them for this test
-		testInstallation.UninstallAgentgatewayCRDs(ctx, t)
 	})
 
-	// install CRDs for both kgateway and agentgateway
+	// install CRDs for kgateway
 	testInstallation.InstallKgatewayCRDsFromLocalChart(ctx, t)
-	testInstallation.InstallAgentgatewayCRDsFromLocalChart(ctx, t)
 
 	// create GatewayParameters for kgateway
 	err := testInstallation.Actions.Kubectl().Apply(ctx, []byte(kgatewayGWP))
@@ -138,22 +122,12 @@ func TestCustomGWP(t *testing.T) {
 		t.Fatalf("failed to create GatewayParameters: %v", err)
 	}
 
-	// create AgentgatewayParameters for agentgateway
-	err = testInstallation.Actions.Kubectl().Apply(ctx, []byte(agentgatewayAGWP))
-	if err != nil {
-		t.Fatalf("failed to create AgentgatewayParameters: %v", err)
-	}
-
 	// install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
-	testInstallation.InstallAgentgatewayCoreFromLocalChart(ctx, t)
 
-	// Wait for GatewayClasses to be created
+	// Wait for GatewayClass to be created
 	testInstallation.AssertionsT(t).EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
 		ObjectMeta: metav1.ObjectMeta{Name: wellknown.DefaultGatewayClassName},
-	})
-	testInstallation.AssertionsT(t).EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
-		ObjectMeta: metav1.ObjectMeta{Name: wellknown.DefaultAgwClassName},
 	})
 
 	// create Gateway
@@ -190,33 +164,6 @@ func TestCustomGWP(t *testing.T) {
 		t.Fatalf("expected kgateway GatewayClass parametersRef.kind to be 'GatewayParameters', got '%s'", gc.Spec.ParametersRef.Kind)
 	}
 
-	// Verify agentgateway GatewayClass has correct parametersRef
-	agwGc := &gwv1.GatewayClass{}
-	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: wellknown.DefaultAgwClassName}, agwGc)
-	if err != nil {
-		t.Fatalf("failed to get agentgateway GatewayClass: %v", err)
-	}
-
-	if agwGc.Spec.ParametersRef == nil {
-		t.Fatal("agentgateway GatewayClass spec.parametersRef is nil")
-	}
-
-	if agwGc.Spec.ParametersRef.Name != "custom-agwp" {
-		t.Fatalf("expected agentgateway GatewayClass parametersRef.name to be 'custom-agwp', got '%s'", agwGc.Spec.ParametersRef.Name)
-	}
-
-	if agwGc.Spec.ParametersRef.Namespace == nil || *agwGc.Spec.ParametersRef.Namespace != expectedNamespace {
-		t.Fatalf("expected agentgateway GatewayClass parametersRef.namespace to be '%s', got '%v'", expectedNamespace, agwGc.Spec.ParametersRef.Namespace)
-	}
-
-	// Verify agentgateway GatewayClass uses AgentgatewayParameters GVK (agentgateway.dev)
-	if agwGc.Spec.ParametersRef.Group != "agentgateway.dev" {
-		t.Fatalf("expected agentgateway GatewayClass parametersRef.group to be 'agentgateway.dev', got '%s'", agwGc.Spec.ParametersRef.Group)
-	}
-	if agwGc.Spec.ParametersRef.Kind != "AgentgatewayParameters" {
-		t.Fatalf("expected agentgateway GatewayClass parametersRef.kind to be 'AgentgatewayParameters', got '%s'", agwGc.Spec.ParametersRef.Kind)
-	}
-
 	// Wait for Gateway to be accepted and deployment created
 	testInstallation.AssertionsT(t).EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
 
@@ -241,27 +188,6 @@ func TestCustomGWP(t *testing.T) {
 		t.Fatalf("failed to upgrade Helm: %v", err)
 	}
 	testInstallation.AssertionsT(t).EventuallyKgatewayInstallSucceeded(ctx)
-	chartUriAgentgateway, err := helper.GetLocalChartPath(helmutils.AgentgatewayChartName, "")
-	if err != nil {
-		t.Fatalf("failed to get chart path: %v", err)
-	}
-	err = testInstallation.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
-		ctx,
-		helmutils.InstallOpts{
-			Namespace:       installNs,
-			CreateNamespace: true,
-			ValuesFiles: []string{
-				e2e.CommonRecommendationManifest,
-				e2e.ManifestPath("custom-gwp-2.yaml"),
-				e2e.ManifestPath("agent-gateway-integration.yaml"),
-			},
-			ReleaseName: helmutils.AgentgatewayChartName,
-			ChartUri:    chartUriAgentgateway,
-		})
-	if err != nil {
-		t.Fatalf("failed to upgrade Helm: %v", err)
-	}
-	testInstallation.AssertionsT(t).EventuallyAgentgatewayInstallSucceeded(ctx)
 
 	// Verify kgateway GatewayClass is updated with new ref
 	r := require.New(t)
@@ -273,20 +199,6 @@ func TestCustomGWP(t *testing.T) {
 		assert.Equal(c, "custom-gwp-2", gcUpdated.Spec.ParametersRef.Name, "expected kgateway GatewayClass parametersRef.name to be 'custom-gwp-2' after upgrade")
 		assert.NotNil(c, gcUpdated.Spec.ParametersRef.Namespace, "kgateway GatewayClass spec.parametersRef.namespace is nil after upgrade")
 		assert.Equal(c, expectedNamespace, *gcUpdated.Spec.ParametersRef.Namespace, "expected kgateway GatewayClass parametersRef.namespace to be '%s' after upgrade", expectedNamespace)
-	}, 20*time.Second, 200*time.Millisecond)
-
-	// Verify agentgateway GatewayClass is updated with new ref
-	r.EventuallyWithT(func(c *assert.CollectT) {
-		agwGcUpdated := &gwv1.GatewayClass{}
-		err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: wellknown.DefaultAgwClassName}, agwGcUpdated)
-		assert.NoError(c, err, "failed to get agentgateway GatewayClass after upgrade")
-		assert.NotNil(c, agwGcUpdated.Spec.ParametersRef, "agentgateway GatewayClass spec.parametersRef is nil after upgrade")
-		assert.Equal(c, "custom-agwp-2", agwGcUpdated.Spec.ParametersRef.Name, "expected agentgateway GatewayClass parametersRef.name to be 'custom-agwp-2' after upgrade")
-		assert.NotNil(c, agwGcUpdated.Spec.ParametersRef.Namespace, "agentgateway GatewayClass spec.parametersRef.namespace is nil after upgrade")
-		assert.Equal(c, expectedNamespace, *agwGcUpdated.Spec.ParametersRef.Namespace, "expected agentgateway GatewayClass parametersRef.namespace to be '%s' after upgrade", expectedNamespace)
-		// Verify it still uses AgentgatewayParameters GVK
-		assert.Equal(c, gwv1.Group("agentgateway.dev"), agwGcUpdated.Spec.ParametersRef.Group, "expected agentgateway GatewayClass parametersRef.group to be 'agentgateway.dev' after upgrade")
-		assert.Equal(c, gwv1.Kind("AgentgatewayParameters"), agwGcUpdated.Spec.ParametersRef.Kind, "expected agentgateway GatewayClass parametersRef.kind to be 'AgentgatewayParameters' after upgrade")
 	}, 20*time.Second, 200*time.Millisecond)
 
 	// Ensure gateway pods are still running (even though the ParametersRef has changed to non-existent resource)

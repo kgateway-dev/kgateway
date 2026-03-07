@@ -9,12 +9,12 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -27,12 +27,6 @@ var (
 	serviceManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
 	headlessServiceManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "headless-service.yaml")
 	gatewayWithRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-with-route.yaml")
-
-	// objects
-	proxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
-	}
 
 	// test cases
 	// Note: CurlPodManifest removed - using native Go HTTP instead
@@ -57,11 +51,31 @@ var (
 // testingSuite is a suite of basic routing / "happy path" tests
 type testingSuite struct {
 	*base.BaseTestingSuite
+	localGateway common.Gateway
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		common.Gateway{}, // initialized in SetupSuite
+	}
+}
+
+func (s *testingSuite) SetupSuite() {
+	s.BaseTestingSuite.SetupSuite()
+
+	// Initialize local gateway for this test
+	address := s.TestInstallation.Assertions.EventuallyGatewayAddress(
+		s.Ctx,
+		"gateway",
+		"default",
+	)
+	s.localGateway = common.Gateway{
+		NamespacedName: types.NamespacedName{
+			Name:      "gateway",
+			Namespace: "default",
+		},
+		Address: address,
 	}
 }
 
@@ -80,6 +94,7 @@ func (s *testingSuite) assertSuccessfulResponse() {
 	// which the test runner can resolve (requires cluster DNS access or
 	// port-forwarding for external test runners).
 	for _, port := range []int{listenerHighPort, listenerLowPort} {
+replace-curl-with-native-go
 	s.BaseTestingSuite.TestInstallation.Assertions.AssertEventualCurlResponseNative(
 		s.BaseTestingSuite.Ctx,
 		[]curl.Option{
@@ -92,4 +107,14 @@ func (s *testingSuite) assertSuccessfulResponse() {
 			Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
 		},
 	)
+		s.localGateway.Send(
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
+			},
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(port),
+		)
+
 }

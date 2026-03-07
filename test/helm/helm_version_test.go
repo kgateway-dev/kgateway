@@ -93,12 +93,6 @@ func TestImageTagVPrefix(t *testing.T) {
 			repository:       "kgateway",
 			hasDefaultEnvTag: true,
 		},
-		{
-			name:             "agentgateway",
-			path:             filepath.Join("..", "..", "install", "helm", "agentgateway"),
-			repository:       "controller",
-			hasDefaultEnvTag: false,
-		},
 	}
 
 	testCases := []struct {
@@ -204,10 +198,10 @@ func extractImageLines(output string) string {
 	return strings.Join(lines, "\n")
 }
 
-// TestHelmChartTemplate tests helm template output for both kgateway and agentgateway charts
+// TestHelmChartTemplate tests helm template output for the kgateway chart
 // with different values configurations.
 func TestHelmChartTemplate(t *testing.T) {
-	charts := []string{"kgateway", "agentgateway"}
+	charts := []string{"kgateway"}
 
 	valuesCases := []struct {
 		name       string
@@ -311,6 +305,17 @@ func TestHelmChartTemplate(t *testing.T) {
 			valuesYAML: `commonLabels:
     extra-label-key: extra-label-value
     another-label: "true"
+`,
+		},
+		{
+			name: "topology-spread-constraints",
+			valuesYAML: `topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: kgateway
 `,
 		},
 	}

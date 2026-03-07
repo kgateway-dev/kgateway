@@ -1,0 +1,64 @@
+name: Devcontainer smoke test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - tools/build-tools/**
+      - .devcontainer/devcontainer.json
+      - .github/workflows/devcontainer-smoke.yaml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/build-tools/**
+      - .devcontainer/devcontainer.json
+      - .github/workflows/devcontainer-smoke.yaml
+      - Makefile
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: devcontainer-smoke
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install devcontainer CLI
+        run: npm install -g @devcontainers/cli
+
+      - name: Build devcontainer image
+        run: devcontainer build --workspace-folder . --image-name devcontainer-smoke:test
+
+      - name: Run smoke test
+        run: |
+          docker run --rm \
+            --network=host \
+            --privileged \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            devcontainer-smoke:test \
+            bash tools/build-tools/devcontainer_smoke_test.sh
+
+      - name: Collect debug artifacts
+        if: failure()
+        run: |
+          mkdir -p artifacts
+          kind export logs artifacts/kind-logs --name kind 2>/dev/null || true
+          kubectl get pods -A -o wide > artifacts/all-pods.txt 2>/dev/null || true
+          kubectl describe pods -A > artifacts/pod-describe.txt 2>/dev/null || true
+
+      - name: Upload debug artifacts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: smoke-test-debug
+          path: artifacts/
+          retention-days: 7

@@ -2,12 +2,12 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  namespace: kgateway-test
+  namespace: kgateway-base
   name: route-example-insecure
 spec:
   parentRefs:
-    - name: super-gateway
-      namespace: kgateway-test
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "insecureroute.com"
   rules:
@@ -18,7 +18,7 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  namespace: kgateway-test
+  namespace: kgateway-base
   name: insecure-route-policy
 spec:
   targetRefs:

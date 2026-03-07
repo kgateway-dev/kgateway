@@ -34,6 +34,14 @@ func GetSupportedFeaturesForStandardGateway() []gwv1.SupportedFeature {
 	exemptFeatures.Insert(
 		features.GatewayHTTPListenerIsolationFeature,
 	)
+
+	// we don't support the BackendTLSPolicy feature at all.
+	for _, feature := range features.BackendTLSPolicyCoreFeatures.UnsortedList() {
+		exemptFeatures.Insert(feature)
+	}
+	for _, feature := range features.BackendTLSPolicyExtendedFeatures.UnsortedList() {
+		exemptFeatures.Insert(feature)
+	}
 	return getSupportedFeatures(exemptFeatures)
 }
 
@@ -42,13 +50,6 @@ func GetSupportedFeaturesForStandardGateway() []gwv1.SupportedFeature {
 func GetSupportedFeaturesForWaypointGateway() []gwv1.SupportedFeature {
 	// For now, waypoint gateways support the same features as standard gateways
 	return GetSupportedFeaturesForStandardGateway()
-}
-
-// GetSupportedFeaturesForAgentGateway returns the supported features for the agent Gateway class.
-// Agent gateways support additional features beyond the standard gateway class.
-func GetSupportedFeaturesForAgentGateway() []gwv1.SupportedFeature {
-	exemptFeatures := GetCommonExemptFeatures()
-	return getSupportedFeatures(exemptFeatures)
 }
 
 // GetCommonExemptFeatures returns the set of features that are commonly unsupported across all gateway classes.
@@ -60,13 +61,6 @@ func GetCommonExemptFeatures() sets.Set[features.Feature] {
 		exemptFeatures.Insert(feature)
 	}
 	for _, feature := range features.MeshExtendedFeatures.UnsortedList() {
-		exemptFeatures.Insert(feature)
-	}
-	// we don't support the BackendTLSPolicy feature at all.
-	for _, feature := range features.BackendTLSPolicyCoreFeatures.UnsortedList() {
-		exemptFeatures.Insert(feature)
-	}
-	for _, feature := range features.BackendTLSPolicyExtendedFeatures.UnsortedList() {
 		exemptFeatures.Insert(feature)
 	}
 	return exemptFeatures

@@ -16,7 +16,7 @@ import (
 
 const (
 	// test namespace for proxy resources
-	namespace = "default"
+	namespace = "kgateway-base"
 	// test namespace for ratelimit resources
 	extensionsNamespace = "kgateway-test-extensions"
 	// test service name
@@ -33,25 +33,6 @@ var (
 	userRateLimitManifest     = getTestFile("user-rate-limit.yaml")
 	combinedRateLimitManifest = getTestFile("combined-rate-limit.yaml")
 	rateLimitServerManifest   = getTestFile("rate-limit-server.yaml")
-
-	// metadata for gateway - matches the name "super-gateway" from common.yaml
-	gatewayObjectMeta = metav1.ObjectMeta{Name: "super-gateway", Namespace: namespace}
-	gateway           = &gwv1.Gateway{
-		ObjectMeta: gatewayObjectMeta,
-	}
-
-	// metadata for proxy resources
-	proxyObjectMeta = metav1.ObjectMeta{Name: "super-gateway", Namespace: namespace}
-
-	proxyDeployment = &appsv1.Deployment{
-		ObjectMeta: proxyObjectMeta,
-	}
-	proxyService = &corev1.Service{
-		ObjectMeta: proxyObjectMeta,
-	}
-	proxyServiceAccount = &corev1.ServiceAccount{
-		ObjectMeta: proxyObjectMeta,
-	}
 
 	// metadata for backend service
 	serviceMeta = metav1.ObjectMeta{

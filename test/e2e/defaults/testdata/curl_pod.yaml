@@ -4,6 +4,8 @@ kind: Namespace
 metadata:
   name: curl
 ---
+# Immutable pod spec fields should be consistent with feature-specific curl manifests
+# due to https://github.com/kgateway-dev/kgateway/issues/13408.
 apiVersion: v1
 kind: Pod
 metadata:

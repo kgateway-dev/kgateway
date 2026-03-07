@@ -5,10 +5,7 @@ package csrf
 import (
 	"path/filepath"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 )
 
@@ -19,15 +16,8 @@ var (
 	csrfGwTrafficPolicyManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "csrf-gw.yaml")
 	csrfShadowedRouteTrafficPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "csrf-shadowed-route.yaml")
 
-	// objects created by deployer after applying gateway manifest
-	proxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
-	}
-
 	setup = base.TestCase{
 		Manifests: []string{
-			testdefaults.CurlPodManifest,
 			commonManifest,
 		},
 	}

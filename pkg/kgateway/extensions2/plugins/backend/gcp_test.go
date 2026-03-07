@@ -61,8 +61,8 @@ func TestGcpIrEquals(t *testing.T) {
 		},
 		{
 			name:     "different audiences",
-			ir1:      buildTestGcpIr(&kgateway.GcpBackend{Host: "example.com", Audience: stringPtr("https://audience1.com")}),
-			ir2:      buildTestGcpIr(&kgateway.GcpBackend{Host: "example.com", Audience: stringPtr("https://audience2.com")}),
+			ir1:      buildTestGcpIr(&kgateway.GcpBackend{Host: "example.com", Audience: new("https://audience1.com")}),
+			ir2:      buildTestGcpIr(&kgateway.GcpBackend{Host: "example.com", Audience: new("https://audience2.com")}),
 			expected: false,
 		},
 	}
@@ -96,7 +96,7 @@ func TestBuildGcpIr(t *testing.T) {
 			name: "GCP backend with custom audience",
 			input: &kgateway.GcpBackend{
 				Host:     "example.com",
-				Audience: stringPtr("https://custom-audience.com"),
+				Audience: new("https://custom-audience.com"),
 			},
 			expectedHost:     "example.com",
 			expectedAudience: "https://custom-audience.com",
@@ -152,7 +152,7 @@ func TestProcessGcp(t *testing.T) {
 		},
 		{
 			name:      "valid GCP IR with audience",
-			ir:        buildTestGcpIr(&kgateway.GcpBackend{Host: "test.example.com", Audience: stringPtr("https://custom-audience.com")}),
+			ir:        buildTestGcpIr(&kgateway.GcpBackend{Host: "test.example.com", Audience: new("https://custom-audience.com")}),
 			wantError: false,
 		},
 	}
@@ -204,8 +204,4 @@ func TestProcessGcp(t *testing.T) {
 			assert.Equal(t, expectedAudience.Url, audienceConfig.Url)
 		})
 	}
-}
-
-func stringPtr(s string) *string {
-	return &s
 }

@@ -88,7 +88,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo"),
+					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -119,7 +119,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo/baz"),
+					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -164,7 +164,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo"),
+					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -194,7 +194,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/bar/baz"),
+					Value: new("/bar/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -238,7 +238,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo"),
+					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -268,7 +268,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo/baz"),
+					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -302,7 +302,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo"),
+					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -332,7 +332,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo/baz"),
+					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -366,7 +366,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo"),
+					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -397,7 +397,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo/baz"),
+					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -442,7 +442,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo"),
+					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -472,7 +472,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo/baz"),
+					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -516,7 +516,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo"),
+					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
@@ -546,7 +546,7 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
 					Type:  ptr.To(gwv1.PathMatchPathPrefix),
-					Value: ptr.To("/foo/baz"),
+					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{

@@ -24,6 +24,7 @@ linters:
     - misspell
     - modernize
     - nakedret
+    - nestif
     - predeclared
     - promlinter
     - sloglint
@@ -102,8 +103,6 @@ linters:
           alias: gwv1
         - pkg: sigs.k8s.io/gateway-api/apis/v1alpha2
           alias: gwv1a2
-        - pkg: sigs.k8s.io/gateway-api/apis/v1alpha3
-          alias: gwv1a3
         - pkg: sigs.k8s.io/gateway-api/apis/v1beta1
           alias: gwv1b1
         - pkg: github.com/envoyproxy/go-control-plane/envoy/config/(\w+)/(v[\w\d]+)
@@ -140,6 +139,9 @@ linters:
       #     // This is allowed but really, really bad. DO NOT do this.
       #     return b, a
       max-func-lines: 0
+    nestif:
+      # This catches only the worst offenders (complexity >= 20)
+      min-complexity: 20
     staticcheck:
       checks:
         - SA1019 # deprecated usage
@@ -193,7 +195,7 @@ issues:
   uniq-by-line: true
 formatters:
   enable:
-    - gofmt
+    - gofumpt
     - gci
   settings:
     gci:

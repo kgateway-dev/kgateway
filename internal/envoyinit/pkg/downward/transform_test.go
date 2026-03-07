@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("Transform", func() {
-
 	Context("bootstrap transforms", func() {
 		var (
 			api             *mockDownward
@@ -30,7 +29,6 @@ var _ = Describe("Transform", func() {
 		})
 
 		It("should transform node id", func() {
-
 			bootstrapConfig.Node.Id = "{{.PodName}}"
 			err := TransformConfigTemplatesWithApi(bootstrapConfig, api)
 			Expect(err).NotTo(HaveOccurred())
@@ -89,6 +87,5 @@ var _ = Describe("Transform", func() {
 			expectedAddress := bootstrapConfig.GetStaticResources().GetClusters()[0].GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress()
 			Expect(expectedAddress).To(Equal("5.5.5.5"))
 		})
-
 	})
 })
