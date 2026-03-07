@@ -100,10 +100,23 @@ func findTestFunctions(testDir string) ([]string, error) {
 	testFunctions := make(map[string]bool)
 	testPattern := regexp.MustCompile(`^func\s+(Test\w+)\s*\(\s*\w+\s+\*testing\.T`)
 
-	// Find all *_test.go files
-	files, err := filepath.Glob(filepath.Join(testDir, "*_test.go"))
+	// Find all *_test.go files recursively under testDir
+	var files []string
+	
+	err := filepath.Walk(testDir, func(path string, info os.FileInfo, err error) error {
+	    if err != nil {
+	        return err
+	    }
+	
+	    if !info.IsDir() && strings.HasSuffix(info.Name(), "_test.go") {
+	        files = append(files, path)
+	    }
+	
+	    return nil
+	})
+	
 	if err != nil {
-		return nil, fmt.Errorf("failed to glob test files: %w", err)
+	    return nil, fmt.Errorf("failed to walk test directory: %w", err)
 	}
 
 	for _, testFile := range files {
@@ -199,4 +212,5 @@ func checkTestCoverage(testName string, regexPatterns []string) bool {
 
 	return false
 }
+
 
