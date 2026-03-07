@@ -368,7 +368,6 @@ spec:
               port: 9093
             initialDelaySeconds: 0
             periodSeconds: 1
-            
             failureThreshold: 120
           env:
             - name: GOMEMLIMIT

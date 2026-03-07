@@ -22,6 +22,16 @@ data:
       "generic_secret": {"secret":{"filename":"/var/run/secrets/tokens/xds-token"}}
     }]}
   envoy.yaml: |
+    {{- with $gateway.logFormat }}
+    application_log_config:
+      log_format:
+        {{- if hasKey . "json" }}
+        json_format:
+          {{- .json | toYaml | nindent 10 }}
+        {{- else if hasKey . "text" }}
+        text_format: {{ .text | quote }}
+        {{- end }}
+    {{- end }}
     admin:
       address:
         socket_address: { address: 127.0.0.1, port_value: 19000 }

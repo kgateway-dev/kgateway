@@ -11,9 +11,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -35,8 +35,8 @@ func NewTestingSuite(ctx context.Context, ti *e2e.TestInstallation) suite.Testin
 	return &testingSuite{
 		ctx:             ctx,
 		ti:              ti,
-		commonManifests: []string{defaults.CurlPodManifest, defaults.HttpbinManifest, autoHostRewriteManifest},
-		commonResources: []client.Object{proxyDeployment, proxyService, route, trafficPolicy},
+		commonManifests: []string{defaults.HttpbinManifest, autoHostRewriteManifest},
+		commonResources: []client.Object{route, trafficPolicy},
 	}
 }
 
@@ -51,15 +51,9 @@ func (s *testingSuite) SetupSuite() {
 	}
 	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, s.commonResources...)
 
-	// wait for all pods to actually come up
-	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.CurlPodLabelSelector,
-	})
+	// wait for httpbin to come up
 	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.HttpbinLabelSelector,
-	})
-	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=" + proxyObjectMeta.GetName(),
 	})
 }
 
@@ -77,37 +71,29 @@ func (s *testingSuite) TearDownSuite() {
 
 func (s *testingSuite) TestHostHeader() {
 	// test basic route with autoHostRewrite
-	s.ti.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath("/headers"),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("foo.local"),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			// `/headers` output should have `Host` header set with the DNS name of the service
 			// due to autoHostRewrite=true
 			Body: gomega.ContainSubstring("httpbin.default.svc"),
 		},
+		curl.WithPath("/headers"),
+		curl.WithHostHeader("foo.local"),
+		curl.WithPort(80),
 	)
 
 	// test specific rule with URLRewrite.hostname set, which overrides the autoHostRewrite from TrafficPolicy
-	s.ti.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath("/headers-override"),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("foo.local"),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
-			// `/headers` output should have `Host` header set to the urlRwrite.hostname value
+			// `/headers` output should have `Host` header set to the urlRewrite.hostname value
 			Body: gomega.ContainSubstring("foo.override"),
 		},
+		curl.WithPath("/headers-override"),
+		curl.WithHostHeader("foo.local"),
+		curl.WithPort(80),
 	)
 }

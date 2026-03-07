@@ -18,6 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
@@ -39,20 +40,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
-	// TODO BML tests in this suite fail if this no-op import is not imported first.
-	//
-	// I know, I know, you're reading this, and you're skeptical. I can feel it.
-	// Don't take my word for it.
-	//
-	// There is some import within this package that this suite relies on. Chasing that down is
-	// *hard* tho due to the import tree, and best done in a followup.
-	// _ "github.com/kgateway-dev/kgateway/pkg/kgateway/translator/translator.go"
-	//
-	// The above TODO is a result of proto types being registered for free somewhere through
-	// the translator import. What we really need is to register all proto types, which is
-	// "correctly" available to use via `envoyinit`; note that the autogeneration of these types
-	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
-	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	deployertest "github.com/kgateway-dev/kgateway/v2/test/deployer"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
@@ -1074,7 +1061,7 @@ var _ = Describe("Deployer", func() {
 				Expect(objs.findConfigMap(defaultNamespace, "foo")).NotTo(BeNil())
 
 				By("validating the default values are used")
-				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, deployer.EnvoyWrapperImage, tag)))
+				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, wellknown.EnvoyWrapperImage, tag)))
 			})
 		})
 
@@ -1162,7 +1149,7 @@ var _ = Describe("Deployer", func() {
 				Expect(objs.findConfigMap(defaultNamespace, "foo")).NotTo(BeNil())
 
 				By("validating the image overrides the default")
-				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("bar/%s:2.3.4", deployer.EnvoyWrapperImage)))
+				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("bar/%s:2.3.4", wellknown.EnvoyWrapperImage)))
 			})
 		})
 
@@ -1279,7 +1266,7 @@ var _ = Describe("Deployer", func() {
 				Expect(port.PortValue).To(Equal(uint32(9091)))
 
 				By("verifying image registry and tag were inherited")
-				Expect(envoyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, deployer.EnvoyWrapperImage, tag)))
+				Expect(envoyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, wellknown.EnvoyWrapperImage, tag)))
 			})
 		})
 	})
@@ -2036,10 +2023,22 @@ var _ = Describe("Deployer", func() {
 					svc := objs.findService(defaultServiceName)
 					Expect(svc).NotTo(BeNil())
 
-					Expect(svc.Spec.Ports).To(HaveLen(1))
-					port := svc.Spec.Ports[0]
-					Expect(port.Port).To(Equal(int32(80)))
-					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
+					Expect(svc.Spec.Ports).To(HaveLen(2))
+					listenerPortIdx := slices.IndexFunc(svc.Spec.Ports, func(port corev1.ServicePort) bool {
+						return port.Name == "listener-80"
+					})
+					Expect(listenerPortIdx).NotTo(Equal(-1))
+					listenerPort := svc.Spec.Ports[listenerPortIdx]
+					Expect(listenerPort.Port).To(Equal(int32(80)))
+					Expect(listenerPort.TargetPort).To(Equal(intstr.FromInt32(80)))
+
+					monitoringPortIdx := slices.IndexFunc(svc.Spec.Ports, func(port corev1.ServicePort) bool {
+						return port.Name == "http-monitoring"
+					})
+					Expect(monitoringPortIdx).NotTo(Equal(-1))
+					monitoringPort := svc.Spec.Ports[monitoringPortIdx]
+					Expect(monitoringPort.Port).To(Equal(int32(9091)))
+					Expect(monitoringPort.TargetPort).To(Equal(intstr.FromInt32(9091)))
 				},
 			}),
 			Entry("object owner refs are set", defaultInput(), &expectedOutput{
@@ -2602,5 +2601,145 @@ var _ = Describe("DeployObjs", func() {
 		err := d.DeployObjs(ctx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
+	})
+})
+
+var _ = Describe("SortByKindPriority", func() {
+	makeObj := func(kind string) *unstructured.Unstructured {
+		obj := &unstructured.Unstructured{}
+		obj.SetGroupVersionKind(schema.GroupVersionKind{Kind: kind})
+		return obj
+	}
+
+	It("sorts infrastructure resources before workload resources", func() {
+		objs := []client.Object{
+			makeObj("Deployment"),
+			makeObj("ClusterRole"),
+			makeObj("ServiceAccount"),
+			makeObj("Service"),
+			makeObj("ClusterRoleBinding"),
+			makeObj("ConfigMap"),
+			makeObj("Secret"),
+			makeObj("RoleBinding"),
+			makeObj("Role"),
+		}
+
+		deployer.SortByKindPriority(objs)
+
+		var kinds []string
+		for _, obj := range objs {
+			kinds = append(kinds, obj.GetObjectKind().GroupVersionKind().Kind)
+		}
+
+		Expect(kinds).To(Equal([]string{
+			"ServiceAccount",
+			"ConfigMap",
+			"Secret",
+			"ClusterRole",
+			"Role",
+			"ClusterRoleBinding",
+			"RoleBinding",
+			"Service",
+			"Deployment",
+		}))
+	})
+
+	It("sorts typed objects from ConvertYAMLToObjects correctly", func() {
+		// ConvertYAMLToObjects converts unstructured objects to typed objects via
+		// runtime.DefaultUnstructuredConverter.FromUnstructured, which does not preserve
+		// TypeMeta. Without explicitly setting the GVK after conversion, typed objects
+		// would have empty GVKs and all get default priority, defeating the sort.
+		yamlData := []byte(`
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-sa
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deploy
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: test
+  template:
+    metadata:
+      labels:
+        app: test
+    spec:
+      containers:
+      - name: test
+        image: test:latest
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-cm
+  namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-svc
+  namespace: default
+spec:
+  ports:
+  - port: 80
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: my-cr
+rules: []
+`)
+		objs, err := deployer.ConvertYAMLToObjects(scheme, yamlData)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(objs).To(HaveLen(5))
+
+		// Verify all objects have their GVK set (this is the core bug being tested)
+		for _, obj := range objs {
+			Expect(obj.GetObjectKind().GroupVersionKind().Kind).NotTo(BeEmpty(),
+				"object %T should have GVK set after ConvertYAMLToObjects", obj)
+		}
+
+		deployer.SortByKindPriority(objs)
+
+		var kinds []string
+		for _, obj := range objs {
+			kinds = append(kinds, obj.GetObjectKind().GroupVersionKind().Kind)
+		}
+
+		Expect(kinds).To(Equal([]string{
+			"ServiceAccount",
+			"ConfigMap",
+			"ClusterRole",
+			"Service",
+			"Deployment",
+		}))
+	})
+
+	It("preserves relative order of objects with the same priority", func() {
+		objs := []client.Object{
+			makeObj("ConfigMap"),
+			makeObj("Secret"),
+			makeObj("Deployment"),
+		}
+
+		deployer.SortByKindPriority(objs)
+
+		var kinds []string
+		for _, obj := range objs {
+			kinds = append(kinds, obj.GetObjectKind().GroupVersionKind().Kind)
+		}
+
+		// ConfigMap and Secret have the same priority, so their relative order is preserved
+		Expect(kinds).To(Equal([]string{
+			"ConfigMap",
+			"Secret",
+			"Deployment",
+		}))
 	})
 })

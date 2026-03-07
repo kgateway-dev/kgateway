@@ -11,10 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -40,79 +39,63 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestRouteTimeout() {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithPath("/delay/1"),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusGatewayTimeout,
 			Body:       "upstream request timeout",
 		},
+		curl.WithPort(80),
+		curl.WithPath("/delay/1"),
 	)
 }
 
 func (s *testingSuite) TestRetries() {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithPath("/status/490"),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: 490,
 		},
+		curl.WithPort(80),
+		curl.WithPath("/status/490"),
 	)
 	// Assert that there were 2 retry attempts
 	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.T().Context(),
 		gatewayObjectMeta,
-		assertStat(s.Assert(), "cluster.kube_default_httpbin_8000.upstream_rq_retry$", 2),
+		assertStat(s.Assert(), "cluster.kube_kgateway-base_httpbin_8000.upstream_rq_retry$", 2),
 	)
 
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithPath("/delay/2"),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusGatewayTimeout,
 			Body:       upstreamReqTimeout,
 		},
+		curl.WithPort(80),
+		curl.WithPath("/delay/2"),
 	)
 	// Assert that there were 2 more retry attempts, 4 in total
 	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.T().Context(),
 		gatewayObjectMeta,
-		assertStat(s.Assert(), "cluster.kube_default_httpbin_8000.upstream_rq_retry$", 4),
+		assertStat(s.Assert(), "cluster.kube_kgateway-base_httpbin_8000.upstream_rq_retry$", 4),
 	)
 
 	// Test retry policy attached to Gateway's listener
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithPath("/status/517"),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: 517,
 		},
+		curl.WithPort(80),
+		curl.WithPath("/status/517"),
 	)
 	// Assert that there were 2 more retry attempts, 6 in total
 	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.T().Context(),
 		gatewayObjectMeta,
-		assertStat(s.Assert(), "cluster.kube_default_httpbin_8000.upstream_rq_retry$", 6),
+		assertStat(s.Assert(), "cluster.kube_kgateway-base_httpbin_8000.upstream_rq_retry$", 6),
 	)
 }
 

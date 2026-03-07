@@ -69,7 +69,7 @@ spec:
               port: {{ .Values.controller.service.ports.health }}
             initialDelaySeconds: 0
             periodSeconds: 1
-            {{/* Allow failing for 120s before the pod is killed */}}
+            {{- /* Allow failing for 120s before the pod is killed */}}
             failureThreshold: 120
           env:
             - name: GOMEMLIMIT
@@ -146,6 +146,10 @@ spec:
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 {{- if .Values.gatewayClassParametersRefs }}

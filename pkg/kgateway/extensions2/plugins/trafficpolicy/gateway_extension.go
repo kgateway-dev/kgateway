@@ -205,8 +205,6 @@ func TranslateGatewayExtensionBuilder(
 				commoncol.ConfigMaps.Collection(),
 				commoncol.BackendIndex,
 				gExt.ObjectSource,
-				gExt.Name,
-				gExt.Namespace,
 				gExt.JWT,
 			)
 			if err != nil {
@@ -232,18 +230,16 @@ func resolveJwtProviders(
 	configMaps krt.Collection[*corev1.ConfigMap],
 	backendResolver backendResolver,
 	gwExtObj ir.ObjectSource,
-	policyName, policyNamespace string,
 	jwt *kgateway.JWT,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
 	uniqProviders := make(map[string]*envoyjwtauthnv3.JwtProvider)
-	policyNameNamespace := fmt.Sprintf("%s_%s", policyName, policyNamespace)
+	extNameNamespace := fmt.Sprintf("%s_%s", gwExtObj.Name, gwExtObj.Namespace)
 
 	for _, provider := range jwt.Providers {
-		providerNameForPolicy := ProviderName(policyNameNamespace, provider.Name)
+		providerNameForExt := ProviderName(extNameNamespace, provider.Name)
 		jwtProvider, err := translateProvider(
 			krtctx,
 			provider.JWTProvider,
-			policyNamespace,
 			configMaps,
 			backendResolver,
 			gwExtObj,
@@ -251,10 +247,10 @@ func resolveJwtProviders(
 		if err != nil {
 			return nil, err
 		}
-		uniqProviders[providerNameForPolicy] = jwtProvider
+		uniqProviders[providerNameForExt] = jwtProvider
 	}
 
-	requirementsName := fmt.Sprintf("%s_requirements", policyNameNamespace)
+	requirementsName := fmt.Sprintf("%s_requirements", extNameNamespace)
 	requirements := make(map[string]*envoyjwtauthnv3.JwtRequirement)
 	requirements[requirementsName] = buildJwtRequirementFromProviders(uniqProviders, jwt.ValidationMode)
 
@@ -485,12 +481,18 @@ func convertRCA(in kgateway.ExtProcRouteCacheAction) envoyextprocv3.ExternalProc
 // the filter can be conditionally disabled with the global_disable/ext_proc filter is enabled
 func buildCompositeExtProcFilter(in kgateway.ExtProcProvider, envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
 	filter := &envoyextprocv3.ExternalProcessor{
-		GrpcService:      envoyGrpcService,
-		FailureModeAllow: in.FailOpen,
-		RouteCacheAction: convertRCA(in.RouteCacheAction),
+		GrpcService:       envoyGrpcService,
+		FailureModeAllow:  in.FailOpen,
+		RouteCacheAction:  convertRCA(in.RouteCacheAction),
+		AllowModeOverride: in.AllowProcessingModeOverride,
 	}
 	if mode := toEnvoyProcessingMode(in.ProcessingMode); mode != nil {
 		filter.ProcessingMode = mode
+	}
+	for _, m := range in.AllowedProcessingModeOverrides {
+		if mode := toEnvoyProcessingMode(m); mode != nil {
+			filter.AllowedOverrideModes = append(filter.AllowedOverrideModes, mode)
+		}
 	}
 	if in.MessageTimeout != nil {
 		filter.MessageTimeout = durationpb.New(in.MessageTimeout.Duration)

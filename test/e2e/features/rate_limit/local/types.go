@@ -17,7 +17,6 @@ import (
 var (
 	// manifests
 	simpleServiceManifest = getTestFile("service.yaml")
-	commonManifest        = getTestFile("common.yaml")
 	// local rate limit traffic policies
 	routeLocalRateLimitManifest         = getTestFile("route-local-rate-limit.yaml")
 	gwLocalRateLimitManifest            = getTestFile("gw-local-rate-limit.yaml")
@@ -26,58 +25,43 @@ var (
 	extensionRefManifest                = getTestFile("extensionref-rl.yaml")
 
 	// objects from gateway manifest
-	gateway = &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "super-gateway",
-			Namespace: "default",
-		},
-	}
 	route = &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "svc-route",
-			Namespace: "default",
+			Namespace: "kgateway-base",
 		},
 	}
 	route2 = &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "svc-route-2",
-			Namespace: "default",
+			Namespace: "kgateway-base",
 		},
 	}
-	// objects created by deployer after applying gateway manifest
-	proxyObjectMeta = metav1.ObjectMeta{
-		Name:      "super-gateway",
-		Namespace: "default",
-	}
-	proxyDeployment     = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
-	proxyService        = &corev1.Service{ObjectMeta: proxyObjectMeta}
-	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: proxyObjectMeta}
 
-	// objects from service manifest
 	simpleSvc = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "simple-svc",
-			Namespace: "default",
+			Namespace: "kgateway-base",
 		},
 	}
 	simpleDeployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "backend-0",
-			Namespace: "default",
+			Namespace: "kgateway-base",
 		},
 	}
 
 	routeRateLimitTrafficPolicy = &kgateway.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route-rl-policy",
-			Namespace: "default",
+			Namespace: "kgateway-base",
 		},
 	}
 
 	gwRateLimitTrafficPolicy = &kgateway.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gw-rl-policy",
-			Namespace: "default",
+			Namespace: "kgateway-base",
 		},
 	}
 )

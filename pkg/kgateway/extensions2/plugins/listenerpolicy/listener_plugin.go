@@ -54,6 +54,8 @@ type ListenerPolicyIR struct {
 type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
 	perConnectionBufferLimitBytes *uint32
+	// only for default policy
+	clientCertificateValidation *ir.ClientCertificateValidationIR
 	// +noKrtEquals
 	http *HttpListenerPolicyIr
 }
@@ -76,6 +78,21 @@ func newListenerPolicy(
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 		http:                          http,
 	}, errs
+}
+
+func newDefaultListenerPolicy(
+	krtctx krt.HandlerContext, commoncol *collections.CommonCollections,
+	objSrc ir.ObjectSource, i *kgateway.ListenerDefaultConfig,
+) (listenerPolicy, []error) {
+	if i == nil {
+		return listenerPolicy{}, nil
+	}
+
+	listenerPolicy, errs := newListenerPolicy(krtctx, commoncol, objSrc, &i.ListenerConfig)
+
+	listenerPolicy.clientCertificateValidation = convertClientCertificateValidationConfig(objSrc, i.ClientCertificateValidation)
+
+	return listenerPolicy, errs
 }
 
 func (d *ListenerPolicyIR) CreationTime() time.Time {
@@ -102,12 +119,28 @@ func (d *ListenerPolicyIR) Equals(in any) bool {
 	return true
 }
 
+// GetClientCertificateValidation returns the ClientCertificateValidation of the ListenerPolicy.
+func (d *ListenerPolicyIR) GetClientCertificateValidation() *ir.ClientCertificateValidationIR {
+	if d == nil {
+		return nil
+	}
+
+	return d.defaultPolicy.clientCertificateValidation
+}
+
 func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	if !proto.Equal(d.proxyProtocol, d2.proxyProtocol) {
 		return false
 	}
 
 	if !cmputils.PointerValsEqual(d.perConnectionBufferLimitBytes, d2.perConnectionBufferLimitBytes) {
+		return false
+	}
+
+	if (d.clientCertificateValidation == nil) != (d2.clientCertificateValidation == nil) {
+		return false
+	}
+	if d.clientCertificateValidation != nil && !d.clientCertificateValidation.Equals(d2.clientCertificateValidation) {
 		return false
 	}
 
@@ -183,8 +216,10 @@ func NewListenerPolicyIR(
 		perPort[uint32(portConfig.Port)] = pol //nolint:gosec // G115: we have CEL validation that this is at least 1.
 		errs = append(errs, errs2...)
 	}
-	defaultPolicy, errs2 := newListenerPolicy(krtctx, commoncol, objSrc, spec.Default)
+
+	defaultPolicy, errs2 := newDefaultListenerPolicy(krtctx, commoncol, objSrc, spec.Default)
 	errs = append(errs, errs2...)
+
 	return &ListenerPolicyIR{
 		ct:            ct,
 		defaultPolicy: defaultPolicy,
@@ -223,7 +258,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			ObjectSource: objSrc,
 			Policy:       i,
 			PolicyIR:     polIr,
-			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
+			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefsWithSectionName(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:       errs,
 		}
 
@@ -373,6 +408,25 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		out.XffNumTrustedHops = *policy.xffNumTrustedHops
 	}
 
+	// translate xffConfig (as extension)
+	if policy.xffConfig != nil {
+		xffConfig, err := utils.MessageToAny(policy.xffConfig)
+		if err != nil {
+			return err
+		}
+		out.OriginalIpDetectionExtensions = []*envoycorev3.TypedExtensionConfig{
+			{
+				Name:        "envoy.http.original_ip_detection.xff",
+				TypedConfig: xffConfig,
+			},
+		}
+	}
+
+	// translate skipXffAppend
+	if policy.skipXffAppend != nil {
+		out.SkipXffAppend = *policy.skipXffAppend
+	}
+
 	// translate serverHeaderTransformation
 	if policy.serverHeaderTransformation != nil {
 		out.ServerHeaderTransformation = *policy.serverHeaderTransformation
@@ -465,6 +519,19 @@ func convertProxyProtocolConfig(objSrc ir.ObjectSource, config *kgateway.ProxyPr
 			"error", err)
 	}
 	return proxyProtocolAny
+}
+
+func convertClientCertificateValidationConfig(_ ir.ObjectSource, config *kgateway.ClientCertificateValidationConfig) *ir.ClientCertificateValidationIR {
+	if config == nil {
+		return nil
+	}
+
+	requireClientCertificate := config.Mode == kgateway.ClientCertificateValidationModeRequire
+
+	return &ir.ClientCertificateValidationIR{
+		RequireClientCertificate: requireClientCertificate,
+		CACertificateRefs:        config.CACertificateRefs,
+	}
 }
 
 func (p *listenerPolicyPluginGwPass) applyProxyProtocol(

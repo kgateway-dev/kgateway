@@ -238,7 +238,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
+					"test-ext_test-ns_test-provider": {
 						Issuer:            "test-issuer",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
@@ -301,12 +301,12 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_provider1": {
+					"test-ext_test-ns_provider1": {
 						Issuer:            "test-issuer-1",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
 					},
-					"test-policy_test-ns_provider2": {
+					"test-ext_test-ns_provider2": {
 						Issuer:            "test-issuer-2",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
@@ -333,7 +333,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
+					"test-ext_test-ns_test-provider": {
 						Issuer:            "test-issuer",
 						Audiences:         []string{"aud1", "aud2"},
 						PayloadInMetadata: PayloadInMetadata,
@@ -364,7 +364,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
+					"test-ext_test-ns_test-provider": {
 						Issuer:            "test-issuer",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
@@ -393,7 +393,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
+					"test-ext_test-ns_test-provider": {
 						Issuer:            "test-issuer",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
@@ -421,7 +421,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			expectedError: false,
 			expectedConfig: &jwtauthnv3.JwtAuthentication{
 				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
+					"test-ext_test-ns_test-provider": {
 						Issuer:            "test-issuer",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
@@ -437,7 +437,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			jwt := &kgateway.JWT{
 				Providers: tt.providers,
 			}
-			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{}, "test-policy", "test-ns", jwt)
+			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{Namespace: "test-ns", Name: "test-ext"}, jwt)
 			if tt.expectedError {
 				assert.Error(t, err)
 				return
@@ -567,12 +567,12 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{}, "test-policy", "test-ns", tt.jwt)
+			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{Namespace: "test-ns", Name: "test-ext"}, tt.jwt)
 			require.NoError(t, err)
 			assert.NotNil(t, config)
 			assert.NotNil(t, config.RequirementMap)
 
-			requirementsName := "test-policy_test-ns_requirements"
+			requirementsName := "test-ext_test-ns_requirements"
 			req, ok := config.RequirementMap[requirementsName]
 			require.True(t, ok, "requirements not found in map")
 
@@ -647,11 +647,10 @@ func TestTranslateJwksRemote(t *testing.T) {
 					CacheDuration: &cacheDuration,
 				},
 			},
-			"policy-ns",
 			out,
 			nil,
 			resolver,
-			ir.ObjectSource{Namespace: "policy-ns"},
+			ir.ObjectSource{Namespace: "ext-ns"},
 		)
 		require.NoError(t, err)
 
@@ -676,11 +675,10 @@ func TestTranslateJwksRemote(t *testing.T) {
 					BackendRef: makeBackendRef("backend", "backend-ns", 80),
 				},
 			},
-			"policy-ns",
 			out,
 			nil,
 			resolver,
-			ir.ObjectSource{Namespace: "policy-ns"},
+			ir.ObjectSource{Namespace: "ext-ns"},
 		)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "remote jwks: unresolved backend ref")

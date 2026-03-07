@@ -28,6 +28,10 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
         mergeSlashes: true
         normalizePath: true
+        originalIpDetectionExtensions:
+          - name: envoy.http.original_ip_detection.xff
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.http.original_ip_detection.xff.v3.XffConfig
         rds:
           configSource:
             ads: {}
@@ -41,6 +45,8 @@ Listeners:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.httpSettings.useRemoteAddress:
         - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        default.httpSettings.xffConfig:
+        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
@@ -48,6 +54,8 @@ Routes:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.httpSettings.useRemoteAddress:
+        - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
+        default.httpSettings.xffConfig:
         - gateway.kgateway.dev/ListenerPolicy/default/use-remote-address-false
   name: listener~80
   virtualHosts:

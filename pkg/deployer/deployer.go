@@ -255,6 +255,11 @@ func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object) error {
 func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Object, sourceObj client.Object) error {
 	controllerName := d.controllerName
 
+	// Sort objects so infrastructure resources (RBAC, ServiceAccounts, ConfigMaps)
+	// are applied before workload resources (Deployments). This prevents race
+	// conditions where a Pod starts before its RBAC resources exist.
+	SortByKindPriority(objs)
+
 	for _, obj := range objs {
 		u, err := kubeutils.ToUnstructured(obj)
 		if err != nil {
@@ -391,6 +396,9 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 		if realObj, err := scheme.New(gvk); err == nil {
 			if realObj, ok := realObj.(client.Object); ok {
 				if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, realObj); err == nil {
+					// FromUnstructured does not preserve TypeMeta on typed objects,
+					// so explicitly set the GVK to ensure it's available for sorting/filtering.
+					realObj.GetObjectKind().SetGroupVersionKind(gvk)
 					objs = append(objs, realObj)
 					continue
 				}
@@ -404,4 +412,37 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
+}
+
+// kindPriority returns a numeric priority for a Kubernetes resource kind.
+// Lower values are applied first, ensuring infrastructure resources (RBAC,
+// ServiceAccounts, ConfigMaps) are created before workload resources (Deployments).
+func kindPriority(kind string) int {
+	switch kind {
+	case "Namespace":
+		return 0
+	case "ServiceAccount":
+		return 1
+	case "Secret", "ConfigMap":
+		return 2
+	case "ClusterRole", "Role":
+		return 3
+	case "ClusterRoleBinding", "RoleBinding":
+		return 4
+	case "Service":
+		return 5
+	default:
+		return 6
+	}
+}
+
+// SortByKindPriority sorts objects in-place so that infrastructure resources
+// (RBAC, ServiceAccounts, ConfigMaps, etc.) are ordered before workload
+// resources (Deployments). This prevents race conditions where a Deployment's
+// Pod starts before its RBAC resources exist.
+func SortByKindPriority(objs []client.Object) {
+	slices.SortStableFunc(objs, func(a, b client.Object) int {
+		return kindPriority(a.GetObjectKind().GroupVersionKind().Kind) -
+			kindPriority(b.GetObjectKind().GroupVersionKind().Kind)
+	})
 }

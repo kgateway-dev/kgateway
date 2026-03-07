@@ -127,6 +127,14 @@ Listeners:
                               responseBodyMode: BUFFERED
                               responseHeaderMode: SKIP
                               responseTrailerMode: SEND
+                            allowModeOverride: true
+                            allowedOverrideModes:
+                              - requestHeaderMode: SEND
+                                responseHeaderMode: SEND
+                                requestBodyMode: NONE
+                                responseBodyMode: BUFFERED
+                                requestTrailerMode: SKIP
+                                responseTrailerMode: SKIP
                             routeCacheAction: CLEAR
                             statPrefix: my_extproc
                   predicate:

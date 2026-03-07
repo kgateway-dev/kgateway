@@ -6,8 +6,6 @@ import (
 	"regexp"
 	"runtime"
 	"testing"
-
-	"golang.org/x/mod/modfile"
 )
 
 func TestDockerfileVersionsMatchGoMod(t *testing.T) {
@@ -22,48 +20,15 @@ func TestDockerfileVersionsMatchGoMod(t *testing.T) {
 	}
 	dockerfile := string(dockerfileBytes)
 
-	gotGoVersion := mustMatch1(t, dockerfile, `(?m)^ARG GO_VERSION=([^\s]+)\s*$`, "Dockerfile ARG GO_VERSION")
-	gotHelmVersion := mustMatch1(t, dockerfile, `(?m)^ENV HELM_VERSION=([^\s]+)\s*$`, "Dockerfile ENV HELM_VERSION")
-
-	goModPath := filepath.Join(rootDir, "go.mod")
-	goModBytes, err := os.ReadFile(goModPath)
-	if err != nil {
-		t.Fatalf("read go.mod: %v", err)
+	// Go and Helm versions are extracted directly from go.mod at Docker build
+	// time, so there are no hardcoded values to drift. Verify the Dockerfile
+	// does NOT contain stale hardcoded versions.
+	if regexp.MustCompile(`(?m)^ARG GO_VERSION=`).FindStringIndex(dockerfile) != nil {
+		t.Fatalf("Dockerfile should not hardcode ARG GO_VERSION; the Go version is derived from go.mod at build time")
 	}
-
-	parsed, err := modfile.Parse(goModPath, goModBytes, nil)
-	if err != nil {
-		t.Fatalf("parse go.mod: %v", err)
+	if regexp.MustCompile(`(?m)^ENV HELM_VERSION=`).FindStringIndex(dockerfile) != nil {
+		t.Fatalf("Dockerfile should not hardcode ENV HELM_VERSION; the Helm version is derived from go.mod at build time")
 	}
-	if parsed.Go == nil || parsed.Go.Version == "" {
-		t.Fatalf("go.mod is missing a go version directive")
-	}
-
-	wantGoVersion := parsed.Go.Version
-	wantHelmVersion := requireVersion(t, parsed, "helm.sh/helm/v3")
-	wantKindVersion := requireVersion(t, parsed, "sigs.k8s.io/kind")
-
-	makefilePath := filepath.Join(rootDir, "Makefile")
-	makefileBytes, err := os.ReadFile(makefilePath)
-	if err != nil {
-		t.Fatalf("read Makefile: %v", err)
-	}
-	makefile := string(makefileBytes)
-	gotKindVersion := mustMatch1(t, makefile, `(?m)^KIND_VERSION\s*\?=\s*([^\s]+)\s*$`, "Makefile KIND_VERSION")
-
-	t.Run("go", func(t *testing.T) {
-		t.Parallel()
-		if gotGoVersion != wantGoVersion {
-			t.Fatalf("GO_VERSION drift detected: Dockerfile has %q, go.mod has %q", gotGoVersion, wantGoVersion)
-		}
-	})
-
-	t.Run("helm", func(t *testing.T) {
-		t.Parallel()
-		if gotHelmVersion != wantHelmVersion {
-			t.Fatalf("HELM_VERSION drift detected: Dockerfile has %q, go.mod helm.sh/helm/v3 is %q", gotHelmVersion, wantHelmVersion)
-		}
-	})
 
 	t.Run("kind", func(t *testing.T) {
 		t.Parallel()
@@ -77,8 +42,16 @@ func TestDockerfileVersionsMatchGoMod(t *testing.T) {
 			t.Fatalf("KIND_VERSION drift risk detected: Dockerfile should not download kind via curl")
 		}
 
-		if gotKindVersion != wantKindVersion {
-			t.Fatalf("KIND_VERSION drift detected: Makefile has %q, go.mod sigs.k8s.io/kind is %q", gotKindVersion, wantKindVersion)
+		// KIND_VERSION in the Makefile is derived from go.mod at make time,
+		// so there is no hardcoded literal to drift. Verify it stays dynamic.
+		makefilePath := filepath.Join(rootDir, "Makefile")
+		makefileBytes, err := os.ReadFile(makefilePath)
+		if err != nil {
+			t.Fatalf("read Makefile: %v", err)
+		}
+		makefile := string(makefileBytes)
+		if regexp.MustCompile(`(?m)^KIND_VERSION\s*\?=\s*v[\d.]+\s*$`).FindStringIndex(makefile) != nil {
+			t.Fatalf("KIND_VERSION drift risk detected: Makefile should derive KIND_VERSION from go.mod, not hardcode it")
 		}
 	})
 }
@@ -112,28 +85,4 @@ func repoRoot(t *testing.T) string {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
-}
-
-func mustMatch1(t *testing.T, content, pattern, label string) string {
-	t.Helper()
-
-	re := regexp.MustCompile(pattern)
-	m := re.FindStringSubmatch(content)
-	if len(m) != 2 {
-		t.Fatalf("%s not found (pattern %q)", label, pattern)
-	}
-	return m[1]
-}
-
-func requireVersion(t *testing.T, mf *modfile.File, modulePath string) string {
-	t.Helper()
-
-	for _, req := range mf.Require {
-		if req.Mod.Path == modulePath {
-			return req.Mod.Version
-		}
-	}
-
-	t.Fatalf("go.mod is missing required module %q", modulePath)
-	return ""
 }

@@ -257,6 +257,31 @@ spec:
                                 minimum: 0
                                 type: integer
                             type: object
+                          logFormat:
+                            description: |-
+                              Envoy application log format. Does *not* affect access logs. Can be JSON or custom text format.
+                              Defaults to text with default format string as defined in Envoy documentation.
+                              See https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-log-format for format flag options.
+                            properties:
+                              json:
+                                description: |-
+                                  The format object by which Envoy will emit logs in a structured way.
+                                  Mutually exclusive with Text.
+                                  See https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/application_logging#printing-logs-in-json-format.
+                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
+                              text:
+                                description: |-
+                                  The format string by which Envoy will format log lines.
+                                  Mutually exclusive with JSON.
+                                  See https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-log-format.
+                                type: string
+                            type: object
+                            x-kubernetes-validations:
+                            - message: exactly one of the fields in [json text] must
+                                be set
+                              rule: '[has(self.json),has(self.text)].filter(x,x==true).size()
+                                == 1'
                           logLevel:
                             description: |-
                               Envoy log level. Options include "trace", "debug", "info", "warn", "error",
@@ -5671,11 +5696,14 @@ spec:
                         description: If specified, the pod's graceful shutdown spec.
                         properties:
                           enabled:
-                            description: Enable grace period before shutdown to finish
-                              current requests while Envoy health checks fail to e.g.
-                              notify external load balancers. *NOTE:* This will not
-                              have any effect if you have not defined health checks
-                              via the health check filter
+                            description: |-
+                              Enable grace period before shutdown to finish current requests.  When
+                              enabled, a preStop hook calls /healthcheck/fail on Envoy's admin port,
+                              which causes the /ready endpoint to return 503 (DRAINING). This makes
+                              the Kubernetes readiness probe fail, removing the pod from Service
+                              endpoints so new traffic stops arriving (unless all endpoints are
+                              draining -- see KEP-1669: Proxy Terminating Endpoints). The hook then
+                              sleeps for SleepTimeSeconds to allow in-flight requests to complete.
                             type: boolean
                           sleepTimeSeconds:
                             description: Time (in seconds) for the preStop hook to
@@ -6999,6 +7027,16 @@ spec:
                           load balancer implementation is used. See
                           https://kubernetes.io/docs/concepts/services-networking/service/#load-balancer-class
                         type: string
+                      loadBalancerSourceRanges:
+                        description: |-
+                          LoadBalancerSourceRanges restricts traffic through the cloud-provider load-balancer
+                          to the specified client IPs. This field will be ignored if the cloud-provider does
+                          not support the feature.
+                          More info: https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/
+                        items:
+                          type: string
+                        type: array
+                        x-kubernetes-list-type: atomic
                       ports:
                         description: |-
                           Additional configuration for the service ports.

@@ -9,10 +9,9 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -310,20 +309,17 @@ func (s *testingSuite) TestHttpRouteAndTrafficPolicyCors() {
 }
 
 func (s *testingSuite) assertResponse(path string, requestHeaders map[string]string, expectedHeaders map[string]any, notExpectedHeaders []string) {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithMethod(http.MethodOptions),
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(8080),
-			curl.WithHeaders(requestHeaders),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Headers:    expectedHeaders,
 			NotHeaders: notExpectedHeaders,
-		})
+		},
+		curl.WithMethod(http.MethodOptions),
+		curl.WithPath(path),
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(80),
+		curl.WithHeaders(requestHeaders),
+	)
 }

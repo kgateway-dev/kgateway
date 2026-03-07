@@ -3,12 +3,12 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: basicauth-gateway
-  namespace: default
+  namespace: kgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
-    name: gw
+    name: gateway
   basicAuth:
     # SHA-1 of "password"
     users:
@@ -19,7 +19,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: basicauth-disable-public
-  namespace: default
+  namespace: kgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io

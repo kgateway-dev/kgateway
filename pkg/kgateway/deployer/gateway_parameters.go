@@ -431,6 +431,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	gateway.PriorityClassName = podConfig.GetPriorityClassName()
 
 	gateway.DataPlaneType = deployer.DataPlaneEnvoy
+	gateway.LogFormat = envoyContainerConfig.GetBootstrap().GetLogFormat()
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
 	gateway.LogLevel = logLevel
 	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()

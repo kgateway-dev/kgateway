@@ -73,7 +73,7 @@ spec:
     envoyContainer:
       env:
       - name: OTEL_RESOURCE_ATTRIBUTES
-        value: "environment=detector,resource=attribute"
+        value: "environment=detector,resource=attribute,service.namespace=test"
 ---
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
