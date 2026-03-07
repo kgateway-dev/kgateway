@@ -98,7 +98,7 @@ func run() error {
 // Returns a sorted list of test function names (e.g., "TestKgateway", "TestListenerSet")
 func findTestFunctions(testDir string) ([]string, error) {
 	testFunctions := make(map[string]bool)
-	testPattern := regexp.MustCompile(`^func\s+(Test\w+)\s*\(t\s+\*testing\.T\)`)
+	testPattern := regexp.MustCompile(`^func\s+(Test\w+)\s*\(\s*\w+\s+\*testing\.T`)
 
 	// Find all *_test.go files
 	files, err := filepath.Glob(filepath.Join(testDir, "*_test.go"))
@@ -199,3 +199,4 @@ func checkTestCoverage(testName string, regexPatterns []string) bool {
 
 	return false
 }
+
