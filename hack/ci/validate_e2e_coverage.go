@@ -119,12 +119,28 @@ func findTestFunctions(testDir string) ([]string, error) {
 	    return nil, fmt.Errorf("failed to walk test directory: %w", err)
 	}
 
-	for _, testFile := range files {
-		file, err := os.Open(testFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open %s: %w", testFile, err)
-		}
-		defer file.Close()
+for _, testFile := range files {
+    file, err := os.Open(testFile)
+    if err != nil {
+        return nil, fmt.Errorf("failed to open %s: %w", testFile, err)
+    }
+
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        line := strings.TrimSpace(scanner.Text())
+        if matches := testPattern.FindStringSubmatch(line); matches != nil {
+            testName := matches[1]
+            testFunctions[testName] = true
+        }
+    }
+
+    if err := scanner.Err(); err != nil {
+        file.Close()
+        return nil, fmt.Errorf("error reading %s: %w", testFile, err)
+    }
+
+    file.Close()
+}
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
@@ -212,5 +228,6 @@ func checkTestCoverage(testName string, regexPatterns []string) bool {
 
 	return false
 }
+
 
 
