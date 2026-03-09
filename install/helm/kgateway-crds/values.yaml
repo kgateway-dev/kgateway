@@ -1,1 +1,4 @@
 # Default values for kgateway-crds.
+
+# -- Add annotations to the kgateway CRDs.
+annotations: {}

@@ -47,19 +47,29 @@ done
 # Generate kgateway CRDs and RBAC
 go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}/kgateway" paths="${APIS_PKG}/api/${VERSION}/shared" \
     output:crd:artifacts:config=${ROOT_DIR}/${KGATEWAY_CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}
-# Template the ClusterRole name to include the namespace
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  # On macOS, prefer gsed (GNU sed) if available
-  if command -v gsed &> /dev/null; then
-    gsed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
+# Portable in-place sed: macOS sed requires -i '' while GNU sed uses -i
+sed_inplace() {
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    if command -v gsed &> /dev/null; then
+      gsed -i "$@"
+    else
+      sed -i '' "$@"
+    fi
   else
-    # Fallback to macOS's native sed
-    sed -i '' 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
+    sed -i "$@"
   fi
-else
-  # For other OSes like Linux
-  sed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
-fi
+}
+
+# Template the ClusterRole name to include the namespace
+sed_inplace 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
+
+# Inject Helm templating for extra annotations into generated CRD files
+for crd_file in "${ROOT_DIR}/${KGATEWAY_CRD_DIR}"/gateway.kgateway.dev_*.yaml; do
+  sed_inplace '/^  annotations:$/a\
+\    {{- with .Values.annotations }}\
+\    {{- toYaml . | nindent 4 }}\
+\    {{- end }}' "${crd_file}"
+done
 
 
 # throw away
