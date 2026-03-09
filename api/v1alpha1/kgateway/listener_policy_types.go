@@ -450,7 +450,6 @@ type KeyAnyValue struct {
 type AnyValue struct {
 	// +optional
 	StringValue *string `json:"stringValue,omitempty"`
-	// TODO: Add support for ArrayValue && KvListValue
 	// +kubebuilder:validation:items:Type=object
 	// +kubebuilder:validation:items:XPreserveUnknownFields
 	// +optional
