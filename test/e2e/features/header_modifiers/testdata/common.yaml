@@ -10,7 +10,11 @@ spec:
   hostnames:
     - "example.com"
   rules:
-    - backendRefs:
+    - matches:
+      - headers:
+        - name: X-Magic-Word
+          value: please
+      backendRefs:
       - name: httpbin
         port: 8000
 ---

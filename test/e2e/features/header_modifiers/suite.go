@@ -25,6 +25,11 @@ type testingSuite struct {
 	*base.BaseTestingSuite
 }
 
+// Mwahaha: This test is broken!
+// Run the e2e test to see the failure:
+//   make e2e-test TEST_PKG=./test/e2e/tests/... TEST_ARGS="-run TestHeaderModifiers/TestRouteLevelHeaderModifiers"
+// Manually test (returns 404 -- broken):
+//   kubectl exec deploy/curl -n default -- curl -s -o /dev/null -w "%{http_code}" http://gw.default.svc.cluster.local:8080/headers -H "Host: example.com"
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	// Define versioned setups - the system will select the appropriate one based on Gateway API version and channel
 	return &testingSuite{
