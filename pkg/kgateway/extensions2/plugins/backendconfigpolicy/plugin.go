@@ -243,7 +243,6 @@ func translate(
 	pol *kgateway.BackendConfigPolicy,
 ) (*BackendConfigPolicyIR, []error) {
 	var errs []error
-	
 	// Collect translation metrics
 	collectMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
 		Name:       pol.Name,
