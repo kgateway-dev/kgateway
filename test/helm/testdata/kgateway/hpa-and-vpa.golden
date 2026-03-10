@@ -11,6 +11,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: kgateway/templates/role.yaml
@@ -268,6 +269,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
 spec:
   type: ClusterIP
@@ -301,6 +303,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -319,6 +322,7 @@ spec:
         kgateway: kgateway
         app.kubernetes.io/name: kgateway
         app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: controller
     spec:
       serviceAccountName: test-release-kgateway
       containers:
@@ -400,6 +404,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
 spec:
   scaleTargetRef:
@@ -428,6 +433,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
 spec:
   targetRef:

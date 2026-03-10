@@ -3,6 +3,7 @@ automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
@@ -215,6 +216,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
@@ -228,6 +230,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
@@ -258,6 +261,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
@@ -281,6 +285,7 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: proxy
         app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
         app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
         gateway.networking.k8s.io/gateway-class-name: kgateway

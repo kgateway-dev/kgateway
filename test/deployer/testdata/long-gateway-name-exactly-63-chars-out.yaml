@@ -3,6 +3,7 @@ automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
@@ -215,6 +216,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
@@ -228,6 +230,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
@@ -258,6 +261,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
@@ -281,6 +285,7 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: proxy
         app.kubernetes.io/instance: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
         app.kubernetes.io/name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
         gateway.networking.k8s.io/gateway-class-name: kgateway

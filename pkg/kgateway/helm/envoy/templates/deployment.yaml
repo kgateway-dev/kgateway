@@ -39,6 +39,7 @@ spec:
           (dict "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName)
           (include "kgateway.gateway.selectorLabels" . | fromYaml)
           (dict "kgateway" "kube-gateway")
+          (dict "app.kubernetes.io/component" "proxy")
           ($gateway.gatewayLabels | default dict)
           ($gateway.extraPodLabels | default dict)
         ) | nindent 8 }}

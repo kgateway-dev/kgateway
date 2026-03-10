@@ -11,6 +11,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
     another-label: "true"
     extra-label-key: extra-label-value
@@ -270,6 +271,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
     another-label: "true"
     extra-label-key: extra-label-value
@@ -305,6 +307,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
     another-label: "true"
     extra-label-key: extra-label-value
@@ -325,6 +328,7 @@ spec:
         kgateway: kgateway
         app.kubernetes.io/name: kgateway
         app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: controller
     spec:
       serviceAccountName: test-release-kgateway
       containers:
