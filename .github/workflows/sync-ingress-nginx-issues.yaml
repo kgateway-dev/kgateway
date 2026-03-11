@@ -1,0 +1,283 @@
+# Syncs issues labeled with `kind/ingress-nginx` from this repo to kgateway-dev/ingress2gateway.
+# This ensures that ingress-nginx migration issues are tracked in the ingress2gateway repo
+# even after the feature has been implemented upstream.
+#
+# Required secret: KGATEWAY_CI_TOKEN
+#   A GitHub Personal Access Token (classic or fine-grained) with the following permissions
+#   on the kgateway-dev/ingress2gateway repo:
+#     - issues: write  (to create/update issues)
+#     - metadata: read
+name: Sync ingress-nginx Issues
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - labeled
+      - unlabeled
+      - reopened
+      - closed
+      - deleted
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: print actions without creating/updating issues"
+        required: false
+        default: "false"
+
+permissions:
+  issues: read
+
+env:
+  TARGET_REPO: kgateway-dev/ingress2gateway
+  SYNC_LABEL: kind/ingress-nginx
+  # Label applied to synced issues in the target repo so they can be identified.
+  SYNCED_LABEL: synced/kgateway
+  DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+
+jobs:
+  sync-issue:
+    name: Sync Issue to ingress2gateway
+    runs-on: ubuntu-22.04
+    # Only run when the issue has the sync label, or when a label event may have added/removed it,
+    # or when triggered manually.
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.issue.labels.*.name, 'kind/ingress-nginx') ||
+      github.event.label.name == 'kind/ingress-nginx'
+    steps:
+      - name: Sync issue
+        uses: actions/github-script@v7
+        env:
+          GH_TOKEN: ${{ secrets.KGATEWAY_CI_TOKEN }}
+        with:
+          github-token: ${{ secrets.KGATEWAY_CI_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const [targetOwner, targetRepo] = process.env.TARGET_REPO.split('/');
+            const syncLabel    = process.env.SYNC_LABEL;
+            const syncedLabel  = process.env.SYNCED_LABEL;
+            const dryRun       = process.env.DRY_RUN === 'true';
+            const eventName    = context.eventName;
+
+           
+            // Helper: log what would happen in dry-run mode
+           
+            function dryLog(action, payload) {
+              console.log(`[DRY RUN] ${action}:`, JSON.stringify(payload, null, 2));
+            }
+
+            // 
+            // Helper: ensure the synced label exists in the target repo
+            // 
+            async function ensureSyncedLabel() {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: targetOwner,
+                  repo: targetRepo,
+                  name: syncedLabel,
+                });
+              } catch (e) {
+                if (e.status === 404) {
+                  console.log(`Creating label "${syncedLabel}" in ${targetOwner}/${targetRepo}`);
+                  if (!dryRun) {
+                    await github.rest.issues.createLabel({
+                      owner: targetOwner,
+                      repo: targetRepo,
+                      name: syncedLabel,
+                      color: '0075ca',
+                      description: `Synced from ${owner}/${repo}`,
+                    });
+                  } else {
+                    dryLog('createLabel', { name: syncedLabel });
+                  }
+                } else {
+                  throw e;
+                }
+              }
+            }
+
+            // 
+            // Helper: find an already-synced issue in the target repo by
+            // searching for the canonical source URL embedded in the body.
+            // 
+            async function findSyncedIssue(sourceHtmlUrl) {
+              // Search in body using the GitHub issues search API
+              const query = `repo:${targetOwner}/${targetRepo} "${sourceHtmlUrl}" in:body is:issue`;
+              const result = await github.rest.search.issuesAndPullRequests({ q: query, per_page: 5 });
+              const match = result.data.items.find(i =>
+                i.body && i.body.includes(sourceHtmlUrl) && !i.pull_request
+              );
+              return match || null;
+            }
+
+            // 
+            // Helper: build the body for the synced issue
+            // 
+            function buildBody(sourceIssue) {
+              const sourceUrl  = sourceIssue.html_url;
+              const sourceRepo = `${owner}/${repo}`;
+              const header = [
+                `> [!NOTE]`,
+                `> This issue was automatically synced from [${sourceRepo}#${sourceIssue.number}](${sourceUrl}).`,
+                `> Please track and discuss this issue in the source repo. Changes here may be overwritten.`,
+                ``,
+                `---`,
+                ``,
+              ].join('\n');
+              return header + (sourceIssue.body || '_No description provided._');
+            }
+
+            // 
+            // Helper: collect labels to forward (skip labels that are internal
+            // to the source repo, keep kind/* labels and the synced marker).
+            // 
+              const forwardedPrefixes = ['kind/', 'priority/', 'area/'];
+              const labels = sourceIssue.labels
+                .map(l => l.name)
+                .filter(name => forwardedPrefixes.some(p => name.startsWith(p)));
+              labels.push(syncedLabel);
+              return [...new Set(labels)];
+            }
+
+            //
+            // Main logic
+            // 
+
+            // For workflow_dispatch: iterate over all open issues with the label
+            if (eventName === 'workflow_dispatch') {
+              console.log(`workflow_dispatch: scanning all open issues labeled "${syncLabel}" in ${owner}/${repo}`);
+              await ensureSyncedLabel();
+
+              let page = 1;
+              while (true) {
+                const { data: issues } = await github.rest.issues.listForRepo({
+                  owner, repo,
+                  labels: syncLabel,
+                  state: 'open',
+                  per_page: 100,
+                  page,
+                });
+                if (issues.length === 0) break;
+
+                for (const issue of issues) {
+                  if (issue.pull_request) continue; // skip PRs
+                  const existing = await findSyncedIssue(issue.html_url);
+                  const title    = `[kgateway#${issue.number}] ${issue.title}`;
+                  const body     = buildBody(issue);
+                  const labels   = buildLabels(issue);
+
+                  if (!existing) {
+                    console.log(`Creating synced issue for source #${issue.number}`);
+                    if (!dryRun) {
+                      await github.rest.issues.create({
+                        owner: targetOwner, repo: targetRepo,
+                        title, body, labels,
+                      });
+                    } else {
+                      dryLog('createIssue', { title, labels });
+                    }
+                  } else {
+                    console.log(`Updating existing synced issue #${existing.number} for source #${issue.number}`);
+                    if (!dryRun) {
+                      await github.rest.issues.update({
+                        owner: targetOwner, repo: targetRepo,
+                        issue_number: existing.number,
+                        title, body, labels,
+                        state: issue.state,
+                      });
+                    } else {
+                      dryLog('updateIssue', { number: existing.number, title, labels, state: issue.state });
+                    }
+                  }
+                }
+                page++;
+              }
+              return;
+            }
+
+            // For issue events: act on the single issue from the event payload
+            const sourceIssue = context.payload.issue;
+            if (!sourceIssue) {
+              console.log('No issue found in payload, skipping.');
+              return;
+            }
+
+            // Skip pull requests (GitHub reports some PR events as issue events)
+            if (sourceIssue.pull_request) {
+              console.log('Payload is a pull request, skipping.');
+              return;
+            }
+
+            const hasLabel = sourceIssue.labels.some(l => l.name === syncLabel);
+
+            await ensureSyncedLabel();
+
+            const existing = await findSyncedIssue(sourceIssue.html_url);
+            const title    = `[kgateway#${sourceIssue.number}] ${sourceIssue.title}`;
+            const body     = buildBody(sourceIssue);
+            const labels   = buildLabels(sourceIssue);
+
+            // Issue was deleted in source: close the synced copy if it exists
+            if (context.payload.action === 'deleted') {
+              if (existing) {
+                console.log(`Source issue deleted — closing synced issue #${existing.number}`);
+                if (!dryRun) {
+                  await github.rest.issues.update({
+                    owner: targetOwner, repo: targetRepo,
+                    issue_number: existing.number,
+                    state: 'closed',
+                    body: existing.body + '\n\n> The source issue was deleted.',
+                  });
+                } else {
+                  dryLog('closeDeletedIssue', { number: existing.number });
+                }
+              }
+              return;
+            }
+
+            // Label was removed and the issue no longer carries the sync label:
+            // close the synced copy if it exists.
+            if (!hasLabel) {
+              if (existing) {
+                console.log(`Label removed — closing synced issue #${existing.number}`);
+                if (!dryRun) {
+                  await github.rest.issues.update({
+                    owner: targetOwner, repo: targetRepo,
+                    issue_number: existing.number,
+                    state: 'closed',
+                    body: existing.body +
+                      `\n\n> The \`${syncLabel}\` label was removed from the source issue. This synced copy has been closed.`,
+                  });
+                } else {
+                  dryLog('closeDueToLabelRemoval', { number: existing.number });
+                }
+              }
+              return;
+            }
+
+            // Issue has the label — create or update the synced copy
+            if (!existing) {
+              console.log(`Creating synced issue for source #${sourceIssue.number}`);
+              if (!dryRun) {
+                await github.rest.issues.create({
+                  owner: targetOwner, repo: targetRepo,
+                  title, body, labels,
+                });
+              } else {
+                dryLog('createIssue', { title, labels });
+              }
+            } else {
+              console.log(`Updating synced issue #${existing.number} for source #${sourceIssue.number}`);
+              if (!dryRun) {
+                await github.rest.issues.update({
+                  owner: targetOwner, repo: targetRepo,
+                  issue_number: existing.number,
+                  title, body, labels,
+                  state: sourceIssue.state,
+                });
+              } else {
+                dryLog('updateIssue', { number: existing.number, title, labels, state: sourceIssue.state });
+              }
+            }
