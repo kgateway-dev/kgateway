@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -14,6 +15,7 @@ import (
 	"helm.sh/helm/v3/pkg/storage/driver"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -412,6 +414,83 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
+}
+
+// prunableResourceGVKs maps GVKs to GVRs for resource types that may become
+// orphaned when their overlay configuration is removed from GatewayParameters.
+// These resources are owner-referenced to the Gateway, but since the Gateway
+// itself still exists, Kubernetes garbage collection won't clean them up.
+var prunableResourceGVKs = map[schema.GroupVersionKind]schema.GroupVersionResource{
+	wellknown.PodDisruptionBudgetGVK:     wellknown.PodDisruptionBudgetGVR,
+	wellknown.HorizontalPodAutoscalerGVK: wellknown.HorizontalPodAutoscalerGVR,
+	wellknown.VerticalPodAutoscalerGVK:   wellknown.VerticalPodAutoscalerGVR,
+}
+
+// PruneRemovedResources deletes managed resources that are no longer in the
+// desired set. This handles the case where a user removes an overlay (e.g. PDB)
+// from GatewayParameters: the resource is no longer rendered by the helm chart
+// but won't be garbage collected because its owner (the Gateway) still exists.
+func (d *Deployer) PruneRemovedResources(ctx context.Context, ownerUID types.UID, namespace string, desiredObjs []client.Object) error {
+	// Build a set of desired resource names per GVR from the desired objects.
+	desiredByGVR := make(map[schema.GroupVersionResource]map[string]struct{})
+	for _, obj := range desiredObjs {
+		gvk := obj.GetObjectKind().GroupVersionKind()
+		gvr, ok := prunableResourceGVKs[gvk]
+		if !ok {
+			continue
+		}
+		if desiredByGVR[gvr] == nil {
+			desiredByGVR[gvr] = make(map[string]struct{})
+		}
+		desiredByGVR[gvr][obj.GetName()] = struct{}{}
+	}
+
+	var errs []error
+	for _, gvr := range prunableResourceGVKs {
+		existing, err := d.client.Dynamic().Resource(gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) || meta.IsNoMatchError(err) {
+				// CRD not installed (e.g. VPA), skip
+				continue
+			}
+			errs = append(errs, fmt.Errorf("failed to list %s: %w", gvr.Resource, err))
+			continue
+		}
+
+		desired := desiredByGVR[gvr]
+		for i := range existing.Items {
+			item := &existing.Items[i]
+			// Only prune resources owned by this Gateway
+			if !isOwnedBy(item, ownerUID) {
+				continue
+			}
+			// If the resource is in the desired set, keep it
+			if _, ok := desired[item.GetName()]; ok {
+				continue
+			}
+			logger.Info("pruning orphaned managed resource",
+				"kind", item.GetKind(),
+				"namespace", item.GetNamespace(),
+				"name", item.GetName(),
+			)
+			if err := d.client.Dynamic().Resource(gvr).Namespace(namespace).Delete(ctx, item.GetName(), metav1.DeleteOptions{}); err != nil {
+				if !apierrors.IsNotFound(err) {
+					errs = append(errs, fmt.Errorf("failed to delete %s %s/%s: %w", gvr.Resource, namespace, item.GetName(), err))
+				}
+			}
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// isOwnedBy returns true if the object has an ownerReference with the given UID.
+func isOwnedBy(obj *unstructured.Unstructured, ownerUID types.UID) bool {
+	for _, ref := range obj.GetOwnerReferences() {
+		if ref.UID == ownerUID {
+			return true
+		}
+	}
+	return false
 }
 
 // kindPriority returns a numeric priority for a Kubernetes resource kind.
