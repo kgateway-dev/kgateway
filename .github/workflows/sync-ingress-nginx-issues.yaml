@@ -42,6 +42,8 @@ jobs:
     runs-on: ubuntu-22.04
     # Only run when the issue has the sync label, or when a label event may have added/removed it,
     # or when triggered manually.
+    # Note: env context is not available in job-level if conditions in GitHub Actions.
+    # The label value is hardcoded here intentionally — update in sync with env.SYNC_LABEL if changed.
     if: |
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.issue.labels.*.name, 'kind/ingress-nginx') ||
@@ -61,16 +63,12 @@ jobs:
             const dryRun       = process.env.DRY_RUN === 'true';
             const eventName    = context.eventName;
 
-           
             // Helper: log what would happen in dry-run mode
-           
             function dryLog(action, payload) {
               console.log(`[DRY RUN] ${action}:`, JSON.stringify(payload, null, 2));
             }
 
-            // 
             // Helper: ensure the synced label exists in the target repo
-            // 
             async function ensureSyncedLabel() {
               try {
                 await github.rest.issues.getLabel({
@@ -98,12 +96,9 @@ jobs:
               }
             }
 
-            // 
             // Helper: find an already-synced issue in the target repo by
             // searching for the canonical source URL embedded in the body.
-            // 
             async function findSyncedIssue(sourceHtmlUrl) {
-              // Search in body using the GitHub issues search API
               const query = `repo:${targetOwner}/${targetRepo} "${sourceHtmlUrl}" in:body is:issue`;
               const result = await github.rest.search.issuesAndPullRequests({ q: query, per_page: 5 });
               const match = result.data.items.find(i =>
@@ -112,9 +107,7 @@ jobs:
               return match || null;
             }
 
-            // 
             // Helper: build the body for the synced issue
-            // 
             function buildBody(sourceIssue) {
               const sourceUrl  = sourceIssue.html_url;
               const sourceRepo = `${owner}/${repo}`;
@@ -129,10 +122,9 @@ jobs:
               return header + (sourceIssue.body || '_No description provided._');
             }
 
-            // 
             // Helper: collect labels to forward (skip labels that are internal
             // to the source repo, keep kind/* labels and the synced marker).
-            // 
+            function buildLabels(sourceIssue) {
               const forwardedPrefixes = ['kind/', 'priority/', 'area/'];
               const labels = sourceIssue.labels
                 .map(l => l.name)
@@ -141,14 +133,36 @@ jobs:
               return [...new Set(labels)];
             }
 
-            //
+            // ------------------------------------------------------------------
             // Main logic
-            // 
+            // ------------------------------------------------------------------
 
             // For workflow_dispatch: iterate over all open issues with the label
             if (eventName === 'workflow_dispatch') {
               console.log(`workflow_dispatch: scanning all open issues labeled "${syncLabel}" in ${owner}/${repo}`);
               await ensureSyncedLabel();
+
+              // Build a lookup map of source URL -> synced issue upfront to avoid
+              // per-issue Search API calls, which are slow and hit rate limits on large backlogs.
+              const syncedIssueMap = new Map();
+              let syncedPage = 1;
+              while (true) {
+                const { data: syncedIssues } = await github.rest.issues.listForRepo({
+                  owner: targetOwner, repo: targetRepo,
+                  labels: syncedLabel,
+                  state: 'all',
+                  per_page: 100,
+                  page: syncedPage,
+                });
+                if (syncedIssues.length === 0) break;
+                for (const si of syncedIssues) {
+                  if (si.pull_request || !si.body) continue;
+                  const match = si.body.match(/https:\/\/github\.com\/[^\s)]+\/issues\/\d+/);
+                  if (match) syncedIssueMap.set(match[0], si);
+                }
+                syncedPage++;
+              }
+              console.log(`Built lookup map with ${syncedIssueMap.size} already-synced issues.`);
 
               let page = 1;
               while (true) {
@@ -163,7 +177,7 @@ jobs:
 
                 for (const issue of issues) {
                   if (issue.pull_request) continue; // skip PRs
-                  const existing = await findSyncedIssue(issue.html_url);
+                  const existing = syncedIssueMap.get(issue.html_url) || null;
                   const title    = `[kgateway#${issue.number}] ${issue.title}`;
                   const body     = buildBody(issue);
                   const labels   = buildLabels(issue);
