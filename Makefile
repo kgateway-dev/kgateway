@@ -67,8 +67,8 @@ endif
 # For v2.2, we use vanilla upstream envoy for arm build and envoy-gloo for x86 build. These are used by goreleaser 
 # directly when building the images for the respective architecture.
 # TODO: Consolidate to just upstream image in v2.3
-export ENVOY_IMAGE_ARM64 = envoyproxy/envoy:v1.36.4
-export ENVOY_IMAGE_AMD64 = quay.io/solo-io/envoy-gloo:1.36.4-patch1
+export ENVOY_IMAGE_ARM64 = envoyproxy/envoy:v1.36.5
+export ENVOY_IMAGE_AMD64 = quay.io/solo-io/envoy-gloo:1.36.5-patch1
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image 
 # to use base on GOARCH. This doesn't affect goreleaser
