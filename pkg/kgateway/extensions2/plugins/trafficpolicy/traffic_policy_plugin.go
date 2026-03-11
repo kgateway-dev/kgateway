@@ -19,8 +19,7 @@ import (
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	// TODO(nfuden): remove once rustformations are able to be used in a production environment
-	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
@@ -86,7 +85,6 @@ type TrafficPolicy struct {
 type trafficPolicySpecIr struct {
 	buffer          *bufferIR
 	extProc         *extprocIR
-	transformation  *transformationIR
 	rustformation   *rustformationIR
 	extAuth         *extAuthIR
 	localRateLimit  *localRateLimitIR
@@ -223,7 +221,6 @@ type trafficPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 
 	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
-	listenerTransform        *transformationpb.RouteTransformations
 	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
 	extAuthPerProvider       ProviderNeededMap
 	extProcPerProvider       ProviderNeededMap
@@ -245,16 +242,7 @@ type trafficPolicyPluginGwPass struct {
 
 var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
 
-var useRustformations bool
-
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, mergeSettings string, v validator.Validator) sdk.Plugin {
-	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
-	if useRustformations {
-		logger.Info("transformation is using Rust Dynamic Module.")
-	} else {
-		logger.Warn("class transformation using envoy-gloo is being deprecated in v2.2 and will be removed in v2.3")
-	}
-
 	cli := kclient.NewFilteredDelayed[*kgateway.TrafficPolicy](
 		commoncol.Client,
 		wellknown.TrafficPolicyGVR,
@@ -436,21 +424,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, stagedExtProcFilter)
 	}
 
-	// register classic transforms
-	if p.setTransformationInChain[fcc.FilterChainName] && !useRustformations {
-		// TODO(nfuden): support stages such as early
-		transformationCfg := transformationpb.FilterTransformations{}
-		if p.listenerTransform != nil {
-			convertClassicRouteToListener(&transformationCfg, p.listenerTransform)
-		}
-		filter := filters.MustNewStagedFilter(transformationFilterNamePrefix,
-			&transformationCfg,
-			filters.BeforeStage(filters.AcceptedStage),
-		)
-		filter.Filter.Disabled = true
-		stagedFilters = append(stagedFilters, filter)
-	}
-	if p.setTransformationInChain[fcc.FilterChainName] && useRustformations {
+	if p.setTransformationInChain[fcc.FilterChainName] {
 		cfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
 			Value: "{}",
 		})
@@ -460,9 +434,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 			},
 			FilterName:   "http_simple_mutations",
 			FilterConfig: cfg,
-		}
-		if p.listenerTransform != nil {
-			// TODO: Add the listener level transform config here?
 		}
 
 		rustFilter := filters.MustNewStagedFilter(rustformationFilterNamePrefix,
@@ -637,11 +608,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	typedFilterConfig *ir.TypedFilterConfigMap,
 	spec trafficPolicySpecIr,
 ) {
-	if useRustformations {
-		p.handleRustTransformation(fcn, typedFilterConfig, spec.rustformation)
-	} else {
-		p.handleTransformation(fcn, typedFilterConfig, spec.transformation)
-	}
+	p.handleRustFormation(fcn, typedFilterConfig, spec.rustformation)
 
 	// Apply ExtAuthz configuration if present
 	// ExtAuth does not allow for most information such as destination

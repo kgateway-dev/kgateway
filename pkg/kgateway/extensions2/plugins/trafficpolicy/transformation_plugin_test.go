@@ -3,13 +3,13 @@ package trafficpolicy
 import (
 	"testing"
 
-	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTransformationIREquals(t *testing.T) {
-	createSimpleTransformation := func() *transformationpb.RouteTransformations {
-		return &transformationpb.RouteTransformations{
+func TestRustformationIREquals(t *testing.T) {
+	createSimpleTransformation := func() *dynamicmodulesv3.DynamicModuleFilterPerRoute {
+		return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 			Transformations: []*transformationpb.RouteTransformations_RouteTransformation{
 				{
 					Match: &transformationpb.RouteTransformations_RouteTransformation_RequestMatch_{

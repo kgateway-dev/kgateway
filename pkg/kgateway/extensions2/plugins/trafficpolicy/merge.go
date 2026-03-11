@@ -7,7 +7,6 @@ import (
 
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
-	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -159,53 +158,6 @@ func mergeExtProc(
 
 	default:
 		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "extProc")
-	}
-}
-
-func mergeTransformation(
-	p1, p2 *TrafficPolicy,
-	p2Ref *ir.AttachedPolicyRef,
-	p2MergeOrigins ir.MergeOrigins,
-	opts policy.MergeOptions,
-	mergeOrigins ir.MergeOrigins,
-	tpOpts TrafficPolicyMergeOpts,
-) {
-	if tpOpts.Transformation != "" {
-		// this is merging 2 policies at the same hierarchical level (no parent->child relationship),
-		// so use tpOpts since it overrides the default merge strategy
-		opts.Strategy = policy.ToInternalMergeStrategy(tpOpts.Transformation)
-	}
-	if !policy.IsMergeable(p1.spec.transformation, p2.spec.transformation, opts) {
-		return
-	}
-
-	switch opts.Strategy {
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
-		if p1.spec.transformation == nil {
-			p1.spec.transformation = &transformationIR{config: &transformationpb.RouteTransformations{}}
-		}
-		// Always Clone so that the original slice in the IR is never modified
-		p1.spec.transformation.config.Transformations = slices.Clone(p2.spec.transformation.config.GetTransformations())
-		mergeOrigins.SetOne("transformation", p2Ref, p2MergeOrigins)
-
-	case policy.AugmentedDeepMerge:
-		if p1.spec.transformation == nil {
-			p1.spec.transformation = &transformationIR{config: &transformationpb.RouteTransformations{}}
-		}
-		// Always Concat so that the original slice in the IR is never modified
-		p1.spec.transformation.config.Transformations = slices.Concat(p1.spec.transformation.config.GetTransformations(), p2.spec.transformation.config.GetTransformations())
-		mergeOrigins.Append("transformation", p2Ref, p2MergeOrigins)
-
-	case policy.OverridableDeepMerge:
-		if p1.spec.transformation == nil {
-			p1.spec.transformation = &transformationIR{config: &transformationpb.RouteTransformations{}}
-		}
-		// Always Concat so that the original slice in the IR is never modified
-		p1.spec.transformation.config.Transformations = slices.Concat(p2.spec.transformation.config.GetTransformations(), p1.spec.transformation.config.GetTransformations())
-		mergeOrigins.Append("transformation", p2Ref, p2MergeOrigins)
-
-	default:
-		logger.Warn("unsupported merge strategy for transformation policy", "strategy", opts.Strategy, "policy", p2Ref)
 	}
 }
 
