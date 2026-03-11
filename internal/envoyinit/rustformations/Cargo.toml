@@ -10,7 +10,7 @@ envoy-sdk-local = { package = "envoy-proxy-dynamic-modules-rust-sdk", path = "..
 
 [target.'cfg(not(target_arch = "x86_64"))'.dependencies]
 # The SDK version must match the Envoy version due to the strict compatibility requirements.
-envoy-sdk-remote = { package = "envoy-proxy-dynamic-modules-rust-sdk", git = "https://github.com/envoyproxy/envoy", rev = "41749943780b54b70b510b1b1a4805ae529e174a" } #envoy v1.36.5
+envoy-sdk-remote = { package = "envoy-proxy-dynamic-modules-rust-sdk", git = "https://github.com/envoyproxy/envoy", rev = "41749943780b54b70b510b1b1a4805ae529e174a" } # envoy v1.36.5
 
 # END REMOVE
 
