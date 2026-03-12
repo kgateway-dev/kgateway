@@ -143,8 +143,8 @@ fmt-changed: ## Format only the changed code with golangci-lint (skip deleted fi
 # must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
 mod-download:  ## Download the dependencies
-	go mod download all
-	cd tools && go mod download all
+	go mod download
+	cd tools && go mod download
 
 .PHONY: mod-tidy-nested
 mod-tidy-nested:  ## Tidy go mod files in nested modules
