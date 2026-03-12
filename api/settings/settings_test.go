@@ -28,7 +28,6 @@ func allEnvVarsSet() map[string]string {
 		"KGW_XDS_SERVICE_HOST":                         "my-xds-host",
 		"KGW_XDS_SERVICE_NAME":                         "custom-svc",
 		"KGW_XDS_SERVICE_PORT":                         "1234",
-		"KGW_USE_RUST_FORMATIONS":                      "false",
 		"KGW_DEFAULT_IMAGE_REGISTRY":                   "my-registry",
 		"KGW_DEFAULT_IMAGE_TAG":                        "my-tag",
 		"KGW_DEFAULT_IMAGE_PULL_POLICY":                "Always",

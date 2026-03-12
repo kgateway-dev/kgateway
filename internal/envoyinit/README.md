@@ -50,7 +50,7 @@ cargo test
 At the kgateway project top level directory, run:
 
 ``` bash
-hack/run-e2e-test.sh TestKgateway/^Transforms$/TestGatewayRustformationsWithTransformedRoute
+hack/run-e2e-test.sh TestKgateway/^Transforms$/TestGatewayWithTransformation
 ```
 
 ## Envoy upgrade

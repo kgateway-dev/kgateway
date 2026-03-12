@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -43,7 +43,6 @@ func MergeTrafficPolicies(
 
 	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins, TrafficPolicyMergeOpts){
 		mergeExtProc,
-		mergeTransformation,
 		mergeRustformation,
 		mergeExtAuth,
 		mergeLocalRateLimit,
@@ -241,7 +240,7 @@ func mergeRustformation(
 				Value: "{}",
 			})
 			p1.spec.rustformation = &rustformationIR{config: &dynamicmodulesv3.DynamicModuleFilterPerRoute{
-				DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
+				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 					Name: "rust_module",
 				},
 				PerRouteConfigName: "http_simple_mutations",

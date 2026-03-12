@@ -5,7 +5,7 @@ import (
 	"time"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	envoy_api_key_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
@@ -118,9 +118,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 
-	if !d.spec.transformation.Equals(d2.spec.transformation) {
-		return false
-	}
 	if !d.spec.rustformation.Equals(d2.spec.rustformation) {
 		return false
 	}
@@ -189,7 +186,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 // PGV validation is always performed regardless of route replacement mode.
 func (p *TrafficPolicy) Validate() error {
 	var validators []func() error
-	validators = append(validators, p.spec.transformation.Validate)
 	validators = append(validators, p.spec.rustformation.Validate)
 	validators = append(validators, p.spec.localRateLimit.Validate)
 	validators = append(validators, p.spec.globalRateLimit.Validate)
@@ -429,7 +425,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 			Value: "{}",
 		})
 		rustCfg := dynamicmodulesv3.DynamicModuleFilter{
-			DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
+			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 				Name: "rust_module",
 			},
 			FilterName:   "http_simple_mutations",

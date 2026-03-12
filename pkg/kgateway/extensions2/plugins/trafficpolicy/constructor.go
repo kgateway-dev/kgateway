@@ -51,8 +51,6 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 
 	var errors []error
 
-	// Construct transformation specific IR
-	constructTransformation(policyCR, &outSpec)
 	// Construct rustformation specific IR
 	if err := constructRustformation(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
