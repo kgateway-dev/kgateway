@@ -38,10 +38,11 @@ spec:
     spec:
       serviceAccountName: vllm-llama3-8b-instruct-epp
       # Conservatively, this timeout should mirror the longest grace period of the pods within the pool
+      # Hub "us-central1-docker.pkg.dev/k8s-staging-images" should be used for pre-release versions.
       terminationGracePeriodSeconds: 130
       containers:
       - name: epp
-        image: us-central1-docker.pkg.dev/k8s-staging-images/gateway-api-inference-extension/epp:v1.1.0
+        image: registry.k8s.io/gateway-api-inference-extension/epp:v1.1.0
         imagePullPolicy: Always
         args:
         - -pool-name
