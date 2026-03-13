@@ -41,6 +41,8 @@ jobs:
         api-channel: ${{ matrix.gateway-api-channel }}
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+        # Only summarize one architecture to avoid spamming the summary
+        summarize-report: ${{matrix.arch == 'arm64'}} 
 
   conformance:
     if: always()

@@ -166,8 +166,6 @@ type Settings struct {
 	// By default, this is disabled.
 	XdsTLS bool `split_words:"true" default:"false"`
 
-	UseRustFormations bool `split_words:"true" default:"true"`
-
 	// DefaultImageRegistry is the default image registry to use for the kgateway image.
 	DefaultImageRegistry string `split_words:"true" default:"cr.kgateway.dev"`
 	// DefaultImageTag is the default image tag to use for the kgateway image.

@@ -66,8 +66,13 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	}
 	outSpec := trafficPolicySpecIr{}
 
+ feat/backendconfigpolicy-translation-metrics
 	// Construct transformation specific IR
 	constructTransformation(policyCR, &outSpec)
+
+	var errors []error
+
+
 	// Construct rustformation specific IR
 	if err := constructRustformation(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)

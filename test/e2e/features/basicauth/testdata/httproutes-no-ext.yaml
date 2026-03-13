@@ -2,9 +2,11 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: route-public
+  namespace: kgateway-base
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "public.example.com"
   rules:
@@ -16,9 +18,11 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: route-secure
+  namespace: kgateway-base
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "secure.example.com"
   rules:

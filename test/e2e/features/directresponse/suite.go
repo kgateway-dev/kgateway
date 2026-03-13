@@ -5,7 +5,6 @@ package directresponse
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,10 +13,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -41,30 +39,15 @@ func NewTestingSuite(
 }
 
 func (s *testingSuite) SetupSuite() {
-	// Check that the common setup manifest is applied
+	// Apply the httpbin setup manifest
 	err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply "+setupManifest)
-	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
-	s.NoError(err, "can apply curl pod manifest")
 
-	// Apply the gateway manifest once for the entire test suite
-	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, gatewayManifest)
-	s.NoError(err, "can apply gateway manifest")
-
-	// Check that istio injection is successful and httpbin is running
+	// Check that httpbin is running
 	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, httpbinDeployment)
 	// httpbin can take a while to start up with Istio sidecar
 	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, httpbinDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=httpbin",
-	})
-	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=curl",
-	})
-
-	// Wait for the gateway and proxy to be ready
-	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=gw",
 	})
 
 	// Only include functional test manifests - negative test cases moved to gateway translator suite
@@ -80,13 +63,9 @@ func (s *testingSuite) TearDownSuite() {
 	if testutils.ShouldSkipCleanup(s.T()) {
 		return
 	}
-	err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, gatewayManifest)
-	s.NoError(err, "can delete gateway manifest")
-	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
+	err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
-	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
-	s.NoError(err, "can delete curl pod manifest")
-	s.ti.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, httpbinDeployment)
+	s.ti.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
@@ -119,69 +98,49 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 
 func (s *testingSuite) TestBasicDirectResponse() {
 	// verify that a direct response route works as expected
-	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/robots.txt"),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       ContainSubstring("Disallow: /custom"),
 		},
-		time.Minute,
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/robots.txt"),
 	)
 }
 
 func (s *testingSuite) TestDelegation() {
 	// verify the regular child route works as expected.
-	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/headers"),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       ContainSubstring(`"headers"`),
 		},
-		time.Minute,
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/headers"),
 	)
 
 	// verify the parent's DR works as expected.
-	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/parent"),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusFound,
 			Body:       ContainSubstring(`Hello from parent`),
 		},
-		time.Minute,
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/parent"),
 	)
 
 	// verify that the child's DR works as expected.
-	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/child"),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusFound,
 			Body:       ContainSubstring(`Hello from child`),
 		},
-		time.Minute,
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/child"),
 	)
 }
 

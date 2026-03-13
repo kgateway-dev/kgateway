@@ -32,9 +32,15 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 func TestConvertJsonFormat_EdgeCases(t *testing.T) {
+	// Set version for testing (normally set via ldflags at build time)
+	origVersion := version.Version
+	version.Version = "v1.0.0-test"
+	t.Cleanup(func() { version.Version = origVersion })
+
 	t.Run("Access Log Conversion", func(t *testing.T) {
 		testCases := []struct {
 			name     string
@@ -801,6 +807,38 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 												},
 											},
 										},
+										{
+											Key: "service.namespace",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "service.version",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "v1.0.0-test",
+												},
+											},
+										},
+										{
+											Key: "k8s.namespace.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "k8s.container.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "kgateway-proxy",
+												},
+											},
+										},
 									},
 								},
 							}),
@@ -1106,6 +1144,38 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 												},
 											},
 										},
+										{
+											Key: "service.namespace",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "service.version",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "v1.0.0-test",
+												},
+											},
+										},
+										{
+											Key: "k8s.namespace.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "k8s.container.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "kgateway-proxy",
+												},
+											},
+										},
 									},
 								},
 								Attributes: &otelv1.KeyValueList{
@@ -1246,6 +1316,12 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 							ObjectSource: ir.ObjectSource{
 								Namespace: "default",
 								Name:      "gw",
+							},
+							Obj: &gwv1.Gateway{
+								ObjectMeta: metav1.ObjectMeta{
+									UID:        "test-uid-1234",
+									Generation: 7,
+								},
 							},
 						},
 					},

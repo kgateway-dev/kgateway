@@ -813,7 +813,7 @@ func newCommonCols(ctx context.Context, kubeClient apiclient.Client) (*collectio
 		return nil, fmt.Errorf("error building CommonCollections: %w", err)
 	}
 
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName, *settings, nil)
+	plugins := registry.Plugins(ctx, commoncol, *settings, nil)
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
 

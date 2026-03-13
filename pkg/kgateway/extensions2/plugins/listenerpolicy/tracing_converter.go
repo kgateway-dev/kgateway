@@ -20,6 +20,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+const (
+	otelTracerName                  = "envoy.tracers.opentelemetry"
+	environmentResourceDetectorName = "envoy.tracers.opentelemetry.resource_detectors.environment"
+	alwaysOnSamplerName             = "envoy.tracers.opentelemetry.samplers.always_on"
+)
+
 func convertTracingConfig(
 	policy *kgateway.HTTPSettings,
 	commoncol *collections.CommonCollections,
@@ -213,25 +219,28 @@ func convertOTelTracingConfig(
 	if config.ServiceName != nil {
 		tracingCfg.ServiceName = *config.ServiceName
 	}
+
+	envDetectorEnabled := true
 	if len(config.ResourceDetectors) != 0 {
-		translatedResourceDetectors := make([]*envoycorev3.TypedExtensionConfig, len(config.ResourceDetectors))
-		for i, rd := range config.ResourceDetectors {
-			if rd.EnvironmentResourceDetector != nil {
-				detector, _ := utils.MessageToAny(&resource_detectorsv3.EnvironmentResourceDetectorConfig{})
-				translatedResourceDetectors[i] = &envoycorev3.TypedExtensionConfig{
-					Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
-					TypedConfig: detector,
-				}
+		for _, rd := range config.ResourceDetectors {
+			if rd.EnvironmentResourceDetector != nil && rd.EnvironmentResourceDetector.Enable != nil {
+				envDetectorEnabled = *rd.EnvironmentResourceDetector.Enable
 			}
 		}
-		tracingCfg.ResourceDetectors = translatedResourceDetectors
+	}
+	if envDetectorEnabled {
+		detector, _ := utils.MessageToAny(&resource_detectorsv3.EnvironmentResourceDetectorConfig{})
+		tracingCfg.ResourceDetectors = []*envoycorev3.TypedExtensionConfig{{
+			Name:        environmentResourceDetectorName,
+			TypedConfig: detector,
+		}}
 	}
 
 	if config.Sampler != nil {
 		if config.Sampler.AlwaysOn != nil {
 			alwaysOnSampler, _ := utils.MessageToAny(&samplersv3.AlwaysOnSamplerConfig{})
 			tracingCfg.Sampler = &envoycorev3.TypedExtensionConfig{
-				Name:        "envoy.tracers.opentelemetry.samplers.always_on",
+				Name:        alwaysOnSamplerName,
 				TypedConfig: alwaysOnSampler,
 			}
 		}
@@ -247,10 +256,11 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 	if tracingProvider.ServiceName == "" {
 		tracingProvider.ServiceName = GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace())
 	}
+
 	otelCfg := utils.MustMessageToAny(tracingProvider)
 
 	tracingConfig.Provider = &envoytracev3.Tracing_Http{
-		Name: "envoy.tracers.opentelemetry",
+		Name: otelTracerName,
 		ConfigType: &envoytracev3.Tracing_Http_TypedConfig{
 			TypedConfig: otelCfg,
 		},

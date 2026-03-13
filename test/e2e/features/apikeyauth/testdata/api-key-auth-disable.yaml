@@ -3,13 +3,15 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: httpbin-route-disable
+  namespace: kgateway-base
 spec:
   hostnames:
     - httpbin
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: gw
+      name: gateway
+      namespace: kgateway-base
   rules:
     - backendRefs:
         - group: ""
@@ -37,6 +39,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: api-keys-secret-gateway
+  namespace: kgateway-base
 type: Opaque
 stringData:
   client1: k-123
@@ -47,11 +50,12 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: api-key-auth-gateway
+  namespace: kgateway-base
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: gw
+      name: gateway
   apiKeyAuth:
     keySources:
     - header: "api-key"
@@ -64,6 +68,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: api-key-auth-route-disable
+  namespace: kgateway-base
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io

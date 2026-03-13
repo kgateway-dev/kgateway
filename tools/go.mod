@@ -1,13 +1,13 @@
 module github.com/kgateway-dev/kgateway/v2/tools
 
-go 1.26.0
+go 1.26.1
 
 tool (
 	github.com/goreleaser/goreleaser/v2
 	sigs.k8s.io/controller-runtime/tools/setup-envtest
 )
 
-require golang.org/x/mod v0.32.0
+require golang.org/x/mod v0.32.0 // indirect
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0 // indirect
