@@ -5,14 +5,15 @@ import (
 
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
 func TestRustformationIREquals(t *testing.T) {
 	stringConf := `{"request":{"set":[{"name":"x-test","value":"text-value"}]}}`
-	filterCfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
+	filterCfg := utils.MustMessageToAny(&wrapperspb.StringValue{
 		Value: stringConf,
 	})
 	createSimpleTransformation := func() *dynamicmodulesv3.DynamicModuleFilterPerRoute {

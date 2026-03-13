@@ -19,7 +19,6 @@ import (
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
@@ -44,7 +43,6 @@ import (
 )
 
 const (
-	transformationFilterNamePrefix = "transformation"
 	rustformationFilterNamePrefix  = "dynamic_modules/simple_mutations"
 	localRateLimitFilterNamePrefix = "ratelimit/local"
 	localRateLimitStatPrefix       = "http_local_rate_limiter"
@@ -421,7 +419,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 
 	if p.setTransformationInChain[fcc.FilterChainName] {
-		cfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
+		cfg := utils.MustMessageToAny(&wrapperspb.StringValue{
 			Value: "{}",
 		})
 		rustCfg := dynamicmodulesv3.DynamicModuleFilter{

@@ -732,7 +732,6 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TestGatewayWithTransformation() {
-
 	// wait for pods to be running again, since controller deployment was patched
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
 		LabelSelector: defaults.ControllerLabelSelector,

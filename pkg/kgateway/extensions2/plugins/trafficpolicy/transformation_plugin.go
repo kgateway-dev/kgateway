@@ -69,9 +69,12 @@ func toRustFormationPerRouteConfig(t *kgateway.TransformationPolicy) (*dynamicmo
 	}
 
 	stringConf := string(rustformationJson)
-	filterCfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
+	filterCfg, err := utils.MessageToAny(&wrapperspb.StringValue{
 		Value: stringConf,
 	})
+	if err != nil {
+		return nil, err
+	}
 	rustCfg := &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 			Name: "rust_module",

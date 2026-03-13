@@ -43,4 +43,4 @@ The add header function works correctly on x86 architecture because we are still
 
 ## Classic Transformation Deprecation
 
-Starting from v2.3.0, Classic Transformation is removed.
+As of v2.3.0, Classic Transformation has been removed.
