@@ -43,4 +43,4 @@ The add header function works correctly on x86 architecture because we are still
 
 ## Classic Transformation Deprecation
 
-Starting from v2.2.0, Classic Transformation is being deprecated and will be removed in future release. On x86_64 architecture, this release is still using the custom envoy build, so it is possible to switch back to the Classic Transformation if needed by using the helm settings `controller.extraEnv.KGW_USE_RUST_FORMATIONS=false`.
+As of v2.3.0, Classic Transformation has been removed.

@@ -345,6 +345,10 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 		return err
 	}
 
+	if err := r.deployer.PruneRemovedResources(ctx, gw.UID, gw.Namespace, objs); err != nil {
+		return err
+	}
+
 	// find the name/ns of the service we own so we can grab addresses
 	// from it for status
 	var generatedSvc *metav1.ObjectMeta
