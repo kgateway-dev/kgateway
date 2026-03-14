@@ -56,6 +56,8 @@ var (
 	transformForMatchMethodManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-method.yaml")
 	transformForHeaderToBodyJsonManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-header-to-body-json.yaml")
 	transformForBodyLocalReplyManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-local-reply.yaml")
+	transformSkipBufferingManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-skip-buffering.yaml")
+	transformSkipBufferingBodyFuncManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-skip-buffering-with-body-func.yaml")
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -80,6 +82,8 @@ var (
 			transformForMatchQueryManifest,
 			transformForHeaderToBodyJsonManifest,
 			transformForBodyLocalReplyManifest,
+			transformSkipBufferingManifest,
+			transformSkipBufferingBodyFuncManifest,
 			rustformationForModelExtractionManifest,
 		},
 	}
@@ -687,6 +691,74 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 				},
 			},
 		},
+		{
+			// test 20
+			// Send a large JSON body with a "model" field at the end and verify it gets extracted into a header.
+			name:      "model-field-extracted-from-large-json-body",
+			routeName: "route-for-model-extraction",
+			opts: []curl.Option{
+				curl.WithPostBody(fmt.Sprintf(`{"messages": [{"role": "user", "content": "%s"}], "model": "gpt-4"}`,
+					strings.Repeat("a", 100*1024))),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+			},
+			req: &testmatchers.HttpRequest{
+				Headers: map[string]any{
+					"Body-Extracted-Model": "gpt-4",
+				},
+			},
+		},
+		{
+			// test 21
+			name:      "skip-buffering",
+			routeName: "route-for-skip-buffering",
+			opts: []curl.Option{
+				curl.WithPostBody(fmt.Sprintf(`"%s"`, strings.Repeat("a", 100*1024))),
+				curl.WithHeader("X-my-name", "andy"),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+			},
+			req: &testmatchers.HttpRequest{
+				Headers: map[string]any{
+					// make sure the body modification is ignored by checking if we still have the exact
+					// request header because we get the request headers from the http-bin response body
+					"x-my-name": "andy",
+				},
+				Body: fmt.Sprintf(`"%s"`, strings.Repeat("a", 100*1024)),
+			},
+		},
+		{
+			// test 22
+			name:      "skip-buffering-with-body-func",
+			routeName: "route-for-skip-buffering-body-func",
+			opts: []curl.Option{
+				curl.WithPostBody("12345"),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Headers: map[string]any{
+					"x-response-good": "def",
+				},
+				NotHeaders: []string{
+					// Because body() render to empty when parseAs is set to None
+					// the header will be deleted
+					"x-response-deleted",
+				},
+			},
+			req: &testmatchers.HttpRequest{
+				Headers: map[string]any{
+					"x-request-good": "abc",
+				},
+				NotHeaders: []string{
+					// Because body() render to empty when parseAs is set to None
+					// the header will be deleted
+					"x-request-deleted",
+				},
+				Body: "12345",
+			},
+		},
 	}
 
 	// If no indices are provided, return the full original slice.
@@ -729,20 +801,7 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TestGatewayWithTransformation() {
-	// wait for pods to be running again, since controller deployment was patched
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
-		LabelSelector: defaults.ControllerLabelSelector,
-	})
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
-	})
-
-	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
-		s.Ctx,
-		proxyObjectMeta,
-		s.envoyAdminReadyAssertion(),
-		s.dynamicModuleAssertion(true),
-	)
+	s.assertPodsRunning()
 
 	testCases := []transformationTestCase{}
 	testCases = append(testCases, s.commonTestCases...)
@@ -779,6 +838,22 @@ func (s *testingSuite) runTestCases(testCases []transformationTestCase) {
 			}
 		})
 	}
+}
+
+func (s *testingSuite) assertPodsRunning() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
+		LabelSelector: defaults.ControllerLabelSelector,
+	})
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
+	})
+
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.Ctx,
+		proxyObjectMeta,
+		s.envoyAdminReadyAssertion(),
+		s.dynamicModuleAssertion(true),
+	)
 }
 
 func (s *testingSuite) assertRouteAndTrafficPolicyStatus(routesToCheck, trafficPoliciesToCheck []string) {
@@ -841,6 +916,8 @@ func (s *testingSuite) assertSuiteResourceStatus() {
 		"example-route-for-pseudo-headers",
 		"example-route-for-query-match",
 		"example-route-for-model-extraction",
+		"example-route-for-skip-buffering",
+		"example-route-for-skip-buffering-body-func",
 	}
 	trafficPoliciesToCheck := []string{
 		"example-traffic-policy-for-body-as-string",
@@ -855,6 +932,8 @@ func (s *testingSuite) assertSuiteResourceStatus() {
 		"example-traffic-policy-for-pseudo-headers",
 		"example-traffic-policy-for-query-match",
 		"example-traffic-policy-for-model-extraction",
+		"example-traffic-policy-for-skip-buffering",
+		"example-traffic-policy-for-skip-buffering-body-func",
 	}
 	s.assertRouteAndTrafficPolicyStatus(routesToCheck, trafficPoliciesToCheck)
 }
