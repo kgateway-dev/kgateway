@@ -238,6 +238,13 @@ golden-helm:  ## Refreshes golden files for ./test/helm snapshot testing
 	@echo "This must pass after refreshing:"
 	go test ./test/helm/...
 
+## Refreshes golden files for translation testing
+golden-translator-%:
+	REFRESH_GOLDEN=true \
+	GINKGO_USER_FLAGS="--fail-on-pending=false" \
+	TEST_PKG=./pkg/kgateway/translator/$* \
+	$(MAKE) test
+
 #----------------------------------------------------------------------------------
 # Env test
 #----------------------------------------------------------------------------------
