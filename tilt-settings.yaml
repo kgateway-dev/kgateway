@@ -3,7 +3,6 @@ helm_installation_name: kgateway
 # Add your custom helm value files here
 helm_values_files:
   - ./test/e2e/tests/manifests/common-recommendations.yaml
-  
 
 helm_installation_namespace: kgateway-system
 
@@ -32,14 +31,14 @@ providers:
     # Command to build the binary
     # NOTE: If you want to build the binary with debugging enabled, uncomment the following line and comment out the next line.
     #build_binary: make -B kgateway GCFLAGS="all=-N -l" LDFLAGS=""
-    build_binary:  make -B kgateway
+    build_binary: make -B kgateway
     # Name of the binary file when built
     binary_name: kgateway-linux-$ARCH
     # Custom Dockerfile with Envoy binary for strict validation mode.
     # NOTE: Do NOT include ENTRYPOINT here - the Tiltfile will append the correct
     # entrypoint (standard or debug) based on whether debug_port is set.
     dockerfile_contents: |
-      FROM quay.io/solo-io/envoy-gloo:1.36.3-patch1 as envoy-bin
+      FROM envoyproxy/envoy:v1.37.1 as envoy-bin
 
       FROM golang:latest as tilt
       WORKDIR /app

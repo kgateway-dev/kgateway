@@ -29,8 +29,6 @@
 //go:generate sh -c "go list github.com/envoyproxy/go-control-plane/contrib/... | grep 'v[3-9]' | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
 //go:generate sh -c "echo '\n\t// github.com/envoyproxy/go-control-plane/ratelimit/...' >> filter_types.gen.go"
 //go:generate sh -c "go list github.com/envoyproxy/go-control-plane/ratelimit/... | grep 'v[3-9]' | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
-//go:generate sh -c "echo '\n\t// envoy-gloo filter types' >> filter_types.gen.go"
-//go:generate sh -c "go list github.com/solo-io/envoy-gloo/go/... | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
 //go:generate sh -c "echo ')' >> filter_types.gen.go"
 
 package filter_types

@@ -23,8 +23,6 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.67.1
-	github.com/solo-io/envoy-gloo/go v0.0.0-20250924144543-9d47b99b2130
-	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
@@ -54,6 +52,7 @@ require sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 require (
 	github.com/PuerkitoBio/goquery v1.10.1
 	github.com/golang/protobuf v1.5.4
+	github.com/solo-io/go-list-licenses v0.1.4
 )
 
 require (

@@ -7,7 +7,7 @@ Name|Version|License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20251110193048-8bfbf64dc13e|Apache License 2.0
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.14.0|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250627145903-197b96a9c7f8|Apache License 2.0
-[go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.36.1-0.20251120180717-7c66c7f1d0b2|Apache License 2.0
+[go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.37.0|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.9.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
@@ -35,7 +35,7 @@ Name|Version|License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20251209150349-8475f28825e9|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.14.0|BSD 3-clause "New" or "Revised" License
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20251213004720-97cd9d5aeac2|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.77.0|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.78.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.11|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.19.2|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.28.0-alpha.0.0.20251210001900-ce7b5802387c|Apache License 2.0
