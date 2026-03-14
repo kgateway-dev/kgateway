@@ -342,13 +342,23 @@ impl Filter {
                         match e {
                             TransformationError::UndeclaredJsonVariables(_msg) => {
                                 envoy_log_error!("{:#}", err);
-                                envoy_filter.send_response(400, Vec::default(), None, None);
+                                envoy_filter.send_response(
+                                    400,
+                                    Vec::default(),
+                                    None,
+                                    Some("undeclared json variables in transformation template"),
+                                );
                                 return false;
                             }
                         }
                     } else if let Some(e) = err.downcast_ref::<serde_json::error::Error>() {
                         envoy_log_error!("json parsing error: {:#}", e);
-                        envoy_filter.send_response(400, Vec::default(), None, None);
+                        envoy_filter.send_response(
+                            400,
+                            Vec::default(),
+                            None,
+                            Some("json parsing error in transformation template"),
+                        );
                         return false;
                     } else {
                         envoy_log_warn!("{:#}", err);
@@ -377,13 +387,23 @@ impl Filter {
                         match e {
                             TransformationError::UndeclaredJsonVariables(_msg) => {
                                 envoy_log_error!("{:#}", err);
-                                envoy_filter.send_response(400, Vec::default(), None, None);
+                                envoy_filter.send_response(
+                                    400,
+                                    Vec::default(),
+                                    None,
+                                    Some("undeclared json variables in transformation template"),
+                                );
                                 return false;
                             }
                         }
                     } else if let Some(e) = err.downcast_ref::<serde_json::error::Error>() {
                         envoy_log_error!("json parsing error: {:#}", e);
-                        envoy_filter.send_response(400, Vec::default(), None, None);
+                        envoy_filter.send_response(
+                            400,
+                            Vec::default(),
+                            None,
+                            Some("json parsing error in transformation template"),
+                        );
                         return false;
                     } else {
                         envoy_log_warn!("{:#}", err);

@@ -17,7 +17,7 @@ When a new envoy version is released, the following files should be updated:
 then:
 
 ``` bash
-(cd interal/envoyinit && cargo update -p envoy-proxy-dynamic-modules-rust-sdk)
+(cd internal/envoyinit && cargo update -p envoy-proxy-dynamic-modules-rust-sdk)
 ```
 
 ### go-control-plane

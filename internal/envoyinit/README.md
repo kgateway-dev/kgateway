@@ -20,15 +20,15 @@ To build the envoy wrapper docker image, at the kgateway top project level, do:
 make envoy-wrapper-docker
 ```
 
-you can use a custom ENVOY_IMAGE but make sure the rust sdk is compatible with the rustformation module:
+A custom ENVOY_IMAGE can be used but make sure the rust sdk is compatible with the rustformation module:
 
 ``` bash
-ENVOY_IMAGE=<you own envoy image> make envoy-wrapper-docker
+ENVOY_IMAGE=<custom envoy image> make envoy-wrapper-docker
 ```
 
 ## Formatting and Linting
 
-Before creating a PR, make sure you run:
+Before creating a PR, run:
 
 ``` bash
 make lint
