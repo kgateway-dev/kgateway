@@ -34,17 +34,8 @@ impl<'a> EnvoyTransformationOps<'a> {
     }
 }
 impl TransformationOps for EnvoyTransformationOps<'_> {
-    // REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, remove the platform specific directive here
-    //                     and the no-op add_request_header()
-    #[cfg(target_arch = "x86_64")]
     fn add_request_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.add_request_header(key, value)
-    }
-
-    #[cfg(not(target_arch = "x86_64"))]
-    fn add_request_header(&mut self, _key: &str, _value: &[u8]) -> bool {
-        envoy_log_warn!("add header is currently not supported for non-x86 build. set header can be used if existing header can be overwritten.");
-        true
     }
 
     fn set_request_header(&mut self, key: &str, value: &[u8]) -> bool {
@@ -112,16 +103,8 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         }
     }
 
-    // REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, remove the platform specific directive here
-    //                     and the no-op add_response_header()
-    #[cfg(target_arch = "x86_64")]
     fn add_response_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.add_response_header(key, value)
-    }
-    #[cfg(not(target_arch = "x86_64"))]
-    fn add_response_header(&mut self, _key: &str, _value: &[u8]) -> bool {
-        envoy_log_warn!("add header is currently not supported for non-x86 build. set header can be used if existing header can be overwritten.");
-        true
     }
     fn set_response_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.set_response_header(key, value)
