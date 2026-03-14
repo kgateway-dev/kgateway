@@ -29,25 +29,25 @@ Listeners:
         mergeSlashes: true
         normalizePath: true
         originalIpDetectionExtensions:
-          - name: envoy.http.original_ip_detection.xff
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.http.original_ip_detection.xff.v3.XffConfig
-              skipXffAppend: true
+        - name: envoy.http.original_ip_detection.xff
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.http.original_ip_detection.xff.v3.XffConfig
+            skipXffAppend: true
         rds:
           configSource:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
+        skipXffAppend: true
         statPrefix: http
         useRemoteAddress: false
-        skipXffAppend: true
     name: listener~80
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        default.httpSettings.useRemoteAddress:
-        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
         default.httpSettings.skipXffAppend:
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
+        default.httpSettings.useRemoteAddress:
         - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
         default.httpSettings.xffConfig:
         - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
@@ -57,9 +57,9 @@ Routes:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        default.httpSettings.useRemoteAddress:
-        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
         default.httpSettings.skipXffAppend:
+        - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
+        default.httpSettings.useRemoteAddress:
         - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true
         default.httpSettings.xffConfig:
         - gateway.kgateway.dev/ListenerPolicy/default/skip-xff-append-true

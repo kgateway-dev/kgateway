@@ -28,12 +28,10 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
             body:
               stringValue: '"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE%"'
-            commonConfig:
-              grpcService:
-                envoyGrpc:
-                  clusterName: kube_default_opentelemetry-collector_4317
-              logName: otel-accesslog-service
-              transportApiVersion: V3
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_default_opentelemetry-collector_4317
+            logName: otel-accesslog-service
             resourceAttributes:
               values:
               - key: service.name
