@@ -7,7 +7,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20251110193048-8bfbf64dc13e
 	github.com/envoyproxy/go-control-plane v0.14.0
 	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250627145903-197b96a9c7f8
-	github.com/envoyproxy/go-control-plane/envoy v1.36.1-0.20251120180717-7c66c7f1d0b2
+	github.com/envoyproxy/go-control-plane/envoy v1.37.0
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -31,7 +31,7 @@ require (
 	go.uber.org/zap v1.27.1
 	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9
 	golang.org/x/net v0.50.0 // indirect
-	google.golang.org/grpc v1.77.0
+	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 	helm.sh/helm/v3 v3.19.2
 	istio.io/api v1.28.0-alpha.0.0.20251210001900-ce7b5802387c
@@ -195,7 +195,7 @@ require (
 	github.com/denis-tingaikin/go-header v0.5.0 // indirect
 	github.com/docker/docker-credential-helpers v0.9.4 // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
+	github.com/envoyproxy/protoc-gen-validate v1.3.0 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
 	github.com/evanphx/json-patch v5.9.11+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect

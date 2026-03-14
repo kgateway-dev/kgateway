@@ -2,22 +2,20 @@
 
 ## Envoy version
 
-Currently, kgateway uses a custom build of envoy from [envoy-gloo](https://github.com/solo-io/envoy-gloo).
-The [release page](https://github.com/solo-io/envoy-gloo/releases) lists the latest release versions.
+as of v2.3.0, kgateway uses vanilla upstream [envoy](https://github.com/envoyproxy/envoy).
+The [release page](https://github.com/envoyproxy/envoy/releases) lists the latest release versions.
 
 ## Upgrading
 
-When a new envoy version is released, envoy-gloo will also be updated to use the latest upstream version.
-
-The following files should be updated:
+When a new envoy version is released, the following files should be updated:
 
 | File | Update |
 |---|---|
 | Makefile | Update ENVOY_IMAGE with the new version |
-| internal/envoyinit/rustformations/Cargo.lock | Update the commit hash to match the [envoy](https://github.com/envoyproxy/envoy/releases) release commit hash |
-| internal/envoyinit/rustformations/Cargo.toml | Update the commit hash to match the [envoy](https://github.com/envoyproxy/envoy/releases) release commit hash |
-| pkg/validator/validator.go | Update the envoy-gloo image version (search for `envoy-gloo:`) |
-| pkg/validator/validator_test.go | Update the envoy-gloo image version  (search for `envoy-gloo:`) |
+| internal/envoyinit/rustformations/Cargo.lock | Update the commit hash or version tag to match the [envoy](https://github.com/envoyproxy/envoy/releases) release commit hash |
+| internal/envoyinit/rustformations/Cargo.toml | Update the commit hash or version tag to match the [envoy](https://github.com/envoyproxy/envoy/releases) release commit hash |
+| pkg/validator/validator.go | Update the envoy image version (search for `envoy-gloo:`) |
+| pkg/validator/validator_test.go | Update the envoy image version  (search for `envoy-gloo:`) |
 
 ### go-control-plane
 
