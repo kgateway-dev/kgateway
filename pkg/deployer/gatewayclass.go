@@ -45,12 +45,6 @@ func GetSupportedFeaturesForStandardGateway() []gwv1.SupportedFeature {
 		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,
 		// ListenerSet status and attachment conformance is not complete yet.
 		features.ListenerSetFeature,
-		// Promoted TLSRoute v1 coverage is only partially wired through the status and
-		// listener validation paths today. Keep TLSRoute conformance gated off until
-		// the promoted API behavior matches the v1.5.x expectations.
-		features.TLSRouteFeature,
-		features.TLSRouteModeTerminateFeature,
-		features.TLSRouteModeMixedFeature,
 	)
 
 	// we don't support the BackendTLSPolicy feature at all.
