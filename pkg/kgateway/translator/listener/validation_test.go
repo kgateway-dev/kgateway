@@ -7,7 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	. "github.com/onsi/gomega"
 
@@ -23,7 +22,7 @@ func GroupNameHelper() *gwv1.Group {
 	return &g
 }
 
-func gwToIr(gw *gwv1.Gateway, allowedLS, deniedLS *gwxv1a1.XListenerSet) *ir.Gateway {
+func gwToIr(gw *gwv1.Gateway, allowedLS, deniedLS *gwv1.ListenerSet) *ir.Gateway {
 	out := &ir.Gateway{
 		Obj:       gw,
 		Listeners: make([]ir.Listener, 0, len(gw.Spec.Listeners)),
@@ -49,7 +48,7 @@ func gwToIr(gw *gwv1.Gateway, allowedLS, deniedLS *gwxv1a1.XListenerSet) *ir.Gat
 	return out
 }
 
-func lsToIR(ls *gwxv1a1.XListenerSet) ir.ListenerSet {
+func lsToIR(ls *gwv1.ListenerSet) ir.ListenerSet {
 	out := ir.ListenerSet{
 		Obj:       ls,
 		Listeners: make([]ir.Listener, 0, len(ls.Spec.Listeners)),
@@ -101,13 +100,13 @@ func TestValidate(t *testing.T) {
 		{
 			Type:               string(gwv1.GatewayConditionAccepted),
 			Status:             metav1.ConditionFalse,
-			Reason:             string(gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed)),
+			Reason:             string(gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed)),
 			LastTransitionTime: actualConditions[0].LastTransitionTime,
 		},
 		{
 			Type:               string(gwv1.GatewayConditionProgrammed),
 			Status:             metav1.ConditionFalse,
-			Reason:             string(gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed)),
+			Reason:             string(gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed)),
 			LastTransitionTime: actualConditions[1].LastTransitionTime,
 		},
 	}))
@@ -1071,14 +1070,14 @@ func simpleGwTCPRoute() *gwv1.Gateway {
 	}
 }
 
-func simpleLsTCPRoute() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+func simpleLsTCPRoute() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "tcp-listenerset",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "tcp",
 					Port:     8081,
@@ -1122,14 +1121,14 @@ func simpleGwInvalidTCPRouteKind() *gwv1.Gateway {
 	}
 }
 
-func simpleLsInvalidTCPRouteKind() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+func simpleLsInvalidTCPRouteKind() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "tcp-invalid-listenerset",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "tcp",
 					Port:     8081,
@@ -1166,14 +1165,14 @@ func tcpProtocolConflictGw() *gwv1.Gateway {
 	}
 }
 
-func tcpProtocolConflictLs() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+func tcpProtocolConflictLs() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "tcp-conflict-listenerset",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Port:     8080,
@@ -1205,15 +1204,15 @@ func tcpHostnameConflictGw() *gwv1.Gateway {
 	}
 }
 
-func tcpHostnameConflictLs() *gwxv1a1.XListenerSet {
+func tcpHostnameConflictLs() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "tcp-hostname-conflict-listenerset",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "tcp2",
 					Port:     8080,
@@ -1444,15 +1443,15 @@ func simpleGw() *gwv1.Gateway {
 	}
 }
 
-func simpleLs() *gwxv1a1.XListenerSet {
+func simpleLs() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1483,14 +1482,14 @@ func simpleGwNoHostname() *gwv1.Gateway {
 	}
 }
 
-func simpleLsNoHostname() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+func simpleLsNoHostname() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Port:     8081,
@@ -1520,14 +1519,14 @@ func simpleGwDuplicateNoHostname() *gwv1.Gateway {
 	}
 }
 
-func simpleLsDuplicateNoHostname() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+func simpleLsDuplicateNoHostname() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http2",
 					Port:     8080,
@@ -1566,15 +1565,15 @@ func simpleGwValidRouteKind() *gwv1.Gateway {
 	}
 }
 
-func simpleLsValidRouteKind() *gwxv1a1.XListenerSet {
+func simpleLsValidRouteKind() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1621,15 +1620,15 @@ func simpleGwInvalidRouteKind() *gwv1.Gateway {
 	}
 }
 
-func simpleLsInvalidRouteKind() *gwxv1a1.XListenerSet {
+func simpleLsInvalidRouteKind() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1677,16 +1676,16 @@ func simpleGwMultiListener() *gwv1.Gateway {
 	}
 }
 
-func simpleLsMultiListener() *gwxv1a1.XListenerSet {
+func simpleLsMultiListener() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1739,16 +1738,16 @@ func simpleGwMultiListenerExplicitRoutes() *gwv1.Gateway {
 	}
 }
 
-func simpleLsMultiListenerExplicitRoutes() *gwxv1a1.XListenerSet {
+func simpleLsMultiListenerExplicitRoutes() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1815,16 +1814,16 @@ func simpleGwMultiListenerWithInvalidListener() *gwv1.Gateway {
 	}
 }
 
-func simpleLsMultiListenerWithInvalidListener() *gwxv1a1.XListenerSet {
+func simpleLsMultiListenerWithInvalidListener() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1877,15 +1876,15 @@ func protocolConfGw() *gwv1.Gateway {
 	}
 }
 
-func protocolConfLs() *gwxv1a1.XListenerSet {
+func protocolConfLs() *gwv1.ListenerSet {
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "https",
 					Hostname: &hostname2,
@@ -1926,15 +1925,15 @@ func protocolConfGwWithInvalidRoute() *gwv1.Gateway {
 	}
 }
 
-func protocolConfLsWithInvalidRoute() *gwxv1a1.XListenerSet {
+func protocolConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "https",
 					Hostname: &hostname2,
@@ -1987,15 +1986,15 @@ func actualProtocolConfGwWithInvalidRoute() *gwv1.Gateway {
 	}
 }
 
-func actualProtocolConfLsWithInvalidRoute() *gwxv1a1.XListenerSet {
+func actualProtocolConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "https",
 					Hostname: &hostname2,
@@ -2028,15 +2027,15 @@ func hostConfGw() *gwv1.Gateway {
 	}
 }
 
-func hostConfLs() *gwxv1a1.XListenerSet {
+func hostConfLs() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http2",
 					Hostname: &hostname,
@@ -2076,15 +2075,15 @@ func hostConfGwWithInvalidRoute() *gwv1.Gateway {
 	}
 }
 
-func hostConfLsWithInvalidRoute() *gwxv1a1.XListenerSet {
+func hostConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http2",
 					Hostname: &hostname,
@@ -2137,15 +2136,15 @@ func actualHostConfGwWithInvalidRoute() *gwv1.Gateway {
 	}
 }
 
-func actualHostConfLsWithInvalidRoute() *gwxv1a1.XListenerSet {
+func actualHostConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http2",
 					Hostname: &hostname,
@@ -2185,16 +2184,16 @@ func hostConfGw2() *gwv1.Gateway {
 	}
 }
 
-func hostConfLs2() *gwxv1a1.XListenerSet {
+func hostConfLs2() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname4 := gwv1.Hostname("ls.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http2",
 					Hostname: &hostname,

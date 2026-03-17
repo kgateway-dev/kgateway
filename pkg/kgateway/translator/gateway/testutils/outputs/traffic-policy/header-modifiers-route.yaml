@@ -242,8 +242,8 @@ Statuses:
           type: ResolvedRefs
         controllerName: kgateway
         parentRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: ls
           namespace: default
   listenerSets:
@@ -312,8 +312,8 @@ Statuses:
     TrafficPolicy/default/header-modifiers-route-policy-2:
       ancestors:
       - ancestorRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: ls
           namespace: default
         conditions:

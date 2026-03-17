@@ -50,7 +50,11 @@ var (
 )
 
 var (
-	backendTlsPolicyGvr       = gwv1.SchemeGroupVersion.WithResource("backendtlspolicies")
+	backendTlsPolicyGvr = schema.GroupVersionResource{
+		Group:    gwv1.GroupVersion.Group,
+		Version:  gwv1.GroupVersion.Version,
+		Resource: "backendtlspolicies",
+	}
 	backendTlsPolicyGroupKind = kgwellknown.BackendTLSPolicyGVK
 )
 

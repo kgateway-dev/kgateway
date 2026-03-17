@@ -12,6 +12,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -20,7 +22,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -447,61 +448,64 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
 	// TODO: retry within loop per LS rather than as a full block
 	err := retry.Do(func() (rErr error) {
-		for lsnn := range rm.ListenerSets[wellknown.XListenerSetGVK] {
-			ls := gwxv1a1.XListenerSet{}
-			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
-			if err != nil {
-				logger.Info("error getting ls", "error", err.Error())
-				return err
-			}
-
-			var statusErr error
-
-			finishMetrics := CollectStatusSyncMetrics(StatusSyncMetricLabels{
-				Name:      string(ls.Spec.ParentRef.Name),
-				Namespace: lsnn.Namespace,
-				Syncer:    "ListenerSetStatusSyncer",
-			})
-			defer func() {
-				finishMetrics(errors.Join(rErr, statusErr))
-			}()
-
-			lsStatus := ls.Status
-			if status := rm.BuildListenerSetStatus(ctx, ls); status != nil {
-				if !isListenerSetStatusEqual(&lsStatus, status) {
-					ls.Status = *status
-					if err := s.mgr.GetClient().Status().Patch(ctx, &ls, client.Merge); err != nil {
-						if !apierrors.IsConflict(err) {
-							logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
-						}
-						return err
-					}
-					logger.Info("patched ls status", "listenerset", lsnn.String())
-
-					for _, cond := range status.Conditions {
-						if cond.Type != string(gwxv1a1.ListenerSetConditionAccepted) &&
-							cond.Type != string(gwxv1a1.ListenerSetConditionProgrammed) {
-							continue
-						}
-
-						if cond.Reason != string(gwxv1a1.ListenerSetReasonAccepted) &&
-							cond.Reason != string(gwxv1a1.ListenerSetReasonProgrammed) &&
-							cond.Reason != string(gwxv1a1.ListenerSetReasonPending) {
-							statusErr = fmt.Errorf("invalid listener condition")
-
-							break
-						}
-					}
-				} else {
-					logger.Debug("skipping k8s ls status update, status equal", "listenerset", lsnn.String())
+		for gvk, listenerSetsForGVK := range rm.ListenerSets {
+			for lsnn := range listenerSetsForGVK {
+				ls, legacyListenerSet, err := s.getListenerSetForStatus(ctx, lsnn, gvk)
+				if err != nil {
+					logger.Info("error getting ls", "error", err.Error())
+					return err
 				}
 
-				metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
-					Namespace:    ls.Namespace,
-					Gateway:      string(ls.Spec.ParentRef.Name),
-					ResourceType: "XListenerSet",
-					ResourceName: ls.Name,
+				var statusErr error
+
+				finishMetrics := CollectStatusSyncMetrics(StatusSyncMetricLabels{
+					Name:      string(ls.Spec.ParentRef.Name),
+					Namespace: lsnn.Namespace,
+					Syncer:    "ListenerSetStatusSyncer",
 				})
+				defer func() {
+					finishMetrics(errors.Join(rErr, statusErr))
+				}()
+
+				lsStatus := ls.Status
+				if status := rm.BuildListenerSetStatus(ctx, ls); status != nil {
+					if !isListenerSetStatusEqual(&lsStatus, status) {
+						ls.Status = *status
+						if err := s.patchListenerSetStatus(ctx, &ls, legacyListenerSet); err != nil {
+							if !apierrors.IsConflict(err) {
+								logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
+							}
+							return err
+						}
+						logger.Info("patched ls status", "listenerset", lsnn.String(), "gvk", gvk.String())
+
+						for _, cond := range status.Conditions {
+							if cond.Type != string(gwv1.ListenerSetConditionAccepted) &&
+								cond.Type != string(gwv1.ListenerSetConditionProgrammed) {
+								continue
+							}
+
+							if cond.Reason != string(gwv1.ListenerSetReasonAccepted) &&
+								cond.Reason != string(gwv1.ListenerSetReasonProgrammed) &&
+								cond.Reason != string(gwv1.ListenerSetReasonPending) {
+								statusErr = fmt.Errorf("invalid listener condition")
+
+								break
+							}
+						}
+					} else {
+						logger.Debug("skipping k8s ls status update, status equal", "listenerset", lsnn.String(), "gvk", gvk.String())
+					}
+
+					metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
+						Namespace: ls.Namespace,
+						Gateway:   string(ls.Spec.ParentRef.Name),
+						// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
+						// follow-up cleanup so dashboards, tests, and emitters can be updated together.
+						ResourceType: "XListenerSet",
+						ResourceName: ls.Name,
+					})
+				}
 			}
 		}
 		return nil
@@ -514,6 +518,53 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 		logger.Error("all attempts failed at updating listener set statuses", "error", err)
 	}
 	logger.Debug("synced listener sets status for listener set", "count", len(rm.ListenerSets))
+}
+
+func (s *StatusSyncer) getListenerSetForStatus(
+	ctx context.Context,
+	key types.NamespacedName,
+	gvk schema.GroupVersionKind,
+) (gwv1.ListenerSet, *unstructured.Unstructured, error) {
+	if gvk == wellknown.XListenerSetGVK {
+		legacyListenerSet := &unstructured.Unstructured{}
+		legacyListenerSet.SetGroupVersionKind(gvk)
+		if err := s.mgr.GetClient().Get(ctx, key, legacyListenerSet); err != nil {
+			return gwv1.ListenerSet{}, nil, err
+		}
+
+		ls := gwv1.ListenerSet{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(legacyListenerSet.UnstructuredContent(), &ls); err != nil {
+			return gwv1.ListenerSet{}, nil, err
+		}
+		ls.SetGroupVersionKind(gvk)
+		return ls, legacyListenerSet, nil
+	}
+
+	ls := gwv1.ListenerSet{}
+	if err := s.mgr.GetClient().Get(ctx, key, &ls); err != nil {
+		return gwv1.ListenerSet{}, nil, err
+	}
+	if ls.GroupVersionKind().Empty() {
+		ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
+	}
+	return ls, nil, nil
+}
+
+func (s *StatusSyncer) patchListenerSetStatus(
+	ctx context.Context,
+	ls *gwv1.ListenerSet,
+	legacyListenerSet *unstructured.Unstructured,
+) error {
+	if legacyListenerSet == nil {
+		return s.mgr.GetClient().Status().Patch(ctx, ls, client.Merge)
+	}
+
+	statusMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&ls.Status)
+	if err != nil {
+		return err
+	}
+	legacyListenerSet.Object["status"] = statusMap
+	return s.mgr.GetClient().Status().Patch(ctx, legacyListenerSet, client.Merge)
 }
 
 func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
@@ -613,7 +664,7 @@ func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 
-func isListenerSetStatusEqual(objA, objB *gwxv1a1.ListenerSetStatus) bool {
+func isListenerSetStatusEqual(objA, objB *gwv1.ListenerSetStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 

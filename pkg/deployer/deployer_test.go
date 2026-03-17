@@ -24,7 +24,6 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 
@@ -2245,23 +2244,23 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
-			ls := &apixv1a1.XListenerSet{
+			ls := &gwv1.ListenerSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ls",
 					Namespace: defaultNamespace,
 				},
-				Spec: apixv1a1.ListenerSetSpec{
-					Listeners: []apixv1a1.ListenerEntry{
+				Spec: gwv1.ListenerSetSpec{
+					Listeners: []gwv1.ListenerEntry{
 						{
 							Name: "listenerset-listener",
-							Port: apixv1a1.PortNumber(listenerSetPort),
+							Port: gwv1.PortNumber(listenerSetPort),
 						},
 					},
-					ParentRef: apixv1a1.ParentGatewayReference{
-						Kind:      (*apixv1a1.Kind)(&gw.Kind),
-						Group:     (*apixv1a1.Group)(&gw.APIVersion),
-						Name:      apixv1a1.ObjectName(gw.Name),
-						Namespace: (*apixv1a1.Namespace)(&gw.Namespace),
+					ParentRef: gwv1.ParentGatewayReference{
+						Kind:      (*gwv1.Kind)(&gw.Kind),
+						Group:     (*gwv1.Group)(&gw.APIVersion),
+						Name:      gwv1.ObjectName(gw.Name),
+						Namespace: (*gwv1.Namespace)(&gw.Namespace),
 					},
 				},
 			}

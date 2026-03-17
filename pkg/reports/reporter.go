@@ -115,7 +115,7 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 func (r *ReportMap) ListenerSet(listenerSet client.Object) *ListenerSetReport {
 	gvk := listenerSet.GetObjectKind().GroupVersionKind()
 	if gvk.Empty() {
-		gvk = wellknown.XListenerSetGVK
+		gvk = wellknown.ListenerSetGVK
 	}
 	if r.ListenerSets[gvk] == nil {
 		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)
@@ -131,7 +131,7 @@ func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSet
 
 	gvk := listenerSet.GetObjectKind().GroupVersionKind()
 	if gvk.Empty() {
-		gvk = wellknown.XListenerSetGVK
+		gvk = wellknown.ListenerSetGVK
 	}
 	if r.ListenerSets[gvk] == nil {
 		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)

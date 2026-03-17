@@ -272,9 +272,9 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Successfully accepted Gateway
-        reason: Accepted
-        status: "True"
+        message: 'extauth: gateway extension gwtest/missing-extauth not found'
+        reason: GatewayReplaced
+        status: "False"
         type: Accepted
       - lastTransitionTime: null
         message: Successfully programmed Gateway
@@ -372,8 +372,8 @@ Statuses:
           type: ResolvedRefs
         controllerName: kgateway
         parentRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: test-listenerset
   listenerSets:
     gwtest/test-listenerset:
@@ -412,7 +412,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: http-additional
-        port: 9090
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
@@ -421,9 +420,9 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: gateway extension gwtest/missing-extauth not found'
-          reason: ListenerReplaced
-          status: "False"
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully verified that Listener has no conflicts
@@ -441,7 +440,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: https-additional
-        port: 9443
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
@@ -468,8 +466,8 @@ Statuses:
           type: Attached
         controllerName: kgateway.dev/kgateway
       - ancestorRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: test-listenerset
           namespace: gwtest
         conditions:
@@ -487,8 +485,8 @@ Statuses:
     TrafficPolicy/gwtest/xlistenerset-wide-invalid-policy:
       ancestors:
       - ancestorRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: test-listenerset
           namespace: gwtest
         conditions:

@@ -198,11 +198,11 @@ func NewGatewayReconciler(
 		r.gwParamClient.AddEventHandler(gwParamEventHandler)
 	}
 
-	// Custom event handler for XListenerSet changes
+	// Custom event handler for ListenerSet changes
 	cfg.CommonCollections.GatewayIndex.GatewaysForDeployer.Register(func(o krt.Event[ir.GatewayForDeployer]) {
 		gw := o.Latest()
 		ref := types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name}
-		logger.Debug("reconciling Gateway due to XListenerSet change", "ref", ref)
+		logger.Debug("reconciling Gateway due to ListenerSet change", "ref", ref)
 		r.queue.Add(ref)
 	})
 

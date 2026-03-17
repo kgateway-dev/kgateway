@@ -26,7 +26,9 @@
 //go:generate sh -c "echo '\n\t// github.com/envoyproxy/go-control-plane/envoy/...' >> filter_types.gen.go"
 //go:generate sh -c "go list github.com/envoyproxy/go-control-plane/envoy/... | grep 'v[3-9]' | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
 //go:generate sh -c "echo '\n\t// github.com/envoyproxy/go-control-plane/contrib/...' >> filter_types.gen.go"
-//go:generate sh -c "go list github.com/envoyproxy/go-control-plane/contrib/... | grep 'v[3-9]' | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
+// Exclude the contrib ALPN proto because it duplicates Istio's legacy ALPN package namespace
+// and panics during test binary init when both are linked.
+//go:generate sh -c "go list github.com/envoyproxy/go-control-plane/contrib/... | grep 'v[3-9]' | grep -v 'github.com/envoyproxy/go-control-plane/contrib/envoy/extensions/filters/http/alpn/v3' | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
 //go:generate sh -c "echo '\n\t// github.com/envoyproxy/go-control-plane/ratelimit/...' >> filter_types.gen.go"
 //go:generate sh -c "go list github.com/envoyproxy/go-control-plane/ratelimit/... | grep 'v[3-9]' | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
 //go:generate sh -c "echo ')' >> filter_types.gen.go"

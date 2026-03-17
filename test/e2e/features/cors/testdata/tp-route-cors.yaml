@@ -11,7 +11,7 @@ spec:
   cors:
     allowOrigins:
       - https://notexample.com
-      - https://a.b.*
+      - https://*.a.b
       - https://*.edu
     allowMethods:
       - GET
@@ -32,4 +32,4 @@ spec:
     name: svc-route-2
     sectionName: rule1
   cors:
-    disable: {}  
+    disable: {}
