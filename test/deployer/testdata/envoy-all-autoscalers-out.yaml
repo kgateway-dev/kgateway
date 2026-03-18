@@ -383,6 +383,14 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/instance: gw
+    app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    kgateway: kube-gateway
     resource-type: pdb
   name: gw
 spec:
@@ -402,6 +410,14 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/instance: gw
+    app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    kgateway: kube-gateway
     resource-type: hpa
   name: gw
 spec:
@@ -426,6 +442,14 @@ apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/instance: gw
+    app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    kgateway: kube-gateway
     resource-type: vpa
   name: gw
   namespace: ""

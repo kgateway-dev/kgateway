@@ -34,12 +34,10 @@ Listeners:
             body:
               stringValue: '"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE%
                 "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"'''
-            commonConfig:
-              grpcService:
-                envoyGrpc:
-                  clusterName: kube_default_opentelemetry-collector_4317
-              logName: otel-accesslog-service
-              transportApiVersion: V3
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_default_opentelemetry-collector_4317
+            logName: otel-accesslog-service
             resourceAttributes:
               values:
               - key: service.name

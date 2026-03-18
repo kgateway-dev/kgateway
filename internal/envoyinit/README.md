@@ -20,16 +20,15 @@ To build the envoy wrapper docker image, at the kgateway top project level, do:
 make envoy-wrapper-docker
 ```
 
-Currently, envoy-gloo does not support arm64 architecture but if you are building a local arm envoy image on a mac with m processor,
-you will need to build the module targeting the arm64 architecture as well:
+A custom ENVOY_IMAGE can be used but make sure the rust sdk is compatible with the rustformation module:
 
 ``` bash
-ENVOY_IMAGE=<you own arm envoy image> RUST_BUILD_ARCH=aarch64 make envoy-wrapper-docker
+ENVOY_IMAGE=<custom envoy image> make envoy-wrapper-docker
 ```
 
 ## Formatting and Linting
 
-Before creating a PR, make sure you run:
+Before creating a PR, run:
 
 ``` bash
 make lint

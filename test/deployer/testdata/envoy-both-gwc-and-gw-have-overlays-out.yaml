@@ -390,7 +390,17 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/instance: gw
+    app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    gwc-label: from-gatewayclass
+    kgateway: kube-gateway
     pdb-source: gatewayclass
+    shared-label: from-gatewayclass
   name: gw
 spec:
   minAvailable: 1
@@ -409,7 +419,18 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/instance: gw
+    app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    gw-label: from-gateway
+    gwc-label: from-gatewayclass
     hpa-source: gateway
+    kgateway: kube-gateway
+    shared-label: from-gateway
   name: gw
 spec:
   maxReplicas: 5

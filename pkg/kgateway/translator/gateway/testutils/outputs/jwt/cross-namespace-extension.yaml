@@ -54,8 +54,8 @@ Listeners:
                             providers:
                               jwt-ext_other-ns_gateway-example:
                                 claimToHeaders:
-                                  - claimName: gateway
-                                    headerName: x-gateway
+                                - claimName: gateway
+                                  headerName: x-gateway
                                 clearRouteCache: true
                                 issuer: https://gateway.example.com
                                 localJwks:

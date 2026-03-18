@@ -385,6 +385,14 @@ metadata:
   annotations:
     vpa-annotation: from-overlay
   labels:
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/instance: gw
+    app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    kgateway: kube-gateway
     vpa-label: from-overlay
   name: gw
   namespace: ""

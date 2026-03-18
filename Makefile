@@ -83,28 +83,14 @@ else
 endif
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-# For v2.2, we use vanilla upstream envoy for arm build and envoy-gloo for x86 build. These are used by goreleaser
-# directly when building the images for the respective architecture.
-# TODO: Consolidate to just upstream image in v2.3
-export ENVOY_IMAGE_ARM64 = envoyproxy/envoy:v1.36.4
-export ENVOY_IMAGE_AMD64 = quay.io/solo-io/envoy-gloo:1.36.4-patch1
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.37.1
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
 ifeq ($(GOARCH), arm64)
 	RUST_BUILD_ARCH := aarch64
-	ifeq ($(ENVOY_IMAGE), )
-		ENVOY_IMAGE := $(ENVOY_IMAGE_ARM64)
-		export ENVOY_IMAGE
-	endif
 else
 	RUST_BUILD_ARCH := x86_64
-# For v2.2 release, we plan to still use envoy-gloo for x86 build (so people can switch back to
-# classic transformation if needed).
-	ifeq ($(ENVOY_IMAGE), )
-		ENVOY_IMAGE := $(ENVOY_IMAGE_AMD64)
-		export ENVOY_IMAGE
-	endif
 endif
 
 
@@ -251,6 +237,13 @@ golden-helm:  ## Refreshes golden files for ./test/helm snapshot testing
 	@echo ""
 	@echo "This must pass after refreshing:"
 	go test ./test/helm/...
+
+## Refreshes golden files for translation testing
+golden-translator-%:
+	REFRESH_GOLDEN=true \
+	GINKGO_USER_FLAGS="--fail-on-pending=false" \
+	TEST_PKG=./pkg/kgateway/translator/$* \
+	$(MAKE) test
 
 #----------------------------------------------------------------------------------
 # Env test
@@ -931,7 +924,6 @@ bump-gtw: ## Bump Gateway API deps to $DEP_REF (or $DEP_VERSION). Example: make 
 envoyversion: ENVOY_VERSION_TAG ?= $(shell echo $(ENVOY_IMAGE) | cut -d':' -f2)
 envoyversion:
 	echo "Version is $(ENVOY_VERSION_TAG)"
-	echo "Commit for envoyproxy is $(shell curl -s https://raw.githubusercontent.com/solo-io/envoy-gloo/refs/tags/v$(ENVOY_VERSION_TAG)/bazel/repository_locations.bzl | grep "envoy =" -A 4 | grep commit | cut -d'"' -f2)"
 	echo "Current ABI in envoyinit can be found in the cargo.toml's envoy-proxy-dynamic-modules-rust-sdk"
 
 #----------------------------------------------------------------------------------

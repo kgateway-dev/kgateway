@@ -445,6 +445,16 @@ additional context here
 more details`,
 			expected: "error initializing configuration '/dev/fd/0': validation error additional context here more details",
 		},
+		{
+			name:     "strips goo.gle/debugonly prefix",
+			input:    "error initializing configuration '/dev/fd/0': goo.gle/debugonly node { id: \"test\" } : Proto constraint validation failed",
+			expected: "error initializing configuration '/dev/fd/0': node { id: \"test\" } : Proto constraint validation failed",
+		},
+		{
+			name:     "strips goo.gle/debugproto prefix",
+			input:    "error initializing configuration '/dev/fd/0': goo.gle/debugproto node { id: \"test\" } : Proto constraint validation failed",
+			expected: "error initializing configuration '/dev/fd/0': node { id: \"test\" } : Proto constraint validation failed",
+		},
 	}
 
 	for _, tt := range tests {

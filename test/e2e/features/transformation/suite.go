@@ -165,8 +165,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 					// The http-bin response has "*" and we added "foo.com" in the policy. The library combined
 					// them with a ','
 
-					// REMOVE-ENVOY-1.37: Add header is no-op for arm build, so comment this out for now until after we upgrade to ENVOY-1.37
-					// "access-control-allow-origin": "*,foo.com",
+					"access-control-allow-origin": "*,foo.com",
 				},
 				NotHeaders: []string{
 					"response-gateway",
@@ -181,8 +180,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 					"x-space-test": "foobar",
 					"x-client":     "text",
 
-					// REMOVE-ENVOY-1.37: Add header is no-op for arm build, so comment this out for now until after we upgrade to ENVOY-1.37
-					// "cookie":       []string{"foo=bar", "test=123"},
+					"cookie": []string{"foo=bar", "test=123"},
 				},
 				NotHeaders: []string{
 					// looks like the way we set up transformation targeting gateway, we are
@@ -208,8 +206,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 				// go-httpbin doesn't allow setting custom response header, so make sure
 				// we get one of the default access-control header and removed the other
 				Headers: map[string]any{
-					// REMOVE-ENVOY-1.37: Add header is no-op for arm build, so comment this out for now until after we upgrade to ENVOY-1.37
-					// "access-control-allow-origin": "*,foo.com",
+					"access-control-allow-origin": "*,foo.com",
 				},
 				NotHeaders: []string{
 					"access-control-allow-credentials",

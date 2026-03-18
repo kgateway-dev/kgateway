@@ -35,11 +35,7 @@ If Strict Mode Validation is needed, see the [Classic Transformation Deprecation
 
 Starting from v2.2.0, we supports building on arm64 architecture and uses Envoy arm64 binary directly from upstream Envoy container.
 
-### add header function not supported with Rustformation on arm64
 
-The rust transformation dynamic module is building with v1.36 Envoy and unfortunately, the add header function has not been exposed in the rust sdk, so on arm64 build, the add header function in Transformation is a no-op. Please use set header instead. This will be addressed when Envoy is upgraded to v1.37 in the future.
-
-The add header function works correctly on x86 architecture because we are still using a custom build Envoy binary and we have patched the rust sdk there to support add header.
 
 ## Classic Transformation Deprecation
 

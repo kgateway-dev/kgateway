@@ -345,8 +345,10 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 		return err
 	}
 
-	if err := r.deployer.PruneRemovedResources(ctx, gw.UID, gw.Namespace, objs); err != nil {
-		return err
+	// Prune any PDB/HPA/VPA resources that are no longer desired
+	err = r.deployer.PruneRemovedResources(ctx, gw, objs)
+	if err != nil {
+		return fmt.Errorf("error pruning removed resources for Gateway %s: %w", req, err)
 	}
 
 	// find the name/ns of the service we own so we can grab addresses

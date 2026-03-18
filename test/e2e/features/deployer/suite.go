@@ -4,6 +4,7 @@ package deployer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -13,8 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
@@ -22,6 +27,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -61,6 +67,9 @@ var (
 		"TestGatewayParametersUpdateTriggersReconciliation": {
 			Manifests: []string{gatewayWithParameters},
 		},
+		"TestHPAPDBLifecycle": {
+			Manifests: []string{gatewayWithHPAPDB},
+		},
 	}
 )
 
@@ -73,6 +82,29 @@ type testingSuite struct {
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+	}
+}
+
+func (s *testingSuite) SetupSuite() {
+	// Register PDB and HPA types in the client's scheme so that tests
+	// can use the typed client to get/list these resources.
+	scheme := s.TestInstallation.ClusterContext.Client.Scheme()
+	_ = policyv1.AddToScheme(scheme)
+	_ = autoscalingv2.AddToScheme(scheme)
+
+	// Install VPA CRD so the deployer can create VPA resources.
+	err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", vpaCRDManifest)
+	s.Require().NoError(err, "failed to install VPA CRD")
+
+	s.BaseTestingSuite.SetupSuite()
+}
+
+func (s *testingSuite) TearDownSuite() {
+	s.BaseTestingSuite.TearDownSuite()
+
+	// Clean up the VPA CRD installed in SetupSuite
+	if !testutils.ShouldSkipCleanup(s.T()) {
+		_ = s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", vpaCRDManifest)
 	}
 }
 
@@ -353,6 +385,130 @@ func (s *testingSuite) TestGatewayParametersUpdateTriggersReconciliation() {
 	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
 }
 
+// TestHPAPDBLifecycle tests the full lifecycle of HPA, PDB, and VPA resources:
+// 1. Creates a Gateway with HPA, PDB, and VPA configured
+// 2. Verifies the proxy deployment is healthy and all three resources exist
+// 3. Updates the PDB configuration and verifies the change propagates
+// 4. Removes the HPA and VPA from GatewayParameters and verifies they are pruned
+// 5. Deletes the Gateway and verifies all resources are cleaned up
+func (s *testingSuite) TestHPAPDBLifecycle() {
+	vpaClient := s.TestInstallation.ClusterContext.IstioClient.Dynamic().
+		Resource(wellknown.VerticalPodAutoscalerGVR).
+		Namespace(proxyObjectMeta.Namespace)
+
+	// Step 1: Wait for the proxy deployment to be healthy
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+
+	// Step 2: Verify PDB, HPA, and VPA were created
+	pdb := &policyv1.PodDisruptionBudget{}
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		}, pdb)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "PDB should exist")
+		g.Expect(pdb.Spec.MinAvailable).NotTo(gomega.BeNil(), "PDB should have minAvailable set")
+		g.Expect(pdb.Spec.MinAvailable.IntValue()).To(gomega.Equal(1), "PDB minAvailable should be 1")
+	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
+
+	hpa := &autoscalingv2.HorizontalPodAutoscaler{}
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		}, hpa)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "HPA should exist")
+		g.Expect(hpa.Spec.MaxReplicas).To(gomega.Equal(int32(3)), "HPA maxReplicas should be 3")
+	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
+
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		vpa, err := vpaClient.Get(s.Ctx, proxyObjectMeta.Name, metav1.GetOptions{})
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "VPA should exist")
+		updateMode, _, _ := unstructured.NestedString(vpa.Object, "spec", "updatePolicy", "updateMode")
+		g.Expect(updateMode).To(gomega.Equal("Off"), "VPA updateMode should be Off")
+	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
+
+	// Step 3: Update PDB configuration - change minAvailable from 1 to 0
+	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *kgateway.GatewayParameters) {
+		parameters.Spec.Kube.PodDisruptionBudget = &shared.KubernetesResourceOverlay{
+			Spec: mustMarshalJSON(map[string]any{
+				"minAvailable": 0,
+			}),
+		}
+	})
+
+	// Verify PDB was updated
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		updatedPDB := &policyv1.PodDisruptionBudget{}
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		}, updatedPDB)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "PDB should still exist after update")
+		g.Expect(updatedPDB.Spec.MinAvailable).NotTo(gomega.BeNil())
+		g.Expect(updatedPDB.Spec.MinAvailable.IntValue()).To(gomega.Equal(0), "PDB minAvailable should be updated to 0")
+	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
+
+	// Step 4: Remove HPA and VPA from GatewayParameters (keep PDB)
+	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *kgateway.GatewayParameters) {
+		parameters.Spec.Kube.HorizontalPodAutoscaler = nil
+		parameters.Spec.Kube.VerticalPodAutoscaler = nil
+	})
+
+	// Verify HPA is pruned
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		}, &autoscalingv2.HorizontalPodAutoscaler{})
+		g.Expect(err).To(gomega.HaveOccurred(), "HPA should be deleted")
+		g.Expect(client.IgnoreNotFound(err)).To(gomega.Succeed(), "error should be NotFound")
+	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
+
+	// Verify VPA is pruned
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		_, err := vpaClient.Get(s.Ctx, proxyObjectMeta.Name, metav1.GetOptions{})
+		g.Expect(err).To(gomega.HaveOccurred(), "VPA should be deleted")
+	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
+
+	// PDB should still exist
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+		Namespace: proxyObjectMeta.Namespace,
+		Name:      proxyObjectMeta.Name,
+	}, &policyv1.PodDisruptionBudget{})
+	s.Require().NoError(err, "PDB should still exist after HPA/VPA removal")
+
+	// Deployment should still be healthy
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+
+	// Step 5: Delete the Gateway and verify all resources are cleaned up
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		gw := &gwv1.Gateway{}
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		}, gw)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+		err = s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, gw)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+	}).WithTimeout(30 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
+
+	// Wait for all owned resources to be garbage collected
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx,
+		&appsv1.Deployment{ObjectMeta: proxyObjectMeta},
+		&corev1.Service{ObjectMeta: proxyObjectMeta},
+		&corev1.ServiceAccount{ObjectMeta: proxyObjectMeta},
+		&policyv1.PodDisruptionBudget{ObjectMeta: proxyObjectMeta},
+		&autoscalingv2.HorizontalPodAutoscaler{ObjectMeta: proxyObjectMeta},
+	)
+
+	// VPA cleanup check (dynamic client since VPA is a CRD)
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		_, err := vpaClient.Get(s.Ctx, proxyObjectMeta.Name, metav1.GetOptions{})
+		g.Expect(err).To(gomega.HaveOccurred(), "VPA should not exist after Gateway deletion")
+	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
+}
+
 // patchGateway accepts a reference to an object, and a patch function. It then queries the object,
 // performs the patch in memory, and writes the object back to the cluster.
 func (s *testingSuite) patchGateway(objectMeta metav1.ObjectMeta, patchFn func(*gwv1.Gateway)) {
@@ -403,6 +559,14 @@ func serverInfoLogLevelAssertion(t *testing.T, testInstallation *e2e.TestInstall
 			WithPolling(time.Millisecond * 200).
 			Should(gomega.Succeed())
 	}
+}
+
+func mustMarshalJSON(v any) *apiextensionsv1.JSON {
+	data, err := json.Marshal(v)
+	if err != nil {
+		panic(fmt.Sprintf("failed to marshal JSON: %v", err))
+	}
+	return &apiextensionsv1.JSON{Raw: data}
 }
 
 func xdsClusterAssertion(t *testing.T, testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
