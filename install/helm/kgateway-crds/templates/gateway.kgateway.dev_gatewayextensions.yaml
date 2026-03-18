@@ -1396,10 +1396,9 @@ spec:
                       Refer to https://datatracker.ietf.org/doc/html/rfc7517#section-5 for more details.
                     pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
                     type: string
-                  jwts:
-                    description: JWTs specifies the configuration for whether and
-                      how to process the retrieved access and ID tokens as JSON Web
-                      Token.
+                  jwt:
+                    description: JWT specifies the configuration for whether and how
+                      to process the retrieved access and ID tokens as JSON Web Token.
                     properties:
                       accessToken:
                         description: |-
@@ -1538,14 +1537,14 @@ spec:
                   rule: has(self.issuerURI) || (has(self.authorizationEndpoint) &&
                     has(self.tokenEndpoint))
                 - message: Either issuerURI or jwksURI must be specified for JWT parsing
-                  rule: '!(has(self.?jwts.accessToken) || has(self.?jwts.idToken))
-                    || (has(self.issuerURI) || has(self.jwksURI))'
+                  rule: '!(has(self.?jwt.accessToken) || has(self.?jwt.idToken)) ||
+                    (has(self.issuerURI) || has(self.jwksURI))'
                 - message: Access token cookie must not be disabled when the token
                     should be parsed
-                  rule: '!has(self.?jwts.accessToken) || !self.?cookies.?disableAccessTokenSetCookie.orValue(false)'
+                  rule: '!has(self.?jwt.accessToken) || !self.?cookies.?disableAccessTokenSetCookie.orValue(false)'
                 - message: ID token cookie must not be disabled when the token should
                     be parsed
-                  rule: '!has(self.?jwts.idToken) || !self.?cookies.?disableIDTokenSetCookie.orValue(false)'
+                  rule: '!has(self.?jwt.idToken) || !self.?cookies.?disableIDTokenSetCookie.orValue(false)'
               rateLimit:
                 description: RateLimit configuration for RateLimit extension type.
                 properties:

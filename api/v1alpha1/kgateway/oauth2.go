@@ -33,9 +33,9 @@ const (
 // OAuth2Provider specifies the configuration for OAuth2 extension provider.
 //
 // +kubebuilder:validation:XValidation:message="Either issuerURI, or both authorizationEndpoint and tokenEndpoint must be specified",rule="has(self.issuerURI) || (has(self.authorizationEndpoint) && has(self.tokenEndpoint))"
-// +kubebuilder:validation:XValidation:message="Either issuerURI or jwksURI must be specified for JWT parsing",rule="!(has(self.?jwts.accessToken) || has(self.?jwts.idToken)) || (has(self.issuerURI) || has(self.jwksURI))"
-// +kubebuilder:validation:XValidation:message="Access token cookie must not be disabled when the token should be parsed",rule="!has(self.?jwts.accessToken) || !self.?cookies.?disableAccessTokenSetCookie.orValue(false)"
-// +kubebuilder:validation:XValidation:message="ID token cookie must not be disabled when the token should be parsed",rule="!has(self.?jwts.idToken) || !self.?cookies.?disableIDTokenSetCookie.orValue(false)"
+// +kubebuilder:validation:XValidation:message="Either issuerURI or jwksURI must be specified for JWT parsing",rule="!(has(self.?jwt.accessToken) || has(self.?jwt.idToken)) || (has(self.issuerURI) || has(self.jwksURI))"
+// +kubebuilder:validation:XValidation:message="Access token cookie must not be disabled when the token should be parsed",rule="!has(self.?jwt.accessToken) || !self.?cookies.?disableAccessTokenSetCookie.orValue(false)"
+// +kubebuilder:validation:XValidation:message="ID token cookie must not be disabled when the token should be parsed",rule="!has(self.?jwt.idToken) || !self.?cookies.?disableIDTokenSetCookie.orValue(false)"
 type OAuth2Provider struct {
 	// BackendRef specifies the Backend to use for the OAuth2 provider.
 	// +required
@@ -112,9 +112,9 @@ type OAuth2Provider struct {
 	// +optional
 	JWKSURI *HttpsUri `json:"jwksURI,omitempty"`
 
-	// JWTs specifies the configuration for whether and how to process the retrieved access and ID tokens as JSON Web Token.
+	// JWT specifies the configuration for whether and how to process the retrieved access and ID tokens as JSON Web Token.
 	// +optional
-	JWTs *OAuth2JWTConfig `json:"jwts,omitempty"`
+	JWT *OAuth2JWTConfig `json:"jwt,omitempty"`
 
 	// DenyRedirectMatcher specifies the matcher to match requests that should be denied redirects to the authorization endpoint.
 	// Matching requests will receive a 401 Unauthorized response instead of being redirected.

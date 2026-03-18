@@ -3667,8 +3667,8 @@ func (in *OAuth2Provider) DeepCopyInto(out *OAuth2Provider) {
 		*out = new(HttpsUri)
 		**out = **in
 	}
-	if in.JWTs != nil {
-		in, out := &in.JWTs, &out.JWTs
+	if in.JWT != nil {
+		in, out := &in.JWT, &out.JWT
 		*out = new(OAuth2JWTConfig)
 		(*in).DeepCopyInto(*out)
 	}

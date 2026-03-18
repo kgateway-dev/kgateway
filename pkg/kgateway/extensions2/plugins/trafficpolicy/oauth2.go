@@ -354,12 +354,12 @@ func buildOAuth2JWTConfig(
 	cookieNames *envoyoauth2v3.OAuth2Credentials_CookieNames,
 	backend *ir.BackendObjectIR,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
-	jwts := ext.OAuth2.JWTs
-	if jwts == nil {
+	jwt := ext.OAuth2.JWT
+	if jwt == nil {
 		return nil, nil
 	}
 
-	if jwts.AccessToken == nil && jwts.IDToken == nil {
+	if jwt.AccessToken == nil && jwt.IDToken == nil {
 		return nil, nil
 	}
 
@@ -381,13 +381,13 @@ func buildOAuth2JWTConfig(
 			},
 		},
 	}
-	if jwts.AccessToken != nil {
-		claimsToHeaders := translateJWTClaimsToHeaders(jwts.AccessToken.ClaimsToHeaders)
+	if jwt.AccessToken != nil {
+		claimsToHeaders := translateJWTClaimsToHeaders(jwt.AccessToken.ClaimsToHeaders)
 		providers[oauthJWTAccessTokenProvider] = &envoyjwtauthnv3.JwtProvider{
 			FromCookies:         []string{cookieNames.BearerToken},
 			PayloadInMetadata:   "accessToken",
 			JwksSourceSpecifier: jwksSource,
-			Audiences:           jwts.AccessToken.Audiences,
+			Audiences:           jwt.AccessToken.Audiences,
 			ClaimToHeaders:      claimsToHeaders,
 			ClearRouteCache:     len(claimsToHeaders) > 0,
 		}
@@ -398,13 +398,13 @@ func buildOAuth2JWTConfig(
 		})
 	}
 
-	if jwts.IDToken != nil {
-		claimsToHeaders := translateJWTClaimsToHeaders(jwts.IDToken.ClaimsToHeaders)
+	if jwt.IDToken != nil {
+		claimsToHeaders := translateJWTClaimsToHeaders(jwt.IDToken.ClaimsToHeaders)
 		providers[oauthJWTIDTokenProvider] = &envoyjwtauthnv3.JwtProvider{
 			FromCookies:         []string{cookieNames.IdToken},
 			PayloadInMetadata:   "idToken",
 			JwksSourceSpecifier: jwksSource,
-			Audiences:           jwts.IDToken.Audiences,
+			Audiences:           jwt.IDToken.Audiences,
 			ClaimToHeaders:      claimsToHeaders,
 			ClearRouteCache:     len(claimsToHeaders) > 0,
 		}
