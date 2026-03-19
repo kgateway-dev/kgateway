@@ -42,11 +42,13 @@ type OAuth2Provider struct {
 	BackendRef gwv1.BackendRef `json:"backendRef"`
 
 	// AuthorizationEndpoint specifies the endpoint to redirect to for authorization in response to unauthorized requests.
+	// If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
 	// Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-3.1 for more details.
 	// +optional
 	AuthorizationEndpoint *HttpsUri `json:"authorizationEndpoint,omitempty"`
 
 	// TokenEndpoint specifies the endpoint on the authorization server to retrieve the access token from.
+	// If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
 	// Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-3.2 for more details.
 	// +optional
 	TokenEndpoint *HttpsUri `json:"tokenEndpoint,omitempty"`
@@ -86,6 +88,7 @@ type OAuth2Provider struct {
 	// The Issuer must be a URI RFC 3986 [RFC3986] with a scheme component that must be https, a host component,
 	// and optionally, port and path components and no query or fragment components.
 	// It discovers the authorizationEndpoint, tokenEndpoint, endSessionEndpoint, and jwksURI if specified in the discovery response.
+	// Explicit configuration of these options will take precedence over the discovered values.
 	// Refer to https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig for more details.
 	// Note that the OpenID provider configuration is cached and only refreshed periodically when the GatewayExtension object
 	// is reprocessed.
@@ -97,6 +100,7 @@ type OAuth2Provider struct {
 	// EndSessionEndpoint specifies the URL that redirects a user's browser to in order to initiate a single logout
 	// across all applications and the OpenID provider. Users are directed to this endpoint when they access the logout path.
 	// This should only be set when the OpenID provider supports RP-Initiated Logout and "openid" is included in the list of scopes.
+	// If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
 	// Refer to https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout for more details.
 	// +optional
 	EndSessionEndpoint *HttpsUri `json:"endSessionEndpoint,omitempty"`
@@ -107,6 +111,7 @@ type OAuth2Provider struct {
 
 	// JWKSURI specifies the URL that public keys for validating JWTs should be retrieved from.
 	// This must be set if the retrieved access or ID token need to be parsed and IssuerURI is not set for discovery.
+	// If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
 	// The URL must point to a valid JWKS definition.
 	// Refer to https://datatracker.ietf.org/doc/html/rfc7517#section-5 for more details.
 	// +optional

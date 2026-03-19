@@ -156,10 +156,10 @@ func buildOAuth2ProviderConfig(
 	}
 
 	if tokenEndpoint == "" {
-		return nil, fmt.Errorf("oauth2 token endpoint not found")
+		return nil, fmt.Errorf("oauth2 token endpoint not specified or not found in issuer well-known configuration")
 	}
 	if authorizationEndpoint == "" {
-		return nil, fmt.Errorf("oauth2 authorization endpoint not found")
+		return nil, fmt.Errorf("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
 	}
 
 	backend, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, in.BackendRef.BackendObjectReference)
@@ -364,7 +364,7 @@ func buildOAuth2JWTConfig(
 	}
 
 	if jwksURI == "" {
-		return nil, fmt.Errorf("jwksURI must be specified when JWT parsing is configured on GatewayExtension %s", ext.NamespacedName())
+		return nil, fmt.Errorf("jwksURI not specified or not found in issuer well-known configuration. Required since JWT parsing is configured on GatewayExtension %s", ext.NamespacedName())
 	}
 
 	providers := map[string]*envoyjwtauthnv3.JwtProvider{}
