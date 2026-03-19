@@ -426,6 +426,12 @@ var _ = Describe("Query", func() {
 			It("should work with prefix listeners and specific http", func() {
 				expectHostnamesToMatch("*.foo.com", []string{"bar.foo.com", "foo.com", "far.foo.com", "blah.com"}, "bar.foo.com", "far.foo.com")
 			})
+			It("should prefer the more specific wildcard hostname", func() {
+				expectHostnamesToMatch("*.example.com", []string{"*.com"}, "*.example.com")
+			})
+			It("should keep the more specific wildcard route hostname", func() {
+				expectHostnamesToMatch("*.com", []string{"*.example.com"}, "*.example.com")
+			})
 			It("should work with catch all listener hostname", func() {
 				expectHostnamesToMatch("", []string{"foo.com", "blah.com"}, "foo.com", "blah.com")
 			})
