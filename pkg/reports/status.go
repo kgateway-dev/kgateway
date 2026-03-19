@@ -125,7 +125,9 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	finalGwStatus.Addresses = gw.Status.Addresses
 	finalGwStatus.Conditions = finalConditions
 	finalGwStatus.Listeners = finalListeners
-	finalGwStatus.AttachedListenerSets = &gwReport.attachedListenerSets
+	if gwReport.attachedListenerSets > 0 {
+		finalGwStatus.AttachedListenerSets = &gwReport.attachedListenerSets
+	}
 	return &finalGwStatus
 }
 

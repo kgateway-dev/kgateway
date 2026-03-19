@@ -103,12 +103,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        observedGeneration: 3
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: Successfully accepted Gateway
         observedGeneration: 3
         reason: Accepted

@@ -162,12 +162,8 @@ Routes:
 Statuses:
   gateways:
     default/example-gateway:
+      attachedListenerSets: 1
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsAttached
-        status: "True"
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
@@ -283,7 +279,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: foo
-        port: 8081
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute

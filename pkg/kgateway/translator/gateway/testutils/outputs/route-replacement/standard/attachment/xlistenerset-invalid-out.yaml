@@ -169,12 +169,8 @@ Routes:
 Statuses:
   gateways:
     gwtest/example-gateway:
+      attachedListenerSets: 1
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsAttached
-        status: "True"
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted

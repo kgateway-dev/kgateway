@@ -7,11 +7,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: 'Some listeners are not programmed: tls-app1-no-routes: TCP/TLS listener
           has no valid backends or routes; tls-app2-no-routes: TCP/TLS listener has
           no valid backends or routes'

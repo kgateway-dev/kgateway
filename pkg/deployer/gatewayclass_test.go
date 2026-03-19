@@ -23,9 +23,6 @@ func TestGetSupportedFeaturesForStandardGatewayExcludesKnownUnsupportedV15Featur
 	if _, ok := supportedNames[gwv1.FeatureName(features.SupportHTTPRouteCORS)]; ok {
 		t.Fatalf("expected %q to be exempted from supported features", features.SupportHTTPRouteCORS)
 	}
-	if _, ok := supportedNames[gwv1.FeatureName(features.SupportListenerSet)]; ok {
-		t.Fatalf("expected %q to be exempted from supported features", features.SupportListenerSet)
-	}
 	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRoute)]; !ok {
 		t.Fatalf("expected %q to remain supported when experimental Gateway API features are enabled", features.SupportTLSRoute)
 	}

@@ -225,12 +225,8 @@ Routes:
 Statuses:
   gateways:
     default/example-gateway:
+      attachedListenerSets: 2
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsAttached
-        status: "True"
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
@@ -373,7 +369,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: http-ls1
-        port: 8080
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
@@ -402,7 +397,6 @@ Statuses:
           status: "False"
           type: Conflicted
         name: tls-ls1
-        port: 443
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
@@ -444,7 +438,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: http-ls2
-        port: 9090
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
@@ -473,7 +466,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: tls-ls2
-        port: 443
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute

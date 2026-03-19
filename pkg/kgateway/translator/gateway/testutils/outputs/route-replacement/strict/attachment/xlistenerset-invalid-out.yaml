@@ -121,12 +121,8 @@ Routes:
 Statuses:
   gateways:
     gwtest/example-gateway:
+      attachedListenerSets: 1
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsAttached
-        status: "True"
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
           Failed to create pre-route filter config: Failed to initialize per-route
