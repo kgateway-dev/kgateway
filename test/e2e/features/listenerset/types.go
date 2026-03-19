@@ -9,7 +9,6 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
@@ -29,50 +28,12 @@ var (
 	ls1Listener1Port = 90
 	ls1Listener2Port = 8091
 	ls2Listener1Port = 8095
-	ls3Listener1Port = 88
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: "default",
 	}
 	proxyService = &corev1.Service{ObjectMeta: proxyObjectMeta}
-
-	// TestValidListenerSet
-	validListenerSet = &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "valid-ls",
-			Namespace: "allowed-ns",
-		},
-	}
-
-	// TestInvalidListenerSetNotAllowed
-	invalidListenerSetNotAllowed = &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "invalid-ls-not-allowed",
-			Namespace: "curl",
-		},
-	}
-
-	// TestInvalidListenerSetNonExistingGW
-	invalidListenerSetNonExistingGW = &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "invalid-ls-non-existing-gw",
-			Namespace: "default",
-		},
-	}
-
-	// TestConflictedListenerSet
-	conflictedListenerSet = &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "z-conflicted-listenerset",
-			Namespace: "allowed-ns",
-		},
-	}
-
-	expectOK = &testmatchers.HttpResponse{
-		StatusCode: http.StatusOK,
-		Body:       gstruct.Ignore(),
-	}
 
 	expectOKWithCustomHeader = func(key, value string) *testmatchers.HttpResponse {
 		return &testmatchers.HttpResponse{
@@ -83,13 +44,6 @@ var (
 			},
 		}
 	}
-
-	expectNotFound = &testmatchers.HttpResponse{
-		StatusCode: http.StatusNotFound,
-		Body:       gstruct.Ignore(),
-	}
-
-	curlExitErrorCode = 28
 
 	setup = base.TestCase{
 		Manifests: []string{e2edefaults.CurlPodManifest, setupManifest},

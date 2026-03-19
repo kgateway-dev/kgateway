@@ -151,7 +151,7 @@ func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter)
 	return validListeners
 }
 
-func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
+func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener {
 	if len(gw.Listeners) == 0 {
 		// gwReporter.Err("gateway must contain at least 1 listener")
 	}
@@ -292,22 +292,22 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 	for _, listener := range validListeners {
 		parent, ok := listener.Parent.(*gwv1.ListenerSet)
 		if ok {
-			nns := fmt.Sprintf("%s-%s", parent.GetNamespace(), parent.GetName())
+			nns := fmt.Sprintf("%s/%s", parent.GetNamespace(), parent.GetName())
 			attachedListenerSet[nns] = struct{}{}
 		}
 	}
 	attachedListenerSetCount := len(attachedListenerSet)
 
 	if attachedListenerSetCount > 0 {
-		reporter.Gateway(gw.Obj).SetAttachedListenerSets(int32(attachedListenerSetCount))
+		reporter.Gateway(gw.Obj).SetAttachedListenerSets(int32(attachedListenerSetCount)) //nolint:gosec // disable G115 directive.
 	}
 
 	return validListeners
 }
 
-func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
+func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter) []ir.Listener {
 	rejectDeniedListenerSets(consolidatedGateway, reporter)
-	validatedListeners := validateListeners(consolidatedGateway, reporter, settings)
+	validatedListeners := validateListeners(consolidatedGateway, reporter)
 	return validatedListeners
 }
 

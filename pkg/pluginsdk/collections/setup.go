@@ -41,13 +41,13 @@ func (c *CommonCollections) InitCollections(
 	metrics.RegisterEvents(kubeRawGateways, kmetrics.GetResourceMetricEventHandler[*gwv1.Gateway]())
 
 	var kubeRawListenerSets krt.Collection[*gwv1.ListenerSet]
+	promotedListenerSets := krt.WrapClient(
+		kclient.NewDelayedInformer[*gwv1.ListenerSet](c.Client, wellknown.ListenerSetGVR, kubetypes.StandardInformer, filter),
+		c.KrtOpts.ToOptions("KubePromotedListenerSets")...,
+	)
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12827
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
-		promotedListenerSets := krt.WrapClient(
-			kclient.NewDelayedInformer[*gwv1.ListenerSet](c.Client, wellknown.ListenerSetGVR, kubetypes.StandardInformer, filter),
-			c.KrtOpts.ToOptions("KubePromotedListenerSets")...,
-		)
 		legacyListenerSetsRaw := krt.WrapClient(
 			newDelayedDynamicUnstructuredInformer(c.Client, wellknown.XListenerSetGVR, filter),
 			c.KrtOpts.ToOptions("KubeLegacyXListenerSets")...,
@@ -64,7 +64,7 @@ func (c *CommonCollections) InitCollections(
 		)
 	} else {
 		// If disabled, still build a collection but make it always empty
-		kubeRawListenerSets = krt.NewStaticCollection[*gwv1.ListenerSet](nil, nil, c.KrtOpts.ToOptions("disable/KubeListenerSets")...)
+		kubeRawListenerSets = promotedListenerSets
 	}
 	metrics.RegisterEvents(kubeRawListenerSets, kmetrics.GetResourceMetricEventHandler[*gwv1.ListenerSet]())
 

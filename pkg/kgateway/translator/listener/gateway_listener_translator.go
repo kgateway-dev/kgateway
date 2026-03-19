@@ -58,7 +58,7 @@ func TranslateListeners(
 		Translator: "TranslateListeners",
 	})(nil)
 
-	validatedListeners := validateGateway(gateway, reporter, settings)
+	validatedListeners := validateGateway(gateway, reporter)
 	mergedListeners := mergeGWListeners(queries, validatedListeners, *gateway, routesForGw, reporter, settings)
 	translatedListeners := mergedListeners.translateListeners(kctx, ctx, queries, reporter)
 
