@@ -58,11 +58,9 @@ func TestConformance(t *testing.T) {
 
 	// Gateway API v1.5.x adds new TLSRoute conformance coverage around the
 	// promoted v1 API's parent/status and listener validation behavior.
-	// The remaining skipped cases are tracked in issue #13673.
+	// TLSRouteListenerPassthroughSupportedKinds is still failing and is tracked
+	// in issue #13673.
 	options.SkipTests = append(options.SkipTests,
-		"TLSRouteHostnameIntersection",
-		"TLSRouteInvalidBackendRefNonexistent",
-		"TLSRouteInvalidBackendRefUnknownKind",
 		"TLSRouteListenerPassthroughSupportedKinds",
 	)
 
