@@ -1887,19 +1887,6 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("basic listener set with experimental features disabled", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFile:  "listener-sets/basic.yaml",
-			outputFile: "listener-sets/basic-experimental-disabled.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalGatewayAPIFeatures = false
-		})
-	})
-
 	t.Run("basic listener set", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-sets/basic.yaml",

@@ -227,14 +227,16 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 	if len(finalListeners) != 0 {
 		if len(invalidListeners) == len(finalListeners) {
 			lsReport.SetCondition(reporter.GatewayCondition{
-				Type:   gwv1.GatewayConditionAccepted,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.GatewayReasonListenersNotValid,
+				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: "No valid listeners",
 			})
 			lsReport.SetCondition(reporter.GatewayCondition{
-				Type:   gwv1.GatewayConditionProgrammed,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.GatewayReasonListenersNotValid,
+				Type:    gwv1.GatewayConditionProgrammed,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: "No valid listeners",
 			})
 		}
 	}

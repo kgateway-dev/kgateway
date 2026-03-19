@@ -287,6 +287,21 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 		}
 	}
 
+	if len(validListeners) == 0 {
+		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: "No valid listeners",
+		})
+		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
+			Type:   gwv1.GatewayConditionProgrammed,
+			Status: metav1.ConditionFalse,
+			Reason: gwv1.GatewayReasonInvalid,
+		})
+		return validListeners
+	}
+
 	// TODO: Maybe this can be handled in the prior loop itself ?
 	attachedListenerSet := map[string]struct{}{}
 	for _, listener := range validListeners {
