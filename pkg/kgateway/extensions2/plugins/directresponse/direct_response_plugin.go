@@ -135,7 +135,7 @@ func (p *directResponsePluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, output
 				},
 			}
 		case dr.spec.BodyFormat.JSON != nil:
-			jsonStruct, err := utils.JSONToProtoStruct(dr.spec.BodyFormat.JSON)
+			jsonStruct, err := utils.JSONToProtoStruct(dr.spec.BodyFormat.JSON.Raw)
 			if err != nil {
 				return fmt.Errorf("DirectResponse body format JSON is invalid: %w", err)
 			}

@@ -157,7 +157,7 @@ func createFileAccessLog(fileSink *kgateway.FileSink) (proto.Message, error) {
 			},
 		}
 	case fileSink.JsonFormat != nil:
-		jsonStruct, err := utils.JSONToProtoStruct(fileSink.JsonFormat)
+		jsonStruct, err := utils.JSONToProtoStruct(fileSink.JsonFormat.Raw)
 		if err != nil {
 			return nil, fmt.Errorf("invalid access log jsonFormat: %w", err)
 		}

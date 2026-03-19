@@ -172,7 +172,7 @@ func (s *testingSuite) TestBodyFormatJSON() {
 				"Content-Type": "text/plain",
 				//"Content-Type": "application/json",
 			},
-			Body: ContainSubstring(`{"path":"/data.json"}`),
+			Body: ContainSubstring(`{"path":"/data.json","preservedNull":null}`),
 		},
 		curl.WithHostHeader("www.example.com"),
 		curl.WithPath("/data.json"),

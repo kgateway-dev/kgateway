@@ -1,8 +1,8 @@
 package kgateway
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -78,8 +78,13 @@ type BodyFormat struct {
 	// JSON is a format object by which Envoy will produce a JSON response body.
 	// Mutually exclusive with Text.
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-json-format for details.
+	//
+	// Setting a field to `null` in the JSON object requires the use of
+	// `kubectl apply --server-side` or equivalent. With regular client-side
+	// `kubectl apply`, null values are stripped by kubectl before reaching
+	// the API server.
 	// +optional
-	JSON *runtime.RawExtension `json:"json,omitempty"`
+	JSON *apiextensionsv1.JSON `json:"json,omitempty"`
 }
 
 // GetStatus returns the HTTP status code to return for this route.

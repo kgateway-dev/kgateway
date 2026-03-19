@@ -41,3 +41,4 @@ spec:
   bodyFormat:
     json:
       path: "%REQ(:path)%"
+      preservedNull: null
