@@ -162,6 +162,8 @@ func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 		return r.HTTPRoutes[key]
 	case *gwv1a2.TCPRoute:
 		return r.TCPRoutes[key]
+	case *gwv1.TLSRoute:
+		return r.TLSRoutes[key]
 	case *gwv1a2.TLSRoute:
 		return r.TLSRoutes[key]
 	case *gwv1.GRPCRoute:
@@ -184,6 +186,8 @@ func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 		r.HTTPRoutes[key] = rr
 	case *gwv1a2.TCPRoute:
 		r.TCPRoutes[key] = rr
+	case *gwv1.TLSRoute:
+		r.TLSRoutes[key] = rr
 	case *gwv1a2.TLSRoute:
 		r.TLSRoutes[key] = rr
 	case *gwv1.GRPCRoute:
