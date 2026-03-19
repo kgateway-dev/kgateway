@@ -120,12 +120,14 @@ type GatewayReporter interface {
 	Listener(listener *gwv1.Listener) ListenerReporter
 	ListenerName(listenerName string) ListenerReporter
 	SetCondition(condition GatewayCondition)
+	SetAttachedListenerSets(count int32)
 }
 
 type ListenerSetReporter interface {
 	Listener(listener *gwv1.Listener) ListenerReporter
 	ListenerName(listenerName string) ListenerReporter
 	SetCondition(condition GatewayCondition)
+	SetAttachedListenerSets(count int32)
 }
 
 type ListenerReporter interface {

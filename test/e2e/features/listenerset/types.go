@@ -19,13 +19,10 @@ import (
 
 var (
 	// manifests
-	setupManifest                           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	validListenerSetManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset.yaml")
-	validListenerSetManifest2               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset-2.yaml")
-	invalidListenerSetNotAllowedManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-listenerset-not-allowed.yaml")
-	invalidListenerSetNonExistingGWManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-listenerset-non-existing-gw.yaml")
-	conflictedListenerSetManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "conflicted-listenerset.yaml")
-	policyManifest                          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "policies.yaml")
+	setupManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	validListenerSetManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset.yaml")
+	validListenerSetManifest2 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset-2.yaml")
+	policyManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "policies.yaml")
 
 	gwListener1Port  = 80
 	gwListener2Port  = 8081
@@ -100,32 +97,11 @@ var (
 
 	// test cases
 	testCases = map[string]*base.TestCase{
-		"TestValidListenerSet": {
-			ManifestsWithTransform: map[string]func(string) string{
-				validListenerSetManifest: base.TransformListenerSetManifest,
-			},
-		},
-		"TestInvalidListenerSetNotAllowed": {
-			ManifestsWithTransform: map[string]func(string) string{
-				invalidListenerSetNotAllowedManifest: base.TransformListenerSetManifest,
-			},
-		},
-		"TestInvalidListenerSetNonExistingGW": {
-			ManifestsWithTransform: map[string]func(string) string{
-				invalidListenerSetNonExistingGWManifest: base.TransformListenerSetManifest,
-			},
-		},
 		"TestPolicies": {
 			ManifestsWithTransform: map[string]func(string) string{
 				validListenerSetManifest:  base.TransformListenerSetManifest,
 				validListenerSetManifest2: base.TransformListenerSetManifest,
 				policyManifest:            base.TransformListenerSetManifest,
-			},
-		},
-		"TestConflictedListenerSet": {
-			ManifestsWithTransform: map[string]func(string) string{
-				validListenerSetManifest:      base.TransformListenerSetManifest,
-				conflictedListenerSetManifest: base.TransformListenerSetManifest,
 			},
 		},
 	}

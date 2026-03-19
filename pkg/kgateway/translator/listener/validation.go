@@ -287,54 +287,19 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 		}
 	}
 
-	// Add the final conditions on the Gateway
-	// Set this here in case there are no valid listeners so it won't need to be repeated later on
-	noAllowedListeners := gw.Obj.Spec.AllowedListeners == nil
-	if settings.EnableExperimentalGatewayAPIFeatures && noAllowedListeners {
-		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   GatewayConditionAttachedListenerSets,
-			Status: metav1.ConditionUnknown,
-			Reason: GatewayReasonListenerSetsNotAllowed,
-		})
-	}
-
-	if len(validListeners) == 0 {
-		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
-			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.GatewayReasonListenersNotValid,
-			Message: "No valid listeners",
-		})
-		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   gwv1.GatewayConditionProgrammed,
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.GatewayReasonInvalid,
-		})
-		return validListeners
-	}
-
-	listenerSetListenerExists := slices.ContainsFunc(validListeners, func(l ir.Listener) bool {
-		// The assumption is that if a parent is not a Gateway, it comes from a listenerSet
-		// or a type that implements krtcollections.ListenerCollection
-		_, ok := l.Parent.(*gwv1.Gateway)
-		return !ok
-	})
-
-	if settings.EnableExperimentalGatewayAPIFeatures {
-		if listenerSetListenerExists {
-			reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-				Type:   GatewayConditionAttachedListenerSets,
-				Status: metav1.ConditionTrue,
-				Reason: GatewayReasonListenerSetsAttached,
-			})
-		} else if !noAllowedListeners {
-			// if there are allowed listeners, but no listener sets, then the gateway is not attached to any listener sets
-			reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-				Type:   GatewayConditionAttachedListenerSets,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.GatewayReasonNoResources,
-			})
+	// TODO: Maybe this can be handled in the prior loop itself ?
+	attachedListenerSet := map[string]struct{}{}
+	for _, listener := range validListeners {
+		parent, ok := listener.Parent.(*gwv1.ListenerSet)
+		if ok {
+			nns := fmt.Sprintf("%s-%s", parent.GetNamespace(), parent.GetName())
+			attachedListenerSet[nns] = struct{}{}
 		}
+	}
+	attachedListenerSetCount := len(attachedListenerSet)
+
+	if attachedListenerSetCount > 0 {
+		reporter.Gateway(gw.Obj).SetAttachedListenerSets(int32(attachedListenerSetCount))
 	}
 
 	return validListeners
@@ -467,11 +432,6 @@ func rejectInvalidListener(parentReporter reports.GatewayReporter, listener ir.L
 		Status: metav1.ConditionTrue,
 		Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonListenersNotValid),
 	})
-	parentReporter.SetCondition(reports.GatewayCondition{
-		Type:   gwv1.GatewayConditionProgrammed,
-		Status: metav1.ConditionTrue,
-		Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonListenersNotValid),
-	})
 }
 
 func rejectConflictedListener(parentReporter reports.GatewayReporter, listener ir.Listener, reason gwv1.ListenerConditionReason, message string) {
@@ -499,11 +459,6 @@ func rejectConflictedListener(parentReporter reports.GatewayReporter, listener i
 	// https://github.com/kubernetes-sigs/gateway-api/blob/v1.5.1/apis/v1/listenerset_types.go#L370
 	parentReporter.SetCondition(reports.GatewayCondition{
 		Type:   gwv1.GatewayConditionAccepted,
-		Status: metav1.ConditionTrue,
-		Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonListenersNotValid),
-	})
-	parentReporter.SetCondition(reports.GatewayCondition{
-		Type:   gwv1.GatewayConditionProgrammed,
 		Status: metav1.ConditionTrue,
 		Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonListenersNotValid),
 	})
