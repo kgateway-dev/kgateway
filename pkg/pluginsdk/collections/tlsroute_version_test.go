@@ -27,7 +27,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			},
 		})
 
-		require.Equal(t, servedTLSRouteVersions{Promoted: true, Legacy: true}, getServedTLSRouteVersions(client))
+		require.Equal(t, servedTLSRouteVersions{Promoted: true, Legacy: true, Authoritative: true}, getServedTLSRouteVersions(client))
 	})
 
 	t.Run("returns only legacy when promoted v1 is not served", func(t *testing.T) {
@@ -40,11 +40,11 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			},
 		})
 
-		require.Equal(t, servedTLSRouteVersions{Legacy: true}, getServedTLSRouteVersions(client))
+		require.Equal(t, servedTLSRouteVersions{Legacy: true, Authoritative: true}, getServedTLSRouteVersions(client))
 	})
 
 	t.Run("defaults to legacy when discovery is unavailable", func(t *testing.T) {
-		require.Equal(t, servedTLSRouteVersions{Legacy: true}, getServedTLSRouteVersions(nil))
+		require.Equal(t, servedTLSRouteVersions{Promoted: true, Legacy: true}, getServedTLSRouteVersions(nil))
 	})
 }
 

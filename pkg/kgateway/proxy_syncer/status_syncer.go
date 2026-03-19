@@ -364,11 +364,11 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	}
 }
 
-func getTLSRouteForStatus(
-	ctx context.Context,
-	kubeClient client.Client,
-	key client.ObjectKey,
-) (client.Object, error) {
+type objectGetter interface {
+	Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
+}
+
+func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key client.ObjectKey) (client.Object, error) {
 	promotedTLSRoute := &gwv1.TLSRoute{}
 	if err := kubeClient.Get(ctx, key, promotedTLSRoute); err == nil {
 		return promotedTLSRoute, nil

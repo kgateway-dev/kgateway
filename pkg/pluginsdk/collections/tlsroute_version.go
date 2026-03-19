@@ -2,6 +2,7 @@ package collections
 
 import (
 	"context"
+	"log/slog"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,21 +28,22 @@ var legacyTLSRouteGVR = schema.GroupVersionResource{
 }
 
 type servedTLSRouteVersions struct {
-	Promoted bool
-	Legacy   bool
+	Promoted      bool
+	Legacy        bool
+	Authoritative bool
 }
 
 func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTLSRouteVersions {
 	if extClient == nil {
-		return servedTLSRouteVersions{Legacy: true}
+		return servedTLSRouteVersions{Promoted: true, Legacy: true}
 	}
 
 	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.Background(), "tlsroutes.gateway.networking.k8s.io", metav1.GetOptions{})
 	if err != nil {
-		return servedTLSRouteVersions{Legacy: true}
+		return servedTLSRouteVersions{Promoted: true, Legacy: true}
 	}
 
-	versions := servedTLSRouteVersions{}
+	versions := servedTLSRouteVersions{Authoritative: true}
 	for _, version := range crd.Spec.Versions {
 		if !version.Served {
 			continue
@@ -86,6 +88,11 @@ func convertLegacyTLSRouteToV1Alpha2(in *unstructured.Unstructured) *gwv1a2.TLSR
 
 	out := &gwv1a2.TLSRoute{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(in.Object, out); err != nil {
+		slog.Warn("ignoring legacy TLSRoute with invalid payload",
+			"name", in.GetName(),
+			"namespace", in.GetNamespace(),
+			"error", err,
+		)
 		return nil
 	}
 	if out.GroupVersionKind().Empty() {

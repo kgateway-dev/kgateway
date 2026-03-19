@@ -110,6 +110,8 @@ func (c *CommonCollections) InitCollections(
 		tcproutes = krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](c.Client, gvr.TCPRoute, kubetypes.StandardInformer, filter), c.KrtOpts.ToOptions("TCPRoute")...)
 		servedTLSRouteVersions := getServedTLSRouteVersions(c.Client.Ext())
 		var tlsRouteCollections []krt.Collection[*gwv1a2.TLSRoute]
+		// Prefer the promoted watch when discovery confirms it is served; watching both
+		// served versions would duplicate the same logical TLSRoute.
 		if servedTLSRouteVersions.Promoted {
 			tlsRoutesV1 := krt.WrapClient(
 				kclient.NewDelayedInformer[*gwv1.TLSRoute](c.Client, promotedTLSRouteGVR, kubetypes.StandardInformer, filter),
@@ -122,7 +124,7 @@ func (c *CommonCollections) InitCollections(
 				return nil
 			}, c.KrtOpts.ToOptions("TLSRouteV1ToV1Alpha2")...))
 		}
-		if servedTLSRouteVersions.Legacy {
+		if servedTLSRouteVersions.Legacy && (!servedTLSRouteVersions.Authoritative || !servedTLSRouteVersions.Promoted) {
 			legacyTLSRoutesRaw := krt.WrapClient(
 				newDelayedDynamicUnstructuredInformer(c.Client, legacyTLSRouteGVR, filter),
 				c.KrtOpts.ToOptions("TLSRouteV1Alpha2Raw")...,

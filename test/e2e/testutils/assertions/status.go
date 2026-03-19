@@ -10,6 +10,8 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -369,6 +371,8 @@ func (p *Provider) getTLSRouteStatus(ctx context.Context, name string, namespace
 	route := &gwv1.TLSRoute{}
 	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, route); err == nil {
 		return route.Status.RouteStatus, nil
+	} else if !shouldFallbackTLSRouteStatusLookup(err) {
+		return gwv1.RouteStatus{}, err
 	}
 
 	legacyRoute := &gwv1a2.TLSRoute{}
@@ -376,6 +380,10 @@ func (p *Provider) getTLSRouteStatus(ctx context.Context, name string, namespace
 		return gwv1.RouteStatus{}, err
 	}
 	return legacyRoute.Status.RouteStatus, nil
+}
+
+func shouldFallbackTLSRouteStatusLookup(err error) bool {
+	return apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err)
 }
 
 func getListenerEntryStatus(listeners []gwv1.ListenerEntryStatus, name string) *gwv1.ListenerEntryStatus {

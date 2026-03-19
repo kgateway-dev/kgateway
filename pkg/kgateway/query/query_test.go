@@ -1040,7 +1040,7 @@ var _ = Describe("Query", func() {
 					},
 				},
 				ParentRef: gwv1.ParentGatewayReference{
-					Name: "test",
+					Name: gwv1.ObjectName(gwWithListener.Name),
 				},
 			},
 		}

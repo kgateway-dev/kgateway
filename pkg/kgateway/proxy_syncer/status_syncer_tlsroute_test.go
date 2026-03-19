@@ -46,8 +46,8 @@ func newFakeTLSRouteClient(t *testing.T, route ctrlclient.Object) ctrlclient.Cli
 	t.Helper()
 
 	scheme := runtime.NewScheme()
-	require.NoError(t, gwv1.AddToScheme(scheme))
-	require.NoError(t, gwv1a2.AddToScheme(scheme))
+	gwv1.Install(scheme)
+	gwv1a2.Install(scheme)
 
 	return fake.NewClientBuilder().
 		WithScheme(scheme).
