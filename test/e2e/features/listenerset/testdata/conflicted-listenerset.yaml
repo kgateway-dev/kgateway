@@ -1,5 +1,5 @@
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   # The name starts with `z` to ensure this is the last listenerset based on precedence
   name: z-conflicted-listenerset
@@ -36,8 +36,8 @@ metadata:
   name: conflicted-ls-route
 spec:
   parentRefs:
-    - kind: XListenerSet
-      group: gateway.networking.x-k8s.io
+    - kind: ListenerSet
+      group: gateway.networking.k8s.io
       name: z-conflicted-listenerset
       namespace: allowed-ns
   hostnames:

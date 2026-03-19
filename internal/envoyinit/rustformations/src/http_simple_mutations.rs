@@ -18,14 +18,14 @@ pub struct FilterConfig {
     env: Environment<'static>,
 }
 
-struct EnvoyTransformationOps<'a> {
-    envoy_filter: &'a mut dyn EnvoyHttpFilter,
+struct EnvoyTransformationOps<'a, EHF: EnvoyHttpFilter> {
+    envoy_filter: &'a mut EHF,
     used_received_request_body: Option<bool>,
     used_received_response_body: Option<bool>,
 }
 
-impl<'a> EnvoyTransformationOps<'a> {
-    fn new(envoy_filter: &'a mut dyn EnvoyHttpFilter) -> EnvoyTransformationOps<'a> {
+impl<'a, EHF: EnvoyHttpFilter> EnvoyTransformationOps<'a, EHF> {
+    fn new(envoy_filter: &'a mut EHF) -> EnvoyTransformationOps<'a, EHF> {
         EnvoyTransformationOps {
             envoy_filter,
             used_received_request_body: None,
@@ -33,18 +33,9 @@ impl<'a> EnvoyTransformationOps<'a> {
         }
     }
 }
-impl TransformationOps for EnvoyTransformationOps<'_> {
-    // REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, remove the platform specific directive here
-    //                     and the no-op add_request_header()
-    #[cfg(target_arch = "x86_64")]
+impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF> {
     fn add_request_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.add_request_header(key, value)
-    }
-
-    #[cfg(not(target_arch = "x86_64"))]
-    fn add_request_header(&mut self, _key: &str, _value: &[u8]) -> bool {
-        envoy_log_warn!("add header is currently not supported for non-x86 build. set header can be used if existing header can be overwritten.");
-        true
     }
 
     fn set_request_header(&mut self, key: &str, value: &[u8]) -> bool {
@@ -112,16 +103,8 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         }
     }
 
-    // REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, remove the platform specific directive here
-    //                     and the no-op add_response_header()
-    #[cfg(target_arch = "x86_64")]
     fn add_response_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.add_response_header(key, value)
-    }
-    #[cfg(not(target_arch = "x86_64"))]
-    fn add_response_header(&mut self, _key: &str, _value: &[u8]) -> bool {
-        envoy_log_warn!("add header is currently not supported for non-x86 build. set header can be used if existing header can be overwritten.");
-        true
     }
     fn set_response_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.set_response_header(key, value)
@@ -234,7 +217,7 @@ pub type PerRouteConfig = FilterConfig;
 
 impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
     /// This is called for each new HTTP filter.
-    fn new_http_filter(&mut self, _envoy: &mut EHF) -> Box<dyn HttpFilter<EHF>> {
+    fn new_http_filter(&self, _envoy: &mut EHF) -> Box<dyn HttpFilter<EHF>> {
         Box::new(Filter {
             filter_config: self.clone(),
             per_route_config: None,
@@ -359,13 +342,23 @@ impl Filter {
                         match e {
                             TransformationError::UndeclaredJsonVariables(_msg) => {
                                 envoy_log_error!("{:#}", err);
-                                envoy_filter.send_response(400, Vec::default(), None);
+                                envoy_filter.send_response(
+                                    400,
+                                    Vec::default(),
+                                    None,
+                                    Some("undeclared json variables in transformation template"),
+                                );
                                 return false;
                             }
                         }
                     } else if let Some(e) = err.downcast_ref::<serde_json::error::Error>() {
                         envoy_log_error!("json parsing error: {:#}", e);
-                        envoy_filter.send_response(400, Vec::default(), None);
+                        envoy_filter.send_response(
+                            400,
+                            Vec::default(),
+                            None,
+                            Some("json parsing error in transformation template"),
+                        );
                         return false;
                     } else {
                         envoy_log_warn!("{:#}", err);
@@ -394,13 +387,23 @@ impl Filter {
                         match e {
                             TransformationError::UndeclaredJsonVariables(_msg) => {
                                 envoy_log_error!("{:#}", err);
-                                envoy_filter.send_response(400, Vec::default(), None);
+                                envoy_filter.send_response(
+                                    400,
+                                    Vec::default(),
+                                    None,
+                                    Some("undeclared json variables in transformation template"),
+                                );
                                 return false;
                             }
                         }
                     } else if let Some(e) = err.downcast_ref::<serde_json::error::Error>() {
                         envoy_log_error!("json parsing error: {:#}", e);
-                        envoy_filter.send_response(400, Vec::default(), None);
+                        envoy_filter.send_response(
+                            400,
+                            Vec::default(),
+                            None,
+                            Some("json parsing error in transformation template"),
+                        );
                         return false;
                     } else {
                         envoy_log_warn!("{:#}", err);
@@ -560,7 +563,7 @@ mod tests {
           "foo": "This is a fake field to make sure the parser will ignore an new fields from the control plane for compatibility"
         }
         "#;
-        let mut filter_conf =
+        let filter_conf =
             FilterConfig::new(json_str).expect("Failed to parse filter config json: {json_str}");
         let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
@@ -668,7 +671,7 @@ mod tests {
           }
         }
         "#;
-        let mut filter_conf =
+        let filter_conf =
             FilterConfig::new(json_str).expect("Failed to parse filter config json: {json_str}");
         let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
@@ -748,8 +751,7 @@ mod tests {
           }
         }
         "#;
-        let mut filter_conf =
-            FilterConfig::new(json_str).expect("Failed to parse filter config json");
+        let filter_conf = FilterConfig::new(json_str).expect("Failed to parse filter config json");
         let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
         // No per-route config — use the base config.

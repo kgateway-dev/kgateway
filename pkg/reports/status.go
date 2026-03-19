@@ -14,12 +14,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 // Status message constants
@@ -155,7 +153,7 @@ func handleInvalidAddresses(report *GatewayReport, g *gwv1.Gateway) {
 	}
 }
 
-func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XListenerSet) *gwxv1a1.ListenerSetStatus {
+func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
 	lsReport := r.ListenerSet(&ls)
 	if lsReport == nil {
 		return nil
@@ -180,7 +178,7 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 			AddMissingListenerConditions(lisReport)
 
 			finalConditions := make([]metav1.Condition, 0, len(lisReport.Status.Conditions))
-			oldLisStatusIndex := slices.IndexFunc(ls.Status.Listeners, func(l gwxv1a1.ListenerEntryStatus) bool {
+			oldLisStatusIndex := slices.IndexFunc(ls.Status.Listeners, func(l gwv1.ListenerEntryStatus) bool {
 				return l.Name == lis.Name
 			})
 			for _, lisCondition := range lisReport.Status.Conditions {
@@ -242,20 +240,12 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 		}
 	}
 
-	finalLsStatus := gwxv1a1.ListenerSetStatus{}
+	finalLsStatus := gwv1.ListenerSetStatus{}
 	finalLsStatus.Conditions = finalConditions
-	fl := make([]gwxv1a1.ListenerEntryStatus, 0, len(finalListeners))
-	for i, f := range finalListeners {
-		listener := ls.Spec.Listeners[i]
-		port, err := kubeutils.DetectListenerPortNumber(listener.Protocol, listener.Port)
-		if err != nil {
-			// Set a random value until upstream to allows 0 for implementations that do not support dynamic port assignment
-			port = 65535
-		}
-
-		fl = append(fl, gwxv1a1.ListenerEntryStatus{
+	fl := make([]gwv1.ListenerEntryStatus, 0, len(finalListeners))
+	for _, f := range finalListeners {
+		fl = append(fl, gwv1.ListenerEntryStatus{
 			Name:           f.Name,
-			Port:           port,
 			SupportedKinds: f.SupportedKinds,
 			AttachedRoutes: f.AttachedRoutes,
 			Conditions:     f.Conditions,

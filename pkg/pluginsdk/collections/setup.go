@@ -8,9 +8,10 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/util/smallset"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -39,16 +40,33 @@ func (c *CommonCollections) InitCollections(
 	kubeRawGateways := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.Gateway](c.Client, wellknown.GatewayGVR, filter), c.KrtOpts.ToOptions("KubeGateways")...)
 	metrics.RegisterEvents(kubeRawGateways, kmetrics.GetResourceMetricEventHandler[*gwv1.Gateway]())
 
-	var kubeRawListenerSets krt.Collection[*gwxv1a1.XListenerSet]
+	var kubeRawListenerSets krt.Collection[*gwv1.ListenerSet]
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12827
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
-		kubeRawListenerSets = krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](c.Client, wellknown.XListenerSetGVR, kubetypes.StandardInformer, filter), c.KrtOpts.ToOptions("KubeListenerSets")...)
+		promotedListenerSets := krt.WrapClient(
+			kclient.NewDelayedInformer[*gwv1.ListenerSet](c.Client, wellknown.ListenerSetGVR, kubetypes.StandardInformer, filter),
+			c.KrtOpts.ToOptions("KubePromotedListenerSets")...,
+		)
+		legacyListenerSetsRaw := krt.WrapClient(
+			newDelayedDynamicUnstructuredInformer(c.Client, wellknown.XListenerSetGVR, filter),
+			c.KrtOpts.ToOptions("KubeLegacyXListenerSets")...,
+		)
+		legacyListenerSets := krt.NewManyCollection(legacyListenerSetsRaw, func(kctx krt.HandlerContext, in *unstructured.Unstructured) []*gwv1.ListenerSet {
+			if ls := convertLegacyXListenerSetToV1(in); ls != nil {
+				return []*gwv1.ListenerSet{ls}
+			}
+			return nil
+		}, c.KrtOpts.ToOptions("KubeLegacyXListenerSetsConverted")...)
+		kubeRawListenerSets = krt.JoinCollection(
+			[]krt.Collection[*gwv1.ListenerSet]{promotedListenerSets, legacyListenerSets},
+			c.KrtOpts.ToOptions("KubeListenerSets")...,
+		)
 	} else {
 		// If disabled, still build a collection but make it always empty
-		kubeRawListenerSets = krt.NewStaticCollection[*gwxv1a1.XListenerSet](nil, nil, c.KrtOpts.ToOptions("disable/KubeListenerSets")...)
+		kubeRawListenerSets = krt.NewStaticCollection[*gwv1.ListenerSet](nil, nil, c.KrtOpts.ToOptions("disable/KubeListenerSets")...)
 	}
-	metrics.RegisterEvents(kubeRawListenerSets, kmetrics.GetResourceMetricEventHandler[*gwxv1a1.XListenerSet]())
+	metrics.RegisterEvents(kubeRawListenerSets, kmetrics.GetResourceMetricEventHandler[*gwv1.ListenerSet]())
 
 	var policies *krtcollections.PolicyIndex
 	if globalSettings.EnableEnvoy {
@@ -90,7 +108,23 @@ func (c *CommonCollections) InitCollections(
 	var tlsRoutes krt.Collection[*gwv1a2.TLSRoute]
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
 		tcproutes = krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](c.Client, gvr.TCPRoute, kubetypes.StandardInformer, filter), c.KrtOpts.ToOptions("TCPRoute")...)
-		tlsRoutes = krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](c.Client, gvr.TLSRoute, kubetypes.StandardInformer, filter), c.KrtOpts.ToOptions("TLSRoute")...)
+		if preferPromotedTLSRouteVersion(c.Client.Ext()) {
+			tlsRoutesV1 := krt.WrapClient(
+				kclient.NewDelayedInformer[*gwv1.TLSRoute](c.Client, promotedTLSRouteGVR, kubetypes.StandardInformer, filter),
+				c.KrtOpts.ToOptions("TLSRouteV1")...,
+			)
+			tlsRoutes = krt.NewManyCollection(tlsRoutesV1, func(kctx krt.HandlerContext, i *gwv1.TLSRoute) []*gwv1a2.TLSRoute {
+				if converted := convertTLSRouteV1ToV1Alpha2(i); converted != nil {
+					return []*gwv1a2.TLSRoute{converted}
+				}
+				return nil
+			}, c.KrtOpts.ToOptions("TLSRoute")...)
+		} else {
+			tlsRoutes = krt.WrapClient(
+				kclient.NewDelayedInformer[*gwv1a2.TLSRoute](c.Client, gvr.TLSRoute, kubetypes.StandardInformer, filter),
+				c.KrtOpts.ToOptions("TLSRoute")...,
+			)
+		}
 	} else {
 		// If disabled, still build a collection but make it always empty
 		tcproutes = krt.NewStaticCollection[*gwv1a2.TCPRoute](nil, nil, c.KrtOpts.ToOptions("disable/TCPRoute")...)
@@ -129,4 +163,20 @@ func initEndpoints(plugins pluginsdk.Plugin, krtopts krtutil.KrtOptions) krt.Col
 	// TODO move kube service to be an extension
 	endpointIRs := krt.JoinCollection(allEndpoints, krtopts.ToOptions("EndpointIRs")...)
 	return endpointIRs
+}
+
+func convertLegacyXListenerSetToV1(in *unstructured.Unstructured) *gwv1.ListenerSet {
+	if in == nil {
+		return nil
+	}
+
+	ls := &gwv1.ListenerSet{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(in.UnstructuredContent(), ls); err != nil {
+		return nil
+	}
+
+	// Preserve the legacy GVK so downstream status/query code can distinguish old XListenerSets
+	// from promoted ListenerSets after normalization.
+	ls.SetGroupVersionKind(wellknown.XListenerSetGVK)
+	return ls
 }

@@ -1,5 +1,5 @@
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: invalid-ls-not-allowed
   namespace: curl
@@ -20,8 +20,8 @@ metadata:
   name: invalid-ls-not-allowed-route
 spec:
   parentRefs:
-    - kind: XListenerSet
-      group: gateway.networking.x-k8s.io
+    - kind: ListenerSet
+      group: gateway.networking.k8s.io
       name: invalid-ls-not-allowed
       namespace: curl
   hostnames:

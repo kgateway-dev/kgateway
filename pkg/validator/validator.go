@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -13,6 +14,10 @@ import (
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
+
+// protoDebugPrefixRe matches the non-deterministic "goo.gle/..." URL that newer
+// protobuf C++ DebugString() prepends to text-format output.
+var protoDebugPrefixRe = regexp.MustCompile(`goo\.gle/\S+\s*`)
 
 var (
 	defaultEnvoyPath = "/usr/local/bin/envoy"
@@ -23,6 +28,7 @@ var (
 	//       be updated and then maybe update the golden files
 	//       Also probably need to change this version when backporting or creating a new release
 	defaultEnvoyImage = "ghcr.io/kgateway-dev/envoy-wrapper:v2.3.0-main"
+	envoyDebugTokenRE = regexp.MustCompile(`goo\.gle/debug[a-zA-Z0-9]+`)
 )
 
 // ErrInvalidXDS is returned when Envoy rejects the supplied JSON.
@@ -61,7 +67,7 @@ func (b *binaryValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 	var e bytes.Buffer
 	cmd.Stderr = &e
 	if err := cmd.Run(); err != nil {
-		rawErr := strings.TrimSpace(e.String())
+		rawErr := normalizeEnvoyError(e.String())
 		if _, ok := err.(*exec.ExitError); ok {
 			if rawErr == "" {
 				rawErr = err.Error()
@@ -153,12 +159,12 @@ func (d *dockerValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 	if _, ok := err.(*exec.ExitError); ok {
 		// Extract just the envoy error message, ignoring Docker pull output
 		if envoyErr := extractEnvoyError(rawErr); envoyErr != "" {
-			return fmt.Errorf("%w: %s", ErrInvalidXDS, envoyErr)
+			return fmt.Errorf("%w: %s", ErrInvalidXDS, normalizeEnvoyError(envoyErr))
 		}
 		if rawErr == "" {
 			rawErr = err.Error()
 		}
-		return fmt.Errorf("%w: %s", ErrInvalidXDS, rawErr)
+		return fmt.Errorf("%w: %s", ErrInvalidXDS, normalizeEnvoyError(rawErr))
 	}
 	return fmt.Errorf("envoy validate invocation failed: %v", err)
 }
@@ -182,7 +188,20 @@ func extractEnvoyError(stderr string) string {
 			remainingLines = append(remainingLines, trimmed)
 		}
 	}
-	return strings.Join(remainingLines, " ")
+	return stripProtoDebugPrefix(strings.Join(remainingLines, " "))
+}
+
+// stripProtoDebugPrefix removes the non-deterministic "goo.gle/..." URL prefix
+// that newer versions of protobuf's C++ DebugString() prepend to text-format output.
+// The prefix varies between builds (e.g. "goo.gle/debugonly", "goo.gle/debugproto")
+// and breaks golden-file test comparisons.
+func stripProtoDebugPrefix(s string) string {
+	return protoDebugPrefixRe.ReplaceAllString(s, "")
+}
+
+func normalizeEnvoyError(raw string) string {
+	normalized := strings.TrimSpace(raw)
+	return envoyDebugTokenRE.ReplaceAllString(normalized, "goo.gle/debug")
 }
 
 func prepareBootstrapConfig(bootstrap *envoybootstrapv3.Bootstrap) ([]byte, error) {

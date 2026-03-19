@@ -29,9 +29,9 @@ Listeners:
         mergeSlashes: true
         normalizePath: true
         originalIpDetectionExtensions:
-          - name: envoy.http.original_ip_detection.xff
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.http.original_ip_detection.xff.v3.XffConfig
+        - name: envoy.http.original_ip_detection.xff
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.http.original_ip_detection.xff.v3.XffConfig
         rds:
           configSource:
             ads: {}

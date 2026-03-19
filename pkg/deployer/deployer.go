@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -63,12 +64,6 @@ type Option func(*Deployer)
 func WithPatcher(p Patcher) Option {
 	return func(d *Deployer) {
 		d.patcher = p
-	}
-}
-
-func WithGVKToGVRMapper(m map[schema.GroupVersionKind]schema.GroupVersionResource) Option {
-	return func(d *Deployer) {
-		d.gvkToGVRMapper = m
 	}
 }
 
@@ -255,6 +250,11 @@ func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object) error {
 func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Object, sourceObj client.Object) error {
 	controllerName := d.controllerName
 
+	// Sort objects so infrastructure resources (RBAC, ServiceAccounts, ConfigMaps)
+	// are applied before workload resources (Deployments). This prevents race
+	// conditions where a Pod starts before its RBAC resources exist.
+	SortByKindPriority(objs)
+
 	for _, obj := range objs {
 		u, err := kubeutils.ToUnstructured(obj)
 		if err != nil {
@@ -391,6 +391,9 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 		if realObj, err := scheme.New(gvk); err == nil {
 			if realObj, ok := realObj.(client.Object); ok {
 				if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, realObj); err == nil {
+					// FromUnstructured does not preserve TypeMeta on typed objects,
+					// so explicitly set the GVK to ensure it's available for sorting/filtering.
+					realObj.GetObjectKind().SetGroupVersionKind(gvk)
 					objs = append(objs, realObj)
 					continue
 				}
@@ -404,4 +407,104 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
+}
+
+// PruneRemovedResources deletes PDB/HPA/VPA resources that are owned by the
+// owner but are no longer in the desired set of objects. This prevents stale
+// resources from persisting when configuration changes. ownerReferences is
+// insufficient because the owner might still exist.
+func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Object, desiredObjs []client.Object) error {
+	ownerNamespace := owner.GetNamespace()
+	labelSelector := fmt.Sprintf("%s=%s", wellknown.GatewayNameLabel, owner.GetName())
+	desiredByGVK := make(map[schema.GroupVersionKind]map[string]bool)
+	for _, obj := range desiredObjs {
+		gvk := obj.GetObjectKind().GroupVersionKind()
+		if _, exists := desiredByGVK[gvk]; !exists {
+			desiredByGVK[gvk] = make(map[string]bool)
+		}
+		desiredByGVK[gvk][obj.GetName()] = true
+	}
+	targetGVKs := []schema.GroupVersionKind{
+		wellknown.PodDisruptionBudgetGVK,
+		wellknown.HorizontalPodAutoscalerGVK,
+		wellknown.VerticalPodAutoscalerGVK,
+	}
+	var pruningErrors []error
+	for _, gvk := range targetGVKs {
+		gvr, err := d.gvkToGVR(gvk)
+		if err != nil {
+			logger.Debug("skipping pruning for unknown GVK", "gvk", gvk.String(), "error", err)
+			continue
+		}
+		client := d.client.Dynamic().Resource(gvr).Namespace(ownerNamespace)
+		list, err := client.List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				// Resource type doesn't exist (e.g., VPA CRD not installed)
+				logger.Debug("resource type not found, skipping pruning", "gvk", gvk.String())
+				continue
+			}
+			return fmt.Errorf("failed to list resources for pruning %s: %w", gvk.String(), err)
+		}
+		for _, item := range list.Items {
+			resourceName := item.GetName()
+			if desiredSet, exists := desiredByGVK[gvk]; exists && desiredSet[resourceName] {
+				continue
+			}
+			logger.Info("pruning removed resource",
+				"gvk", gvk.String(),
+				"namespace", ownerNamespace,
+				"name", resourceName,
+				"owner", owner.GetName())
+			err := client.Delete(ctx, resourceName, metav1.DeleteOptions{})
+			if err != nil && !apierrors.IsNotFound(err) {
+				pruningErrors = append(
+					pruningErrors,
+					fmt.Errorf("failed to delete resource %s/%s: %w", gvk.String(), resourceName, err))
+				logger.Debug("error pruning removed resource",
+					"gvk", gvk.String(),
+					"namespace", ownerNamespace,
+					"name", resourceName,
+					"owner", owner.GetName(),
+					"error", err.Error())
+			}
+		}
+	}
+	if len(pruningErrors) > 0 {
+		return errors.Join(pruningErrors...)
+	}
+	return nil
+}
+
+// kindPriority returns a numeric priority for a Kubernetes resource kind.
+// Lower values are applied first, ensuring infrastructure resources (RBAC,
+// ServiceAccounts, ConfigMaps) are created before workload resources (Deployments).
+func kindPriority(kind string) int {
+	switch kind {
+	case "Namespace":
+		return 0
+	case "ServiceAccount":
+		return 1
+	case "Secret", "ConfigMap":
+		return 2
+	case "ClusterRole", "Role":
+		return 3
+	case "ClusterRoleBinding", "RoleBinding":
+		return 4
+	case "Service":
+		return 5
+	default:
+		return 6
+	}
+}
+
+// SortByKindPriority sorts objects in-place so that infrastructure resources
+// (RBAC, ServiceAccounts, ConfigMaps, etc.) are ordered before workload
+// resources (Deployments). This prevents race conditions where a Deployment's
+// Pod starts before its RBAC resources exist.
+func SortByKindPriority(objs []client.Object) {
+	slices.SortStableFunc(objs, func(a, b client.Object) int {
+		return kindPriority(a.GetObjectKind().GroupVersionKind().Kind) -
+			kindPriority(b.GetObjectKind().GroupVersionKind().Kind)
+	})
 }

@@ -16,8 +16,8 @@ spec:
     namespaces:
       from: All
 ---
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: test-listenerset
   namespace: gwtest
@@ -48,8 +48,8 @@ metadata:
 spec:
   parentRefs:
   - name: test-listenerset
-    group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
   hostnames:
   - "www.example.com"
   rules:
@@ -82,8 +82,8 @@ metadata:
 spec:
   targetRefs:
   - name: test-listenerset
-    group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
   transformation:
     request:
       body:

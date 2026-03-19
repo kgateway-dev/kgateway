@@ -779,12 +779,20 @@ type OpenTelemetryTracingConfig struct {
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
 type ResourceDetector struct {
+	// EnvironmentResourceDetector sets OpenTelemetry resource attributes from the OTEL_RESOURCE_ATTRIBUTES
+	// environment variable in the Envoy container.
+	// Default enabled if not set. If multiple are set, the last will take precedence.
 	// +optional
 	EnvironmentResourceDetector *EnvironmentResourceDetectorConfig `json:"environmentResourceDetector,omitempty"`
 }
 
-// EnvironmentResourceDetectorConfig specified the EnvironmentResourceDetector
-type EnvironmentResourceDetectorConfig struct{}
+// EnvironmentResourceDetectorConfig specifies the EnvironmentResourceDetector configuration.
+type EnvironmentResourceDetectorConfig struct {
+	// Enable controls whether the EnvironmentResourceDetector is used.
+	// +optional
+	// +kubebuilder:default=true
+	Enable *bool `json:"enable,omitempty"`
+}
 
 // Sampler defines the list of supported Samplers
 // +kubebuilder:validation:MaxProperties=1

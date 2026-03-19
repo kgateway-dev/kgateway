@@ -12,7 +12,6 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	. "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
@@ -192,18 +191,18 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 			parent:    testGateway,
 			resource:  "XListenerSet",
 			inputs: []any{
-				&gwxv1a1.XListenerSet{
+				&gwv1.ListenerSet{
 					TypeMeta: metav1.TypeMeta{},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      testName,
 						Namespace: testNamespace,
 						Labels:    map[string]string{"a": "b"},
 					},
-					Spec: gwxv1a1.ListenerSetSpec{
-						ParentRef: gwxv1a1.ParentGatewayReference{
+					Spec: gwv1.ListenerSetSpec{
+						ParentRef: gwv1.ParentGatewayReference{
 							Name:      testGateway,
-							Kind:      ptr.To(gwxv1a1.Kind("Gateway")),
-							Namespace: ptr.To(gwxv1a1.Namespace(testNamespace)),
+							Kind:      ptr.To(gwv1.Kind("Gateway")),
+							Namespace: ptr.To(gwv1.Namespace(testNamespace)),
 						},
 					},
 				},

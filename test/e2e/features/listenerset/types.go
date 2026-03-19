@@ -9,7 +9,7 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
@@ -41,7 +41,7 @@ var (
 	proxyService = &corev1.Service{ObjectMeta: proxyObjectMeta}
 
 	// TestValidListenerSet
-	validListenerSet = &gwxv1a1.XListenerSet{
+	validListenerSet = &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "valid-ls",
 			Namespace: "allowed-ns",
@@ -49,7 +49,7 @@ var (
 	}
 
 	// TestInvalidListenerSetNotAllowed
-	invalidListenerSetNotAllowed = &gwxv1a1.XListenerSet{
+	invalidListenerSetNotAllowed = &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "invalid-ls-not-allowed",
 			Namespace: "curl",
@@ -57,7 +57,7 @@ var (
 	}
 
 	// TestInvalidListenerSetNonExistingGW
-	invalidListenerSetNonExistingGW = &gwxv1a1.XListenerSet{
+	invalidListenerSetNonExistingGW = &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "invalid-ls-non-existing-gw",
 			Namespace: "default",
@@ -65,7 +65,7 @@ var (
 	}
 
 	// TestConflictedListenerSet
-	conflictedListenerSet = &gwxv1a1.XListenerSet{
+	conflictedListenerSet = &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "z-conflicted-listenerset",
 			Namespace: "allowed-ns",
@@ -101,19 +101,32 @@ var (
 	// test cases
 	testCases = map[string]*base.TestCase{
 		"TestValidListenerSet": {
-			Manifests: []string{validListenerSetManifest},
+			ManifestsWithTransform: map[string]func(string) string{
+				validListenerSetManifest: base.TransformListenerSetManifest,
+			},
 		},
 		"TestInvalidListenerSetNotAllowed": {
-			Manifests: []string{invalidListenerSetNotAllowedManifest},
+			ManifestsWithTransform: map[string]func(string) string{
+				invalidListenerSetNotAllowedManifest: base.TransformListenerSetManifest,
+			},
 		},
 		"TestInvalidListenerSetNonExistingGW": {
-			Manifests: []string{invalidListenerSetNonExistingGWManifest},
+			ManifestsWithTransform: map[string]func(string) string{
+				invalidListenerSetNonExistingGWManifest: base.TransformListenerSetManifest,
+			},
 		},
 		"TestPolicies": {
-			Manifests: []string{validListenerSetManifest, validListenerSetManifest2, policyManifest},
+			ManifestsWithTransform: map[string]func(string) string{
+				validListenerSetManifest:  base.TransformListenerSetManifest,
+				validListenerSetManifest2: base.TransformListenerSetManifest,
+				policyManifest:            base.TransformListenerSetManifest,
+			},
 		},
 		"TestConflictedListenerSet": {
-			Manifests: []string{validListenerSetManifest, conflictedListenerSetManifest},
+			ManifestsWithTransform: map[string]func(string) string{
+				validListenerSetManifest:      base.TransformListenerSetManifest,
+				conflictedListenerSetManifest: base.TransformListenerSetManifest,
+			},
 		},
 	}
 )

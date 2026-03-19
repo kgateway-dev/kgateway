@@ -2,6 +2,7 @@ kind: BackendConfigPolicy
 apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
   name: example-policy
+  namespace: kgateway-base
 spec:
   targetRefs:
     - name: missing-svc

@@ -34,7 +34,10 @@ var (
 	}
 
 	setupWithListenerSets = base.TestCase{
-		Manifests: []string{setupWithListenerSetsManifest, setupCommonManifest, e2edefaults.CurlPodManifest},
+		Manifests: []string{setupCommonManifest, e2edefaults.CurlPodManifest},
+		ManifestsWithTransform: map[string]func(string) string{
+			setupWithListenerSetsManifest: base.TransformListenerSetManifest,
+		},
 	}
 
 	// We only want to run one version of the metrics test because they will interfere with each other.

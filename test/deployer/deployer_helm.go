@@ -18,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -194,7 +193,7 @@ func ExtractCommonObjs(t *testing.T, objs []client.Object) ([]client.Object, *gw
 			commonObjs = append(commonObjs, gtw)
 		case *gwv1.GatewayClass:
 			commonObjs = append(commonObjs, obj)
-		case *gwxv1a1.XListenerSet:
+		case *gwv1.ListenerSet:
 			commonObjs = append(commonObjs, obj)
 		}
 	}

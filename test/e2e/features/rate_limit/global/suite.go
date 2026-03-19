@@ -4,17 +4,15 @@ package global_rate_limit
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -52,24 +50,17 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) SetupSuite() {
 	s.commonManifests = []string{
-		testdefaults.CurlPodManifest,
 		commonManifest,
 		simpleServiceManifest,
 		rateLimitServerManifest,
 	}
 	s.commonResources = []client.Object{
-		// resources from curl manifest
-		testdefaults.CurlPod,
 		// resources from service manifest
 		simpleSvc, simpleDeployment,
-		// resources from gateway manifest
-		gateway,
 		// resources from gateway extension manifest
 		gatewayExtension,
 		// rate limit service resources
 		rateLimitDeployment, rateLimitService, rateLimitConfigMap,
-		// deployer-generated resources
-		proxyDeployment, proxyService, proxyServiceAccount,
 	}
 
 	// set up common resources once
@@ -80,17 +71,11 @@ func (s *testingSuite) SetupSuite() {
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, s.commonResources...)
 
 	// make sure pods are running
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=backend-0,version=v1",
 	})
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, rateLimitDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=ratelimit",
-	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 }
 
@@ -106,17 +91,11 @@ func (s *testingSuite) TearDownSuite() {
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, s.commonResources...)
 
 	// make sure pods are gone
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, simpleDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=backend-0,version=v1",
 	})
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, rateLimitDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=ratelimit",
-	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 }
 
@@ -190,49 +169,39 @@ func (s *testingSuite) setupTest(manifests []string, resources []client.Object) 
 }
 
 func (s *testingSuite) assertResponse(path string, expectedStatus int) {
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: expectedStatus,
-		})
+		},
+		curl.WithPath(path),
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(80),
+	)
 }
 
 func (s *testingSuite) assertResponseWithHeader(path string, headerName string, headerValue string, expectedStatus int) {
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithHeader(headerName, headerValue),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: expectedStatus,
-		})
+		},
+		curl.WithPath(path),
+		curl.WithHostHeader("example.com"),
+		curl.WithHeader(headerName, headerValue),
+		curl.WithPort(80),
+	)
 }
 
 // Burst a few quick checks so the test doesn't cross a rate-limit window boundary.
 func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
 	for range rlBurstTries {
-		s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-			s.ctx,
-			testdefaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithPath(path),
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-				curl.WithHostHeader("example.com"),
-				curl.WithPort(8080),
-			},
+		common.BaseGateway.Send(
+			s.T(),
 			&testmatchers.HttpResponse{StatusCode: expectedStatus},
+			curl.WithPath(path),
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(80),
 		)
 	}
 }
@@ -240,17 +209,13 @@ func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int)
 // Safe burst a few quick checks so the test doesn't cross a rate-limit window boundary.
 func (s *testingSuite) assertConsistentResponseWithHeader(path, headerName, headerValue string, expectedStatus int) {
 	for range rlBurstTries {
-		s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-			s.ctx,
-			testdefaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithPath(path),
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-				curl.WithHostHeader("example.com"),
-				curl.WithHeader(headerName, headerValue),
-				curl.WithPort(8080),
-			},
+		common.BaseGateway.Send(
+			s.T(),
 			&testmatchers.HttpResponse{StatusCode: expectedStatus},
+			curl.WithPath(path),
+			curl.WithHostHeader("example.com"),
+			curl.WithHeader(headerName, headerValue),
+			curl.WithPort(80),
 		)
 	}
 }

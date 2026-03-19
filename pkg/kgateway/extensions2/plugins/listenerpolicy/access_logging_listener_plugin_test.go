@@ -32,9 +32,15 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 func TestConvertJsonFormat_EdgeCases(t *testing.T) {
+	// Set version for testing (normally set via ldflags at build time)
+	origVersion := version.Version
+	version.Version = "v1.0.0-test"
+	t.Cleanup(func() { version.Version = origVersion })
+
 	t.Run("Access Log Conversion", func(t *testing.T) {
 		testCases := []struct {
 			name     string
@@ -780,17 +786,14 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						Name: "envoy.access_loggers.open_telemetry",
 						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoy_open_telemetry.OpenTelemetryAccessLogConfig{
-								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
-									LogName: "otel-log",
-									GrpcService: &envoycorev3.GrpcService{
-										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
-												ClusterName: "backend_default_test-service_0",
-											},
+								GrpcService: &envoycorev3.GrpcService{
+									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+											ClusterName: "backend_default_test-service_0",
 										},
 									},
-									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
+								LogName: "otel-log",
 								ResourceAttributes: &otelv1.KeyValueList{
 									Values: []*otelv1.KeyValue{
 										{
@@ -798,6 +801,38 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											Value: &otelv1.AnyValue{
 												Value: &otelv1.AnyValue_StringValue{
 													StringValue: "gw.default",
+												},
+											},
+										},
+										{
+											Key: "service.namespace",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "service.version",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "v1.0.0-test",
+												},
+											},
+										},
+										{
+											Key: "k8s.namespace.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "k8s.container.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "kgateway-proxy",
 												},
 											},
 										},
@@ -983,17 +1018,14 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						Name: "envoy.access_loggers.open_telemetry",
 						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoy_open_telemetry.OpenTelemetryAccessLogConfig{
-								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
-									LogName: "otel-log",
-									GrpcService: &envoycorev3.GrpcService{
-										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
-												ClusterName: "backend_default_test-service_0",
-											},
+								GrpcService: &envoycorev3.GrpcService{
+									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+											ClusterName: "backend_default_test-service_0",
 										},
 									},
-									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
+								LogName: "otel-log",
 								Body: &otelv1.AnyValue{
 									Value: &otelv1.AnyValue_StringValue{
 										StringValue: `"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`,
@@ -1103,6 +1135,38 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 															},
 														},
 													},
+												},
+											},
+										},
+										{
+											Key: "service.namespace",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "service.version",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "v1.0.0-test",
+												},
+											},
+										},
+										{
+											Key: "k8s.namespace.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "k8s.container.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "kgateway-proxy",
 												},
 											},
 										},
@@ -1246,6 +1310,12 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 							ObjectSource: ir.ObjectSource{
 								Namespace: "default",
 								Name:      "gw",
+							},
+							Obj: &gwv1.Gateway{
+								ObjectMeta: metav1.ObjectMeta{
+									UID:        "test-uid-1234",
+									Generation: 7,
+								},
 							},
 						},
 					},

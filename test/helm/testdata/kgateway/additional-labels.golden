@@ -11,6 +11,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
     another-label: "true"
     extra-label-key: extra-label-value
@@ -167,6 +168,7 @@ rules:
   - gateways
   - grpcroutes
   - httproutes
+  - listenersets
   - referencegrants
   - tcproutes
   - tlsroutes
@@ -182,6 +184,7 @@ rules:
   - gateways/status
   - grpcroutes/status
   - httproutes/status
+  - listenersets/status
   - tcproutes/status
   - tlsroutes/status
   verbs:
@@ -270,6 +273,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
     another-label: "true"
     extra-label-key: extra-label-value
@@ -305,6 +309,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
     another-label: "true"
     extra-label-key: extra-label-value
@@ -325,6 +330,7 @@ spec:
         kgateway: kgateway
         app.kubernetes.io/name: kgateway
         app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: controller
     spec:
       serviceAccountName: test-release-kgateway
       containers:

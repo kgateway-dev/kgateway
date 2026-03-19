@@ -14,6 +14,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
@@ -28,6 +29,12 @@ func TestBasic(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
+
+		prevVersion := version.Version
+		version.Version = "v1.0.0-ci1"
+		defer func() {
+			version.Version = prevVersion
+		}()
 
 		// Prepend setting EnableExperimentalGatewayAPIFeatures to true so it can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
@@ -780,6 +787,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with route tracing sampling overrides", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-tracing-sampling.yaml",
+			outputFile: "traffic-policy/route-tracing-sampling.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with route tracing disabled", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-tracing-disable.yaml",
+			outputFile: "traffic-policy/route-tracing-disable.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with route tracing custom tags", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-tracing-custom-tags.yaml",
+			outputFile: "traffic-policy/route-tracing-custom-tags.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("tcp gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "tcp-routing/basic.yaml",
@@ -1103,6 +1143,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/timeout-retry.yaml",
 			outputFile: "traffic-policy/timeout-retry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy timeout attached to GRPCRoute", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/grpcroute-timeout.yaml",
+			outputFile: "traffic-policy/grpcroute-timeout.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1576,6 +1627,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend-protocol/svc-h2c.yaml",
 			outputFile: "backend-protocol/svc-h2c.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with opentelemetry attributes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/opentelemetry.yaml",
+			outputFile: "listener-policy-http/opentelemetry.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
