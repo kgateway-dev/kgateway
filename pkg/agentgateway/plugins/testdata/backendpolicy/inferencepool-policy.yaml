@@ -1,0 +1,70 @@
+apiVersion: inference.networking.k8s.io/v1
+kind: InferencePool
+metadata:
+  name: my-pool
+  namespace: default
+spec:
+  endpointPickerRef:
+    failureMode: FailClose
+    group: ""
+    kind: Service
+    name: endpoint-picker
+    port:
+      number: 9002
+  selector:
+    matchLabels:
+      app: inference
+  targetPorts:
+    - number: 8080
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: inference-policy
+  namespace: default
+spec:
+  targetRefs:
+  - kind: InferencePool
+    name: my-pool
+    group: inference.networking.k8s.io
+  backend:
+    http:
+      version: HTTP2
+      requestTimeout: 30s
+---
+# Output
+output:
+- Policy:
+    backend:
+      backendHttp:
+        requestTimeout: 30s
+        version: HTTP2
+    key: default/inference-policy:backend-http:default/my-pool
+    name:
+      kind: AgentgatewayPolicy
+      name: inference-policy
+      namespace: default
+    target:
+      route:
+        kind: InferencePool
+        name: my-pool
+        namespace: default
+status:
+  ancestors:
+  - ancestorRef:
+      group: inference.networking.k8s.io
+      kind: InferencePool
+      name: my-pool
+      namespace: default
+    conditions:
+    - lastTransitionTime: fake
+      message: Policy accepted
+      reason: Valid
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: fake
+      message: Attached to all targets
+      reason: Attached
+      status: "True"
+      type: Attached
+    controllerName: agentgateway.dev/agentgateway
