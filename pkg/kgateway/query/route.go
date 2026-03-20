@@ -13,7 +13,6 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
@@ -194,7 +193,7 @@ func defaultAllowedRouteKinds(l *gwv1.Listener) []metav1.GroupKind {
 		}
 		return []metav1.GroupKind{{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName}}
 	case gwv1.TCPProtocolType:
-		return []metav1.GroupKind{{Kind: wellknown.TCPRouteKind, Group: gwv1a2.GroupName}}
+		return []metav1.GroupKind{{Kind: wellknown.TCPRouteKind, Group: gwv1.GroupName}}
 	case gwv1.UDPProtocolType:
 		return []metav1.GroupKind{{}}
 	default:

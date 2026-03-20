@@ -616,6 +616,38 @@ var _ = Describe("Query", func() {
 			Expect(routes.GetListenerResult(gw, "foo-tcp").Routes).To(HaveLen(1))
 			Expect(routes.GetListenerResult(gw, "bar").Routes).To(BeEmpty())
 		})
+
+		It("should allow TCPRoute for a TCP listener when AllowedRoutes kind omits group", func() {
+			gw := gw()
+			gw.Spec.Listeners = []gwv1.Listener{
+				{
+					Name:     "foo-tcp",
+					Protocol: gwv1.TCPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{{Kind: wellknown.TCPRouteKind}},
+					},
+				},
+			}
+
+			tcpRoute := tcpRoute(gw.Namespace)
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
+						{
+							Name: gwv1.ObjectName(gw.Name),
+						},
+					},
+				},
+			}
+
+			gq := newQueries(GinkgoT(), tcpRoute)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors).To(BeEmpty())
+			Expect(routes.GetListenerResult(gw, "foo-tcp").Error).NotTo(HaveOccurred())
+			Expect(routes.GetListenerResult(gw, "foo-tcp").Routes).To(HaveLen(1))
+		})
 	})
 
 	It("should match TLSRoutes for Listener", func() {
