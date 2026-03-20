@@ -73,6 +73,7 @@ func getSupportedTLSRouteKindsForMode(tls *gwv1.ListenerTLSConfig) map[groupName
 	if tls != nil && tls.Mode != nil && *tls.Mode == gwv1.TLSModeTerminate {
 		return map[groupName][]routeKind{
 			gwv1.GroupName: {
+				wellknown.TLSRouteKind,
 				wellknown.TCPRouteKind,
 			},
 		}

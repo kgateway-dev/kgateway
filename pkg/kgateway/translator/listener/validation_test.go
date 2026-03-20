@@ -1349,6 +1349,59 @@ func TestTerminatedTLSListenerSupportsTCPRoute(t *testing.T) {
 	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
 }
 
+func TestTerminatedTLSListenerSupportsTLSRouteAndTCPRouteKinds(t *testing.T) {
+	mode := gwv1.TLSModeTerminate
+	gateway := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tls-terminated-mixed-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "kgateway",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tls-terminate",
+					Port:     8443,
+					Protocol: gwv1.TLSProtocolType,
+					TLS: &gwv1.ListenerTLSConfig{
+						Mode: &mode,
+					},
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{
+							{Kind: wellknown.TCPRouteKind},
+							{Kind: wellknown.TLSRouteKind},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tls-terminate": {
+			Name: "tls-terminate",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  wellknown.TCPRouteKind,
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  wellknown.TLSRouteKind,
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
+}
+
 func simpleGwTLSRoute() *gwv1.Gateway {
 	return &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{

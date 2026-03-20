@@ -187,7 +187,10 @@ func defaultAllowedRouteKinds(l *gwv1.Listener) []metav1.GroupKind {
 		}
 	case gwv1.TLSProtocolType:
 		if l.TLS != nil && l.TLS.Mode != nil && *l.TLS.Mode == gwv1.TLSModeTerminate {
-			return []metav1.GroupKind{{Kind: wellknown.TCPRouteKind, Group: gwv1.GroupName}}
+			return []metav1.GroupKind{
+				{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName},
+				{Kind: wellknown.TCPRouteKind, Group: gwv1.GroupName},
+			}
 		}
 		return []metav1.GroupKind{{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName}}
 	case gwv1.TCPProtocolType:

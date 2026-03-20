@@ -45,8 +45,6 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: TLSRoute
-        - group: gateway.networking.k8s.io
-          kind: TCPRoute
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
@@ -73,5 +71,3 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: TLSRoute
-        - group: gateway.networking.k8s.io
-          kind: TCPRoute

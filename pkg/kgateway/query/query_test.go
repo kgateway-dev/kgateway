@@ -871,6 +871,42 @@ var _ = Describe("Query", func() {
 		Expect(routes.GetListenerResult(gw, "foo-tls-terminate").Routes).To(HaveLen(1))
 	})
 
+	It("should allow TLSRoute for a terminated TLS listener", func() {
+		gw := gw()
+		mode := gwv1.TLSModeTerminate
+		gw.Spec.Listeners = []gwv1.Listener{
+			{
+				Name:     "foo-tls-terminate",
+				Protocol: gwv1.TLSProtocolType,
+				TLS: &gwv1.ListenerTLSConfig{
+					Mode: &mode,
+				},
+				AllowedRoutes: &gwv1.AllowedRoutes{
+					Kinds: []gwv1.RouteGroupKind{{Kind: wellknown.TLSRouteKind}},
+				},
+			},
+		}
+
+		tlsRoute := tlsRoute(gw.Namespace)
+		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Name: gwv1.ObjectName(gw.Name),
+					},
+				},
+			},
+		}
+
+		gq := newQueries(GinkgoT(), tlsRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(BeEmpty())
+		Expect(routes.GetListenerResult(gw, "foo-tls-terminate").Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(gw, "foo-tls-terminate").Routes).To(HaveLen(1))
+	})
+
 	// GRPCRoute Tests
 	It("should match GRPCRoutes for Listener", func() {
 		gw := gw()
