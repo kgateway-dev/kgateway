@@ -138,36 +138,13 @@ func (r *gatewayQueries) GetRouteChain(
 }
 
 func (r *gatewayQueries) allowedRoutes(resource client.Object, l *gwv1.Listener) (func(krt.HandlerContext, string) bool, []metav1.GroupKind, error) {
-	var allowedKinds []metav1.GroupKind
-
-	// Determine the allowed route kinds based on the listener's protocol
-	switch l.Protocol {
-	case gwv1.HTTPSProtocolType:
-		fallthrough
-	case gwv1.HTTPProtocolType:
-		allowedKinds = []metav1.GroupKind{
-			{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName},
-			{Kind: wellknown.GRPCRouteKind, Group: gwv1.GroupName},
-		}
-	case gwv1.TLSProtocolType:
-		allowedKinds = []metav1.GroupKind{
-			{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName},
-			{Kind: wellknown.TCPRouteKind, Group: gwv1.GroupName},
-		}
-	case gwv1.TCPProtocolType:
-		allowedKinds = []metav1.GroupKind{{Kind: wellknown.TCPRouteKind, Group: gwv1a2.GroupName}}
-	case gwv1.UDPProtocolType:
-		allowedKinds = []metav1.GroupKind{{}}
-	default:
-		// allow custom protocols to work
-		allowedKinds = []metav1.GroupKind{{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName}}
-	}
+	allowedKinds := defaultAllowedRouteKinds(l)
 
 	allowedNs := krtcollections.SameNamespace(resource.GetNamespace())
 	if ar := l.AllowedRoutes; ar != nil {
 		// Override the allowed route kinds if specified in AllowedRoutes
 		if ar.Kinds != nil {
-			allowedKinds = nil // Reset to include only explicitly allowed kinds
+			explicitKinds := make([]metav1.GroupKind, 0, len(ar.Kinds))
 			for _, k := range ar.Kinds {
 				gk := metav1.GroupKind{Kind: string(k.Kind)}
 				if k.Group != nil {
@@ -175,8 +152,9 @@ func (r *gatewayQueries) allowedRoutes(resource client.Object, l *gwv1.Listener)
 				} else {
 					gk.Group = gwv1.GroupName
 				}
-				allowedKinds = append(allowedKinds, gk)
+				explicitKinds = append(explicitKinds, gk)
 			}
+			allowedKinds = filterSupportedRouteKinds(explicitKinds, allowedKinds)
 		}
 
 		// Determine the allowed namespaces if specified
@@ -198,6 +176,38 @@ func (r *gatewayQueries) allowedRoutes(resource client.Object, l *gwv1.Listener)
 	}
 
 	return allowedNs, allowedKinds, nil
+}
+
+func defaultAllowedRouteKinds(l *gwv1.Listener) []metav1.GroupKind {
+	switch l.Protocol {
+	case gwv1.HTTPSProtocolType, gwv1.HTTPProtocolType:
+		return []metav1.GroupKind{
+			{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName},
+			{Kind: wellknown.GRPCRouteKind, Group: gwv1.GroupName},
+		}
+	case gwv1.TLSProtocolType:
+		if l.TLS != nil && l.TLS.Mode != nil && *l.TLS.Mode == gwv1.TLSModeTerminate {
+			return []metav1.GroupKind{{Kind: wellknown.TCPRouteKind, Group: gwv1.GroupName}}
+		}
+		return []metav1.GroupKind{{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName}}
+	case gwv1.TCPProtocolType:
+		return []metav1.GroupKind{{Kind: wellknown.TCPRouteKind, Group: gwv1a2.GroupName}}
+	case gwv1.UDPProtocolType:
+		return []metav1.GroupKind{{}}
+	default:
+		// allow custom protocols to work
+		return []metav1.GroupKind{{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName}}
+	}
+}
+
+func filterSupportedRouteKinds(requested, supported []metav1.GroupKind) []metav1.GroupKind {
+	filtered := make([]metav1.GroupKind, 0, len(requested))
+	for _, requestedKind := range requested {
+		if slices.Contains(supported, requestedKind) {
+			filtered = append(filtered, requestedKind)
+		}
+	}
+	return filtered
 }
 
 func (r *gatewayQueries) getDelegatedChildren(

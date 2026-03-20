@@ -1244,6 +1244,111 @@ func TestValidTLSRouteListener(t *testing.T) {
 	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), listeners, expectedStatuses)
 }
 
+func TestPassthroughTLSListenerRejectsTCPRouteKindButKeepsTLSRoute(t *testing.T) {
+	mode := gwv1.TLSModePassthrough
+	gateway := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tls-passthrough-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "kgateway",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tls-passthrough",
+					Port:     443,
+					Protocol: gwv1.TLSProtocolType,
+					TLS: &gwv1.ListenerTLSConfig{
+						Mode: &mode,
+					},
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{
+							{Kind: wellknown.TCPRouteKind},
+							{Kind: wellknown.TLSRouteKind},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tls-passthrough": {
+			Name: "tls-passthrough",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  wellknown.TLSRouteKind,
+				},
+			},
+			Conditions: []metav1.Condition{
+				{
+					Type:    string(gwv1.ListenerConditionResolvedRefs),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerReasonInvalidRouteKinds),
+					Message: "Found invalid route kinds: [TCPRoute]",
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
+}
+
+func TestTerminatedTLSListenerSupportsTCPRoute(t *testing.T) {
+	mode := gwv1.TLSModeTerminate
+	gateway := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tls-terminated-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "kgateway",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tls-terminate",
+					Port:     8443,
+					Protocol: gwv1.TLSProtocolType,
+					TLS: &gwv1.ListenerTLSConfig{
+						Mode: &mode,
+					},
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{
+							{Kind: wellknown.TCPRouteKind},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tls-terminate": {
+			Name: "tls-terminate",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  wellknown.TCPRouteKind,
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
+}
+
 func simpleGwTLSRoute() *gwv1.Gateway {
 	return &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{

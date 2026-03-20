@@ -797,6 +797,80 @@ var _ = Describe("Query", func() {
 		Expect(routes.GetListenerResult(gw, "bar").Routes).To(BeEmpty())
 	})
 
+	It("should reject TCPRoute for a passthrough TLS listener with mixed allowed kinds", func() {
+		gw := gw()
+		mode := gwv1.TLSModePassthrough
+		gw.Spec.Listeners = []gwv1.Listener{
+			{
+				Name:     "foo-tls",
+				Protocol: gwv1.TLSProtocolType,
+				TLS: &gwv1.ListenerTLSConfig{
+					Mode: &mode,
+				},
+				AllowedRoutes: &gwv1.AllowedRoutes{
+					Kinds: []gwv1.RouteGroupKind{
+						{Kind: wellknown.TCPRouteKind},
+						{Kind: wellknown.TLSRouteKind},
+					},
+				},
+			},
+		}
+
+		tcpRoute := tcpRoute(gw.Namespace)
+		tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Name: gwv1.ObjectName(gw.Name),
+					},
+				},
+			},
+		}
+
+		gq := newQueries(GinkgoT(), tcpRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(HaveLen(1))
+		Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
+	})
+
+	It("should allow TCPRoute for a terminated TLS listener", func() {
+		gw := gw()
+		mode := gwv1.TLSModeTerminate
+		gw.Spec.Listeners = []gwv1.Listener{
+			{
+				Name:     "foo-tls-terminate",
+				Protocol: gwv1.TLSProtocolType,
+				TLS: &gwv1.ListenerTLSConfig{
+					Mode: &mode,
+				},
+				AllowedRoutes: &gwv1.AllowedRoutes{
+					Kinds: []gwv1.RouteGroupKind{{Kind: wellknown.TCPRouteKind}},
+				},
+			},
+		}
+
+		tcpRoute := tcpRoute(gw.Namespace)
+		tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Name: gwv1.ObjectName(gw.Name),
+					},
+				},
+			},
+		}
+
+		gq := newQueries(GinkgoT(), tcpRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(BeEmpty())
+		Expect(routes.GetListenerResult(gw, "foo-tls-terminate").Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(gw, "foo-tls-terminate").Routes).To(HaveLen(1))
+	})
+
 	// GRPCRoute Tests
 	It("should match GRPCRoutes for Listener", func() {
 		gw := gw()

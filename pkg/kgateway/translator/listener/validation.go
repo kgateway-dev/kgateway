@@ -32,47 +32,57 @@ type portProtocol struct {
 }
 
 type (
-	protocol  = string
 	groupName = string
 	routeKind = string
 )
 
-// getSupportedProtocolsRoutes returns a map of listener protocols to the supported route kinds for that protocol
-func getSupportedProtocolsRoutes() map[protocol]map[groupName][]routeKind {
-	supportedProtocolToKinds := map[protocol]map[groupName][]routeKind{
-		string(gwv1.HTTPProtocolType): {
-			gwv1.GroupName: []string{
+// getSupportedRouteKindsForListener returns the supported route kinds for the
+// provided listener based on protocol and, for TLS listeners, TLS mode.
+func getSupportedRouteKindsForListener(listener gwv1.Listener) map[groupName][]routeKind {
+	switch listener.Protocol {
+	case gwv1.HTTPProtocolType, gwv1.HTTPSProtocolType:
+		return map[groupName][]routeKind{
+			gwv1.GroupName: {
 				wellknown.HTTPRouteKind,
 				wellknown.GRPCRouteKind,
 			},
-		},
-		string(gwv1.HTTPSProtocolType): {
-			gwv1.GroupName: []string{
-				wellknown.HTTPRouteKind,
-				wellknown.GRPCRouteKind,
-			},
-		},
-		string(gwv1.TCPProtocolType): {
-			gwv1.GroupName: []string{
+		}
+	case gwv1.TCPProtocolType:
+		return map[groupName][]routeKind{
+			gwv1.GroupName: {
 				wellknown.TCPRouteKind,
 			},
-		},
-		string(gwv1.TLSProtocolType): {
-			gwv1.GroupName: []string{
-				wellknown.TLSRouteKind,
-				wellknown.TCPRouteKind,
-			},
-		},
-		string(gwv1.ProtocolType(istioprotocol.HBONE)): {
-			gwv1.GroupName: []string{
+		}
+	case gwv1.TLSProtocolType:
+		return getSupportedTLSRouteKindsForMode(listener.TLS)
+	case gwv1.ProtocolType(istioprotocol.HBONE):
+		return map[groupName][]routeKind{
+			gwv1.GroupName: {
 				wellknown.HTTPRouteKind,
 				wellknown.GRPCRouteKind,
 				wellknown.TCPRouteKind,
 				wellknown.TLSRouteKind,
 			},
+		}
+	default:
+		return nil
+	}
+}
+
+func getSupportedTLSRouteKindsForMode(tls *gwv1.ListenerTLSConfig) map[groupName][]routeKind {
+	if tls != nil && tls.Mode != nil && *tls.Mode == gwv1.TLSModeTerminate {
+		return map[groupName][]routeKind{
+			gwv1.GroupName: {
+				wellknown.TCPRouteKind,
+			},
+		}
+	}
+
+	return map[groupName][]routeKind{
+		gwv1.GroupName: {
+			wellknown.TLSRouteKind,
 		},
 	}
-	return supportedProtocolToKinds
 }
 
 func buildDefaultRouteKindsForProtocol(supportedRouteKindsForProtocol map[groupName][]routeKind) []gwv1.RouteGroupKind {
@@ -89,13 +99,12 @@ func buildDefaultRouteKindsForProtocol(supportedRouteKindsForProtocol map[groupN
 }
 
 func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter) []ir.Listener {
-	supportedProtocolToKinds := getSupportedProtocolsRoutes()
 	validListeners := []ir.Listener{}
 
 	for _, listener := range listeners {
-		supportedRouteKindsForProtocol, ok := supportedProtocolToKinds[string(listener.Protocol)]
+		supportedRouteKindsForProtocol := getSupportedRouteKindsForListener(listener.Listener)
 		parentReporter := listener.GetParentReporter(reporter)
-		if !ok {
+		if supportedRouteKindsForProtocol == nil {
 			// todo: log?
 			parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
 				Type:    gwv1.ListenerConditionAccepted,
@@ -143,7 +152,8 @@ func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter)
 				Reason:  gwv1.ListenerReasonInvalidRouteKinds,
 				Message: fmt.Sprintf("Found invalid route kinds: [%s]", strings.Join(invalidKinds, ", ")),
 			})
-		} else {
+		}
+		if len(foundSupportedRouteKinds) > 0 {
 			validListeners = append(validListeners, listener)
 		}
 	}
