@@ -34,8 +34,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 	// backfill individual features that we don't support yet.
 	exemptFeatures.Insert(
 		features.GatewayHTTPListenerIsolationFeature,
-		// The new Gateway API v1.5.x CORS conformance coverage does not pass yet.
-		features.HTTPRouteCORS,
 		// Gateway.spec.tls.backend.clientCertificateRef is not translated yet.
 		features.GatewayBackendClientCertificateFeature,
 		// We support the AllowInsecureFallback traffic behavior, but do not yet publish the
