@@ -1211,6 +1211,7 @@ func applyClientCertificateValidation(
 	tlsConfig.ClientCertificateValidation = &ir.ClientCertificateValidation{
 		CACertificates:           caCertificates,
 		RequireClientCertificate: validationConfig.RequireClientCertificate,
+		AllowInsecureFallback:    validationConfig.AllowInsecureFallback,
 	}
 
 	return true, certErr

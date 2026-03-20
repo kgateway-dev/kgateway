@@ -102,6 +102,53 @@ func TestFilterChainInfoMultipleCertificates(t *testing.T) {
 	)
 }
 
+func TestFilterChainInfoFrontendTLSAllowInsecureFallback(t *testing.T) {
+	info := &FilterChainInfo{
+		TLS: &ir.TLSConfig{
+			Certificates: []ir.TLSCertificate{{
+				CertChain:  []byte("cert"),
+				PrivateKey: []byte("key"),
+			}},
+			ClientCertificateValidation: &ir.ClientCertificateValidation{
+				CACertificates:           [][]byte{[]byte("ca-cert")},
+				RequireClientCertificate: false,
+				AllowInsecureFallback:    true,
+			},
+		},
+	}
+
+	downstream := extractDownstreamTlsContext(t, info.toTransportSocket())
+	require.False(t, downstream.GetRequireClientCertificate().GetValue())
+	require.Equal(
+		t,
+		envoytlsv3.CertificateValidationContext_ACCEPT_UNTRUSTED,
+		downstream.GetCommonTlsContext().GetValidationContext().GetTrustChainVerification(),
+	)
+}
+
+func TestFilterChainInfoOptionalClientValidationStaysStrict(t *testing.T) {
+	info := &FilterChainInfo{
+		TLS: &ir.TLSConfig{
+			Certificates: []ir.TLSCertificate{{
+				CertChain:  []byte("cert"),
+				PrivateKey: []byte("key"),
+			}},
+			ClientCertificateValidation: &ir.ClientCertificateValidation{
+				CACertificates:           [][]byte{[]byte("ca-cert")},
+				RequireClientCertificate: false,
+			},
+		},
+	}
+
+	downstream := extractDownstreamTlsContext(t, info.toTransportSocket())
+	require.False(t, downstream.GetRequireClientCertificate().GetValue())
+	require.Equal(
+		t,
+		envoytlsv3.CertificateValidationContext_VERIFY_TRUST_CHAIN,
+		downstream.GetCommonTlsContext().GetValidationContext().GetTrustChainVerification(),
+	)
+}
+
 func extractDownstreamTlsContext(t *testing.T, socket *envoycorev3.TransportSocket) *envoytlsv3.DownstreamTlsContext {
 	t.Helper()
 	require.NotNil(t, socket)

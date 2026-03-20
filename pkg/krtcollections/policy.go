@@ -1653,6 +1653,7 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSCo
 		if len(validCARefs) > 0 {
 			result.DefaultValidation = &ir.ClientCertificateValidationIR{
 				RequireClientCertificate: getRequiredClientCertificate(frontendTLS.Default.Validation.Mode),
+				AllowInsecureFallback:    frontendTLS.Default.Validation.Mode == gwv1.AllowInsecureFallback,
 				CACertificateRefs:        validCARefs,
 			}
 		}
@@ -1675,6 +1676,7 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSCo
 			if len(validCARefs) > 0 {
 				result.PerPortValidation[portConfig.Port] = &ir.ClientCertificateValidationIR{
 					RequireClientCertificate: getRequiredClientCertificate(portConfig.TLS.Validation.Mode),
+					AllowInsecureFallback:    portConfig.TLS.Validation.Mode == gwv1.AllowInsecureFallback,
 					CACertificateRefs:        validCARefs,
 				}
 			}
