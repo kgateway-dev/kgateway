@@ -154,6 +154,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute()),
 			Entry("regular tcproute", tcpRoute()),
+			Entry("regular promoted tlsroute", tlsRouteV1()),
 			Entry("regular tlsroute", tlsRoute()),
 			Entry("regular grpcroute", grpcRoute()),
 			Entry("delegatee route", delegateeRoute()),
@@ -177,6 +178,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 				},
 			)),
 			Entry("regular tcproute", tcpRoute(
+				metav1.Condition{
+					Type: fake_condition,
+				},
+			)),
+			Entry("regular promoted tlsroute", tlsRouteV1(
 				metav1.Condition{
 					Type: fake_condition,
 				},
@@ -359,6 +365,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 					route.Status.RouteStatus = *status
 				case *gwv1a2.TCPRoute:
 					route.Status.RouteStatus = *status
+				case *gwv1.TLSRoute:
+					route.Status.RouteStatus = *status
 				case *gwv1a2.TLSRoute:
 					route.Status.RouteStatus = *status
 				case *gwv1.GRPCRoute:
@@ -379,6 +387,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute()),
 			Entry("regular tcproute", tcpRoute()),
+			Entry("regular promoted tlsroute", tlsRouteV1()),
 			Entry("regular tlsroute", tlsRoute()),
 			Entry("regular grpcroute", grpcRoute()),
 			Entry("delegatee route", delegateeRoute()),
@@ -393,6 +402,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 						Name: "additional-gateway",
 					})
 				case *gwv1a2.TCPRoute:
+					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
+						Name: "additional-gateway",
+					})
+				case *gwv1.TLSRoute:
 					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
 						Name: "additional-gateway",
 					})
@@ -425,6 +438,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular HTTPRoute", httpRoute()),
 			Entry("regular TCPRoute", tcpRoute()),
+			Entry("regular promoted tlsroute", tlsRouteV1()),
 			Entry("regular tlsroute", tlsRoute()),
 			Entry("regular grpcroute", grpcRoute()),
 		)
@@ -440,6 +454,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				case *gwv1a2.TCPRoute:
 					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
+				case *gwv1.TLSRoute:
+					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				case *gwv1a2.TLSRoute:
 					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				case *gwv1.GRPCRoute:
@@ -451,6 +467,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				case *gwv1.HTTPRoute:
 					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
 				case *gwv1a2.TCPRoute:
+					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
+				case *gwv1.TLSRoute:
 					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
 				case *gwv1a2.TLSRoute:
 					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
@@ -483,6 +501,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 				gwv1.Listener{Name: "foo-tcp", Protocol: gwv1.TCPProtocolType},
 				gwv1.Listener{Name: "bar-tcp", Protocol: gwv1.TCPProtocolType},
 			),
+			Entry("promoted TLSRoutes with shared and separate listeners",
+				tlsRouteV1(), tlsRouteV1(),
+				gwv1.Listener{Name: "foo-tls", Protocol: gwv1.TLSProtocolType},
+				gwv1.Listener{Name: "bar-tls", Protocol: gwv1.TLSProtocolType},
+			),
 			Entry("TLSRoutes with shared and separate listeners",
 				tlsRoute(), tlsRoute(),
 				gwv1.Listener{Name: "foo-tls", Protocol: gwv1.TLSProtocolType},
@@ -504,6 +527,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				r.Spec.ParentRefs = nil
 			case *gwv1a2.TCPRoute:
 				r.Spec.ParentRefs = nil
+			case *gwv1.TLSRoute:
+				r.Spec.ParentRefs = nil
 			case *gwv1a2.TLSRoute:
 				r.Spec.ParentRefs = nil
 			case *gwv1.GRPCRoute:
@@ -521,6 +546,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 		},
 		Entry("HTTPRoute with missing parent reference", httpRoute()),
 		Entry("TCPRoute with missing parent reference", tcpRoute()),
+		Entry("promoted TLSRoute with missing parent reference", tlsRouteV1()),
 		Entry("TLSRoute with missing parent reference", tlsRoute()),
 		Entry("GRPCRoute with missing parent reference", grpcRoute()),
 	)
@@ -542,6 +568,9 @@ var _ = Describe("Reporting Infrastructure", func() {
 			metav1.Condition{Type: fake_condition},
 		)),
 		Entry("TCPRoute with stale status", tcpRoute(
+			metav1.Condition{Type: fake_condition},
+		)),
+		Entry("promoted TLSRoute with stale status", tlsRouteV1(
 			metav1.Condition{Type: fake_condition},
 		)),
 		Entry("TLSRoute with stale status", tlsRoute(
@@ -702,6 +731,11 @@ func fakeTranslate(reporter reporter.Reporter, obj client.Object) {
 		for _, pr := range route.Spec.ParentRefs {
 			routeReporter.ParentRef(&pr)
 		}
+	case *gwv1.TLSRoute:
+		routeReporter := reporter.Route(route)
+		for _, pr := range route.Spec.ParentRefs {
+			routeReporter.ParentRef(&pr)
+		}
 	case *gwv1a2.TLSRoute:
 		routeReporter := reporter.Route(route)
 		for _, pr := range route.Spec.ParentRefs {
@@ -753,6 +787,24 @@ func tcpRoute(conditions ...metav1.Condition) client.Object {
 
 func tlsRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1a2.TLSRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route",
+			Namespace: "default",
+		},
+	}
+	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
+	if len(conditions) > 0 {
+		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
+			ParentRef:      *parentRef(),
+			Conditions:     conditions,
+			ControllerName: wellknown.DefaultGatewayControllerName,
+		})
+	}
+	return route
+}
+
+func tlsRouteV1(conditions ...metav1.Condition) client.Object {
+	route := &gwv1.TLSRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route",
 			Namespace: "default",

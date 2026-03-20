@@ -558,7 +558,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	}
 
 	for nns := range reportsMap.TLSRoutes {
-		r := gwv1a2.TLSRoute{
+		r := gwv1.TLSRoute{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      nns.Name,
 				Namespace: nns.Namespace,

@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -136,14 +137,12 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	syncStatusWithRetry := func(
 		routeType string,
 		routeKey client.ObjectKey,
-		getRouteFunc func() client.Object,
+		getRouteFunc func(context.Context, client.ObjectKey) (client.Object, error),
 		statusUpdater func(route client.Object) (*gwv1.RouteStatus, error),
 	) error {
 		return retry.Do(
 			func() (rErr error) {
-				route := getRouteFunc()
-
-				err := s.mgr.GetClient().Get(ctx, routeKey, route)
+				route, err := getRouteFunc(ctx, routeKey)
 				if err != nil {
 					if apierrors.IsNotFound(err) {
 						// the route is not found, we can't report status on it
@@ -162,6 +161,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
 				case *gwv1a2.TCPRoute:
+					for _, parentRef := range r.Spec.ParentRefs {
+						gatewayNames = append(gatewayNames, string(parentRef.Name))
+					}
+				case *gwv1.TLSRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
@@ -271,6 +274,12 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 				return nil, nil
 			}
 			r.Status.RouteStatus = *status
+		case *gwv1.TLSRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil, nil
+			}
+			r.Status.RouteStatus = *status
 		case *gwv1a2.TLSRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
@@ -297,7 +306,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 		err := syncStatusWithRetry(
 			wellknown.HTTPRouteKind,
 			rnn,
-			func() client.Object { return new(gwv1.HTTPRoute) },
+			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
+				route := new(gwv1.HTTPRoute)
+				return route, s.mgr.GetClient().Get(ctx, routeKey, route)
+			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
 			},
@@ -310,7 +322,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	// Sync TCPRoute statuses
 	for rnn := range rm.TCPRoutes {
 		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn,
-			func() client.Object { return new(gwv1a2.TCPRoute) },
+			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
+				route := new(gwv1a2.TCPRoute)
+				return route, s.mgr.GetClient().Get(ctx, routeKey, route)
+			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
 			})
@@ -322,7 +337,9 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	// Sync TLSRoute statuses
 	for rnn := range rm.TLSRoutes {
 		err := syncStatusWithRetry(wellknown.TLSRouteKind, rnn,
-			func() client.Object { return new(gwv1a2.TLSRoute) },
+			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
+				return getTLSRouteForStatus(ctx, s.mgr.GetClient(), routeKey)
+			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.TLSRouteKind)
 			})
@@ -334,7 +351,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	// Sync GRPCRoute statuses
 	for rnn := range rm.GRPCRoutes {
 		err := syncStatusWithRetry(wellknown.GRPCRouteKind, rnn,
-			func() client.Object { return new(gwv1.GRPCRoute) },
+			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
+				route := new(gwv1.GRPCRoute)
+				return route, s.mgr.GetClient().Get(ctx, routeKey, route)
+			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.GRPCRouteKind)
 			})
@@ -342,6 +362,29 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 			logger.Error("all attempts failed at updating GRPCRoute status", "error", err, "route", rnn)
 		}
 	}
+}
+
+type objectGetter interface {
+	Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
+}
+
+func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key client.ObjectKey) (client.Object, error) {
+	promotedTLSRoute := &gwv1.TLSRoute{}
+	if err := kubeClient.Get(ctx, key, promotedTLSRoute); err == nil {
+		return promotedTLSRoute, nil
+	} else if !shouldFallbackTLSRouteLookup(err) {
+		return nil, err
+	}
+
+	legacyTLSRoute := &gwv1a2.TLSRoute{}
+	if err := kubeClient.Get(ctx, key, legacyTLSRoute); err != nil {
+		return nil, err
+	}
+	return legacyTLSRoute, nil
+}
+
+func shouldFallbackTLSRouteLookup(err error) bool {
+	return apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err)
 }
 
 // syncGatewayStatus will build and update status for all Gateways in a reportMap

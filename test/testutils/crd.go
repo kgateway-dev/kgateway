@@ -31,6 +31,7 @@ var AllCRDs = []schema.GroupVersionResource{
 	gvr.GRPCRoute,
 	gvr.TCPRoute,
 	gvr.TLSRoute,
+	gvr.TLSRoute_v1alpha2,
 	gvr.ReferenceGrant,
 	gvr.BackendTLSPolicy,
 	wellknown.XListenerSetGVR,

@@ -10,6 +10,8 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -259,10 +261,9 @@ func (p *Provider) EventuallyTLSRouteCondition(
 	ginkgo.GinkgoHelper()
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		route := &gwv1a2.TLSRoute{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		status, err := p.getTLSRouteStatus(ctx, routeName, routeNamespace)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get TLSRoute %s/%s", routeNamespace, routeName))
-		g.Expect(extractParentConditions(route.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
+		g.Expect(extractParentConditions(status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -364,6 +365,25 @@ func (p *Provider) getListenerSetStatus(ctx context.Context, name string, namesp
 		return gwv1.ListenerSetStatus{}, err
 	}
 	return legacyStatus, nil
+}
+
+func (p *Provider) getTLSRouteStatus(ctx context.Context, name string, namespace string) (gwv1.RouteStatus, error) {
+	route := &gwv1.TLSRoute{}
+	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, route); err == nil {
+		return route.Status.RouteStatus, nil
+	} else if !shouldFallbackTLSRouteStatusLookup(err) {
+		return gwv1.RouteStatus{}, err
+	}
+
+	legacyRoute := &gwv1a2.TLSRoute{}
+	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, legacyRoute); err != nil {
+		return gwv1.RouteStatus{}, err
+	}
+	return legacyRoute.Status.RouteStatus, nil
+}
+
+func shouldFallbackTLSRouteStatusLookup(err error) bool {
+	return apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err)
 }
 
 func getListenerEntryStatus(listeners []gwv1.ListenerEntryStatus, name string) *gwv1.ListenerEntryStatus {

@@ -2,9 +2,12 @@ package collections
 
 import (
 	"context"
+	"log/slog"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -18,22 +21,42 @@ var promotedTLSRouteGVR = schema.GroupVersionResource{
 	Resource: "tlsroutes",
 }
 
-func preferPromotedTLSRouteVersion(extClient apiextensionsclient.Interface) bool {
+var legacyTLSRouteGVR = schema.GroupVersionResource{
+	Group:    wellknown.GatewayGroup,
+	Version:  gwv1a2.GroupVersion.Version,
+	Resource: "tlsroutes",
+}
+
+type servedTLSRouteVersions struct {
+	Promoted      bool
+	Legacy        bool
+	Authoritative bool
+}
+
+func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTLSRouteVersions {
 	if extClient == nil {
-		return false
+		return servedTLSRouteVersions{Promoted: true, Legacy: true}
 	}
 
 	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.Background(), "tlsroutes.gateway.networking.k8s.io", metav1.GetOptions{})
 	if err != nil {
-		return false
+		return servedTLSRouteVersions{Promoted: true, Legacy: true}
 	}
 
+	versions := servedTLSRouteVersions{Authoritative: true}
 	for _, version := range crd.Spec.Versions {
-		if version.Name == gwv1.GroupVersion.Version && version.Served {
-			return true
+		if !version.Served {
+			continue
+		}
+		switch version.Name {
+		case gwv1.GroupVersion.Version:
+			versions.Promoted = true
+		case gwv1a2.GroupVersion.Version:
+			versions.Legacy = true
 		}
 	}
-	return false
+
+	return versions
 }
 
 func convertTLSRouteV1ToV1Alpha2(in *gwv1.TLSRoute) *gwv1a2.TLSRoute {
@@ -56,6 +79,26 @@ func convertTLSRouteV1ToV1Alpha2(in *gwv1.TLSRoute) *gwv1a2.TLSRoute {
 			Rules:     convertTLSRouteRulesV1ToV1Alpha2(in.Spec.Rules),
 		},
 	}
+}
+
+func convertLegacyTLSRouteToV1Alpha2(in *unstructured.Unstructured) *gwv1a2.TLSRoute {
+	if in == nil {
+		return nil
+	}
+
+	out := &gwv1a2.TLSRoute{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(in.Object, out); err != nil {
+		slog.Warn("ignoring legacy TLSRoute with invalid payload",
+			"name", in.GetName(),
+			"namespace", in.GetNamespace(),
+			"error", err,
+		)
+		return nil
+	}
+	if out.GroupVersionKind().Empty() {
+		out.SetGroupVersionKind(legacyTLSRouteGVR.GroupVersion().WithKind(wellknown.TLSRouteKind))
+	}
+	return out
 }
 
 func convertTLSRouteHostnamesV1ToV1Alpha2(in []gwv1.Hostname) []gwv1a2.Hostname {

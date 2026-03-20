@@ -58,19 +58,10 @@ func TestConformance(t *testing.T) {
 
 	// Gateway API v1.5.x adds new TLSRoute conformance coverage around the
 	// promoted v1 API's parent/status and listener validation behavior.
-	// kgateway still supports the pre-promotion TLSRoute surface, but these
-	// promoted-v1 cases do not pass yet and are tracked as follow-up work for
-	// the bump.
+	// TLSRouteListenerPassthroughSupportedKinds is still failing and is tracked
+	// in issue #13673.
 	options.SkipTests = append(options.SkipTests,
-		"TLSRouteHostnameIntersection",
-		"TLSRouteInvalidBackendRefNonexistent",
-		"TLSRouteInvalidBackendRefUnknownKind",
-		"TLSRouteInvalidNoMatchingListener",
-		"TLSRouteInvalidNoMatchingListenerHostname",
-		"TLSRouteInvalidReferenceGrant",
-		"TLSRouteListenerMixedTerminationNotSupported",
 		"TLSRouteListenerPassthroughSupportedKinds",
-		"TLSRouteListenerTerminateNotSupported",
 	)
 
 	ip, err := guessMetallbAddress()

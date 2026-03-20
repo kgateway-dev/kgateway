@@ -126,7 +126,7 @@ func buildStatusesFromReports(
 
 	// Build TLSRoute statuses
 	for routeNN := range reportsMap.TLSRoutes {
-		route := gwv1a2.TLSRoute{
+		route := gwv1.TLSRoute{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      routeNN.Name,
 				Namespace: routeNN.Namespace,

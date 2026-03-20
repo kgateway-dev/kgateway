@@ -108,22 +108,42 @@ func (c *CommonCollections) InitCollections(
 	var tlsRoutes krt.Collection[*gwv1a2.TLSRoute]
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
 		tcproutes = krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](c.Client, gvr.TCPRoute, kubetypes.StandardInformer, filter), c.KrtOpts.ToOptions("TCPRoute")...)
-		if preferPromotedTLSRouteVersion(c.Client.Ext()) {
+		servedTLSRouteVersions := getServedTLSRouteVersions(c.Client.Ext())
+		var tlsRouteCollections []krt.Collection[*gwv1a2.TLSRoute]
+		// Prefer the promoted watch when discovery confirms it is served; watching both
+		// served versions would duplicate the same logical TLSRoute.
+		if servedTLSRouteVersions.Promoted {
 			tlsRoutesV1 := krt.WrapClient(
 				kclient.NewDelayedInformer[*gwv1.TLSRoute](c.Client, promotedTLSRouteGVR, kubetypes.StandardInformer, filter),
 				c.KrtOpts.ToOptions("TLSRouteV1")...,
 			)
-			tlsRoutes = krt.NewManyCollection(tlsRoutesV1, func(kctx krt.HandlerContext, i *gwv1.TLSRoute) []*gwv1a2.TLSRoute {
+			tlsRouteCollections = append(tlsRouteCollections, krt.NewManyCollection(tlsRoutesV1, func(kctx krt.HandlerContext, i *gwv1.TLSRoute) []*gwv1a2.TLSRoute {
 				if converted := convertTLSRouteV1ToV1Alpha2(i); converted != nil {
 					return []*gwv1a2.TLSRoute{converted}
 				}
 				return nil
-			}, c.KrtOpts.ToOptions("TLSRoute")...)
-		} else {
-			tlsRoutes = krt.WrapClient(
-				kclient.NewDelayedInformer[*gwv1a2.TLSRoute](c.Client, gvr.TLSRoute, kubetypes.StandardInformer, filter),
-				c.KrtOpts.ToOptions("TLSRoute")...,
+			}, c.KrtOpts.ToOptions("TLSRouteV1ToV1Alpha2")...))
+		}
+		if servedTLSRouteVersions.Legacy && (!servedTLSRouteVersions.Authoritative || !servedTLSRouteVersions.Promoted) {
+			legacyTLSRoutesRaw := krt.WrapClient(
+				newDelayedDynamicUnstructuredInformer(c.Client, legacyTLSRouteGVR, filter),
+				c.KrtOpts.ToOptions("TLSRouteV1Alpha2Raw")...,
 			)
+			tlsRouteCollections = append(tlsRouteCollections, krt.NewManyCollection(legacyTLSRoutesRaw, func(kctx krt.HandlerContext, i *unstructured.Unstructured) []*gwv1a2.TLSRoute {
+				if converted := convertLegacyTLSRouteToV1Alpha2(i); converted != nil {
+					return []*gwv1a2.TLSRoute{converted}
+				}
+				return nil
+			}, c.KrtOpts.ToOptions("TLSRouteV1Alpha2")...))
+		}
+
+		switch len(tlsRouteCollections) {
+		case 0:
+			tlsRoutes = krt.NewStaticCollection[*gwv1a2.TLSRoute](nil, nil, c.KrtOpts.ToOptions("disable/TLSRoute")...)
+		case 1:
+			tlsRoutes = tlsRouteCollections[0]
+		default:
+			tlsRoutes = krt.JoinCollection(tlsRouteCollections, c.KrtOpts.ToOptions("TLSRoute")...)
 		}
 	} else {
 		// If disabled, still build a collection but make it always empty
