@@ -118,8 +118,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	// If there are conditions on the Gateway that are not owned by our reporter, include
 	// them in the final list of conditions to preseve conditions we do not own
 	for _, condition := range gw.Status.Conditions {
-		if !isReporterOwnedGatewayConditionType(gwv1.GatewayConditionType(condition.Type)) &&
-			meta.FindStatusCondition(finalConditions, condition.Type) == nil {
+		if shouldPreserveGatewayCondition(condition, finalConditions) {
 			finalConditions = append(finalConditions, condition)
 		}
 	}
@@ -203,6 +202,20 @@ func isReporterOwnedGatewayConditionType(conditionType gwv1.GatewayConditionType
 	default:
 		return false
 	}
+}
+
+func shouldPreserveGatewayCondition(condition metav1.Condition, finalConditions []metav1.Condition) bool {
+	if meta.FindStatusCondition(finalConditions, condition.Type) != nil {
+		return false
+	}
+
+	if condition.Type == string(gwv1.GatewayConditionAccepted) &&
+		condition.Status == metav1.ConditionFalse &&
+		condition.Reason == string(gwv1.GatewayReasonInvalidParameters) {
+		return true
+	}
+
+	return !isReporterOwnedGatewayConditionType(gwv1.GatewayConditionType(condition.Type))
 }
 
 func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
