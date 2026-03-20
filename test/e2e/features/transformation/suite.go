@@ -5,7 +5,6 @@ package transformation
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -738,23 +737,10 @@ func (s *testingSuite) TestGatewayWithTransformation() {
 		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 
-	// Wait for Envoy admin API readiness before fetching listener config.
-	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
-		adminClient := envoyadmincli.NewClient().
-			WithReceiver(io.Discard).
-			WithCurlOptions(curl.WithRetries(5, 1, 30))
-
-		_, err := adminClient.GetServerInfo(s.Ctx)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "Envoy admin API not ready")
-	}).
-		WithContext(s.Ctx).
-		WithTimeout(60*time.Second).
-		WithPolling(2*time.Second).
-		Should(gomega.Succeed(), "Envoy admin API did not become ready in time")
-
 	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.Ctx,
 		proxyObjectMeta,
+		s.envoyAdminReadyAssertion(),
 		s.dynamicModuleAssertion(true),
 	)
 
@@ -887,5 +873,18 @@ func (s *testingSuite) dynamicModuleAssertion(shouldBeLoaded bool) func(ctx cont
 			WithTimeout(30*time.Second).
 			WithPolling(2*time.Second).
 			Should(gomega.Succeed(), "failed to get expected load of dynamic modules")
+	}
+}
+
+func (s *testingSuite) envoyAdminReadyAssertion() func(ctx context.Context, adminClient *envoyadmincli.Client) {
+	return func(ctx context.Context, adminClient *envoyadmincli.Client) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+			_, err := adminClient.GetServerInfo(ctx)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "Envoy admin API not ready")
+		}).
+			WithContext(ctx).
+			WithTimeout(60*time.Second).
+			WithPolling(2*time.Second).
+			Should(gomega.Succeed(), "Envoy admin API did not become ready in time")
 	}
 }
