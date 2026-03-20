@@ -88,4 +88,5 @@ routes:
               regex: ^https://.*\.notexample\.com$
           - prefix: http://
           exposeHeaders: X-Custom-Header
+          forwardNotMatchingPreflights: false
           maxAge: "86400"

@@ -100,4 +100,5 @@ routes:
               regex: ^https://.*\.notexample\.com$
           - exact: https://exact.domain.com
           - prefix: http://
+          forwardNotMatchingPreflights: false
           maxAge: "5"

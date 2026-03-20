@@ -99,6 +99,7 @@ routes:
                 allowMethods: GET
                 allowOriginStringMatch:
                 - exact: https://notexample.com
+                forwardNotMatchingPreflights: false
                 maxAge: "5"
             weight: 1
           - name: kube_gwtest_reviews-2_8080
