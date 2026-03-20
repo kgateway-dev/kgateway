@@ -64,6 +64,86 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 		})
 
+		It("should set insecure frontend validation mode when configured on the default frontend TLS config", func() {
+			gw := gw()
+			gw.Spec.TLS = &gwv1.GatewayTLSConfig{
+				Frontend: &gwv1.FrontendTLSConfig{
+					Default: gwv1.TLSConfig{
+						Validation: &gwv1.FrontendTLSValidation{
+							Mode: gwv1.AllowInsecureFallback,
+							CACertificateRefs: []gwv1.ObjectReference{
+								{Name: "ca-cert"},
+							},
+						},
+					},
+				},
+			}
+
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.Gateway(gw)
+
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
+
+			Expect(status).NotTo(BeNil())
+			condition := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionInsecureFrontendValidationMode))
+			Expect(condition).NotTo(BeNil())
+			Expect(condition.Status).To(Equal(metav1.ConditionTrue))
+			Expect(condition.Reason).To(Equal(string(gwv1.GatewayReasonConfigurationChanged)))
+		})
+
+		It("should set insecure frontend validation mode when configured via per-port override", func() {
+			gw := gw()
+			gw.Spec.TLS = &gwv1.GatewayTLSConfig{
+				Frontend: &gwv1.FrontendTLSConfig{
+					Default: gwv1.TLSConfig{},
+					PerPort: []gwv1.TLSPortConfig{
+						{
+							Port: 8443,
+							TLS: gwv1.TLSConfig{
+								Validation: &gwv1.FrontendTLSValidation{
+									Mode: gwv1.AllowInsecureFallback,
+									CACertificateRefs: []gwv1.ObjectReference{
+										{Name: "ca-cert"},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.Gateway(gw)
+
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
+
+			Expect(status).NotTo(BeNil())
+			condition := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionInsecureFrontendValidationMode))
+			Expect(condition).NotTo(BeNil())
+			Expect(condition.Status).To(Equal(metav1.ConditionTrue))
+			Expect(condition.Reason).To(Equal(string(gwv1.GatewayReasonConfigurationChanged)))
+		})
+
+		It("should remove stale insecure frontend validation mode conditions when insecure fallback is no longer configured", func() {
+			gw := gw()
+			gw.Status.Conditions = append(gw.Status.Conditions, metav1.Condition{
+				Type:   string(gwv1.GatewayConditionInsecureFrontendValidationMode),
+				Status: metav1.ConditionTrue,
+				Reason: string(gwv1.GatewayReasonConfigurationChanged),
+			})
+
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.Gateway(gw)
+
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
+
+			Expect(status).NotTo(BeNil())
+			Expect(meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionInsecureFrontendValidationMode))).To(BeNil())
+		})
+
 		It("should correctly set negative gateway conditions from report and not add extra conditions", func() {
 			gw := gw()
 			rm := reports.NewReportMap()

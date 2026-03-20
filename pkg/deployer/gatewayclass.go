@@ -36,9 +36,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 		features.GatewayHTTPListenerIsolationFeature,
 		// Gateway.spec.tls.backend.clientCertificateRef is not translated yet.
 		features.GatewayBackendClientCertificateFeature,
-		// We support the AllowInsecureFallback traffic behavior, but do not yet publish the
-		// required InsecureFrontendValidationMode Gateway status condition.
-		features.GatewayFrontendClientCertificateValidationInsecureFallbackFeature,
 		// We do not yet implement the 421 misdirected-request behavior across HTTPS listeners
 		// sharing the same port.
 		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,

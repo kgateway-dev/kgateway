@@ -22,16 +22,17 @@ import (
 
 // Status message constants
 const (
-	GatewayAcceptedMessage       = "Successfully accepted Gateway"
-	GatewayProgrammedMessage     = "Successfully programmed Gateway"
-	ListenerSetAcceptedMessage   = "Successfully accepted ListenerSet"
-	ListenerSetProgrammedMessage = "Successfully programmed ListenerSet"
-	ListenerAcceptedMessage      = "Successfully accepted Listener"
-	ListenerNoConflictsMessage   = "Successfully verified that Listener has no conflicts"
-	ValidRefsMessage             = "Successfully resolved all references"
-	ListenerProgrammedMessage    = "Successfully programmed Listener"
-	RouteAcceptedMessage         = "Successfully accepted Route"
-	GatewayClassAcceptedMessage  = "GatewayClass accepted by kgateway controller"
+	GatewayAcceptedMessage         = "Successfully accepted Gateway"
+	GatewayProgrammedMessage       = "Successfully programmed Gateway"
+	GatewayInsecureFallbackMessage = "Gateway frontend validation is configured to allow insecure fallback"
+	ListenerSetAcceptedMessage     = "Successfully accepted ListenerSet"
+	ListenerSetProgrammedMessage   = "Successfully programmed ListenerSet"
+	ListenerAcceptedMessage        = "Successfully accepted Listener"
+	ListenerNoConflictsMessage     = "Successfully verified that Listener has no conflicts"
+	ValidRefsMessage               = "Successfully resolved all references"
+	ListenerProgrammedMessage      = "Successfully programmed Listener"
+	RouteAcceptedMessage           = "Successfully accepted Route"
+	GatewayClassAcceptedMessage    = "GatewayClass accepted by kgateway controller"
 )
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
@@ -100,6 +101,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	}
 
 	handleInvalidAddresses(gwReport, &gw)
+	handleInsecureFrontendValidationMode(gwReport, &gw)
 
 	addMissingGatewayConditions(r.Gateway(&gw), &gw)
 
@@ -116,7 +118,8 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	// If there are conditions on the Gateway that are not owned by our reporter, include
 	// them in the final list of conditions to preseve conditions we do not own
 	for _, condition := range gw.Status.Conditions {
-		if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
+		if !isReporterOwnedGatewayConditionType(gwv1.GatewayConditionType(condition.Type)) &&
+			meta.FindStatusCondition(finalConditions, condition.Type) == nil {
 			finalConditions = append(finalConditions, condition)
 		}
 	}
@@ -153,6 +156,52 @@ func handleInvalidAddresses(report *GatewayReport, g *gwv1.Gateway) {
 				Message: "Unknown address kind",
 			})
 		}
+	}
+}
+
+func handleInsecureFrontendValidationMode(report *GatewayReport, g *gwv1.Gateway) {
+	if !gatewayUsesInsecureFrontendValidationMode(g) {
+		return
+	}
+
+	report.SetCondition(reporter.GatewayCondition{
+		Type:    gwv1.GatewayConditionInsecureFrontendValidationMode,
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.GatewayReasonConfigurationChanged,
+		Message: GatewayInsecureFallbackMessage,
+	})
+}
+
+func gatewayUsesInsecureFrontendValidationMode(g *gwv1.Gateway) bool {
+	if g == nil || g.Spec.TLS == nil || g.Spec.TLS.Frontend == nil {
+		return false
+	}
+
+	if validationUsesInsecureFrontendMode(g.Spec.TLS.Frontend.Default.Validation) {
+		return true
+	}
+
+	for _, perPort := range g.Spec.TLS.Frontend.PerPort {
+		if validationUsesInsecureFrontendMode(perPort.TLS.Validation) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func validationUsesInsecureFrontendMode(validation *gwv1.FrontendTLSValidation) bool {
+	return validation != nil && validation.Mode == gwv1.AllowInsecureFallback
+}
+
+func isReporterOwnedGatewayConditionType(conditionType gwv1.GatewayConditionType) bool {
+	switch conditionType {
+	case gwv1.GatewayConditionAccepted,
+		gwv1.GatewayConditionProgrammed,
+		gwv1.GatewayConditionInsecureFrontendValidationMode:
+		return true
+	default:
+		return false
 	}
 }
 

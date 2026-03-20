@@ -26,6 +26,9 @@ func TestGetSupportedFeaturesForStandardGatewayExcludesKnownUnsupportedV15Featur
 	if _, ok := supportedNames[gwv1.FeatureName(features.SupportGatewayFrontendClientCertificateValidation)]; !ok {
 		t.Fatalf("expected %q to remain supported", features.SupportGatewayFrontendClientCertificateValidation)
 	}
+	if _, ok := supportedNames[gwv1.FeatureName(features.SupportGatewayFrontendClientCertificateValidationInsecureFallback)]; !ok {
+		t.Fatalf("expected %q to remain supported", features.SupportGatewayFrontendClientCertificateValidationInsecureFallback)
+	}
 }
 
 func TestGetSupportedFeaturesForStandardGatewayExcludesTLSRouteWhenExperimentalDisabled(t *testing.T) {
