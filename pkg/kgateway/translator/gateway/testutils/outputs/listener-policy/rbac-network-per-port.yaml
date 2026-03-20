@@ -19,6 +19,63 @@ Listeners:
       portValue: 80
   filterChains:
   - filters:
+    - name: envoy.filters.network.rbac
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+        matcher:
+          matcherList:
+            matchers:
+            - onMatch:
+                action:
+                  name: envoy.filters.rbac.action
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                    name: allow-request
+              predicate:
+                singlePredicate:
+                  customMatch:
+                    name: envoy.matching.matchers.cel_matcher
+                    typedConfig:
+                      '@type': type.googleapis.com/xds.type.matcher.v3.CelMatcher
+                      exprMatch:
+                        celExprParsed:
+                          expr:
+                            callExpr:
+                              args:
+                              - constExpr:
+                                  stringValue: 10.0.0.
+                                id: "4"
+                              function: startsWith
+                              target:
+                                id: "2"
+                                selectExpr:
+                                  field: address
+                                  operand:
+                                    id: "1"
+                                    identExpr:
+                                      name: source
+                            id: "3"
+                          sourceInfo:
+                            lineOffsets:
+                            - 37
+                            location: <input>
+                            positions:
+                              "1": 0
+                              "2": 6
+                              "3": 25
+                              "4": 26
+                  input:
+                    name: envoy.matching.inputs.cel_data_input
+                    typedConfig:
+                      '@type': type.googleapis.com/xds.type.matcher.v3.HttpAttributesCelMatchInput
+          onNoMatch:
+            action:
+              name: action
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                action: DENY
+                name: deny-request
+        statPrefix: default_rbac-network-per-port_network_rbac
     - name: envoy.filters.network.http_connection_manager
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -39,6 +96,8 @@ Listeners:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
+        default.rbacNetworkFilter:
+        - gateway.kgateway.dev/ListenerPolicy/default/rbac-network-per-port
         perPortPolicy[8080]:
         - gateway.kgateway.dev/ListenerPolicy/default/rbac-network-per-port
   name: listener~80
@@ -126,6 +185,8 @@ Listeners:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
+        default.rbacNetworkFilter:
+        - gateway.kgateway.dev/ListenerPolicy/default/rbac-network-per-port
         perPortPolicy[8080]:
         - gateway.kgateway.dev/ListenerPolicy/default/rbac-network-per-port
   name: listener~8080
@@ -134,6 +195,8 @@ Routes:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
+        default.rbacNetworkFilter:
+        - gateway.kgateway.dev/ListenerPolicy/default/rbac-network-per-port
         perPortPolicy[8080]:
         - gateway.kgateway.dev/ListenerPolicy/default/rbac-network-per-port
   name: listener~80
@@ -152,6 +215,8 @@ Routes:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
+        default.rbacNetworkFilter:
+        - gateway.kgateway.dev/ListenerPolicy/default/rbac-network-per-port
         perPortPolicy[8080]:
         - gateway.kgateway.dev/ListenerPolicy/default/rbac-network-per-port
   name: listener~8080
