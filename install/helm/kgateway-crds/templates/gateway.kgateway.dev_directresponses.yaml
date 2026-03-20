@@ -75,9 +75,10 @@ spec:
                       See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-json-format for details.
 
                       Setting a field to `null` in the JSON object requires the use of
-                      `kubectl apply --server-side` or equivalent. With regular client-side
+                      `kubectl apply --server-side` or equivalent. With the default client-side
                       `kubectl apply`, null values are stripped by kubectl before reaching
                       the API server.
+                    type: object
                     x-kubernetes-preserve-unknown-fields: true
                   text:
                     description: |-
