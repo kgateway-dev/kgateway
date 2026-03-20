@@ -4,6 +4,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 )
@@ -342,6 +343,12 @@ func (in *EnvoyContainer) GetEnv() []corev1.EnvVar {
 // EnvoyBootstrap configures the Envoy proxy instance that is provisioned from a
 // Kubernetes Gateway.
 type EnvoyBootstrap struct {
+	// Envoy application log format. Does *not* affect access logs. Can be JSON or custom text format.
+	// Defaults to text with default format string as defined in Envoy documentation.
+	// See https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-log-format for format flag options.
+	// +optional
+	LogFormat *LogFormat `json:"logFormat,omitempty"`
+
 	// Envoy log level. Options include "trace", "debug", "info", "warn", "error",
 	// "critical" and "off". Defaults to "info". See
 	// https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
@@ -379,6 +386,21 @@ type EnvoyBootstrap struct {
 	DnsResolver *DnsResolver `json:"dnsResolver,omitempty"`
 }
 
+// LogFormat configures Envoy's application log format. Either JSON or Text must be specified.
+// +kubebuilder:validation:ExactlyOneOf=json;text
+type LogFormat struct {
+	// The format object by which Envoy will emit logs in a structured way.
+	// Mutually exclusive with Text.
+	// See https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/application_logging#printing-logs-in-json-format.
+	// +optional
+	JSON *runtime.RawExtension `json:"json,omitempty"`
+	// The format string by which Envoy will format log lines.
+	// Mutually exclusive with JSON.
+	// See https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-log-format.
+	// +optional
+	Text *string `json:"text,omitempty"`
+}
+
 // DnsResolver configures the CARES DNS resolver for Envoy.
 type DnsResolver struct {
 	// Maximum number of UDP queries to be issued on a single UDP channel.
@@ -390,6 +412,13 @@ type DnsResolver struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	UdpMaxQueries *int32 `json:"udpMaxQueries,omitempty"`
+}
+
+func (in *EnvoyBootstrap) GetLogFormat() *LogFormat {
+	if in == nil {
+		return nil
+	}
+	return in.LogFormat
 }
 
 func (in *EnvoyBootstrap) GetLogLevel() *string {

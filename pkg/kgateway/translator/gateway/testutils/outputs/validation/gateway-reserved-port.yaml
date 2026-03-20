@@ -17,11 +17,6 @@ Statuses:
         reason: Invalid
         status: "False"
         type: Programmed
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       listeners:
       - attachedRoutes: 0
         conditions:

@@ -13,10 +13,9 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -57,22 +56,18 @@ func (s *testingSuite) TestNoCompressionWithoutAcceptEncoding() {
 }
 
 func (s *testingSuite) assertHeaders(path string, reqHeaders map[string]string, expectedHeaders map[string]any, notExpectedHeaders []string) {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithPath(path),
-			curl.WithHostHeader("example.com"),
-			curl.WithIgnoreBody(),
-			curl.WithHeaders(reqHeaders),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Headers:    expectedHeaders,
 			NotHeaders: notExpectedHeaders,
 		},
+		curl.WithPort(80),
+		curl.WithPath(path),
+		curl.WithHostHeader("example.com"),
+		curl.WithIgnoreBody(),
+		curl.WithHeaders(reqHeaders),
 	)
 }
 
@@ -80,41 +75,33 @@ func (s *testingSuite) assertHeaders(path string, reqHeaders map[string]string, 
 func (s *testingSuite) TestRequestDecompression() {
 	// first get a gzip file; the easiest way to do this is to GET a compressed response
 	// and write it to a file
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithPath("/html"),
-			curl.WithHostHeader("example.com"),
-			curl.WithArgs([]string{"--output", "/tmp/gzfile"}),
-			curl.WithHeaders(map[string]string{"Accept-Encoding": "gzip"}),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Headers:    map[string]any{"Content-Encoding": "gzip"},
 		},
+		curl.WithPort(80),
+		curl.WithPath("/html"),
+		curl.WithHostHeader("example.com"),
+		curl.WithArgs([]string{"--output", "/tmp/gzfile"}),
+		curl.WithHeaders(map[string]string{"Accept-Encoding": "gzip"}),
 	)
 
 	// Now for the test, post the gzipped body
 	// we post to /json because the policy is set there..
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithPath("/json"),
-			curl.WithHostHeader("example.com"),
-			curl.WithBody("@/tmp/gzfile"),
-			curl.WithHeaders(map[string]string{
-				"Content-Encoding": "gzip",
-			}),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 		},
+		curl.WithPort(80),
+		curl.WithPath("/json"),
+		curl.WithHostHeader("example.com"),
+		curl.WithBody("@/tmp/gzfile"),
+		curl.WithHeaders(map[string]string{
+			"Content-Encoding": "gzip",
+		}),
 	)
 
 	// Verify decompressor filter emitted metrics indicating it handled the request via Envoy admin API

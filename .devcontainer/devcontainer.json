@@ -1,6 +1,5 @@
 {
   "name": "kgateway build-tools",
-  // TODO: switch back to a published image tag (GHCR/GCR) once build-tools publishing is stable.
   "build": {
     "dockerfile": "../tools/build-tools/Dockerfile",
     "context": ".."
@@ -12,7 +11,10 @@
     "RUSTUP_HOME": "/home/.rustup"
   },
   "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+	"version": "24.0", 
+	"moby": true
+    },
     "ghcr.io/mpriscella/features/kind:1": {}
   },
   "customizations": {

@@ -15,7 +15,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -1192,20 +1191,20 @@ func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Ba
 	})
 }
 
-func ls() *gwxv1a1.XListenerSet {
-	ls := &gwxv1a1.XListenerSet{
+func ls() *gwv1.ListenerSet {
+	ls := &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "ls",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "bar",
 					Protocol: gwv1.HTTPProtocolType,
 				},
 			},
-			ParentRef: gwxv1a1.ParentGatewayReference{
+			ParentRef: gwv1.ParentGatewayReference{
 				Name: "test",
 			},
 		},

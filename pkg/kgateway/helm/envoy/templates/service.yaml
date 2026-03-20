@@ -1,4 +1,5 @@
 {{- $gateway := .Values.gateway }}
+{{- $statsConfig := $gateway.stats }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -27,6 +28,10 @@ spec:
   {{- with $gateway.service.loadBalancerIP }}
   loadBalancerIP: {{ . }}
   {{- end }}
+  {{- with $gateway.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   ports:
   {{- range $p := $gateway.ports }}
   - name: {{ $p.name }}
@@ -36,6 +41,12 @@ spec:
     {{- if $p.nodePort }}
     nodePort: {{ $p.nodePort }}
     {{- end }}
+  {{- end }}
+  {{- if $statsConfig.enabled }}
+  - name: http-monitoring
+    protocol: TCP
+    targetPort: 9091
+    port: 9091
   {{- end }}
   selector:
     {{- include "kgateway.gateway.selectorLabels" . | nindent 4 }}

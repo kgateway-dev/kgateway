@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -208,8 +207,8 @@ func isParentRefForResource(pRef *gwv1.ParentReference, resource client.Object, 
 		switch resource.(type) {
 		case *gwv1.Gateway:
 			gvk = wellknown.GatewayGVK
-		case *gwxv1a1.XListenerSet:
-			gvk = wellknown.XListenerSetGVK
+		case *gwv1.ListenerSet:
+			gvk = wellknown.ListenerSetGVK
 		}
 	}
 

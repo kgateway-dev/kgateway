@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -670,12 +669,12 @@ var _ = Describe("Reporting Infrastructure", func() {
 			r.ListenerSet(ls).SetCondition(reporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionAccepted,
 				Status: metav1.ConditionFalse,
-				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+				Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed),
 			})
 			r.ListenerSet(ls).SetCondition(reporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionProgrammed,
 				Status: metav1.ConditionFalse,
-				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+				Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed),
 			})
 
 			status := rm.BuildListenerSetStatus(context.Background(), *ls)
@@ -844,14 +843,14 @@ func listener() *gwv1.Listener {
 	}
 }
 
-func ls() *gwxv1a1.XListenerSet {
-	ls := &gwxv1a1.XListenerSet{
+func ls() *gwv1.ListenerSet {
+	ls := &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
 	}
-	ls.Spec.Listeners = []gwxv1a1.ListenerEntry{
+	ls.Spec.Listeners = []gwv1.ListenerEntry{
 		{
 			Name: "http",
 		},

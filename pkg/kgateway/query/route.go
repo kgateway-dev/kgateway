@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
@@ -332,8 +331,8 @@ func (r *gatewayQueries) GetRoutesForResource(kctx krt.HandlerContext, ctx conte
 		switch resource.(type) {
 		case *gwv1.Gateway:
 			gvk = wellknown.GatewayGVK
-		case *gwxv1a1.XListenerSet:
-			gvk = wellknown.XListenerSetGVK
+		case *gwv1.ListenerSet:
+			gvk = wellknown.ListenerSetGVK
 		}
 	}
 
@@ -382,7 +381,7 @@ func getListeners(resource client.Object) ([]gwv1.Listener, error) {
 	switch typed := resource.(type) {
 	case *gwv1.Gateway:
 		listeners = typed.Spec.Listeners
-	case *gwxv1a1.XListenerSet:
+	case *gwv1.ListenerSet:
 		listeners = utils.ToListenerSlice(typed.Spec.Listeners)
 	case krtcollections.ListenerCollection:
 		listeners = typed.GetListeners()

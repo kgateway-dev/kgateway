@@ -1,9 +1,6 @@
 # Based on Istio's build-tools image: https://github.com/istio/tools/tree/228d21452fd640bf7389d7d41fecaa715ce73249/docker/build-tools
-ARG GO_VERSION=1.25.7
-ARG GO_BASE_IMAGE=golang:${GO_VERSION}-bookworm
 ARG UBUNTU_BASE_IMAGE=ubuntu:noble
 
-FROM ${GO_BASE_IMAGE} AS go_context
 FROM ${UBUNTU_BASE_IMAGE} AS build_tools
 
 ARG TARGETARCH
@@ -14,10 +11,9 @@ LABEL "io.kgateway.version"="${VERSION}"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Pinned tool versions (keep aligned with `go.mod` and repo tooling where possible)
+# Pinned tool versions (not tracked in go.mod)
 ENV RUST_VERSION=1.86.0
 ENV KUBECTL_VERSION=1.35.0
-ENV HELM_VERSION=v3.19.2
 ENV PROTOC_VERSION=33.2
 ENV BUF_VERSION=v1.62.1
 ENV YQ_VERSION=4.50.1
@@ -74,21 +70,18 @@ RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
       vim \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Docker CLI + buildx plugin (Codespaces uses docker-outside-of-docker)
-RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    install -m 0755 -d /etc/apt/keyrings \
-    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc \
-    && chmod a+r /etc/apt/keyrings/docker.asc \
-    && echo "deb [arch=${TARGETARCH} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-      docker-ce-cli \
-      docker-buildx-plugin \
-    && rm -rf /var/lib/apt/lists/*
+# Docker CLI is provided by the docker-outside-of-docker devcontainer feature
+# (pinned in .devcontainer/devcontainer.json). No need to install it here.
 
-# Go toolchain (copy from official golang image to match go.mod)
-COPY --from=go_context /usr/local/go /usr/local/go
+# go.mod is the single source of truth for Go, Helm, and Kind versions.
+# Tool install steps below extract their version from it at build time.
+COPY go.mod /tmp/go.mod
+
+# Go toolchain (version from go.mod)
+RUN set -eux; \
+    GO_VERSION=$(grep '^go ' /tmp/go.mod | awk '{print $2}'); \
+    test -n "$GO_VERSION" || { echo "Failed to extract Go version from go.mod"; exit 1; }; \
+    curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" | tar -C /usr/local -xz
 
 # Install protoc
 RUN set -eux; \
@@ -112,8 +105,10 @@ RUN set -eux; \
 COPY tools/build-tools/kind /usr/local/bin/kind
 RUN chmod 555 /usr/local/bin/kind
 
-# helm
+# helm (version from go.mod helm.sh/helm/v3)
 RUN set -eux; \
+    HELM_VERSION=$(grep 'helm.sh/helm/v3' /tmp/go.mod | awk '{print $2}'); \
+    test -n "$HELM_VERSION" || { echo "Failed to extract Helm version from go.mod"; exit 1; }; \
     curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-${TARGETARCH}.tar.gz"; \
     mkdir -p /tmp/helm; \
     tar -xzf /tmp/helm.tgz -C /tmp/helm; \

@@ -101,12 +101,12 @@ jobs:
       matrix:
         env-versions: [ {file: "./.github/workflows/.env/nightly-tests/max_versions.env", label: "max"},
                         {file: "./.github/workflows/.env/nightly-tests/min_versions.env", label: "min"} ]
-        gateway-api-version: [ { version: 'v1.4.1', channel: 'experimental' },
+        gateway-api-version: [ { version: 'v1.5.1', channel: 'experimental' },
+                              { version: 'v1.5.1', channel: 'standard' },
+                              { version: 'v1.4.1', channel: 'experimental' },
                               { version: 'v1.4.1', channel: 'standard' },
                               { version: 'v1.3.0', channel: 'experimental' },
-                              { version: 'v1.3.0', channel: 'standard' },
-                              { version: 'v1.2.1', channel: 'experimental' },
-                              { version: 'v1.2.1', channel: 'standard' }]
+                              { version: 'v1.3.0', channel: 'standard' }]
         controllers: [
           {regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$"}
         ]

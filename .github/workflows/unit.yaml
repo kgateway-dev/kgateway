@@ -38,3 +38,18 @@ jobs:
       # We intentionally ignore the errors while we build out our test coverage, to establish a good baseline
       # However, we should strive to establish a baseline, and then make it required on PRs
       run: make --always-make --ignore-errors validate-test-coverage
+
+  # Catches version drift between go.mod, Dockerfile, and Makefile
+  version-drift:
+    name: Version Drift Check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Go
+      uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+      with:
+        go-version-file: tools/go.mod
+    - name: Run drift tests
+      working-directory: tools
+      run: go test -v -count=1 ./build-tools/

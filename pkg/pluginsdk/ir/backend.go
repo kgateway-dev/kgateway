@@ -364,9 +364,19 @@ type FrontendTLSConfigIR struct {
 // CA certificates are fetched later during listener translation
 type ClientCertificateValidationIR struct {
 	// CACertificateRefs contains references to ConfigMaps or Secrets containing CA certificates
+	// +noKrtEquals. Fields are compared in Equal in helper function however linter still complains.
 	CACertificateRefs []gwv1.ObjectReference
 	// RequireClientCertificate indicates whether client certificates are required
+	// +noKrtEquals
 	RequireClientCertificate bool
+}
+
+func (c *ClientCertificateValidationIR) Equals(in any) bool {
+	c2, ok := in.(*ClientCertificateValidationIR)
+	if !ok {
+		return false
+	}
+	return equalsClientCertValidationIR(c, c2)
 }
 
 func (c Gateway) ResourceName() string {

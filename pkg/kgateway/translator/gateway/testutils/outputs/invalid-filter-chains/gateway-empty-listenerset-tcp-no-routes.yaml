@@ -5,12 +5,8 @@ Clusters:
 Statuses:
   gateways:
     default/example-gateway:
+      attachedListenerSets: 1
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsAttached
-        status: "True"
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
@@ -25,15 +21,14 @@ Statuses:
     default/example-listenerset:
       conditions:
       - lastTransitionTime: null
-        message: 'Some listeners are not programmed: tcp: TCP/TLS listener has no
-          valid backends or routes'
+        message: No valid listeners
         reason: ListenersNotValid
-        status: "True"
+        status: "False"
         type: Accepted
       - lastTransitionTime: null
-        message: Successfully programmed ListenerSet
-        reason: Programmed
-        status: "True"
+        message: No valid listeners
+        reason: ListenersNotValid
+        status: "False"
         type: Programmed
       listeners:
       - attachedRoutes: 0
@@ -59,7 +54,6 @@ Statuses:
           status: "True"
           type: ResolvedRefs
         name: tcp
-        port: 8080
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: TCPRoute

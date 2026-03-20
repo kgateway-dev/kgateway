@@ -8,7 +8,6 @@ import (
 	istioprotocol "istio.io/istio/pkg/config/protocol"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -152,7 +151,7 @@ func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter)
 	return validListeners
 }
 
-func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
+func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener {
 	if len(gw.Listeners) == 0 {
 		// gwReporter.Err("gateway must contain at least 1 listener")
 	}
@@ -288,17 +287,6 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 		}
 	}
 
-	// Add the final conditions on the Gateway
-	// Set this here in case there are no valid listeners so it won't need to be repeated later on
-	noAllowedListeners := gw.Obj.Spec.AllowedListeners == nil
-	if settings.EnableExperimentalGatewayAPIFeatures && noAllowedListeners {
-		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   GatewayConditionAttachedListenerSets,
-			Status: metav1.ConditionUnknown,
-			Reason: GatewayReasonListenerSetsNotAllowed,
-		})
-	}
-
 	if len(validListeners) == 0 {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
 			Type:    gwv1.GatewayConditionAccepted,
@@ -314,36 +302,27 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 		return validListeners
 	}
 
-	listenerSetListenerExists := slices.ContainsFunc(validListeners, func(l ir.Listener) bool {
-		// The assumption is that if a parent is not a Gateway, it comes from a listenerSet
-		// or a type that implements krtcollections.ListenerCollection
-		_, ok := l.Parent.(*gwv1.Gateway)
-		return !ok
-	})
-
-	if settings.EnableExperimentalGatewayAPIFeatures {
-		if listenerSetListenerExists {
-			reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-				Type:   GatewayConditionAttachedListenerSets,
-				Status: metav1.ConditionTrue,
-				Reason: GatewayReasonListenerSetsAttached,
-			})
-		} else if !noAllowedListeners {
-			// if there are allowed listeners, but no listener sets, then the gateway is not attached to any listener sets
-			reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-				Type:   GatewayConditionAttachedListenerSets,
-				Status: metav1.ConditionFalse,
-				Reason: gwv1.GatewayReasonNoResources,
-			})
+	// TODO: Maybe this can be handled in the prior loop itself ?
+	attachedListenerSet := map[string]struct{}{}
+	for _, listener := range validListeners {
+		parent, ok := listener.Parent.(*gwv1.ListenerSet)
+		if ok {
+			nns := fmt.Sprintf("%s/%s", parent.GetNamespace(), parent.GetName())
+			attachedListenerSet[nns] = struct{}{}
 		}
+	}
+	attachedListenerSetCount := len(attachedListenerSet)
+
+	if attachedListenerSetCount > 0 {
+		reporter.Gateway(gw.Obj).SetAttachedListenerSets(int32(attachedListenerSetCount)) //nolint:gosec // disable G115 directive.
 	}
 
 	return validListeners
 }
 
-func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
+func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter) []ir.Listener {
 	rejectDeniedListenerSets(consolidatedGateway, reporter)
-	validatedListeners := validateListeners(consolidatedGateway, reporter, settings)
+	validatedListeners := validateListeners(consolidatedGateway, reporter)
 	return validatedListeners
 }
 
@@ -420,18 +399,18 @@ func rejectDeniedListenerSets(consolidatedGateway *ir.Gateway, reporter reports.
 	for _, gvkLS := range consolidatedGateway.DeniedListenerSets {
 		for _, ls := range gvkLS {
 			acceptedCond := reports.GatewayCondition{
-				Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionAccepted),
+				Type:   gwv1.GatewayConditionType(gwv1.ListenerSetConditionAccepted),
 				Status: metav1.ConditionFalse,
-				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+				Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed),
 			}
 			if ls.Err != nil {
 				acceptedCond.Message = ls.Err.Error()
 			}
 			reporter.ListenerSet(ls.Obj).SetCondition(acceptedCond)
 			programmedCond := reports.GatewayCondition{
-				Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionProgrammed),
+				Type:   gwv1.GatewayConditionType(gwv1.ListenerSetConditionProgrammed),
 				Status: metav1.ConditionFalse,
-				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+				Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed),
 			}
 			if ls.Err != nil {
 				programmedCond.Message = ls.Err.Error()
@@ -450,28 +429,23 @@ func rejectInvalidListener(parentReporter reports.GatewayReporter, listener ir.L
 	parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
 		Type:    gwv1.ListenerConditionAccepted,
 		Status:  metav1.ConditionFalse,
-		Reason:  gwv1.ListenerConditionReason(gwxv1a1.ListenerEntryReasonInvalid),
+		Reason:  gwv1.ListenerConditionReason(gwv1.ListenerEntryReasonInvalid),
 		Message: message,
 	})
 	parentReporter.ListenerName(string(listener.Name)).SetCondition(reports.ListenerCondition{
 		Type:    gwv1.ListenerConditionProgrammed,
 		Status:  metav1.ConditionFalse,
-		Reason:  gwv1.ListenerConditionReason(gwxv1a1.ListenerEntryReasonInvalid),
+		Reason:  gwv1.ListenerConditionReason(gwv1.ListenerEntryReasonInvalid),
 		Message: message,
 	})
 	// Set the accepted and programmed condition now since the right reason is needed.
 	// If the gateway is eventually rejected, the condition will be overwritten
 	// In case any listeners are invalid, this status should be set even if the gateway / listenerset is accepted
-	// https://github.com/kubernetes-sigs/gateway-api/blob/8fe8316f5792a7830a49c800f89fe689e0df042e/apisx/v1alpha1/xlistenerset_types.go#L396
+	// https://github.com/kubernetes-sigs/gateway-api/blob/v1.5.1/apis/v1/listenerset_types.go#L370
 	parentReporter.SetCondition(reports.GatewayCondition{
 		Type:   gwv1.GatewayConditionAccepted,
 		Status: metav1.ConditionTrue,
-		Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonListenersNotValid),
-	})
-	parentReporter.SetCondition(reports.GatewayCondition{
-		Type:   gwv1.GatewayConditionProgrammed,
-		Status: metav1.ConditionTrue,
-		Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonListenersNotValid),
+		Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonListenersNotValid),
 	})
 }
 
@@ -497,16 +471,11 @@ func rejectConflictedListener(parentReporter reports.GatewayReporter, listener i
 	// Set the accepted and programmed condition now since the right reason is needed.
 	// If the gateway is eventually rejected, the condition will be overwritten
 	// In case any listeners are invalid, this status should be set even if the gateway / listenerset is accepted
-	// https://github.com/kubernetes-sigs/gateway-api/blob/8fe8316f5792a7830a49c800f89fe689e0df042e/apisx/v1alpha1/xlistenerset_types.go#L396
+	// https://github.com/kubernetes-sigs/gateway-api/blob/v1.5.1/apis/v1/listenerset_types.go#L370
 	parentReporter.SetCondition(reports.GatewayCondition{
 		Type:   gwv1.GatewayConditionAccepted,
 		Status: metav1.ConditionTrue,
-		Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonListenersNotValid),
-	})
-	parentReporter.SetCondition(reports.GatewayCondition{
-		Type:   gwv1.GatewayConditionProgrammed,
-		Status: metav1.ConditionTrue,
-		Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonListenersNotValid),
+		Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonListenersNotValid),
 	})
 }
 

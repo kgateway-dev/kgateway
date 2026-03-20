@@ -122,7 +122,7 @@ func addMergeOriginsToFilterMetadata(
 // reportRouteConfigPolicyErrors reports policy errors to the appropriate reporter based on attachment level.
 // we can infer the attachment level of the policy based on a combination of PolicyRef.SectionName and the
 // listener's PolicyAncestorRef kind: empty sectionName indicates a gateway-wide policy attachment, non-empty
-// sectionName indicates a listener-level policy attachment. For XListenerSet reporting, we cannot rely on the
+// sectionName indicates a listener-level policy attachment. For ListenerSet reporting, we cannot rely on the
 // sectionName value alone, so we check the ancestor reference kind to make sure we report on that resource
 // instead of the Gateway.
 //

@@ -274,8 +274,11 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: test-route
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+  - group: gateway.networking.k8s.io
+    kind: GRPCRoute
+    name: test-grpc-route
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
     name: test-listener
   targetSelectors:
   - group: gateway.networking.k8s.io
@@ -297,7 +300,7 @@ spec:
     kind: Deployment
     name: test-deployment
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, or ListenerSet resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, GRPCRoute, or ListenerSet resources"},
 		},
 		{
 			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",
@@ -358,8 +361,8 @@ metadata:
   name: http-listener-policy-invalid-target
 spec:
   targetRefs:
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
     name: test-listener
 `,
 			wantErrors: []string{"targetRefs may only reference Gateway resources"},

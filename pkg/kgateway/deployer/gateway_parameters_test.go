@@ -15,7 +15,6 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -170,7 +169,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, settings)
 	kubeRawGateways := krttest.GetMockCollection[*gwv1.Gateway](mock)
-	kubeRawListenerSets := krttest.GetMockCollection[*apixv1a1.XListenerSet](mock)
+	kubeRawListenerSets := krttest.GetMockCollection[*gwv1.ListenerSet](mock)
 	gatewayClasses := krttest.GetMockCollection[*gwv1.GatewayClass](mock)
 	nsCol := krtcollections.NewNamespaceCollectionFromCol(ctx, krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
 

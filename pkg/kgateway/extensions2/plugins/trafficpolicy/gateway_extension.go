@@ -481,12 +481,18 @@ func convertRCA(in kgateway.ExtProcRouteCacheAction) envoyextprocv3.ExternalProc
 // the filter can be conditionally disabled with the global_disable/ext_proc filter is enabled
 func buildCompositeExtProcFilter(in kgateway.ExtProcProvider, envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
 	filter := &envoyextprocv3.ExternalProcessor{
-		GrpcService:      envoyGrpcService,
-		FailureModeAllow: in.FailOpen,
-		RouteCacheAction: convertRCA(in.RouteCacheAction),
+		GrpcService:       envoyGrpcService,
+		FailureModeAllow:  in.FailOpen,
+		RouteCacheAction:  convertRCA(in.RouteCacheAction),
+		AllowModeOverride: in.AllowProcessingModeOverride,
 	}
 	if mode := toEnvoyProcessingMode(in.ProcessingMode); mode != nil {
 		filter.ProcessingMode = mode
+	}
+	for _, m := range in.AllowedProcessingModeOverrides {
+		if mode := toEnvoyProcessingMode(m); mode != nil {
+			filter.AllowedOverrideModes = append(filter.AllowedOverrideModes, mode)
+		}
 	}
 	if in.MessageTimeout != nil {
 		filter.MessageTimeout = durationpb.New(in.MessageTimeout.Duration)

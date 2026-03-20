@@ -70,6 +70,7 @@ type HelmGateway struct {
 	ComponentLogLevel *string `json:"componentLogLevel,omitempty"`
 
 	// envoy container values (mapped to the proxy container)
+	LogFormat         *kgateway.LogFormat          `json:"logFormat,omitempty"`
 	LogLevel          *string                      `json:"logLevel,omitempty"`
 	Image             *HelmImage                   `json:"image,omitempty"`
 	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
@@ -105,13 +106,14 @@ type HelmImage struct {
 }
 
 type HelmService struct {
-	Type                  *string           `json:"type,omitempty"`
-	ClusterIP             *string           `json:"clusterIP,omitempty"`
-	LoadBalancerClass     *string           `json:"loadBalancerClass,omitempty"`
-	LoadBalancerIP        *string           `json:"loadBalancerIP,omitempty"`
-	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
-	ExtraLabels           map[string]string `json:"extraLabels,omitempty"`
-	ExternalTrafficPolicy *string           `json:"externalTrafficPolicy,omitempty"`
+	Type                     *string           `json:"type,omitempty"`
+	ClusterIP                *string           `json:"clusterIP,omitempty"`
+	LoadBalancerClass        *string           `json:"loadBalancerClass,omitempty"`
+	LoadBalancerIP           *string           `json:"loadBalancerIP,omitempty"`
+	LoadBalancerSourceRanges []string          `json:"loadBalancerSourceRanges,omitempty"`
+	ExtraAnnotations         map[string]string `json:"extraAnnotations,omitempty"`
+	ExtraLabels              map[string]string `json:"extraLabels,omitempty"`
+	ExternalTrafficPolicy    *string           `json:"externalTrafficPolicy,omitempty"`
 }
 
 type HelmServiceAccount struct {

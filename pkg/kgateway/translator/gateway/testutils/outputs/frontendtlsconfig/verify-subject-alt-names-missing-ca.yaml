@@ -7,11 +7,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: 'Some listeners are not programmed: https-mtls-strict-validation:
           verify-subject-alt-names annotation requires a trusted CA to be configured'
         reason: ListenersNotValid
