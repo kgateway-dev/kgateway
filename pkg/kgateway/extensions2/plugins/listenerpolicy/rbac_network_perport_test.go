@@ -12,6 +12,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -261,15 +262,14 @@ func TestPerPortRBAC_FilterApplication(t *testing.T) {
 
 	pass.ApplyListenerPlugin(pCtx, listener)
 
-	// Verify RBAC filter was prepended
-	require.Len(t, listener.FilterChains, 1)
-	require.Len(t, listener.FilterChains[0].Filters, 2) // RBAC + HTTP
+	// Verify RBAC filter is returned by NetworkFilters
+	networkFilters, err := pass.NetworkFilters()
+	require.NoError(t, err)
+	require.Len(t, networkFilters, 1)
 
-	// First filter should be RBAC
-	assert.Equal(t, "envoy.filters.network.rbac", listener.FilterChains[0].Filters[0].Name)
-
-	// Second filter should be HTTP
-	assert.Equal(t, "envoy.filters.network.http_connection_manager", listener.FilterChains[0].Filters[1].Name)
+	// Filter should be RBAC
+	assert.Equal(t, "envoy.filters.network.rbac", networkFilters[0].Filter.Name)
+	assert.Equal(t, filters.BeforeStage(filters.AuthZStage), networkFilters[0].Stage)
 
 	// Verify filter was tracked in map
 	assert.NotNil(t, pass.rbacNetworkFilters[8080])
@@ -319,12 +319,10 @@ func TestPerPortRBAC_NoRBAC(t *testing.T) {
 
 	pass.ApplyListenerPlugin(pCtx, listener)
 
-	// Verify no RBAC filter was added
-	require.Len(t, listener.FilterChains, 1)
-	require.Len(t, listener.FilterChains[0].Filters, 1) // Only HTTP
-
-	// First filter should still be HTTP
-	assert.Equal(t, "envoy.filters.network.http_connection_manager", listener.FilterChains[0].Filters[0].Name)
+	// Verify no RBAC filter is returned by NetworkFilters
+	networkFilters, err := pass.NetworkFilters()
+	require.NoError(t, err)
+	require.Empty(t, networkFilters)
 
 	// Verify no filter in map
 	assert.Nil(t, pass.rbacNetworkFilters[8080])
