@@ -82,13 +82,13 @@ jobs:
         version-files:
           - file: './.github/workflows/.env/pr-tests/versions.env'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
     - name: Prep Go Runner
       uses: ./.github/actions/prep-go-runner
     # The dotenv action is used to load key-value pairs from files.
     # In this case, the file is specified in the matrix and will contain the versions of the tools to use
     - name: Dotenv Action
-      uses: falti/dotenv-action@v1.1.4
+      uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
       id: dotenv
       with:
         path: ${{ matrix.version-files.file }}
