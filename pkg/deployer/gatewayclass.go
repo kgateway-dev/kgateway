@@ -34,8 +34,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 	// backfill individual features that we don't support yet.
 	exemptFeatures.Insert(
 		features.GatewayHTTPListenerIsolationFeature,
-		// Gateway.spec.tls.backend.clientCertificateRef is not translated yet.
-		features.GatewayBackendClientCertificateFeature,
 		// We do not yet implement the 421 misdirected-request behavior across HTTPS listeners
 		// sharing the same port.
 		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,

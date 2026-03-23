@@ -587,6 +587,9 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			frontendTLSConfig := getFrontendTLSConfig(gw.Spec.TLS.Frontend)
 			gwIR.FrontendTLSConfig = frontendTLSConfig
 		}
+		if gw.Spec.TLS != nil && gw.Spec.TLS.Backend != nil {
+			gwIR.BackendTLSConfig = getGatewayBackendTLSConfig(gw.Spec.TLS.Backend)
+		}
 
 		return gwIR
 	}
@@ -1733,4 +1736,14 @@ func getRequiredClientCertificate(mode gwv1.FrontendValidationModeType) bool {
 		return true
 	}
 	return false
+}
+
+func getGatewayBackendTLSConfig(backendTLS *gwv1.GatewayBackendTLS) *ir.GatewayBackendTLSConfigIR {
+	if backendTLS == nil || backendTLS.ClientCertificateRef == nil {
+		return nil
+	}
+
+	return &ir.GatewayBackendTLSConfigIR{
+		ClientCertificateRef: backendTLS.ClientCertificateRef.DeepCopy(),
+	}
 }

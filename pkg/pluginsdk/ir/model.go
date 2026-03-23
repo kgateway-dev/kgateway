@@ -121,6 +121,10 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	// to mitigate https://github.com/envoyproxy/envoy/issues/13070 / https://github.com/envoyproxy/envoy/issues/13009
 
 	h := fnv.New64a()
+	h.Write([]byte(us.ResourceName()))
+	h.Write([]byte{0})
+	h.Write([]byte(us.ClusterName()))
+	h.Write([]byte{0})
 	h.Write([]byte(us.Group))
 	h.Write([]byte{0})
 	h.Write([]byte(us.Kind))
