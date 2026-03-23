@@ -4,10 +4,12 @@ package cors
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	"istio.io/istio/pkg/test/util/retry"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -122,9 +124,9 @@ func (s *testingSuite) TestTrafficPolicyCorsForRoute() {
 
 			// For negative cases, we expect no CORS headers to be returned
 			// since the origin doesn't match any of the allowed patterns
-			// s.assertResponse("/path1", requestHeaders, nil, []string{
-			// 	"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
-			// })
+			s.assertNegativePreflightResponse("/path1", requestHeaders, []string{
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
+			})
 
 			// Verify that the route without cors is also not affected
 			s.assertResponse("/path2", requestHeaders, nil, []string{
@@ -267,9 +269,9 @@ func (s *testingSuite) TestHttpRouteCorsInRouteRules() {
 
 			// For negative cases, we expect no CORS headers to be returned
 			// since the origin doesn't match any of the allowed patterns
-			// s.assertResponse("/path1", requestHeaders, nil, []string{
-			// 	"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
-			// })
+			s.assertNegativePreflightResponse("/path1", requestHeaders, []string{
+				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
+			})
 
 			// Verify that the route without cors is also not affected
 			s.assertResponse("/path2", requestHeaders, nil, []string{
@@ -322,4 +324,37 @@ func (s *testingSuite) assertResponse(path string, requestHeaders map[string]str
 		curl.WithPort(80),
 		curl.WithHeaders(requestHeaders),
 	)
+}
+
+func (s *testingSuite) assertNegativePreflightResponse(path string, requestHeaders map[string]string, notExpectedHeaders []string) {
+	s.T().Helper()
+
+	retry.UntilSuccessOrFail(s.T(), func() error {
+		response, err := curl.ExecuteRequest(
+			curl.WithHost(common.BaseGateway.Address),
+			curl.WithMethod(http.MethodOptions),
+			curl.WithPath(path),
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(80),
+			curl.WithHeaders(requestHeaders),
+		)
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
+
+		switch response.StatusCode {
+		case http.StatusOK, http.StatusNoContent, http.StatusForbidden:
+		default:
+			return fmt.Errorf("expected preflight status 200, 204, or 403, got %d", response.StatusCode)
+		}
+
+		for _, header := range notExpectedHeaders {
+			if _, ok := response.Header[http.CanonicalHeaderKey(header)]; ok {
+				return fmt.Errorf("expected header %q to be absent", header)
+			}
+		}
+
+		return nil
+	})
 }
