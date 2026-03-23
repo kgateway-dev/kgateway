@@ -1,6 +1,10 @@
 Clusters:
-- connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
   loadAssignment:
     clusterName: backend_default_gcp-backend-with-audience_0
     endpoints:
@@ -21,9 +25,12 @@ Clusters:
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       sni: example.googleapis.com
-  type: STRICT_DNS
-- connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
   loadAssignment:
     clusterName: backend_default_gcp-backend_0
     endpoints:
@@ -44,14 +51,18 @@ Clusters:
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       sni: example.googleapis.com
-  type: STRICT_DNS
 - connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
 ExtraClusters:
 - altStatName: gcp_authn
+  clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_ONLY
+      respectDnsTtl: true
   connectTimeout: 5s
-  dnsLookupFamily: V4_ONLY
   loadAssignment:
     clusterName: gcp_authn
     endpoints:
@@ -62,8 +73,6 @@ ExtraClusters:
               address: metadata.google.internal
               portValue: 80
   name: gcp_authn
-  respectDnsTtl: true
-  type: STRICT_DNS
 Listeners:
 - address:
     socketAddress:

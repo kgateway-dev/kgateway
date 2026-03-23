@@ -1,6 +1,10 @@
 Clusters:
-- connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
   loadAssignment:
     clusterName: backend_default_oauth-provider-1_0
     endpoints:
@@ -15,9 +19,12 @@ Clusters:
           hostname: provider-1.com
   metadata: {}
   name: backend_default_oauth-provider-1_0
-  type: STRICT_DNS
-- connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
   loadAssignment:
     clusterName: backend_default_oauth-provider-2_0
     endpoints:
@@ -32,7 +39,6 @@ Clusters:
           hostname: provider-2.com
   metadata: {}
   name: backend_default_oauth-provider-2_0
-  type: STRICT_DNS
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
