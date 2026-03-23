@@ -11,6 +11,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
+	sockets_raw_buffer "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -389,6 +390,97 @@ func TestBackendTranslatorDoesNotEnableTLSForGatewayBackendClientCertificate(t *
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	assert.Nil(t, cluster.TransportSocket)
+}
+
+func TestBackendTranslatorAppliesGatewayBackendClientCertificateToTransportSocketMatches(t *testing.T) {
+	backend := &ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Group:     "group",
+			Kind:      "kind",
+			Name:      "name",
+			Namespace: "namespace",
+		},
+		GatewayBackendClientCertificate: &ir.GatewayBackendClientCertificateIR{
+			Certificate: ir.TLSCertificate{
+				CertChain:  []byte("gateway-cert"),
+				PrivateKey: []byte("gateway-key"),
+			},
+		},
+		AttachedPolicies: ir.AttachedPolicies{
+			Policies: map[schema.GroupKind][]ir.PolicyAtt{
+				{Group: "istio.io", Kind: "Settings"}: {
+					{
+						GroupKind: schema.GroupKind{Group: "istio.io", Kind: "Settings"},
+						PolicyIr:  new(testPolicyIR),
+					},
+				},
+			},
+		},
+	}
+
+	var bt irtranslator.BackendTranslator
+	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
+		{Group: "group", Kind: "kind"}: {
+			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+				return nil
+			},
+		},
+	}
+	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "istio.io", Kind: "Settings"}: {
+			ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+				tlsTypedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
+					Sni: "backend.example.com",
+					CommonTlsContext: &envoytlsv3.CommonTlsContext{
+						ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{},
+						TlsCertificateSdsSecretConfigs: []*envoytlsv3.SdsSecretConfig{
+							{Name: "existing-sds-secret"},
+						},
+					},
+				})
+				require.NoError(t, err)
+
+				rawBufferTypedConfig, err := utils.MessageToAny(&sockets_raw_buffer.RawBuffer{})
+				require.NoError(t, err)
+
+				out.TransportSocketMatches = []*envoyclusterv3.Cluster_TransportSocketMatch{
+					{
+						Name: "tls-mode-istio",
+						TransportSocket: &envoycorev3.TransportSocket{
+							Name: envoywellknown.TransportSocketTls,
+							ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+								TypedConfig: tlsTypedConfig,
+							},
+						},
+					},
+					{
+						Name: "tls-mode-disabled",
+						TransportSocket: &envoycorev3.TransportSocket{
+							Name: envoywellknown.TransportSocketRawBuffer,
+							ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+								TypedConfig: rawBufferTypedConfig,
+							},
+						},
+					},
+				}
+			},
+		},
+	}
+
+	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniqlyConnectedClient{}, backend)
+	require.NoError(t, err)
+	require.NotNil(t, cluster)
+	require.Nil(t, cluster.TransportSocket)
+	require.Len(t, cluster.TransportSocketMatches, 2)
+
+	tlsContext := &envoytlsv3.UpstreamTlsContext{}
+	require.NoError(t, cluster.TransportSocketMatches[0].GetTransportSocket().GetTypedConfig().UnmarshalTo(tlsContext))
+	require.Len(t, tlsContext.GetCommonTlsContext().GetTlsCertificates(), 1)
+	assert.Equal(t, "backend.example.com", tlsContext.GetSni())
+	assert.Equal(t, "gateway-cert", tlsContext.GetCommonTlsContext().GetTlsCertificates()[0].GetCertificateChain().GetInlineString())
+	assert.Equal(t, "gateway-key", tlsContext.GetCommonTlsContext().GetTlsCertificates()[0].GetPrivateKey().GetInlineString())
+	assert.Nil(t, tlsContext.GetCommonTlsContext().GetTlsCertificateSdsSecretConfigs())
+	assert.Equal(t, envoywellknown.TransportSocketRawBuffer, cluster.TransportSocketMatches[1].GetTransportSocket().GetName())
 }
 
 // mockValidator is a test implementation of validator.Validator for testing xDS validation errors

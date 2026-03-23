@@ -1,6 +1,7 @@
 package query
 
 import (
+	"maps"
 	"slices"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -90,9 +91,7 @@ func cloneChildrenWithVariants(
 		}
 		clone.items[key] = clonedRoutes
 	}
-	for key, err := range children.errors {
-		clone.errors[key] = err
-	}
+	maps.Copy(clone.errors, children.errors)
 	return clone
 }
 

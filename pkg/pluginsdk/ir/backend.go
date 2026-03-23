@@ -417,6 +417,14 @@ type GatewayBackendClientCertificateIR struct {
 	Certificate TLSCertificate
 }
 
+func (c GatewayBackendClientCertificateIR) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Certificate string `json:"certificate"`
+	}{
+		Certificate: "[REDACTED]",
+	})
+}
+
 func (c *ClientCertificateValidationIR) Equals(in any) bool {
 	c2, ok := in.(*ClientCertificateValidationIR)
 	if !ok {

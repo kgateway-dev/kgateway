@@ -335,27 +335,58 @@ func createCommonLbConfig(b *ir.BackendObjectIR) *envoyclusterv3.Cluster_CommonL
 }
 
 func applyGatewayBackendClientCertificate(out *envoyclusterv3.Cluster, backend *ir.BackendObjectIR) error {
-	if backend == nil || backend.GatewayBackendClientCertificate == nil || out.GetTransportSocket() == nil {
-		return nil
-	}
-	if out.GetTransportSocket().GetName() != envoywellknown.TransportSocketTls {
+	if backend == nil || backend.GatewayBackendClientCertificate == nil {
 		return nil
 	}
 
-	typedConfig := out.GetTransportSocket().GetTypedConfig()
-	if typedConfig == nil {
+	certificate := backend.GatewayBackendClientCertificate.Certificate
+
+	transportSocket, err := applyGatewayBackendClientCertificateToTransportSocket(out.GetTransportSocket(), certificate)
+	if err != nil {
+		return err
+	}
+	if transportSocket != nil {
+		out.TransportSocket = transportSocket
+	}
+
+	if len(out.GetTransportSocketMatches()) == 0 {
 		return nil
+	}
+
+	updatedMatches := make([]*envoyclusterv3.Cluster_TransportSocketMatch, 0, len(out.GetTransportSocketMatches()))
+	for _, match := range out.GetTransportSocketMatches() {
+		updatedMatch, err := applyGatewayBackendClientCertificateToTransportSocketMatch(match, certificate)
+		if err != nil {
+			return err
+		}
+		updatedMatches = append(updatedMatches, updatedMatch)
+	}
+	out.TransportSocketMatches = updatedMatches
+
+	return nil
+}
+
+func applyGatewayBackendClientCertificateToTransportSocket(
+	transportSocket *envoycorev3.TransportSocket,
+	certificate ir.TLSCertificate,
+) (*envoycorev3.TransportSocket, error) {
+	if transportSocket == nil || transportSocket.GetName() != envoywellknown.TransportSocketTls {
+		return transportSocket, nil
+	}
+
+	typedConfig := transportSocket.GetTypedConfig()
+	if typedConfig == nil {
+		return transportSocket, nil
 	}
 
 	tlsContext := &envoytlsv3.UpstreamTlsContext{}
 	if err := typedConfig.UnmarshalTo(tlsContext); err != nil {
-		return err
+		return nil, err
 	}
 	if tlsContext.CommonTlsContext == nil {
 		tlsContext.CommonTlsContext = &envoytlsv3.CommonTlsContext{}
 	}
 
-	certificate := backend.GatewayBackendClientCertificate.Certificate
 	tlsContext.CommonTlsContext.TlsCertificates = []*envoytlsv3.TlsCertificate{
 		{
 			CertificateChain: pluginutils.InlineStringDataSource(string(certificate.CertChain)),
@@ -366,14 +397,30 @@ func applyGatewayBackendClientCertificate(out *envoyclusterv3.Cluster, backend *
 
 	updatedTypedConfig, err := utils.MessageToAny(tlsContext)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	out.TransportSocket = &envoycorev3.TransportSocket{
-		Name: envoywellknown.TransportSocketTls,
-		ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-			TypedConfig: updatedTypedConfig,
-		},
+	clone := *transportSocket
+	clone.ConfigType = &envoycorev3.TransportSocket_TypedConfig{
+		TypedConfig: updatedTypedConfig,
 	}
-	return nil
+	return &clone, nil
+}
+
+func applyGatewayBackendClientCertificateToTransportSocketMatch(
+	match *envoyclusterv3.Cluster_TransportSocketMatch,
+	certificate ir.TLSCertificate,
+) (*envoyclusterv3.Cluster_TransportSocketMatch, error) {
+	if match == nil {
+		return nil, nil
+	}
+
+	transportSocket, err := applyGatewayBackendClientCertificateToTransportSocket(match.GetTransportSocket(), certificate)
+	if err != nil {
+		return nil, err
+	}
+
+	clone := *match
+	clone.TransportSocket = transportSocket
+	return &clone, nil
 }
