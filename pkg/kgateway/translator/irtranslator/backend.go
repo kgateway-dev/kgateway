@@ -28,8 +28,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
-const clusterConnectionTimeout = time.Second * 5
-const dnsClusterExtensionName = "envoy.clusters.dns"
+const (
+	clusterConnectionTimeout = time.Second * 5
+	dnsClusterExtensionName  = "envoy.clusters.dns"
+)
 
 type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
@@ -168,16 +170,18 @@ func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *
 	return nil
 }
 
+var inlineCLAClusterTypes = sets.New(
+	envoyclusterv3.Cluster_STATIC,
+	envoyclusterv3.Cluster_STRICT_DNS,
+	envoyclusterv3.Cluster_LOGICAL_DNS,
+)
+
 func clusterSupportsInlineCLA(cluster *envoyclusterv3.Cluster) bool {
 	switch cdt := cluster.GetClusterDiscoveryType().(type) {
 	case *envoyclusterv3.Cluster_ClusterType:
 		return cdt.ClusterType.GetName() == dnsClusterExtensionName
 	case *envoyclusterv3.Cluster_Type:
-		return sets.New(
-			envoyclusterv3.Cluster_STATIC,
-			envoyclusterv3.Cluster_STRICT_DNS,
-			envoyclusterv3.Cluster_LOGICAL_DNS,
-		).Has(cdt.Type)
+		return inlineCLAClusterTypes.Has(cdt.Type)
 	default:
 		return false
 	}
