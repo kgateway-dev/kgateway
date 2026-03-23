@@ -2022,22 +2022,10 @@ var _ = Describe("Deployer", func() {
 					svc := objs.findService(defaultServiceName)
 					Expect(svc).NotTo(BeNil())
 
-					Expect(svc.Spec.Ports).To(HaveLen(2))
-					listenerPortIdx := slices.IndexFunc(svc.Spec.Ports, func(port corev1.ServicePort) bool {
-						return port.Name == "listener-80"
-					})
-					Expect(listenerPortIdx).NotTo(Equal(-1))
-					listenerPort := svc.Spec.Ports[listenerPortIdx]
-					Expect(listenerPort.Port).To(Equal(int32(80)))
-					Expect(listenerPort.TargetPort).To(Equal(intstr.FromInt32(80)))
-
-					monitoringPortIdx := slices.IndexFunc(svc.Spec.Ports, func(port corev1.ServicePort) bool {
-						return port.Name == "http-monitoring"
-					})
-					Expect(monitoringPortIdx).NotTo(Equal(-1))
-					monitoringPort := svc.Spec.Ports[monitoringPortIdx]
-					Expect(monitoringPort.Port).To(Equal(int32(9091)))
-					Expect(monitoringPort.TargetPort).To(Equal(intstr.FromInt32(9091)))
+					Expect(svc.Spec.Ports).To(HaveLen(1))
+					port := svc.Spec.Ports[0]
+					Expect(port.Port).To(Equal(int32(80)))
+					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
 				},
 			}),
 			Entry("object owner refs are set", defaultInput(), &expectedOutput{
