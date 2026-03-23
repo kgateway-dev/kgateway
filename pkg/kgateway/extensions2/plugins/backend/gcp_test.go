@@ -4,9 +4,12 @@ import (
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	gcp_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gcp_authn/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -171,9 +174,13 @@ func TestProcessGcp(t *testing.T) {
 
 			// Verify cluster discovery type
 			assert.NotNil(t, cluster.ClusterDiscoveryType)
-			clusterType, ok := cluster.ClusterDiscoveryType.(*envoyclusterv3.Cluster_Type)
-			assert.True(t, ok, "cluster discovery type should be Cluster_Type")
-			assert.Equal(t, envoyclusterv3.Cluster_STRICT_DNS, clusterType.Type)
+			clusterType := cluster.GetClusterType()
+			require.NotNil(t, clusterType, "cluster discovery type should be custom dns cluster type")
+			assert.Equal(t, dnsClusterExtensionName, clusterType.GetName())
+			var dnsCluster envoydnsv3.DnsCluster
+			err = anypb.UnmarshalTo(clusterType.GetTypedConfig(), &dnsCluster, proto.UnmarshalOptions{})
+			assert.NoError(t, err)
+			assert.False(t, dnsCluster.GetAllAddressesInSingleEndpoint(), "gcp backends should keep strict DNS semantics")
 
 			// Verify load assignment
 			assert.NotNil(t, cluster.LoadAssignment)
@@ -204,4 +211,26 @@ func TestProcessGcp(t *testing.T) {
 			assert.Equal(t, expectedAudience.Url, audienceConfig.Url)
 		})
 	}
+}
+
+func TestGetGcpAuthnCluster(t *testing.T) {
+	cluster := getGcpAuthnCluster()
+
+	clusterType := cluster.GetClusterType()
+	require.NotNil(t, clusterType)
+	assert.Equal(t, dnsClusterExtensionName, clusterType.GetName())
+
+	var dnsCluster envoydnsv3.DnsCluster
+	err := anypb.UnmarshalTo(clusterType.GetTypedConfig(), &dnsCluster, proto.UnmarshalOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, envoycommondnsv3.DnsLookupFamily_V4_ONLY, dnsCluster.GetDnsLookupFamily())
+	assert.True(t, dnsCluster.GetRespectDnsTtl())
+
+	require.NotNil(t, cluster.LoadAssignment)
+	require.Len(t, cluster.LoadAssignment.Endpoints, 1)
+	require.Len(t, cluster.LoadAssignment.Endpoints[0].LbEndpoints, 1)
+	endpoint := cluster.LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint()
+	require.NotNil(t, endpoint)
+	assert.Equal(t, googleMetadataAddress, endpoint.GetAddress().GetSocketAddress().GetAddress())
+	assert.Equal(t, uint32(80), endpoint.GetAddress().GetSocketAddress().GetPortValue())
 }

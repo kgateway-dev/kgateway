@@ -7,6 +7,8 @@ import (
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +17,9 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -52,6 +56,53 @@ func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 	httpOpts, ok := p.(*envoy_upstreams_v3.HttpProtocolOptions)
 	assert.True(t, ok)
 	assert.NotNil(t, httpOpts.GetExplicitHttpConfig().GetHttp2ProtocolOptions())
+}
+
+func TestBackendTranslatorAppliesDnsLookupFamilyToDnsCluster(t *testing.T) {
+	backend := &ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Group:     "group",
+			Kind:      "kind",
+			Name:      "name",
+			Namespace: "namespace",
+		},
+	}
+
+	var bt irtranslator.BackendTranslator
+	bt.CommonCols = &collections.CommonCollections{
+		Settings: apisettings.Settings{
+			DnsLookupFamily: apisettings.DnsLookupFamilyV4Only,
+		},
+	}
+	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
+		{Group: "group", Kind: "kind"}: {
+			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+				dnsClusterCfg, err := utils.MessageToAny(&envoydnsv3.DnsCluster{})
+				require.NoError(t, err)
+				out.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
+					ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+						Name:        "envoy.clusters.dns",
+						TypedConfig: dnsClusterCfg,
+					},
+				}
+				return nil
+			},
+		},
+	}
+	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
+
+	var ucc ir.UniqlyConnectedClient
+	var kctx krt.TestingDummyContext
+
+	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	require.NoError(t, err)
+
+	clusterType := cluster.GetClusterType()
+	require.NotNil(t, clusterType)
+	var dnsCluster envoydnsv3.DnsCluster
+	err = clusterType.GetTypedConfig().UnmarshalTo(&dnsCluster)
+	require.NoError(t, err)
+	assert.Equal(t, envoycommondnsv3.DnsLookupFamily_V4_ONLY, dnsCluster.GetDnsLookupFamily())
 }
 
 // TestBackendTranslatorHandlesBackendIRErrors validates that when the Backend IR itself

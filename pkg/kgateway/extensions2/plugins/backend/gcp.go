@@ -6,6 +6,8 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	gcp_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gcp_authn/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/proto"
@@ -59,8 +61,15 @@ func processGcp(ir *GcpIr, out *envoyclusterv3.Cluster) error {
 		return fmt.Errorf("gcp ir is nil")
 	}
 
-	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
-		Type: envoyclusterv3.Cluster_STRICT_DNS,
+	dnsClusterConfig, err := utils.MessageToAny(&envoydnsv3.DnsCluster{})
+	if err != nil {
+		return fmt.Errorf("failed to create dns cluster config: %v", err)
+	}
+	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
+		ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+			Name:        dnsClusterExtensionName,
+			TypedConfig: dnsClusterConfig,
+		},
 	}
 
 	if ir.transportSocket != nil {
@@ -119,13 +128,21 @@ func buildGcpIr(in *kgateway.GcpBackend) (*GcpIr, error) {
 
 // getGcpAuthnCluster returns the GCP metadata cluster configuration.
 func getGcpAuthnCluster() *envoyclusterv3.Cluster {
+	dnsClusterConfig := utils.MustMessageToAny(&envoydnsv3.DnsCluster{
+		DnsLookupFamily: envoycommondnsv3.DnsLookupFamily_V4_ONLY,
+		RespectDnsTtl:   true,
+	})
+
 	return &envoyclusterv3.Cluster{
-		Name:                 gcpAuthnClusterName,
-		AltStatName:          gcpAuthnClusterName,
-		ConnectTimeout:       &durationpb.Duration{Seconds: 5},
-		DnsLookupFamily:      envoyclusterv3.Cluster_V4_ONLY,
-		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS},
-		RespectDnsTtl:        true,
+		Name:           gcpAuthnClusterName,
+		AltStatName:    gcpAuthnClusterName,
+		ConnectTimeout: &durationpb.Duration{Seconds: 5},
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+			ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+				Name:        dnsClusterExtensionName,
+				TypedConfig: dnsClusterConfig,
+			},
+		},
 		LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
 			ClusterName: gcpAuthnClusterName,
 			Endpoints: []*envoyendpointv3.LocalityLbEndpoints{
