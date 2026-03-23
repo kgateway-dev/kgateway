@@ -27,7 +27,7 @@ runs:
           echo "job_id=$ts" >> $GITHUB_OUTPUT
         fi
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: ${{ inputs.name }}-${{ github.run_id }}-${{ steps.get-job-id.outputs.job_id }}
         path: ${{ inputs.path }}
