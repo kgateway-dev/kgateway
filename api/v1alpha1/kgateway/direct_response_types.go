@@ -1,8 +1,8 @@
 package kgateway
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -87,7 +87,7 @@ type BodyFormat struct {
 	// +optional
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
-	JSON *runtime.RawExtension `json:"json,omitempty"`
+	JSON *apiextensionsv1.JSON `json:"json,omitempty"`
 }
 
 // GetStatus returns the HTTP status code to return for this route.
