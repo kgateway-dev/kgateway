@@ -7,7 +7,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/util/smallset"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -59,7 +58,7 @@ func getConfig(t *testing.T) GatewayIndexConfig {
 		EnvoyControllerName: "envoy-controller-name",
 		PolicyIndex:         NewPolicyIndex(krtOpts, nil, settings.Settings{}),
 		Gateways:            krt.NewStaticCollection[*gwv1.Gateway](nil, nil, krtOpts.ToOptions("Gateways")...),
-		ListenerSets:        krt.NewStaticCollection[*gwxv1a1.XListenerSet](nil, nil, krtOpts.ToOptions("ListenerSets")...),
+		ListenerSets:        krt.NewStaticCollection[*gwv1.ListenerSet](nil, nil, krtOpts.ToOptions("ListenerSets")...),
 		GatewayClasses:      krt.NewStaticCollection[*gwv1.GatewayClass](nil, nil, krtOpts.ToOptions("GatewayClasses")...),
 		Namespaces:          krt.NewStaticCollection[NamespaceMetadata](nil, nil, krtOpts.ToOptions("Namespaces")...),
 	}

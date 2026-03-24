@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -63,6 +62,107 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(status.Conditions).To(HaveLen(3)) // 2 from the report, 1 from the original status
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+		})
+
+		It("should set insecure frontend validation mode when configured on the default frontend TLS config", func() {
+			gw := gw()
+			gw.Spec.TLS = &gwv1.GatewayTLSConfig{
+				Frontend: &gwv1.FrontendTLSConfig{
+					Default: gwv1.TLSConfig{
+						Validation: &gwv1.FrontendTLSValidation{
+							Mode: gwv1.AllowInsecureFallback,
+							CACertificateRefs: []gwv1.ObjectReference{
+								{Name: "ca-cert"},
+							},
+						},
+					},
+				},
+			}
+
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.Gateway(gw)
+
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
+
+			Expect(status).NotTo(BeNil())
+			condition := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionInsecureFrontendValidationMode))
+			Expect(condition).NotTo(BeNil())
+			Expect(condition.Status).To(Equal(metav1.ConditionTrue))
+			Expect(condition.Reason).To(Equal(string(gwv1.GatewayReasonConfigurationChanged)))
+		})
+
+		It("should set insecure frontend validation mode when configured via per-port override", func() {
+			gw := gw()
+			gw.Spec.TLS = &gwv1.GatewayTLSConfig{
+				Frontend: &gwv1.FrontendTLSConfig{
+					Default: gwv1.TLSConfig{},
+					PerPort: []gwv1.TLSPortConfig{
+						{
+							Port: 8443,
+							TLS: gwv1.TLSConfig{
+								Validation: &gwv1.FrontendTLSValidation{
+									Mode: gwv1.AllowInsecureFallback,
+									CACertificateRefs: []gwv1.ObjectReference{
+										{Name: "ca-cert"},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.Gateway(gw)
+
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
+
+			Expect(status).NotTo(BeNil())
+			condition := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionInsecureFrontendValidationMode))
+			Expect(condition).NotTo(BeNil())
+			Expect(condition.Status).To(Equal(metav1.ConditionTrue))
+			Expect(condition.Reason).To(Equal(string(gwv1.GatewayReasonConfigurationChanged)))
+		})
+
+		It("should remove stale insecure frontend validation mode conditions when insecure fallback is no longer configured", func() {
+			gw := gw()
+			gw.Status.Conditions = append(gw.Status.Conditions, metav1.Condition{
+				Type:   string(gwv1.GatewayConditionInsecureFrontendValidationMode),
+				Status: metav1.ConditionTrue,
+				Reason: string(gwv1.GatewayReasonConfigurationChanged),
+			})
+
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.Gateway(gw)
+
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
+
+			Expect(status).NotTo(BeNil())
+			Expect(meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionInsecureFrontendValidationMode))).To(BeNil())
+		})
+
+		It("should preserve controller-managed invalid parameters accepted conditions", func() {
+			gw := gw()
+			gw.Status.Conditions = append(gw.Status.Conditions, metav1.Condition{
+				Type:   string(gwv1.GatewayConditionAccepted),
+				Status: metav1.ConditionFalse,
+				Reason: string(gwv1.GatewayReasonInvalidParameters),
+			})
+
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+			reporter.Gateway(gw)
+
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
+
+			Expect(status).NotTo(BeNil())
+			condition := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionAccepted))
+			Expect(condition).NotTo(BeNil())
+			Expect(condition.Status).To(Equal(metav1.ConditionFalse))
+			Expect(condition.Reason).To(Equal(string(gwv1.GatewayReasonInvalidParameters)))
 		})
 
 		It("should correctly set negative gateway conditions from report and not add extra conditions", func() {
@@ -155,6 +255,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute()),
 			Entry("regular tcproute", tcpRoute()),
+			Entry("regular promoted tlsroute", tlsRouteV1()),
 			Entry("regular tlsroute", tlsRoute()),
 			Entry("regular grpcroute", grpcRoute()),
 			Entry("delegatee route", delegateeRoute()),
@@ -178,6 +279,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 				},
 			)),
 			Entry("regular tcproute", tcpRoute(
+				metav1.Condition{
+					Type: fake_condition,
+				},
+			)),
+			Entry("regular promoted tlsroute", tlsRouteV1(
 				metav1.Condition{
 					Type: fake_condition,
 				},
@@ -360,6 +466,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 					route.Status.RouteStatus = *status
 				case *gwv1a2.TCPRoute:
 					route.Status.RouteStatus = *status
+				case *gwv1.TLSRoute:
+					route.Status.RouteStatus = *status
 				case *gwv1a2.TLSRoute:
 					route.Status.RouteStatus = *status
 				case *gwv1.GRPCRoute:
@@ -380,6 +488,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute()),
 			Entry("regular tcproute", tcpRoute()),
+			Entry("regular promoted tlsroute", tlsRouteV1()),
 			Entry("regular tlsroute", tlsRoute()),
 			Entry("regular grpcroute", grpcRoute()),
 			Entry("delegatee route", delegateeRoute()),
@@ -394,6 +503,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 						Name: "additional-gateway",
 					})
 				case *gwv1a2.TCPRoute:
+					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
+						Name: "additional-gateway",
+					})
+				case *gwv1.TLSRoute:
 					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
 						Name: "additional-gateway",
 					})
@@ -426,6 +539,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular HTTPRoute", httpRoute()),
 			Entry("regular TCPRoute", tcpRoute()),
+			Entry("regular promoted tlsroute", tlsRouteV1()),
 			Entry("regular tlsroute", tlsRoute()),
 			Entry("regular grpcroute", grpcRoute()),
 		)
@@ -441,6 +555,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				case *gwv1a2.TCPRoute:
 					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
+				case *gwv1.TLSRoute:
+					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				case *gwv1a2.TLSRoute:
 					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				case *gwv1.GRPCRoute:
@@ -452,6 +568,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				case *gwv1.HTTPRoute:
 					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
 				case *gwv1a2.TCPRoute:
+					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
+				case *gwv1.TLSRoute:
 					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
 				case *gwv1a2.TLSRoute:
 					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
@@ -484,6 +602,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 				gwv1.Listener{Name: "foo-tcp", Protocol: gwv1.TCPProtocolType},
 				gwv1.Listener{Name: "bar-tcp", Protocol: gwv1.TCPProtocolType},
 			),
+			Entry("promoted TLSRoutes with shared and separate listeners",
+				tlsRouteV1(), tlsRouteV1(),
+				gwv1.Listener{Name: "foo-tls", Protocol: gwv1.TLSProtocolType},
+				gwv1.Listener{Name: "bar-tls", Protocol: gwv1.TLSProtocolType},
+			),
 			Entry("TLSRoutes with shared and separate listeners",
 				tlsRoute(), tlsRoute(),
 				gwv1.Listener{Name: "foo-tls", Protocol: gwv1.TLSProtocolType},
@@ -505,6 +628,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				r.Spec.ParentRefs = nil
 			case *gwv1a2.TCPRoute:
 				r.Spec.ParentRefs = nil
+			case *gwv1.TLSRoute:
+				r.Spec.ParentRefs = nil
 			case *gwv1a2.TLSRoute:
 				r.Spec.ParentRefs = nil
 			case *gwv1.GRPCRoute:
@@ -522,6 +647,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 		},
 		Entry("HTTPRoute with missing parent reference", httpRoute()),
 		Entry("TCPRoute with missing parent reference", tcpRoute()),
+		Entry("promoted TLSRoute with missing parent reference", tlsRouteV1()),
 		Entry("TLSRoute with missing parent reference", tlsRoute()),
 		Entry("GRPCRoute with missing parent reference", grpcRoute()),
 	)
@@ -543,6 +669,9 @@ var _ = Describe("Reporting Infrastructure", func() {
 			metav1.Condition{Type: fake_condition},
 		)),
 		Entry("TCPRoute with stale status", tcpRoute(
+			metav1.Condition{Type: fake_condition},
+		)),
+		Entry("promoted TLSRoute with stale status", tlsRouteV1(
 			metav1.Condition{Type: fake_condition},
 		)),
 		Entry("TLSRoute with stale status", tlsRoute(
@@ -670,12 +799,12 @@ var _ = Describe("Reporting Infrastructure", func() {
 			r.ListenerSet(ls).SetCondition(reporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionAccepted,
 				Status: metav1.ConditionFalse,
-				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+				Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed),
 			})
 			r.ListenerSet(ls).SetCondition(reporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionProgrammed,
 				Status: metav1.ConditionFalse,
-				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+				Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed),
 			})
 
 			status := rm.BuildListenerSetStatus(context.Background(), *ls)
@@ -699,6 +828,11 @@ func fakeTranslate(reporter reporter.Reporter, obj client.Object) {
 			routeReporter.ParentRef(&pr)
 		}
 	case *gwv1a2.TCPRoute:
+		routeReporter := reporter.Route(route)
+		for _, pr := range route.Spec.ParentRefs {
+			routeReporter.ParentRef(&pr)
+		}
+	case *gwv1.TLSRoute:
 		routeReporter := reporter.Route(route)
 		for _, pr := range route.Spec.ParentRefs {
 			routeReporter.ParentRef(&pr)
@@ -754,6 +888,24 @@ func tcpRoute(conditions ...metav1.Condition) client.Object {
 
 func tlsRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1a2.TLSRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route",
+			Namespace: "default",
+		},
+	}
+	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
+	if len(conditions) > 0 {
+		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
+			ParentRef:      *parentRef(),
+			Conditions:     conditions,
+			ControllerName: wellknown.DefaultGatewayControllerName,
+		})
+	}
+	return route
+}
+
+func tlsRouteV1(conditions ...metav1.Condition) client.Object {
+	route := &gwv1.TLSRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route",
 			Namespace: "default",
@@ -844,14 +996,14 @@ func listener() *gwv1.Listener {
 	}
 }
 
-func ls() *gwxv1a1.XListenerSet {
-	ls := &gwxv1a1.XListenerSet{
+func ls() *gwv1.ListenerSet {
+	ls := &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
 	}
-	ls.Spec.Listeners = []gwxv1a1.ListenerEntry{
+	ls.Spec.Listeners = []gwv1.ListenerEntry{
 		{
 			Name: "http",
 		},

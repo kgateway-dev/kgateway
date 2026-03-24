@@ -10,13 +10,17 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
@@ -257,10 +261,9 @@ func (p *Provider) EventuallyTLSRouteCondition(
 	ginkgo.GinkgoHelper()
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		route := &gwv1a2.TLSRoute{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		status, err := p.getTLSRouteStatus(ctx, routeName, routeNamespace)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get TLSRoute %s/%s", routeNamespace, routeName))
-		g.Expect(extractParentConditions(route.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
+		g.Expect(extractParentConditions(status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -297,51 +300,93 @@ func (p *Provider) EventuallyListenerSetStatus(
 	ctx context.Context,
 	name string,
 	namespace string,
-	status gwxv1a1.ListenerSetStatus,
+	status gwv1.ListenerSetStatus,
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		ls := &gwxv1a1.XListenerSet{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, ls)
+		lsStatus, err := p.getListenerSetStatus(ctx, name, namespace)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get listenerset %s/%s", namespace, name))
 
 		for _, expected := range status.Conditions {
-			condition := GetConditionByType(ls.Status.Conditions, expected.Type)
-			g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listenerset %s/%s. Full status: %+v", expected.Type, namespace, name, ls.Status))
-			g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v status is not %v for listenerset %s/%s. Full status: %+v", expected, expected.Status, namespace, name, ls.Status))
+			condition := GetConditionByType(lsStatus.Conditions, expected.Type)
+			g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listenerset %s/%s. Full status: %+v", expected.Type, namespace, name, lsStatus))
+			g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v status is not %v for listenerset %s/%s. Full status: %+v", expected, expected.Status, namespace, name, lsStatus))
 			if expected.Reason != "" {
-				g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v reason is not %v for listenerset %s/%s. Full status: %+v", expected, expected.Reason, namespace, name, ls.Status))
+				g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v reason is not %v for listenerset %s/%s. Full status: %+v", expected, expected.Reason, namespace, name, lsStatus))
 			}
 		}
 
 		for _, expectedListener := range status.Listeners {
-			listenerStatus := getListenerEntryStatus(ls.Status.Listeners, string(expectedListener.Name))
-			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s. Full status: %+v", expectedListener.Name, expectedListener.Name, ls.Status))
-			if expectedListener.Port != 0 {
-				g.Expect(listenerStatus.Port).To(gomega.Equal(expectedListener.Port), fmt.Sprintf("%v listener condition is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.Port, expectedListener.Name, ls.Status))
-			}
+			listenerStatus := getListenerEntryStatus(lsStatus.Listeners, string(expectedListener.Name))
+			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s. Full status: %+v", expectedListener.Name, expectedListener.Name, lsStatus))
 			if expectedListener.AttachedRoutes != 0 {
-				g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name, ls.Status))
+				g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name, lsStatus))
 			}
 			if expectedListener.SupportedKinds != nil {
-				g.Expect(listenerStatus.SupportedKinds).To(gomega.ContainElements(expectedListener.SupportedKinds), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.SupportedKinds, expectedListener.Name, ls.Status))
+				g.Expect(listenerStatus.SupportedKinds).To(gomega.ContainElements(expectedListener.SupportedKinds), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.SupportedKinds, expectedListener.Name, lsStatus))
 			}
 
 			for _, expected := range expectedListener.Conditions {
 				condition := GetConditionByType(listenerStatus.Conditions, expected.Type)
-				g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listener %s. Full status: %+v", expected, expectedListener.Name, ls.Status))
-				g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expected, expected.Status, expectedListener.Name, ls.Status))
+				g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listener %s. Full status: %+v", expected, expectedListener.Name, lsStatus))
+				g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expected, expected.Status, expectedListener.Name, lsStatus))
 				if expected.Reason != "" {
-					g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expected, expected.Reason, expectedListener.Name, ls.Status))
+					g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expected, expected.Reason, expectedListener.Name, lsStatus))
 				}
 			}
 		}
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
-func getListenerEntryStatus(listeners []gwxv1a1.ListenerEntryStatus, name string) *gwxv1a1.ListenerEntryStatus {
+func (p *Provider) getListenerSetStatus(ctx context.Context, name string, namespace string) (gwv1.ListenerSetStatus, error) {
+	ls := &gwv1.ListenerSet{}
+	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, ls); err == nil {
+		return ls.Status, nil
+	}
+
+	legacyListenerSet := &unstructured.Unstructured{}
+	legacyListenerSet.SetGroupVersionKind(wellknown.XListenerSetGVK)
+	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, legacyListenerSet); err != nil {
+		return gwv1.ListenerSetStatus{}, err
+	}
+
+	statusMap, found, err := unstructured.NestedMap(legacyListenerSet.Object, "status")
+	if err != nil {
+		return gwv1.ListenerSetStatus{}, err
+	}
+	if !found {
+		return gwv1.ListenerSetStatus{}, fmt.Errorf("legacy xlistenerset %s/%s has no status", namespace, name)
+	}
+
+	legacyStatus := gwv1.ListenerSetStatus{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(statusMap, &legacyStatus); err != nil {
+		return gwv1.ListenerSetStatus{}, err
+	}
+	return legacyStatus, nil
+}
+
+func (p *Provider) getTLSRouteStatus(ctx context.Context, name string, namespace string) (gwv1.RouteStatus, error) {
+	route := &gwv1.TLSRoute{}
+	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, route); err == nil {
+		return route.Status.RouteStatus, nil
+	} else if !shouldFallbackTLSRouteStatusLookup(err) {
+		return gwv1.RouteStatus{}, err
+	}
+
+	legacyRoute := &gwv1a2.TLSRoute{}
+	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, legacyRoute); err != nil {
+		return gwv1.RouteStatus{}, err
+	}
+	return legacyRoute.Status.RouteStatus, nil
+}
+
+func shouldFallbackTLSRouteStatusLookup(err error) bool {
+	return apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err)
+}
+
+func getListenerEntryStatus(listeners []gwv1.ListenerEntryStatus, name string) *gwv1.ListenerEntryStatus {
 	for i := range listeners {
 		if string(listeners[i].Name) == name {
 			return &listeners[i]

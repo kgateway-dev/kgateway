@@ -27,13 +27,29 @@ type GatewayClassInfo struct {
 }
 
 // GetSupportedFeaturesForStandardGateway returns the supported features for the standard Gateway class.
-// This is derived from the conformance test configuration where we exempt certain features.
-func GetSupportedFeaturesForStandardGateway() []gwv1.SupportedFeature {
+// This is derived from the conformance test configuration where we exempt certain features, and from
+// whether experimental Gateway API features are enabled in the running controller.
+func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures bool) []gwv1.SupportedFeature {
 	exemptFeatures := GetCommonExemptFeatures()
 	// backfill individual features that we don't support yet.
 	exemptFeatures.Insert(
 		features.GatewayHTTPListenerIsolationFeature,
+		// Gateway.spec.tls.backend.clientCertificateRef is not translated yet.
+		features.GatewayBackendClientCertificateFeature,
+		// We do not yet implement the 421 misdirected-request behavior across HTTPS listeners
+		// sharing the same port.
+		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,
 	)
+	if !enableExperimentalGatewayAPIFeatures {
+		// TLSRoute processing is behind the experimental Gateway API feature flag.
+		// Standard conformance runs disable that flag, so the standard GatewayClass must not
+		// advertise TLSRoute support in that mode.
+		exemptFeatures.Insert(
+			features.TLSRouteFeature,
+			features.TLSRouteModeTerminateFeature,
+			features.TLSRouteModeMixedFeature,
+		)
+	}
 
 	// we don't support the BackendTLSPolicy feature at all.
 	for _, feature := range features.BackendTLSPolicyCoreFeatures.UnsortedList() {
@@ -47,9 +63,9 @@ func GetSupportedFeaturesForStandardGateway() []gwv1.SupportedFeature {
 
 // GetSupportedFeaturesForWaypointGateway returns the supported features for the waypoint Gateway class.
 // Waypoint gateways have similar support to standard gateways but may have some differences.
-func GetSupportedFeaturesForWaypointGateway() []gwv1.SupportedFeature {
+func GetSupportedFeaturesForWaypointGateway(enableExperimentalGatewayAPIFeatures bool) []gwv1.SupportedFeature {
 	// For now, waypoint gateways support the same features as standard gateways
-	return GetSupportedFeaturesForStandardGateway()
+	return GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures)
 }
 
 // GetCommonExemptFeatures returns the set of features that are commonly unsupported across all gateway classes.

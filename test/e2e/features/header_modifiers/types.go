@@ -34,7 +34,10 @@ var (
 	}
 
 	setupWithListenerSets = base.TestCase{
-		Manifests: append([]string{setupWithListenerSetsManifest}, commonSetupManifests...),
+		Manifests: append([]string{}, commonSetupManifests...),
+		ManifestsWithTransform: map[string]func(string) string{
+			setupWithListenerSetsManifest: base.TransformListenerSetManifest,
+		},
 	}
 
 	testCases = map[string]*base.TestCase{
@@ -47,21 +50,27 @@ var (
 		"TestMultiLevelHeaderModifiers": {
 			Manifests: []string{
 				headerModifiersGwTrafficPolicyManifest,
-				headerModifiersLsTrafficPolicyManifest,
 				headerModifiersRouteTrafficPolicyManifest,
+			},
+			ManifestsWithTransform: map[string]func(string) string{
+				headerModifiersLsTrafficPolicyManifest: base.TransformListenerSetManifest,
 			},
 		},
 		"TestMultiLevelHeaderModifiersWithListenerSet": {
 			Manifests: []string{
 				headerModifiersGwTrafficPolicyManifest,
-				headerModifiersLsTrafficPolicyManifest,
 				headerModifiersRouteTrafficPolicyManifest,
 				headerModifiersRouteListenerSetTrafficPolicyManifest,
+			},
+			ManifestsWithTransform: map[string]func(string) string{
+				headerModifiersLsTrafficPolicyManifest: base.TransformListenerSetManifest,
 			},
 			MinGwApiVersion: base.GwApiRequireListenerSets,
 		},
 		"TestListenerSetLevelHeaderModifiers": {
-			Manifests:       []string{headerModifiersLsTrafficPolicyManifest},
+			ManifestsWithTransform: map[string]func(string) string{
+				headerModifiersLsTrafficPolicyManifest: base.TransformListenerSetManifest,
+			},
 			MinGwApiVersion: base.GwApiRequireListenerSets,
 		},
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"slices"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -14,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -208,8 +208,8 @@ func isParentRefForResource(pRef *gwv1.ParentReference, resource client.Object, 
 		switch resource.(type) {
 		case *gwv1.Gateway:
 			gvk = wellknown.GatewayGVK
-		case *gwxv1a1.XListenerSet:
-			gvk = wellknown.XListenerSetGVK
+		case *gwv1.ListenerSet:
+			gvk = wellknown.ListenerSetGVK
 		}
 	}
 
@@ -229,49 +229,70 @@ func isParentRefForResource(pRef *gwv1.ParentReference, resource client.Object, 
 }
 
 func hostnameIntersect(l *gwv1.Listener, routeHostnames []string) (bool, []string) {
-	var hostnames []string
 	if l == nil {
-		return false, hostnames
+		return false, nil
 	}
-	if l.Hostname == nil {
-		for _, h := range routeHostnames {
-			hostnames = append(hostnames, string(h))
-		}
-		return true, hostnames
-	}
-	var listenerHostname string = string(*l.Hostname)
 
-	if strings.HasPrefix(listenerHostname, "*.") {
-		if len(routeHostnames) == 0 {
-			return true, []string{listenerHostname}
-		}
-
-		for _, hostname := range routeHostnames {
-			hrHost := string(hostname)
-			if strings.HasSuffix(hrHost, listenerHostname[1:]) {
-				hostnames = append(hostnames, hrHost)
-			}
-		}
-		return len(hostnames) > 0, hostnames
+	listenerHostname := ""
+	if l.Hostname != nil {
+		listenerHostname = string(*l.Hostname)
 	}
+
 	if len(routeHostnames) == 0 {
+		if listenerHostname == "" {
+			return true, nil
+		}
 		return true, []string{listenerHostname}
 	}
-	for _, hostname := range routeHostnames {
-		hrHost := string(hostname)
-		if hrHost == listenerHostname {
-			return true, []string{listenerHostname}
-		}
 
-		if strings.HasPrefix(hrHost, "*.") {
-			if strings.HasSuffix(listenerHostname, hrHost[1:]) {
-				return true, []string{listenerHostname}
-			}
-		}
-		// also possible that listener hostname is more specific than the hr hostname
+	if listenerHostname == "" {
+		return true, slices.Clone(routeHostnames)
 	}
 
-	return false, nil
+	var hostnames []string
+	for _, routeHostname := range routeHostnames {
+		intersection, ok := intersectHostnames(listenerHostname, routeHostname)
+		if !ok || slices.Contains(hostnames, intersection) {
+			continue
+		}
+		hostnames = append(hostnames, intersection)
+	}
+
+	return len(hostnames) > 0, hostnames
+}
+
+func intersectHostnames(listenerHostname, routeHostname string) (string, bool) {
+	if listenerHostname == "" {
+		return routeHostname, true
+	}
+	if routeHostname == "" {
+		return listenerHostname, true
+	}
+
+	listenerWildcard := strings.HasPrefix(listenerHostname, "*.")
+	routeWildcard := strings.HasPrefix(routeHostname, "*.")
+
+	switch {
+	case !listenerWildcard && !routeWildcard:
+		return listenerHostname, listenerHostname == routeHostname
+	case listenerWildcard && !routeWildcard:
+		if strings.HasSuffix(routeHostname, listenerHostname[1:]) {
+			return routeHostname, true
+		}
+	case !listenerWildcard && routeWildcard:
+		if strings.HasSuffix(listenerHostname, routeHostname[1:]) {
+			return listenerHostname, true
+		}
+	default:
+		switch {
+		case strings.HasSuffix(listenerHostname[1:], routeHostname[1:]):
+			return listenerHostname, true
+		case strings.HasSuffix(routeHostname[1:], listenerHostname[1:]):
+			return routeHostname, true
+		}
+	}
+
+	return "", false
 }
 
 func (r *gatewayQueries) GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {

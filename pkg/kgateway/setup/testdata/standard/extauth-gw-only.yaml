@@ -111,3 +111,27 @@ spec:
     targetPort: 9000
   selector:
     app: ext-authz
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: ext-authz-slice
+  namespace: gwtest
+  labels:
+    kubernetes.io/service-name: ext-authz
+    app: ext-authz
+addressType: IPv4
+endpoints:
+  - addresses:
+      - 10.244.2.15
+    conditions:
+      ready: true
+    nodeName: worker
+    targetRef:
+      kind: Pod
+      name: ext-authz-1
+      namespace: gwtest
+ports:
+  - name: grpc
+    port: 9000
+    protocol: TCP

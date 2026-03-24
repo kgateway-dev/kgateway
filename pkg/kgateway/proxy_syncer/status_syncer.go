@@ -11,7 +11,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -20,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -135,14 +137,12 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	syncStatusWithRetry := func(
 		routeType string,
 		routeKey client.ObjectKey,
-		getRouteFunc func() client.Object,
+		getRouteFunc func(context.Context, client.ObjectKey) (client.Object, error),
 		statusUpdater func(route client.Object) (*gwv1.RouteStatus, error),
 	) error {
 		return retry.Do(
 			func() (rErr error) {
-				route := getRouteFunc()
-
-				err := s.mgr.GetClient().Get(ctx, routeKey, route)
+				route, err := getRouteFunc(ctx, routeKey)
 				if err != nil {
 					if apierrors.IsNotFound(err) {
 						// the route is not found, we can't report status on it
@@ -161,6 +161,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
 				case *gwv1a2.TCPRoute:
+					for _, parentRef := range r.Spec.ParentRefs {
+						gatewayNames = append(gatewayNames, string(parentRef.Name))
+					}
+				case *gwv1.TLSRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
@@ -270,6 +274,12 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 				return nil, nil
 			}
 			r.Status.RouteStatus = *status
+		case *gwv1.TLSRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil, nil
+			}
+			r.Status.RouteStatus = *status
 		case *gwv1a2.TLSRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
@@ -296,7 +306,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 		err := syncStatusWithRetry(
 			wellknown.HTTPRouteKind,
 			rnn,
-			func() client.Object { return new(gwv1.HTTPRoute) },
+			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
+				route := new(gwv1.HTTPRoute)
+				return route, s.mgr.GetClient().Get(ctx, routeKey, route)
+			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
 			},
@@ -309,7 +322,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	// Sync TCPRoute statuses
 	for rnn := range rm.TCPRoutes {
 		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn,
-			func() client.Object { return new(gwv1a2.TCPRoute) },
+			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
+				route := new(gwv1a2.TCPRoute)
+				return route, s.mgr.GetClient().Get(ctx, routeKey, route)
+			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
 			})
@@ -321,7 +337,9 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	// Sync TLSRoute statuses
 	for rnn := range rm.TLSRoutes {
 		err := syncStatusWithRetry(wellknown.TLSRouteKind, rnn,
-			func() client.Object { return new(gwv1a2.TLSRoute) },
+			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
+				return getTLSRouteForStatus(ctx, s.mgr.GetClient(), routeKey)
+			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.TLSRouteKind)
 			})
@@ -333,7 +351,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	// Sync GRPCRoute statuses
 	for rnn := range rm.GRPCRoutes {
 		err := syncStatusWithRetry(wellknown.GRPCRouteKind, rnn,
-			func() client.Object { return new(gwv1.GRPCRoute) },
+			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
+				route := new(gwv1.GRPCRoute)
+				return route, s.mgr.GetClient().Get(ctx, routeKey, route)
+			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.GRPCRouteKind)
 			})
@@ -341,6 +362,29 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 			logger.Error("all attempts failed at updating GRPCRoute status", "error", err, "route", rnn)
 		}
 	}
+}
+
+type objectGetter interface {
+	Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
+}
+
+func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key client.ObjectKey) (client.Object, error) {
+	promotedTLSRoute := &gwv1.TLSRoute{}
+	if err := kubeClient.Get(ctx, key, promotedTLSRoute); err == nil {
+		return promotedTLSRoute, nil
+	} else if !shouldFallbackTLSRouteLookup(err) {
+		return nil, err
+	}
+
+	legacyTLSRoute := &gwv1a2.TLSRoute{}
+	if err := kubeClient.Get(ctx, key, legacyTLSRoute); err != nil {
+		return nil, err
+	}
+	return legacyTLSRoute, nil
+}
+
+func shouldFallbackTLSRouteLookup(err error) bool {
+	return apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err)
 }
 
 // syncGatewayStatus will build and update status for all Gateways in a reportMap
@@ -447,61 +491,64 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
 	// TODO: retry within loop per LS rather than as a full block
 	err := retry.Do(func() (rErr error) {
-		for lsnn := range rm.ListenerSets[wellknown.XListenerSetGVK] {
-			ls := gwxv1a1.XListenerSet{}
-			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
-			if err != nil {
-				logger.Info("error getting ls", "error", err.Error())
-				return err
-			}
-
-			var statusErr error
-
-			finishMetrics := CollectStatusSyncMetrics(StatusSyncMetricLabels{
-				Name:      string(ls.Spec.ParentRef.Name),
-				Namespace: lsnn.Namespace,
-				Syncer:    "ListenerSetStatusSyncer",
-			})
-			defer func() {
-				finishMetrics(errors.Join(rErr, statusErr))
-			}()
-
-			lsStatus := ls.Status
-			if status := rm.BuildListenerSetStatus(ctx, ls); status != nil {
-				if !isListenerSetStatusEqual(&lsStatus, status) {
-					ls.Status = *status
-					if err := s.mgr.GetClient().Status().Patch(ctx, &ls, client.Merge); err != nil {
-						if !apierrors.IsConflict(err) {
-							logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
-						}
-						return err
-					}
-					logger.Info("patched ls status", "listenerset", lsnn.String())
-
-					for _, cond := range status.Conditions {
-						if cond.Type != string(gwxv1a1.ListenerSetConditionAccepted) &&
-							cond.Type != string(gwxv1a1.ListenerSetConditionProgrammed) {
-							continue
-						}
-
-						if cond.Reason != string(gwxv1a1.ListenerSetReasonAccepted) &&
-							cond.Reason != string(gwxv1a1.ListenerSetReasonProgrammed) &&
-							cond.Reason != string(gwxv1a1.ListenerSetReasonPending) {
-							statusErr = fmt.Errorf("invalid listener condition")
-
-							break
-						}
-					}
-				} else {
-					logger.Debug("skipping k8s ls status update, status equal", "listenerset", lsnn.String())
+		for gvk, listenerSetsForGVK := range rm.ListenerSets {
+			for lsnn := range listenerSetsForGVK {
+				ls, legacyListenerSet, err := s.getListenerSetForStatus(ctx, lsnn, gvk)
+				if err != nil {
+					logger.Info("error getting ls", "error", err.Error())
+					return err
 				}
 
-				metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
-					Namespace:    ls.Namespace,
-					Gateway:      string(ls.Spec.ParentRef.Name),
-					ResourceType: "XListenerSet",
-					ResourceName: ls.Name,
+				var statusErr error
+
+				finishMetrics := CollectStatusSyncMetrics(StatusSyncMetricLabels{
+					Name:      string(ls.Spec.ParentRef.Name),
+					Namespace: lsnn.Namespace,
+					Syncer:    "ListenerSetStatusSyncer",
 				})
+				defer func() {
+					finishMetrics(errors.Join(rErr, statusErr))
+				}()
+
+				lsStatus := ls.Status
+				if status := rm.BuildListenerSetStatus(ctx, ls); status != nil {
+					if !isListenerSetStatusEqual(&lsStatus, status) {
+						ls.Status = *status
+						if err := s.patchListenerSetStatus(ctx, &ls, legacyListenerSet); err != nil {
+							if !apierrors.IsConflict(err) {
+								logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
+							}
+							return err
+						}
+						logger.Info("patched ls status", "listenerset", lsnn.String(), "gvk", gvk.String())
+
+						for _, cond := range status.Conditions {
+							if cond.Type != string(gwv1.ListenerSetConditionAccepted) &&
+								cond.Type != string(gwv1.ListenerSetConditionProgrammed) {
+								continue
+							}
+
+							if cond.Reason != string(gwv1.ListenerSetReasonAccepted) &&
+								cond.Reason != string(gwv1.ListenerSetReasonProgrammed) &&
+								cond.Reason != string(gwv1.ListenerSetReasonPending) {
+								statusErr = fmt.Errorf("invalid listener condition")
+
+								break
+							}
+						}
+					} else {
+						logger.Debug("skipping k8s ls status update, status equal", "listenerset", lsnn.String(), "gvk", gvk.String())
+					}
+
+					metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
+						Namespace: ls.Namespace,
+						Gateway:   string(ls.Spec.ParentRef.Name),
+						// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
+						// follow-up cleanup so dashboards, tests, and emitters can be updated together.
+						ResourceType: "XListenerSet",
+						ResourceName: ls.Name,
+					})
+				}
 			}
 		}
 		return nil
@@ -516,6 +563,53 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 	logger.Debug("synced listener sets status for listener set", "count", len(rm.ListenerSets))
 }
 
+func (s *StatusSyncer) getListenerSetForStatus(
+	ctx context.Context,
+	key types.NamespacedName,
+	gvk schema.GroupVersionKind,
+) (gwv1.ListenerSet, *unstructured.Unstructured, error) {
+	if gvk == wellknown.XListenerSetGVK {
+		legacyListenerSet := &unstructured.Unstructured{}
+		legacyListenerSet.SetGroupVersionKind(gvk)
+		if err := s.mgr.GetClient().Get(ctx, key, legacyListenerSet); err != nil {
+			return gwv1.ListenerSet{}, nil, err
+		}
+
+		ls := gwv1.ListenerSet{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(legacyListenerSet.UnstructuredContent(), &ls); err != nil {
+			return gwv1.ListenerSet{}, nil, err
+		}
+		ls.SetGroupVersionKind(gvk)
+		return ls, legacyListenerSet, nil
+	}
+
+	ls := gwv1.ListenerSet{}
+	if err := s.mgr.GetClient().Get(ctx, key, &ls); err != nil {
+		return gwv1.ListenerSet{}, nil, err
+	}
+	if ls.GroupVersionKind().Empty() {
+		ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
+	}
+	return ls, nil, nil
+}
+
+func (s *StatusSyncer) patchListenerSetStatus(
+	ctx context.Context,
+	ls *gwv1.ListenerSet,
+	legacyListenerSet *unstructured.Unstructured,
+) error {
+	if legacyListenerSet == nil {
+		return s.mgr.GetClient().Status().Patch(ctx, ls, client.Merge)
+	}
+
+	statusMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&ls.Status)
+	if err != nil {
+		return err
+	}
+	legacyListenerSet.Object["status"] = statusMap
+	return s.mgr.GetClient().Status().Patch(ctx, legacyListenerSet, client.Merge)
+}
+
 func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
 	// Sync Policy statuses
 	for key := range rm.Policies {
@@ -528,11 +622,11 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			continue
 		}
 		if plugin.GetPolicyStatus == nil {
-			logger.Error("GetPolicyStatus handler not registered for policy", "group_kind", gk, "resource", nsName) //nolint:sloglint // ignore PascalCase at start
+			logger.Debug("GetPolicyStatus handler not registered for policy", "group_kind", gk, "resource", nsName) //nolint:sloglint // ignore PascalCase at start
 			continue
 		}
 		if plugin.PatchPolicyStatus == nil {
-			logger.Error("PatchPolicyStatus handler not registered for policy", "group_kind", gk, "resource", nsName) //nolint:sloglint // ignore PascalCase at start
+			logger.Debug("PatchPolicyStatus handler not registered for policy", "group_kind", gk, "resource", nsName) //nolint:sloglint // ignore PascalCase at start
 			continue
 		}
 		currentStatus, err := plugin.GetPolicyStatus(ctx, nsName)
@@ -613,7 +707,7 @@ func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 
-func isListenerSetStatusEqual(objA, objB *gwxv1a1.ListenerSetStatus) bool {
+func isListenerSetStatusEqual(objA, objB *gwv1.ListenerSetStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 

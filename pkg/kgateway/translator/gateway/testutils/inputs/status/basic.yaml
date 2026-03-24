@@ -51,6 +51,27 @@ spec:
         kind: TrafficPolicy
         name: policy-no-merge        
 ---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-3
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example3.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /not-found
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: gateway.kgateway.dev
+        kind: DirectResponse
+        name: not-found-response
+---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
@@ -131,6 +152,15 @@ spec:
   cors:
     allowOrigins:
     - "https://example.com"        
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: DirectResponse
+metadata:
+  name: not-found-response
+  generation: 1
+spec:
+  status: 404
+  body: "The requested resource was not found on this server."
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: HTTPListenerPolicy

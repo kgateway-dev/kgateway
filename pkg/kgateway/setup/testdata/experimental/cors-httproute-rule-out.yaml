@@ -98,7 +98,7 @@ routes:
           allowOriginStringMatch:
           - safeRegex:
               regex: ^https://.*\.notexample\.com$
-          - prefix: https://a.b
           - exact: https://exact.domain.com
           - prefix: http://
+          forwardNotMatchingPreflights: false
           maxAge: "5"

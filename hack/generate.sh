@@ -24,6 +24,21 @@ readonly CLIENT_GEN_DIR=pkg/client
 readonly KGATEWAY_CRD_DIR=install/helm/kgateway-crds/templates
 readonly KGATEWAY_MANIFESTS_DIR=install/helm/kgateway/templates
 
+sed_in_place() {
+  local expr="$1"
+  local file="$2"
+
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    if command -v gsed &> /dev/null; then
+      gsed -i -e "$expr" "$file"
+    else
+      sed -i '' -e "$expr" "$file"
+    fi
+  else
+    sed -i -e "$expr" "$file"
+  fi
+}
+
 echo "Generating clientset at ${OUTPUT_PKG}/${CLIENTSET_PKG_NAME} for versions:" "${VERSIONS[@]}"
 
 # Build combined input list for BOTH groups so a single clientset includes both
@@ -48,18 +63,8 @@ done
 go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}/kgateway" paths="${APIS_PKG}/api/${VERSION}/shared" \
     output:crd:artifacts:config=${ROOT_DIR}/${KGATEWAY_CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}
 # Template the ClusterRole name to include the namespace
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  # On macOS, prefer gsed (GNU sed) if available
-  if command -v gsed &> /dev/null; then
-    gsed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
-  else
-    # Fallback to macOS's native sed
-    sed -i '' 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
-  fi
-else
-  # For other OSes like Linux
-  sed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
-fi
+sed_in_place 's|name: kgateway|name: kgateway-{{ .Release.Namespace }}|g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
+sed_in_place "s|AllowHeaders cannot contain '\\*' alongside other methods|AllowHeaders cannot contain '\\*' alongside other headers|g" "${ROOT_DIR}/${KGATEWAY_CRD_DIR}/gateway.kgateway.dev_trafficpolicies.yaml"
 
 
 # throw away
@@ -72,7 +77,7 @@ go tool client-gen \
   --output-dir "${ROOT_DIR}/${CLIENT_GEN_DIR}/${CLIENTSET_PKG_NAME}" \
   --output-pkg "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME}" \
   --plural-exceptions "GatewayParameters:GatewayParameters"
+sed_in_place 's|IsWatchListSemanticsSupported informs|IsWatchListSemanticsUnSupported informs|g' "${ROOT_DIR}/${CLIENT_GEN_DIR}/${CLIENTSET_PKG_NAME}/${CLIENTSET_NAME}/fake/clientset_generated.go"
 
 go generate ${ROOT_DIR}/internal/...
 go generate ${ROOT_DIR}/pkg/...
-

@@ -15,7 +15,6 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	"istio.io/istio/pkg/maps"
 	"istio.io/istio/pkg/test/util/assert"
 	"istio.io/istio/pkg/test/util/yml"
 	appsv1 "k8s.io/api/apps/v1"
@@ -62,10 +61,12 @@ var (
 	GwApiV1_1_0 = GwApiVersionMustParse("1.1.0")
 	// HTTPRoutes.spec.rules[].name was added in 1.2.0 experimental (added to standard in 1.4.0)
 	GwApiV1_2_0 = GwApiVersionMustParse("1.2.0")
-	// XListenerSets and CORS filters were added in 1.3.0 experimental
+	// ListenerSets and CORS filters were added in 1.3.0 experimental.
 	GwApiV1_3_0 = GwApiVersionMustParse("1.3.0")
 	// BackendTLSPolicy moved to standard/v1 in 1.4.0 and experimental (alpha1v3 version is not supported), HTTPRoutes.spec.rules[].name was added to standard in 1.4.0
 	GwApiV1_4_0 = GwApiVersionMustParse("1.4.0")
+	// ListenerSet was promoted to gateway.networking.k8s.io/v1 in 1.5.1 and is available in the standard channel.
+	GwApiV1_5_1 = GwApiVersionMustParse("1.5.1")
 
 	GwApiRequireRouteNames = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_2_0,
@@ -79,6 +80,7 @@ var (
 
 	GwApiRequireListenerSets = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_3_0,
+		GwApiChannelStandard:     &GwApiV1_5_1,
 	}
 
 	GwApiRequireCorsFilters = map[GwApiChannel]*GwApiVersion{
@@ -101,6 +103,11 @@ var (
 	GwApiRequireFrontendTLSConfig = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_4_0,
 	}
+)
+
+var (
+	currentGwApiVersion *semver.Version
+	currentGwApiChannel GwApiChannel
 )
 
 // selfManagedGatewayAnnotation is the annotation used to mark a Gateway as self-managed in e2e tests
@@ -547,17 +554,24 @@ func stripNamespaceResources(t *testing.T, manifests ...string) string {
 	for _, manifest := range manifests {
 		d, err := os.ReadFile(manifest)
 		assert.NoError(t, err)
-		for _, yml := range yml.SplitString(string(d)) {
-			obj := &unstructured.Unstructured{}
-			_, gvk, err := decUnstructured.Decode([]byte(yml), nil, obj)
-			if runtime.IsMissingKind(err) {
-				// Not a k8s object, skip
-				continue
-			}
-			assert.NoError(t, err)
-			if gvk.Kind != "Namespace" {
-				cfgs = append(cfgs, yml)
-			}
+		cfgs = append(cfgs, stripNamespaceResourcesFromContent(t, string(d)))
+	}
+
+	return strings.Join(cfgs, "\n---\n")
+}
+
+func stripNamespaceResourcesFromContent(t *testing.T, content string) string {
+	cfgs := []string{}
+	for _, yml := range yml.SplitString(content) {
+		obj := &unstructured.Unstructured{}
+		_, gvk, err := decUnstructured.Decode([]byte(yml), nil, obj)
+		if runtime.IsMissingKind(err) {
+			// Not a k8s object, skip
+			continue
+		}
+		assert.NoError(t, err)
+		if gvk.Kind != "Namespace" {
+			cfgs = append(cfgs, yml)
 		}
 	}
 
@@ -568,13 +582,26 @@ func stripNamespaceResources(t *testing.T, manifests ...string) string {
 func (s *BaseTestingSuite) DeleteManifests(testCase *TestCase) {
 	nf := stripNamespaceResources(s.T(), testCase.Manifests...)
 	fp := filepath.Join(s.TestInstallation.GeneratedFiles.TempDir, "delete_manifests.yaml")
-	s.Require().NoError(os.WriteFile(fp, []byte(nf), 0o644)) //nolint:gosec // G306: Golden test file can be readable
+	s.Require().NoError(os.WriteFile(fp, []byte(nf), 0o600))
 
 	err := s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", fp)
 	s.Require().NoError(err)
 
-	// we don't need to transform the manifest here, as we are just deleting by filename
-	err = s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", maps.Keys(testCase.ManifestsWithTransform)...)
+	if len(testCase.ManifestsWithTransform) == 0 {
+		return
+	}
+
+	transformedCfgs := []string{}
+	for manifest, transform := range testCase.ManifestsWithTransform {
+		d, err := os.ReadFile(manifest)
+		s.Require().NoError(err)
+
+		transformedCfgs = append(transformedCfgs, stripNamespaceResourcesFromContent(s.T(), transform(string(d))))
+	}
+
+	transformedDeleteManifest := filepath.Join(s.TestInstallation.GeneratedFiles.TempDir, "delete_transformed_manifests.yaml")
+	s.Require().NoError(os.WriteFile(transformedDeleteManifest, []byte(strings.Join(transformedCfgs, "\n---\n")), 0o600))
+	err = s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", transformedDeleteManifest)
 	s.Require().NoError(err)
 }
 
@@ -669,6 +696,8 @@ func (s *BaseTestingSuite) detectAndCacheGwApiInfo() {
 	version, err := semver.NewVersion(versionStr)
 	s.Require().NoError(err, "failed to parse Gateway API version '%s'", versionStr)
 	s.gwApiVersion = version
+	currentGwApiVersion = version
+	currentGwApiChannel = s.gwApiChannel
 }
 
 // getCurrentGwApiChannel returns the cached Gateway API channel

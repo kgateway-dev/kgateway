@@ -2,6 +2,7 @@ package kgateway
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=directresponses,verbs=get;list;watch
@@ -21,7 +22,7 @@ type DirectResponse struct {
 	// +required
 	Spec DirectResponseSpec `json:"spec"`
 	// +optional
-	Status DirectResponseStatus `json:"status,omitempty"`
+	Status gwv1.PolicyStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -48,9 +49,6 @@ type DirectResponseSpec struct {
 	// +kubebuilder:validation:MaxLength=4096
 	Body *string `json:"body,omitempty"`
 }
-
-// DirectResponseStatus defines the observed state of a DirectResponse.
-type DirectResponseStatus struct{}
 
 // GetStatus returns the HTTP status code to return for this route.
 func (in *DirectResponse) GetStatusCode() int32 {

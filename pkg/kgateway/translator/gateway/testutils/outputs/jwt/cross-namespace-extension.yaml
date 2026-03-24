@@ -54,8 +54,8 @@ Listeners:
                             providers:
                               jwt-ext_other-ns_gateway-example:
                                 claimToHeaders:
-                                  - claimName: gateway
-                                    headerName: x-gateway
+                                - claimName: gateway
+                                  headerName: x-gateway
                                 clearRouteCache: true
                                 issuer: https://gateway.example.com
                                 localJwks:
@@ -121,11 +121,6 @@ Statuses:
   gateways:
     default/example-gateway:
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted

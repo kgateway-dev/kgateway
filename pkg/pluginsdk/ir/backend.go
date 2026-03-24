@@ -369,6 +369,10 @@ type ClientCertificateValidationIR struct {
 	// RequireClientCertificate indicates whether client certificates are required
 	// +noKrtEquals
 	RequireClientCertificate bool
+	// AllowInsecureFallback indicates whether untrusted client certificates should
+	// still be accepted at the TLS handshake layer.
+	// +noKrtEquals
+	AllowInsecureFallback bool
 }
 
 func (c *ClientCertificateValidationIR) Equals(in any) bool {
@@ -419,6 +423,9 @@ func equalsClientCertValidationIR(a, b *ClientCertificateValidationIR) bool {
 		return a == b
 	}
 	if a.RequireClientCertificate != b.RequireClientCertificate {
+		return false
+	}
+	if a.AllowInsecureFallback != b.AllowInsecureFallback {
 		return false
 	}
 	if len(a.CACertificateRefs) != len(b.CACertificateRefs) {
