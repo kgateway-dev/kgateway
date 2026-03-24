@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
+	envoycompositev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/composite/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -229,4 +231,45 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			tt.validateResult(t, result)
 		})
 	}
+}
+
+func TestBuildCompositeExtProcFilter_UntypedMetadataForwarding(t *testing.T) {
+	grpcService := &envoycorev3.GrpcService{
+		TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+			EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{ClusterName: "test-cluster"},
+		},
+	}
+	provider := kgateway.ExtProcProvider{
+		FailOpen: true,
+		MetadataOptions: &kgateway.MetadataOptions{
+			Forwarding: &kgateway.MetadataNamespaces{
+				Typed:   []string{"io.transformation"},
+				Untyped: []string{"envoy.lb", "envoy.common"},
+			},
+		},
+	}
+
+	composite := buildCompositeExtProcFilter(provider, grpcService)
+	require.NotNil(t, composite)
+
+	processor := extractExternalProcessor(t, composite)
+	require.NotNil(t, processor.MetadataOptions)
+	require.NotNil(t, processor.MetadataOptions.ForwardingNamespaces)
+	assert.Equal(t, []string{"io.transformation"}, processor.MetadataOptions.ForwardingNamespaces.Typed)
+	assert.Equal(t, []string{"envoy.lb", "envoy.common"}, processor.MetadataOptions.ForwardingNamespaces.Untyped)
+}
+
+// extractExternalProcessor unwraps the ExternalProcessor proto produced by buildCompositeExtProcFilter.
+func extractExternalProcessor(t *testing.T, composite *envoymatchingv3.ExtensionWithMatcher) *envoy_ext_proc_v3.ExternalProcessor {
+	t.Helper()
+
+	action := composite.GetXdsMatcher().GetMatcherList().GetMatchers()[0].GetOnMatch().GetAction()
+	require.NotNil(t, action, "composite action should not be nil")
+
+	executeAction := &envoycompositev3.ExecuteFilterAction{}
+	require.NoError(t, action.GetTypedConfig().UnmarshalTo(executeAction))
+
+	processor := &envoy_ext_proc_v3.ExternalProcessor{}
+	require.NoError(t, executeAction.GetTypedConfig().GetTypedConfig().UnmarshalTo(processor))
+	return processor
 }
