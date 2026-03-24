@@ -2,7 +2,6 @@ clusters:
 - commonLbConfig:
     localityWeightedLbConfig: {}
   connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: istio-se_gwtest_inlined-se_se-a.example.com_80
     endpoints:
