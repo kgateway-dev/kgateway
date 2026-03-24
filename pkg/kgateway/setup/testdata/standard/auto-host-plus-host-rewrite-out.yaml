@@ -1,6 +1,10 @@
 clusters:
-- connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
   loadAssignment:
     clusterName: backend_gwtest_httpbin-static_0
     endpoints:
@@ -15,7 +19,6 @@ clusters:
           hostname: httpbin.default.svc
   metadata: {}
   name: backend_gwtest_httpbin-static_0
-  type: STRICT_DNS
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
