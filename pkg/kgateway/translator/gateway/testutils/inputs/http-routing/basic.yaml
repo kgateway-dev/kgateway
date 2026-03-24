@@ -109,4 +109,4 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: test            
+      targetPort: test

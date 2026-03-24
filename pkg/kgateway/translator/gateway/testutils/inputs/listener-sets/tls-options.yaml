@@ -13,8 +13,8 @@ spec:
     namespaces:
       from: All
 ---
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: ls-tls-options
   namespace: default
@@ -49,8 +49,8 @@ metadata:
 spec:
   parentRefs:
   - name: ls-tls-options
-    group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
     sectionName: https-ls
   rules:
   - matches:

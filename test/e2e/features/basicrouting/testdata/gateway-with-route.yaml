@@ -1,7 +1,9 @@
+# Since we want to validate basic routing behavior across multiple ports, we define a Gateway
+# with multiple listeners instead of using the base "gateway" from test/e2e/tests/manifests/kgateway-base.yaml
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: gw
+  name: gateway
 spec:
   gatewayClassName: kgateway
   listeners:
@@ -24,7 +26,7 @@ metadata:
   name: example-route
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
   hostnames:
     - "example.com"
   rules:

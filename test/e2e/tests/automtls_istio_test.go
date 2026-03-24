@@ -11,7 +11,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
+	testruntime "github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
+)
+
+const (
+	minAutomtlsIstioVersion = "1.24.2"
 )
 
 // TestKgatewayIstioAutoMtls is the function which executes a series of tests against a given installation
@@ -19,8 +24,13 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 	ctx := context.Background()
 
 	// Set Istio version if not already set
-	if os.Getenv("ISTIO_VERSION") == "" {
-		os.Setenv("ISTIO_VERSION", "1.25.1") // Using default istio version
+	if os.Getenv(testruntime.IstioVersionEnv) == "" {
+		os.Setenv(testruntime.IstioVersionEnv, testruntime.DefaultIstioVersion) // Using default istio version
+	}
+
+	if testruntime.ShouldSkipIstioVersion(t, minAutomtlsIstioVersion) {
+		t.Skip("Skipping due to https://github.com/istio/istio/issues/53846 which is fixed in Istio >= 1.24.2")
+		return
 	}
 
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "automtls-istio-test")
@@ -50,14 +60,14 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {
-			testInstallation.PreFailHandler(ctx)
+			testInstallation.PreFailHandler(ctx, t)
 
 			// Generate istioctl bug report
 			testInstallation.CreateIstioBugReport(ctx)
 		}
 
 		// Uninstall kgateway
-		testInstallation.UninstallKgateway(ctx)
+		testInstallation.UninstallKgateway(ctx, t)
 
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
@@ -73,7 +83,7 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 	}
 
 	// Install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx)
+	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	AutomtlsIstioSuiteRunner().Run(ctx, t, testInstallation)
 }

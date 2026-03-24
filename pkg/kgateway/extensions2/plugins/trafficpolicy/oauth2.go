@@ -161,7 +161,7 @@ func buildOAuth2ProviderConfig(
 	credSecret, err := secrets.GetSecret(krtctx,
 		krtcollections.From{GroupKind: wellknown.GatewayExtensionGVK.GroupKind(), Namespace: ext.Namespace},
 		gwv1.SecretObjectReference{
-			Name: gwv1.ObjectName(in.Credentials.ClientSecretRef.Name), Namespace: ptr.To(gwv1.Namespace(ext.Namespace)),
+			Name: gwv1.ObjectName(in.Credentials.ClientSecretRef.Name), Namespace: new(gwv1.Namespace(ext.Namespace)),
 		},
 	)
 	if err != nil {
@@ -285,6 +285,12 @@ func buildOAuth2ProviderConfig(
 			OauthNonceCookieConfig:   config,
 			CodeVerifierCookieConfig: config,
 		}
+	}
+
+	if in.Cookies != nil {
+		cfg.Config.DisableAccessTokenSetCookie = ptr.Deref(in.Cookies.DisableAccessTokenSetCookie, false)
+		cfg.Config.DisableIdTokenSetCookie = ptr.Deref(in.Cookies.DisableIDTokenSetCookie, false)
+		cfg.Config.DisableRefreshTokenSetCookie = ptr.Deref(in.Cookies.DisableRefreshTokenSetCookie, false)
 	}
 
 	if in.DenyRedirect != nil {

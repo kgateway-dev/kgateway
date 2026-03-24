@@ -14,6 +14,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
@@ -28,6 +29,12 @@ func TestBasic(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
+
+		prevVersion := version.Version
+		version.Version = "v1.0.0-ci1"
+		defer func() {
+			version.Version = prevVersion
+		}()
 
 		// Prepend setting EnableExperimentalGatewayAPIFeatures to true so it can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
@@ -95,10 +102,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("gateway with FrontendTLSConfig and missing refgrant", func(t *testing.T) {
+	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "frontendtlsconfig/missing-refgrant.yaml",
-			outputFile: "frontendtlsconfig/missing-refgrant.yaml",
+			inputFile:  "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
+			outputFile: "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -106,10 +113,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
+	t.Run("frontendtlsconfig with invalid conditions", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
-			outputFile: "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
+			inputFile:  "frontendtlsconfig/invalid-conditions.yaml",
+			outputFile: "frontendtlsconfig/invalid-conditions.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -658,6 +665,17 @@ func TestBasic(t *testing.T) {
 			})
 	})
 
+	t.Run("TrafficPolicy ExtProc with overrides", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extproc-overrides.yaml",
+			outputFile: "traffic-policy/extproc-overrides.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy Transformation deep merge", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/transformation-deep-merge.yaml",
@@ -762,6 +780,39 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/url-rewrite.yaml",
 			outputFile: "traffic-policy/url-rewrite.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with route tracing sampling overrides", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-tracing-sampling.yaml",
+			outputFile: "traffic-policy/route-tracing-sampling.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with route tracing disabled", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-tracing-disable.yaml",
+			outputFile: "traffic-policy/route-tracing-disable.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with route tracing custom tags", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-tracing-custom-tags.yaml",
+			outputFile: "traffic-policy/route-tracing-custom-tags.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -879,6 +930,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("tls gateway with TLSRoute and TLS termination", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "tls-routing/tls-terminate.yaml",
+			outputFile: "tls-routing/tls-terminate-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("grpc gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "grpc-routing/basic.yaml",
@@ -923,6 +985,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("grpc route with https listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "grpc-routing/https-listener.yaml",
+			outputFile: "grpc-routing/https-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Basic service backend", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backends/basic.yaml",
@@ -938,6 +1011,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backends/aws_lambda.yaml",
 			outputFile: "backends/aws_lambda.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("GCP backend", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backends/gcp_backend.yaml",
+			outputFile: "backends/gcp_backend.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1059,6 +1143,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/timeout-retry.yaml",
 			outputFile: "traffic-policy/timeout-retry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy timeout attached to GRPCRoute", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/grpcroute-timeout.yaml",
+			outputFile: "traffic-policy/grpcroute-timeout.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1352,6 +1447,83 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with skipXFFAppend absent", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/skip-xff-append-absent.yaml",
+			outputFile: "listener-policy-http/skip-xff-append-absent.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with skipXFFAppend true", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/skip-xff-append-true.yaml",
+			outputFile: "listener-policy-http/skip-xff-append-true.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with skipXFFAppend false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/skip-xff-append-false.yaml",
+			outputFile: "listener-policy-http/skip-xff-append-false.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with xffNumTrustedHops", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/xff-num-trusted-hops.yaml",
+			outputFile: "listener-policy-http/xff-num-trusted-hops.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with xffNumTrustedHops and useRemoteAddress false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/xff-num-trusted-hops-extension.yaml",
+			outputFile: "listener-policy-http/xff-num-trusted-hops-extension.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with xffTrustedCIDRs", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/xff-trusted-cidrs.yaml",
+			outputFile: "listener-policy-http/xff-trusted-cidrs.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with xffTrustedCIDRs and skipXFFAppend false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/xff-trusted-cidrs-no-skip-append.yaml",
+			outputFile: "listener-policy-http/xff-trusted-cidrs-no-skip-append.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with acceptHttp10", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/accept-http10.yaml",
@@ -1455,6 +1627,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend-protocol/svc-h2c.yaml",
 			outputFile: "backend-protocol/svc-h2c.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with opentelemetry attributes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/opentelemetry.yaml",
+			outputFile: "listener-policy-http/opentelemetry.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1701,19 +1884,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		})
-	})
-
-	t.Run("basic listener set with experimental features disabled", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFile:  "listener-sets/basic.yaml",
-			outputFile: "listener-sets/basic-experimental-disabled.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalGatewayAPIFeatures = false
 		})
 	})
 
@@ -2069,6 +2239,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with per-listener mTLS override", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/per-listener-mtls.yaml",
+			outputFile: "listener-policy/per-listener-mtls.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with multiple per-listener mTLS override", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/per-listener-mtls-multiple.yaml",
+			outputFile: "listener-policy/per-listener-mtls-multiple.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy merge happens in the default and perPort fields", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy/deep-merge.yaml",
@@ -2139,6 +2331,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/cross-namespace.yaml",
 			outputFile: "jwt/cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy with cross-namespace GatewayExtension", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/cross-namespace-extension.yaml",
+			outputFile: "jwt/cross-namespace-extension.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

@@ -37,8 +37,8 @@ func TestUuidRequestIdConfigConversion(t *testing.T) {
 		{
 			name: "explicit false values",
 			config: &kgateway.UuidRequestIdConfig{
-				PackTraceReason:              ptr.To(false),
-				UseRequestIDForTraceSampling: ptr.To(false),
+				PackTraceReason:              new(false),
+				UseRequestIDForTraceSampling: new(false),
 			},
 			expected: &envoyuuidv3.UuidRequestIdConfig{
 				PackTraceReason:              wrapperspb.Bool(false),
@@ -48,8 +48,8 @@ func TestUuidRequestIdConfigConversion(t *testing.T) {
 		{
 			name: "mixed values",
 			config: &kgateway.UuidRequestIdConfig{
-				PackTraceReason:              ptr.To(true),
-				UseRequestIDForTraceSampling: ptr.To(false),
+				PackTraceReason:              new(true),
+				UseRequestIDForTraceSampling: new(false),
 			},
 			expected: &envoyuuidv3.UuidRequestIdConfig{
 				PackTraceReason:              wrapperspb.Bool(true),
@@ -59,7 +59,7 @@ func TestUuidRequestIdConfigConversion(t *testing.T) {
 		{
 			name: "partial config with defaults",
 			config: &kgateway.UuidRequestIdConfig{
-				PackTraceReason: ptr.To(false),
+				PackTraceReason: new(false),
 				// UseRequestIDForTraceSampling should default to true
 			},
 			expected: &envoyuuidv3.UuidRequestIdConfig{

@@ -92,7 +92,7 @@ func WithWriters(out, err io.Writer) Option {
 }
 
 func buildPortForwardProperties(options ...Option) *properties {
-	//default
+	// default
 	cfg := &properties{
 		kubeConfig:        "",
 		kubeContext:       "",
@@ -105,7 +105,7 @@ func buildPortForwardProperties(options ...Option) *properties {
 		stderr:            os.Stderr,
 	}
 
-	//apply opts
+	// apply opts
 	for _, opt := range options {
 		opt(cfg)
 	}

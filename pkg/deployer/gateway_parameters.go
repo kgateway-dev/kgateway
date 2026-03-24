@@ -1,8 +1,6 @@
 package deployer
 
 import (
-	"fmt"
-
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
@@ -10,20 +8,19 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 // Inputs is the set of options used to configure gateway/inference pool deployment.
 type Inputs struct {
-	Dev                        bool
-	IstioAutoMtlsEnabled       bool
-	ControlPlane               ControlPlaneInfo
-	ImageInfo                  *ImageInfo
-	CommonCollections          *collections.CommonCollections
-	GatewayClassName           string
-	WaypointGatewayClassName   string
-	AgentgatewayClassName      string
-	AgentgatewayControllerName string
+	Dev                      bool
+	IstioAutoMtlsEnabled     bool
+	ControlPlane             ControlPlaneInfo
+	ImageInfo                *ImageInfo
+	CommonCollections        *collections.CommonCollections
+	GatewayClassName         string
+	WaypointGatewayClassName string
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.
@@ -80,15 +77,10 @@ type InMemoryGatewayParametersConfig struct {
 	ClassName                  string
 	ImageInfo                  *ImageInfo
 	WaypointClassName          string
-	AgwControllerName          string
 	OmitDefaultSecurityContext bool
 }
 
 // GetInMemoryGatewayParameters returns an in-memory GatewayParameters for envoy-based gateways.
-//
-// This function must NOT be called for agentgateway controllers - agentgateway uses
-// agwHelmValuesGenerator which has its own defaults. Calling this with the agentgateway
-// controllerName indicates a bug in the routing logic.
 //
 // Priority order:
 // 1. Waypoint class name (must check before envoy controller since waypoint uses the same controller)
@@ -97,10 +89,6 @@ type InMemoryGatewayParametersConfig struct {
 // This allows users to define their own GatewayClass that acts very much like a
 // built-in class but is not an exact name match.
 func GetInMemoryGatewayParameters(cfg InMemoryGatewayParametersConfig) (*kgateway.GatewayParameters, error) {
-	if cfg.ControllerName == cfg.AgwControllerName {
-		return nil, fmt.Errorf("GetInMemoryGatewayParameters must not be called for agentgateway controller %q; "+
-			"agentgateway gateways should use agwHelmValuesGenerator", cfg.ControllerName)
-	}
 	if cfg.ClassName == cfg.WaypointClassName {
 		return defaultWaypointGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext), nil
 	}
@@ -125,7 +113,7 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityC
 
 	// Similar to labeling in kubernetes, this is used to identify the service as a waypoint service.
 	meshPort := kgateway.Port{
-		Port: IstioWaypointPort,
+		Port: wellknown.IstioWaypointPort,
 	}
 	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
 
@@ -158,10 +146,10 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
 				},
 				PodTemplate: &kgateway.Pod{
-					TerminationGracePeriodSeconds: ptr.To(int64(60)),
+					TerminationGracePeriodSeconds: new(int64(60)),
 					GracefulShutdown: &kgateway.GracefulShutdownSpec{
-						Enabled:          ptr.To(true),
-						SleepTimeSeconds: ptr.To(int64(10)),
+						Enabled:          new(true),
+						SleepTimeSeconds: new(int64(10)),
 					},
 					ReadinessProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
@@ -189,18 +177,21 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 				},
 				EnvoyContainer: &kgateway.EnvoyContainer{
 					Bootstrap: &kgateway.EnvoyBootstrap{
-						LogLevel: ptr.To("info"),
+						LogLevel: new("info"),
+						DnsResolver: &kgateway.DnsResolver{
+							UdpMaxQueries: new(int32(100)),
+						},
 					},
 					Image: &kgateway.Image{
-						Registry:   ptr.To(imageInfo.Registry),
-						Tag:        ptr.To(imageInfo.Tag),
-						Repository: ptr.To(EnvoyWrapperImage),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
+						Registry:   new(imageInfo.Registry),
+						Tag:        new(imageInfo.Tag),
+						Repository: new(wellknown.EnvoyWrapperImage),
+						PullPolicy: (*corev1.PullPolicy)(new(imageInfo.PullPolicy)),
 					},
 					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: ptr.To(false),
-						ReadOnlyRootFilesystem:   ptr.To(true),
-						RunAsNonRoot:             ptr.To(true),
+						AllowPrivilegeEscalation: new(false),
+						ReadOnlyRootFilesystem:   new(true),
+						RunAsNonRoot:             new(true),
 						RunAsUser:                ptr.To[int64](10101),
 						Capabilities: &corev1.Capabilities{
 							Drop: []corev1.Capability{"ALL"},
@@ -208,38 +199,36 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 					},
 				},
 				Stats: &kgateway.StatsConfig{
-					Enabled:                 ptr.To(true),
-					RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
-					EnableStatsRoute:        ptr.To(true),
-					StatsRoutePrefixRewrite: ptr.To("/stats"),
+					Enabled:                 new(true),
+					RoutePrefixRewrite:      new("/stats/prometheus?usedonly"),
+					EnableStatsRoute:        new(true),
+					StatsRoutePrefixRewrite: new("/stats"),
 				},
 				SdsContainer: &kgateway.SdsContainer{
 					Image: &kgateway.Image{
-						Registry:   ptr.To(imageInfo.Registry),
-						Tag:        ptr.To(imageInfo.Tag),
-						Repository: ptr.To(SdsImage),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
+						Registry:   new(imageInfo.Registry),
+						Tag:        new(imageInfo.Tag),
+						Repository: new(wellknown.SdsImage),
+						PullPolicy: (*corev1.PullPolicy)(new(imageInfo.PullPolicy)),
 					},
 					Bootstrap: &kgateway.SdsBootstrap{
-						LogLevel: ptr.To("info"),
+						LogLevel: new("info"),
 					},
 				},
 				Istio: &kgateway.IstioIntegration{
 					IstioProxyContainer: &kgateway.IstioContainer{
 						Image: &kgateway.Image{
-							Registry:   ptr.To("docker.io/istio"),
-							Repository: ptr.To("proxyv2"),
-							Tag:        ptr.To("1.22.0"),
-							PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
+							Registry:   new("docker.io/istio"),
+							Repository: new("proxyv2"),
+							Tag:        new("1.22.0"),
+							PullPolicy: (*corev1.PullPolicy)(new(imageInfo.PullPolicy)),
 						},
-						LogLevel:              ptr.To("warning"),
-						IstioDiscoveryAddress: ptr.To("istiod.istio-system.svc:15012"),
-						IstioMetaMeshId:       ptr.To("cluster.local"),
-						IstioMetaClusterId:    ptr.To("Kubernetes"),
+						LogLevel:              new("warning"),
+						IstioDiscoveryAddress: new("istiod.istio-system.svc:15012"),
+						IstioMetaMeshId:       new("cluster.local"),
+						IstioMetaClusterId:    new("Kubernetes"),
 					},
 				},
-				// Note: Agentgateway config is only added for agentgateway controller gateways
-				// via defaultAgentgatewayParameters(). For envoy gateways, we leave this nil.
 			},
 		},
 	}

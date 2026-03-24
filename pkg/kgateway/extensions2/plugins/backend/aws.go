@@ -48,25 +48,21 @@ type AwsIr struct {
 }
 
 // Equals checks if two AwsIr objects are equal.
-func (u *AwsIr) Equals(other any) bool {
-	otherAws, ok := other.(*AwsIr)
-	if !ok {
-		return false
-	}
-	if u == nil && otherAws != nil {
+func (u *AwsIr) Equals(other *AwsIr) bool {
+	if u == nil && other != nil {
 		return false
 	}
 	if u != nil {
-		if otherAws == nil {
+		if other == nil {
 			return false
 		}
-		if !u.lambdaEndpoint.Equals(otherAws.lambdaEndpoint) {
+		if !u.lambdaEndpoint.Equals(other.lambdaEndpoint) {
 			return false
 		}
-		if !u.lambdaFilters.Equals(otherAws.lambdaFilters) {
+		if !u.lambdaFilters.Equals(other.lambdaFilters) {
 			return false
 		}
-		if !proto.Equal(u.lambdaTransportSocket, otherAws.lambdaTransportSocket) {
+		if !proto.Equal(u.lambdaTransportSocket, other.lambdaTransportSocket) {
 			return false
 		}
 	}

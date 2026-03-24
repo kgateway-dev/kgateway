@@ -354,17 +354,33 @@ type FrontendTLSConfigIR struct {
 	// PerPort client certificate validation configuration, keyed by port number
 	PerPortValidation map[gwv1.PortNumber]*ClientCertificateValidationIR
 
-	// Err contains any error encountered during construction of the FrontendTLSConfigIR, used in status reportings
-	Err error
+	// The per-port and default configs are independent, so store errors per port and default separately.
+	PortErrors map[gwv1.PortNumber]error
+	// Error encountered during construction of the default client certificate validation configuration.
+	DefaultError error
 }
 
 // ClientCertificateValidationIR holds the client certificate validation configuration with references
 // CA certificates are fetched later during listener translation
 type ClientCertificateValidationIR struct {
 	// CACertificateRefs contains references to ConfigMaps or Secrets containing CA certificates
+	// +noKrtEquals. Fields are compared in Equal in helper function however linter still complains.
 	CACertificateRefs []gwv1.ObjectReference
 	// RequireClientCertificate indicates whether client certificates are required
+	// +noKrtEquals
 	RequireClientCertificate bool
+	// AllowInsecureFallback indicates whether untrusted client certificates should
+	// still be accepted at the TLS handshake layer.
+	// +noKrtEquals
+	AllowInsecureFallback bool
+}
+
+func (c *ClientCertificateValidationIR) Equals(in any) bool {
+	c2, ok := in.(*ClientCertificateValidationIR)
+	if !ok {
+		return false
+	}
+	return equalsClientCertValidationIR(c, c2)
 }
 
 func (c Gateway) ResourceName() string {
@@ -407,6 +423,9 @@ func equalsClientCertValidationIR(a, b *ClientCertificateValidationIR) bool {
 		return a == b
 	}
 	if a.RequireClientCertificate != b.RequireClientCertificate {
+		return false
+	}
+	if a.AllowInsecureFallback != b.AllowInsecureFallback {
 		return false
 	}
 	if len(a.CACertificateRefs) != len(b.CACertificateRefs) {

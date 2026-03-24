@@ -15,16 +15,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-	k8sptr "k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/backendref"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -180,7 +179,7 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 		}
 		backendObj.RequiresPolicyStatus = anyHasRef
 		backendObj.AttachedPolicies = ToAttachedPolicies(policies)
-		return ptr.Of(&backendObj)
+		return new(&backendObj)
 	}, i.krtopts.ToOptions("")...)
 	backendsRequiringPolicyStatus := krt.NewCollection(backendsWithPoliciesCol, func(ctx krt.HandlerContext, i *ir.BackendObjectIR) **ir.BackendObjectIR {
 		if i.RequiresPolicyStatus {
@@ -307,15 +306,6 @@ func (i *BackendIndex) GetBackendFromRef(kctx krt.HandlerContext, src ir.ObjectS
 		return nil, ErrMissingReferenceGrant
 	}
 
-	// Ignore user’s port and always use poolIR.Port for InferencePool backends.
-	// TODO [danehans]: Add a warning message to HTTPRoute status the required change is made per
-	// discussion in github.com/kubernetes-sigs/gateway-api-inference-extension/discussions/918
-	if strOr(ref.Kind, string(wellknown.ServiceKind)) == wellknown.InferencePoolKind {
-		if err := i.normalizeInfPoolBackendPort(kctx, src.Namespace, &ref); err != nil {
-			return nil, err
-		}
-	}
-
 	return i.getBackendFromRef(kctx, src.Namespace, ref)
 }
 
@@ -337,13 +327,13 @@ type GatewayIndexConfig struct {
 	EnvoyControllerName string
 	PolicyIndex         *PolicyIndex
 	Gateways            krt.Collection[*gwv1.Gateway]
-	ListenerSets        krt.Collection[*gwxv1a1.XListenerSet]
+	ListenerSets        krt.Collection[*gwv1.ListenerSet]
 	GatewayClasses      krt.Collection[*gwv1.GatewayClass]
 	Namespaces          krt.Collection[NamespaceMetadata]
 
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
 	gatewaysForEnvoyTransformationFunc    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
-	byParentRefIndex                      krt.Index[TargetRefIndexKey, *gwxv1a1.XListenerSet]
+	byParentRefIndex                      krt.Index[TargetRefIndexKey, *gwv1.ListenerSet]
 }
 
 func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption) *GatewayIndex {
@@ -362,7 +352,7 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 
 func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
-		// only care about gateways use a class controlled by us (envoy or agentgateway)
+		// only care about gateways that use a class controlled by us
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, config.GatewayClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
 		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) {
 			return nil
@@ -418,14 +408,10 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 				Namespace: gw.Namespace,
 				Name:      gw.Name,
 			},
-			Obj:       gw,
-			Listeners: make([]ir.Listener, 0, len(gw.Spec.Listeners)),
-			DeniedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{
-				wellknown.XListenerSetGVK: []ir.ListenerSet{},
-			},
-			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{
-				wellknown.XListenerSetGVK: []ir.ListenerSet{},
-			},
+			Obj:                 gw,
+			Listeners:           make([]ir.Listener, 0, len(gw.Spec.Listeners)),
+			DeniedListenerSets:  map[schema.GroupVersionKind]ir.ListenerSets{},
+			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{},
 		}
 
 		if gw.Annotations[string(apiannotations.PerConnectionBufferLimit)] != "" { //nolint:staticcheck // deprecated annotation
@@ -436,7 +422,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			if err != nil {
 				logger.Error("failed to parse per connection buffer limit", "error", err)
 			} else {
-				gwIR.PerConnectionBufferLimitBytes = k8sptr.To(uint32(limit.Value())) //nolint:gosec // G115: Kubernetes resource quantities are always non-negative
+				gwIR.PerConnectionBufferLimitBytes = new(uint32(limit.Value())) //nolint:gosec // G115: Kubernetes resource quantities are always non-negative
 			}
 		}
 
@@ -451,10 +437,10 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 				Parent:           gw,
 				AttachedPolicies: ToAttachedPolicies(config.PolicyIndex.GetTargetingPolicies(kctx, gwIR.ObjectSource, string(l.Name), gw.GetLabels())),
 				PolicyAncestorRef: gwv1.ParentReference{
-					Group:     k8sptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),
-					Kind:      k8sptr.To(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+					Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
+					Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
 					Name:      gwv1.ObjectName(gw.Name),
-					Namespace: k8sptr.To(gwv1.Namespace(gw.Namespace)),
+					Namespace: new(gwv1.Namespace(gw.Namespace)),
 				},
 			})
 		}
@@ -475,38 +461,41 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
 		// - ListenerSet ordered by creation time (oldest first)
 		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
-		slices.SortFunc(listenerSets, func(a, b *gwxv1a1.XListenerSet) int {
+		slices.SortFunc(listenerSets, func(a, b *gwv1.ListenerSet) int {
 			// primary sort: creation timestamp (oldest first)
 			if cmp := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); cmp != 0 {
 				return cmp
 			}
 			// secondary sort: alphabetically by "{namespace}/{name}"
-			nnsString := func(ls *gwxv1a1.XListenerSet) string {
+			nnsString := func(ls *gwv1.ListenerSet) string {
 				return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
 			}
 			return strings.Compare(nnsString(a), nnsString(b))
 		})
 
-		// Start the resource sync metrics for all XListenerSets before they are processed,
+		// Start the resource sync metrics for all ListenerSets before they are processed,
 		// so they do not have staggered start times.
 		for _, ls := range listenerSets {
 			metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
-				Namespace:    ls.Namespace,
-				Gateway:      gw.GetName(),
-				ResourceType: wellknown.XListenerSetKind,
+				Namespace: ls.Namespace,
+				Gateway:   gw.GetName(),
+				// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
+				// follow-up cleanup so dashboards, tests, and emitters can be updated together.
+				ResourceType: "XListenerSet",
 				ResourceName: ls.Name,
 			})
 		}
 
 		for _, ls := range listenerSets {
 			if ls.GroupVersionKind().Empty() {
-				ls.SetGroupVersionKind(wellknown.XListenerSetGVK)
+				ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
 			}
+			lsGVK := ls.GroupVersionKind()
 
 			lsIR := ir.ListenerSet{
 				ObjectSource: ir.ObjectSource{
-					Group:     wellknown.XListenerSetGroup,
-					Kind:      wellknown.XListenerSetKind,
+					Group:     lsGVK.Group,
+					Kind:      lsGVK.Kind,
 					Namespace: ls.Namespace,
 					Name:      ls.Name,
 				},
@@ -527,17 +516,17 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 					Parent:           ls,
 					AttachedPolicies: ToAttachedPolicies(listenerPolicies),
 					PolicyAncestorRef: gwv1.ParentReference{
-						Group:     k8sptr.To(gwv1.Group(wellknown.XListenerSetGVK.Group)),
-						Kind:      k8sptr.To(gwv1.Kind(wellknown.XListenerSetGVK.Kind)),
+						Group:     new(gwv1.Group(lsGVK.Group)),
+						Kind:      new(gwv1.Kind(lsGVK.Kind)),
 						Name:      gwv1.ObjectName(ls.Name),
-						Namespace: k8sptr.To(gwv1.Namespace(ls.Namespace)),
+						Namespace: new(gwv1.Namespace(ls.Namespace)),
 					},
 				})
 			}
 
 			if gw.Spec.AllowedListeners == nil {
 				lsIR.Err = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
-				gwIR.DeniedListenerSets[wellknown.XListenerSetGVK] = append(gwIR.DeniedListenerSets[wellknown.XListenerSetGVK], lsIR)
+				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
 				continue
 			}
 
@@ -545,24 +534,18 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			// We return the denied list of ls to have their status set to rejected during validation
 			if !allowedNs(kctx, ls.GetNamespace()) {
 				lsIR.Err = errors.New("Attachment not allowed")
-				gwIR.DeniedListenerSets[wellknown.XListenerSetGVK] = append(gwIR.DeniedListenerSets[wellknown.XListenerSetGVK], lsIR)
+				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
 				continue
 			}
 
-			gwIR.AllowedListenerSets[wellknown.XListenerSetGVK] = append(gwIR.AllowedListenerSets[wellknown.XListenerSetGVK], lsIR)
+			gwIR.AllowedListenerSets[lsGVK] = append(gwIR.AllowedListenerSets[lsGVK], lsIR)
 			gwIR.Listeners = append(gwIR.Listeners, lsIR.Listeners...)
 		}
 
 		// Extract FrontendTLSConfig from Gateway spec
 		if gw.Spec.TLS != nil && gw.Spec.TLS.Frontend != nil {
-			frontendTLSConfig, err := getFrontendTLSConfig(gw.Spec.TLS.Frontend)
-			if err != nil {
-				gwIR.FrontendTLSConfig = &ir.FrontendTLSConfigIR{
-					Err: err,
-				}
-			} else {
-				gwIR.FrontendTLSConfig = frontendTLSConfig
-			}
+			frontendTLSConfig := getFrontendTLSConfig(gw.Spec.TLS.Frontend)
+			gwIR.FrontendTLSConfig = frontendTLSConfig
 		}
 
 		return gwIR
@@ -1597,53 +1580,6 @@ func emptyIfCore(s string) string {
 	return s
 }
 
-// normalizeInfPoolBackendPort looks up the InferencePool IR for the given BackendObjectReference,
-// logs a warning if the user-supplied port doesn’t match the pool’s targetPort, and then
-// mutates ref.Port to the correct pool port.
-func (i *BackendIndex) normalizeInfPoolBackendPort(
-	kctx krt.HandlerContext,
-	srcNamespace string,
-	ref *gwv1.BackendObjectReference,
-) error {
-	// Build an ObjectSource for the pool (ignoring any port for lookup)
-	poolSrc := toFromBackendRef(srcNamespace, *ref)
-	poolGK := poolSrc.GetGroupKind()
-
-	// Fetch the collection for that kind
-	col, exists := i.availableBackends[poolGK]
-	if !exists {
-		return &NotFoundError{NotFoundObj: poolSrc}
-	}
-
-	// Find matching pool IR(s) by name/namespace
-	matches := krt.Fetch(kctx, col, krt.FilterGeneric(func(obj any) bool {
-		b, ok := obj.(ir.BackendObjectIR)
-		return ok &&
-			b.ObjectSource.Name == poolSrc.Name &&
-			b.ObjectSource.Namespace == poolSrc.Namespace
-	}))
-	if len(matches) == 0 {
-		return &NotFoundError{NotFoundObj: poolSrc}
-	}
-	poolIR := &matches[0]
-
-	// If the user gave a port and it doesn’t match, warn
-	resolvedPort := poolIR.Port
-	if ref.Port != nil && int32(*ref.Port) != resolvedPort {
-		logger.Warn(
-			"backendRef.port does not match InferencePool targetPort; overriding",
-			"provided_port", *ref.Port,
-			"pool_port", resolvedPort,
-			"inference_pool", types.NamespacedName{Namespace: poolSrc.Namespace, Name: poolSrc.Name},
-		)
-	}
-
-	// Overwrite ref.Port so downstream lookup is correct
-	correct := gwv1.PortNumber(resolvedPort)
-	ref.Port = &correct
-	return nil
-}
-
 func getInheritedPolicyPriority(annotations map[string]string) apiannotations.InheritedPolicyPriorityValue {
 	def := apiannotations.ShallowMergePreferChild
 	val, ok := annotations[apiannotations.InheritedPolicyPriority]
@@ -1668,7 +1604,7 @@ func validateCAReferenceType(ref gwv1.ObjectReference) error {
 	// Normalize kind
 	kind := string(ref.Kind)
 	if kind == "" {
-		return fmt.Errorf("CA certificate reference must specify a kind")
+		return sslutils.ErrInvalidCACertificateKindDetails(string(ref.Name), strOr(ref.Namespace, ""), "")
 	}
 
 	gvk := schema.GroupVersionKind{
@@ -1684,33 +1620,42 @@ func validateCAReferenceType(ref gwv1.ObjectReference) error {
 		return nil
 	}
 
-	return fmt.Errorf("CA certificate reference must be a ConfigMap or Secret, got %s/%s", group, kind)
+	return sslutils.ErrInvalidCACertificateKindDetails(string(ref.Name), strOr(ref.Namespace, ""), string(ref.Kind))
 }
 
 // getFrontendTLSConfig extracts FrontendTLSConfig from Gateway spec and converts it to IR format.
 // Validates that all CA certificate references are ConfigMap or Secret types.
-// Returns an error if any CA certificate reference is invalid.
+// Stores errors on the IR to be written to the listener status.
 // CA certificate fetching is deferred to the listener translation phase where queries are available.
-func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) (*ir.FrontendTLSConfigIR, error) {
+func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSConfigIR {
 	if frontendTLS == nil {
-		return nil, nil
+		return nil
 	}
 
 	result := &ir.FrontendTLSConfigIR{
 		PerPortValidation: make(map[gwv1.PortNumber]*ir.ClientCertificateValidationIR),
+		PortErrors:        make(map[gwv1.PortNumber]error),
 	}
 
 	// Extract default validation configuration
 	if frontendTLS.Default.Validation != nil {
 		// Validate all CA certificate references
+		validCARefs := make([]gwv1.ObjectReference, 0)
 		for _, ref := range frontendTLS.Default.Validation.CACertificateRefs {
 			if err := validateCAReferenceType(ref); err != nil {
-				return nil, fmt.Errorf("invalid CA certificate reference in FrontendTLSConfig.default.validation: %s/%s: %w", ref.Kind, ref.Name, err)
+				result.DefaultError = errors.Join(result.DefaultError, err)
+			} else {
+				validCARefs = append(validCARefs, ref)
 			}
 		}
-		result.DefaultValidation = &ir.ClientCertificateValidationIR{
-			RequireClientCertificate: getRequiredClientCertificate(frontendTLS.Default.Validation.Mode),
-			CACertificateRefs:        frontendTLS.Default.Validation.CACertificateRefs,
+
+		// If there are any valid CA certificate references, use them
+		if len(validCARefs) > 0 {
+			result.DefaultValidation = &ir.ClientCertificateValidationIR{
+				RequireClientCertificate: getRequiredClientCertificate(frontendTLS.Default.Validation.Mode),
+				AllowInsecureFallback:    frontendTLS.Default.Validation.Mode == gwv1.AllowInsecureFallback,
+				CACertificateRefs:        validCARefs,
+			}
 		}
 	}
 
@@ -1718,19 +1663,27 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) (*ir.FrontendTLSC
 	for _, portConfig := range frontendTLS.PerPort {
 		if portConfig.TLS.Validation != nil {
 			// Validate all CA certificate references
+			validCARefs := make([]gwv1.ObjectReference, 0)
 			for _, ref := range portConfig.TLS.Validation.CACertificateRefs {
 				if err := validateCAReferenceType(ref); err != nil {
-					return nil, fmt.Errorf("invalid CA certificate reference in FrontendTLSConfig.perPort[%d].validation: %s/%s: %w", portConfig.Port, ref.Kind, ref.Name, err)
+					result.PortErrors[portConfig.Port] = errors.Join(result.PortErrors[portConfig.Port], err)
+				} else {
+					validCARefs = append(validCARefs, ref)
 				}
 			}
-			result.PerPortValidation[portConfig.Port] = &ir.ClientCertificateValidationIR{
-				RequireClientCertificate: getRequiredClientCertificate(portConfig.TLS.Validation.Mode),
-				CACertificateRefs:        portConfig.TLS.Validation.CACertificateRefs,
+
+			// If there are any valid CA certificate references, use them
+			if len(validCARefs) > 0 {
+				result.PerPortValidation[portConfig.Port] = &ir.ClientCertificateValidationIR{
+					RequireClientCertificate: getRequiredClientCertificate(portConfig.TLS.Validation.Mode),
+					AllowInsecureFallback:    portConfig.TLS.Validation.Mode == gwv1.AllowInsecureFallback,
+					CACertificateRefs:        validCARefs,
+				}
 			}
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 // getRequiredClientCertificate returns true if the client certificate is required, false otherwise.

@@ -6,11 +6,12 @@ metadata:
   name: test-release-kgateway
   namespace: default
   labels:
-    helm.sh/chart: kgateway-v0.0.1
+    helm.sh/chart: kgateway-0.0.2
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
-    app.kubernetes.io/version: "v0.0.2"
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: kgateway/templates/role.yaml
@@ -89,6 +90,30 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - autoscaling.k8s.io
+  resources:
+  - verticalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
@@ -107,8 +132,6 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
-  - agentgatewaybackends
-  - agentgatewaypolicies
   - backendconfigpolicies
   - backends
   - directresponses
@@ -124,8 +147,6 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
-  - agentgatewaybackends/status
-  - agentgatewaypolicies/status
   - backendconfigpolicies/status
   - backends/status
   - directresponses/status
@@ -145,6 +166,7 @@ rules:
   - gateways
   - grpcroutes
   - httproutes
+  - listenersets
   - referencegrants
   - tcproutes
   - tlsroutes
@@ -160,6 +182,7 @@ rules:
   - gateways/status
   - grpcroutes/status
   - httproutes/status
+  - listenersets/status
   - tcproutes/status
   - tlsroutes/status
   verbs:
@@ -202,6 +225,18 @@ rules:
   - list
   - watch
 - apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - security.istio.io
   resources:
   - authorizationpolicies
@@ -231,11 +266,12 @@ metadata:
   name: test-release-kgateway
   namespace: default
   labels:
-    helm.sh/chart: kgateway-v0.0.1
+    helm.sh/chart: kgateway-0.0.2
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
-    app.kubernetes.io/version: "v0.0.2"
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
 spec:
   type: ClusterIP
@@ -264,11 +300,12 @@ metadata:
   name: test-release-kgateway
   namespace: default
   labels:
-    helm.sh/chart: kgateway-v0.0.1
+    helm.sh/chart: kgateway-0.0.2
     kgateway: kgateway
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
-    app.kubernetes.io/version: "v0.0.2"
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -287,12 +324,13 @@ spec:
         kgateway: kgateway
         app.kubernetes.io/name: kgateway
         app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: controller
     spec:
       priorityClassName: "system-cluster-critical"
       serviceAccountName: test-release-kgateway
       containers:
         - name: controller
-          image: "cr.kgateway.dev/kgateway-dev/kgateway:v0.0.2"
+          image: "cr.kgateway.dev/kgateway-dev/kgateway:v0.0.1"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9977
@@ -316,7 +354,6 @@ spec:
               port: 9093
             initialDelaySeconds: 0
             periodSeconds: 1
-            
             failureThreshold: 120
           env:
             - name: GOMEMLIMIT
@@ -338,7 +375,7 @@ spec:
             - name: KGW_DEFAULT_IMAGE_REGISTRY
               value: cr.kgateway.dev/kgateway-dev
             - name: KGW_DEFAULT_IMAGE_TAG
-              value: v0.0.2
+              value: v0.0.1
             - name: KGW_DEFAULT_IMAGE_PULL_POLICY
               value: IfNotPresent
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
@@ -347,8 +384,6 @@ spec:
               value: "{}"
             - name: KGW_VALIDATION_MODE
               value: "standard"
-            - name: KGW_ENABLE_AGENTGATEWAY
-              value: "false"
             - name: KGW_ENABLE_ENVOY
               value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS

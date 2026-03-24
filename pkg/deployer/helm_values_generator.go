@@ -21,7 +21,7 @@ type HelmValuesGenerator interface {
 
 // ObjectPostProcessor is an optional interface that can be implemented by HelmValuesGenerator
 // to post-process rendered objects before they are deployed. This is used for applying
-// strategic merge patch overlays from AgentgatewayParameters.
+// strategic merge patch overlays from GatewayParameters.
 type ObjectPostProcessor interface {
 	// PostProcessObjects applies any post-processing to the rendered objects.
 	// This is called after helm rendering but before deployment.

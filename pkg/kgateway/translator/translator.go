@@ -20,7 +20,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stopwatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -108,9 +107,6 @@ func (s *CombinedTranslator) HasSynced() bool {
 
 // buildProxy performs translation of a kube Gateway -> GatewayIR
 func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reporter.Reporter) *ir.GatewayIR {
-	stopwatch := stopwatch.NewTranslatorStopWatch("CombinedTranslator")
-	stopwatch.Start()
-
 	var gatewayTranslator sdk.KGwTranslator = s.gwtranslator
 	if s.extensions.ContributesGwTranslator != nil {
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
@@ -123,8 +119,7 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 		return nil
 	}
 
-	duration := stopwatch.Stop(ctx)
-	logger.Debug("translated proxy", "namespace", gw.Namespace, "name", gw.Name, "duration", duration.String())
+	logger.Debug("translated proxy", "namespace", gw.Namespace, "name", gw.Name)
 
 	return proxy
 }

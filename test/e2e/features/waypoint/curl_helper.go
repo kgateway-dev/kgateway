@@ -87,7 +87,7 @@ func (s *testingSuite) assertCurlInner(
 	}
 
 	// wait for 1 good response
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		from,
 		curlOpts,
@@ -96,7 +96,7 @@ func (s *testingSuite) assertCurlInner(
 	)
 
 	// then ensure it's consistently working
-	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(
+	s.testInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(
 		s.ctx,
 		from,
 		curlOpts,

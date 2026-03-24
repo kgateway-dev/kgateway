@@ -7,7 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	. "github.com/onsi/gomega"
 
@@ -23,7 +22,7 @@ func GroupNameHelper() *gwv1.Group {
 	return &g
 }
 
-func gwToIr(gw *gwv1.Gateway, allowedLS, deniedLS *gwxv1a1.XListenerSet) *ir.Gateway {
+func gwToIr(gw *gwv1.Gateway, allowedLS, deniedLS *gwv1.ListenerSet) *ir.Gateway {
 	out := &ir.Gateway{
 		Obj:       gw,
 		Listeners: make([]ir.Listener, 0, len(gw.Spec.Listeners)),
@@ -36,18 +35,20 @@ func gwToIr(gw *gwv1.Gateway, allowedLS, deniedLS *gwxv1a1.XListenerSet) *ir.Gat
 	}
 	if deniedLS != nil {
 		out.DeniedListenerSets = map[schema.GroupVersionKind]ir.ListenerSets{
-			wellknown.XListenerSetGVK: []ir.ListenerSet{lsToIR(deniedLS)}}
+			wellknown.XListenerSetGVK: []ir.ListenerSet{lsToIR(deniedLS)},
+		}
 	}
 	if allowedLS != nil {
 		allowedIrLs := lsToIR(allowedLS)
 		out.AllowedListenerSets = map[schema.GroupVersionKind]ir.ListenerSets{
-			wellknown.XListenerSetGVK: []ir.ListenerSet{allowedIrLs}}
+			wellknown.XListenerSetGVK: []ir.ListenerSet{allowedIrLs},
+		}
 		out.Listeners = append(out.Listeners, allowedIrLs.Listeners...)
 	}
 	return out
 }
 
-func lsToIR(ls *gwxv1a1.XListenerSet) ir.ListenerSet {
+func lsToIR(ls *gwv1.ListenerSet) ir.ListenerSet {
 	out := ir.ListenerSet{
 		Obj:       ls,
 		Listeners: make([]ir.Listener, 0, len(ls.Spec.Listeners)),
@@ -61,10 +62,6 @@ func lsToIR(ls *gwxv1a1.XListenerSet) ir.ListenerSet {
 	return out
 }
 
-var settings = ListenerTranslatorConfig{
-	EnableExperimentalGatewayAPIFeatures: true,
-}
-
 func TestValidate(t *testing.T) {
 	gateway := simpleGw()
 	listenerSet := simpleLs()
@@ -72,7 +69,7 @@ func TestValidate(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, deniedListenerSet), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, deniedListenerSet), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(2))
 
@@ -99,13 +96,13 @@ func TestValidate(t *testing.T) {
 		{
 			Type:               string(gwv1.GatewayConditionAccepted),
 			Status:             metav1.ConditionFalse,
-			Reason:             string(gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed)),
+			Reason:             string(gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed)),
 			LastTransitionTime: actualConditions[0].LastTransitionTime,
 		},
 		{
 			Type:               string(gwv1.GatewayConditionProgrammed),
 			Status:             metav1.ConditionFalse,
-			Reason:             string(gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed)),
+			Reason:             string(gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed)),
 			LastTransitionTime: actualConditions[1].LastTransitionTime,
 		},
 	}))
@@ -117,7 +114,7 @@ func TestSimpleGWNoHostname(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(2))
 
@@ -146,7 +143,7 @@ func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -211,7 +208,7 @@ func TestSimpleListenerWithValidRouteKind(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(2))
 
@@ -236,7 +233,7 @@ func TestSimpleListenerWithInvalidRouteKind(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -263,7 +260,7 @@ func TestHBONEProtocol(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -298,7 +295,7 @@ func TestUnsupportedProtocol(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -325,7 +322,7 @@ func TestMultiListener(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(4))
 
@@ -367,7 +364,7 @@ func TestMultiListenerExplicitRoutes(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(4))
 
@@ -405,7 +402,7 @@ func TestMultiListenerWithInavlidRoute(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(2))
 
@@ -441,7 +438,7 @@ func TestProtocolConflict(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -469,6 +466,10 @@ func TestProtocolConflict(t *testing.T) {
 				{
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
 				},
 			},
 			Conditions: []metav1.Condition{
@@ -503,7 +504,7 @@ func TestProtocolConflictInvalidRoutes(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -528,6 +529,10 @@ func TestProtocolConflictInvalidRoutes(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 		},
 	}
@@ -541,7 +546,7 @@ func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -577,6 +582,10 @@ func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 					Group: GroupNameHelper(),
 					Kind:  "HTTPRoute",
 				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
 			},
 			Conditions: []metav1.Condition{
 				{
@@ -607,7 +616,7 @@ func TestHostnameConflict(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -670,7 +679,7 @@ func TestHostnameConflictWithInvalidRoute(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -712,7 +721,7 @@ func TestActualHostnameConflictWithInvalidRoute(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -782,7 +791,7 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(3))
 
@@ -871,7 +880,7 @@ func TestValidTCPRouteListener(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(2))
 
@@ -896,7 +905,7 @@ func TestInvalidRouteKindOnTCPListener(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -923,7 +932,7 @@ func TestTCPProtocolConflict(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -982,7 +991,7 @@ func TestTCPHostnameConflict(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -1057,14 +1066,14 @@ func simpleGwTCPRoute() *gwv1.Gateway {
 	}
 }
 
-func simpleLsTCPRoute() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+func simpleLsTCPRoute() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "tcp-listenerset",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "tcp",
 					Port:     8081,
@@ -1108,14 +1117,14 @@ func simpleGwInvalidTCPRouteKind() *gwv1.Gateway {
 	}
 }
 
-func simpleLsInvalidTCPRouteKind() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+func simpleLsInvalidTCPRouteKind() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "tcp-invalid-listenerset",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "tcp",
 					Port:     8081,
@@ -1152,14 +1161,14 @@ func tcpProtocolConflictGw() *gwv1.Gateway {
 	}
 }
 
-func tcpProtocolConflictLs() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+func tcpProtocolConflictLs() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "tcp-conflict-listenerset",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Port:     8080,
@@ -1191,15 +1200,15 @@ func tcpHostnameConflictGw() *gwv1.Gateway {
 	}
 }
 
-func tcpHostnameConflictLs() *gwxv1a1.XListenerSet {
+func tcpHostnameConflictLs() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "tcp-hostname-conflict-listenerset",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "tcp2",
 					Port:     8080,
@@ -1217,7 +1226,7 @@ func TestValidTLSRouteListener(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter, settings)
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -1233,6 +1242,164 @@ func TestValidTLSRouteListener(t *testing.T) {
 		},
 	}
 	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), listeners, expectedStatuses)
+}
+
+func TestPassthroughTLSListenerRejectsTCPRouteKindButKeepsTLSRoute(t *testing.T) {
+	mode := gwv1.TLSModePassthrough
+	gateway := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tls-passthrough-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "kgateway",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tls-passthrough",
+					Port:     443,
+					Protocol: gwv1.TLSProtocolType,
+					TLS: &gwv1.ListenerTLSConfig{
+						Mode: &mode,
+					},
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{
+							{Kind: wellknown.TCPRouteKind},
+							{Kind: wellknown.TLSRouteKind},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tls-passthrough": {
+			Name: "tls-passthrough",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  wellknown.TLSRouteKind,
+				},
+			},
+			Conditions: []metav1.Condition{
+				{
+					Type:    string(gwv1.ListenerConditionResolvedRefs),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerReasonInvalidRouteKinds),
+					Message: "Found invalid route kinds: [TCPRoute]",
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
+}
+
+func TestTerminatedTLSListenerSupportsTCPRoute(t *testing.T) {
+	mode := gwv1.TLSModeTerminate
+	gateway := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tls-terminated-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "kgateway",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tls-terminate",
+					Port:     8443,
+					Protocol: gwv1.TLSProtocolType,
+					TLS: &gwv1.ListenerTLSConfig{
+						Mode: &mode,
+					},
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{
+							{Kind: wellknown.TCPRouteKind},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tls-terminate": {
+			Name: "tls-terminate",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  wellknown.TCPRouteKind,
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
+}
+
+func TestTerminatedTLSListenerSupportsTLSRouteAndTCPRouteKinds(t *testing.T) {
+	mode := gwv1.TLSModeTerminate
+	gateway := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tls-terminated-mixed-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "kgateway",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tls-terminate",
+					Port:     8443,
+					Protocol: gwv1.TLSProtocolType,
+					TLS: &gwv1.ListenerTLSConfig{
+						Mode: &mode,
+					},
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{
+							{Kind: wellknown.TCPRouteKind},
+							{Kind: wellknown.TLSRouteKind},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tls-terminate": {
+			Name: "tls-terminate",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  wellknown.TCPRouteKind,
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  wellknown.TLSRouteKind,
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
 }
 
 func simpleGwTLSRoute() *gwv1.Gateway {
@@ -1430,15 +1597,15 @@ func simpleGw() *gwv1.Gateway {
 	}
 }
 
-func simpleLs() *gwxv1a1.XListenerSet {
+func simpleLs() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1469,14 +1636,14 @@ func simpleGwNoHostname() *gwv1.Gateway {
 	}
 }
 
-func simpleLsNoHostname() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+func simpleLsNoHostname() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Port:     8081,
@@ -1506,14 +1673,14 @@ func simpleGwDuplicateNoHostname() *gwv1.Gateway {
 	}
 }
 
-func simpleLsDuplicateNoHostname() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+func simpleLsDuplicateNoHostname() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http2",
 					Port:     8080,
@@ -1552,15 +1719,15 @@ func simpleGwValidRouteKind() *gwv1.Gateway {
 	}
 }
 
-func simpleLsValidRouteKind() *gwxv1a1.XListenerSet {
+func simpleLsValidRouteKind() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1607,15 +1774,15 @@ func simpleGwInvalidRouteKind() *gwv1.Gateway {
 	}
 }
 
-func simpleLsInvalidRouteKind() *gwxv1a1.XListenerSet {
+func simpleLsInvalidRouteKind() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1663,16 +1830,16 @@ func simpleGwMultiListener() *gwv1.Gateway {
 	}
 }
 
-func simpleLsMultiListener() *gwxv1a1.XListenerSet {
+func simpleLsMultiListener() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1725,16 +1892,16 @@ func simpleGwMultiListenerExplicitRoutes() *gwv1.Gateway {
 	}
 }
 
-func simpleLsMultiListenerExplicitRoutes() *gwxv1a1.XListenerSet {
+func simpleLsMultiListenerExplicitRoutes() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1801,16 +1968,16 @@ func simpleGwMultiListenerWithInvalidListener() *gwv1.Gateway {
 	}
 }
 
-func simpleLsMultiListenerWithInvalidListener() *gwxv1a1.XListenerSet {
+func simpleLsMultiListenerWithInvalidListener() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http",
 					Hostname: &hostname,
@@ -1863,15 +2030,15 @@ func protocolConfGw() *gwv1.Gateway {
 	}
 }
 
-func protocolConfLs() *gwxv1a1.XListenerSet {
+func protocolConfLs() *gwv1.ListenerSet {
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "https",
 					Hostname: &hostname2,
@@ -1912,15 +2079,15 @@ func protocolConfGwWithInvalidRoute() *gwv1.Gateway {
 	}
 }
 
-func protocolConfLsWithInvalidRoute() *gwxv1a1.XListenerSet {
+func protocolConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "https",
 					Hostname: &hostname2,
@@ -1973,15 +2140,15 @@ func actualProtocolConfGwWithInvalidRoute() *gwv1.Gateway {
 	}
 }
 
-func actualProtocolConfLsWithInvalidRoute() *gwxv1a1.XListenerSet {
+func actualProtocolConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "https",
 					Hostname: &hostname2,
@@ -2014,15 +2181,15 @@ func hostConfGw() *gwv1.Gateway {
 	}
 }
 
-func hostConfLs() *gwxv1a1.XListenerSet {
+func hostConfLs() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http2",
 					Hostname: &hostname,
@@ -2062,15 +2229,15 @@ func hostConfGwWithInvalidRoute() *gwv1.Gateway {
 	}
 }
 
-func hostConfLsWithInvalidRoute() *gwxv1a1.XListenerSet {
+func hostConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http2",
 					Hostname: &hostname,
@@ -2123,15 +2290,15 @@ func actualHostConfGwWithInvalidRoute() *gwv1.Gateway {
 	}
 }
 
-func actualHostConfLsWithInvalidRoute() *gwxv1a1.XListenerSet {
+func actualHostConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http2",
 					Hostname: &hostname,
@@ -2171,16 +2338,16 @@ func hostConfGw2() *gwv1.Gateway {
 	}
 }
 
-func hostConfLs2() *gwxv1a1.XListenerSet {
+func hostConfLs2() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname4 := gwv1.Hostname("ls.kgateway.dev")
-	return &gwxv1a1.XListenerSet{
+	return &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "http2",
 					Hostname: &hostname,

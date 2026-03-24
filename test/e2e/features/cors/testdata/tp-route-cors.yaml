@@ -2,6 +2,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: route-cors-policy
+  namespace: kgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
@@ -10,7 +11,7 @@ spec:
   cors:
     allowOrigins:
       - https://notexample.com
-      - https://a.b.*
+      - https://*.a.b
       - https://*.edu
     allowMethods:
       - GET
@@ -23,6 +24,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: disable-cors
+  namespace: kgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
@@ -30,4 +32,4 @@ spec:
     name: svc-route-2
     sectionName: rule1
   cors:
-    disable: {}  
+    disable: {}

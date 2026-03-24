@@ -13,9 +13,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -48,21 +48,13 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) SetupSuite() {
 	s.commonManifests = []string{
-		testdefaults.CurlPodManifest,
 		simpleServiceManifest,
 		gatewayWithRouteManifest,
 		extAuthManifest,
-		// securedGatewayPolicyManifest,
-		// securedRouteManifest,
-		// insecureRouteManifest,
 	}
 	s.commonResources = []client.Object{
-		// resources from curl manifest
-		testdefaults.CurlPod,
 		// resources from service manifest
 		basicSecureRoute, simpleSvc, simpleDeployment,
-		// deployer-generated resources
-		proxyDeployment, proxyService,
 		// extauth resources
 		extAuthSvc, extAuthExtension,
 	}
@@ -72,14 +64,10 @@ func (s *testingSuite) SetupSuite() {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err, "can apply "+manifest)
 	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.commonResources...)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, s.commonResources...)
 
 	// make sure pods are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjMeta.GetName()),
 	}, time.Minute*2)
 }
@@ -93,11 +81,7 @@ func (s *testingSuite) TearDownSuite() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 		s.Require().NoError(err, "can delete "+manifest)
 	}
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.commonResources...)
-
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjMeta.GetName()),
-	})
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, s.commonResources...)
 }
 
 // TestExtAuthPolicy tests the basic ExtAuth functionality with header-based allow/deny
@@ -117,14 +101,14 @@ func (s *testingSuite) TestExtAuthPolicy() {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
 		}
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, resources...)
+		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, resources...)
 	})
 	// set up common resources once
 	for _, manifest := range manifests {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err, "can apply "+manifest)
 	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, resources...)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, resources...)
 
 	// Wait for pods to be running
 	s.ensureBasicRunning()
@@ -170,9 +154,8 @@ func (s *testingSuite) TestExtAuthPolicy() {
 		s.Run(tc.name, func() {
 			// Build curl options
 			opts := []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjMeta)),
 				curl.WithHostHeader(tc.hostname),
-				curl.WithPort(8080),
+				curl.WithPort(80),
 			}
 
 			// Add test-specific headers
@@ -181,14 +164,13 @@ func (s *testingSuite) TestExtAuthPolicy() {
 			}
 
 			// Test the request
-			s.testInstallation.Assertions.AssertEventualCurlResponse(
-				s.ctx,
-				testdefaults.CurlPodExecOpt,
-				opts,
+			common.BaseGateway.Send(
+				s.T(),
 				&testmatchers.HttpResponse{
 					StatusCode: tc.expectedStatus,
 					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
-				})
+				},
+				opts...)
 		})
 	}
 }
@@ -209,14 +191,14 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
 		}
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, resources...)
+		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, resources...)
 	})
 	// set up common resources once
 	for _, manifest := range manifests {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err, "can apply "+manifest)
 	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, resources...)
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, resources...)
 
 	// Wait for pods to be running
 	s.ensureBasicRunning()
@@ -260,9 +242,8 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 		s.Run(tc.name, func() {
 			// Build curl options
 			opts := []curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjMeta)),
 				curl.WithHostHeader(tc.hostname),
-				curl.WithPort(8080),
+				curl.WithPort(80),
 			}
 
 			// Add test-specific headers
@@ -271,26 +252,22 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 			}
 
 			// Test the request
-			s.testInstallation.Assertions.AssertEventualCurlResponse(
-				s.ctx,
-				testdefaults.CurlPodExecOpt,
-				opts,
+			common.BaseGateway.Send(
+				s.T(),
 				&testmatchers.HttpResponse{
 					StatusCode: tc.expectedStatus,
 					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
-				})
+				},
+				opts...)
 		})
 	}
 }
 
 func (s *testingSuite) ensureBasicRunning() {
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=curl",
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=super-gateway",
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: testdefaults.WellKnownAppLabel + "=gateway",
 	}, time.Minute)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, extAuthSvc.GetNamespace(), metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, extAuthSvc.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=ext-authz",
 	})
 }

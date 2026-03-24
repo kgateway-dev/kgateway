@@ -130,6 +130,24 @@ type OAuth2CookieConfig struct {
 	// If not set, the default is Lax.
 	// +optional
 	SameSite *OAuth2CookieSameSite `json:"sameSite,omitempty"`
+
+	// DisableAccessTokenSetCookie specifies whether to disable setting the access token cookie.
+	// This can be used when the access token is too large to fit in a cookie. When true, the
+	// set-cookie response header for the access token will be omitted.
+	// +optional
+	DisableAccessTokenSetCookie *bool `json:"disableAccessTokenSetCookie,omitempty"`
+
+	// DisableIDTokenSetCookie specifies whether to disable setting the ID token cookie.
+	// This can be used when the ID token is too large to fit in a cookie. When true, the
+	// set-cookie response header for the ID token will be omitted.
+	// +optional
+	DisableIDTokenSetCookie *bool `json:"disableIDTokenSetCookie,omitempty"`
+
+	// DisableRefreshTokenSetCookie specifies whether to disable setting the refresh token cookie.
+	// This can be used when the refresh token is too large to fit in a cookie. When true, the
+	// set-cookie response header for the refresh token will be omitted.
+	// +optional
+	DisableRefreshTokenSetCookie *bool `json:"disableRefreshTokenSetCookie,omitempty"`
 }
 
 // OAuth2Credentials specifies the Oauth2 client credentials.

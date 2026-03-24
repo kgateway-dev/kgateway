@@ -1,21 +1,23 @@
 package deployer
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -23,6 +25,7 @@ import (
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -40,9 +43,7 @@ type HelmTestCase struct {
 
 type DeployerTester struct {
 	ControllerName    string
-	AgwControllerName string
 	ClassName         string
-	AgwClassName      string
 	WaypointClassName string
 }
 
@@ -87,7 +88,10 @@ func EmptySecurityContextValidator() func(t *testing.T, outputYaml string) {
 // The exclude parameter allows skipping files that are tested elsewhere (e.g., TLS tests).
 func VerifyAllYAMLFilesReferenced(t *testing.T, testDataDir string, testCases []HelmTestCase, exclude ...string) {
 	t.Helper()
-
+	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
+		t.Log("Skipping reference validation because REFRESH_GOLDEN is set")
+		return
+	}
 	yamlFiles, err := filepath.Glob(filepath.Join(testDataDir, "*.yaml"))
 	require.NoError(t, err, "failed to list YAML files in %s", testDataDir)
 
@@ -115,6 +119,64 @@ func VerifyAllYAMLFilesReferenced(t *testing.T, testDataDir string, testCases []
 	require.Empty(t, unreferenced, "Found YAML files in %s without corresponding test cases: %v", testDataDir, unreferenced)
 }
 
+// VerifyAllEnvoyBootstrapAreValid ensures that envoy bootstrap configs are accepted by envoy.
+func VerifyAllEnvoyBootstrapAreValid(t *testing.T, testDataDir string) {
+	t.Helper()
+
+	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
+		t.Log("Skipping envoy bootstrap validation because REFRESH_GOLDEN is set")
+		return
+	}
+
+	yamlFiles, err := filepath.Glob(filepath.Join(testDataDir, "*-out.yaml"))
+	require.NoError(t, err, "failed to list YAML files in %s", testDataDir)
+
+	// split
+	var wg sync.WaitGroup
+	var envoyErr error
+	var once sync.Once
+	validator := validator.NewDocker(validator.EtcEnvoyVolume(filepath.Join(testDataDir, "etc-envoy")))
+
+	for _, yamlFile := range yamlFiles {
+		// deserialize the YAML file
+		data, err := os.ReadFile(yamlFile)
+		require.NoError(t, err, "failed to read YAML file %s", yamlFile)
+
+		documents := strings.Split(string(data), "\n---\n")
+		for i, doc := range documents {
+			if d := strings.TrimSpace(doc); d == "" || d == "---" {
+				continue
+			}
+			var obj corev1.ConfigMap
+			err := yaml.Unmarshal([]byte(doc), &obj)
+			if err != nil && obj.Kind == "ConfigMap" {
+				require.NoErrorf(t, err, "failed to unmarshal document %d in %s", i+1, yamlFile)
+			}
+			envoyYaml, ok := obj.Data["envoy.yaml"]
+			if !ok {
+				continue
+			}
+			envoyJsn, err := yaml.YAMLToJSON([]byte(envoyYaml))
+			require.NoErrorf(t, err, "failed to convert envoy.yaml to JSON for document %d in %s", i+1, yamlFile)
+			var bootstrap envoybootstrapv3.Bootstrap
+			err = protojson.Unmarshal(envoyJsn, &bootstrap)
+			require.NoErrorf(t, err, "failed to unmarshal envoy.yaml as Envoy bootstrap config for document %d in %s", i+1, yamlFile)
+
+			wg.Go(func() {
+				// validate envoy bootstrap
+				err := validator.Validate(t.Context(), &bootstrap)
+				if err != nil {
+					once.Do(func() {
+						envoyErr = fmt.Errorf("envoy bootstrap validation failed for document %d in %s: %w", i+1, yamlFile, err)
+					})
+				}
+			})
+		}
+		wg.Wait()
+		require.NoErrorf(t, envoyErr, "envoy bootstrap validation failed")
+	}
+}
+
 // ExtractCommonObjs will return a collection containing only objects necessary for collections.CommonCollections,
 // so we don't add unknown objects to avoid logging from krttest package re: objects not consumed
 func ExtractCommonObjs(t *testing.T, objs []client.Object) ([]client.Object, *gwv1.Gateway) {
@@ -131,7 +193,7 @@ func ExtractCommonObjs(t *testing.T, objs []client.Object) ([]client.Object, *gw
 			commonObjs = append(commonObjs, gtw)
 		case *gwv1.GatewayClass:
 			commonObjs = append(commonObjs, obj)
-		case *gwxv1a1.XListenerSet:
+		case *gwv1.ListenerSet:
 			commonObjs = append(commonObjs, obj)
 		}
 	}
@@ -190,8 +252,6 @@ func (dt DeployerTester) RunHelmChartTest(
 	}
 	deployer, err := internaldeployer.NewGatewayDeployer(
 		dt.ControllerName,
-		dt.AgwControllerName,
-		dt.AgwClassName,
 		scheme,
 		fakeClient,
 		gwParams,
@@ -241,13 +301,9 @@ func (dt DeployerTester) RunHelmChartTest(
 	}
 }
 
-// Remove things that change often but are not relevant to the tests
+// sanitizeOutput removes things that change often but are not relevant to the tests
 func sanitizeOutput(got []byte) []byte {
-
-	old := fmt.Sprintf("%s/%s:%v", pkgdeployer.AgentgatewayRegistry, pkgdeployer.AgentgatewayImage, pkgdeployer.AgentgatewayDefaultTag)
-	now := fmt.Sprintf("%s/%s:99.99.99", pkgdeployer.AgentgatewayRegistry, pkgdeployer.AgentgatewayImage)
-
-	return bytes.Replace(got, []byte(old), []byte(now), -1)
+	return got
 }
 
 // objectsToYAML converts a slice of client.Object to YAML bytes, separated by "---"
@@ -271,18 +327,15 @@ func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonColl
 		Dev:               false,
 		CommonCollections: commonCols,
 		ControlPlane: pkgdeployer.ControlPlaneInfo{
-			XdsHost:    "xds.cluster.local",
-			XdsPort:    9977,
-			AgwXdsPort: 9978,
+			XdsHost: "xds.cluster.local",
+			XdsPort: 9977,
 		},
 		ImageInfo: &pkgdeployer.ImageInfo{
 			Registry: "ghcr.io",
 			Tag:      "v2.1.0-dev",
 		},
-		GatewayClassName:           dt.ClassName,
-		WaypointGatewayClassName:   dt.WaypointClassName,
-		AgentgatewayClassName:      dt.AgwClassName,
-		AgentgatewayControllerName: dt.AgwControllerName,
+		GatewayClassName:         dt.ClassName,
+		WaypointGatewayClassName: dt.WaypointClassName,
 	}
 }
 

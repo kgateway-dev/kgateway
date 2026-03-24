@@ -460,6 +460,10 @@ func deepMergeService(dst, src *kgateway.Service) *kgateway.Service {
 		dst.LoadBalancerClass = src.GetLoadBalancerClass()
 	}
 
+	if src.GetLoadBalancerSourceRanges() != nil {
+		dst.LoadBalancerSourceRanges = src.GetLoadBalancerSourceRanges()
+	}
+
 	dst.ExtraLabels = DeepMergeMaps(dst.GetExtraLabels(), src.GetExtraLabels())
 	dst.ExtraAnnotations = DeepMergeMaps(dst.GetExtraAnnotations(), src.GetExtraAnnotations())
 	dst.Ports = DeepMergeSlices(dst.GetPorts(), src.GetPorts())
@@ -532,7 +536,7 @@ func deepMergeIstioIntegration(dst, src *kgateway.IstioIntegration) *kgateway.Is
 	}
 
 	dst.IstioProxyContainer = deepMergeIstioContainer(dst.GetIstioProxyContainer(), src.GetIstioProxyContainer())
-	dst.CustomSidecars = mergeCustomSidecars(dst.GetCustomSidecars(), src.GetCustomSidecars())
+	dst.CustomSidecars = mergeCustomSidecars(dst.GetCustomSidecars(), src.GetCustomSidecars()) //nolint:staticcheck // deprecated but still needs merge support
 
 	return dst
 }
@@ -642,11 +646,33 @@ func deepMergeEnvoyBootstrap(dst, src *kgateway.EnvoyBootstrap) *kgateway.EnvoyB
 	if dst == nil {
 		return src
 	}
+
+	if src.GetLogFormat() != nil {
+		dst.LogFormat = src.GetLogFormat()
+	}
+
 	if src.GetLogLevel() != nil {
 		dst.LogLevel = src.GetLogLevel()
 	}
 
 	dst.ComponentLogLevels = DeepMergeMaps(dst.GetComponentLogLevels(), src.GetComponentLogLevels())
+	dst.DnsResolver = deepMergeDnsResolver(dst.GetDnsResolver(), src.GetDnsResolver())
+
+	return dst
+}
+
+func deepMergeDnsResolver(dst, src *kgateway.DnsResolver) *kgateway.DnsResolver {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+	if src.GetUdpMaxQueries() != nil {
+		dst.UdpMaxQueries = src.GetUdpMaxQueries()
+	}
 
 	return dst
 }

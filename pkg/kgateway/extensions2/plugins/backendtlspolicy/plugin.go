@@ -21,6 +21,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	tlsutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -49,7 +50,11 @@ var (
 )
 
 var (
-	backendTlsPolicyGvr       = gwv1.SchemeGroupVersion.WithResource("backendtlspolicies")
+	backendTlsPolicyGvr = schema.GroupVersionResource{
+		Group:    gwv1.GroupVersion.Group,
+		Version:  gwv1.GroupVersion.Version,
+		Resource: "backendtlspolicies",
+	}
 	backendTlsPolicyGroupKind = kgwellknown.BackendTLSPolicyGVK
 )
 
@@ -233,7 +238,7 @@ func buildTranslateFunc(
 			default:
 				return &policyIr, fmt.Errorf("%w: unsupported certificate reference kind: %s", ErrInvalidValidationSpec, refKind)
 			}
-			tlsContextDefault, err = ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
+			tlsContextDefault, err = tlsutils.ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
 			if err != nil {
 				perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
 				logger.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)

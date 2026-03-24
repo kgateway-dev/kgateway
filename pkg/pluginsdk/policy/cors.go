@@ -79,6 +79,7 @@ func BuildCorsPolicy(
 	if f.MaxAge != 0 {
 		corsPolicy.MaxAge = fmt.Sprintf("%d", f.MaxAge)
 	}
+	corsPolicy.ForwardNotMatchingPreflights = &wrapperspb.BoolValue{Value: false}
 	return corsPolicy
 }
 
@@ -115,7 +116,10 @@ func ConvertOriginToEnvoyStringMatcher(origin string) *envoymatcherv3.StringMatc
 		return &envoymatcherv3.StringMatcher{
 			MatchPattern: &envoymatcherv3.StringMatcher_SafeRegex{
 				SafeRegex: &envoymatcherv3.RegexMatcher{
-					Regex: "^.*$",
+					// Match valid origin: scheme://host(:port)?
+					// - scheme: starts with letter, followed by alphanumeric, +, -, or .
+					// - host(:port): any characters except /, whitespace, ?, #
+					Regex: `^[a-zA-Z][a-zA-Z0-9+.-]*://[^/\s?#]+$`,
 				},
 			},
 		}

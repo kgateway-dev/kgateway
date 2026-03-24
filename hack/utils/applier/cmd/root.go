@@ -30,5 +30,4 @@ func Execute() {
 func init() {
 	configFlags.AddFlags(rootCmd.PersistentFlags())
 	matchVersionKubeConfigFlags.AddFlags(rootCmd.PersistentFlags())
-
 }

@@ -26,6 +26,27 @@ clusters:
   metadata: {}
   name: kube_gwtest_reviews-v2_8080
   type: EDS
+endpoints:
+- clusterName: kube_gwtest_reviews-v1_8080
+  endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.1.11
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+- clusterName: kube_gwtest_reviews-v2_8080
+  endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.1.12
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
 listeners:
 - address:
     socketAddress:

@@ -84,6 +84,7 @@ spec:
         - "websocket"
       useRemoteAddress: false
       xffNumTrustedHops: 2
+      skipXFFAppend: false
       serverHeaderTransformation: AppendIfAbsent
       streamIdleTimeout: 30s
       healthCheck:

@@ -10,10 +10,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -34,7 +33,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	s.BaseTestingSuite.BeforeTest(suiteName, testName)
 
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin", "httpbin", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin", "httpbin", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 }
 
 // TestExactMatch tests an HTTPRoute with a path match of type Exact
@@ -152,17 +151,13 @@ func (s *testingSuite) TestPrefixRewrite() {
 }
 
 func (s *testingSuite) assertStatus(path string, status int) {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPort(8080),
-			curl.WithPath(path),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: status,
 		},
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPort(80),
+		curl.WithPath(path),
 	)
 }

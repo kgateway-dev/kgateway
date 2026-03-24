@@ -4,7 +4,6 @@ import (
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -13,7 +12,12 @@ import (
 
 const (
 	// Group string for Gateway API resources
-	GatewayGroup      = gwv1.GroupName
+	GatewayGroup = gwv1.GroupName
+	// ListenerSetGroup is the promoted ListenerSet API group.
+	ListenerSetGroup = gwv1.GroupName
+	// XListenerSetGroup is the legacy experimental ListenerSet API group.
+	// TODO: Remove legacy XListenerSet support once the nightly matrix no longer targets
+	// Gateway API releases that only serve gateway.networking.x-k8s.io XListenerSets.
 	XListenerSetGroup = gwxv1a1.GroupName
 
 	// Kind strings
@@ -29,11 +33,12 @@ const (
 	ReferenceGrantKind   = "ReferenceGrant"
 	BackendTLSPolicyKind = "BackendTLSPolicy"
 
-	// Kind string for XListenerSet resource
+	// ListenerSetKind is the promoted ListenerSet kind.
+	ListenerSetKind = "ListenerSet"
+	// XListenerSetKind is the legacy experimental ListenerSet kind.
+	// TODO: Remove legacy XListenerSet support once the nightly matrix no longer targets
+	// Gateway API releases that only serve gateway.networking.x-k8s.io XListenerSets.
 	XListenerSetKind = "XListenerSet"
-
-	// Kind string for InferencePool resource
-	InferencePoolKind = "InferencePool"
 
 	// List Kind strings
 	HTTPRouteListKind      = "HTTPRouteList"
@@ -121,16 +126,6 @@ var (
 		Version: gwv1.GroupVersion.Version,
 		Kind:    BackendTLSPolicyKind,
 	}
-	InferencePoolGVK = schema.GroupVersionKind{
-		Group:   inf.GroupVersion.Group,
-		Version: inf.GroupVersion.Version,
-		Kind:    InferencePoolKind,
-	}
-	InferencePoolGVR = schema.GroupVersionResource{
-		Group:    inf.GroupVersion.Group,
-		Version:  inf.GroupVersion.Version,
-		Resource: "inferencepools",
-	}
 	BackendTLSPolicyGVR = schema.GroupVersionResource{
 		Group:    GatewayGroup,
 		Version:  gwv1.GroupVersion.Version,
@@ -143,11 +138,28 @@ var (
 		},
 	}
 
+	ListenerSetGVK = schema.GroupVersionKind{
+		Group:   ListenerSetGroup,
+		Version: gwv1.GroupVersion.Version,
+		Kind:    ListenerSetKind,
+	}
+	ListenerSetGVR = schema.GroupVersionResource{
+		Group:    ListenerSetGroup,
+		Version:  gwv1.GroupVersion.Version,
+		Resource: "listenersets",
+	}
+
+	// XListenerSetGVK is the legacy experimental ListenerSet GVK.
+	// TODO: Remove legacy XListenerSet support once the nightly matrix no longer targets
+	// Gateway API releases that only serve gateway.networking.x-k8s.io XListenerSets.
 	XListenerSetGVK = schema.GroupVersionKind{
 		Group:   XListenerSetGroup,
 		Version: gwxv1a1.GroupVersion.Version,
 		Kind:    XListenerSetKind,
 	}
+	// XListenerSetGVR is the legacy experimental ListenerSet GVR.
+	// TODO: Remove legacy XListenerSet support once the nightly matrix no longer targets
+	// Gateway API releases that only serve gateway.networking.x-k8s.io XListenerSets.
 	XListenerSetGVR = schema.GroupVersionResource{
 		Group:    XListenerSetGroup,
 		Version:  gwxv1a1.GroupVersion.Version,
@@ -155,9 +167,10 @@ var (
 	}
 )
 
-// IsInferencePoolGK returns true if the given group and kind match
-// the InferencePool Group, Version, and Kind.
-func IsInferencePoolGK(group, kind string) bool {
-	return InferencePoolGVK.Group == group &&
-		InferencePoolGVK.Kind == kind
+func IsListenerSetGVK(gvk schema.GroupVersionKind) bool {
+	return gvk == ListenerSetGVK || gvk == XListenerSetGVK
+}
+
+func AllListenerSetGVKs() []schema.GroupVersionKind {
+	return []schema.GroupVersionKind{ListenerSetGVK, XListenerSetGVK}
 }

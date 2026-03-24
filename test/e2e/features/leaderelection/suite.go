@@ -65,7 +65,7 @@ func (s *testingSuite) TestLeaderAndFollowerAction() {
 
 	s.assertCurlResponseCode(200)
 	s.assertRouteHasNoStatus()
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, routeObjectMeta.Name, routeObjectMeta.Namespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, routeObjectMeta.Name, routeObjectMeta.Namespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
 	// Verify that a new leader was elected
 	s.leadershipChanges(leader)
@@ -99,7 +99,7 @@ func (s *testingSuite) TestLeaderWritesBackendStatus() {
 	s.assertBackendHasNoStatus()
 
 	begin := time.Now()
-	s.TestInstallation.Assertions.EventuallyBackendCondition(s.Ctx, "httpbin-static", "default", "Accepted", metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyBackendCondition(s.Ctx, "httpbin-static", "default", "Accepted", metav1.ConditionTrue)
 	diff := time.Since(begin)
 
 	// The time to deploy the write the status is greater than the lease renewal period.
@@ -132,7 +132,7 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 	}()
 
 	begin := time.Now()
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, proxyDeployment, proxyService)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, proxyDeployment, proxyService)
 	diff := time.Since(begin)
 
 	// The time to deploy the proxy is greater than the lease renewal period.
@@ -145,10 +145,6 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 func (s *testingSuite) getLeader() string {
 	var leaderPodName string
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		// Determine the actual lease name based on the chart type
-		// kgateway chart: only Envoy enabled -> lease is "kgateway-envoy"
-		// agentgateway chart: only Agentgateway enabled -> lease is "kgateway-agentgateway"
-		// both controllers enabled (not typical in tests): lease is "kgateway"
 		leaseID := s.getLeaderElectionID()
 		holder, err := s.TestInstallation.Actions.Kubectl().GetLeaseHolder(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, leaseID)
 		assert.NoError(c, err, "failed to get lease")
@@ -164,21 +160,10 @@ func (s *testingSuite) getLeader() string {
 	return leaderPodName
 }
 
-// getLeaderElectionID returns the leader election ID based on the chart type.
-// This matches the logic in pkg/kgateway/setup/setup.go lines 285-296.
+// getLeaderElectionID returns the leader election ID.
+// This matches the logic in pkg/kgateway/setup/setup.go.
 func (s *testingSuite) getLeaderElectionID() string {
-	chartType := s.TestInstallation.Metadata.GetChartType()
-	switch chartType {
-	case "kgateway":
-		// kgateway chart has EnableEnvoy=true, EnableAgentgateway=false
-		return wellknown.LeaderElectionID + "-envoy"
-	case "agentgateway":
-		// agentgateway chart has EnableEnvoy=false, EnableAgentgateway=true
-		return wellknown.LeaderElectionID + "-agentgateway"
-	default:
-		// Fallback to default (both enabled or unknown chart type)
-		return wellknown.LeaderElectionID
-	}
+	return wellknown.LeaderElectionID
 }
 
 func (s *testingSuite) leadershipChanges(oldLeader string) {
@@ -200,7 +185,7 @@ func (s *testingSuite) killLeader(leader string) {
 }
 
 func (s *testingSuite) assertCurlResponseCode(code int) {
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{

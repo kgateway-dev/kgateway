@@ -11,15 +11,23 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
+	testruntime "github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
+
+var minWaypointIstioVersion = "1.25.1"
 
 func TestKgatewayWaypoint(t *testing.T) {
 	ctx := context.Background()
 
 	// Set Istio version if not already set
-	if os.Getenv("ISTIO_VERSION") == "" {
-		os.Setenv("ISTIO_VERSION", "1.25.1") // Using minimum required version that supports multiple TargetRef types for Istio Authz policies.
+	if os.Getenv(testruntime.IstioVersionEnv) == "" {
+		os.Setenv(testruntime.IstioVersionEnv, testruntime.DefaultIstioVersion) // Using minimum required version that supports multiple TargetRef types for Istio Authz policies.
+	}
+
+	if testruntime.ShouldSkipIstioVersion(t, minWaypointIstioVersion) {
+		t.Skip("Skipping waypoint tests due to istio version requirements")
+		return
 	}
 
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-waypoint-test")
@@ -44,10 +52,10 @@ func TestKgatewayWaypoint(t *testing.T) {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {
-			testInstallation.PreFailHandler(ctx)
+			testInstallation.PreFailHandler(ctx, t)
 		}
 
-		testInstallation.UninstallKgateway(ctx)
+		testInstallation.UninstallKgateway(ctx, t)
 		testInstallation.UninstallIstio()
 	})
 
@@ -69,7 +77,7 @@ func TestKgatewayWaypoint(t *testing.T) {
 	}
 
 	// Install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx)
+	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	WaypointSuiteRunner().Run(ctx, t, testInstallation)
 }

@@ -9,9 +9,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-var (
-	ingressWaypointLabel = "istio.io/ingress-use-waypoint"
-)
+var ingressWaypointLabel = "istio.io/ingress-use-waypoint"
 
 func (s *testingSuite) TestIngressHTTPRouteWithoutLabel() {
 	s.setNamespaceWaypointOrFail(testNamespace)

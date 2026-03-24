@@ -35,7 +35,10 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases,
 			base.WithSetupByVersion(map[base.GwApiChannel]map[base.GwApiVersion]*base.TestCase{
 				base.GwApiChannelExperimental: {
-					base.GwApiV1_3_0: &setupWithListenerSets, // ListenerSet available in experimental >= 1.3
+					base.GwApiV1_3_0: &setupWithListenerSets, // XListenerSet available in experimental >= 1.3
+				},
+				base.GwApiChannelStandard: {
+					base.GwApiV1_5_1: &setupWithListenerSets, // ListenerSet promoted in standard >= 1.5.1
 				},
 			}),
 		),
@@ -43,7 +46,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) checkPodsRunning() {
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, kgatewayMetricsObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, kgatewayMetricsObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: e2edefaults.WellKnownAppLabel + "=kgateway",
 	})
 }
@@ -53,7 +56,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 	s.checkPodsRunning()
 
 	// Verify the test services are created and working.
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		e2edefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -67,8 +70,8 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 		})
 
 	// Verify the control plane metrics are generating as expected.
-	s.TestInstallation.Assertions.Assert.EventuallyWithT(func(c *assert.CollectT) {
-		resp := s.TestInstallation.Assertions.AssertEventualCurlReturnResponse(
+	s.TestInstallation.AssertionsT(s.T()).Assert.EventuallyWithT(func(c *assert.CollectT) {
+		resp := s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlReturnResponse(
 			s.Ctx,
 			e2edefaults.CurlPodExecOpt,
 			[]curl.Option{

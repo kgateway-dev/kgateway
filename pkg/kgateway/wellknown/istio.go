@@ -10,8 +10,6 @@ var (
 	HostnameGVK     = istionetworking.SchemeGroupVersion.WithKind("Hostname")
 )
 
-var (
-	GlobalRefGKs = sets.New(
-		HostnameGVK.GroupKind(),
-	)
+var GlobalRefGKs = sets.New(
+	HostnameGVK.GroupKind(),
 )

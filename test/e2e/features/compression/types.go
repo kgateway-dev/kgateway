@@ -8,29 +8,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 )
 
 var (
 	// manifests
-	commonManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
+	serviceManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
 	httpRoutesManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes.yaml")
 	routeCompressionManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-compression.yaml")
 	routeDecompressionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-decompression.yaml")
 
-	// objects created by deployer after applying gateway manifest
+	// proxy object meta for the shared gateway
 	proxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
+		Name:      "gateway",
+		Namespace: "kgateway-base",
 	}
 
 	setup = base.TestCase{
-		Manifests: []string{
-			testdefaults.CurlPodManifest,
-			testdefaults.HttpbinManifest,
-			commonManifest,
-		},
+		Manifests: []string{serviceManifest},
 	}
 
 	testCases = map[string]*base.TestCase{

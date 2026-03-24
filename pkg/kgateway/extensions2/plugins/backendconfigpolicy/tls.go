@@ -1,7 +1,6 @@
 package backendconfigpolicy
 
 import (
-	"crypto/tls"
 	"errors"
 	"fmt"
 
@@ -10,12 +9,12 @@ import (
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/util/cert"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -117,15 +116,19 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 	}
 
 	// Validate the certificate and key pair, and get a sanitized version of the certificate chain.
-	cleanedCertChain, err := cleanedSslKeyPair(tlsData.certChain, tlsData.privateKey)
+	cleanedCertChain, err := pluginutils.CleanedSslKeyPair(tlsData.certChain, tlsData.privateKey)
 	if err != nil {
 		return fmt.Errorf("invalid certificate and key pair: %w", err)
 	}
 
-	dataSource := stringDataSourceGenerator(tlsData.inlineDataSource)
-
-	certChainData := dataSource(cleanedCertChain)
-	privateKeyData := dataSource(tlsData.privateKey)
+	var certChainData, privateKeyData *envoycorev3.DataSource
+	if tlsData.inlineDataSource {
+		certChainData = pluginutils.InlineStringDataSource(cleanedCertChain)
+		privateKeyData = pluginutils.InlineStringDataSource(tlsData.privateKey)
+	} else {
+		certChainData = pluginutils.FileDataSource(cleanedCertChain)
+		privateKeyData = pluginutils.FileDataSource(tlsData.privateKey)
+	}
 
 	tlsContext.TlsCertificates = []*envoytlsv3.TlsCertificate{
 		{
@@ -172,8 +175,12 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 	}
 
 	// If root CA is provided, build a validation context
-	dataSource := stringDataSourceGenerator(tlsData.inlineDataSource)
-	rootCaData := dataSource(tlsData.rootCA)
+	var rootCaData *envoycorev3.DataSource
+	if tlsData.inlineDataSource {
+		rootCaData = pluginutils.InlineStringDataSource(tlsData.rootCA)
+	} else {
+		rootCaData = pluginutils.FileDataSource(tlsData.rootCA)
+	}
 
 	validationCtx := &envoytlsv3.CommonTlsContext_ValidationContext{
 		ValidationContext: &envoytlsv3.CertificateValidationContext{
@@ -261,51 +268,6 @@ func parseTLSVersion(tlsVersion *kgateway.TLSVersion) (envoytlsv3.TlsParameters_
 		return envoytlsv3.TlsParameters_TLS_AUTO, nil
 	default:
 		return 0, fmt.Errorf("invalid TLS version: %s", *tlsVersion)
-	}
-}
-
-func cleanedSslKeyPair(certChain, privateKey string) (cleanedChain string, err error) {
-	// validate that the cert and key are a valid pair
-	_, err = tls.X509KeyPair([]byte(certChain), []byte(privateKey))
-	if err != nil {
-		return "", err
-	}
-
-	// validate that the parsed piece is valid
-	// this is still faster than a call out to openssl despite this second parsing pass of the cert
-	// pem parsing in go is permissive while envoy is not
-	// this might not be needed once we have larger envoy validation
-	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
-	if err != nil {
-		// return err rather than sanitize. This is to maintain UX with older versions and to keep in line with gateway2 pkg.
-		return "", err
-	}
-	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
-	cleanedChain = string(cleanedChainBytes)
-
-	return cleanedChain, err
-}
-
-// stringDataSourceGenerator returns a function that returns an Envoy data source that uses the given string as the data source.
-// If inlineDataSource is false, the returned function returns a file data source. Otherwise, the returned function returns an inline-string data source.
-func stringDataSourceGenerator(inlineDataSource bool) func(s string) *envoycorev3.DataSource {
-	// Return a file data source if inlineDataSource is false.
-	if !inlineDataSource {
-		return func(s string) *envoycorev3.DataSource {
-			return &envoycorev3.DataSource{
-				Specifier: &envoycorev3.DataSource_Filename{
-					Filename: s,
-				},
-			}
-		}
-	}
-
-	return func(s string) *envoycorev3.DataSource {
-		return &envoycorev3.DataSource{
-			Specifier: &envoycorev3.DataSource_InlineString{
-				InlineString: s,
-			},
-		}
 	}
 }
 

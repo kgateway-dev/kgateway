@@ -7,15 +7,12 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,7 +31,6 @@ import (
 	envoyadmincli "github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -45,20 +41,21 @@ const (
 
 var (
 	// manifests
-	simpleServiceManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
-	gatewayManifest                      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
-	transformForCustomFunctionsManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-custom-functions.yaml")
-	transformForHeadersManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-headers.yaml")
-	transformForPseudoHeadersManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-pseudo-headers.yaml")
-	transformForBodyJsonManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json.yaml")
-	rustformationForBodyJsonManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json-rust.yaml")
-	transformForBodyAsStringManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-as-string.yaml")
-	gatewayAttachedTransformManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-attached-transform.yaml")
-	transformForMatchPathManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-path.yaml")
-	transformForMatchHeaderManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-header.yaml")
-	transformForMatchQueryManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-query.yaml")
-	transformForMatchMethodManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-method.yaml")
-	transformForHeaderToBodyJsonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-header-to-body-json.yaml")
+	simpleServiceManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	gatewayManifest                         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
+	transformForCustomFunctionsManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-custom-functions.yaml")
+	transformForHeadersManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-headers.yaml")
+	transformForPseudoHeadersManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-pseudo-headers.yaml")
+	rustformationForBodyJsonManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json-rust.yaml")
+	rustformationForModelExtractionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-model-extraction-rust.yaml")
+	transformForBodyAsStringManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-as-string.yaml")
+	gatewayAttachedTransformManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-attached-transform.yaml")
+	transformForMatchPathManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-path.yaml")
+	transformForMatchHeaderManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-header.yaml")
+	transformForMatchQueryManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-query.yaml")
+	transformForMatchMethodManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-method.yaml")
+	transformForHeaderToBodyJsonManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-header-to-body-json.yaml")
+	transformForBodyLocalReplyManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-local-reply.yaml")
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -74,6 +71,7 @@ var (
 			transformForCustomFunctionsManifest,
 			transformForHeadersManifest,
 			transformForPseudoHeadersManifest,
+			rustformationForBodyJsonManifest,
 			transformForBodyAsStringManifest,
 			gatewayAttachedTransformManifest,
 			transformForMatchHeaderManifest,
@@ -81,33 +79,8 @@ var (
 			transformForMatchPathManifest,
 			transformForMatchQueryManifest,
 			transformForHeaderToBodyJsonManifest,
-		},
-	}
-
-	// Because the jinja template syntax are slightly different between C++ and rust when
-	// accessing the json object after parsing the body as json, we need to use different
-	// resources for the same test case when switching between the C++ (classic transformation)
-	// and Rust (rustformation). Also because there is no hook in the testsuite frame work
-	// to run custom function right before applying the resource, if you look at the log from envoy
-	// you will see something like this:
-	// [2025-11-17 15:37:40.956][1][warning][config]
-	// [external/envoy/source/extensions/config_subscription/grpc/grpc_subscription_impl.cc:138]
-	// gRPC config for type.googleapis.com/envoy.config.route.v3.RouteConfiguration rejected:
-	// Failed to parse response template: Failed to parse header template 'from-incoming':
-	// [inja.exception.parser_error] (at 1:67) malformed expression
-	// This is because envoy is still configured to use the classic transformation while the rust
-	// specific resource is applied. Once the rust test starts, it will switch envoy to the
-	// rust dynamic module filter and the route will be accepted (and the error will go away)
-	testCases = map[string]*base.TestCase{
-		"TestGatewayWithTransformedRoute": {
-			Manifests: []string{
-				transformForBodyJsonManifest,
-			},
-		},
-		"TestGatewayRustformationsWithTransformedRoute": {
-			Manifests: []string{
-				rustformationForBodyJsonManifest,
-			},
+			transformForBodyLocalReplyManifest,
+			rustformationForModelExtractionManifest,
 		},
 	}
 )
@@ -128,9 +101,6 @@ type transformationTestCase struct {
 // testingSuite is a suite of basic routing / "happy path" tests
 type testingSuite struct {
 	*base.BaseTestingSuite
-	// testcases that are common between the classic transformation (c++) and rustformation
-	// once the rustformation is in feature parity with the classic transformation,
-	// they should both just use this.
 	commonTestCases []transformationTestCase
 }
 
@@ -178,6 +148,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 			opts: []curl.Option{
 				curl.WithBody("hello"),
 				curl.WithHeader("cookie", "foo=bar"),
+				curl.WithHeader("User-Agent", "curl/8.18.0"),
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
@@ -194,8 +165,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 					// The http-bin response has "*" and we added "foo.com" in the policy. The library combined
 					// them with a ','
 
-					// REMOVE-ENVOY-1.37: Add header is no-op for arm build, so comment this out for now until after we upgrade to ENVOY-1.37
-					// "access-control-allow-origin": "*,foo.com",
+					"access-control-allow-origin": "*,foo.com",
 				},
 				NotHeaders: []string{
 					"response-gateway",
@@ -208,9 +178,9 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 					// There should be a space at the beginning and end but
 					// there might be a side effect from the echo server where the header values are trimmed
 					"x-space-test": "foobar",
+					"x-client":     "text",
 
-					// REMOVE-ENVOY-1.37: Add header is no-op for arm build, so comment this out for now until after we upgrade to ENVOY-1.37
-					// "cookie":       []string{"foo=bar", "test=123"},
+					"cookie": []string{"foo=bar", "test=123"},
 				},
 				NotHeaders: []string{
 					// looks like the way we set up transformation targeting gateway, we are
@@ -236,8 +206,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 				// go-httpbin doesn't allow setting custom response header, so make sure
 				// we get one of the default access-control header and removed the other
 				Headers: map[string]any{
-					// REMOVE-ENVOY-1.37: Add header is no-op for arm build, so comment this out for now until after we upgrade to ENVOY-1.37
-					// "access-control-allow-origin": "*,foo.com",
+					"access-control-allow-origin": "*,foo.com",
 				},
 				NotHeaders: []string{
 					"access-control-allow-credentials",
@@ -500,7 +469,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 		},
 		{
 			// test 10
-			name:      "custom functions",
+			name:      "custom-functions",
 			routeName: "custom-functions",
 			opts: []curl.Option{
 				curl.WithBody(`{"foo":"\"bar\""}`),
@@ -555,7 +524,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 		},
 		{
 			// test 11
-			name:      "pull json info", // shows we parse the body as json
+			name:      "pull-json-info", // shows we parse the body as json
 			routeName: "route-for-body-json",
 			opts: []curl.Option{
 				curl.WithBody(`{"mykey": {"myinnerkey": "myinnervalue"}}`),
@@ -660,6 +629,64 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 				Method: "POST",
 			},
 		},
+		{
+			// test 17
+			name:      "body transform for local reply",
+			routeName: "route-for-body-local-reply",
+			opts: []curl.Option{
+				curl.WithBody(strings.Repeat("x", 1500)),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusRequestEntityTooLarge,
+				Headers: map[string]any{
+					"content-length": "17",
+				},
+				Body: gomega.HaveLen(17), // The body should have the string "Payload Too Large" (17 bytes)
+			},
+			req: &testmatchers.HttpRequest{},
+		},
+		{
+			// test 18
+			name:      "body transform for local reply no body()",
+			routeName: "route-for-body-local-reply",
+			url:       "/foobar",
+			opts: []curl.Option{
+				curl.WithBody(strings.Repeat("x", 1500)),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusRequestEntityTooLarge,
+				Headers: map[string]any{
+					"content-length": "6",
+				},
+				Body: "foobar",
+			},
+			req: &testmatchers.HttpRequest{},
+		},
+		{
+			// test 19
+			// Send a JSON body with a "model" field and verify it gets extracted into a header.
+			// This is a regression test for the bug where Rustformations failed to parse a JSON
+			// request body arriving in a single chunk. The body data sat in the "received" buffer
+			// rather than the "buffered" buffer, causing parse_request_json_body to return Null
+			// and the undeclared-variables safety check to fire a 400. The fix adds a
+			// get_received_request_body fallback.
+			//
+			// This mirrors the production TrafficPolicy pattern: parse the JSON request body
+			// and extract the "model" field into a request header.
+			name:      "model-field-extracted-from-json-body",
+			routeName: "route-for-model-extraction",
+			opts: []curl.Option{
+				curl.WithPostBody(`{"model": "gpt-4", "messages": [{"role": "user", "content": "hello"}]}`),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+			},
+			req: &testmatchers.HttpRequest{
+				Headers: map[string]any{
+					"Body-Extracted-Model": "gpt-4",
+				},
+			},
+		},
 	}
 
 	// If no indices are provided, return the full original slice.
@@ -686,7 +713,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		base.NewBaseTestingSuite(ctx, testInst, setup, nil),
 		// For local development only!
 		// Enter a list of indices to select specific tests, -1 means the last test.
 		// Default will return all common test cases.
@@ -701,95 +728,19 @@ func (s *testingSuite) SetupSuite() {
 	s.assertSuiteResourceStatus()
 }
 
-func (s *testingSuite) TestGatewayWithTransformedRoute() {
-	s.SetRustformationInController(false)
-	s.assertTestResourceStatus()
-	testutils.Cleanup(s.T(), func() {
-		s.SetRustformationInController(true)
-	})
-
-	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
-		s.Ctx,
-		proxyObjectMeta,
-		s.dynamicModuleAssertion(false),
-	)
-
-	testCases := []transformationTestCase{}
-	testCases = append(testCases, s.commonTestCases...)
-	s.runTestCases((testCases))
-}
-
-func (s *testingSuite) SetRustformationInController(enabled bool) {
-	// make a copy of the original controller deployment
-	controllerDeploymentOriginal := &appsv1.Deployment{}
-	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-		Namespace: s.TestInstallation.Metadata.InstallNamespace,
-		Name:      helpers.DefaultKgatewayDeploymentName,
-	}, controllerDeploymentOriginal)
-	s.Assert().NoError(err, "has controller deployment")
-
-	rustFormationsEnvVar := corev1.EnvVar{
-		Name:  "KGW_USE_RUST_FORMATIONS",
-		Value: "false",
-	}
-	controllerDeployModified := controllerDeploymentOriginal.DeepCopy()
-	if !enabled {
-		// add the environment variable RUSTFORMATIONS to the modified controller deployment
-		controllerDeployModified.Spec.Template.Spec.Containers[0].Env = append(
-			controllerDeployModified.Spec.Template.Spec.Containers[0].Env,
-			rustFormationsEnvVar,
-		)
-		controllerDeployModified.ResourceVersion = ""
-	} else {
-		controllerDeployModified.Spec.Template.Spec.Containers[0].Env = slices.DeleteFunc(controllerDeployModified.Spec.Template.Spec.Containers[0].Env, func(envVar corev1.EnvVar) bool {
-			return envVar.Name == "KGW_USE_RUST_FORMATIONS"
-		})
-	}
-
-	// patch the deployment
-	err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, controllerDeployModified, client.MergeFrom(controllerDeploymentOriginal))
-	s.Assert().NoError(err, "patching controller deployment")
-
-	if !enabled {
-		// wait for the changes to be reflected in pod
-		s.TestInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
-			s.Ctx,
-			s.TestInstallation.Metadata.InstallNamespace,
-			metav1.ListOptions{
-				LabelSelector: defaults.ControllerLabelSelector,
-			},
-			helpers.KgatewayContainerName,
-			rustFormationsEnvVar,
-		)
-	} else {
-		// make sure the env var is removed
-		s.TestInstallation.Assertions.EventuallyPodContainerDoesNotContainEnvVar(
-			s.Ctx,
-			s.TestInstallation.Metadata.InstallNamespace,
-			metav1.ListOptions{
-				LabelSelector: defaults.ControllerLabelSelector,
-			},
-			helpers.KgatewayContainerName,
-			rustFormationsEnvVar.Name,
-		)
-	}
-}
-
-func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
-	s.SetRustformationInController(true)
-	s.assertTestResourceStatus()
-
+func (s *testingSuite) TestGatewayWithTransformation() {
 	// wait for pods to be running again, since controller deployment was patched
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
 		LabelSelector: defaults.ControllerLabelSelector,
 	})
-	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 
-	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.Ctx,
 		proxyObjectMeta,
+		s.envoyAdminReadyAssertion(),
 		s.dynamicModuleAssertion(true),
 	)
 
@@ -802,7 +753,7 @@ func (s *testingSuite) runTestCases(testCases []transformationTestCase) {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
-			resp := s.TestInstallation.Assertions.AssertEventualCurlReturnResponse(
+			resp := s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlReturnResponse(
 				s.Ctx,
 				defaults.CurlPodExecOpt,
 				append(tc.opts,
@@ -831,7 +782,7 @@ func (s *testingSuite) assertRouteAndTrafficPolicyStatus(routesToCheck, trafficP
 		trafficPolicyName := trafficPoliciesToCheck[i]
 
 		// get the traffic policy
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			tp := &kgateway.TrafficPolicy{}
 			tpObjKey := client.ObjectKey{
 				Name:      trafficPolicyName,
@@ -874,8 +825,7 @@ func (s *testingSuite) assertRouteAndTrafficPolicyStatus(routesToCheck, trafficP
 func (s *testingSuite) assertSuiteResourceStatus() {
 	routesToCheck := []string{
 		"example-route-for-body-as-string",
-		// This route is apply right before that test as this is test specific. Cannot check at suite.
-		//		"example-route-for-body-json",
+		"example-route-for-body-json",
 		"example-route-for-custom-functions",
 		"example-route-for-gateway-attached-transform",
 		"example-route-for-header-match",
@@ -885,11 +835,11 @@ func (s *testingSuite) assertSuiteResourceStatus() {
 		"example-route-for-path-match",
 		"example-route-for-pseudo-headers",
 		"example-route-for-query-match",
+		"example-route-for-model-extraction",
 	}
 	trafficPoliciesToCheck := []string{
 		"example-traffic-policy-for-body-as-string",
-		// This policy is applied right before that test as this is test specific. Cannot check at suite.
-		//		"example-traffic-policy-for-body-json",
+		"example-traffic-policy-for-body-json",
 		"example-traffic-policy-for-custom-functions",
 		"example-traffic-policy-for-gateway-attached-transform",
 		"example-traffic-policy-for-header-match",
@@ -899,23 +849,14 @@ func (s *testingSuite) assertSuiteResourceStatus() {
 		"example-traffic-policy-for-path-match",
 		"example-traffic-policy-for-pseudo-headers",
 		"example-traffic-policy-for-query-match",
-	}
-	s.assertRouteAndTrafficPolicyStatus(routesToCheck, trafficPoliciesToCheck)
-}
-
-func (s *testingSuite) assertTestResourceStatus() {
-	routesToCheck := []string{
-		"example-route-for-body-json",
-	}
-	trafficPoliciesToCheck := []string{
-		"example-traffic-policy-for-body-json",
+		"example-traffic-policy-for-model-extraction",
 	}
 	s.assertRouteAndTrafficPolicyStatus(routesToCheck, trafficPoliciesToCheck)
 }
 
 func (s *testingSuite) dynamicModuleAssertion(shouldBeLoaded bool) func(ctx context.Context, adminClient *envoyadmincli.Client) {
 	return func(ctx context.Context, adminClient *envoyadmincli.Client) {
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
 			g.Expect(err).ToNot(gomega.HaveOccurred(), "failed to get listener")
 
@@ -929,8 +870,21 @@ func (s *testingSuite) dynamicModuleAssertion(shouldBeLoaded bool) func(ctx cont
 			}
 		}).
 			WithContext(ctx).
-			WithTimeout(time.Second*20).
-			WithPolling(time.Second).
+			WithTimeout(30*time.Second).
+			WithPolling(2*time.Second).
 			Should(gomega.Succeed(), "failed to get expected load of dynamic modules")
+	}
+}
+
+func (s *testingSuite) envoyAdminReadyAssertion() func(ctx context.Context, adminClient *envoyadmincli.Client) {
+	return func(ctx context.Context, adminClient *envoyadmincli.Client) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+			_, err := adminClient.GetServerInfo(ctx)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "Envoy admin API not ready")
+		}).
+			WithContext(ctx).
+			WithTimeout(60*time.Second).
+			WithPolling(2*time.Second).
+			Should(gomega.Succeed(), "Envoy admin API did not become ready in time")
 	}
 }

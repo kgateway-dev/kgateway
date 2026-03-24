@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Based of of gateway-api codegen (https://github.com/kubernetes-sigs/gateway-api/blob/main/hack/update-codegen.sh)
 # generate deep copy and clients for our api.
@@ -23,8 +23,21 @@ readonly APPLY_CFG_DIR=api/applyconfiguration
 readonly CLIENT_GEN_DIR=pkg/client
 readonly KGATEWAY_CRD_DIR=install/helm/kgateway-crds/templates
 readonly KGATEWAY_MANIFESTS_DIR=install/helm/kgateway/templates
-readonly AGENTGATEWAY_CRD_DIR=install/helm/agentgateway-crds/templates
-readonly AGENTGATEWAY_MANIFESTS_DIR=install/helm/agentgateway/templates
+
+sed_in_place() {
+  local expr="$1"
+  local file="$2"
+
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    if command -v gsed &> /dev/null; then
+      gsed -i -e "$expr" "$file"
+    else
+      sed -i '' -e "$expr" "$file"
+    fi
+  else
+    sed -i -e "$expr" "$file"
+  fi
+}
 
 echo "Generating clientset at ${OUTPUT_PKG}/${CLIENTSET_PKG_NAME} for versions:" "${VERSIONS[@]}"
 
@@ -33,9 +46,7 @@ API_INPUT_DIRS_SPACE=""
 API_INPUT_DIRS_COMMA=""
 for VERSION in "${VERSIONS[@]}"; do
   API_INPUT_DIRS_SPACE+="${APIS_PKG}/api/${VERSION}/kgateway "
-  API_INPUT_DIRS_SPACE+="${APIS_PKG}/api/${VERSION}/agentgateway "
   API_INPUT_DIRS_COMMA+="${APIS_PKG}/api/${VERSION}/kgateway,"
-  API_INPUT_DIRS_COMMA+="${APIS_PKG}/api/${VERSION}/agentgateway,"
 done
 API_INPUT_DIRS_SPACE="${API_INPUT_DIRS_SPACE%,}" # drop trailing space
 API_INPUT_DIRS_COMMA="${API_INPUT_DIRS_COMMA%,}" # drop trailing comma
@@ -46,43 +57,14 @@ go tool register-gen --output-file zz_generated.register.go ${API_INPUT_DIRS_SPA
 for VERSION in "${VERSIONS[@]}"; do
   sed -i.bak -E "s/(Version: )\"kgateway\"/\\1\"${VERSION}\"/" "${ROOT_DIR}/api/${VERSION}/kgateway/zz_generated.register.go"
   rm -f "${ROOT_DIR}/api/${VERSION}/kgateway/zz_generated.register.go.bak"
-  sed -i.bak -E "s/(Version: )\"agentgateway\"/\\1\"${VERSION}\"/" "${ROOT_DIR}/api/${VERSION}/agentgateway/zz_generated.register.go"
-  rm -f "${ROOT_DIR}/api/${VERSION}/agentgateway/zz_generated.register.go.bak"
 done
 
 # Generate kgateway CRDs and RBAC
 go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}/kgateway" paths="${APIS_PKG}/api/${VERSION}/shared" \
     output:crd:artifacts:config=${ROOT_DIR}/${KGATEWAY_CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}
 # Template the ClusterRole name to include the namespace
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  # On macOS, prefer gsed (GNU sed) if available
-  if command -v gsed &> /dev/null; then
-    gsed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
-  else
-    # Fallback to macOS's native sed
-    sed -i '' 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
-  fi
-else
-  # For other OSes like Linux
-  sed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
-fi
-
-# Generate agentgateway CRDs and RBAC
-go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=agentgateway paths="${APIS_PKG}/api/${VERSION}/agentgateway" paths="${APIS_PKG}/api/${VERSION}/shared" \
-    output:crd:artifacts:config=${ROOT_DIR}/${AGENTGATEWAY_CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${AGENTGATEWAY_MANIFESTS_DIR}
-# Template the ClusterRole name to include the namespace
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  # On macOS, prefer gsed (GNU sed) if available
-  if command -v gsed &> /dev/null; then
-    gsed -i 's/name: agentgateway/name: agentgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${AGENTGATEWAY_MANIFESTS_DIR}/role.yaml"
-  else
-    # Fallback to macOS's native sed
-    sed -i '' 's/name: agentgateway/name: agentgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${AGENTGATEWAY_MANIFESTS_DIR}/role.yaml"
-  fi
-else
-  # For other OSes like Linux
-  sed -i 's/name: agentgateway/name: agentgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${AGENTGATEWAY_MANIFESTS_DIR}/role.yaml"
-fi
+sed_in_place 's|name: kgateway|name: kgateway-{{ .Release.Namespace }}|g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
+sed_in_place "s|AllowHeaders cannot contain '\\*' alongside other methods|AllowHeaders cannot contain '\\*' alongside other headers|g" "${ROOT_DIR}/${KGATEWAY_CRD_DIR}/gateway.kgateway.dev_trafficpolicies.yaml"
 
 
 # throw away
@@ -94,8 +76,8 @@ go tool client-gen \
   --input "${API_INPUT_DIRS_COMMA//${APIS_PKG}\//}" \
   --output-dir "${ROOT_DIR}/${CLIENT_GEN_DIR}/${CLIENTSET_PKG_NAME}" \
   --output-pkg "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME}" \
-  --plural-exceptions "GatewayParameters:GatewayParameters,AgentgatewayParameters:AgentgatewayParameters"
+  --plural-exceptions "GatewayParameters:GatewayParameters"
+sed_in_place 's|IsWatchListSemanticsSupported informs|IsWatchListSemanticsUnSupported informs|g' "${ROOT_DIR}/${CLIENT_GEN_DIR}/${CLIENTSET_PKG_NAME}/${CLIENTSET_NAME}/fake/clientset_generated.go"
 
 go generate ${ROOT_DIR}/internal/...
 go generate ${ROOT_DIR}/pkg/...
-

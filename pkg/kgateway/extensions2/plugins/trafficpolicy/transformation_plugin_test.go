@@ -3,37 +3,33 @@ package trafficpolicy
 import (
 	"testing"
 
-	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
-func TestTransformationIREquals(t *testing.T) {
-	createSimpleTransformation := func() *transformationpb.RouteTransformations {
-		return &transformationpb.RouteTransformations{
-			Transformations: []*transformationpb.RouteTransformations_RouteTransformation{
-				{
-					Match: &transformationpb.RouteTransformations_RouteTransformation_RequestMatch_{
-						RequestMatch: &transformationpb.RouteTransformations_RouteTransformation_RequestMatch{
-							RequestTransformation: &transformationpb.Transformation{
-								TransformationType: &transformationpb.Transformation_TransformationTemplate{
-									TransformationTemplate: &transformationpb.TransformationTemplate{
-										Headers: map[string]*transformationpb.InjaTemplate{
-											"x-test": {Text: "test-value"},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+func TestRustformationIREquals(t *testing.T) {
+	stringConf := `{"request":{"set":[{"name":"x-test","value":"text-value"}]}}`
+	filterCfg := utils.MustMessageToAny(&wrapperspb.StringValue{
+		Value: stringConf,
+	})
+	createSimpleTransformation := func() *dynamicmodulesv3.DynamicModuleFilterPerRoute {
+		return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
+			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+				Name: "rust_module",
 			},
+			PerRouteConfigName: "http_simple_mutations",
+			FilterConfig:       filterCfg,
 		}
 	}
 
 	tests := []struct {
 		name     string
-		trans1   *transformationIR
-		trans2   *transformationIR
+		trans1   *rustformationIR
+		trans2   *rustformationIR
 		expected bool
 	}{
 		{
@@ -45,31 +41,31 @@ func TestTransformationIREquals(t *testing.T) {
 		{
 			name:     "nil vs non-nil are not equal",
 			trans1:   nil,
-			trans2:   &transformationIR{config: createSimpleTransformation()},
+			trans2:   &rustformationIR{config: createSimpleTransformation()},
 			expected: false,
 		},
 		{
 			name:     "non-nil vs nil are not equal",
-			trans1:   &transformationIR{config: createSimpleTransformation()},
+			trans1:   &rustformationIR{config: createSimpleTransformation()},
 			trans2:   nil,
 			expected: false,
 		},
 		{
 			name:     "same instance is equal",
-			trans1:   &transformationIR{config: createSimpleTransformation()},
-			trans2:   &transformationIR{config: createSimpleTransformation()},
+			trans1:   &rustformationIR{config: createSimpleTransformation()},
+			trans2:   &rustformationIR{config: createSimpleTransformation()},
 			expected: true,
 		},
 		{
 			name:     "nil transformation fields are equal",
-			trans1:   &transformationIR{config: nil},
-			trans2:   &transformationIR{config: nil},
+			trans1:   &rustformationIR{config: nil},
+			trans2:   &rustformationIR{config: nil},
 			expected: true,
 		},
 		{
 			name:     "nil vs non-nil transformation fields are not equal",
-			trans1:   &transformationIR{config: nil},
-			trans2:   &transformationIR{config: createSimpleTransformation()},
+			trans1:   &rustformationIR{config: nil},
+			trans2:   &rustformationIR{config: createSimpleTransformation()},
 			expected: false,
 		},
 	}
@@ -87,9 +83,12 @@ func TestTransformationIREquals(t *testing.T) {
 
 	// Test reflexivity: x.Equals(x) should always be true for non-nil values
 	t.Run("reflexivity", func(t *testing.T) {
-		transformation := &transformationIR{
-			config: &transformationpb.RouteTransformations{
-				Transformations: []*transformationpb.RouteTransformations_RouteTransformation{},
+		transformation := &rustformationIR{
+			config: &dynamicmodulesv3.DynamicModuleFilterPerRoute{
+				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+					Name: "rust_module",
+				},
+				PerRouteConfigName: "http_simple_mutations",
 			},
 		}
 		assert.True(t, transformation.Equals(transformation), "transformation should equal itself")
@@ -97,8 +96,8 @@ func TestTransformationIREquals(t *testing.T) {
 
 	// Test transitivity: if a.Equals(b) && b.Equals(c), then a.Equals(c)
 	t.Run("transitivity", func(t *testing.T) {
-		createSameTransformation := func() *transformationIR {
-			return &transformationIR{
+		createSameTransformation := func() *rustformationIR {
+			return &rustformationIR{
 				config: createSimpleTransformation(),
 			}
 		}

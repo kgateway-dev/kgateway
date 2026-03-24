@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -o errexit
 set -o nounset
@@ -13,6 +13,7 @@ OUTPUT_DIR="${OUTPUT_DIR:-_output}"
 OUTPUT_FILE="${OUTPUT_DIR}/RELEASE_NOTES.md"
 REPO_OVERRIDE=""
 TEMP_DIR=""
+declare -A CONTRIBUTORS_MAP
 
 # Help message
 function show_help() {
@@ -172,6 +173,12 @@ function process_prs() {
             fi
         fi
 
+        # Extract PR author and track in contributors map
+        PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.user.login // empty')
+        if [ -n "$PR_AUTHOR" ] && [ "$PR_AUTHOR" != "Copilot" ]; then
+            CONTRIBUTORS_MAP["$PR_AUTHOR"]=1
+        fi
+
         # Extract PR title and body
         PR_TITLE=$(echo "$PR_DATA" | jq -r .title)
         PR_BODY=$(echo "$PR_DATA" | jq -r '.body // empty')
@@ -320,5 +327,17 @@ for KIND in breaking_change feature fix deprecation documentation cleanup instal
         cat "$TEMP_DIR/$KIND.txt" >> "$OUTPUT_FILE"
     fi
 done
+
+# Generate contributors section
+if [ ${#CONTRIBUTORS_MAP[@]} -gt 0 ]; then
+    echo -e "\n## Contributors\n" >> "$OUTPUT_FILE"
+    echo "Thanks to all the contributors who made this release possible:" >> "$OUTPUT_FILE"
+    echo "" >> "$OUTPUT_FILE"
+    # Sort contributors alphabetically (case-insensitive) and display as avatar grid
+    for contributor in $(printf '%s\n' "${!CONTRIBUTORS_MAP[@]}" | sort -f); do
+        echo -n "<a href=\"https://github.com/${contributor}\"><img src=\"https://github.com/${contributor}.png\" width=\"50\" alt=\"@${contributor}\"></a> " >> "$OUTPUT_FILE"
+    done
+    echo "" >> "$OUTPUT_FILE"
+fi
 
 echo "Release notes have been generated in $OUTPUT_FILE (${SECONDS}s)"

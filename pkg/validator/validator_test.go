@@ -4,11 +4,22 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
 func TestBinaryValidator_Validate(t *testing.T) {
@@ -19,14 +30,14 @@ func TestBinaryValidator_Validate(t *testing.T) {
 	// validator tests.
 	tests := []struct {
 		name        string
-		json        string
+		bootstrap   *envoybootstrapv3.Bootstrap
 		mockBinary  func(t *testing.T) string
 		expectError bool
 		errorMsg    string
 	}{
 		{
-			name: "successful validation",
-			json: "any-config-here",
+			name:      "successful validation",
+			bootstrap: &envoybootstrapv3.Bootstrap{}, // actual config content doesn't matter for this test
 			mockBinary: func(t *testing.T) string {
 				script := `#!/bin/sh
 if [ "$1" != "--mode" ] || [ "$2" != "validate" ] || [ "$3" != "--config-path" ]; then
@@ -40,8 +51,8 @@ exit 0
 			expectError: false,
 		},
 		{
-			name: "validation error with envoy-style message",
-			json: "any-config-here", // actual config content doesn't matter for this test
+			name:      "validation error with envoy-style message",
+			bootstrap: &envoybootstrapv3.Bootstrap{}, // actual config content doesn't matter for this test
 			mockBinary: func(t *testing.T) string {
 				script := `#!/bin/sh
 if [ "$1" != "--mode" ] || [ "$2" != "validate" ] || [ "$3" != "--config-path" ]; then
@@ -57,8 +68,8 @@ exit 1
 			errorMsg:    "invalid xds configuration: error initializing configuration '': missing ]:",
 		},
 		{
-			name: "binary execution failure",
-			json: "any-config-here", // actual config content doesn't matter for this test
+			name:      "binary execution failure",
+			bootstrap: &envoybootstrapv3.Bootstrap{}, // actual config content doesn't matter for this test
 			mockBinary: func(t *testing.T) string {
 				script := `#!/bin/sh
 # Simulate a binary execution failure (e.g. segfault)
@@ -77,7 +88,7 @@ exit 2
 			defer os.Remove(mockPath)
 
 			validator := NewBinary(mockPath)
-			err := validator.Validate(context.Background(), tt.json)
+			err := validator.Validate(context.Background(), tt.bootstrap)
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
@@ -91,225 +102,263 @@ exit 2
 func TestDockerValidator_Validate(t *testing.T) {
 	tests := []struct {
 		name        string
-		json        string
+		bootstrap   *envoybootstrapv3.Bootstrap
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name: "valid configuration",
-			json: `{
-  "node": {
-    "id": "test-id",
-    "cluster": "test-cluster"
-  },
-  "static_resources": {
-    "listeners": [
-      {
-        "name": "listener_0",
-        "address": {
-          "socket_address": {
-            "address": "0.0.0.0",
-            "port_value": 10000
-          }
-        },
-        "filter_chains": [
-          {
-            "filters": [
-              {
-                "name": "envoy.filters.network.http_connection_manager",
-                "typed_config": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-                  "stat_prefix": "ingress_http",
-                  "route_config": {
-                    "name": "local_route",
-                    "virtual_hosts": [
-                      {
-                        "name": "local_service",
-                        "domains": ["*"],
-                        "routes": [
-                          {
-                            "match": {
-                              "prefix": "/"
-                            },
-                            "route": {
-                              "cluster": "service_foo"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "http_filters": [
-                    {
-                      "name": "envoy.filters.http.router",
-                      "typed_config": {
-                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    "clusters": [
-      {
-        "name": "service_foo",
-        "connect_timeout": "0.25s",
-        "type": "STATIC",
-        "lb_policy": "ROUND_ROBIN",
-        "load_assignment": {
-          "cluster_name": "service_foo",
-          "endpoints": [
-            {
-              "lb_endpoints": [
-                {
-                  "endpoint": {
-                    "address": {
-                      "socket_address": {
-                        "address": "127.0.0.1",
-                        "port_value": 8080
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      }
-    ]
-  }
-}`,
+			bootstrap: &envoybootstrapv3.Bootstrap{
+				Node: &envoycorev3.Node{
+					Id:      "test-id",
+					Cluster: "test-cluster",
+				},
+				StaticResources: &envoybootstrapv3.Bootstrap_StaticResources{
+					Listeners: []*envoylistenerv3.Listener{
+						{
+							Name: "listener_0",
+							Address: &envoycorev3.Address{
+								Address: &envoycorev3.Address_SocketAddress{
+									SocketAddress: &envoycorev3.SocketAddress{
+										Address: "0.0.0.0",
+										PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+											PortValue: 10000,
+										},
+									},
+								},
+							},
+							FilterChains: []*envoylistenerv3.FilterChain{
+								{
+									Filters: []*envoylistenerv3.Filter{
+										{
+											Name: "envoy.filters.network.http_connection_manager",
+											ConfigType: &envoylistenerv3.Filter_TypedConfig{
+												TypedConfig: utils.MustMessageToAny(&envoy_hcm.HttpConnectionManager{
+													StatPrefix: "ingress_http",
+													RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
+														RouteConfig: &envoyroutev3.RouteConfiguration{
+															Name: "local_route",
+															VirtualHosts: []*envoyroutev3.VirtualHost{
+																{
+																	Name:    "local_service",
+																	Domains: []string{"*"},
+																	Routes: []*envoyroutev3.Route{
+																		{
+																			Match: &envoyroutev3.RouteMatch{
+																				PathSpecifier: &envoyroutev3.RouteMatch_Prefix{
+																					Prefix: "/",
+																				},
+																			},
+																			Action: &envoyroutev3.Route_Route{
+																				Route: &envoyroutev3.RouteAction{
+																					ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
+																						Cluster: "service_foo",
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+													HttpFilters: []*envoy_hcm.HttpFilter{
+														{
+															Name: "envoy.filters.http.router",
+															ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+																TypedConfig: utils.MustMessageToAny(&envoyhttpv3.Router{}),
+															},
+														},
+													},
+												}),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					Clusters: []*envoyclusterv3.Cluster{
+						{
+							Name: "service_foo",
+							ConnectTimeout: &duration.Duration{
+								Seconds: 10,
+							},
+							ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+								Type: envoyclusterv3.Cluster_STATIC,
+							},
+							LbPolicy: envoyclusterv3.Cluster_ROUND_ROBIN,
+							LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
+								ClusterName: "service_foo",
+								Endpoints: []*envoyendpointv3.LocalityLbEndpoints{
+									{
+										LbEndpoints: []*envoyendpointv3.LbEndpoint{
+											{
+												HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+													Endpoint: &envoyendpointv3.Endpoint{
+														Address: &envoycorev3.Address{
+															Address: &envoycorev3.Address_SocketAddress{
+																SocketAddress: &envoycorev3.SocketAddress{
+																	Address: "127.0.0.1",
+																	PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+																		PortValue: 8080,
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			expectError: false,
 		},
 		{
 			name: "missing listener address",
-			json: `{
-  "node": {
-    "id": "test-id",
-    "cluster": "test-cluster"
-  },
-  "static_resources": {
-    "listeners": [
-      {
-        "name": "listener_0"
-      }
-    ]
-  }
-}`,
+			bootstrap: &envoybootstrapv3.Bootstrap{
+				Node: &envoycorev3.Node{
+					Id:      "test-id",
+					Cluster: "test-cluster",
+				},
+				StaticResources: &envoybootstrapv3.Bootstrap_StaticResources{
+					Listeners: []*envoylistenerv3.Listener{
+						{
+							Name: "listener_0",
+						},
+					},
+				},
+			},
 			expectError: true,
 			errorMsg:    `error initializing configuration '/dev/fd/0': error adding listener named 'listener_0': address is necessary`,
 		},
 		{
 			name: "invalid regex in route match",
-			json: `{
-  "node": {
-    "id": "test-id",
-    "cluster": "test-cluster"
-  },
-  "static_resources": {
-    "listeners": [
-      {
-        "name": "listener_0",
-        "address": {
-          "socket_address": {
-            "address": "0.0.0.0",
-            "port_value": 10000
-          }
-        },
-        "filter_chains": [
-          {
-            "filters": [
-              {
-                "name": "envoy.filters.network.http_connection_manager",
-                "typed_config": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-                  "stat_prefix": "ingress_http",
-                  "route_config": {
-                    "name": "local_route",
-                    "virtual_hosts": [
-                      {
-                        "name": "local_service",
-                        "domains": ["*"],
-                        "routes": [
-                          {
-                            "match": {
-                              "safe_regex": {
-                                "regex": "[[invalid.regex"
-                              }
-                            },
-                            "route": {
-                              "cluster": "service_foo"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "http_filters": [
-                    {
-                      "name": "envoy.filters.http.router",
-                      "typed_config": {
-                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    "clusters": [
-      {
-        "name": "service_foo",
-        "connect_timeout": "0.25s",
-        "type": "STATIC",
-        "lb_policy": "ROUND_ROBIN",
-        "load_assignment": {
-          "cluster_name": "service_foo",
-          "endpoints": [
-            {
-              "lb_endpoints": [
-                {
-                  "endpoint": {
-                    "address": {
-                      "socket_address": {
-                        "address": "127.0.0.1",
-                        "port_value": 8080
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      }
-    ]
-  }
-}`,
+			bootstrap: &envoybootstrapv3.Bootstrap{
+				Node: &envoycorev3.Node{
+					Id:      "test-id",
+					Cluster: "test-cluster",
+				},
+				StaticResources: &envoybootstrapv3.Bootstrap_StaticResources{
+					Listeners: []*envoylistenerv3.Listener{
+						{
+							Name: "listener_0",
+							Address: &envoycorev3.Address{
+								Address: &envoycorev3.Address_SocketAddress{
+									SocketAddress: &envoycorev3.SocketAddress{
+										Address: "0.0.0.0",
+										PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+											PortValue: 10000,
+										},
+									},
+								},
+							},
+							FilterChains: []*envoylistenerv3.FilterChain{
+								{
+									Filters: []*envoylistenerv3.Filter{
+										{
+											Name: "envoy.filters.network.http_connection_manager",
+											ConfigType: &envoylistenerv3.Filter_TypedConfig{
+												TypedConfig: utils.MustMessageToAny(&envoy_hcm.HttpConnectionManager{
+													StatPrefix: "ingress_http",
+													RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
+														RouteConfig: &envoyroutev3.RouteConfiguration{
+															Name: "local_route",
+															VirtualHosts: []*envoyroutev3.VirtualHost{
+																{
+																	Name:    "local_service",
+																	Domains: []string{"*"},
+																	Routes: []*envoyroutev3.Route{
+																		{
+																			Match: &envoyroutev3.RouteMatch{
+																				PathSpecifier: &envoyroutev3.RouteMatch_SafeRegex{
+																					SafeRegex: &envoymatcherv3.RegexMatcher{
+																						Regex: "[[invalid.regex",
+																					},
+																				},
+																			},
+																			Action: &envoyroutev3.Route_Route{
+																				Route: &envoyroutev3.RouteAction{
+																					ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
+																						Cluster: "service_foo",
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+													HttpFilters: []*envoy_hcm.HttpFilter{
+														{
+															Name: "envoy.filters.http.router",
+															ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+																TypedConfig: utils.MustMessageToAny(&envoyhttpv3.Router{}),
+															},
+														},
+													},
+												}),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					Clusters: []*envoyclusterv3.Cluster{
+						{
+							Name: "service_foo",
+							ConnectTimeout: &duration.Duration{
+								Seconds: 10,
+							},
+							ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+								Type: envoyclusterv3.Cluster_STATIC,
+							},
+							LbPolicy: envoyclusterv3.Cluster_ROUND_ROBIN,
+							LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
+								ClusterName: "service_foo",
+								Endpoints: []*envoyendpointv3.LocalityLbEndpoints{
+									{
+										LbEndpoints: []*envoyendpointv3.LbEndpoint{
+											{
+												HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+													Endpoint: &envoyendpointv3.Endpoint{
+														Address: &envoycorev3.Address{
+															Address: &envoycorev3.Address_SocketAddress{
+																SocketAddress: &envoycorev3.SocketAddress{
+																	Address: "127.0.0.1",
+																	PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+																		PortValue: 8080,
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			expectError: true,
 			errorMsg:    `error initializing configuration '/dev/fd/0': missing ]:`,
-		},
-		{
-			// should not error with argument too long
-			// empty error msg due to too long since it tries to print entire invalid json
-			name:        "validate very large config",
-			json:        strings.Repeat("1", 1000000),
-			expectError: true,
-			errorMsg:    ``,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			validator := NewDocker()
-			err := validator.Validate(context.Background(), tt.json)
+			err := validator.Validate(context.Background(), tt.bootstrap)
 
 			if tt.expectError {
 				require.Error(t, err)
@@ -396,12 +445,47 @@ additional context here
 more details`,
 			expected: "error initializing configuration '/dev/fd/0': validation error additional context here more details",
 		},
+		{
+			name:     "strips goo.gle/debugonly prefix",
+			input:    "error initializing configuration '/dev/fd/0': goo.gle/debugonly node { id: \"test\" } : Proto constraint validation failed",
+			expected: "error initializing configuration '/dev/fd/0': node { id: \"test\" } : Proto constraint validation failed",
+		},
+		{
+			name:     "strips goo.gle/debugproto prefix",
+			input:    "error initializing configuration '/dev/fd/0': goo.gle/debugproto node { id: \"test\" } : Proto constraint validation failed",
+			expected: "error initializing configuration '/dev/fd/0': node { id: \"test\" } : Proto constraint validation failed",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := extractEnvoyError(tt.input)
+			result := normalizeEnvoyError(extractEnvoyError(tt.input))
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNormalizeEnvoyError(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "normalizes debugonly token",
+			input:    `error initializing configuration '/dev/fd/0': goo.gle/debugonly node { id: "x" } Proto constraint validation failed`,
+			expected: `error initializing configuration '/dev/fd/0': goo.gle/debug node { id: "x" } Proto constraint validation failed`,
+		},
+		{
+			name:     "normalizes debugproto token",
+			input:    `error initializing configuration '/dev/fd/0': goo.gle/debugproto node { id: "x" } Proto constraint validation failed`,
+			expected: `error initializing configuration '/dev/fd/0': goo.gle/debug node { id: "x" } Proto constraint validation failed`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, normalizeEnvoyError(tt.input))
 		})
 	}
 }
@@ -414,7 +498,7 @@ func createMockBinary(t *testing.T, script string) string {
 	t.Cleanup(func() { os.RemoveAll(tmpDir) })
 
 	mockPath := filepath.Join(tmpDir, "mock-envoy")
-	err = os.WriteFile(mockPath, []byte(script), 0755) //nolint:gosec // G306: test file creating executable mock script
+	err = os.WriteFile(mockPath, []byte(script), 0o755) //nolint:gosec // G306: test file creating executable mock script
 	require.NoError(t, err)
 
 	return mockPath

@@ -7,8 +7,10 @@ package kgateway
 // Gateway API resources with status management
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses;gateways;httproutes;grpcroutes;tcproutes;tlsroutes;referencegrants;backendtlspolicies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.networking.x-k8s.io,resources=xlistenersets,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=listenersets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/status;gateways/status;httproutes/status;grpcroutes/status;tcproutes/status;tlsroutes/status;backendtlspolicies/status,verbs=patch;update
 // +kubebuilder:rbac:groups=gateway.networking.x-k8s.io,resources=xlistenersets/status,verbs=patch;update
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=listenersets/status,verbs=patch;update
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses,verbs=create;patch;update
 
 // Controller resources
@@ -26,6 +28,9 @@ package kgateway
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;patch;update;delete
 // +kubebuilder:rbac:groups="",resources=secrets;serviceaccounts,verbs=get;list;watch;create;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;patch;delete
+// +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=get;list;watch;create;patch;update;delete
+// +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;patch;update;delete
+// +kubebuilder:rbac:groups=autoscaling.k8s.io,resources=verticalpodautoscalers,verbs=get;list;watch;create;patch;update;delete
 
 // EDS discovery resources
 // +kubebuilder:rbac:groups=discovery.k8s.io,resources=endpointslices,verbs=get;list;watch
