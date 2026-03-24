@@ -1,0 +1,81 @@
+format = """
+$directory\
+$git_branch\
+$git_status\
+$golang\
+$rust\
+$kubernetes\
+$helm\
+$docker_context\
+$buf\
+$nix_shell\
+$line_break\
+$character"""
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+style = "bold cyan"
+
+[git_branch]
+format = "on [$symbol$branch(:$remote_branch)]($style) "
+symbol = " "
+style = "bold purple"
+
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+style = "bold red"
+
+[golang]
+format = "[$symbol($version)]($style) "
+symbol = " "
+style = "bold cyan"
+detect_files = ["go.mod"]
+
+[rust]
+format = "[$symbol($version)]($style) "
+symbol = " "
+style = "bold red"
+detect_files = ["Cargo.toml"]
+
+[kubernetes]
+disabled = false
+format = "[$symbol$context( \\($namespace\\))]($style) "
+symbol = " "
+style = "bold blue"
+detect_files = []
+detect_extensions = []
+detect_folders = []
+# Show when KUBECONFIG is set
+detect_env_vars = ["KUBECONFIG"]
+
+[helm]
+format = "[$symbol($version)]($style) "
+symbol = " "
+style = "bold white"
+detect_files = ["Chart.yaml", "helmfile.yaml"]
+detect_folders = ["charts"]
+
+[docker_context]
+format = "[$symbol$context]($style) "
+symbol = " "
+style = "blue"
+only_with_files = false
+disabled = true
+
+[buf]
+format = "[$symbol($version)]($style) "
+symbol = " "
+style = "bold blue"
+detect_files = ["buf.yaml", "buf.gen.yaml", "buf.work.yaml"]
+
+[nix_shell]
+format = "via [$symbol$state]($style) "
+symbol = " "
+style = "bold blue"
+impure_msg = "nix"
+pure_msg = "nix pure"
+
+[character]
+success_symbol = "[->](bold green)"
+error_symbol = "[->](bold red)"
