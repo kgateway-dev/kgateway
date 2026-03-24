@@ -56,11 +56,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: 'Some listeners are not programmed: https: Secret default/missing-cert
           not found.; https2: invalid TLS secret default/invalid-cert: tls: failed
           to find any PEM data in key input'

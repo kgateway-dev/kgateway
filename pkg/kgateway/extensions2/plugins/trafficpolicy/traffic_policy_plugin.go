@@ -101,6 +101,7 @@ type trafficPolicySpecIr struct {
 	urlRewrite      *urlRewriteIR
 	apiKeyAuth      *apiKeyAuthIR
 	oauth2          *oauthIR
+	tracing         *routeTracingIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -176,6 +177,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.oauth2.Equals(d2.spec.oauth2) {
 		return false
 	}
+	if !d.spec.tracing.Equals(d2.spec.tracing) {
+		return false
+	}
 	return true
 }
 
@@ -202,6 +206,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.urlRewrite.Validate)
 	validators = append(validators, p.spec.apiKeyAuth.Validate)
 	validators = append(validators, p.spec.oauth2.Validate)
+	validators = append(validators, p.spec.tracing.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -663,6 +668,9 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 
 	// Apply URL rewrite configuration
 	applyURLRewrite(spec.urlRewrite, out)
+
+	// Apply route-level tracing overrides
+	p.handleRouteTracing(spec, out)
 }
 
 // handlePerVHostPolicies handles policies that are meant to be processed at the vhost level

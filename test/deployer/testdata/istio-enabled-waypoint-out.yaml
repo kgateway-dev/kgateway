@@ -261,10 +261,6 @@ spec:
     port: 15008
     protocol: TCP
     targetPort: 15008
-  - name: http-monitoring
-    port: 9091
-    protocol: TCP
-    targetPort: 9091
   selector:
     app.kubernetes.io/instance: waypoint
     app.kubernetes.io/name: waypoint

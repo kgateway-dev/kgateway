@@ -32,21 +32,20 @@ Listeners:
         - name: envoy.http.original_ip_detection.xff
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.http.original_ip_detection.xff.v3.XffConfig
+            skipXffAppend: false
             xffTrustedCidrs:
               cidrs:
               - addressPrefix: 10.0.0.0
                 prefixLen: 8
               - addressPrefix: 192.168.0.0
                 prefixLen: 16
-              - addressPrefix: "fc00::"
+              - addressPrefix: 'fc00::'
                 prefixLen: 7
-            skipXffAppend: false
         rds:
           configSource:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        skipXffAppend: false
         statPrefix: http
         useRemoteAddress: false
     name: listener~80
@@ -87,11 +86,6 @@ Statuses:
   gateways:
     default/example-gateway:
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted

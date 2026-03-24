@@ -249,10 +249,6 @@ spec:
     port: 8080
     protocol: TCP
     targetPort: 8080
-  - name: http-monitoring
-    port: 9091
-    protocol: TCP
-    targetPort: 9091
   selector:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/name: gw

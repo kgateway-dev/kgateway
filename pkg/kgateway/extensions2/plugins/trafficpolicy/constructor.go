@@ -133,6 +133,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 
+	// Construct route tracing specific IR
+	constructRouteTracing(policyCR.Spec, &outSpec)
 	// Construct url rewrite specific IR
 	constructURLRewrite(policyCR.Spec, &outSpec)
 	// Construct basic auth specific IR

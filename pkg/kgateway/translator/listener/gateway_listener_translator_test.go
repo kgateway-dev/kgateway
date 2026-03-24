@@ -855,6 +855,82 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				Expect(tlsListener.BackendRefs[0].ClusterName).To(Equal("backend-svc1"))
 				Expect(tlsListener.FilterChainCommon.Matcher.SniDomains).To(ContainElement("example.com"))
 			})
+
+			It("should create a filter chain per intersecting TLSRoute hostname", func() {
+				gwListener.Hostname = ptr.To(gwv1.Hostname("*.example.com"))
+
+				exactRoute := tlsRoute("exact-tls-route")
+				exactRoute.Spec = gwv1a2.TLSRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{
+						ParentRefs: []gwv1.ParentReference{{
+							Name:      gwv1.ObjectName("test-gateway"),
+							Namespace: ptr.To(gwv1.Namespace("default")),
+							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+						}},
+					},
+					Hostnames: []gwv1a2.Hostname{"abc.example.com"},
+					Rules: []gwv1a2.TLSRouteRule{{
+						BackendRefs: []gwv1.BackendRef{{
+							BackendObjectReference: gwv1.BackendObjectReference{
+								Name:      "backend-svc1",
+								Namespace: ptr.To(gwv1.Namespace("default")),
+								Port:      ptr.To(gwv1.PortNumber(8081)),
+							},
+						}},
+					}},
+				}
+
+				wildcardRoute := tlsRoute("wildcard-tls-route")
+				wildcardRoute.Spec = gwv1a2.TLSRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{
+						ParentRefs: []gwv1.ParentReference{{
+							Name:      gwv1.ObjectName("test-gateway"),
+							Namespace: ptr.To(gwv1.Namespace("default")),
+							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+						}},
+					},
+					Hostnames: []gwv1a2.Hostname{"*.com"},
+					Rules: []gwv1a2.TLSRouteRule{{
+						BackendRefs: []gwv1.BackendRef{{
+							BackendObjectReference: gwv1.BackendObjectReference{
+								Name:      "backend-svc2",
+								Namespace: ptr.To(gwv1.Namespace("default")),
+								Port:      ptr.To(gwv1.PortNumber(8082)),
+							},
+						}},
+					}},
+				}
+
+				routes := []*query.RouteInfo{
+					{
+						Object:            tlsToIr(exactRoute),
+						HostnameOverrides: []string{"abc.example.com"},
+					},
+					{
+						Object:            tlsToIr(wildcardRoute),
+						HostnameOverrides: []string{"*.example.com"},
+					},
+				}
+
+				ml.AppendTlsListener(lisToIr(gwListener), routes, listenerReporter)
+
+				Expect(ml.Listeners).To(HaveLen(1))
+				Expect(ml.Listeners[0].TcpFilterChains).To(HaveLen(2))
+
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
+				Expect(translatedListener).NotTo(BeNil())
+				Expect(translatedListener.TcpFilterChain).To(HaveLen(2))
+
+				backendsBySNI := map[string]string{}
+				for _, fc := range translatedListener.TcpFilterChain {
+					Expect(fc.FilterChainCommon.Matcher.SniDomains).To(HaveLen(1))
+					Expect(fc.BackendRefs).To(HaveLen(1))
+					backendsBySNI[fc.FilterChainCommon.Matcher.SniDomains[0]] = fc.BackendRefs[0].ClusterName
+				}
+
+				Expect(backendsBySNI).To(HaveKeyWithValue("abc.example.com", "backend-svc1"))
+				Expect(backendsBySNI).To(HaveKeyWithValue("*.example.com", "backend-svc2"))
+			})
 		})
 	})
 

@@ -245,10 +245,6 @@ spec:
     port: 8080
     protocol: TCP
     targetPort: 8080
-  - name: http-monitoring
-    port: 9091
-    protocol: TCP
-    targetPort: 9091
   selector:
     app.kubernetes.io/instance: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097
     app.kubernetes.io/name: extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097

@@ -105,6 +105,13 @@ Listeners:
                           name: envoy.filters.http.ext_proc
                           typedConfig:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                            allowModeOverride: true
+                            allowedOverrideModes:
+                            - requestHeaderMode: SEND
+                              requestTrailerMode: SKIP
+                              responseBodyMode: BUFFERED
+                              responseHeaderMode: SEND
+                              responseTrailerMode: SKIP
                             grpcService:
                               envoyGrpc:
                                 clusterName: kube_infra_extproc_9000
@@ -127,14 +134,6 @@ Listeners:
                               responseBodyMode: BUFFERED
                               responseHeaderMode: SKIP
                               responseTrailerMode: SEND
-                            allowModeOverride: true
-                            allowedOverrideModes:
-                              - requestHeaderMode: SEND
-                                responseHeaderMode: SEND
-                                requestBodyMode: NONE
-                                responseBodyMode: BUFFERED
-                                requestTrailerMode: SKIP
-                                responseTrailerMode: SKIP
                             routeCacheAction: CLEAR
                             statPrefix: my_extproc
                   predicate:
@@ -209,11 +208,6 @@ Statuses:
   gateways:
     infra/example-gateway:
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted

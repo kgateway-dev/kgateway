@@ -15,7 +15,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -427,6 +426,12 @@ var _ = Describe("Query", func() {
 			It("should work with prefix listeners and specific http", func() {
 				expectHostnamesToMatch("*.foo.com", []string{"bar.foo.com", "foo.com", "far.foo.com", "blah.com"}, "bar.foo.com", "far.foo.com")
 			})
+			It("should prefer the more specific wildcard hostname", func() {
+				expectHostnamesToMatch("*.example.com", []string{"*.com"}, "*.example.com")
+			})
+			It("should keep the more specific wildcard route hostname", func() {
+				expectHostnamesToMatch("*.com", []string{"*.example.com"}, "*.example.com")
+			})
 			It("should work with catch all listener hostname", func() {
 				expectHostnamesToMatch("", []string{"foo.com", "blah.com"}, "foo.com", "blah.com")
 			})
@@ -611,6 +616,38 @@ var _ = Describe("Query", func() {
 			Expect(routes.GetListenerResult(gw, "foo-tcp").Routes).To(HaveLen(1))
 			Expect(routes.GetListenerResult(gw, "bar").Routes).To(BeEmpty())
 		})
+
+		It("should allow TCPRoute for a TCP listener when AllowedRoutes kind omits group", func() {
+			gw := gw()
+			gw.Spec.Listeners = []gwv1.Listener{
+				{
+					Name:     "foo-tcp",
+					Protocol: gwv1.TCPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{{Kind: wellknown.TCPRouteKind}},
+					},
+				},
+			}
+
+			tcpRoute := tcpRoute(gw.Namespace)
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
+						{
+							Name: gwv1.ObjectName(gw.Name),
+						},
+					},
+				},
+			}
+
+			gq := newQueries(GinkgoT(), tcpRoute)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors).To(BeEmpty())
+			Expect(routes.GetListenerResult(gw, "foo-tcp").Error).NotTo(HaveOccurred())
+			Expect(routes.GetListenerResult(gw, "foo-tcp").Routes).To(HaveLen(1))
+		})
 	})
 
 	It("should match TLSRoutes for Listener", func() {
@@ -790,6 +827,116 @@ var _ = Describe("Query", func() {
 		Expect(routes.RouteErrors).To(BeEmpty())
 		Expect(routes.GetListenerResult(gw, "foo-tls").Routes).To(HaveLen(1))
 		Expect(routes.GetListenerResult(gw, "bar").Routes).To(BeEmpty())
+	})
+
+	It("should reject TCPRoute for a passthrough TLS listener with mixed allowed kinds", func() {
+		gw := gw()
+		mode := gwv1.TLSModePassthrough
+		gw.Spec.Listeners = []gwv1.Listener{
+			{
+				Name:     "foo-tls",
+				Protocol: gwv1.TLSProtocolType,
+				TLS: &gwv1.ListenerTLSConfig{
+					Mode: &mode,
+				},
+				AllowedRoutes: &gwv1.AllowedRoutes{
+					Kinds: []gwv1.RouteGroupKind{
+						{Kind: wellknown.TCPRouteKind},
+						{Kind: wellknown.TLSRouteKind},
+					},
+				},
+			},
+		}
+
+		tcpRoute := tcpRoute(gw.Namespace)
+		tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Name: gwv1.ObjectName(gw.Name),
+					},
+				},
+			},
+		}
+
+		gq := newQueries(GinkgoT(), tcpRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(HaveLen(1))
+		Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
+	})
+
+	It("should allow TCPRoute for a terminated TLS listener", func() {
+		gw := gw()
+		mode := gwv1.TLSModeTerminate
+		gw.Spec.Listeners = []gwv1.Listener{
+			{
+				Name:     "foo-tls-terminate",
+				Protocol: gwv1.TLSProtocolType,
+				TLS: &gwv1.ListenerTLSConfig{
+					Mode: &mode,
+				},
+				AllowedRoutes: &gwv1.AllowedRoutes{
+					Kinds: []gwv1.RouteGroupKind{{Kind: wellknown.TCPRouteKind}},
+				},
+			},
+		}
+
+		tcpRoute := tcpRoute(gw.Namespace)
+		tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Name: gwv1.ObjectName(gw.Name),
+					},
+				},
+			},
+		}
+
+		gq := newQueries(GinkgoT(), tcpRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(BeEmpty())
+		Expect(routes.GetListenerResult(gw, "foo-tls-terminate").Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(gw, "foo-tls-terminate").Routes).To(HaveLen(1))
+	})
+
+	It("should allow TLSRoute for a terminated TLS listener", func() {
+		gw := gw()
+		mode := gwv1.TLSModeTerminate
+		gw.Spec.Listeners = []gwv1.Listener{
+			{
+				Name:     "foo-tls-terminate",
+				Protocol: gwv1.TLSProtocolType,
+				TLS: &gwv1.ListenerTLSConfig{
+					Mode: &mode,
+				},
+				AllowedRoutes: &gwv1.AllowedRoutes{
+					Kinds: []gwv1.RouteGroupKind{{Kind: wellknown.TLSRouteKind}},
+				},
+			},
+		}
+
+		tlsRoute := tlsRoute(gw.Namespace)
+		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Name: gwv1.ObjectName(gw.Name),
+					},
+				},
+			},
+		}
+
+		gq := newQueries(GinkgoT(), tlsRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &ir.Gateway{Obj: gw})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(BeEmpty())
+		Expect(routes.GetListenerResult(gw, "foo-tls-terminate").Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(gw, "foo-tls-terminate").Routes).To(HaveLen(1))
 	})
 
 	// GRPCRoute Tests
@@ -1016,6 +1163,71 @@ var _ = Describe("Query", func() {
 		Expect(routes.GetListenerResult(lsWithListener, "bar").Routes).To(HaveLen(1))
 		Expect(routes.GetListenerResult(lsWithListener, string(lsWithListener.Spec.Listeners[0].Name)).Routes[0].GetName()).To(Equal("ls-route"))
 	})
+
+	It("should get tls routes for a consolidated gateway with promoted ListenerSet", func() {
+		gwWithListener := gw()
+		gwWithListener.Spec.Listeners = []gwv1.Listener{}
+		allNamespaces := gwv1.NamespacesFromAll
+		gwWithListener.Spec.AllowedListeners = &gwv1.AllowedListeners{
+			Namespaces: &gwv1.ListenerNamespaces{
+				From: &allNamespaces,
+			},
+		}
+
+		lsWithListener := &gwv1.ListenerSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "tls-ls",
+			},
+			Spec: gwv1.ListenerSetSpec{
+				Listeners: []gwv1.ListenerEntry{
+					{
+						Name:     "tls-bar",
+						Protocol: gwv1.TLSProtocolType,
+						Port:     8444,
+					},
+				},
+				ParentRef: gwv1.ParentGatewayReference{
+					Name: gwv1.ObjectName(gwWithListener.Name),
+				},
+			},
+		}
+		lsWithListener.SetGroupVersionKind(wellknown.ListenerSetGVK)
+
+		tlsr := tlsRoute(lsWithListener.Namespace)
+		lsKind := gwv1.Kind(wellknown.ListenerSetKind)
+		lsGroup := gwv1.Group(wellknown.ListenerSetGroup)
+		lsSection := gwv1.SectionName(lsWithListener.Spec.Listeners[0].Name)
+		lsHostname := gwv1.Hostname("with-routes.example.com")
+		tlsr.Spec = gwv1a2.TLSRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{
+				ParentRefs: []gwv1.ParentReference{
+					{
+						Kind:        &lsKind,
+						Group:       &lsGroup,
+						Name:        gwv1.ObjectName(lsWithListener.Name),
+						SectionName: &lsSection,
+					},
+				},
+			},
+			Hostnames: []gwv1a2.Hostname{gwv1a2.Hostname(lsHostname)},
+		}
+
+		irGW := ir.Gateway{
+			Obj: gwWithListener,
+			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{
+				wellknown.ListenerSetGVK: []ir.ListenerSet{{Obj: lsWithListener}},
+			},
+		}
+
+		gq := newQueries(GinkgoT(), tlsr)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), &irGW)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(BeEmpty())
+		Expect(routes.GetListenerResult(lsWithListener, "tls-bar").Error).NotTo(HaveOccurred())
+		Expect(routes.GetListenerResult(lsWithListener, "tls-bar").Routes).To(HaveLen(1))
+		Expect(routes.GetListenerResult(lsWithListener, "tls-bar").Routes[0].GetName()).To(Equal(tlsr.Name))
+	})
 })
 
 func refGrantSecret() *gwv1b1.ReferenceGrant {
@@ -1192,20 +1404,20 @@ func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Ba
 	})
 }
 
-func ls() *gwxv1a1.XListenerSet {
-	ls := &gwxv1a1.XListenerSet{
+func ls() *gwv1.ListenerSet {
+	ls := &gwv1.ListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "ls",
 		},
-		Spec: gwxv1a1.ListenerSetSpec{
-			Listeners: []gwxv1a1.ListenerEntry{
+		Spec: gwv1.ListenerSetSpec{
+			Listeners: []gwv1.ListenerEntry{
 				{
 					Name:     "bar",
 					Protocol: gwv1.HTTPProtocolType,
 				},
 			},
-			ParentRef: gwxv1a1.ParentGatewayReference{
+			ParentRef: gwv1.ParentGatewayReference{
 				Name: "test",
 			},
 		},

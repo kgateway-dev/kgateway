@@ -9,8 +9,8 @@ spec:
     namespaces:
       from: All
 ---
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: example-listenerset
 spec:
@@ -39,8 +39,8 @@ metadata:
 spec:
   parentRefs:
   - name: example-listenerset
-    kind: XListenerSet
-    group: gateway.networking.x-k8s.io
+    kind: ListenerSet
+    group: gateway.networking.k8s.io
     sectionName: tls-with-routes
   hostnames:
   - "with-routes.example.com"

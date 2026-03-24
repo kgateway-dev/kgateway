@@ -61,6 +61,7 @@ func MergeTrafficPolicies(
 		mergeURLRewrite,
 		mergeAPIKeyAuth,
 		mergeOAuth,
+		mergeRouteTracing,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -619,6 +620,21 @@ func mergeURLRewrite(
 		Set: func(spec *trafficPolicySpecIr, val *urlRewriteIR) { spec.urlRewrite = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "urlRewrite")
+}
+
+func mergeRouteTracing(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[routeTracingIR]{
+		Get: func(spec *trafficPolicySpecIr) *routeTracingIR { return spec.tracing },
+		Set: func(spec *trafficPolicySpecIr, val *routeTracingIR) { spec.tracing = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "tracing")
 }
 
 // fieldAccessor defines how to access and set a field on trafficPolicySpecIr

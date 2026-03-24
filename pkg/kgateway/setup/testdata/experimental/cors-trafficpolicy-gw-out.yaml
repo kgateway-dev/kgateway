@@ -79,6 +79,7 @@ routes:
       allowOriginStringMatch:
       - exact: https://example.com
       exposeHeaders: X-Custom-Header
+      forwardNotMatchingPreflights: false
       maxAge: "86400"
   virtualHosts:
   - domains:

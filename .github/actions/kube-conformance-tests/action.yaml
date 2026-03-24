@@ -34,7 +34,7 @@ runs:
     uses: ./.github/actions/prep-go-runner
 
 
-  - uses: azure/setup-kubectl@v4
+  - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4.0.1
     id: kubectl
     with:
       version: ${{ inputs.kubectl-version }}
@@ -140,12 +140,13 @@ runs:
       kubectl -n kgateway-system logs deploy/kgateway
 
   - name: Set artifact name and path
+    id: artifact-info
     shell: bash
     run: |
       case "${{ inputs.test-type }}" in
         "gateway-api")
-          echo "ARTIFACT_NAME=conformance-kgateway-gateway-report@k8s${{ inputs.kubectl-version }}" >> $GITHUB_ENV
-          echo "ARTIFACT_PATH=_test/conformance/${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
+          echo "name=conformance-kgateway-gateway-report@k8s${{ inputs.kubectl-version }}" >> $GITHUB_OUTPUT
+          echo "path=_test/conformance/${{ env.VERSION }}-report.yaml" >> $GITHUB_OUTPUT
           ;;
         *)
           echo "Unknown test type: ${{ inputs.test-type }}"
@@ -158,19 +159,19 @@ runs:
     shell: bash
     run: |
       echo -e '\n# Conformance Reports\n' >> $GITHUB_STEP_SUMMARY
-      if [[ -f "${{ env.ARTIFACT_PATH }}" ]]; then
+      if [[ -f "${{ steps.artifact-info.outputs.path }}" ]]; then
         echo -e '```yaml' >> $GITHUB_STEP_SUMMARY
-        cat "${{ env.ARTIFACT_PATH }}" >> $GITHUB_STEP_SUMMARY
+        cat "${{ steps.artifact-info.outputs.path }}" >> $GITHUB_STEP_SUMMARY
         echo -e '```\n' >> $GITHUB_STEP_SUMMARY
       else
-        echo "Report file not found: ${{ env.ARTIFACT_PATH }}" >> $GITHUB_STEP_SUMMARY
+        echo "Report file not found: ${{ steps.artifact-info.outputs.path }}" >> $GITHUB_STEP_SUMMARY
       fi
 
   - name: Upload reports
-    if: ${{ failure() }}
+    if: ${{ failure() && steps.artifact-info.outputs.path != '' }}
     uses: ./.github/actions/upload-artifact
     with:
       # Name of the path to upload. The VERSION variable refers to the Makefile
       # VERSION variable.
-      name: ${{ env.ARTIFACT_NAME }}
-      path: ${{ env.ARTIFACT_PATH }}
+      name: ${{ steps.artifact-info.outputs.name }}
+      path: ${{ steps.artifact-info.outputs.path }}
