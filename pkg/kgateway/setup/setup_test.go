@@ -1042,10 +1042,49 @@ func sortResource[T fmt.Stringer](resources []T) []T {
 	return resources
 }
 
+func canonicalizeCluster(c *envoyclusterv3.Cluster) *envoyclusterv3.Cluster {
+	if c == nil {
+		return nil
+	}
+	cloned := proto.Clone(c).(*envoyclusterv3.Cluster)
+	cloned.LoadAssignment = canonicalizeClusterLoadAssignment(cloned.GetLoadAssignment())
+	return cloned
+}
+
+func canonicalizeClusterLoadAssignment(
+	cla *envoyendpointv3.ClusterLoadAssignment,
+) *envoyendpointv3.ClusterLoadAssignment {
+	if cla == nil {
+		return nil
+	}
+	cloned := proto.Clone(cla).(*envoyendpointv3.ClusterLoadAssignment)
+	for _, localityEndpoints := range cloned.GetEndpoints() {
+		sort.Slice(localityEndpoints.LbEndpoints, func(i, j int) bool {
+			return protoLess(localityEndpoints.LbEndpoints[i], localityEndpoints.LbEndpoints[j])
+		})
+	}
+	sort.Slice(cloned.Endpoints, func(i, j int) bool {
+		return protoLess(cloned.Endpoints[i], cloned.Endpoints[j])
+	})
+	return cloned
+}
+
+func protoLess(a, b proto.Message) bool {
+	return bytes.Compare(protoBytes(a), protoBytes(b)) < 0
+}
+
+func protoBytes(msg proto.Message) []byte {
+	b, err := proto.MarshalOptions{Deterministic: true}.Marshal(msg)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 func (x *xdsDump) ToYaml() ([]byte, error) {
 	jsonM := map[string][]any{}
 	for _, c := range sortResource(x.Clusters) {
-		roundtrip, err := protoJsonRoundTrip(c)
+		roundtrip, err := protoJsonRoundTrip(canonicalizeCluster(c))
 		if err != nil {
 			return nil, err
 		}
@@ -1059,7 +1098,7 @@ func (x *xdsDump) ToYaml() ([]byte, error) {
 		jsonM["listeners"] = append(jsonM["listeners"], roundtrip)
 	}
 	for _, c := range sortResource(x.Endpoints) {
-		roundtrip, err := protoJsonRoundTrip(c)
+		roundtrip, err := protoJsonRoundTrip(canonicalizeClusterLoadAssignment(c))
 		if err != nil {
 			return nil, err
 		}
