@@ -106,6 +106,15 @@ Routes:
   name: tenant-a-https
   virtualHosts:
   - domains:
+    - tenant-b.example.com
+    name: tenant-a-https~misdirected-request~tenant-b_example_com
+    requireTls: ALL
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
+  - domains:
     - tenant-a.example.com
     name: tenant-a-https~tenant-a_example_com
     requireTls: ALL
@@ -119,6 +128,15 @@ Routes:
 - ignorePortInHostMatching: true
   name: tenant-b-https
   virtualHosts:
+  - domains:
+    - tenant-a.example.com
+    name: tenant-b-https~misdirected-request~tenant-a_example_com
+    requireTls: ALL
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
   - domains:
     - tenant-b.example.com
     name: tenant-b-https~tenant-b_example_com

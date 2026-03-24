@@ -255,6 +255,24 @@ Routes:
       route:
         cluster: kube_ls-1-ns_foo-svc_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+  - domains:
+    - ls2.tls.example.com
+    name: ls-1-ns/ls-1/tls-ls1~misdirected-request~ls2_tls_example_com
+    requireTls: ALL
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
+  - domains:
+    - tls.example.com
+    name: ls-1-ns/ls-1/tls-ls1~misdirected-request~tls_example_com
+    requireTls: ALL
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 - ignorePortInHostMatching: true
   name: ls-2-ns/ls-2/tls-ls2
   virtualHosts:
@@ -269,8 +287,45 @@ Routes:
       route:
         cluster: kube_ls-2-ns_foo-svc_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+  - domains:
+    - ls1.tls.example.com
+    name: ls-2-ns/ls-2/tls-ls2~misdirected-request~ls1_tls_example_com
+    requireTls: ALL
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
+  - domains:
+    - tls.example.com
+    name: ls-2-ns/ls-2/tls-ls2~misdirected-request~tls_example_com
+    requireTls: ALL
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 - ignorePortInHostMatching: true
   name: tls-gw
+  virtualHosts:
+  - domains:
+    - ls1.tls.example.com
+    name: tls-gw~misdirected-request~ls1_tls_example_com
+    requireTls: ALL
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
+  - domains:
+    - ls2.tls.example.com
+    name: tls-gw~misdirected-request~ls2_tls_example_com
+    requireTls: ALL
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 Statuses:
   gateways:
     default/example-gateway:
