@@ -11,8 +11,8 @@ metadata:
   labels:
     {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
 spec:
-  {{- if $gateway.replicaCount }}
-  replicas: {{ $gateway.replicaCount }}
+  {{- if not (kindIs "invalid" $gateway.replicaCount) }}
+  replicas: {{ int $gateway.replicaCount }}
   {{- end }}
   selector:
     matchLabels:

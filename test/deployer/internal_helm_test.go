@@ -103,6 +103,30 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "gwc-with-replicas",
 		},
 		{
+			Name:      "gateway with zero replicas GWP via GWC",
+			InputFile: "gwc-with-replicas-zero",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "replicas: 0",
+					"replicas: 0 should be rendered in the deployment")
+				assert.NotContains(t, outputYaml, "replicas: null",
+					"replicas: null should never appear in the output")
+			},
+		},
+		{
+			// This test case cares about SSA vs. client-side apply because it
+			// uses a null value. It'd be nice to test it both ways.
+			Name:      "gateway with null replicas GWP via GWC",
+			InputFile: "gwc-with-replicas-null",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.NotContains(t, outputYaml, "replicas: null",
+					"replicas: null should never appear in the output")
+				assert.NotRegexp(t, `(?m)^\s*replicas:`, outputYaml,
+					"replicas field should be omitted entirely when set to null")
+			},
+		},
+		{
 			Name:      "gateway with priorityClassName",
 			InputFile: "priority-class-name",
 		},
