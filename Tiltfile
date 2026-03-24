@@ -197,13 +197,13 @@ def enable_provider(provider):
     provider["links"] = get_links(provider)
     provider["binary_name"] = provider.get("binary_name").replace("$ARCH", arch)
     
-  original_image = provider.get("image")
-if original_image:
-    image_name = original_image.split("/")[-1]
-    if image_registry:
-        provider["image"] = image_registry + "/" + image_name
-    else:
-        provider["image"] = image_name
+    original_image = provider.get("image")
+    if original_image:
+        image_name = original_image.split("/")[-1]
+        if image_registry:
+            provider["image"] = image_registry + "/" + image_name
+        else:
+            provider["image"] = image_name
 
     build_go_binary(provider)
     build_docker_image(
