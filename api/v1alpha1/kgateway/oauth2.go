@@ -109,14 +109,6 @@ type OAuth2Provider struct {
 	// +optional
 	Cookies *OAuth2CookieConfig `json:"cookies,omitempty"`
 
-	// JWKSURI specifies the URL that public keys for validating JWTs should be retrieved from.
-	// This must be set if the retrieved access or ID token need to be parsed and IssuerURI is not set for discovery.
-	// If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
-	// The URL must point to a valid JWKS definition.
-	// Refer to https://datatracker.ietf.org/doc/html/rfc7517#section-5 for more details.
-	// +optional
-	JWKSURI *HttpsUri `json:"jwksURI,omitempty"`
-
 	// JWT specifies the configuration for whether and how to process the retrieved access and ID tokens as JSON Web Token.
 	// +optional
 	JWT *OAuth2JWTConfig `json:"jwt,omitempty"`
@@ -202,6 +194,14 @@ type OAuth2CookieNames struct {
 
 // OAuth2JWTConfig specifies how retrieved tokens are to be parsed and verified as JWT if at all.
 type OAuth2JWTConfig struct {
+	// JWKSURI specifies the URL that public keys for validating JWTs should be retrieved from.
+	// This must be set if the retrieved access or ID token need to be parsed and IssuerURI is not set for discovery.
+	// If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
+	// The URL must point to a valid JWKS definition.
+	// Refer to https://datatracker.ietf.org/doc/html/rfc7517#section-5 for more details.
+	// +optional
+	JWKSURI *HttpsUri `json:"jwksURI,omitempty"`
+
 	// AccessToken specifies how to process the retrieved access token.
 	// This requires the access token cookie to be enabled. Requests missing the token will be rejected.
 	// The token will be verified against the provided JWKS.

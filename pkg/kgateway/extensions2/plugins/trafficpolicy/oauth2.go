@@ -131,11 +131,14 @@ func buildOAuth2ProviderConfig(
 	tokenEndpoint := ptr.Deref(in.TokenEndpoint, "").String()
 	authorizationEndpoint := ptr.Deref(in.AuthorizationEndpoint, "").String()
 	endSessionEndpoint := ptr.Deref(in.EndSessionEndpoint, "").String()
-	jwksURI := ptr.Deref(in.JWKSURI, "").String()
+	var jwksURI string
+	if in.JWT != nil {
+		jwksURI = ptr.Deref(in.JWT.JWKSURI, "").String()
+	}
 
 	if in.IssuerURI != nil {
 		// only discover config if we need to, i.e., when either tokenEndpoint, authorizationEndpoint, or endSessionEndpoint is not provided
-		if in.TokenEndpoint == nil || in.AuthorizationEndpoint == nil || in.EndSessionEndpoint == nil || in.JWKSURI == nil {
+		if in.TokenEndpoint == nil || in.AuthorizationEndpoint == nil || in.EndSessionEndpoint == nil || (in.JWT != nil && in.JWT.JWKSURI == nil) {
 			openidCfg, err := discoverer.get(*in.IssuerURI)
 			if err != nil {
 				return nil, err

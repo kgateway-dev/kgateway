@@ -1391,15 +1391,6 @@ spec:
                       is reprocessed.
                     pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?$
                     type: string
-                  jwksURI:
-                    description: |-
-                      JWKSURI specifies the URL that public keys for validating JWTs should be retrieved from.
-                      This must be set if the retrieved access or ID token need to be parsed and IssuerURI is not set for discovery.
-                      If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
-                      The URL must point to a valid JWKS definition.
-                      Refer to https://datatracker.ietf.org/doc/html/rfc7517#section-5 for more details.
-                    pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
-                    type: string
                   jwt:
                     description: JWT specifies the configuration for whether and how
                       to process the retrieved access and ID tokens as JSON Web Token.
@@ -1502,6 +1493,15 @@ spec:
                             minItems: 1
                             type: array
                         type: object
+                      jwksURI:
+                        description: |-
+                          JWKSURI specifies the URL that public keys for validating JWTs should be retrieved from.
+                          This must be set if the retrieved access or ID token need to be parsed and IssuerURI is not set for discovery.
+                          If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
+                          The URL must point to a valid JWKS definition.
+                          Refer to https://datatracker.ietf.org/doc/html/rfc7517#section-5 for more details.
+                        pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
+                        type: string
                     type: object
                   logoutPath:
                     default: /logout
