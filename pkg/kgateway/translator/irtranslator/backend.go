@@ -244,10 +244,6 @@ func processDnsLookupFamily(out *envoyclusterv3.Cluster, cc *collections.CommonC
 			return
 		}
 		cdt.ClusterType.TypedConfig = typedConfig
-	case *envoyclusterv3.Cluster_Type:
-		if cdt.Type == envoyclusterv3.Cluster_STATIC || cdt.Type == envoyclusterv3.Cluster_LOGICAL_DNS || cdt.Type == envoyclusterv3.Cluster_STRICT_DNS {
-			out.DnsLookupFamily = lookupFamily
-		}
 	default:
 		return
 	}
