@@ -6,9 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"slices"
 	"strings"
 )
+
+// protoDebugPrefixRe matches the non-deterministic "goo.gle/..." URL that newer
+// protobuf C++ DebugString() prepends to text-format output.
+var protoDebugPrefixRe = regexp.MustCompile(`goo\.gle/\S+\s*`)
 
 var (
 	defaultEnvoyPath = "/usr/local/bin/envoy"
@@ -136,5 +141,13 @@ func extractEnvoyError(stderr string) string {
 			remainingLines = append(remainingLines, trimmed)
 		}
 	}
-	return strings.Join(remainingLines, " ")
+	return stripProtoDebugPrefix(strings.Join(remainingLines, " "))
+}
+
+// stripProtoDebugPrefix removes the non-deterministic "goo.gle/..." URL prefix
+// that newer versions of protobuf's C++ DebugString() prepend to text-format output.
+// The prefix varies between builds (e.g. "goo.gle/debugonly", "goo.gle/debugproto")
+// and breaks golden-file test comparisons.
+func stripProtoDebugPrefix(s string) string {
+	return protoDebugPrefixRe.ReplaceAllString(s, "")
 }
