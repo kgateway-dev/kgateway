@@ -1,11 +1,14 @@
 package irtranslator
 
 import (
+	"context"
 	"testing"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestValidateWeightedClusters(t *testing.T) {
@@ -88,4 +91,23 @@ func TestValidateWeightedClusters(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestComputeVirtualHostDirectResponse(t *testing.T) {
+	t.Parallel()
+
+	translator := &httpRouteConfigurationTranslator{}
+	virtualHost := &ir.VirtualHost{
+		Name:     "https-listener~misdirected-request~second-example.org",
+		Hostname: "second-example.org",
+		DirectResponse: &ir.DirectResponseIR{
+			StatusCode: 421,
+		},
+	}
+
+	envoyVirtualHost := translator.computeVirtualHost(context.Background(), virtualHost)
+
+	assert.Equal(t, []string{"second-example.org"}, envoyVirtualHost.GetDomains())
+	assert.Len(t, envoyVirtualHost.GetRoutes(), 1)
+	assert.Equal(t, uint32(421), envoyVirtualHost.GetRoutes()[0].GetDirectResponse().GetStatus())
 }

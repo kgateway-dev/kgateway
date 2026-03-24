@@ -359,13 +359,15 @@ func (ml *MergedListener) TranslateListener(
 	}
 
 	// Translate HTTPS filter chains
-	for _, mfc := range ml.httpsFilterChains {
+	for i := range ml.httpsFilterChains {
+		mfc := &ml.httpsFilterChains[i]
 		httpsFilterChain, err := mfc.translateHttpsFilterChain(
 			kctx,
 			ctx,
 			queries,
 			reporter,
 			ml.gateway.FrontendTLSConfig,
+			ml.httpsFilterChains,
 		)
 		if err != nil {
 			// Log and skip invalid HTTPS filter chains
@@ -762,6 +764,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 	frontendTLSConfig *ir.FrontendTLSConfigIR,
+	samePortFilterChains []httpsFilterChain,
 ) (*ir.HttpFilterChainIR, error) {
 	// process routes first, so any route related errors are reported on the httproute.
 	routesByHost := map[string]routeutils.SortableRoutes{}
@@ -776,19 +779,43 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		virtualHostNames = map[string]bool{}
 		virtualHosts     = []*ir.VirtualHost{}
 	)
+	currentPattern := normalizeHTTPSListenerHostnamePattern(hfc.sniDomain)
+	siblingPatterns := siblingHTTPSListenerHostnamePatterns(hfc.gatewayListenerName, samePortFilterChains)
+	allPatterns := make([]string, 0, len(siblingPatterns)+1)
+	allPatterns = append(allPatterns, currentPattern)
+	allPatterns = append(allPatterns, siblingPatterns...)
+	actualDomains := make(map[string]struct{}, len(routesByHost))
 	for host, vhostRoutes := range routesByHost {
+		normalizedHost := normalizeHTTPSHostnamePattern(host)
+		if isExactHostnamePattern(normalizedHost) && shouldShadowHTTPSExactVirtualHost(currentPattern, normalizedHost, allPatterns) {
+			continue
+		}
+
 		sort.Stable(vhostRoutes)
 		vhostName := makeVhostName(ctx, hfc.gatewayListenerName, host)
 		if !virtualHostNames[vhostName] {
 			virtualHostNames[vhostName] = true
 			virtualHost := &ir.VirtualHost{
-				Name:     vhostName,
-				Hostname: host,
-				Rules:    vhostRoutes.ToRoutes(),
+				Name:      vhostName,
+				Hostname:  host,
+				Rules:     vhostRoutes.ToRoutes(),
+				ParentRef: hfc.listener,
 			}
 			virtualHosts = append(virtualHosts, virtualHost)
+			actualDomains[normalizedHost] = struct{}{}
 		}
 	}
+	virtualHosts = append(
+		virtualHosts,
+		buildHTTPSMisdirectedRequestVirtualHosts(
+			ctx,
+			hfc.gatewayListenerName,
+			hfc.listener,
+			currentPattern,
+			siblingPatterns,
+			actualDomains,
+		)...,
+	)
 
 	var matcher ir.FilterChainMatch
 	if hfc.sniDomain != nil {

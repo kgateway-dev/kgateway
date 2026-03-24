@@ -36,9 +36,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 		features.GatewayHTTPListenerIsolationFeature,
 		// Gateway.spec.tls.backend.clientCertificateRef is not translated yet.
 		features.GatewayBackendClientCertificateFeature,
-		// We do not yet implement the 421 misdirected-request behavior across HTTPS listeners
-		// sharing the same port.
-		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,
 	)
 	if !enableExperimentalGatewayAPIFeatures {
 		// TLSRoute processing is behind the experimental Gateway API feature flag.

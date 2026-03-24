@@ -201,6 +201,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("https gateway detects misdirected requests across listeners on the same port", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "https-listener-detect-misdirected-requests",
+			outputFile: "https-listener-detect-misdirected-requests-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "same-namespace-with-https-listener",
+			},
+		})
+	})
+
 	t.Run("http gateway with multiple routing rules and HeaderModifier filter", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "http-with-header-modifier",

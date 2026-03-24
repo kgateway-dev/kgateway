@@ -135,21 +135,6 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 ) *envoyroutev3.VirtualHost {
 	sanitizedName := utils.SanitizeForEnvoy(ctx, virtualHost.Name, "virtual host")
 
-	var envoyRoutes []*envoyroutev3.Route
-	for i, route := range virtualHost.Rules {
-		var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
-		if route.Parent != nil {
-			// route may be a fake one that we don't really report,
-			// such as in the waypoint translator where we produce
-			// synthetic routes if there none are attached to the Gateway/Service.
-			routeReport = h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
-		}
-		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
-		computedRoute := h.envoyRoutes(ctx, routeReport, route, generatedName)
-		if computedRoute != nil {
-			envoyRoutes = append(envoyRoutes, computedRoute)
-		}
-	}
 	domains := []string{virtualHost.Hostname}
 	if len(domains) == 0 || (len(domains) == 1 && domains[0] == "") {
 		domains = []string{"*"}
@@ -158,6 +143,26 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	if h.requireTlsOnVirtualHosts {
 		// TODO (ilackarms): support external-only TLS
 		envoyRequireTls = envoyroutev3.VirtualHost_ALL
+	}
+
+	var envoyRoutes []*envoyroutev3.Route
+	if virtualHost.DirectResponse != nil {
+		envoyRoutes = []*envoyroutev3.Route{newDirectResponseRoute(virtualHost.DirectResponse.StatusCode, virtualHost.DirectResponse.Body)}
+	} else {
+		for i, route := range virtualHost.Rules {
+			var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
+			if route.Parent != nil {
+				// route may be a fake one that we don't really report,
+				// such as in the waypoint translator where we produce
+				// synthetic routes if there none are attached to the Gateway/Service.
+				routeReport = h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
+			}
+			generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
+			computedRoute := h.envoyRoutes(ctx, routeReport, route, generatedName)
+			if computedRoute != nil {
+				envoyRoutes = append(envoyRoutes, computedRoute)
+			}
+		}
 	}
 
 	out := &envoyroutev3.VirtualHost{
@@ -192,24 +197,31 @@ func setFallBackConfig(name, domain string) *envoyroutev3.VirtualHost {
 	return &envoyroutev3.VirtualHost{
 		Domains: []string{domain},
 		Name:    name,
-		Routes: []*envoyroutev3.Route{{
-			Match: &envoyroutev3.RouteMatch{
-				PathSpecifier: &envoyroutev3.RouteMatch_Prefix{
-					Prefix: "/",
-				},
-			},
-			Action: &envoyroutev3.Route_DirectResponse{
-				DirectResponse: &envoyroutev3.DirectResponseAction{
-					Status: http.StatusInternalServerError,
-					Body: &envoycorev3.DataSource{
-						Specifier: &envoycorev3.DataSource_InlineString{
-							InlineString: directResponseActionBody,
-						},
-					},
-				},
-			},
-		}},
+		Routes:  []*envoyroutev3.Route{newDirectResponseRoute(http.StatusInternalServerError, directResponseActionBody)},
 	}
+}
+
+func newDirectResponseRoute(statusCode uint32, body string) *envoyroutev3.Route {
+	route := &envoyroutev3.Route{
+		Match: &envoyroutev3.RouteMatch{
+			PathSpecifier: &envoyroutev3.RouteMatch_Prefix{
+				Prefix: "/",
+			},
+		},
+		Action: &envoyroutev3.Route_DirectResponse{
+			DirectResponse: &envoyroutev3.DirectResponseAction{
+				Status: statusCode,
+			},
+		},
+	}
+	if body != "" {
+		route.GetDirectResponse().Body = &envoycorev3.DataSource{
+			Specifier: &envoycorev3.DataSource_InlineString{
+				InlineString: body,
+			},
+		}
+	}
+	return route
 }
 
 type backendConfigContext struct {
