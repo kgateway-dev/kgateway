@@ -464,6 +464,55 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			}(),
 		},
 		{
+			name: "RingHash: UseHostnameForHashing, DnsCluster AllAddressesInSingleEndpoint",
+			config: &kgateway.LoadBalancer{
+				RingHash: &kgateway.LoadBalancerRingHashConfig{
+					UseHostnameForHashing: new(true),
+				},
+			},
+			cluster: func() *envoyclusterv3.Cluster {
+				dnsClusterMsg, _ := utils.MessageToAny(&envoydnsv3.DnsCluster{
+					AllAddressesInSingleEndpoint: true,
+				})
+				return &envoyclusterv3.Cluster{
+					ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+						ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+							Name:        dnsClusterExtensionName,
+							TypedConfig: dnsClusterMsg,
+						},
+					},
+				}
+			}(),
+			expected: func() *envoyclusterv3.Cluster {
+				dnsClusterMsg, _ := utils.MessageToAny(&envoydnsv3.DnsCluster{
+					AllAddressesInSingleEndpoint: true,
+				})
+				msg, _ := utils.MessageToAny(&ringhashv3.RingHash{
+					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
+						UseHostnameForHashing: false,
+					},
+				})
+				return &envoyclusterv3.Cluster{
+					Name: "test",
+					ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+						ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+							Name:        dnsClusterExtensionName,
+							TypedConfig: dnsClusterMsg,
+						},
+					},
+					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
+						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+								Name:        "envoy.load_balancing_policies.ring_hash",
+								TypedConfig: msg,
+							},
+						}},
+					},
+					CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+				}
+			}(),
+		},
+		{
 			name: "Ringhash: UseHostnameForHashing, EDS",
 			config: &kgateway.LoadBalancer{
 				RingHash: &kgateway.LoadBalancerRingHashConfig{
