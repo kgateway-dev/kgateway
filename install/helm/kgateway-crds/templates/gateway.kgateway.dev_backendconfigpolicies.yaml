@@ -919,8 +919,9 @@ spec:
                       WellKnownCACertificates specifies whether to use a well-known set of CA
                       certificates for validating the backend's certificate chain. Currently,
                       only the system certificate pool is supported via SDS.
-                    enum:
-                    - System
+                    maxLength: 253
+                    minLength: 1
+                    pattern: ^(System|([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/([A-Za-z0-9][-A-Za-z0-9_.]{0,61})?[A-Za-z0-9]))$
                     type: string
                 type: object
                 x-kubernetes-validations:

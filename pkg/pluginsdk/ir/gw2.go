@@ -101,6 +101,9 @@ type ClientCertificateValidation struct {
 	CACertificates [][]byte
 	// RequireClientCertificate indicates whether client certificates are required
 	RequireClientCertificate bool
+	// AllowInsecureFallback allows the handshake to continue even when the
+	// presented client certificate cannot be validated against the trusted CA.
+	AllowInsecureFallback bool
 }
 
 type TLSCertificate struct {

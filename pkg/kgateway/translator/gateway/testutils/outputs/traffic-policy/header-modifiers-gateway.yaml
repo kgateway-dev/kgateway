@@ -96,11 +96,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: NoResources
-        status: "False"
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
         status: "True"

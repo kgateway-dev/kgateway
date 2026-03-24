@@ -1,5 +1,4 @@
 {{- $gateway := .Values.gateway }}
-{{- $statsConfig := $gateway.stats }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -41,12 +40,6 @@ spec:
     {{- if $p.nodePort }}
     nodePort: {{ $p.nodePort }}
     {{- end }}
-  {{- end }}
-  {{- if $statsConfig.enabled }}
-  - name: http-monitoring
-    protocol: TCP
-    targetPort: 9091
-    port: 9091
   {{- end }}
   selector:
     {{- include "kgateway.gateway.selectorLabels" . | nindent 4 }}

@@ -47,11 +47,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: |-
           Some listeners are not programmed: https: failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef; listener-bad-certref: failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef; listener-partially-valid: invalid ca.crt kind Service in default/ca-cert-missing: InvalidCACertificateKind; listener-bad-certkind: failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef
           failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef; listener-missing-refgrant: failed to fetch CA certificate ConfigMap ca-cert-2/default: missing CA certificate reference grant

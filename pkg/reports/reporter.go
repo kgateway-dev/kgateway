@@ -27,9 +27,10 @@ type ReportMap struct {
 }
 
 type GatewayReport struct {
-	conditions         []metav1.Condition
-	listeners          map[string]*ListenerReport
-	observedGeneration int64
+	conditions           []metav1.Condition
+	listeners            map[string]*ListenerReport
+	observedGeneration   int64
+	attachedListenerSets int32
 }
 
 type ListenerSetReport struct {
@@ -56,6 +57,10 @@ type ParentRefKey struct {
 	Group string
 	Kind  string
 	types.NamespacedName
+}
+
+func (p *ParentRefKey) String() string {
+	return fmt.Sprintf("%s/%s/%s", p.Group, p.Kind, p.NamespacedName.String())
 }
 
 func NewReportMap() ReportMap {
@@ -115,7 +120,7 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 func (r *ReportMap) ListenerSet(listenerSet client.Object) *ListenerSetReport {
 	gvk := listenerSet.GetObjectKind().GroupVersionKind()
 	if gvk.Empty() {
-		gvk = wellknown.XListenerSetGVK
+		gvk = wellknown.ListenerSetGVK
 	}
 	if r.ListenerSets[gvk] == nil {
 		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)
@@ -131,7 +136,7 @@ func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSet
 
 	gvk := listenerSet.GetObjectKind().GroupVersionKind()
 	if gvk.Empty() {
-		gvk = wellknown.XListenerSetGVK
+		gvk = wellknown.ListenerSetGVK
 	}
 	if r.ListenerSets[gvk] == nil {
 		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)
@@ -157,6 +162,8 @@ func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 		return r.HTTPRoutes[key]
 	case *gwv1a2.TCPRoute:
 		return r.TCPRoutes[key]
+	case *gwv1.TLSRoute:
+		return r.TLSRoutes[key]
 	case *gwv1a2.TLSRoute:
 		return r.TLSRoutes[key]
 	case *gwv1.GRPCRoute:
@@ -179,6 +186,8 @@ func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 		r.HTTPRoutes[key] = rr
 	case *gwv1a2.TCPRoute:
 		r.TCPRoutes[key] = rr
+	case *gwv1.TLSRoute:
+		r.TLSRoutes[key] = rr
 	case *gwv1a2.TLSRoute:
 		r.TLSRoutes[key] = rr
 	case *gwv1.GRPCRoute:
@@ -232,6 +241,10 @@ func (g *GatewayReport) SetCondition(gc reporter.GatewayCondition) {
 	meta.SetStatusCondition(&g.conditions, condition)
 }
 
+func (g *GatewayReport) SetAttachedListenerSets(count int32) {
+	g.attachedListenerSets = count
+}
+
 func (g *ListenerSetReport) Listener(listener *gwv1.Listener) reporter.ListenerReporter {
 	return g.listener(string(listener.Name))
 }
@@ -275,6 +288,10 @@ func (g *ListenerSetReport) SetCondition(gc reporter.GatewayCondition) {
 
 func (g *ListenerSetReport) GetObservedGeneration() int64 {
 	return g.observedGeneration
+}
+
+func (g *ListenerSetReport) SetAttachedListenerSets(count int32) {
+	panic("This should not be called")
 }
 
 func NewListenerReport(name string) *ListenerReport {

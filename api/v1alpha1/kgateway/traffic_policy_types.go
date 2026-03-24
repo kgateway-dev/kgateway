@@ -41,6 +41,7 @@ type TrafficPolicyList struct {
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
 // +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetRefs[].sectionName must be set when targeting Gateway resources with retry policy"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy"
@@ -107,7 +108,7 @@ type TrafficPolicySpec struct {
 	Timeouts *shared.Timeouts `json:"timeouts,omitempty"`
 
 	// Retry defines the policy for retrying requests.
-	// It is applicable to HTTPRoutes, Gateway listeners and XListenerSets, and ignored for other targeted kinds.
+	// It is applicable to HTTPRoutes, Gateway listeners and ListenerSets, and ignored for other targeted kinds.
 	// +optional
 	Retry *Retry `json:"retry,omitempty"`
 
@@ -150,6 +151,16 @@ type TrafficPolicySpec struct {
 	// malicious social engineering.
 	// +optional
 	OAuth2 *OAuth2Policy `json:"oauth2,omitempty"`
+
+	// Tracing configures per-route tracing overrides.
+	// These settings override the listener-level tracing configuration
+	// (configured via ListenerPolicy) for matched routes.
+	// The tracing provider (e.g., OpenTelemetry collector endpoint) must be
+	// configured at the listener level via ListenerPolicy. Without a listener-level
+	// tracing provider, route-level settings have no effect.
+	// NOTE: This field is only honored for HTTPRoute and GRPCRoute targets.
+	// +optional
+	Tracing *RouteTracing `json:"tracing,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
@@ -605,6 +616,51 @@ type ResponseCompression struct {
 // RequestDecompression enables request gzip decompression.
 type RequestDecompression struct {
 	// Disables decompression.
+	// +optional
+	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+}
+
+// RouteTracing configures per-route tracing overrides.
+// These settings override the listener-level tracing configuration for matched routes.
+// The tracing provider (e.g., OpenTelemetry collector endpoint) must still be
+// configured at the listener level via ListenerPolicy. Without a listener-level tracing
+// provider, route-level settings have no effect.
+// Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#config-route-v3-tracing
+//
+// +kubebuilder:validation:XValidation:rule="!has(self.disable) || (!has(self.clientSampling) && !has(self.randomSampling) && !has(self.overallSampling) && !has(self.attributes))",message="disable is mutually exclusive with other tracing fields"
+type RouteTracing struct {
+	// Target percentage of requests that will be force traced if the
+	// x-client-trace-id header is set. Overrides the listener-level setting.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	ClientSampling *int32 `json:"clientSampling,omitempty"`
+
+	// Target percentage of requests that will be randomly selected for
+	// trace generation. Overrides the listener-level setting.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	RandomSampling *int32 `json:"randomSampling,omitempty"`
+
+	// Target percentage of requests that will be traced after all other
+	// sampling checks have been applied. This acts as an upper limit on
+	// the total configured sampling rate. Overrides the listener-level setting.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	OverallSampling *int32 `json:"overallSampling,omitempty"`
+
+	// Additional attributes to add to active spans for this route.
+	// These are merged with listener-level attributes configured via ListenerPolicy.
+	// On name collision, route-level attributes take priority.
+	// +optional
+	// +kubebuilder:validation:MaxItems=16
+	Attributes []CustomAttribute `json:"attributes,omitempty"`
+
+	// Disable tracing for this route.
+	// Can be used to disable tracing for specific routes when listener-level
+	// tracing is configured via ListenerPolicy.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
 }

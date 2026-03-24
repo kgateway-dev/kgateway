@@ -13,7 +13,7 @@ import (
 
 func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
-		Group:     gwv1.SchemeGroupVersion.Group,
+		Group:     gwv1.GroupVersion.Group,
 		Kind:      wellknown.GRPCRouteKind,
 		Namespace: i.Namespace,
 		Name:      i.Name,

@@ -394,21 +394,25 @@ func generateCommonAccessLogGrpcConfig(grpcService kgateway.CommonAccessLogGrpcS
 		return nil, errors.New("grpc service log name cannot be empty")
 	}
 
-	backend := grpcBackends[getLogId(grpcService.LogName, accessLogId)]
-	if backend == nil {
-		return nil, errors.New("backend ref not found")
-	}
-
-	commonConfig, err := ToEnvoyGrpc(grpcService.CommonGrpcService, backend)
+	grpcServiceConfig, err := generateGrpcServiceConfig(grpcService, grpcBackends, accessLogId)
 	if err != nil {
 		return nil, err
 	}
 
 	return &envoygrpc.CommonGrpcAccessLogConfig{
 		LogName:             grpcService.LogName,
-		GrpcService:         commonConfig,
+		GrpcService:         grpcServiceConfig,
 		TransportApiVersion: envoycorev3.ApiVersion_V3,
 	}, nil
+}
+
+func generateGrpcServiceConfig(grpcService kgateway.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoycorev3.GrpcService, error) {
+	backend := grpcBackends[getLogId(grpcService.LogName, accessLogId)]
+	if backend == nil {
+		return nil, errors.New("backend ref not found")
+	}
+
+	return ToEnvoyGrpc(grpcService.CommonGrpcService, backend)
 }
 
 func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgateway.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
@@ -425,12 +429,13 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgate
 }
 
 func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, otelService *kgateway.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
-	config, err := generateCommonAccessLogGrpcConfig(otelService.GrpcService, grpcBackends, accessLogId)
+	config, err := generateGrpcServiceConfig(otelService.GrpcService, grpcBackends, accessLogId)
 	if err != nil {
 		return err
 	}
 
-	cfg.CommonConfig = config
+	cfg.LogName = otelService.GrpcService.LogName
+	cfg.GrpcService = config
 	if otelService.Body != nil {
 		cfg.Body = &otelv1.AnyValue{
 			Value: &otelv1.AnyValue_StringValue{

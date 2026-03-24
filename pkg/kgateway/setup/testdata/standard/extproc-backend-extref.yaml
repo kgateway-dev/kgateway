@@ -44,6 +44,30 @@ spec:
   selector:
     app: extproc
 ---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: extproc-slice
+  namespace: gwtest
+  labels:
+    kubernetes.io/service-name: extproc
+    app: extproc
+addressType: IPv4
+endpoints:
+  - addresses:
+      - 10.244.2.14
+    conditions:
+      ready: true
+    nodeName: worker
+    targetRef:
+      kind: Pod
+      name: extproc
+      namespace: gwtest
+ports:
+  - name: grpc
+    port: 9091
+    protocol: TCP
+---
 apiVersion: v1
 kind: Service
 metadata:

@@ -786,17 +786,14 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						Name: "envoy.access_loggers.open_telemetry",
 						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoy_open_telemetry.OpenTelemetryAccessLogConfig{
-								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
-									LogName: "otel-log",
-									GrpcService: &envoycorev3.GrpcService{
-										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
-												ClusterName: "backend_default_test-service_0",
-											},
+								GrpcService: &envoycorev3.GrpcService{
+									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+											ClusterName: "backend_default_test-service_0",
 										},
 									},
-									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
+								LogName: "otel-log",
 								ResourceAttributes: &otelv1.KeyValueList{
 									Values: []*otelv1.KeyValue{
 										{
@@ -1021,17 +1018,14 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						Name: "envoy.access_loggers.open_telemetry",
 						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoy_open_telemetry.OpenTelemetryAccessLogConfig{
-								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
-									LogName: "otel-log",
-									GrpcService: &envoycorev3.GrpcService{
-										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
-												ClusterName: "backend_default_test-service_0",
-											},
+								GrpcService: &envoycorev3.GrpcService{
+									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+											ClusterName: "backend_default_test-service_0",
 										},
 									},
-									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
+								LogName: "otel-log",
 								Body: &otelv1.AnyValue{
 									Value: &otelv1.AnyValue_StringValue{
 										StringValue: `"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`,
