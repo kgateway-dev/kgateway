@@ -66,10 +66,13 @@ require (
 	github.com/Masterminds/vcs v1.13.3 // indirect
 	github.com/MirrexOne/unqueryvet v1.5.3 // indirect
 	github.com/alecthomas/chroma/v2 v2.23.1 // indirect
+	github.com/alexflint/go-arg v1.6.0 // indirect
+	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/alfatraining/structtag v1.0.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/ashanbrown/forbidigo/v2 v2.3.0 // indirect
 	github.com/ashanbrown/makezero/v2 v2.1.0 // indirect
+	github.com/aws/aws-sdk-go v1.49.4 // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
 	github.com/bombsimon/wsl/v5 v5.6.0 // indirect
@@ -90,19 +93,24 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.25.4 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/godoc-lint/godoc-lint v0.11.1 // indirect
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golangci/asciicheck v0.5.0 // indirect
 	github.com/golangci/swaggoswag v0.0.0-20250504205917-77f2aca3143e // indirect
+	github.com/google/go-github/v82 v82.0.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/gostaticanalysis/nilerr v0.1.2 // indirect
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
 	github.com/hashicorp/golang-lru/arc/v2 v2.0.6 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/ldez/structtags v0.6.1 // indirect
 	github.com/manuelarte/embeddedstructfieldcheck v0.4.0 // indirect
 	github.com/manuelarte/funcorder v0.5.0 // indirect
 	github.com/matryer/is v1.4.1 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/mattn/go-sqlite3 v1.14.28 // indirect
+	github.com/narqo/go-badge v0.0.0-20230821190521-c9a75c019a59 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/otlptranslator v0.0.2 // indirect
@@ -110,8 +118,10 @@ require (
 	github.com/rhysd/actionlint v1.7.8 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rotisserie/eris v0.5.4 // indirect
+	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/solo-io/go-utils v0.20.2 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
+	github.com/vladopajic/go-test-coverage/v2 v2.18.4 // indirect
 	go.augendre.info/arangolint v0.4.0 // indirect
 	go.augendre.info/fatcontext v0.9.0 // indirect
 	go.opentelemetry.io/contrib/bridges/prometheus v0.63.0 // indirect
@@ -126,6 +136,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
+	golang.org/x/image v0.18.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gotest.tools/gotestsum v1.13.0 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect
@@ -428,9 +439,9 @@ require (
 tool (
 	github.com/golang/mock/mockgen
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
-
 	github.com/onsi/ginkgo/v2/ginkgo
 	github.com/rhysd/actionlint/cmd/actionlint
+	github.com/vladopajic/go-test-coverage/v2
 	gotest.tools/gotestsum
 	helm.sh/helm/v3/cmd/helm
 	k8s.io/code-generator/cmd/applyconfiguration-gen
