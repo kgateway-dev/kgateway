@@ -1,9 +1,13 @@
 clusters:
-- commonLbConfig:
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  commonLbConfig:
     healthyPanicThreshold: {}
     localityWeightedLbConfig: {}
   connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: istio-se_gwtest_example-se_se.example.com_80
     endpoints:
@@ -39,7 +43,6 @@ clusters:
     baseEjectionTime: 900s
     consecutive5xx: 7
     interval: 300s
-  type: STRICT_DNS
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
