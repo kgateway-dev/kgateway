@@ -14,11 +14,14 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
+
+var logger = logging.New("plugin/directresponse")
 
 type directResponse struct {
 	// +noKrtEquals
@@ -47,13 +50,14 @@ type directResponsePluginGwPass struct {
 var _ ir.ProxyTranslationPass = &directResponsePluginGwPass{}
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
-	col := krt.WrapClient(kclient.NewFilteredDelayed[*kgateway.DirectResponse](
+	cli := kclient.NewFilteredDelayed[*kgateway.DirectResponse](
 		commoncol.Client,
 		wellknown.DirectResponseGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
-	), commoncol.KrtOpts.ToOptions("DirectResponse")...)
-
+	)
+	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("DirectResponse")...)
 	gk := wellknown.DirectResponseGVK.GroupKind()
+
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.DirectResponse) *ir.PolicyWrapper {
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -74,6 +78,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			wellknown.DirectResponseGVK.GroupKind(): {
 				Name:                      "directresponse",
 				Policies:                  policyCol,
+				GetPolicyStatus:           getPolicyStatusFn(cli),
+				PatchPolicyStatus:         patchPolicyStatusFn(cli),
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 			},
 		},

@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
@@ -59,7 +58,7 @@ func TranslateListeners(
 		Translator: "TranslateListeners",
 	})(nil)
 
-	validatedListeners := validateGateway(gateway, reporter, settings)
+	validatedListeners := validateGateway(gateway, reporter)
 	mergedListeners := mergeGWListeners(queries, validatedListeners, *gateway, routesForGw, reporter, settings)
 	translatedListeners := mergedListeners.translateListeners(kctx, ctx, queries, reporter)
 
@@ -252,27 +251,38 @@ func (ml *MergedListeners) AppendTlsListener(
 	routeInfos []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
-	parent := tcpFilterChainParent{
-		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
-		listener:            listener,
-		listenerReporter:    reporter,
-		routesWithHosts:     routeInfos,
-	}
 	tls := listener.TLS
 	if tls == nil {
 		tls = &gwv1.ListenerTLSConfig{}
 	}
-	fc := tcpFilterChain{
-		parents:          parent,
-		tls:              tls,
-		sniDomain:        listener.Hostname,
-		listenerReporter: reporter,
+
+	var filterChains []tcpFilterChain
+	appendFilterChain := func(routeSet []*query.RouteInfo, sniDomains []string) {
+		filterChains = append(filterChains, tcpFilterChain{
+			parents: tcpFilterChainParent{
+				gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
+				listener:            listener,
+				listenerReporter:    reporter,
+				routesWithHosts:     routeSet,
+			},
+			tls:              tls,
+			sniDomains:       sniDomains,
+			listenerReporter: reporter,
+		})
+	}
+
+	if len(routeInfos) == 0 {
+		appendFilterChain(nil, listenerSNIDomains(listener))
+	} else {
+		for _, routeInfo := range routeInfos {
+			appendFilterChain([]*query.RouteInfo{routeInfo}, tlsRouteSNIDomains(listener, routeInfo))
+		}
 	}
 
 	finalPort := getListenerPortNumber(listener)
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
-			lis.TcpFilterChains = append(lis.TcpFilterChains, fc)
+			lis.TcpFilterChains = append(lis.TcpFilterChains, filterChains...)
 			return
 		}
 	}
@@ -281,10 +291,29 @@ func (ml *MergedListeners) AppendTlsListener(
 	ml.Listeners = append(ml.Listeners, &MergedListener{
 		name:            GenerateListenerName(listener),
 		port:            finalPort,
-		TcpFilterChains: []tcpFilterChain{fc},
+		TcpFilterChains: filterChains,
 		listener:        listener,
 		settings:        ml.settings,
 	})
+}
+
+func listenerSNIDomains(listener ir.Listener) []string {
+	if listener.Hostname == nil {
+		return nil
+	}
+	return []string{string(*listener.Hostname)}
+}
+
+func tlsRouteSNIDomains(listener ir.Listener, routeInfo *query.RouteInfo) []string {
+	if routeInfo != nil {
+		if _, ok := routeInfo.Object.(*ir.TlsRouteIR); ok {
+			if hostnames := routeInfo.Hostnames(); len(hostnames) > 0 {
+				return slices.Clone(hostnames)
+			}
+		}
+	}
+
+	return listenerSNIDomains(listener)
 }
 
 func (ml *MergedListeners) translateListeners(
@@ -394,7 +423,7 @@ func (ml *MergedListener) TranslateListener(
 type tcpFilterChain struct {
 	parents          tcpFilterChainParent
 	tls              *gwv1.ListenerTLSConfig
-	sniDomain        *gwv1.Hostname
+	sniDomains       []string
 	listenerReporter reports.ListenerReporter
 }
 
@@ -591,9 +620,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		}
 
 		var matcher ir.FilterChainMatch
-		if tc.sniDomain != nil {
-			matcher.SniDomains = []string{string(*tc.sniDomain)}
-		}
+		matcher.SniDomains = slices.Clone(tc.sniDomains)
 
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
@@ -895,7 +922,7 @@ func translateTLSConfig(
 			switch listener.Parent.(type) {
 			case *gwv1.Gateway:
 				parentGVK = wellknown.GatewayGVK
-			case *gwxv1a1.XListenerSet:
+			case *gwv1.ListenerSet:
 				parentGVK = wellknown.XListenerSetGVK
 			}
 		}
@@ -1150,7 +1177,7 @@ func applyClientCertificateValidation(
 		switch listener.Parent.(type) {
 		case *gwv1.Gateway:
 			parentGVK = wellknown.GatewayGVK
-		case *gwxv1a1.XListenerSet:
+		case *gwv1.ListenerSet:
 			parentGVK = wellknown.XListenerSetGVK
 		default:
 			return false, fmt.Errorf("unsupported parent type: %T", listener.Parent)
@@ -1184,6 +1211,7 @@ func applyClientCertificateValidation(
 	tlsConfig.ClientCertificateValidation = &ir.ClientCertificateValidation{
 		CACertificates:           caCertificates,
 		RequireClientCertificate: validationConfig.RequireClientCertificate,
+		AllowInsecureFallback:    validationConfig.AllowInsecureFallback,
 	}
 
 	return true, certErr

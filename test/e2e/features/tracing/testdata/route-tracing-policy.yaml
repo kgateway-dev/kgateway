@@ -1,0 +1,20 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-tracing-policy
+  namespace: httpbin
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: httpbin
+  tracing:
+    randomSampling: 100
+    overallSampling: 100
+    attributes:
+      - name: route-tag
+        literal:
+          value: route-tag-value
+      - name: route-request-header
+        requestHeader:
+          name: x-route-header

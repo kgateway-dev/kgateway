@@ -9,6 +9,7 @@ import (
 	"istio.io/istio/pkg/test"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,6 +26,15 @@ import (
 )
 
 var _ apiclient.Client = (*cli)(nil)
+
+func init() {
+	// Register the legacy XListenerSet list kind so the fake dynamic client can
+	// back the delayed legacy informer used by older Gateway API versions.
+	kube.FakeIstioScheme.AddKnownTypeWithName(
+		wellknown.XListenerSetGVK.GroupVersion().WithKind("XListenerSetList"),
+		&unstructured.UnstructuredList{},
+	)
+}
 
 type cli struct {
 	kube.Client
@@ -83,6 +93,9 @@ func fakeIstioClient(objects ...client.Object) kube.Client {
 }
 
 func fakeKgwClient(objects ...client.Object) *fake.Clientset {
+	// The generated clientset in this repo does not include the newer NewClientset helper
+	// because we do not generate applyconfigs for these APIs yet.
+	//nolint:staticcheck // SA1019: use the generated fake until applyconfig generation is enabled
 	f := fake.NewSimpleClientset()
 	for _, obj := range objects {
 		gvr := mustGetGVR(obj, schemes.DefaultScheme())

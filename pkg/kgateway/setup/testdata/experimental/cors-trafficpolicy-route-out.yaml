@@ -86,7 +86,7 @@ routes:
           - exact: https://example.com
           - safeRegex:
               regex: ^https://.*\.notexample\.com$
-          - prefix: https://a.b
           - prefix: http://
           exposeHeaders: X-Custom-Header
+          forwardNotMatchingPreflights: false
           maxAge: "86400"

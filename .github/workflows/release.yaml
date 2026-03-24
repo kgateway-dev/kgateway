@@ -45,7 +45,7 @@ jobs:
       needs_release: ${{ steps.set_vars.outputs.needs_release }}
       previous_tag: ${{ steps.set_vars.outputs.previous_tag }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
       - name: Set the release related variables
@@ -95,7 +95,7 @@ jobs:
     needs: [setup, goreleaser]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Helm login to ${{ env.IMAGE_REGISTRY }}
         if: ${{ github.event_name != 'pull_request' }}
@@ -118,7 +118,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
         with:
           fetch-depth: 0
@@ -146,7 +146,7 @@ jobs:
     needs: [setup, release-notes]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
       - name: Prep Go Runner
@@ -166,7 +166,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: "docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392" # v3.6.0
-      - uses: "docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2" # v3.10 .0
+      - uses: "docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2" # v3.10.0
 
       - name: Download release notes
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
@@ -218,7 +218,7 @@ jobs:
       matrix:
         arch: [ 'amd64', 'arm64' ]
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
 
@@ -265,7 +265,7 @@ jobs:
     if: ${{ inputs.run_load_tests }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
 

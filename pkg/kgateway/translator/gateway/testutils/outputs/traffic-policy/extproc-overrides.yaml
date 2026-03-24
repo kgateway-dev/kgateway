@@ -93,25 +93,22 @@ Listeners:
                           name: envoy.filters.http.ext_proc
                           typedConfig:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
-                            processingMode:
-                              requestBodyMode: NONE
-                              requestHeaderMode: SEND
+                            allowModeOverride: true
+                            allowedOverrideModes:
+                            - requestHeaderMode: SEND
                               requestTrailerMode: SKIP
-                              responseBodyMode: NONE
+                              responseBodyMode: BUFFERED
                               responseHeaderMode: SEND
                               responseTrailerMode: SKIP
-                            allowModeOverride: true
                             failureModeAllow: true
-                            allowedOverrideModes:
-                              - requestHeaderMode: SEND
-                                responseHeaderMode: SEND
-                                requestBodyMode: NONE
-                                responseBodyMode: BUFFERED
-                                requestTrailerMode: SKIP
-                                responseTrailerMode: SKIP
                             grpcService:
                               envoyGrpc:
                                 clusterName: kube_default_extproc_9091
+                            processingMode:
+                              requestHeaderMode: SEND
+                              requestTrailerMode: SKIP
+                              responseHeaderMode: SEND
+                              responseTrailerMode: SKIP
                   predicate:
                     singlePredicate:
                       customMatch:
@@ -148,25 +145,22 @@ Listeners:
                           name: envoy.filters.http.ext_proc
                           typedConfig:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
-                            processingMode:
-                              requestBodyMode: NONE
-                              requestHeaderMode: SEND
+                            allowModeOverride: true
+                            allowedOverrideModes:
+                            - requestHeaderMode: SEND
                               requestTrailerMode: SKIP
-                              responseBodyMode: NONE
+                              responseBodyMode: BUFFERED
                               responseHeaderMode: SEND
                               responseTrailerMode: SKIP
-                            allowModeOverride: true
                             failureModeAllow: true
-                            allowedOverrideModes:
-                              - requestHeaderMode: SEND
-                                responseHeaderMode: SEND
-                                requestBodyMode: NONE
-                                responseBodyMode: BUFFERED
-                                requestTrailerMode: SKIP
-                                responseTrailerMode: SKIP
                             grpcService:
                               envoyGrpc:
                                 clusterName: kube_default_extproc_9092
+                            processingMode:
+                              requestHeaderMode: SEND
+                              requestTrailerMode: SKIP
+                              responseHeaderMode: SEND
+                              responseTrailerMode: SKIP
                   predicate:
                     singlePredicate:
                       customMatch:
@@ -203,25 +197,22 @@ Listeners:
                           name: envoy.filters.http.ext_proc
                           typedConfig:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
-                            processingMode:
-                              requestBodyMode: NONE
-                              requestHeaderMode: SEND
+                            allowModeOverride: true
+                            allowedOverrideModes:
+                            - requestHeaderMode: SEND
                               requestTrailerMode: SKIP
-                              responseBodyMode: NONE
+                              responseBodyMode: BUFFERED
                               responseHeaderMode: SEND
                               responseTrailerMode: SKIP
-                            allowModeOverride: true
                             failureModeAllow: true
-                            allowedOverrideModes:
-                              - requestHeaderMode: SEND
-                                responseHeaderMode: SEND
-                                requestBodyMode: NONE
-                                responseBodyMode: BUFFERED
-                                requestTrailerMode: SKIP
-                                responseTrailerMode: SKIP
                             grpcService:
                               envoyGrpc:
                                 clusterName: kube_default_extproc_9093
+                            processingMode:
+                              requestHeaderMode: SEND
+                              requestTrailerMode: SKIP
+                              responseHeaderMode: SEND
+                              responseTrailerMode: SKIP
                   predicate:
                     singlePredicate:
                       customMatch:
@@ -323,11 +314,6 @@ Statuses:
   gateways:
     default/test:
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted

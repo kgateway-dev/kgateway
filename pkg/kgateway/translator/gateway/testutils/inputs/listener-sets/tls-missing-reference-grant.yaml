@@ -24,8 +24,8 @@ spec:
       from: All
 ---
 # This listenerSet should NOT be able to access the secret `https` in the `ls-2-ns` namespace as a reference grant is missing
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: ls-1
   namespace: ls-1-ns
@@ -54,8 +54,8 @@ spec:
     hostname: "ls1.tls.example.com"
 ---
 # This listenerSet should be able to access the `https` secret in its own namespace
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: ls-2
   namespace: ls-2-ns
@@ -90,8 +90,8 @@ metadata:
 spec:
   parentRefs:
   - name: ls-1
-    group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
   rules:
   - matches:
     - path:
@@ -109,8 +109,8 @@ metadata:
 spec:
   parentRefs:
   - name: ls-2
-    group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
   rules:
   - matches:
     - path:

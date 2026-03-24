@@ -4,8 +4,8 @@ metadata:
   name: header-modifiers-ls-policy
 spec:
   targetRefs:
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
     name: ls
   headerModifiers:
     request:

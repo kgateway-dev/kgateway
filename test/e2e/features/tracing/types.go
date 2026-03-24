@@ -19,6 +19,8 @@ var (
 	otelCollectorManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "otel-collector.yaml")
 	otelCollectorSecureManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "otel-collector-secure.yaml")
 	policyManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tracing-policy.yaml")
+	routeTracingPolicyManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-tracing-policy.yaml")
+	routeTracingDisableManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-tracing-disable-policy.yaml")
 
 	// setup objects
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -40,6 +42,12 @@ var (
 			Manifests: []string{otelCollectorSecureManifest, policyManifest},
 			// BackendTLSPolicy moved from experimental to standard in Gateway API 1.4, and the alpha1v3 version is not supported
 			MinGwApiVersion: base.GwApiRequireBackendTLSPolicy,
+		},
+		"TestRouteTracingCustomAttributes": {
+			Manifests: []string{otelCollectorManifest, policyManifest, routeTracingPolicyManifest},
+		},
+		"TestRouteTracingDisable": {
+			Manifests: []string{otelCollectorManifest, policyManifest, routeTracingDisableManifest},
 		},
 	}
 )

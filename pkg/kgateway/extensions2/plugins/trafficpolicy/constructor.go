@@ -51,8 +51,6 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 
 	var errors []error
 
-	// Construct transformation specific IR
-	constructTransformation(policyCR, &outSpec)
 	// Construct rustformation specific IR
 	if err := constructRustformation(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
@@ -113,6 +111,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 
+	// Construct route tracing specific IR
+	constructRouteTracing(policyCR.Spec, &outSpec)
 	// Construct url rewrite specific IR
 	constructURLRewrite(policyCR.Spec, &outSpec)
 	// Construct basic auth specific IR

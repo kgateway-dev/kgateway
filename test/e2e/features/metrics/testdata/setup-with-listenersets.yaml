@@ -28,8 +28,8 @@ spec:
     namespaces:
       from: All
 ---
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: ls1
   namespace: default
@@ -54,8 +54,8 @@ metadata:
 spec:
   parentRefs:
   - name: ls1
-    group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
   hostnames:
   - "example1-ls.com"
   - "example2-ls.com"

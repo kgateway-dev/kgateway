@@ -12,7 +12,12 @@ import (
 
 const (
 	// Group string for Gateway API resources
-	GatewayGroup      = gwv1.GroupName
+	GatewayGroup = gwv1.GroupName
+	// ListenerSetGroup is the promoted ListenerSet API group.
+	ListenerSetGroup = gwv1.GroupName
+	// XListenerSetGroup is the legacy experimental ListenerSet API group.
+	// TODO: Remove legacy XListenerSet support once the nightly matrix no longer targets
+	// Gateway API releases that only serve gateway.networking.x-k8s.io XListenerSets.
 	XListenerSetGroup = gwxv1a1.GroupName
 
 	// Kind strings
@@ -28,7 +33,11 @@ const (
 	ReferenceGrantKind   = "ReferenceGrant"
 	BackendTLSPolicyKind = "BackendTLSPolicy"
 
-	// Kind string for XListenerSet resource
+	// ListenerSetKind is the promoted ListenerSet kind.
+	ListenerSetKind = "ListenerSet"
+	// XListenerSetKind is the legacy experimental ListenerSet kind.
+	// TODO: Remove legacy XListenerSet support once the nightly matrix no longer targets
+	// Gateway API releases that only serve gateway.networking.x-k8s.io XListenerSets.
 	XListenerSetKind = "XListenerSet"
 
 	// List Kind strings
@@ -129,14 +138,39 @@ var (
 		},
 	}
 
+	ListenerSetGVK = schema.GroupVersionKind{
+		Group:   ListenerSetGroup,
+		Version: gwv1.GroupVersion.Version,
+		Kind:    ListenerSetKind,
+	}
+	ListenerSetGVR = schema.GroupVersionResource{
+		Group:    ListenerSetGroup,
+		Version:  gwv1.GroupVersion.Version,
+		Resource: "listenersets",
+	}
+
+	// XListenerSetGVK is the legacy experimental ListenerSet GVK.
+	// TODO: Remove legacy XListenerSet support once the nightly matrix no longer targets
+	// Gateway API releases that only serve gateway.networking.x-k8s.io XListenerSets.
 	XListenerSetGVK = schema.GroupVersionKind{
 		Group:   XListenerSetGroup,
 		Version: gwxv1a1.GroupVersion.Version,
 		Kind:    XListenerSetKind,
 	}
+	// XListenerSetGVR is the legacy experimental ListenerSet GVR.
+	// TODO: Remove legacy XListenerSet support once the nightly matrix no longer targets
+	// Gateway API releases that only serve gateway.networking.x-k8s.io XListenerSets.
 	XListenerSetGVR = schema.GroupVersionResource{
 		Group:    XListenerSetGroup,
 		Version:  gwxv1a1.GroupVersion.Version,
 		Resource: "xlistenersets",
 	}
 )
+
+func IsListenerSetGVK(gvk schema.GroupVersionKind) bool {
+	return gvk == ListenerSetGVK || gvk == XListenerSetGVK
+}
+
+func AllListenerSetGVKs() []schema.GroupVersionKind {
+	return []schema.GroupVersionKind{ListenerSetGVK, XListenerSetGVK}
+}

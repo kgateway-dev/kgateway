@@ -5,6 +5,7 @@ metadata:
   annotations:
     sa-overlay-annotation: from-overlay
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -218,6 +219,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -233,6 +235,7 @@ metadata:
   annotations:
     service-overlay-annotation: from-overlay
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -265,6 +268,7 @@ metadata:
   annotations:
     deployment-overlay-annotation: from-overlay
   labels:
+    app.kubernetes.io/component: proxy
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
@@ -290,6 +294,7 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
       labels:
+        app.kubernetes.io/component: proxy
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
         gateway.networking.k8s.io/gateway-class-name: kgateway

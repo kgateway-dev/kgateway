@@ -36,8 +36,8 @@ metadata:
   namespace: allowed-ns
 spec:
   targetRefs:
-    - kind: XListenerSet
-      group: gateway.networking.x-k8s.io
+    - kind: ListenerSet
+      group: gateway.networking.k8s.io
       name: valid-ls
   transformation:
     response:
@@ -52,8 +52,8 @@ metadata:
   namespace: allowed-ns
 spec:
   targetRefs:
-    - kind: XListenerSet
-      group: gateway.networking.x-k8s.io
+    - kind: ListenerSet
+      group: gateway.networking.k8s.io
       name: valid-ls
       sectionName: http-2
   transformation:

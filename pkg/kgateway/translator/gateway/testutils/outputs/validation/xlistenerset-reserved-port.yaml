@@ -20,15 +20,14 @@ Statuses:
     default/test:
       conditions:
       - lastTransitionTime: null
-        message: 'Some listeners are not programmed: http: invalid port 9091 in listener:
-          port is reserved'
+        message: No valid listeners
         reason: ListenersNotValid
-        status: "True"
+        status: "False"
         type: Accepted
       - lastTransitionTime: null
-        message: ""
+        message: No valid listeners
         reason: ListenersNotValid
-        status: "True"
+        status: "False"
         type: Programmed
       listeners:
       - attachedRoutes: 0
@@ -54,7 +53,6 @@ Statuses:
           status: "True"
           type: ResolvedRefs
         name: http
-        port: 9091
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: TCPRoute

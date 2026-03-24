@@ -277,8 +277,8 @@ spec:
   - group: gateway.networking.k8s.io
     kind: GRPCRoute
     name: test-grpc-route
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
     name: test-listener
   targetSelectors:
   - group: gateway.networking.k8s.io
@@ -361,8 +361,8 @@ metadata:
   name: http-listener-policy-invalid-target
 spec:
   targetRefs:
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
     name: test-listener
 `,
 			wantErrors: []string{"targetRefs may only reference Gateway resources"},

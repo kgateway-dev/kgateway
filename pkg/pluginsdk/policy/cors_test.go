@@ -144,7 +144,7 @@ func TestConvertOriginToEnvoyStringMatcher(t *testing.T) {
 			expected: &envoy_type_matcher_v3.StringMatcher{
 				MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-						Regex: "^.*$",
+						Regex: `^[a-zA-Z][a-zA-Z0-9+.-]*://[^/\s?#]+$`,
 					},
 				},
 			},

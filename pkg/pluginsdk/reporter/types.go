@@ -27,7 +27,7 @@ const (
 	RouteRuleReplacedReason = "RouteRuleReplaced"
 
 	// ListenerReplacedReason is used with the Accepted=False condition when an individual listener
-	// on a Gateway or XListenerSet is replaced due to an error in a policy targeting that listener.
+	// on a Gateway or ListenerSet is replaced due to an error in a policy targeting that listener.
 	ListenerReplacedReason = "ListenerReplaced"
 
 	// GatewayReplacedReason is used with the Accepted=False condition when the entire Gateway is replaced
@@ -120,12 +120,14 @@ type GatewayReporter interface {
 	Listener(listener *gwv1.Listener) ListenerReporter
 	ListenerName(listenerName string) ListenerReporter
 	SetCondition(condition GatewayCondition)
+	SetAttachedListenerSets(count int32)
 }
 
 type ListenerSetReporter interface {
 	Listener(listener *gwv1.Listener) ListenerReporter
 	ListenerName(listenerName string) ListenerReporter
 	SetCondition(condition GatewayCondition)
+	SetAttachedListenerSets(count int32)
 }
 
 type ListenerReporter interface {
