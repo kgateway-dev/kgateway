@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -164,7 +165,7 @@ func TestCreateNetworkCELMatcher_SingleExpression_Allow(t *testing.T) {
 		`source.address.startsWith("10.0.0.")`,
 	}
 
-	matcher, err := createNetworkCELMatcher(celExprs, sharedv1alpha1.AuthorizationPolicyActionAllow)
+	matcher, err := plugins.CreateCELMatcher(celExprs, sharedv1alpha1.AuthorizationPolicyActionAllow)
 	require.NoError(t, err)
 	require.NotNil(t, matcher)
 
@@ -182,7 +183,7 @@ func TestCreateNetworkCELMatcher_MultipleExpressions_Deny(t *testing.T) {
 		`source.address.startsWith("192.168.0.")`,
 	}
 
-	matcher, err := createNetworkCELMatcher(celExprs, sharedv1alpha1.AuthorizationPolicyActionDeny)
+	matcher, err := plugins.CreateCELMatcher(celExprs, sharedv1alpha1.AuthorizationPolicyActionDeny)
 	require.NoError(t, err)
 	require.NotNil(t, matcher)
 
@@ -198,7 +199,7 @@ func TestCreateNetworkCELMatcher_MultipleExpressions_Deny(t *testing.T) {
 func TestCreateNetworkCELMatcher_EmptyExpressions(t *testing.T) {
 	celExprs := []sharedv1alpha1.CELExpression{}
 
-	matcher, err := createNetworkCELMatcher(celExprs, sharedv1alpha1.AuthorizationPolicyActionAllow)
+	matcher, err := plugins.CreateCELMatcher(celExprs, sharedv1alpha1.AuthorizationPolicyActionAllow)
 	assert.Error(t, err)
 	assert.Nil(t, matcher)
 	assert.Contains(t, err.Error(), "no CEL expressions provided")
@@ -209,13 +210,13 @@ func TestCreateNetworkCELMatcher_InvalidExpression(t *testing.T) {
 		`this is not valid CEL!!!`,
 	}
 
-	matcher, err := createNetworkCELMatcher(celExprs, sharedv1alpha1.AuthorizationPolicyActionAllow)
+	matcher, err := plugins.CreateCELMatcher(celExprs, sharedv1alpha1.AuthorizationPolicyActionAllow)
 	assert.Error(t, err)
 	assert.Nil(t, matcher)
 }
 
 func TestCreateMatchAction_Allow(t *testing.T) {
-	action := createMatchAction(envoyrbacv3.RBAC_ALLOW)
+	action := plugins.CreateMatchAction(envoyrbacv3.RBAC_ALLOW)
 	require.NotNil(t, action)
 
 	actionConfig := action.GetAction()
@@ -231,7 +232,7 @@ func TestCreateMatchAction_Allow(t *testing.T) {
 }
 
 func TestCreateMatchAction_Deny(t *testing.T) {
-	action := createMatchAction(envoyrbacv3.RBAC_DENY)
+	action := plugins.CreateMatchAction(envoyrbacv3.RBAC_DENY)
 	require.NotNil(t, action)
 
 	actionConfig := action.GetAction()
@@ -245,7 +246,7 @@ func TestCreateMatchAction_Deny(t *testing.T) {
 }
 
 func TestCreateDefaultAction(t *testing.T) {
-	action := createDefaultAction(envoyrbacv3.RBAC_DENY)
+	action := plugins.CreateDefaultAction(envoyrbacv3.RBAC_DENY)
 	require.NotNil(t, action)
 
 	actionConfig := action.GetAction()
@@ -285,7 +286,7 @@ func TestParseCELExpression_Valid(t *testing.T) {
 			env, err := createTestCELEnv()
 			require.NoError(t, err)
 
-			parsed, err := parseCELExpression(env, tc.expr)
+			parsed, err := plugins.ParseCELExpression(env, tc.expr)
 			assert.NoError(t, err)
 			assert.NotNil(t, parsed)
 		})
@@ -303,14 +304,14 @@ func TestParseCELExpression_Invalid(t *testing.T) {
 	}
 
 	for _, expr := range invalidExprs {
-		parsed, err := parseCELExpression(env, expr)
+		parsed, err := plugins.ParseCELExpression(env, expr)
 		assert.Error(t, err)
 		assert.Nil(t, parsed)
 	}
 }
 
 func TestParseCELExpression_NilEnv(t *testing.T) {
-	parsed, err := parseCELExpression(nil, `source.address == "10.0.0.1"`)
+	parsed, err := plugins.ParseCELExpression(nil, `source.address == "10.0.0.1"`)
 	assert.Error(t, err)
 	assert.Nil(t, parsed)
 	assert.Contains(t, err.Error(), "CEL environment is nil")
