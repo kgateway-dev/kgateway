@@ -2,10 +2,12 @@ package backendconfigpolicy
 
 import (
 	"context"
+	"net/netip"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
@@ -45,6 +47,8 @@ type BackendConfigPolicyIR struct {
 	healthCheck                   *envoycorev3.HealthCheck
 	outlierDetection              *envoyclusterv3.OutlierDetection
 	circuitBreakers               *envoyclusterv3.CircuitBreakers
+	dnsRefreshRate                *durationpb.Duration
+	dnsJitter                     *durationpb.Duration
 }
 
 var logger = logging.New("plugin/backendconfigpolicy")
@@ -108,6 +112,14 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	}
 
 	if !proto.Equal(d.circuitBreakers, d2.circuitBreakers) {
+		return false
+	}
+
+	if !proto.Equal(d.dnsRefreshRate, d2.dnsRefreshRate) {
+		return false
+	}
+
+	if !proto.Equal(d.dnsJitter, d2.dnsJitter) {
 		return false
 	}
 
@@ -234,6 +246,8 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	if pol.circuitBreakers != nil {
 		out.CircuitBreakers = pol.circuitBreakers
 	}
+
+	applyDnsClusterConfig(pol, backend, out)
 }
 
 func translate(
@@ -304,7 +318,66 @@ func translate(
 		}
 	}
 
+	if pol.Spec.DNS != nil {
+		if pol.Spec.DNS.DnsRefreshRate != nil {
+			ir.dnsRefreshRate = durationpb.New(pol.Spec.DNS.DnsRefreshRate.Duration)
+		}
+		if pol.Spec.DNS.DnsJitter != nil {
+			ir.dnsJitter = durationpb.New(pol.Spec.DNS.DnsJitter.Duration)
+		}
+	}
+
 	return &ir, errs
+}
+
+func applyDnsClusterConfig(pol *BackendConfigPolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+	if pol.dnsRefreshRate == nil && pol.dnsJitter == nil {
+		return
+	}
+
+	if !isStaticHostnameBackend(backend) {
+		return
+	}
+
+	clusterType := out.GetClusterType()
+	if clusterType == nil || clusterType.GetName() != dnsClusterExtensionName || clusterType.GetTypedConfig() == nil {
+		return
+	}
+
+	dnsCluster := &envoydnsv3.DnsCluster{}
+	if err := clusterType.GetTypedConfig().UnmarshalTo(dnsCluster); err != nil {
+		logger.Error("failed to unpack dns cluster config", "cluster", out.GetName(), "error", err)
+		return
+	}
+
+	if pol.dnsRefreshRate != nil {
+		dnsCluster.DnsRefreshRate = pol.dnsRefreshRate
+	}
+	if pol.dnsJitter != nil {
+		dnsCluster.DnsJitter = pol.dnsJitter
+	}
+
+	typedConfig, err := utils.MessageToAny(dnsCluster)
+	if err != nil {
+		logger.Error("failed to pack dns cluster config", "cluster", out.GetName(), "error", err)
+		return
+	}
+	clusterType.TypedConfig = typedConfig
+}
+
+func isStaticHostnameBackend(backend ir.BackendObjectIR) bool {
+	obj, ok := backend.Obj.(*kgateway.Backend)
+	if !ok || obj == nil || obj.Spec.Static == nil {
+		return false
+	}
+
+	for _, host := range obj.Spec.Static.Hosts {
+		if _, err := netip.ParseAddr(host.Host); err != nil {
+			return true
+		}
+	}
+
+	return false
 }
 
 func translateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.TcpKeepalive {

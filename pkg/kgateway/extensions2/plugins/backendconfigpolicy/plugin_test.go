@@ -7,6 +7,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoy_upstreams_http_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/stretchr/testify/assert"
@@ -305,6 +306,128 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			assert.Equal(t, tt.want, cluster)
 		})
 	}
+}
+
+func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
+	t.Run("applies dns settings to hostname-based static backends", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				DNS: &kgateway.DNS{
+					DnsRefreshRate: &metav1.Duration{Duration: 60 * time.Second},
+					DnsJitter:      &metav1.Duration{Duration: 15 * time.Second},
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := &envoyclusterv3.Cluster{
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+					Name:        dnsClusterExtensionName,
+					TypedConfig: mustMessageToAny(t, &envoydnsv3.DnsCluster{}),
+				},
+			},
+		}
+		backend := ir.BackendObjectIR{
+			Obj: &kgateway.Backend{
+				Spec: kgateway.BackendSpec{
+					Static: &kgateway.StaticBackend{
+						Hosts: []kgateway.Host{{
+							Host: "example.com",
+							Port: 8080,
+						}},
+					},
+				},
+			},
+		}
+
+		processBackend(context.Background(), policyIR, backend, cluster)
+
+		var dnsCluster envoydnsv3.DnsCluster
+		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
+		require.NoError(t, err)
+		assert.Equal(t, durationpb.New(60*time.Second), dnsCluster.GetDnsRefreshRate())
+		assert.Equal(t, durationpb.New(15*time.Second), dnsCluster.GetDnsJitter())
+	})
+
+	t.Run("ignores dns settings for ip-based static backends", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				DNS: &kgateway.DNS{
+					DnsRefreshRate: &metav1.Duration{Duration: 60 * time.Second},
+					DnsJitter:      &metav1.Duration{Duration: 15 * time.Second},
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := &envoyclusterv3.Cluster{
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+					Name:        dnsClusterExtensionName,
+					TypedConfig: mustMessageToAny(t, &envoydnsv3.DnsCluster{}),
+				},
+			},
+		}
+		backend := ir.BackendObjectIR{
+			Obj: &kgateway.Backend{
+				Spec: kgateway.BackendSpec{
+					Static: &kgateway.StaticBackend{
+						Hosts: []kgateway.Host{{
+							Host: "10.0.0.1",
+							Port: 8080,
+						}},
+					},
+				},
+			},
+		}
+
+		processBackend(context.Background(), policyIR, backend, cluster)
+
+		var dnsCluster envoydnsv3.DnsCluster
+		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
+		require.NoError(t, err)
+		assert.Nil(t, dnsCluster.GetDnsRefreshRate())
+		assert.Nil(t, dnsCluster.GetDnsJitter())
+	})
+
+	t.Run("ignores dns settings for non-static dns clusters", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				DNS: &kgateway.DNS{
+					DnsRefreshRate: &metav1.Duration{Duration: 60 * time.Second},
+					DnsJitter:      &metav1.Duration{Duration: 15 * time.Second},
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := &envoyclusterv3.Cluster{
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+					Name:        dnsClusterExtensionName,
+					TypedConfig: mustMessageToAny(t, &envoydnsv3.DnsCluster{}),
+				},
+			},
+		}
+		backend := ir.BackendObjectIR{
+			Obj: &kgateway.Backend{
+				Spec: kgateway.BackendSpec{
+					Gcp: &kgateway.GcpBackend{
+						Host: "example.googleapis.com",
+					},
+				},
+			},
+		}
+
+		processBackend(context.Background(), policyIR, backend, cluster)
+
+		var dnsCluster envoydnsv3.DnsCluster
+		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
+		require.NoError(t, err)
+		assert.Nil(t, dnsCluster.GetDnsRefreshRate())
+		assert.Nil(t, dnsCluster.GetDnsJitter())
+	})
 }
 
 // mustMessageToAny is a helper function to handle MessageToAny error in test cases
