@@ -1,0 +1,43 @@
+{{- /*
+Render a GatewayParameters resource for the default kgateway GatewayClass when the
+user has specified any proxy-pod scheduling settings under .Values.gateway.podTemplate.
+
+The resource is only created when at least one scheduling field is non-empty AND the
+user has not already provided a custom reference via gatewayClassParametersRefs.kgateway,
+which takes precedence.
+*/ -}}
+{{- $podTemplate := .Values.gateway.podTemplate | default dict }}
+{{- $hasTolerations := gt (len ($podTemplate.tolerations | default list)) 0 }}
+{{- $hasNodeSelector := gt (len ($podTemplate.nodeSelector | default dict)) 0 }}
+{{- $hasAffinity := $podTemplate.affinity | default false }}
+{{- $hasTSC := gt (len ($podTemplate.topologySpreadConstraints | default list)) 0 }}
+{{- $hasSettings := or $hasTolerations $hasNodeSelector $hasAffinity $hasTSC }}
+{{- $userOverride := hasKey (.Values.gatewayClassParametersRefs | default dict) "kgateway" }}
+{{- if and $hasSettings (not $userOverride) }}
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: {{ include "kgateway.fullname" . }}-proxy
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kgateway.labels" . | nindent 4 }}
+spec:
+  kube:
+    podTemplate:
+      {{- with $podTemplate.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $podTemplate.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $podTemplate.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $podTemplate.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

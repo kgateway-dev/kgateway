@@ -109,8 +109,26 @@ spec:
             {{- end }}
             - name: KGW_ENABLE_ENVOY
               value: "true"
+            {{- /*
+            Compute the effective gatewayClassParametersRefs map.
+            If the user specified scheduling settings under .Values.gateway.podTemplate
+            and did NOT already provide a custom gatewayClassParametersRefs.kgateway
+            entry, inject a reference to the auto-generated GatewayParameters so that
+            the default kgateway GatewayClass picks it up automatically.
+            */ -}}
+            {{- $classRefs := .Values.gatewayClassParametersRefs | default dict }}
+            {{- $podTemplate := .Values.gateway.podTemplate | default dict }}
+            {{- $hasTolerations := gt (len ($podTemplate.tolerations | default list)) 0 }}
+            {{- $hasNodeSelector := gt (len ($podTemplate.nodeSelector | default dict)) 0 }}
+            {{- $hasAffinity := $podTemplate.affinity | default false }}
+            {{- $hasTSC := gt (len ($podTemplate.topologySpreadConstraints | default list)) 0 }}
+            {{- $hasSettings := or $hasTolerations $hasNodeSelector $hasAffinity $hasTSC }}
+            {{- if and $hasSettings (not (hasKey $classRefs "kgateway")) }}
+            {{- $autoRef := dict "name" (printf "%s-proxy" (include "kgateway.fullname" .)) "namespace" .Release.Namespace }}
+            {{- $classRefs = merge $classRefs (dict "kgateway" $autoRef) }}
+            {{- end }}
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
-              value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
+              value: {{ $classRefs | toJson | quote }}
             {{- if .Values.waypoint.enabled }}
             - name: KGW_ENABLE_WAYPOINT
               value: "true"

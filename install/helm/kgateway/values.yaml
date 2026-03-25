@@ -190,6 +190,32 @@ image:
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
 
+# -- Configure default scheduling and pod-template settings for gateway proxy pods.
+# These values are rendered into a GatewayParameters resource that is automatically
+# associated with the default kgateway GatewayClass. They are ignored when
+# gatewayClassParametersRefs.kgateway is already set to a custom GatewayParameters.
+#
+# Example — run all proxy pods on spot nodes:
+#   gateway:
+#     podTemplate:
+#       tolerations:
+#         - key: "kubernetes.azure.com/scalesetpriority"
+#           operator: "Equal"
+#           value: "spot"
+#           effect: "NoSchedule"
+#       nodeSelector:
+#         kubernetes.azure.com/scalesetpriority: spot
+gateway:
+  podTemplate:
+    # -- Set tolerations for gateway proxy pod scheduling.
+    tolerations: []
+    # -- Set nodeSelector labels for gateway proxy pod scheduling.
+    nodeSelector: {}
+    # -- Set affinity rules for gateway proxy pod scheduling.
+    affinity: {}
+    # -- Set topology spread constraints for gateway proxy pod scheduling.
+    topologySpreadConstraints: []
+
 # -- Map of GatewayClass names to GatewayParameters references that will be set on
 #    the default GatewayClasses managed by kgateway. Each entry must define both the
 #    name and namespace of the GatewayParameters resource.
