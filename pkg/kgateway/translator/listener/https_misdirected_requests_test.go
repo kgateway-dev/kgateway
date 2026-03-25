@@ -11,49 +11,77 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-func TestShouldShadowHTTPSExactVirtualHost(t *testing.T) {
+func TestShouldShadowHTTPSVirtualHost(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name           string
 		currentPattern string
-		host           string
+		hostPattern    string
 		allPatterns    []string
 		want           bool
 	}{
 		{
 			name:           "catch-all listener shadows exact host owned by exact sibling",
 			currentPattern: catchAllHostnamePattern,
-			host:           "second-example.org",
+			hostPattern:    "second-example.org",
 			allPatterns:    []string{catchAllHostnamePattern, "second-example.org"},
 			want:           true,
 		},
 		{
 			name:           "catch-all listener shadows exact host owned by wildcard sibling",
 			currentPattern: catchAllHostnamePattern,
-			host:           "third-example.wildcard.org",
+			hostPattern:    "third-example.wildcard.org",
 			allPatterns:    []string{catchAllHostnamePattern, "*.wildcard.org"},
 			want:           true,
 		},
 		{
 			name:           "wildcard listener shadows exact host owned by exact sibling",
 			currentPattern: "*.wildcard.org",
-			host:           "fourth-example.wildcard.org",
+			hostPattern:    "fourth-example.wildcard.org",
 			allPatterns:    []string{"*.wildcard.org", "fourth-example.wildcard.org"},
 			want:           true,
 		},
 		{
 			name:           "wildcard listener keeps exact host inside its own hostspace",
 			currentPattern: "*.wildcard.org",
-			host:           "third-example.wildcard.org",
+			hostPattern:    "third-example.wildcard.org",
 			allPatterns:    []string{"*.wildcard.org", "fourth-example.wildcard.org"},
 			want:           false,
 		},
 		{
 			name:           "exact listener keeps its own host over catch-all sibling",
 			currentPattern: "second-example.org",
-			host:           "second-example.org",
+			hostPattern:    "second-example.org",
 			allPatterns:    []string{"second-example.org", catchAllHostnamePattern},
+			want:           false,
+		},
+		{
+			name:           "catch-all listener shadows wildcard hostspace owned by wildcard sibling",
+			currentPattern: catchAllHostnamePattern,
+			hostPattern:    "*.example.org",
+			allPatterns:    []string{catchAllHostnamePattern, "*.example.org"},
+			want:           true,
+		},
+		{
+			name:           "catch-all listener keeps wildcard hostspace when sibling exact only covers a subset",
+			currentPattern: catchAllHostnamePattern,
+			hostPattern:    "*.example.org",
+			allPatterns:    []string{catchAllHostnamePattern, "foo.example.org"},
+			want:           false,
+		},
+		{
+			name:           "wildcard listener keeps broader wildcard when sibling only covers a narrower subset",
+			currentPattern: "*.example.org",
+			hostPattern:    "*.example.org",
+			allPatterns:    []string{"*.example.org", "*.bar.example.org"},
+			want:           false,
+		},
+		{
+			name:           "catch-all wildcard route remains when no sibling owns all hostspace",
+			currentPattern: catchAllHostnamePattern,
+			hostPattern:    catchAllHostnamePattern,
+			allPatterns:    []string{catchAllHostnamePattern, "*.example.org"},
 			want:           false,
 		},
 	}
@@ -61,7 +89,56 @@ func TestShouldShadowHTTPSExactVirtualHost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, shouldShadowHTTPSExactVirtualHost(tt.currentPattern, tt.host, tt.allPatterns))
+			assert.Equal(t, tt.want, shouldShadowHTTPSVirtualHost(tt.currentPattern, tt.hostPattern, tt.allPatterns))
+		})
+	}
+}
+
+func TestHostnamePatternContains(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		containerPattern string
+		hostPattern      string
+		want             bool
+	}{
+		{
+			name:             "catch-all contains wildcard",
+			containerPattern: catchAllHostnamePattern,
+			hostPattern:      "*.example.org",
+			want:             true,
+		},
+		{
+			name:             "wildcard contains narrower wildcard",
+			containerPattern: "*.example.org",
+			hostPattern:      "*.bar.example.org",
+			want:             true,
+		},
+		{
+			name:             "wildcard does not contain broader wildcard",
+			containerPattern: "*.bar.example.org",
+			hostPattern:      "*.example.org",
+			want:             false,
+		},
+		{
+			name:             "exact does not contain wildcard",
+			containerPattern: "foo.example.org",
+			hostPattern:      "*.example.org",
+			want:             false,
+		},
+		{
+			name:             "wildcard contains matching exact host",
+			containerPattern: "*.example.org",
+			hostPattern:      "foo.example.org",
+			want:             true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, hostnamePatternContains(tt.containerPattern, tt.hostPattern))
 		})
 	}
 }
@@ -154,5 +231,20 @@ func TestBuildHTTPSMisdirectedRequestVirtualHosts(t *testing.T) {
 		require.Len(t, virtualHosts, 1)
 		assert.Equal(t, catchAllHostnamePattern, virtualHosts[0].Hostname)
 		assert.Equal(t, uint32(http.StatusMisdirectedRequest), virtualHosts[0].DirectResponse.StatusCode)
+	})
+
+	t.Run("skips synthetic sibling vhosts that would duplicate actual domains", func(t *testing.T) {
+		t.Parallel()
+
+		virtualHosts := buildHTTPSMisdirectedRequestVirtualHosts(
+			context.Background(),
+			"https",
+			ir.Listener{},
+			catchAllHostnamePattern,
+			[]string{"*.example.org"},
+			map[string]struct{}{"*.example.org": {}},
+		)
+
+		require.Empty(t, virtualHosts)
 	})
 }

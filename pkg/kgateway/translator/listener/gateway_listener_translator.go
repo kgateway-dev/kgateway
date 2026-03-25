@@ -787,7 +787,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	actualDomains := make(map[string]struct{}, len(routesByHost))
 	for host, vhostRoutes := range routesByHost {
 		normalizedHost := normalizeHTTPSHostnamePattern(host)
-		if isExactHostnamePattern(normalizedHost) && shouldShadowHTTPSExactVirtualHost(currentPattern, normalizedHost, allPatterns) {
+		if shouldShadowHTTPSVirtualHost(currentPattern, normalizedHost, allPatterns) {
 			continue
 		}
 

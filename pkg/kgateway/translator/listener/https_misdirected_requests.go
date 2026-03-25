@@ -123,10 +123,36 @@ func representativeHostForHostnamePattern(hostname string) string {
 	}
 }
 
-func shouldShadowHTTPSExactVirtualHost(currentPattern, exactHost string, allPatterns []string) bool {
+func hostnamePatternContains(containerPattern, hostPattern string) bool {
+	containerPattern = normalizeHTTPSHostnamePattern(containerPattern)
+	hostPattern = normalizeHTTPSHostnamePattern(hostPattern)
+
+	switch {
+	case hostPattern == catchAllHostnamePattern:
+		return containerPattern == catchAllHostnamePattern
+	case containerPattern == catchAllHostnamePattern:
+		return true
+	case isExactHostnamePattern(hostPattern):
+		return hostnamePatternMatchesHost(containerPattern, hostPattern)
+	case isExactHostnamePattern(containerPattern):
+		return false
+	default:
+		return strings.HasSuffix(hostPattern[1:], containerPattern[1:])
+	}
+}
+
+func shouldShadowHTTPSVirtualHost(currentPattern, hostPattern string, allPatterns []string) bool {
+	host := representativeHostForHostnamePattern(hostPattern)
+	if host == "" {
+		return false
+	}
+
 	bestPattern := currentPattern
 	for _, pattern := range allPatterns {
-		if compareHostnamePatternsForHost(pattern, bestPattern, exactHost) > 0 {
+		if !hostnamePatternContains(pattern, hostPattern) {
+			continue
+		}
+		if compareHostnamePatternsForHost(pattern, bestPattern, host) > 0 {
 			bestPattern = pattern
 		}
 	}
@@ -160,6 +186,9 @@ func buildHTTPSMisdirectedRequestVirtualHosts(
 ) []*ir.VirtualHost {
 	virtualHosts := make([]*ir.VirtualHost, 0, len(siblingPatterns)+1)
 	for _, siblingPattern := range siblingPatterns {
+		if _, ok := actualDomains[siblingPattern]; ok {
+			continue
+		}
 		virtualHosts = append(virtualHosts, newSyntheticDirectResponseVirtualHost(
 			ctx,
 			parentName+"~misdirected-request",
