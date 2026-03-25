@@ -1543,7 +1543,7 @@ spec:
                     has(self.tokenEndpoint))
                 - message: Either issuerURI or jwksURI must be specified for JWT parsing
                   rule: '!(has(self.?jwt.accessToken) || has(self.?jwt.idToken)) ||
-                    (has(self.issuerURI) || has(self.jwksURI))'
+                    (has(self.issuerURI) || has(self.?jwt.jwksURI))'
                 - message: Access token cookie must not be disabled when the token
                     should be parsed
                   rule: '!has(self.?jwt.accessToken) || !self.?cookies.?disableAccessTokenSetCookie.orValue(false)'

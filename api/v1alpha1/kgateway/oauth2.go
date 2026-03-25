@@ -33,7 +33,7 @@ const (
 // OAuth2Provider specifies the configuration for OAuth2 extension provider.
 //
 // +kubebuilder:validation:XValidation:message="Either issuerURI, or both authorizationEndpoint and tokenEndpoint must be specified",rule="has(self.issuerURI) || (has(self.authorizationEndpoint) && has(self.tokenEndpoint))"
-// +kubebuilder:validation:XValidation:message="Either issuerURI or jwksURI must be specified for JWT parsing",rule="!(has(self.?jwt.accessToken) || has(self.?jwt.idToken)) || (has(self.issuerURI) || has(self.jwksURI))"
+// +kubebuilder:validation:XValidation:message="Either issuerURI or jwksURI must be specified for JWT parsing",rule="!(has(self.?jwt.accessToken) || has(self.?jwt.idToken)) || (has(self.issuerURI) || has(self.?jwt.jwksURI))"
 // +kubebuilder:validation:XValidation:message="Access token cookie must not be disabled when the token should be parsed",rule="!has(self.?jwt.accessToken) || !self.?cookies.?disableAccessTokenSetCookie.orValue(false)"
 // +kubebuilder:validation:XValidation:message="ID token cookie must not be disabled when the token should be parsed",rule="!has(self.?jwt.idToken) || !self.?cookies.?disableIDTokenSetCookie.orValue(false)"
 type OAuth2Provider struct {
