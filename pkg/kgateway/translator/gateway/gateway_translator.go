@@ -65,12 +65,16 @@ func (t *translator) Translate(
 		return nil
 	}
 
+	// Resolve once during translation so invalid refs surface on Gateway status
+	// and so route rewriting can point at Gateway-scoped backend clones.
+	// proxy_syncer resolves again inside its KRT collection so those clones also
+	// depend directly on Secret updates.
 	clientCertificate, err := resolveGatewayBackendClientCertificate(kctx, ctx, t.queries, gateway)
 	if err != nil {
 		reportGatewayBackendClientCertificateError(err, reporter.Gateway(gateway.Obj))
 	} else if clientCertificate != nil {
-		variants := query.BuildGatewayBackendClientCertificateVariants(routesForGw, gateway, clientCertificate)
-		routesForGw = query.RewriteRoutesForBackendVariants(routesForGw, variants)
+		gatewayScopedBackends := query.BuildGatewayBackendClientCertificateVariants(routesForGw, gateway, clientCertificate)
+		routesForGw = query.RewriteRoutesForBackendVariants(routesForGw, gatewayScopedBackends)
 	}
 
 	for _, rErr := range routesForGw.RouteErrors {

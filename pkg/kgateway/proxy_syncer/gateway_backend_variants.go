@@ -16,19 +16,19 @@ import (
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-type gatewayBackendVariant struct {
+type gatewayScopedBackend struct {
 	baseResourceName string
 	backend          *ir.BackendObjectIR
 }
 
-func (v gatewayBackendVariant) ResourceName() string {
+func (v gatewayScopedBackend) ResourceName() string {
 	if v.backend == nil {
 		return v.baseResourceName
 	}
 	return v.backend.ResourceName()
 }
 
-func (v gatewayBackendVariant) Equals(other gatewayBackendVariant) bool {
+func (v gatewayScopedBackend) Equals(other gatewayScopedBackend) bool {
 	if v.baseResourceName != other.baseResourceName {
 		return false
 	}
@@ -44,34 +44,44 @@ func newGatewayBackendVariants(
 	commonCols *collections.CommonCollections,
 	queries query.GatewayQueries,
 	gateways krt.Collection[ir.Gateway],
-) krt.Collection[gatewayBackendVariant] {
-	return krt.NewManyCollection(gateways, func(kctx krt.HandlerContext, gateway ir.Gateway) []gatewayBackendVariant {
+) krt.Collection[gatewayScopedBackend] {
+	return krt.NewManyCollection(gateways, func(kctx krt.HandlerContext, gateway ir.Gateway) []gatewayScopedBackend {
+		// Translation resolves and reports backend client certificate errors on
+		// Gateway status. Keep the collection quiet here because it may recompute
+		// frequently and would otherwise emit duplicate log noise for the same
+		// user-facing error.
 		clientCertificate, err := gatewaytls.ResolveBackendClientCertificate(&gateway, func(secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
 			return commonCols.Secrets.GetSecret(kctx, krtcollections.From{
 				GroupKind: gateway.GetGroupKind(),
 				Namespace: gateway.GetNamespace(),
 			}, secretRef)
 		})
-		if err != nil || clientCertificate == nil {
+		if err != nil {
+			return nil
+		}
+		if clientCertificate == nil {
 			return nil
 		}
 
+		// Resolve again inside the KRT collection even though translation also
+		// does so. This makes the backend and endpoint variants depend directly on
+		// the referenced Secret, so Secret updates recompute the collection.
 		routesForGw, err := queries.GetRoutesForGateway(kctx, ctx, &gateway)
 		if err != nil {
 			logger.Error("failed to get routes for gateway backend variants", "gateway", gateway.ResourceName(), "error", err)
 			return nil
 		}
 
-		variants := query.BuildGatewayBackendClientCertificateVariants(routesForGw, &gateway, clientCertificate)
-		result := make([]gatewayBackendVariant, 0, len(variants))
-		for baseResourceName, backend := range variants {
-			result = append(result, gatewayBackendVariant{
+		gatewayScopedBackends := query.BuildGatewayBackendClientCertificateVariants(routesForGw, &gateway, clientCertificate)
+		result := make([]gatewayScopedBackend, 0, len(gatewayScopedBackends))
+		for baseResourceName, backend := range gatewayScopedBackends {
+			result = append(result, gatewayScopedBackend{
 				baseResourceName: baseResourceName,
 				backend:          backend,
 			})
 		}
 
-		slices.SortFunc(result, func(a, b gatewayBackendVariant) int {
+		slices.SortFunc(result, func(a, b gatewayScopedBackend) int {
 			return cmp.Compare(a.ResourceName(), b.ResourceName())
 		})
 
@@ -81,10 +91,10 @@ func newGatewayBackendVariants(
 
 func newGatewayBackendVariantEndpoints(
 	krtopts krtutil.KrtOptions,
-	variants krt.Collection[gatewayBackendVariant],
+	variants krt.Collection[gatewayScopedBackend],
 	baseEndpoints krt.Collection[ir.EndpointsForBackend],
 ) krt.Collection[ir.EndpointsForBackend] {
-	return krt.NewCollection(variants, func(kctx krt.HandlerContext, variant gatewayBackendVariant) *ir.EndpointsForBackend {
+	return krt.NewCollection(variants, func(kctx krt.HandlerContext, variant gatewayScopedBackend) *ir.EndpointsForBackend {
 		if variant.backend == nil {
 			return nil
 		}

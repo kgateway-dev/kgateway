@@ -7,6 +7,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+// BuildGatewayBackendClientCertificateVariants clones every backend reachable
+// from the given Gateway's routes into a Gateway-scoped backend when the
+// Gateway supplies a backend client certificate. The returned map is keyed by
+// the original backend resource name so callers can rewrite route references to
+// the Gateway-scoped clone.
 func BuildGatewayBackendClientCertificateVariants(
 	routes *RoutesForGwResult,
 	gateway *ir.Gateway,
@@ -38,6 +43,9 @@ func BuildGatewayBackendClientCertificateVariants(
 	return variants
 }
 
+// RewriteRoutesForBackendVariants rewrites backend references in the route tree
+// to point at the Gateway-scoped backend clones returned by
+// BuildGatewayBackendClientCertificateVariants.
 func RewriteRoutesForBackendVariants(
 	routes *RoutesForGwResult,
 	variants map[string]*ir.BackendObjectIR,

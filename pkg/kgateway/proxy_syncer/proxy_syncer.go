@@ -218,8 +218,8 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		queries,
 		s.commonCols.GatewayIndex.Gateways,
 	)
-	gatewayBackendVariantBackends := krt.NewCollection(gatewayBackendVariants, func(kctx krt.HandlerContext, variant gatewayBackendVariant) **ir.BackendObjectIR {
-		backend := variant.backend
+	gatewayBackendVariantBackends := krt.NewCollection(gatewayBackendVariants, func(kctx krt.HandlerContext, backendForGateway gatewayScopedBackend) **ir.BackendObjectIR {
+		backend := backendForGateway.backend
 		return &backend
 	}, krtopts.ToOptions("GatewayBackendClientCertificateVariantBackends")...)
 	gatewayBackendVariantEndpoints := newGatewayBackendVariantEndpoints(krtopts, gatewayBackendVariants, s.commonCols.Endpoints)
