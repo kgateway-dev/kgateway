@@ -834,8 +834,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Listeners).To(HaveLen(2))
-			// Listener order and names must match the spec — wrong index mapping
-			// would cause the wrong port to be reported for each listener.
+			// Listener order and names in status must match the spec; this guards
+			// against incorrect index mapping in the legacy XListenerSet patching logic.
 			Expect(status.Listeners[0].Name).To(Equal(gwv1.SectionName("http")))
 			Expect(status.Listeners[1].Name).To(Equal(gwv1.SectionName("http-2")))
 		})

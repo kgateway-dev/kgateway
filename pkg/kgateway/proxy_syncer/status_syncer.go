@@ -612,31 +612,60 @@ func (s *StatusSyncer) patchListenerSetStatus(
 	// in each listener entry status. gwv1.ListenerEntryStatus omits Port, so
 	// ToUnstructured above produces listener entries without it. Populate Port from
 	// the spec so the status reflects the correct per-listener port.
-	if listenersRaw, ok := statusMap["listeners"]; ok {
-		if listenerStatuses, ok := listenersRaw.([]interface{}); ok {
-			// Build a name→port map from spec for O(1) lookups.
-			specPortByName := make(map[gwv1.SectionName]gwv1.PortNumber, len(ls.Spec.Listeners))
-			for _, specListener := range ls.Spec.Listeners {
-				port, err := kubeutils.DetectListenerPortNumber(specListener.Protocol, specListener.Port)
-				if err == nil {
-					specPortByName[specListener.Name] = port
-				}
-			}
-			for _, raw := range listenerStatuses {
-				if m, ok := raw.(map[string]interface{}); ok {
-					if name, ok := m["name"].(string); ok {
-						if port, ok := specPortByName[gwv1.SectionName(name)]; ok {
-							m["port"] = int64(port)
-						}
-					}
-				}
-			}
-			statusMap["listeners"] = listenerStatuses
-		}
-	}
+	injectXListenerSetPorts(statusMap, ls.Spec.Listeners)
 
 	legacyListenerSet.Object["status"] = statusMap
 	return s.mgr.GetClient().Status().Patch(ctx, legacyListenerSet, client.Merge)
+}
+
+// injectXListenerSetPorts sets the "port" field on each unstructured listener
+// status entry by name-matching against specListeners. For listeners whose port
+// cannot be determined, the field is explicitly set to nil so that a previously
+// persisted stale value is never left in place by a merge patch.
+func injectXListenerSetPorts(statusMap map[string]interface{}, specListeners []gwv1.ListenerEntry) {
+	listenersRaw, ok := statusMap["listeners"]
+	if !ok {
+		return
+	}
+	listenerStatuses, ok := listenersRaw.([]interface{})
+	if !ok {
+		return
+	}
+
+	// Build a name→port map from spec for O(1) lookups.
+	specPortByName := make(map[gwv1.SectionName]gwv1.PortNumber, len(specListeners))
+	for _, specListener := range specListeners {
+		port, err := kubeutils.DetectListenerPortNumber(specListener.Protocol, specListener.Port)
+		if err != nil {
+			slog.Warn("cannot determine port for XListenerSet listener; port will be cleared in status",
+				"listenerName", specListener.Name,
+				"protocol", specListener.Protocol,
+				"port", specListener.Port,
+				"error", err,
+			)
+			continue
+		}
+		specPortByName[specListener.Name] = port
+	}
+
+	for _, raw := range listenerStatuses {
+		m, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name, ok := m["name"].(string)
+		if !ok {
+			continue
+		}
+		if port, found := specPortByName[gwv1.SectionName(name)]; found {
+			m["port"] = int64(port)
+		} else {
+			// Explicitly clear the port so a previously persisted value is not
+			// retained by the merge patch.
+			m["port"] = nil
+		}
+	}
+	statusMap["listeners"] = listenerStatuses
 }
 
 func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
