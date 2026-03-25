@@ -318,6 +318,37 @@ func TestHelmChartTemplate(t *testing.T) {
         app.kubernetes.io/name: kgateway
 `,
 		},
+		{
+			// Verifies that gateway.podTemplate.tolerations causes the chart to:
+			//   1. Render a GatewayParameters resource with those tolerations.
+			//   2. Auto-wire KGW_GATEWAY_CLASS_PARAMETERS_REFS to reference it.
+			name: "gateway-proxy-tolerations",
+			valuesYAML: `gateway:
+  podTemplate:
+    tolerations:
+      - key: "kubernetes.azure.com/scalesetpriority"
+        operator: "Equal"
+        value: "spot"
+        effect: "NoSchedule"
+    nodeSelector:
+      kubernetes.azure.com/scalesetpriority: spot
+`,
+		},
+		{
+			// Verifies that when the user supplies gatewayClassParametersRefs.kgateway,
+			// the auto-generated GatewayParameters is suppressed and the user's ref is used.
+			name: "gateway-proxy-tolerations-user-override",
+			valuesYAML: `gateway:
+  podTemplate:
+    tolerations:
+      - key: "spot"
+        operator: "Exists"
+gatewayClassParametersRefs:
+  kgateway:
+    name: my-custom-params
+    namespace: kgateway-system
+`,
+		},
 	}
 
 	for _, chart := range charts {

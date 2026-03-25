@@ -123,12 +123,15 @@ spec:
             {{- $hasAffinity := $podTemplate.affinity | default false }}
             {{- $hasTSC := gt (len ($podTemplate.topologySpreadConstraints | default list)) 0 }}
             {{- $hasSettings := or $hasTolerations $hasNodeSelector $hasAffinity $hasTSC }}
+            {{- /* Use a fresh dict as destination to avoid mutating .Values.gatewayClassParametersRefs in-place,
+                 which would cause the gatewayparameters.yaml template to incorrectly detect a user override. */ -}}
+            {{- $effectiveRefs := $classRefs }}
             {{- if and $hasSettings (not (hasKey $classRefs "kgateway")) }}
             {{- $autoRef := dict "name" (printf "%s-proxy" (include "kgateway.fullname" .)) "namespace" .Release.Namespace }}
-            {{- $classRefs = merge $classRefs (dict "kgateway" $autoRef) }}
+            {{- $effectiveRefs = merge (dict "kgateway" $autoRef) $classRefs }}
             {{- end }}
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
-              value: {{ $classRefs | toJson | quote }}
+              value: {{ $effectiveRefs | toJson | quote }}
             {{- if .Values.waypoint.enabled }}
             - name: KGW_ENABLE_WAYPOINT
               value: "true"
