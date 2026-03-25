@@ -33,10 +33,17 @@ import (
 var ErrUnresolvedBackendRef = errors.New("unresolved backend reference")
 
 const (
-	serviceNameKey       = "service.name"
-	serviceNamespaceKey  = "service.namespace"
-	serviceVersionKey    = "service.version"
-	serviceInstanceIdKey = "service.instance.id"
+	// resource attribute keys per OTel semantic conventions
+	// https://opentelemetry.io/docs/specs/semconv/resource/k8s/
+
+	// Note: attributes such as k8s.pod.name, k8s.pod.uid, etc. cannot be set for access
+	// logs because Envoy's OTel access log does not support OTEL_RESOURCE_ATTRIBUTES
+	serviceNameKey      = "service.name"
+	serviceNamespaceKey = "service.namespace"
+	serviceVersionKey   = "service.version"
+
+	k8sNamespaceNameKey = "k8s.namespace.name"
+	k8sContainerNameKey = "k8s.container.name"
 )
 
 // convertAccessLogConfig transforms a list of AccessLog configurations into Envoy AccessLog configurations
@@ -387,21 +394,25 @@ func generateCommonAccessLogGrpcConfig(grpcService kgateway.CommonAccessLogGrpcS
 		return nil, errors.New("grpc service log name cannot be empty")
 	}
 
-	backend := grpcBackends[getLogId(grpcService.LogName, accessLogId)]
-	if backend == nil {
-		return nil, errors.New("backend ref not found")
-	}
-
-	commonConfig, err := ToEnvoyGrpc(grpcService.CommonGrpcService, backend)
+	grpcServiceConfig, err := generateGrpcServiceConfig(grpcService, grpcBackends, accessLogId)
 	if err != nil {
 		return nil, err
 	}
 
 	return &envoygrpc.CommonGrpcAccessLogConfig{
 		LogName:             grpcService.LogName,
-		GrpcService:         commonConfig,
+		GrpcService:         grpcServiceConfig,
 		TransportApiVersion: envoycorev3.ApiVersion_V3,
 	}, nil
+}
+
+func generateGrpcServiceConfig(grpcService kgateway.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoycorev3.GrpcService, error) {
+	backend := grpcBackends[getLogId(grpcService.LogName, accessLogId)]
+	if backend == nil {
+		return nil, errors.New("backend ref not found")
+	}
+
+	return ToEnvoyGrpc(grpcService.CommonGrpcService, backend)
 }
 
 func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgateway.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
@@ -418,12 +429,13 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgate
 }
 
 func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, otelService *kgateway.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
-	config, err := generateCommonAccessLogGrpcConfig(otelService.GrpcService, grpcBackends, accessLogId)
+	config, err := generateGrpcServiceConfig(otelService.GrpcService, grpcBackends, accessLogId)
 	if err != nil {
 		return err
 	}
 
-	cfg.CommonConfig = config
+	cfg.LogName = otelService.GrpcService.LogName
+	cfg.GrpcService = config
 	if otelService.Body != nil {
 		cfg.Body = &otelv1.AnyValue{
 			Value: &otelv1.AnyValue_StringValue{
@@ -618,22 +630,16 @@ func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_teleme
 	gatewayName := pCtx.Gateway.SourceObject.GetName()
 	gatewayNamespace := pCtx.Gateway.SourceObject.GetNamespace()
 
-	// Set default service.name if not already present
+	// Set default resource attributes if not already present
 	addResourceAttributeIfMissing(config, serviceNameKey, GenerateDefaultServiceName(gatewayName, gatewayNamespace))
-
-	// Set default service.namespace if not already present
 	addResourceAttributeIfMissing(config, serviceNamespaceKey, gatewayNamespace)
 
-	// Set default service.instance.id from the Gateway CR UID if not already present
-	if pCtx.Gateway.SourceObject.Obj != nil && pCtx.Gateway.SourceObject.Obj.GetUID() != "" {
-		uid := string(pCtx.Gateway.SourceObject.Obj.GetUID())
-		addResourceAttributeIfMissing(config, serviceInstanceIdKey, uid)
-	}
-
-	// Set default service.version from the kgateway controller version if not already present
 	if version.Version != "" {
 		addResourceAttributeIfMissing(config, serviceVersionKey, version.Version)
 	}
+
+	addResourceAttributeIfMissing(config, k8sNamespaceNameKey, gatewayNamespace)
+	addResourceAttributeIfMissing(config, k8sContainerNameKey, kwellknown.KgatewayContainerName)
 }
 
 // addResourceAttributeIfMissing adds a string resource attribute to the config

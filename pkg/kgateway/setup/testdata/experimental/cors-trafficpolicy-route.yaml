@@ -83,7 +83,6 @@ spec:
     allowOrigins:
     - "https://example.com"
     - "https://*.notexample.com"
-    - "https://a.b*"
     - "http://*"
     allowMethods:
     - "GET"

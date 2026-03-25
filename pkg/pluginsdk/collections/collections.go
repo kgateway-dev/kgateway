@@ -135,11 +135,16 @@ func NewCommonCollections(
 	)
 	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
 
-	seInformer := kclient.NewDelayedInformer[*networkingclient.ServiceEntry](
-		client, gvr.ServiceEntry,
-		kubetypes.StandardInformer, kclient.Filter{ObjectFilter: client.ObjectFilter()},
-	)
-	serviceEntries := krt.WrapClient(seInformer, krtOptions.ToOptions("ServiceEntries")...)
+	var serviceEntries krt.Collection[*networkingclient.ServiceEntry]
+	if settings.EnableIstioIntegration {
+		seInformer := kclient.NewDelayedInformer[*networkingclient.ServiceEntry](
+			client, gvr.ServiceEntry,
+			kubetypes.StandardInformer, kclient.Filter{ObjectFilter: client.ObjectFilter()},
+		)
+		serviceEntries = krt.WrapClient(seInformer, krtOptions.ToOptions("ServiceEntries")...)
+	} else {
+		serviceEntries = krt.NewStaticCollection[*networkingclient.ServiceEntry](nil, nil, krtOptions.ToOptions("disable/ServiceEntries")...)
+	}
 
 	cmClient := kclient.NewFiltered[*corev1.ConfigMap](
 		client,

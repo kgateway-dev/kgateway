@@ -70,6 +70,8 @@ func GVKToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) 
 		return ListenerPolicyGVR, nil
 	case BackendConfigPolicyGVK:
 		return BackendConfigPolicyGVR, nil
+	case VerticalPodAutoscalerGVK:
+		return VerticalPodAutoscalerGVR, nil
 	default:
 		return schema.GroupVersionResource{}, fmt.Errorf("unknown GVK: %v", gvk)
 	}

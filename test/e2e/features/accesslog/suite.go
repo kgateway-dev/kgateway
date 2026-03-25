@@ -93,8 +93,9 @@ func (s *testingSuite) TestAccessLogWithOTelSink() {
 		// {"level":"info","ts":"2025-06-20T18:22:57.716Z","msg":"ResourceLog #0\nResource SchemaURL: \nResource attributes:\n     -> log_name: Str(test-otel-accesslog-service)\n     -> zone_name: Str()\n     -> cluster_name: Str(gateway.kgateway-base.default)\n     -> node_name: Str(gateway-69c5b8cd88-ln44n.kgateway-base)\n     -> service.name: Str(gateway.kgateway-base)\nScopeLogs #0\nScopeLogs SchemaURL: \nInstrumentationScope  \nLogRecord #0\nObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC\nTimestamp: 2025-06-20 18:22:56.807883 +0000 UTC\nSeverityText: \nSeverityNumber: Unspecified(0)\nBody: Str(\"GET /get 200 \"www.example.com\" \"kube_kgateway-base_httpbin_8000\"\\n')\nAttributes:\n     -> custom: Str(string)\n     -> kvlist: Map({\"key-1\":\"value-1\",\"key-2\":\"value-2\"})\nTrace ID: \nSpan ID: \nFlags: 0\n","kind":"exporter","data_type":"logs","name":"debug"}		assert.Contains(c, logs, `-> log_name: Str(test-otel-accesslog-service)`)
 		assert.Contains(c, logs, `-> service.name: Str(gateway.kgateway-base)`)
 		assert.Contains(c, logs, `-> service.namespace: Str(kgateway-base)`)
-		// verify the field is present as the id will be different each run
-		assert.Contains(c, logs, `-> service.instance.id: Str(`)
+		// Static k8s resource attributes set by the control plane
+		assert.Contains(c, logs, `-> k8s.namespace.name: Str(kgateway-base)`)
+		assert.Contains(c, logs, `-> k8s.container.name: Str(kgateway-proxy)`)
 		assert.Contains(c, logs, `GET /status/200 200`)
 		assert.Contains(c, logs, `www.example.com`)
 		assert.Contains(c, logs, `kube_kgateway-base_httpbin_8000`)

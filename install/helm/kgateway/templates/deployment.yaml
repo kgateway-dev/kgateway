@@ -26,6 +26,7 @@ spec:
         {{- toYaml .Values.podAnnotations | nindent 8 }}
       labels:
         {{- include "kgateway.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: controller
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

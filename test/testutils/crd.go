@@ -31,9 +31,11 @@ var AllCRDs = []schema.GroupVersionResource{
 	gvr.GRPCRoute,
 	gvr.TCPRoute,
 	gvr.TLSRoute,
+	gvr.TLSRoute_v1alpha2,
 	gvr.ReferenceGrant,
 	gvr.BackendTLSPolicy,
-	gvr.XListenerSet,
+	wellknown.XListenerSetGVR,
+	wellknown.ListenerSetGVR,
 	wellknown.BackendTLSPolicyGVR,
 	// K8s API
 	gvr.Service,

@@ -18,12 +18,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 const (
 	otelTracerName                  = "envoy.tracers.opentelemetry"
-	staticResourceDetectorName      = "envoy.tracers.opentelemetry.resource_detectors.static_config"
 	environmentResourceDetectorName = "envoy.tracers.opentelemetry.resource_detectors.environment"
 	alwaysOnSamplerName             = "envoy.tracers.opentelemetry.samplers.always_on"
 )
@@ -85,113 +83,7 @@ func translateTracing(
 		}
 	}
 	if len(config.Attributes) != 0 {
-		tracingConfig.CustomTags = make([]*tracingv3.CustomTag, len(config.Attributes))
-		for i, ct := range config.Attributes {
-			if ct.Literal != nil {
-				tracingConfig.GetCustomTags()[i] = &tracingv3.CustomTag{
-					Tag: ct.Name,
-					Type: &tracingv3.CustomTag_Literal_{
-						Literal: &tracingv3.CustomTag_Literal{
-							Value: ct.Literal.Value,
-						},
-					},
-				}
-				continue
-			}
-
-			if ct.Environment != nil {
-				tagType := &tracingv3.CustomTag_Environment_{
-					Environment: &tracingv3.CustomTag_Environment{
-						Name: ct.Environment.Name,
-					},
-				}
-				if ct.Environment.DefaultValue != nil {
-					tagType.Environment.DefaultValue = *ct.Environment.DefaultValue
-				}
-
-				tracingConfig.GetCustomTags()[i] = &tracingv3.CustomTag{
-					Tag:  ct.Name,
-					Type: tagType,
-				}
-				continue
-			}
-
-			if ct.RequestHeader != nil {
-				tagType := &tracingv3.CustomTag_RequestHeader{
-					RequestHeader: &tracingv3.CustomTag_Header{
-						Name: ct.RequestHeader.Name,
-					},
-				}
-				if ct.RequestHeader.DefaultValue != nil {
-					tagType.RequestHeader.DefaultValue = *ct.RequestHeader.DefaultValue
-				}
-
-				tracingConfig.GetCustomTags()[i] = &tracingv3.CustomTag{
-					Tag:  ct.Name,
-					Type: tagType,
-				}
-				continue
-			}
-
-			if ct.Metadata != nil {
-				tagType := &tracingv3.CustomTag_Metadata_{
-					Metadata: &tracingv3.CustomTag_Metadata{
-						MetadataKey: &metadatav3.MetadataKey{
-							Key: ct.Metadata.MetadataKey.Key,
-						},
-					},
-				}
-
-				if len(ct.Metadata.MetadataKey.Path) != 0 {
-					paths := make([]*metadatav3.MetadataKey_PathSegment, len(ct.Metadata.MetadataKey.Path))
-					for i, p := range ct.Metadata.MetadataKey.Path {
-						paths[i] = &metadatav3.MetadataKey_PathSegment{
-							Segment: &metadatav3.MetadataKey_PathSegment_Key{
-								Key: p.Key,
-							},
-						}
-					}
-					tagType.Metadata.GetMetadataKey().Path = paths
-				}
-
-				switch ct.Metadata.Kind {
-				case kgateway.MetadataKindRequest:
-					tagType.Metadata.Kind = &metadatav3.MetadataKind{
-						Kind: &metadatav3.MetadataKind_Request_{
-							Request: &metadatav3.MetadataKind_Request{},
-						},
-					}
-				case kgateway.MetadataKindRoute:
-					tagType.Metadata.Kind = &metadatav3.MetadataKind{
-						Kind: &metadatav3.MetadataKind_Route_{
-							Route: &metadatav3.MetadataKind_Route{},
-						},
-					}
-				case kgateway.MetadataKindCluster:
-					tagType.Metadata.Kind = &metadatav3.MetadataKind{
-						Kind: &metadatav3.MetadataKind_Cluster_{
-							Cluster: &metadatav3.MetadataKind_Cluster{},
-						},
-					}
-				case kgateway.MetadataKindHost:
-					tagType.Metadata.Kind = &metadatav3.MetadataKind{
-						Kind: &metadatav3.MetadataKind_Host_{
-							Host: &metadatav3.MetadataKind_Host{},
-						},
-					}
-				}
-
-				if ct.Metadata.DefaultValue != nil {
-					tagType.Metadata.DefaultValue = *ct.Metadata.DefaultValue
-				}
-
-				tracingConfig.GetCustomTags()[i] = &tracingv3.CustomTag{
-					Tag:  ct.Name,
-					Type: tagType,
-				}
-				continue
-			}
-		}
+		tracingConfig.CustomTags = ConvertCustomAttributesToCustomTags(config.Attributes)
 	}
 	if config.SpawnUpstreamSpan != nil {
 		tracingConfig.SpawnUpstreamSpan = &wrapperspb.BoolValue{
@@ -221,18 +113,21 @@ func convertOTelTracingConfig(
 	if config.ServiceName != nil {
 		tracingCfg.ServiceName = *config.ServiceName
 	}
+
+	envDetectorEnabled := true
 	if len(config.ResourceDetectors) != 0 {
-		translatedResourceDetectors := make([]*envoycorev3.TypedExtensionConfig, len(config.ResourceDetectors))
-		for i, rd := range config.ResourceDetectors {
-			if rd.EnvironmentResourceDetector != nil {
-				detector, _ := utils.MessageToAny(&resource_detectorsv3.EnvironmentResourceDetectorConfig{})
-				translatedResourceDetectors[i] = &envoycorev3.TypedExtensionConfig{
-					Name:        environmentResourceDetectorName,
-					TypedConfig: detector,
-				}
+		for _, rd := range config.ResourceDetectors {
+			if rd.EnvironmentResourceDetector != nil && rd.EnvironmentResourceDetector.Enable != nil {
+				envDetectorEnabled = *rd.EnvironmentResourceDetector.Enable
 			}
 		}
-		tracingCfg.ResourceDetectors = translatedResourceDetectors
+	}
+	if envDetectorEnabled {
+		detector, _ := utils.MessageToAny(&resource_detectorsv3.EnvironmentResourceDetectorConfig{})
+		tracingCfg.ResourceDetectors = []*envoycorev3.TypedExtensionConfig{{
+			Name:        environmentResourceDetectorName,
+			TypedConfig: detector,
+		}}
 	}
 
 	if config.Sampler != nil {
@@ -256,9 +151,6 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 		tracingProvider.ServiceName = GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace())
 	}
 
-	// Add default service attributes to a static resource detector.
-	addDefaultStaticResourceDetector(pCtx, tracingProvider)
-
 	otelCfg := utils.MustMessageToAny(tracingProvider)
 
 	tracingConfig.Provider = &envoytracev3.Tracing_Http{
@@ -269,35 +161,132 @@ func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.Open
 	}
 }
 
-// addDefaultStaticResourceDetector adds default service attributes for service.namespace,
-// service.instance.id, service.version in a StaticConfigResourceDetector on the tracing provider
-func addDefaultStaticResourceDetector(pCtx *ir.HcmContext, tracingProvider *envoytracev3.OpenTelemetryConfig) {
-	// Build default attributes for the static resource detector.
-	defaultAttrs := map[string]string{
-		serviceNamespaceKey: pCtx.Gateway.SourceObject.GetNamespace(),
-	}
-
-	if pCtx.Gateway.SourceObject.Obj != nil && pCtx.Gateway.SourceObject.Obj.GetUID() != "" {
-		defaultAttrs[serviceInstanceIdKey] = string(pCtx.Gateway.SourceObject.Obj.GetUID())
-	}
-
-	if version.Version != "" {
-		defaultAttrs[serviceVersionKey] = version.Version
-	}
-
-	detector, _ := utils.MessageToAny(&resource_detectorsv3.StaticConfigResourceDetectorConfig{
-		Attributes: defaultAttrs,
-	})
-	// Prepend the static detector so user-configured detectors will override default
-	tracingProvider.ResourceDetectors = append([]*envoycorev3.TypedExtensionConfig{{
-		Name:        staticResourceDetectorName,
-		TypedConfig: detector,
-	}}, tracingProvider.ResourceDetectors...)
-}
-
 // GenerateDefaultServiceName returns the default service name that matches the cluster name
 // specified in the envoy bootstrap config
 // Ie: `<gateway-name>.<gateway-namespace>`
 func GenerateDefaultServiceName(name, namespace string) string {
 	return fmt.Sprintf("%s.%s", name, namespace)
+}
+
+// ConvertCustomAttributesToCustomTags converts a list of kgateway CustomAttribute
+// to a list of Envoy CustomTag protos. This is used by both listener-level and
+// route-level tracing configuration.
+func ConvertCustomAttributesToCustomTags(attrs []kgateway.CustomAttribute) []*tracingv3.CustomTag {
+	if len(attrs) == 0 {
+		return nil
+	}
+
+	tags := make([]*tracingv3.CustomTag, 0, len(attrs))
+	for _, ct := range attrs {
+		tag := convertCustomAttributeToCustomTag(ct)
+		if tag != nil {
+			tags = append(tags, tag)
+		}
+	}
+	return tags
+}
+
+func convertCustomAttributeToCustomTag(ct kgateway.CustomAttribute) *tracingv3.CustomTag {
+	if ct.Literal != nil {
+		return &tracingv3.CustomTag{
+			Tag: ct.Name,
+			Type: &tracingv3.CustomTag_Literal_{
+				Literal: &tracingv3.CustomTag_Literal{
+					Value: ct.Literal.Value,
+				},
+			},
+		}
+	}
+
+	if ct.Environment != nil {
+		tagType := &tracingv3.CustomTag_Environment_{
+			Environment: &tracingv3.CustomTag_Environment{
+				Name: ct.Environment.Name,
+			},
+		}
+		if ct.Environment.DefaultValue != nil {
+			tagType.Environment.DefaultValue = *ct.Environment.DefaultValue
+		}
+
+		return &tracingv3.CustomTag{
+			Tag:  ct.Name,
+			Type: tagType,
+		}
+	}
+
+	if ct.RequestHeader != nil {
+		tagType := &tracingv3.CustomTag_RequestHeader{
+			RequestHeader: &tracingv3.CustomTag_Header{
+				Name: ct.RequestHeader.Name,
+			},
+		}
+		if ct.RequestHeader.DefaultValue != nil {
+			tagType.RequestHeader.DefaultValue = *ct.RequestHeader.DefaultValue
+		}
+
+		return &tracingv3.CustomTag{
+			Tag:  ct.Name,
+			Type: tagType,
+		}
+	}
+
+	if ct.Metadata != nil {
+		tagType := &tracingv3.CustomTag_Metadata_{
+			Metadata: &tracingv3.CustomTag_Metadata{
+				MetadataKey: &metadatav3.MetadataKey{
+					Key: ct.Metadata.MetadataKey.Key,
+				},
+			},
+		}
+
+		if len(ct.Metadata.MetadataKey.Path) != 0 {
+			paths := make([]*metadatav3.MetadataKey_PathSegment, len(ct.Metadata.MetadataKey.Path))
+			for i, p := range ct.Metadata.MetadataKey.Path {
+				paths[i] = &metadatav3.MetadataKey_PathSegment{
+					Segment: &metadatav3.MetadataKey_PathSegment_Key{
+						Key: p.Key,
+					},
+				}
+			}
+			tagType.Metadata.GetMetadataKey().Path = paths
+		}
+
+		switch ct.Metadata.Kind {
+		case kgateway.MetadataKindRequest:
+			tagType.Metadata.Kind = &metadatav3.MetadataKind{
+				Kind: &metadatav3.MetadataKind_Request_{
+					Request: &metadatav3.MetadataKind_Request{},
+				},
+			}
+		case kgateway.MetadataKindRoute:
+			tagType.Metadata.Kind = &metadatav3.MetadataKind{
+				Kind: &metadatav3.MetadataKind_Route_{
+					Route: &metadatav3.MetadataKind_Route{},
+				},
+			}
+		case kgateway.MetadataKindCluster:
+			tagType.Metadata.Kind = &metadatav3.MetadataKind{
+				Kind: &metadatav3.MetadataKind_Cluster_{
+					Cluster: &metadatav3.MetadataKind_Cluster{},
+				},
+			}
+		case kgateway.MetadataKindHost:
+			tagType.Metadata.Kind = &metadatav3.MetadataKind{
+				Kind: &metadatav3.MetadataKind_Host_{
+					Host: &metadatav3.MetadataKind_Host{},
+				},
+			}
+		}
+
+		if ct.Metadata.DefaultValue != nil {
+			tagType.Metadata.DefaultValue = *ct.Metadata.DefaultValue
+		}
+
+		return &tracingv3.CustomTag{
+			Tag:  ct.Name,
+			Type: tagType,
+		}
+	}
+
+	return nil
 }

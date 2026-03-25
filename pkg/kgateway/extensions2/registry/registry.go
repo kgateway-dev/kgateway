@@ -75,7 +75,6 @@ func MergePlugins(plug ...sdk.Plugin) sdk.Plugin {
 func Plugins(
 	ctx context.Context,
 	commoncol *pluginsdkcol.CommonCollections,
-	waypointGatewayClassName string,
 	globalSettings apisettings.Settings,
 	validator validator.Validator,
 ) []sdk.Plugin {

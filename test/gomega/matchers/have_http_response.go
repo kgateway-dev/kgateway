@@ -72,8 +72,11 @@ func HaveOKResponseWithJSONContains(jsonBody []byte) types.GomegaMatcher {
 // HttpResponse defines the set of properties that we can validate from an http.Response
 type HttpResponse struct {
 	// StatusCode is the expected status code for an http.Response
-	// Required
+	// Required (unless StatusCodes is set)
 	StatusCode int
+	// StatusCodes is a list of acceptable status codes for an http.Response
+	// Optional: If set, overrides StatusCode
+	StatusCodes []int
 	// Body is the expected response body for an http.Response
 	// Body can be of type: {string, bytes, GomegaMatcher}
 	// Optional: If not provided, defaults to an empty string
@@ -118,10 +121,15 @@ func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
 	}
 
 	var partialResponseMatchers []types.GomegaMatcher
+	expectedStatuses := []any{expected.StatusCode}
+	if len(expected.StatusCodes) > 0 {
+		expectedStatuses = make([]any, len(expected.StatusCodes))
+		for i, code := range expected.StatusCodes {
+			expectedStatuses[i] = code
+		}
+	}
 	partialResponseMatchers = append(partialResponseMatchers, &matchers.HaveHTTPStatusMatcher{
-		Expected: []any{
-			expected.StatusCode,
-		},
+		Expected: expectedStatuses,
 	})
 	if expected.Body != nil {
 		partialResponseMatchers = append(partialResponseMatchers, &matchers.HaveHTTPBodyMatcher{

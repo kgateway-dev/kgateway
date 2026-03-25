@@ -9,6 +9,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoy_aws_common_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/aws/v3"
 	envoy_lambda_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_lambda/v3"
 	envoy_request_signing_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_request_signing/v3"
@@ -76,8 +77,17 @@ func processAws(ir *AwsIr, out *envoyclusterv3.Cluster) error {
 		return fmt.Errorf("aws ir is nil")
 	}
 
-	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
-		Type: envoyclusterv3.Cluster_LOGICAL_DNS,
+	dnsClusterConfig, err := utils.MessageToAny(&envoydnsv3.DnsCluster{
+		AllAddressesInSingleEndpoint: true, // follows logical dns semantics
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create dns cluster config: %v", err)
+	}
+	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
+		ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+			Name:        dnsClusterExtensionName,
+			TypedConfig: dnsClusterConfig,
+		},
 	}
 	if ir.lambdaTransportSocket != nil {
 		out.TransportSocket = ir.lambdaTransportSocket

@@ -121,16 +121,14 @@ Routes:
 Statuses:
   gateways:
     gwtest/example-gateway:
+      attachedListenerSets: 1
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsAttached
-        status: "True"
-        type: AttachedListenerSets
-      - lastTransitionTime: null
-        message: Successfully accepted Gateway
-        reason: Accepted
-        status: "True"
+        message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+          Failed to create pre-route filter config: Failed to initialize per-route
+          dynamic module'
+        reason: GatewayReplaced
+        status: "False"
         type: Accepted
       - lastTransitionTime: null
         message: Successfully programmed Gateway
@@ -182,8 +180,8 @@ Statuses:
           type: ResolvedRefs
         controllerName: kgateway
         parentRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: test-listenerset
   listenerSets:
     gwtest/test-listenerset:
@@ -224,7 +222,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: http-9090
-        port: 9090
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
@@ -233,11 +230,9 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to create pre-route filter config: Failed to initialize per-route
-            dynamic module'
-          reason: ListenerReplaced
-          status: "False"
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully verified that Listener has no conflicts
@@ -255,7 +250,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: https-8443
-        port: 8443
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
@@ -265,8 +259,8 @@ Statuses:
     TrafficPolicy/gwtest/invalid-traffic-policy:
       ancestors:
       - ancestorRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: test-listenerset
           namespace: gwtest
         conditions:

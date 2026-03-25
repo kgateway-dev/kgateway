@@ -1,6 +1,5 @@
 Clusters:
 - connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: istio-se_infra_se-a_se-a.example.com_5000
     endpoints:
@@ -16,7 +15,6 @@ Clusters:
   name: istio-se_infra_se-a_se-a.example.com_5000
   type: STATIC
 - connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: istio-se_infra_se-b_se-b.example.com_9000
     endpoints:

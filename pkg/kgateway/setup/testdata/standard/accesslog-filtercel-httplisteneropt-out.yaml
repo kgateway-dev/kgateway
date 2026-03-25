@@ -1,6 +1,5 @@
 clusters:
 - connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: backend_gwtest_log_0
     endpoints:

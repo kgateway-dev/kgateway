@@ -34,12 +34,10 @@ Listeners:
             body:
               stringValue: '"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE%
                 "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"'''
-            commonConfig:
-              grpcService:
-                envoyGrpc:
-                  clusterName: kube_default_opentelemetry-collector_4317
-              logName: otel-accesslog-service
-              transportApiVersion: V3
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_default_opentelemetry-collector_4317
+            logName: otel-accesslog-service
             resourceAttributes:
               values:
               - key: service.name
@@ -51,6 +49,12 @@ Listeners:
               - key: service.version
                 value:
                   stringValue: v1.0.0-ci1
+              - key: k8s.namespace.name
+                value:
+                  stringValue: default
+              - key: k8s.container.name
+                value:
+                  stringValue: kgateway-proxy
         httpFilters:
         - name: envoy.filters.http.health_check
           typedConfig:
@@ -96,12 +100,6 @@ Listeners:
                   authority: httpbin.example.com
                   clusterName: kube_default_opentelemetry-collector_4317
               resourceDetectors:
-              - name: envoy.tracers.opentelemetry.resource_detectors.static_config
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.StaticConfigResourceDetectorConfig
-                  attributes:
-                    service.namespace: default
-                    service.version: v1.0.0-ci1
               - name: envoy.tracers.opentelemetry.resource_detectors.environment
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig
@@ -165,11 +163,6 @@ Statuses:
   gateways:
     default/example-gateway:
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted

@@ -142,6 +142,7 @@ endpoints:
             portValue: 8080
       loadBalancingWeight: 1
     loadBalancingWeight: 1
+- clusterName: kube_gwtest_httpbin_9000
 listeners:
 - address:
     socketAddress:

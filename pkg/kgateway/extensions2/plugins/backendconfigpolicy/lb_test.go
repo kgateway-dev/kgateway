@@ -7,6 +7,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoycommonv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/common/v3"
 	leastrequestv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/least_request/v3"
 	maglevv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/maglev/v3"
@@ -405,6 +406,100 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 				return &envoyclusterv3.Cluster{
 					Name:                 "test",
 					ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS},
+					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
+						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+								Name:        "envoy.load_balancing_policies.ring_hash",
+								TypedConfig: msg,
+							},
+						}},
+					},
+					CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+				}
+			}(),
+		},
+		{
+			name: "RingHash: UseHostnameForHashing, DnsCluster",
+			config: &kgateway.LoadBalancer{
+				RingHash: &kgateway.LoadBalancerRingHashConfig{
+					UseHostnameForHashing: new(true),
+				},
+			},
+			cluster: func() *envoyclusterv3.Cluster {
+				dnsClusterMsg, _ := utils.MessageToAny(&envoydnsv3.DnsCluster{})
+				return &envoyclusterv3.Cluster{
+					ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+						ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+							Name:        dnsClusterExtensionName,
+							TypedConfig: dnsClusterMsg,
+						},
+					},
+				}
+			}(),
+			expected: func() *envoyclusterv3.Cluster {
+				dnsClusterMsg, _ := utils.MessageToAny(&envoydnsv3.DnsCluster{})
+				msg, _ := utils.MessageToAny(&ringhashv3.RingHash{
+					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
+						UseHostnameForHashing: true,
+					},
+				})
+				return &envoyclusterv3.Cluster{
+					Name: "test",
+					ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+						ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+							Name:        dnsClusterExtensionName,
+							TypedConfig: dnsClusterMsg,
+						},
+					},
+					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
+						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+								Name:        "envoy.load_balancing_policies.ring_hash",
+								TypedConfig: msg,
+							},
+						}},
+					},
+					CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+				}
+			}(),
+		},
+		{
+			name: "RingHash: UseHostnameForHashing, DnsCluster AllAddressesInSingleEndpoint",
+			config: &kgateway.LoadBalancer{
+				RingHash: &kgateway.LoadBalancerRingHashConfig{
+					UseHostnameForHashing: new(true),
+				},
+			},
+			cluster: func() *envoyclusterv3.Cluster {
+				dnsClusterMsg, _ := utils.MessageToAny(&envoydnsv3.DnsCluster{
+					AllAddressesInSingleEndpoint: true,
+				})
+				return &envoyclusterv3.Cluster{
+					ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+						ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+							Name:        dnsClusterExtensionName,
+							TypedConfig: dnsClusterMsg,
+						},
+					},
+				}
+			}(),
+			expected: func() *envoyclusterv3.Cluster {
+				dnsClusterMsg, _ := utils.MessageToAny(&envoydnsv3.DnsCluster{
+					AllAddressesInSingleEndpoint: true,
+				})
+				msg, _ := utils.MessageToAny(&ringhashv3.RingHash{
+					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
+						UseHostnameForHashing: false,
+					},
+				})
+				return &envoyclusterv3.Cluster{
+					Name: "test",
+					ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+						ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+							Name:        dnsClusterExtensionName,
+							TypedConfig: dnsClusterMsg,
+						},
+					},
 					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
 						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
 							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{

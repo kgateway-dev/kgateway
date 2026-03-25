@@ -54,12 +54,8 @@ Routes:
 Statuses:
   gateways:
     default/example-gateway:
+      attachedListenerSets: 1
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsAttached
-        status: "True"
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: 'Some listeners are not programmed: tcp: TCP/TLS listener has no
           valid backends or routes'
@@ -114,8 +110,8 @@ Statuses:
           type: ResolvedRefs
         controllerName: kgateway
         parentRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: example-listenerset
   listenerSets:
     default/example-listenerset:
@@ -154,7 +150,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: http
-        port: 80
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute

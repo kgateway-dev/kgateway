@@ -232,8 +232,14 @@ spec:
                                         - RegularExpression
                                         type: string
                                       value:
-                                        description: Value is the value of HTTP Header
-                                          to be matched.
+                                        description: |-
+                                          Value is the value of HTTP Header to be matched.
+                                          <gateway:experimental:description>
+                                          Must consist of printable US-ASCII characters, optionally separated
+                                          by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                                          </gateway:experimental:description>
+
+                                          <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
                                         maxLength: 4096
                                         minLength: 1
                                         type: string
@@ -406,8 +412,14 @@ spec:
                                   - RegularExpression
                                   type: string
                                 value:
-                                  description: Value is the value of HTTP Header to
-                                    be matched.
+                                  description: |-
+                                    Value is the value of HTTP Header to be matched.
+                                    <gateway:experimental:description>
+                                    Must consist of printable US-ASCII characters, optionally separated
+                                    by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                                    </gateway:experimental:description>
+
+                                    <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
                                   maxLength: 4096
                                   minLength: 1
                                   type: string
@@ -549,8 +561,14 @@ spec:
                                         - RegularExpression
                                         type: string
                                       value:
-                                        description: Value is the value of HTTP Header
-                                          to be matched.
+                                        description: |-
+                                          Value is the value of HTTP Header to be matched.
+                                          <gateway:experimental:description>
+                                          Must consist of printable US-ASCII characters, optionally separated
+                                          by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                                          </gateway:experimental:description>
+
+                                          <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
                                         maxLength: 4096
                                         minLength: 1
                                         type: string
@@ -1188,7 +1206,14 @@ spec:
                           pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                           type: string
                         value:
-                          description: Value is the value of HTTP Header to be matched.
+                          description: |-
+                            Value is the value of HTTP Header to be matched.
+                            <gateway:experimental:description>
+                            Must consist of printable US-ASCII characters, optionally separated
+                            by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                            </gateway:experimental:description>
+
+                            <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
                           maxLength: 4096
                           minLength: 1
                           type: string
@@ -1261,7 +1286,14 @@ spec:
                           pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                           type: string
                         value:
-                          description: Value is the value of HTTP Header to be matched.
+                          description: |-
+                            Value is the value of HTTP Header to be matched.
+                            <gateway:experimental:description>
+                            Must consist of printable US-ASCII characters, optionally separated
+                            by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                            </gateway:experimental:description>
+
+                            <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
                           maxLength: 4096
                           minLength: 1
                           type: string
@@ -1765,8 +1797,16 @@ spec:
                               minProperties: 1
                               properties:
                                 environmentResourceDetector:
-                                  description: EnvironmentResourceDetectorConfig specified
-                                    the EnvironmentResourceDetector
+                                  description: |-
+                                    EnvironmentResourceDetector sets OpenTelemetry resource attributes from the OTEL_RESOURCE_ATTRIBUTES
+                                    environment variable in the Envoy container.
+                                    Default enabled if not set. If multiple are set, the last will take precedence.
+                                  properties:
+                                    enable:
+                                      default: true
+                                      description: Enable controls whether the EnvironmentResourceDetector
+                                        is used.
+                                      type: boolean
                                   type: object
                               type: object
                             type: array

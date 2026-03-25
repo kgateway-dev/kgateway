@@ -28,12 +28,10 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
             body:
               stringValue: '"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE%"'
-            commonConfig:
-              grpcService:
-                envoyGrpc:
-                  clusterName: kube_default_opentelemetry-collector_4317
-              logName: otel-accesslog-service
-              transportApiVersion: V3
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_default_opentelemetry-collector_4317
+            logName: otel-accesslog-service
             resourceAttributes:
               values:
               - key: service.name
@@ -42,12 +40,15 @@ Listeners:
               - key: service.namespace
                 value:
                   stringValue: default
-              - key: service.instance.id
-                value:
-                  stringValue: 12345678-abcd-1234-efgh-123456789012
               - key: service.version
                 value:
                   stringValue: v1.0.0-ci1
+              - key: k8s.namespace.name
+                value:
+                  stringValue: default
+              - key: k8s.container.name
+                value:
+                  stringValue: kgateway-proxy
         httpFilters:
         - name: envoy.filters.http.router
           typedConfig:
@@ -69,13 +70,9 @@ Listeners:
                 envoyGrpc:
                   clusterName: kube_default_opentelemetry-collector_4317
               resourceDetectors:
-              - name: envoy.tracers.opentelemetry.resource_detectors.static_config
+              - name: envoy.tracers.opentelemetry.resource_detectors.environment
                 typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.StaticConfigResourceDetectorConfig
-                  attributes:
-                    service.instance.id: 12345678-abcd-1234-efgh-123456789012
-                    service.namespace: default
-                    service.version: v1.0.0-ci1
+                  '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig
               serviceName: example-gateway.default
         useRemoteAddress: true
     name: listener~8080
@@ -105,12 +102,6 @@ Statuses:
   gateways:
     default/example-gateway:
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        observedGeneration: 3
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         observedGeneration: 3

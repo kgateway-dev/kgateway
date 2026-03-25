@@ -92,6 +92,7 @@ Routes:
           '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
           allowOriginStringMatch:
           - exact: https://example.com
+          forwardNotMatchingPreflights: false
           maxAge: "5"
         ratelimit/local:
           '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
@@ -112,11 +113,6 @@ Statuses:
   gateways:
     infra/example-gateway:
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted

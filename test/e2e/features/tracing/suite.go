@@ -74,12 +74,18 @@ func (s *testingSuite) testOTelTracing() {
 			`-> http.method: Str(GET)`,
 			`-> http.status_code: Str(200)`,
 			`-> upstream_cluster: Str(kube_httpbin_httpbin_8000)`,
-			// Default service identity resource attributes auto-injected by the static resource detector
+			// User provided in the HTTPListenerPolicy
 			`-> service.name: Str(my:service)`,
-			`-> service.namespace: Str(default)`,
-			// verify the field is present as the id will be different each run
+			// Default resource attributes set via OTEL_RESOURCE_ATTRIBUTES env var in the Helm chart
+			`-> k8s.namespace.name: Str(default)`,
+			`-> k8s.container.name: Str(kgateway-proxy)`,
 			`-> service.instance.id: Str(`,
-			// Resource attributes specified via the environmentResourceDetector
+			`-> k8s.pod.name: Str(`,
+			`-> k8s.pod.uid: Str(`,
+			`-> k8s.node.name: Str(`,
+			`-> k8s.deployment.name: Str(`,
+			// User-appended resource attributes from GatewayParameters
+			`-> service.namespace: Str(test)`,
 			`-> environment: Str(detector)`,
 			`-> resource: Str(attribute)`,
 			// Custom tag passed in the config
@@ -101,4 +107,91 @@ func (s *testingSuite) testOTelTracing() {
 		}
 		g.Expect(allMatched).To(gomega.BeTrue(), "lines not found in logs")
 	}, time.Second*60, time.Second*15, "should find traces in collector pod logs").Should(gomega.Succeed())
+}
+
+// TestRouteTracingCustomAttributes verifies that a TrafficPolicy with route-level tracing
+// adds custom tags to traces alongside listener-level tags from the HTTPListenerPolicy.
+func (s *testingSuite) TestRouteTracingCustomAttributes() {
+	// Wait for listener-level tracing policy to be accepted
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+
+	headerValue := fmt.Sprintf("%v", rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+			s.Ctx,
+			defaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithHostHeader("www.example.com"),
+				curl.WithHeader("x-route-header", headerValue),
+				curl.WithPath("/status/200"),
+				curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			},
+			&matchers.HttpResponse{
+				StatusCode: 200,
+			},
+			20*time.Second,
+			2*time.Second,
+		)
+
+		expectedLines := []string{
+			// Standard trace attributes
+			`-> http.url: Str(http://www.example.com/status/200)`,
+			`-> http.method: Str(GET)`,
+			`-> http.status_code: Str(200)`,
+			// Listener-level custom tags from HTTPListenerPolicy should still be present
+			`-> custom: Str(literal)`,
+			// Route-level custom tags from TrafficPolicy
+			`-> route-tag: Str(route-tag-value)`,
+			// Route-level custom tag fetched from request header
+			fmt.Sprintf("-> route-request-header: Str(%s)", headerValue),
+		}
+
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", "otel-collector")
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
+
+		allMatched := true
+		for _, line := range expectedLines {
+			if !strings.Contains(logs, line) {
+				allMatched = false
+			}
+		}
+		g.Expect(allMatched).To(gomega.BeTrue(), "expected trace attributes not found in collector logs")
+	}, time.Second*60, time.Second*15, "should find route-level trace tags in collector pod logs").Should(gomega.Succeed())
+}
+
+// TestRouteTracingDisable verifies that a TrafficPolicy with tracing disabled
+// prevents traces from being emitted for the targeted route.
+func (s *testingSuite) TestRouteTracingDisable() {
+	// Wait for listener-level tracing policy to be accepted
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+
+	// Use a unique marker to identify requests from this test
+	marker := fmt.Sprintf("disable-test-%v", rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable
+
+	// Make several requests with the unique marker header
+	for range 5 {
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+			s.Ctx,
+			defaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithHostHeader("www.example.com"),
+				curl.WithHeader("x-header-tag", marker),
+				curl.WithPath("/status/200"),
+				curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			},
+			&matchers.HttpResponse{
+				StatusCode: 200,
+			},
+			20*time.Second,
+			2*time.Second,
+		)
+	}
+
+	// Wait briefly for any traces to be flushed to the collector
+	time.Sleep(5 * time.Second)
+
+	// Verify that no traces with our unique marker appear in the collector logs
+	logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", "otel-collector")
+	s.Require().NoError(err, "Failed to get pod logs")
+	s.Require().NotContains(logs, marker, "traces should not be emitted when route tracing is disabled")
 }

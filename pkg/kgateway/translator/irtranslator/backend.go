@@ -8,8 +8,9 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -27,7 +28,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
-const clusterConnectionTimeout = time.Second * 5
+const (
+	clusterConnectionTimeout = time.Second * 5
+	dnsClusterExtensionName  = "envoy.clusters.dns"
+)
 
 type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
@@ -173,7 +177,14 @@ var inlineCLAClusterTypes = sets.New(
 )
 
 func clusterSupportsInlineCLA(cluster *envoyclusterv3.Cluster) bool {
-	return inlineCLAClusterTypes.Has(cluster.GetType())
+	switch cdt := cluster.GetClusterDiscoveryType().(type) {
+	case *envoyclusterv3.Cluster_ClusterType:
+		return cdt.ClusterType.GetName() == dnsClusterExtensionName
+	case *envoyclusterv3.Cluster_Type:
+		return inlineCLAClusterTypes.Has(cdt.Type)
+	default:
+		return false
+	}
 }
 
 var h2Options = func() *anypb.Any {
@@ -199,47 +210,78 @@ var h2Options = func() *anypb.Any {
 // 1. explicitly default to 'V4_PREFERRED' (as opposed to the envoy default of effectively V6_PREFERRED)
 // 2. override to value defined in kgateway global setting if present
 func processDnsLookupFamily(out *envoyclusterv3.Cluster, cc *collections.CommonCollections) {
-	cdt, ok := out.GetClusterDiscoveryType().(*envoyclusterv3.Cluster_Type)
-	if !ok {
-		return
-	}
-	setDns := false
-	switch cdt.Type {
-	case envoyclusterv3.Cluster_STATIC, envoyclusterv3.Cluster_LOGICAL_DNS, envoyclusterv3.Cluster_STRICT_DNS:
-		setDns = true
-	}
-	if !setDns {
-		return
+	lookupFamily := envoyclusterv3.Cluster_V4_PREFERRED
+	if cc != nil {
+		switch cc.Settings.DnsLookupFamily {
+		case apisettings.DnsLookupFamilyV4Preferred:
+			lookupFamily = envoyclusterv3.Cluster_V4_PREFERRED
+		case apisettings.DnsLookupFamilyV4Only:
+			lookupFamily = envoyclusterv3.Cluster_V4_ONLY
+		case apisettings.DnsLookupFamilyV6Only:
+			lookupFamily = envoyclusterv3.Cluster_V6_ONLY
+		case apisettings.DnsLookupFamilyAuto:
+			lookupFamily = envoyclusterv3.Cluster_AUTO
+		case apisettings.DnsLookupFamilyAll:
+			lookupFamily = envoyclusterv3.Cluster_ALL
+		}
 	}
 
-	// irrespective of settings, default to V4_PREFERRED, overriding Envoy default
-	out.DnsLookupFamily = envoyclusterv3.Cluster_V4_PREFERRED
-
-	if cc == nil {
+	switch cdt := out.GetClusterDiscoveryType().(type) {
+	case *envoyclusterv3.Cluster_ClusterType:
+		if cdt.ClusterType.GetName() != dnsClusterExtensionName || cdt.ClusterType.GetTypedConfig() == nil {
+			return
+		}
+		dnsCluster := &envoydnsv3.DnsCluster{}
+		err := cdt.ClusterType.GetTypedConfig().UnmarshalTo(dnsCluster)
+		if err != nil {
+			logger.Error("failed to unpack dns cluster config", "cluster", out.GetName(), "error", err)
+			return
+		}
+		dnsCluster.DnsLookupFamily = toExtensionDnsLookupFamily(lookupFamily)
+		typedConfig, err := utils.MessageToAny(dnsCluster)
+		if err != nil {
+			logger.Error("failed to pack dns cluster config", "cluster", out.GetName(), "error", err)
+			return
+		}
+		cdt.ClusterType.TypedConfig = typedConfig
+	default:
 		return
 	}
-	// if we have settings, use value from it
-	switch cc.Settings.DnsLookupFamily {
-	case apisettings.DnsLookupFamilyV4Preferred:
-		out.DnsLookupFamily = envoyclusterv3.Cluster_V4_PREFERRED
-	case apisettings.DnsLookupFamilyV4Only:
-		out.DnsLookupFamily = envoyclusterv3.Cluster_V4_ONLY
-	case apisettings.DnsLookupFamilyV6Only:
-		out.DnsLookupFamily = envoyclusterv3.Cluster_V6_ONLY
-	case apisettings.DnsLookupFamilyAuto:
-		out.DnsLookupFamily = envoyclusterv3.Cluster_AUTO
-	case apisettings.DnsLookupFamilyAll:
-		out.DnsLookupFamily = envoyclusterv3.Cluster_ALL
+}
+
+func toExtensionDnsLookupFamily(family envoyclusterv3.Cluster_DnsLookupFamily) envoycommondnsv3.DnsLookupFamily {
+	switch family {
+	case envoyclusterv3.Cluster_AUTO:
+		return envoycommondnsv3.DnsLookupFamily_AUTO
+	case envoyclusterv3.Cluster_V6_ONLY:
+		return envoycommondnsv3.DnsLookupFamily_V6_ONLY
+	case envoyclusterv3.Cluster_V4_ONLY:
+		return envoycommondnsv3.DnsLookupFamily_V4_ONLY
+	case envoyclusterv3.Cluster_V4_PREFERRED:
+		return envoycommondnsv3.DnsLookupFamily_V4_PREFERRED
+	case envoyclusterv3.Cluster_ALL:
+		return envoycommondnsv3.DnsLookupFamily_ALL
+	default:
+		return envoycommondnsv3.DnsLookupFamily_AUTO
 	}
 }
 
 func translateAppProtocol(appProtocol ir.AppProtocol) map[string]*anypb.Any {
 	typedExtensionProtocolOptions := map[string]*anypb.Any{}
-	switch appProtocol {
-	case ir.HTTP2AppProtocol:
-		typedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = proto.Clone(h2Options).(*anypb.Any)
+	if appProtocol == ir.HTTP2AppProtocol {
+		typedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = cloneAny(h2Options)
 	}
 	return typedExtensionProtocolOptions
+}
+
+func cloneAny(msg *anypb.Any) *anypb.Any {
+	if msg == nil {
+		return nil
+	}
+	return &anypb.Any{
+		TypeUrl: msg.TypeUrl,
+		Value:   append([]byte(nil), msg.Value...),
+	}
 }
 
 // initializeCluster creates a default envoy cluster with minimal configuration,

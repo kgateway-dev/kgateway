@@ -1,6 +1,5 @@
 clusters:
 - connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: istio-se_gwtest_httpbin-se_se.example.com_80
     endpoints:

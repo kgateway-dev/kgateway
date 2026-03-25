@@ -4,7 +4,6 @@ package zero_downtime_rollout
 
 import (
 	"context"
-	"net/http"
 	"path/filepath"
 	"time"
 
@@ -12,10 +11,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -23,12 +22,9 @@ import (
 
 var (
 	serviceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
-	gatewayManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
+	setupManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 
-	proxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
-	}
+	gatewayName = "gw"
 )
 
 type testingSuiteKgateway struct {
@@ -41,12 +37,10 @@ func NewTestingSuiteKgateway(ctx context.Context, testInst *e2e.TestInstallation
 			ctx,
 			testInst,
 			base.TestCase{
-				Manifests: []string{serviceManifest},
+				Manifests: []string{serviceManifest, setupManifest},
 			},
 			map[string]*base.TestCase{
-				"TestZeroDowntimeRollout": {
-					Manifests: []string{gatewayManifest, defaults.CurlPodManifest},
-				},
+				"TestZeroDowntimeRollout": {},
 			},
 		),
 	}
@@ -55,20 +49,16 @@ func NewTestingSuiteKgateway(ctx context.Context, testInst *e2e.TestInstallation
 func (s *testingSuiteKgateway) TestZeroDowntimeRollout() {
 	// Ensure the gateway pod is up and running.
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
-		proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-			LabelSelector: defaults.WellKnownAppLabel + "=" + proxyObjectMeta.GetName(),
+		"default", metav1.ListOptions{
+			LabelSelector: defaults.WellKnownAppLabel + "=" + gatewayName,
 		})
 
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusOK,
-		})
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{StatusCode: 200},
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(8080),
+	)
 
 	kCli := kubectl.NewCli()
 

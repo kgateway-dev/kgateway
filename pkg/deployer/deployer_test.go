@@ -24,7 +24,6 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 
@@ -40,20 +39,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
-	// TODO BML tests in this suite fail if this no-op import is not imported first.
-	//
-	// I know, I know, you're reading this, and you're skeptical. I can feel it.
-	// Don't take my word for it.
-	//
-	// There is some import within this package that this suite relies on. Chasing that down is
-	// *hard* tho due to the import tree, and best done in a followup.
-	// _ "github.com/kgateway-dev/kgateway/pkg/kgateway/translator/translator.go"
-	//
-	// The above TODO is a result of proto types being registered for free somewhere through
-	// the translator import. What we really need is to register all proto types, which is
-	// "correctly" available to use via `envoyinit`; note that the autogeneration of these types
-	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
-	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	deployertest "github.com/kgateway-dev/kgateway/v2/test/deployer"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
@@ -1075,7 +1060,7 @@ var _ = Describe("Deployer", func() {
 				Expect(objs.findConfigMap(defaultNamespace, "foo")).NotTo(BeNil())
 
 				By("validating the default values are used")
-				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, deployer.EnvoyWrapperImage, tag)))
+				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, wellknown.EnvoyWrapperImage, tag)))
 			})
 		})
 
@@ -1163,7 +1148,7 @@ var _ = Describe("Deployer", func() {
 				Expect(objs.findConfigMap(defaultNamespace, "foo")).NotTo(BeNil())
 
 				By("validating the image overrides the default")
-				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("bar/%s:2.3.4", deployer.EnvoyWrapperImage)))
+				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("bar/%s:2.3.4", wellknown.EnvoyWrapperImage)))
 			})
 		})
 
@@ -1280,7 +1265,7 @@ var _ = Describe("Deployer", func() {
 				Expect(port.PortValue).To(Equal(uint32(9091)))
 
 				By("verifying image registry and tag were inherited")
-				Expect(envoyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, deployer.EnvoyWrapperImage, tag)))
+				Expect(envoyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, wellknown.EnvoyWrapperImage, tag)))
 			})
 		})
 	})
@@ -2247,23 +2232,23 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
-			ls := &apixv1a1.XListenerSet{
+			ls := &gwv1.ListenerSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ls",
 					Namespace: defaultNamespace,
 				},
-				Spec: apixv1a1.ListenerSetSpec{
-					Listeners: []apixv1a1.ListenerEntry{
+				Spec: gwv1.ListenerSetSpec{
+					Listeners: []gwv1.ListenerEntry{
 						{
 							Name: "listenerset-listener",
-							Port: apixv1a1.PortNumber(listenerSetPort),
+							Port: gwv1.PortNumber(listenerSetPort),
 						},
 					},
-					ParentRef: apixv1a1.ParentGatewayReference{
-						Kind:      (*apixv1a1.Kind)(&gw.Kind),
-						Group:     (*apixv1a1.Group)(&gw.APIVersion),
-						Name:      apixv1a1.ObjectName(gw.Name),
-						Namespace: (*apixv1a1.Namespace)(&gw.Namespace),
+					ParentRef: gwv1.ParentGatewayReference{
+						Kind:      (*gwv1.Kind)(&gw.Kind),
+						Group:     (*gwv1.Group)(&gw.APIVersion),
+						Name:      gwv1.ObjectName(gw.Name),
+						Namespace: (*gwv1.Namespace)(&gw.Namespace),
 					},
 				},
 			}

@@ -445,12 +445,47 @@ additional context here
 more details`,
 			expected: "error initializing configuration '/dev/fd/0': validation error additional context here more details",
 		},
+		{
+			name:     "strips goo.gle/debugonly prefix",
+			input:    "error initializing configuration '/dev/fd/0': goo.gle/debugonly node { id: \"test\" } : Proto constraint validation failed",
+			expected: "error initializing configuration '/dev/fd/0': node { id: \"test\" } : Proto constraint validation failed",
+		},
+		{
+			name:     "strips goo.gle/debugproto prefix",
+			input:    "error initializing configuration '/dev/fd/0': goo.gle/debugproto node { id: \"test\" } : Proto constraint validation failed",
+			expected: "error initializing configuration '/dev/fd/0': node { id: \"test\" } : Proto constraint validation failed",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := extractEnvoyError(tt.input)
+			result := normalizeEnvoyError(extractEnvoyError(tt.input))
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNormalizeEnvoyError(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "normalizes debugonly token",
+			input:    `error initializing configuration '/dev/fd/0': goo.gle/debugonly node { id: "x" } Proto constraint validation failed`,
+			expected: `error initializing configuration '/dev/fd/0': goo.gle/debug node { id: "x" } Proto constraint validation failed`,
+		},
+		{
+			name:     "normalizes debugproto token",
+			input:    `error initializing configuration '/dev/fd/0': goo.gle/debugproto node { id: "x" } Proto constraint validation failed`,
+			expected: `error initializing configuration '/dev/fd/0': goo.gle/debug node { id: "x" } Proto constraint validation failed`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, normalizeEnvoyError(tt.input))
 		})
 	}
 }

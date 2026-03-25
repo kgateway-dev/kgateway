@@ -139,4 +139,22 @@ func TestApplyForRoute_SetsRouteActionFlag(t *testing.T) {
 		require.NotNil(t, ra)
 		assert.Nil(t, ra.HostRewriteSpecifier) // nothing written
 	})
+
+	t.Run("non-RouteAction route does not panic", func(t *testing.T) {
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				timeouts: &timeoutsIR{},
+			},
+		}
+		pCtx := &ir.RouteContext{Policy: policy}
+		out := &envoyroutev3.Route{
+			Action: &envoyroutev3.Route_DirectResponse{
+				DirectResponse: &envoyroutev3.DirectResponseAction{
+					Status: 200,
+				},
+			},
+		}
+
+		require.NoError(t, plugin.ApplyForRoute(pCtx, out))
+	})
 }
