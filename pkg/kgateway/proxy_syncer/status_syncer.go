@@ -32,6 +32,7 @@ import (
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 var _ manager.LeaderElectionRunnable = &StatusSyncer{}
@@ -606,6 +607,34 @@ func (s *StatusSyncer) patchListenerSetStatus(
 	if err != nil {
 		return err
 	}
+
+	// The legacy XListenerSet CRD (gateway.networking.x-k8s.io) includes a Port field
+	// in each listener entry status. gwv1.ListenerEntryStatus omits Port, so
+	// ToUnstructured above produces listener entries without it. Populate Port from
+	// the spec so the status reflects the correct per-listener port.
+	if listenersRaw, ok := statusMap["listeners"]; ok {
+		if listenerStatuses, ok := listenersRaw.([]interface{}); ok {
+			// Build a name→port map from spec for O(1) lookups.
+			specPortByName := make(map[gwv1.SectionName]gwv1.PortNumber, len(ls.Spec.Listeners))
+			for _, specListener := range ls.Spec.Listeners {
+				port, err := kubeutils.DetectListenerPortNumber(specListener.Protocol, specListener.Port)
+				if err == nil {
+					specPortByName[specListener.Name] = port
+				}
+			}
+			for _, raw := range listenerStatuses {
+				if m, ok := raw.(map[string]interface{}); ok {
+					if name, ok := m["name"].(string); ok {
+						if port, ok := specPortByName[gwv1.SectionName(name)]; ok {
+							m["port"] = int64(port)
+						}
+					}
+				}
+			}
+			statusMap["listeners"] = listenerStatuses
+		}
+	}
+
 	legacyListenerSet.Object["status"] = statusMap
 	return s.mgr.GetClient().Status().Patch(ctx, legacyListenerSet, client.Merge)
 }

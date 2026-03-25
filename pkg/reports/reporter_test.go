@@ -813,6 +813,32 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(status.Conditions).To(HaveLen(2))
 			Expect(status.Listeners).To(BeEmpty())
 		})
+
+		It("should preserve listener order and names for a multi-listener ListenerSet", func() {
+			multiLS := &gwv1.ListenerSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "multi-listener",
+				},
+			}
+			multiLS.Spec.Listeners = []gwv1.ListenerEntry{
+				{Name: "http", Port: 90, Protocol: gwv1.HTTPProtocolType},
+				{Name: "http-2", Port: 8091, Protocol: gwv1.HTTPProtocolType},
+			}
+
+			rm := reports.NewReportMap()
+			r := reports.NewReporter(&rm)
+			r.ListenerSet(multiLS)
+
+			status := rm.BuildListenerSetStatus(context.Background(), *multiLS)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Listeners).To(HaveLen(2))
+			// Listener order and names must match the spec — wrong index mapping
+			// would cause the wrong port to be reported for each listener.
+			Expect(status.Listeners[0].Name).To(Equal(gwv1.SectionName("http")))
+			Expect(status.Listeners[1].Name).To(Equal(gwv1.SectionName("http-2")))
+		})
 	})
 })
 
