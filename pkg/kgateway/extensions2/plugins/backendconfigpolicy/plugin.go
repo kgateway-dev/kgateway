@@ -2,7 +2,6 @@ package backendconfigpolicy
 
 import (
 	"context"
-	"net/netip"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -335,10 +334,6 @@ func applyDnsClusterConfig(pol *BackendConfigPolicyIR, backend ir.BackendObjectI
 		return
 	}
 
-	if !isStaticHostnameBackend(backend) {
-		return
-	}
-
 	clusterType := out.GetClusterType()
 	if clusterType == nil || clusterType.GetName() != dnsClusterExtensionName || clusterType.GetTypedConfig() == nil {
 		return
@@ -363,21 +358,6 @@ func applyDnsClusterConfig(pol *BackendConfigPolicyIR, backend ir.BackendObjectI
 		return
 	}
 	clusterType.TypedConfig = typedConfig
-}
-
-func isStaticHostnameBackend(backend ir.BackendObjectIR) bool {
-	obj, ok := backend.Obj.(*kgateway.Backend)
-	if !ok || obj == nil || obj.Spec.Static == nil {
-		return false
-	}
-
-	for _, host := range obj.Spec.Static.Hosts {
-		if _, err := netip.ParseAddr(host.Host); err != nil {
-			return true
-		}
-	}
-
-	return false
 }
 
 func translateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.TcpKeepalive {

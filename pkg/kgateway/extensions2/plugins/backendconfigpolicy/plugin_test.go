@@ -350,7 +350,7 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 		assert.Equal(t, durationpb.New(15*time.Second), dnsCluster.GetDnsJitter())
 	})
 
-	t.Run("ignores dns settings for ip-based static backends", func(t *testing.T) {
+	t.Run("applies dns settings when cluster is dns", func(t *testing.T) {
 		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
 			Spec: kgateway.BackendConfigPolicySpec{
 				DNS: &kgateway.DNS{
@@ -387,11 +387,11 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 		var dnsCluster envoydnsv3.DnsCluster
 		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
 		require.NoError(t, err)
-		assert.Nil(t, dnsCluster.GetDnsRefreshRate())
-		assert.Nil(t, dnsCluster.GetDnsJitter())
+		assert.Equal(t, durationpb.New(60*time.Second), dnsCluster.GetDnsRefreshRate())
+		assert.Equal(t, durationpb.New(15*time.Second), dnsCluster.GetDnsJitter())
 	})
 
-	t.Run("ignores dns settings for non-static dns clusters", func(t *testing.T) {
+	t.Run("ignores dns settings for non-dns clusters", func(t *testing.T) {
 		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
 			Spec: kgateway.BackendConfigPolicySpec{
 				DNS: &kgateway.DNS{
@@ -405,28 +405,16 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 		cluster := &envoyclusterv3.Cluster{
 			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
 				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
-					Name:        dnsClusterExtensionName,
-					TypedConfig: mustMessageToAny(t, &envoydnsv3.DnsCluster{}),
-				},
-			},
-		}
-		backend := ir.BackendObjectIR{
-			Obj: &kgateway.Backend{
-				Spec: kgateway.BackendSpec{
-					Gcp: &kgateway.GcpBackend{
-						Host: "example.googleapis.com",
-					},
+					Name:        "envoy.clusters.aggregate",
+					TypedConfig: mustMessageToAny(t, &wrapperspb.StringValue{Value: "unchanged"}),
 				},
 			},
 		}
 
-		processBackend(context.Background(), policyIR, backend, cluster)
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
 
-		var dnsCluster envoydnsv3.DnsCluster
-		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
-		require.NoError(t, err)
-		assert.Nil(t, dnsCluster.GetDnsRefreshRate())
-		assert.Nil(t, dnsCluster.GetDnsJitter())
+		assert.Equal(t, "envoy.clusters.aggregate", cluster.GetClusterType().GetName())
+		assert.True(t, proto.Equal(mustMessageToAny(t, &wrapperspb.StringValue{Value: "unchanged"}), cluster.GetClusterType().GetTypedConfig()))
 	})
 }
 
