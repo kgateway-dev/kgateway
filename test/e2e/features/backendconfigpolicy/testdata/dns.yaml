@@ -38,5 +38,5 @@ spec:
       group: gateway.kgateway.dev
       kind: Backend
   dns:
-    dnsRefreshRate: 60s
-    dnsJitter: 15s
+    refreshRate: 60s
+    jitter: 15s

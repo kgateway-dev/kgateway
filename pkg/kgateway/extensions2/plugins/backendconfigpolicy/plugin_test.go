@@ -416,8 +416,8 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
 			Spec: kgateway.BackendConfigPolicySpec{
 				DNS: &kgateway.DNS{
-					DnsRefreshRate: &metav1.Duration{Duration: 60 * time.Second},
-					DnsJitter:      &metav1.Duration{Duration: 15 * time.Second},
+					RefreshRate: &metav1.Duration{Duration: 60 * time.Second},
+					Jitter:      &metav1.Duration{Duration: 15 * time.Second},
 				},
 			},
 		})
@@ -457,8 +457,8 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
 			Spec: kgateway.BackendConfigPolicySpec{
 				DNS: &kgateway.DNS{
-					DnsRefreshRate: &metav1.Duration{Duration: 60 * time.Second},
-					DnsJitter:      &metav1.Duration{Duration: 15 * time.Second},
+					RefreshRate: &metav1.Duration{Duration: 60 * time.Second},
+					Jitter:      &metav1.Duration{Duration: 15 * time.Second},
 				},
 			},
 		})
@@ -498,8 +498,8 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
 			Spec: kgateway.BackendConfigPolicySpec{
 				DNS: &kgateway.DNS{
-					DnsRefreshRate: &metav1.Duration{Duration: 60 * time.Second},
-					DnsJitter:      &metav1.Duration{Duration: 15 * time.Second},
+					RefreshRate: &metav1.Duration{Duration: 60 * time.Second},
+					Jitter:      &metav1.Duration{Duration: 15 * time.Second},
 				},
 			},
 		})

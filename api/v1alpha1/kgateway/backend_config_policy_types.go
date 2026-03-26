@@ -146,30 +146,30 @@ type CircuitBreakers struct {
 	MaxRetries *int32 `json:"maxRetries,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="!(has(self.dnsJitter) && has(self.dnsRefreshRate)) || duration(self.dnsJitter) <= duration(self.dnsRefreshRate)",message="dnsJitter must be less than or equal to dnsRefreshRate"
+// +kubebuilder:validation:XValidation:rule="!(has(self.refreshRate) && has(self.refreshRate)) || duration(self.refreshRate) <= duration(self.refreshRate)",message="refreshRate must be less than or equal to refreshRate"
 type DNS struct {
-	// DnsRefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
+	// RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
 	// Only applies to backends that resolve to STRICT_DNS or LOGICAL_DNS Envoy clusters
 	// (that is, StaticBackend with at least one hostname-based host entry). Ignored for
 	// IP-based, AWS, GCP, and DynamicForwardProxy backends.
 	//
 	// Minimum value is 1ms. If unset, Envoy's default of 5s is used.
 	// When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
-	// so DnsRefreshRate acts as the maximum polling interval.
+	// so RefreshRate acts as the maximum polling interval.
 	// Recommended value for large-scale deployments is 60s or higher.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="dnsRefreshRate must be at least 1ms"
-	DnsRefreshRate *metav1.Duration `json:"dnsRefreshRate,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="refreshRate must be at least 1ms"
+	RefreshRate *metav1.Duration `json:"refreshRate,omitempty"`
 
-	// DnsJitter adds a random delay of up to this duration before each DNS refresh,
+	// Jitter adds a random delay of up to this duration before each DNS refresh,
 	// spreading query load over time and helping prevent thundering-herd spikes.
-	// Must be less than or equal to dnsRefreshRate when both are set.
+	// Must be less than or equal to refreshRate when both are set.
 	// Only applies to STRICT_DNS and LOGICAL_DNS clusters generated from hostname-based
 	// StaticBackend entries. Ignored for IP-based, AWS, GCP, and DynamicForwardProxy backends.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	DnsJitter *metav1.Duration `json:"dnsJitter,omitempty"`
+	Jitter *metav1.Duration `json:"jitter,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.

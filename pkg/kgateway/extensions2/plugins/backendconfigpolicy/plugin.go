@@ -336,11 +336,11 @@ func translate(
 	}
 
 	if pol.Spec.DNS != nil {
-		if pol.Spec.DNS.DnsRefreshRate != nil {
-			ir.dnsRefreshRate = durationpb.New(pol.Spec.DNS.DnsRefreshRate.Duration)
+		if pol.Spec.DNS.RefreshRate != nil {
+			ir.dnsRefreshRate = durationpb.New(pol.Spec.DNS.RefreshRate.Duration)
 		}
-		if pol.Spec.DNS.DnsJitter != nil {
-			ir.dnsJitter = durationpb.New(pol.Spec.DNS.DnsJitter.Duration)
+		if pol.Spec.DNS.Jitter != nil {
+			ir.dnsJitter = durationpb.New(pol.Spec.DNS.Jitter.Duration)
 		}
 	}
 	if pol.Spec.UpstreamProxyProtocol != nil {
