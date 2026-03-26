@@ -379,6 +379,7 @@ func applyDnsClusterConfig(pol *BackendConfigPolicyIR, out *envoyclusterv3.Clust
 	}
 	clusterType.TypedConfig = typedConfig
 }
+
 func translateUpstreamProxyProtocol(cfg *kgateway.UpstreamProxyProtocol) *envoycorev3.ProxyProtocolConfig {
 	ppConfig := &envoycorev3.ProxyProtocolConfig{}
 	if cfg.Version != nil {
@@ -425,6 +426,7 @@ func applyUpstreamProxyProtocol(ppConfig *envoycorev3.ProxyProtocolConfig, out *
 		},
 	}
 }
+
 func translateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.TcpKeepalive {
 	out := &envoycorev3.TcpKeepalive{}
 	if tcpKeepalive.KeepAliveProbes != nil {
