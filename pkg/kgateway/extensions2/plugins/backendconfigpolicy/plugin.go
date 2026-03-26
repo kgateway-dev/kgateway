@@ -55,6 +55,7 @@ type BackendConfigPolicyIR struct {
 	circuitBreakers               *envoyclusterv3.CircuitBreakers
 	dnsRefreshRate                *durationpb.Duration
 	dnsJitter                     *durationpb.Duration
+	respectDnsTtl                 *bool
 	upstreamProxyProtocol         *envoycorev3.ProxyProtocolConfig
 }
 
@@ -127,6 +128,9 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	}
 
 	if !proto.Equal(d.dnsJitter, d2.dnsJitter) {
+		return false
+	}
+	if !cmputils.PointerValsEqual(d.respectDnsTtl, d2.respectDnsTtl) {
 		return false
 	}
 	if !proto.Equal(d.upstreamProxyProtocol, d2.upstreamProxyProtocol) {
@@ -342,6 +346,7 @@ func translate(
 		if pol.Spec.DNS.Jitter != nil {
 			ir.dnsJitter = durationpb.New(pol.Spec.DNS.Jitter.Duration)
 		}
+		ir.respectDnsTtl = pol.Spec.DNS.RespectTTL
 	}
 	if pol.Spec.UpstreamProxyProtocol != nil {
 		ir.upstreamProxyProtocol = translateUpstreamProxyProtocol(pol.Spec.UpstreamProxyProtocol)
@@ -350,7 +355,7 @@ func translate(
 }
 
 func applyDnsClusterConfig(pol *BackendConfigPolicyIR, out *envoyclusterv3.Cluster) {
-	if pol.dnsRefreshRate == nil && pol.dnsJitter == nil {
+	if pol.dnsRefreshRate == nil && pol.dnsJitter == nil && pol.respectDnsTtl == nil {
 		return
 	}
 
@@ -370,6 +375,9 @@ func applyDnsClusterConfig(pol *BackendConfigPolicyIR, out *envoyclusterv3.Clust
 	}
 	if pol.dnsJitter != nil {
 		dnsCluster.DnsJitter = pol.dnsJitter
+	}
+	if pol.respectDnsTtl != nil {
+		dnsCluster.RespectDnsTtl = *pol.respectDnsTtl
 	}
 
 	typedConfig, err := utils.MessageToAny(dnsCluster)

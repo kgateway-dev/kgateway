@@ -24,6 +24,7 @@ spec:
   dns:
     refreshRate: 60s
     jitter: 15s
+    respectTTL: true
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend

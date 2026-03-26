@@ -6,6 +6,7 @@ Clusters:
       dnsJitter: 15s
       dnsLookupFamily: V4_PREFERRED
       dnsRefreshRate: 60s
+      respectDnsTtl: true
   connectTimeout: 5s
   loadAssignment:
     clusterName: backend_default_example-backend_0

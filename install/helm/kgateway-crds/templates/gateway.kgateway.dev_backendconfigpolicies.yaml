@@ -147,39 +147,46 @@ spec:
                 description: DNS contains DNS refresh and jitter settings for hostname-based
                   static backends.
                 properties:
-                  dnsJitter:
+                  jitter:
                     description: |-
-                      DnsJitter adds a random delay of up to this duration before each DNS refresh,
+                      Jitter adds a random delay of up to this duration before each DNS refresh,
                       spreading query load over time and helping prevent thundering-herd spikes.
-                      Must be less than or equal to dnsRefreshRate when both are set.
+                      Must be less than or equal to refreshRate when both are set.
                       Only applies to STRICT_DNS and LOGICAL_DNS clusters generated from hostname-based
                       StaticBackend entries. Ignored for IP-based, AWS, GCP, and DynamicForwardProxy backends.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                  dnsRefreshRate:
+                  refreshRate:
                     description: |-
-                      DnsRefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
+                      RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
                       Only applies to backends that resolve to STRICT_DNS or LOGICAL_DNS Envoy clusters
                       (that is, StaticBackend with at least one hostname-based host entry). Ignored for
                       IP-based, AWS, GCP, and DynamicForwardProxy backends.
 
                       Minimum value is 1ms. If unset, Envoy's default of 5s is used.
                       When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
-                      so DnsRefreshRate acts as the maximum polling interval.
+                      so RefreshRate acts as the maximum polling interval.
                       Recommended value for large-scale deployments is 60s or higher.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                    - message: dnsRefreshRate must be at least 1ms
+                    - message: refreshRate must be at least 1ms
                       rule: duration(self) >= duration('1ms')
+                  respectDnsTtl:
+                    description: |-
+                      RespectDnsTtl instructs Envoy to honor TTL values returned by DNS responses.
+                      When enabled, TTLs lower than RefreshRate effectively become the refresh interval.
+                      Only applies to STRICT_DNS and LOGICAL_DNS clusters generated from hostname-based
+                      StaticBackend entries. Ignored for IP-based, AWS, GCP, and DynamicForwardProxy backends.
+                    type: boolean
                 type: object
                 x-kubernetes-validations:
-                - message: dnsJitter must be less than or equal to dnsRefreshRate
-                  rule: '!(has(self.dnsJitter) && has(self.dnsRefreshRate)) || duration(self.dnsJitter)
-                    <= duration(self.dnsRefreshRate)'
+                - message: refreshRate must be less than or equal to refreshRate
+                  rule: '!(has(self.refreshRate) && has(self.refreshRate)) || duration(self.refreshRate)
+                    <= duration(self.refreshRate)'
               healthCheck:
                 description: HealthCheck contains the options necessary to configure
                   the health check.

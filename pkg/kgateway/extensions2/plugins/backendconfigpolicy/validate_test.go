@@ -154,6 +154,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 				ct:             time.Now(),
 				dnsRefreshRate: durationpb.New(60 * time.Second),
 				dnsJitter:      durationpb.New(15 * time.Second),
+				respectDnsTtl:  new(true),
 			},
 			validator: &mockValidator{
 				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
@@ -174,6 +175,9 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 					}
 					if dnsCluster.GetDnsJitter().AsDuration() != 15*time.Second {
 						return fmt.Errorf("expected dns jitter to be 15s, got %v", dnsCluster.GetDnsJitter().AsDuration())
+					}
+					if !dnsCluster.GetRespectDnsTtl() {
+						return errors.New("expected respect dns ttl to be true")
 					}
 					return nil
 				},

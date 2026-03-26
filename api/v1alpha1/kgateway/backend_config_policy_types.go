@@ -170,6 +170,13 @@ type DNS struct {
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Jitter *metav1.Duration `json:"jitter,omitempty"`
+
+	// RespectTTL instructs Envoy to honor TTL values returned by DNS responses.
+	// When enabled, TTLs lower than RefreshRate effectively become the refresh interval.
+	// Only applies to STRICT_DNS and LOGICAL_DNS clusters generated from hostname-based
+	// StaticBackend entries. Ignored for IP-based, AWS, GCP, and DynamicForwardProxy backends.
+	// +optional
+	RespectTTL *bool `json:"respectTTL,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
