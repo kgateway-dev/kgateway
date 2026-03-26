@@ -141,8 +141,8 @@ spec:
     endSessionEndpoint: https://provider-2.com/logout
     forwardAccessToken: true
     scopes: ["email", "groups"]
-    jwksURI: https://provider-2.com/jwks.json
     jwt:
+      jwksURI: https://provider-2.com/jwks.json
       accessToken:
         audiences:
           - test.com

@@ -297,8 +297,8 @@ spec:
     logoutPath: /logout
     forwardAccessToken: true
     scopes: ["openid", "email"]
-    jwksURI: https://keycloak/realms/master/protocol/openid-connect/certs
     jwt:
+      jwksURI: https://keycloak/realms/master/protocol/openid-connect/certs
       accessToken:
         audiences:
           - account
