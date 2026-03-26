@@ -9,7 +9,11 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
+	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
+	envoyrawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_http_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -276,6 +280,105 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 							MaxRequests:        &wrapperspb.UInt32Value{Value: 2000},
 							MaxRetries:         &wrapperspb.UInt32Value{Value: 10},
 						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "upstream proxy protocol V1 without TLS",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					UpstreamProxyProtocol: &kgateway.UpstreamProxyProtocol{
+						Version: new(kgateway.ProxyProtocolVersionV1),
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				TransportSocket: &envoycorev3.TransportSocket{
+					Name: TransportSocketUpstreamProxyProtocol,
+					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
+							Config: &envoycorev3.ProxyProtocolConfig{
+								Version: envoycorev3.ProxyProtocolConfig_V1,
+							},
+							TransportSocket: &envoycorev3.TransportSocket{
+								Name: envoywellknown.TransportSocketRawBuffer,
+								ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+									TypedConfig: mustMessageToAny(t, &envoyrawbufferv3.RawBuffer{}),
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "upstream proxy protocol V2 without TLS",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					UpstreamProxyProtocol: &kgateway.UpstreamProxyProtocol{
+						Version: new(kgateway.ProxyProtocolVersionV2),
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				TransportSocket: &envoycorev3.TransportSocket{
+					Name: TransportSocketUpstreamProxyProtocol,
+					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
+							Config: &envoycorev3.ProxyProtocolConfig{
+								Version: envoycorev3.ProxyProtocolConfig_V2,
+							},
+							TransportSocket: &envoycorev3.TransportSocket{
+								Name: envoywellknown.TransportSocketRawBuffer,
+								ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+									TypedConfig: mustMessageToAny(t, &envoyrawbufferv3.RawBuffer{}),
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "upstream proxy protocol V1 with TLS",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					UpstreamProxyProtocol: &kgateway.UpstreamProxyProtocol{
+						Version: new(kgateway.ProxyProtocolVersionV1),
+					},
+				},
+			},
+			cluster: &envoyclusterv3.Cluster{
+				TransportSocket: &envoycorev3.TransportSocket{
+					Name: envoywellknown.TransportSocketTls,
+					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+						TypedConfig: mustMessageToAny(t, &envoytlsv3.UpstreamTlsContext{
+							Sni: "example.com",
+						}),
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				TransportSocket: &envoycorev3.TransportSocket{
+					Name: TransportSocketUpstreamProxyProtocol,
+					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
+							Config: &envoycorev3.ProxyProtocolConfig{
+								Version: envoycorev3.ProxyProtocolConfig_V1,
+							},
+							TransportSocket: &envoycorev3.TransportSocket{
+								Name: envoywellknown.TransportSocketTls,
+								ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+									TypedConfig: mustMessageToAny(t, &envoytlsv3.UpstreamTlsContext{
+										Sni: "example.com",
+									}),
+								},
+							},
+						}),
 					},
 				},
 			},

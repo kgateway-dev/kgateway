@@ -84,6 +84,9 @@ func (s *testingSuite) SetupSuite() {
 		"TestBackendConfigPolicyClearStaleStatus": {
 			setupManifest,
 		},
+		"TestBackendConfigPolicyUpstreamProxyProtocol": {
+			upstreamProxyProtocolManifest,
+		},
 	}
 }
 
@@ -370,6 +373,27 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 			// If this fails, be aware of `lb_healthy_panic`.
 		}).WithTimeout(20 * time.Second).WithPolling(time.Second).Should(gomega.Succeed())
 	})
+}
+
+func (s *testingSuite) TestBackendConfigPolicyUpstreamProxyProtocol() {
+	// This test deploys nginx configured to accept only PROXY protocol connections.
+	// If the BackendConfigPolicy correctly enables upstream proxy protocol on Envoy,
+	// nginx will accept the connection and respond with 200. Without proxy protocol,
+	// nginx would reject the connection with a 400 error.
+	// The nginx config also echoes back the client address received via PROXY protocol
+	// in the X-Proxy-Protocol-Addr response header.
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("proxy-protocol-ok"),
+			Headers: map[string]any{
+				"X-Proxy-Protocol-Addr": gomega.Not(gomega.BeEmpty()),
+			},
+		},
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(80),
+	)
 }
 
 const (

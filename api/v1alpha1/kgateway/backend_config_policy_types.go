@@ -108,6 +108,13 @@ type BackendConfigPolicySpec struct {
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking) for more details.
 	// +optional
 	CircuitBreakers *CircuitBreakers `json:"circuitBreakers,omitempty"`
+
+	// UpstreamProxyProtocol configures the PROXY protocol for upstream connections to the backend.
+	// When enabled, the proxy protocol header is prepended to upstream connections,
+	// allowing backend services to see the original client connection information.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/proxy_protocol/v3/upstream_proxy_protocol.proto) for more details.
+	// +optional
+	UpstreamProxyProtocol *UpstreamProxyProtocol `json:"upstreamProxyProtocol,omitempty"`
 }
 
 // CircuitBreakers contains the options to configure circuit breaker thresholds for the default priority.
@@ -693,3 +700,23 @@ type Cookie struct {
 }
 
 type SourceIP struct{}
+
+// UpstreamProxyProtocol configures the PROXY protocol for upstream connections.
+type UpstreamProxyProtocol struct {
+	// Version is the PROXY protocol version to use.
+	// +optional
+	// +kubebuilder:default=V1
+	// +kubebuilder:validation:Enum=V1;V2
+	Version *ProxyProtocolVersion `json:"version,omitempty"`
+}
+
+// ProxyProtocolVersion defines the PROXY protocol version.
+// +kubebuilder:validation:Enum=V1;V2
+type ProxyProtocolVersion string
+
+const (
+	// ProxyProtocolVersionV1 is the human-readable PROXY protocol version 1.
+	ProxyProtocolVersionV1 ProxyProtocolVersion = "V1"
+	// ProxyProtocolVersionV2 is the binary PROXY protocol version 2.
+	ProxyProtocolVersionV2 ProxyProtocolVersion = "V2"
+)

@@ -318,6 +318,18 @@ func TestHelmChartTemplate(t *testing.T) {
         app.kubernetes.io/name: kgateway
 `,
 		},
+		{
+			name: "replicas-zero",
+			valuesYAML: `controller:
+  replicaCount: 0
+`,
+		},
+		{
+			name: "replicas-null",
+			valuesYAML: `controller:
+  replicaCount: null
+`,
+		},
 	}
 
 	for _, chart := range charts {

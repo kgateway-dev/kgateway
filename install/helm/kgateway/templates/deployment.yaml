@@ -10,7 +10,9 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  {{- if not (kindIs "invalid" .Values.controller.replicaCount) }}
   replicas: {{ .Values.controller.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "kgateway.selectorLabels" . | nindent 6 }}

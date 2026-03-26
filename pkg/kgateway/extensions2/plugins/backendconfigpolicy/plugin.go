@@ -7,6 +7,8 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
+	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
+	envoyrawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
@@ -31,7 +33,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
-const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
+const (
+	PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
+	// TransportSocketUpstreamProxyProtocol is the name of the upstream proxy protocol
+	// transport socket. Not defined in go-control-plane wellknown package.
+	TransportSocketUpstreamProxyProtocol = "envoy.transport_sockets.upstream_proxy_protocol"
+)
 
 type BackendConfigPolicyIR struct {
 	ct                            time.Time
@@ -48,6 +55,7 @@ type BackendConfigPolicyIR struct {
 	circuitBreakers               *envoyclusterv3.CircuitBreakers
 	dnsRefreshRate                *durationpb.Duration
 	dnsJitter                     *durationpb.Duration
+	upstreamProxyProtocol         *envoycorev3.ProxyProtocolConfig
 }
 
 var logger = logging.New("plugin/backendconfigpolicy")
@@ -121,7 +129,9 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	if !proto.Equal(d.dnsJitter, d2.dnsJitter) {
 		return false
 	}
-
+	if !proto.Equal(d.upstreamProxyProtocol, d2.upstreamProxyProtocol) {
+		return false
+	}
 	return true
 }
 
@@ -232,6 +242,14 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 		}
 	}
 
+	// Apply upstream proxy protocol after TLS so it can wrap the existing
+	// transport socket. ProxyProtocolUpstreamTransport requires a non-nil
+	// inner transport socket. If TLS is configured it wraps that, otherwise
+	// an explicit raw_buffer is provided.
+	if pol.upstreamProxyProtocol != nil {
+		applyUpstreamProxyProtocol(pol.upstreamProxyProtocol, out)
+	}
+
 	applyLoadBalancerConfig(pol.loadBalancerConfig, out)
 
 	if pol.healthCheck != nil {
@@ -246,7 +264,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 		out.CircuitBreakers = pol.circuitBreakers
 	}
 
-	applyDnsClusterConfig(pol, backend, out)
+	applyDnsClusterConfig(pol, out)
 }
 
 func translate(
@@ -325,11 +343,13 @@ func translate(
 			ir.dnsJitter = durationpb.New(pol.Spec.DNS.DnsJitter.Duration)
 		}
 	}
-
+	if pol.Spec.UpstreamProxyProtocol != nil {
+		ir.upstreamProxyProtocol = translateUpstreamProxyProtocol(pol.Spec.UpstreamProxyProtocol)
+	}
 	return &ir, errs
 }
 
-func applyDnsClusterConfig(pol *BackendConfigPolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+func applyDnsClusterConfig(pol *BackendConfigPolicyIR, out *envoyclusterv3.Cluster) {
 	if pol.dnsRefreshRate == nil && pol.dnsJitter == nil {
 		return
 	}
@@ -359,7 +379,52 @@ func applyDnsClusterConfig(pol *BackendConfigPolicyIR, backend ir.BackendObjectI
 	}
 	clusterType.TypedConfig = typedConfig
 }
+func translateUpstreamProxyProtocol(cfg *kgateway.UpstreamProxyProtocol) *envoycorev3.ProxyProtocolConfig {
+	ppConfig := &envoycorev3.ProxyProtocolConfig{}
+	if cfg.Version != nil {
+		switch *cfg.Version {
+		case kgateway.ProxyProtocolVersionV2:
+			ppConfig.Version = envoycorev3.ProxyProtocolConfig_V2
+		default:
+			ppConfig.Version = envoycorev3.ProxyProtocolConfig_V1
+		}
+	}
+	return ppConfig
+}
 
+func applyUpstreamProxyProtocol(ppConfig *envoycorev3.ProxyProtocolConfig, out *envoyclusterv3.Cluster) {
+	// Get the existing transport socket (could be TLS or nil for raw buffer)
+	innerTransportSocket := out.TransportSocket
+	if innerTransportSocket == nil {
+		rawBufferConfig, err := utils.MessageToAny(&envoyrawbufferv3.RawBuffer{})
+		if err != nil {
+			logger.Error("failed to convert raw buffer config to any", "error", err)
+			return
+		}
+		innerTransportSocket = &envoycorev3.TransportSocket{
+			Name: envoywellknown.TransportSocketRawBuffer,
+			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+				TypedConfig: rawBufferConfig,
+			},
+		}
+	}
+
+	ppUpstream := &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
+		Config:          ppConfig,
+		TransportSocket: innerTransportSocket,
+	}
+	typedConfig, err := utils.MessageToAny(ppUpstream)
+	if err != nil {
+		logger.Error("failed to convert upstream proxy protocol config to any", "error", err)
+		return
+	}
+	out.TransportSocket = &envoycorev3.TransportSocket{
+		Name: TransportSocketUpstreamProxyProtocol,
+		ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+			TypedConfig: typedConfig,
+		},
+	}
+}
 func translateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.TcpKeepalive {
 	out := &envoycorev3.TcpKeepalive{}
 	if tcpKeepalive.KeepAliveProbes != nil {
