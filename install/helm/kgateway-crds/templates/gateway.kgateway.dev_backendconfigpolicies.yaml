@@ -175,17 +175,17 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: refreshRate must be at least 1ms
                       rule: duration(self) >= duration('1ms')
-                  respectDnsTtl:
+                  respectTTL:
                     description: |-
-                      RespectDnsTtl instructs Envoy to honor TTL values returned by DNS responses.
+                      RespectTTL instructs Envoy to honor TTL values returned by DNS responses.
                       When enabled, TTLs lower than RefreshRate effectively become the refresh interval.
                       Only applies to STRICT_DNS and LOGICAL_DNS clusters generated from hostname-based
                       StaticBackend entries. Ignored for IP-based, AWS, GCP, and DynamicForwardProxy backends.
                     type: boolean
                 type: object
                 x-kubernetes-validations:
-                - message: refreshRate must be less than or equal to refreshRate
-                  rule: '!(has(self.refreshRate) && has(self.refreshRate)) || duration(self.refreshRate)
+                - message: jitter must be less than or equal to refreshRate
+                  rule: '!(has(self.jitter) && has(self.refreshRate)) || duration(self.jitter)
                     <= duration(self.refreshRate)'
               healthCheck:
                 description: HealthCheck contains the options necessary to configure
