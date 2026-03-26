@@ -146,7 +146,7 @@ type CircuitBreakers struct {
 	MaxRetries *int32 `json:"maxRetries,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="!(has(self.refreshRate) && has(self.refreshRate)) || duration(self.refreshRate) <= duration(self.refreshRate)",message="refreshRate must be less than or equal to refreshRate"
+// +kubebuilder:validation:XValidation:rule="!(has(self.jitter) && has(self.refreshRate)) || duration(self.jitter) <= duration(self.refreshRate)",message="jitter must be less than or equal to refreshRate"
 type DNS struct {
 	// RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
 	// Only applies to backends that resolve to STRICT_DNS or LOGICAL_DNS Envoy clusters
