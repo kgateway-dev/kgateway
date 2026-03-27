@@ -26,9 +26,9 @@ namespace="kgateway-system"
 k8s_version=""
 gateway_api_version="v1.2.1"
 gateway_api_channel="standard"
-install_metallb=false
+enable_metallb=false
 metallb_version="v0.13.7"
-create_gateway=true
+enable_gateway=true
 gateway_name="kgw"
 gateway_class_name="kgateway"
 kind_cmd="go tool kind"
@@ -94,11 +94,11 @@ while [[ $# -gt 0 ]]; do
         --gateway-api-channel)
             gateway_api_channel="$2"; shift 2 ;;
         --metallb)
-            install_metallb=true; shift ;;
+            enable_metallb=true; shift ;;
         --metallb-version)
             metallb_version="$2"; shift 2 ;;
         --no-gateway)
-            create_gateway=false; shift ;;
+            enable_gateway=false; shift ;;
         --gateway-name)
             gateway_name="$2"; shift 2 ;;
         --gateway-class-name)
@@ -110,10 +110,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Normalize version inputs: strip leading "v" so we can add it consistently.
+kgw_version="${kgw_version#v}"
+gateway_api_version="${gateway_api_version#v}"
+
 # Compute default cluster name from versions if not explicitly set.
 # e.g. kind-kgw-2.3.0-main-gw-1.2.1-standard
 if [[ -z "${cluster_name}" ]]; then
-    cluster_name="kind-kgw-${kgw_version#v}-gw-${gateway_api_version#v}-${gateway_api_channel}"
+    cluster_name="kind-kgw-${kgw_version}-gw-${gateway_api_version}-${gateway_api_channel}"
 fi
 
 # --- Functions ---
@@ -135,65 +139,37 @@ create_kind_cluster() {
     kubectl wait --for=condition=Ready nodes --all --timeout=120s
 }
 
-install_metallb() {
-    if [[ "${install_metallb}" != "true" ]]; then
+maybe_install_metallb() {
+    if [[ "${enable_metallb}" != "true" ]]; then
         echo "Skipping MetalLB (use --metallb to install)"
         return
     fi
 
     echo "Installing MetalLB ${metallb_version}..."
-    kubectl apply -f "https://raw.githubusercontent.com/metallb/metallb/${metallb_version}/config/manifests/metallb-native.yaml"
-
-    kubectl rollout status -n metallb-system deployment/controller --timeout 5m
-    kubectl rollout status -n metallb-system daemonset/speaker --timeout 5m
-    kubectl wait -n metallb-system pod -l app=metallb --for=condition=Ready --timeout=60s
-
-    # Configure address pool using the kind Docker network subnet
-    local subnet min max
-    subnet=$(docker network inspect kind | jq -r '.[].IPAM.Config[].Subnet | select(contains(":") | not)' | cut -d '.' -f1,2)
-    min=${subnet}.255.0
-    max=${subnet}.255.231
-
-    kubectl apply -f - <<EOF
-apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
-metadata:
-  name: address-pool
-  namespace: metallb-system
-spec:
-  addresses:
-    - ${min}-${max}
----
-apiVersion: metallb.io/v1beta1
-kind: L2Advertisement
-metadata:
-  name: advertisement
-  namespace: metallb-system
-spec:
-  ipAddressPools:
-    - address-pool
-EOF
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    METALLB_VERSION="${metallb_version}" . "${script_dir}/kind/setup-metalllb-on-kind.sh"
     echo "MetalLB configured"
 }
 
 install_gateway_api_crds() {
-    echo "Installing Gateway API CRDs ${gateway_api_version} (${gateway_api_channel} channel)..."
+    echo "Installing Gateway API CRDs v${gateway_api_version} (${gateway_api_channel} channel)..."
     kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/v${gateway_api_version}/${gateway_api_channel}-install.yaml"
 }
 
 install_kgateway() {
-    echo "Installing kgateway-crds ${kgw_version}..."
+    echo "Installing kgateway-crds v${kgw_version}..."
     $helm_cmd upgrade -i --create-namespace \
         --namespace "${namespace}" \
-        --version v"${kgw_version}" \
+        --version "v${kgw_version}" \
         kgateway-crds \
         "${helm_registry}/kgateway-crds" \
         --wait
 
-    echo "Installing kgateway ${kgw_version}..."
+    echo "Installing kgateway v${kgw_version}..."
     $helm_cmd upgrade -i --create-namespace \
         --namespace "${namespace}" \
-        --version v"${kgw_version}" \
+        --version "v${kgw_version}" \
         kgateway \
         "${helm_registry}/kgateway" \
         --wait
@@ -202,8 +178,8 @@ install_kgateway() {
     kubectl rollout status deployment/kgateway -n "${namespace}" --timeout=120s
 }
 
-create_gateway() {
-    if [[ "${create_gateway}" != "true" ]]; then
+maybe_create_gateway() {
+    if [[ "${enable_gateway}" != "true" ]]; then
         echo "Skipping Gateway/GatewayClass creation"
         return
     fi
@@ -271,22 +247,22 @@ EOF
 
 # --- Main ---
 
-echo "=== Setting up kgateway ${kgw_version} on kind cluster '${cluster_name}' ==="
-echo "  Gateway API: ${gateway_api_version} (${gateway_api_channel})"
+echo "=== Setting up kgateway v${kgw_version} on kind cluster '${cluster_name}' ==="
+echo "  Gateway API: v${gateway_api_version} (${gateway_api_channel})"
 echo "  Namespace:   ${namespace}"
 echo ""
 
 create_kind_cluster
-install_metallb
+maybe_install_metallb
 install_gateway_api_crds
 install_kgateway
-create_gateway
+maybe_create_gateway
 
 echo ""
 echo "=== Setup Complete ==="
 echo ""
 
-if [[ "${create_gateway}" == "true" ]]; then
+if [[ "${enable_gateway}" == "true" ]]; then
     echo "Waiting for Gateway deployment..."
     sleep 5
 
