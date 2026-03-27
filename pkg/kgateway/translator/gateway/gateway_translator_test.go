@@ -1151,6 +1151,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend TLS Policy with Gateway backend client certificate", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendtlspolicy/gateway-client-certificate.yaml",
+			outputFile: "backendtlspolicy/gateway-client-certificate.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Proxy with no routes", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "edge-cases/no_route.yaml",
