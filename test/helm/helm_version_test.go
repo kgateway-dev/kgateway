@@ -113,6 +113,12 @@ func TestHelmChartTemplate(t *testing.T) {
     maxUnavailable: 25%
 `,
 		},
+		{
+			name: "priority-class-name",
+			valuesYAML: `controller:
+  priorityClassName: system-cluster-critical
+`,
+		},
 	}
 
 	for _, chart := range charts {
