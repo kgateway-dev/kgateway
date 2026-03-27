@@ -58,7 +58,8 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
-	// DNS contains DNS refresh and jitter settings for hostname-based static backends.
+	// DNS contains DNS configuration. Note that this only applies to backends that resolve to Envoy DNS clusters, i.e.,
+	// Backends of type Static, AWS, or GCP.
 	// +optional
 	DNS *DNS `json:"dns,omitempty"`
 
@@ -149,9 +150,6 @@ type CircuitBreakers struct {
 // +kubebuilder:validation:XValidation:rule="!(has(self.jitter) && has(self.refreshRate)) || duration(self.jitter) <= duration(self.refreshRate)",message="jitter must be less than or equal to refreshRate"
 type DNS struct {
 	// RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
-	// Only applies to backends that resolve to STRICT_DNS or LOGICAL_DNS Envoy clusters
-	// (that is, StaticBackend with at least one hostname-based host entry). Ignored for
-	// IP-based, AWS, GCP, and DynamicForwardProxy backends.
 	//
 	// Minimum value is 1ms. If unset, Envoy's default of 5s is used.
 	// When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
@@ -165,16 +163,12 @@ type DNS struct {
 	// Jitter adds a random delay of up to this duration before each DNS refresh,
 	// spreading query load over time and helping prevent thundering-herd spikes.
 	// Must be less than or equal to refreshRate when both are set.
-	// Only applies to STRICT_DNS and LOGICAL_DNS clusters generated from hostname-based
-	// StaticBackend entries. Ignored for IP-based, AWS, GCP, and DynamicForwardProxy backends.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Jitter *metav1.Duration `json:"jitter,omitempty"`
 
 	// RespectTTL instructs Envoy to honor TTL values returned by DNS responses.
 	// When enabled, TTLs lower than RefreshRate effectively become the refresh interval.
-	// Only applies to STRICT_DNS and LOGICAL_DNS clusters generated from hostname-based
-	// StaticBackend entries. Ignored for IP-based, AWS, GCP, and DynamicForwardProxy backends.
 	// +optional
 	RespectTTL *bool `json:"respectTTL,omitempty"`
 }

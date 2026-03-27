@@ -418,6 +418,7 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 				DNS: &kgateway.DNS{
 					RefreshRate: &metav1.Duration{Duration: 60 * time.Second},
 					Jitter:      &metav1.Duration{Duration: 15 * time.Second},
+					RespectTTL:  new(true),
 				},
 			},
 		})
@@ -451,6 +452,7 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, durationpb.New(60*time.Second), dnsCluster.GetDnsRefreshRate())
 		assert.Equal(t, durationpb.New(15*time.Second), dnsCluster.GetDnsJitter())
+		assert.True(t, dnsCluster.GetRespectDnsTtl())
 	})
 
 	t.Run("applies dns settings when cluster is dns", func(t *testing.T) {
@@ -459,6 +461,7 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 				DNS: &kgateway.DNS{
 					RefreshRate: &metav1.Duration{Duration: 60 * time.Second},
 					Jitter:      &metav1.Duration{Duration: 15 * time.Second},
+					RespectTTL:  new(true),
 				},
 			},
 		})
@@ -492,6 +495,7 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, durationpb.New(60*time.Second), dnsCluster.GetDnsRefreshRate())
 		assert.Equal(t, durationpb.New(15*time.Second), dnsCluster.GetDnsJitter())
+		assert.True(t, dnsCluster.GetRespectDnsTtl())
 	})
 
 	t.Run("ignores dns settings for non-dns clusters", func(t *testing.T) {
@@ -500,6 +504,7 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 				DNS: &kgateway.DNS{
 					RefreshRate: &metav1.Duration{Duration: 60 * time.Second},
 					Jitter:      &metav1.Duration{Duration: 15 * time.Second},
+					RespectTTL:  new(true),
 				},
 			},
 		})
