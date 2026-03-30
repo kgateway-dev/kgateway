@@ -201,6 +201,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("https gateway does not detect misdirected requests across listeners on the same port by default", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "https-listener-detect-misdirected-requests",
+			outputFile: "https-listener-detect-misdirected-requests-disabled-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "same-namespace-with-https-listener",
+			},
+		})
+	})
+
 	t.Run("https gateway detects misdirected requests across listeners on the same port", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "https-listener-detect-misdirected-requests",
@@ -209,6 +220,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "same-namespace-with-https-listener",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableHTTPSListenerMisdirectedRequests = true
 		})
 	})
 

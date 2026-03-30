@@ -78,8 +78,10 @@ runs:
       if [[ "${{ inputs.api-channel }}" == "standard" ]]; then
         EXPERIMENTAL_FLAG="--set controller.extraEnv.KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES=false"
       fi
+      HTTPS_MISDIRECTED_REQUESTS_FLAG="--set controller.enableHttpsListenerMisdirectedRequests=true"
 
       echo "EXPERIMENTAL_FLAG: $EXPERIMENTAL_FLAG"
+      echo "HTTPS_MISDIRECTED_REQUESTS_FLAG: $HTTPS_MISDIRECTED_REQUESTS_FLAG"
 
       # Check if additional Helm values file is provided
       ADDITIONAL_VALUES=""
@@ -95,6 +97,7 @@ runs:
         helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
           --create-namespace \
           ${EXPERIMENTAL_FLAG} \
+          ${HTTPS_MISDIRECTED_REQUESTS_FLAG} \
           --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
           ${ADDITIONAL_VALUES}
       else
@@ -108,6 +111,7 @@ runs:
           --version ${VERSION} \
           --create-namespace \
           ${EXPERIMENTAL_FLAG} \
+          ${HTTPS_MISDIRECTED_REQUESTS_FLAG} \
           --set image.tag=${VERSION} \
           ${ADDITIONAL_VALUES}
       fi

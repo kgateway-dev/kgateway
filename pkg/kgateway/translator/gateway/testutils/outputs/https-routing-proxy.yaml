@@ -107,25 +107,18 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
   - domains:
     - second-example.org
-    name: https~misdirected-request~second-example_org
+    name: https~second-example_org
     requireTls: ALL
     routes:
-    - directResponse:
-        status: 421
-      match:
+    - match:
         prefix: /
+      name: https~second-example_org-route-0-httproute-second-example-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 - ignorePortInHostMatching: true
   name: https-with-hostname
   virtualHosts:
-  - domains:
-    - '*'
-    name: https-with-hostname~misdirected-request~*
-    requireTls: ALL
-    routes:
-    - directResponse:
-        status: 421
-      match:
-        prefix: /
   - domains:
     - second-example.org
     name: https-with-hostname~second-example_org

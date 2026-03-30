@@ -109,6 +109,10 @@ spec:
             {{- end }}
             - name: KGW_ENABLE_ENVOY
               value: "true"
+            {{- if .Values.controller.enableHttpsListenerMisdirectedRequests }}
+            - name: KGW_ENABLE_HTTPS_LISTENER_MISDIRECTED_REQUESTS
+              value: "true"
+            {{- end }}
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
             {{- if .Values.waypoint.enabled }}

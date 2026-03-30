@@ -306,11 +306,14 @@ func GetDefaultClassInfo(
 	if globalSettings.EnableEnvoy {
 		logger.Info("enabling envoy gateway class")
 		classInfos[gatewayClassName] = &deployer.GatewayClassInfo{
-			Description:       "Standard class for managing Gateway API ingress traffic.",
-			Labels:            map[string]string{},
-			Annotations:       map[string]string{},
-			ControllerName:    controllerName,
-			SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(globalSettings.EnableExperimentalGatewayAPIFeatures),
+			Description:    "Standard class for managing Gateway API ingress traffic.",
+			Labels:         map[string]string{},
+			Annotations:    map[string]string{},
+			ControllerName: controllerName,
+			SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(
+				globalSettings.EnableExperimentalGatewayAPIFeatures,
+				globalSettings.EnableHTTPSListenerMisdirectedRequests,
+			),
 		}
 		applyGatewayClassParametersRef(classInfos[gatewayClassName], gatewayClassName, refOverrides)
 	}
@@ -322,8 +325,11 @@ func GetDefaultClassInfo(
 			Annotations: map[string]string{
 				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
 			},
-			ControllerName:    controllerName,
-			SupportedFeatures: deployer.GetSupportedFeaturesForWaypointGateway(globalSettings.EnableExperimentalGatewayAPIFeatures),
+			ControllerName: controllerName,
+			SupportedFeatures: deployer.GetSupportedFeaturesForWaypointGateway(
+				globalSettings.EnableExperimentalGatewayAPIFeatures,
+				globalSettings.EnableHTTPSListenerMisdirectedRequests,
+			),
 		}
 		applyGatewayClassParametersRef(classInfos[waypointGatewayClassName], waypointGatewayClassName, refOverrides)
 	}

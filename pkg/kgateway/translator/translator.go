@@ -68,8 +68,9 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 
 	listenerTranslatorConfig := gwtranslator.TranslatorConfig{
 		ListenerTranslatorConfig: listener.ListenerTranslatorConfig{
-			ListenerBindIpv6:                     s.commonCols.Settings.ListenerBindIpv6,
-			EnableExperimentalGatewayAPIFeatures: s.commonCols.Settings.EnableExperimentalGatewayAPIFeatures,
+			ListenerBindIpv6:                       s.commonCols.Settings.ListenerBindIpv6,
+			EnableExperimentalGatewayAPIFeatures:   s.commonCols.Settings.EnableExperimentalGatewayAPIFeatures,
+			EnableHTTPSListenerMisdirectedRequests: s.commonCols.Settings.EnableHTTPSListenerMisdirectedRequests,
 		},
 	}
 

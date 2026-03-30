@@ -314,7 +314,7 @@ func (s *ControllerSuite) TestGatewayClassStatus() {
 		require.Equal(c, gc.Generation, condition.ObservedGeneration)
 
 		// Check SupportedFeatures
-		require.ElementsMatch(c, gc.Status.SupportedFeatures, deployer.GetSupportedFeaturesForStandardGateway(true))
+		require.ElementsMatch(c, gc.Status.SupportedFeatures, deployer.GetSupportedFeaturesForStandardGateway(true, false))
 	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass to be present")
 }
 
@@ -749,7 +749,7 @@ func (s *ControllerSuite) startController(
 		CommonCollections:        commonCols,
 	}
 
-	supportedFeatures := deployer.GetSupportedFeaturesForStandardGateway(true)
+	supportedFeatures := deployer.GetSupportedFeaturesForStandardGateway(true, false)
 	classConfigs := map[string]*deployer.GatewayClassInfo{
 		altGatewayClassName: {
 			Description:       "alt GatewayClass",

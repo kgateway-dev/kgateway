@@ -226,6 +226,10 @@ type Settings struct {
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
 
+	// EnableHTTPSListenerMisdirectedRequests enables 421 misdirected-request handling
+	// across same-port HTTPS listeners.
+	EnableHTTPSListenerMisdirectedRequests bool `split_words:"true" default:"false"`
+
 	// GatewayClassParametersRefs configures the GatewayParameters references to set on the default GatewayClasses.
 	// Format: JSON map where keys are GatewayClass names and values are objects with "name" (required),
 	// "namespace" (required), "group" (optional), and "kind" (optional) fields.

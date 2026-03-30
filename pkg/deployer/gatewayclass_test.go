@@ -18,7 +18,7 @@ func supportedFeatureSet(featuresList []gwv1.SupportedFeature) map[gwv1.FeatureN
 func TestGetSupportedFeaturesForStandardGatewayExcludesKnownUnsupportedV15Features(t *testing.T) {
 	t.Helper()
 
-	supportedNames := supportedFeatureSet(GetSupportedFeaturesForStandardGateway(true))
+	supportedNames := supportedFeatureSet(GetSupportedFeaturesForStandardGateway(true, false))
 
 	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRoute)]; !ok {
 		t.Fatalf("expected %q to remain supported when experimental Gateway API features are enabled", features.SupportTLSRoute)
@@ -29,15 +29,15 @@ func TestGetSupportedFeaturesForStandardGatewayExcludesKnownUnsupportedV15Featur
 	if _, ok := supportedNames[gwv1.FeatureName(features.SupportGatewayFrontendClientCertificateValidationInsecureFallback)]; !ok {
 		t.Fatalf("expected %q to remain supported", features.SupportGatewayFrontendClientCertificateValidationInsecureFallback)
 	}
-	if _, ok := supportedNames[gwv1.FeatureName(features.SupportGatewayHTTPSListenerDetectMisdirectedRequests)]; !ok {
-		t.Fatalf("expected %q to remain supported", features.SupportGatewayHTTPSListenerDetectMisdirectedRequests)
+	if _, ok := supportedNames[gwv1.FeatureName(features.SupportGatewayHTTPSListenerDetectMisdirectedRequests)]; ok {
+		t.Fatalf("expected %q to remain exempted when HTTPS misdirected requests are disabled", features.SupportGatewayHTTPSListenerDetectMisdirectedRequests)
 	}
 }
 
 func TestGetSupportedFeaturesForStandardGatewayExcludesTLSRouteWhenExperimentalDisabled(t *testing.T) {
 	t.Helper()
 
-	supportedNames := supportedFeatureSet(GetSupportedFeaturesForStandardGateway(false))
+	supportedNames := supportedFeatureSet(GetSupportedFeaturesForStandardGateway(false, false))
 
 	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRoute)]; ok {
 		t.Fatalf("expected %q to be exempted when experimental Gateway API features are disabled", features.SupportTLSRoute)
@@ -47,5 +47,15 @@ func TestGetSupportedFeaturesForStandardGatewayExcludesTLSRouteWhenExperimentalD
 	}
 	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRouteModeMixed)]; ok {
 		t.Fatalf("expected %q to be exempted when experimental Gateway API features are disabled", features.SupportTLSRouteModeMixed)
+	}
+}
+
+func TestGetSupportedFeaturesForStandardGatewayIncludesHTTPSMisdirectedRequestsWhenEnabled(t *testing.T) {
+	t.Helper()
+
+	supportedNames := supportedFeatureSet(GetSupportedFeaturesForStandardGateway(false, true))
+
+	if _, ok := supportedNames[gwv1.FeatureName(features.SupportGatewayHTTPSListenerDetectMisdirectedRequests)]; !ok {
+		t.Fatalf("expected %q to be supported when HTTPS misdirected requests are enabled", features.SupportGatewayHTTPSListenerDetectMisdirectedRequests)
 	}
 }

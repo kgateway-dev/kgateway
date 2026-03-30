@@ -211,14 +211,20 @@ func TestHelmChartTemplate(t *testing.T) {
 			name:       "default",
 			valuesYAML: "",
 		},
-		{
-			name: "xds-tls-enabled",
-			valuesYAML: `controller:
+			{
+				name: "xds-tls-enabled",
+				valuesYAML: `controller:
   xds:
     tls:
       enabled: true
 `,
-		},
+			},
+			{
+				name: "https-listener-misdirected-requests-enabled",
+				valuesYAML: `controller:
+  enableHttpsListenerMisdirectedRequests: true
+`,
+			},
 		{
 			name: "pdb-min-available",
 			valuesYAML: `controller:

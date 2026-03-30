@@ -124,6 +124,8 @@ controller:
     trafficDistribution: ""
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
+  # -- Enable 421 misdirected-request handling across same-port HTTPS listeners.
+  enableHttpsListenerMisdirectedRequests: false
   # -- Configure TLS settings for the xDS gRPC servers.
   xds:
     tls:
