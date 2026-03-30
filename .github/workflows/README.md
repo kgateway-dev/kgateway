@@ -45,3 +45,5 @@ After a Pull Request is marked as `Ready for Review` it will trigger the action 
 
 ### Labels That Prevent Merge
 The [check-labels](./check-labels.yaml) workflow will block a PR from merging if the PR contains a `do-not-merge*` or `work in progress` label. These labels can be added to a PR to prevent accidental merges.
+### sync-ingress-nginx 
+ 

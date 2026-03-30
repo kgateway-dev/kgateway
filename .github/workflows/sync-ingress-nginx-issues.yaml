@@ -25,6 +25,10 @@ on:
         description: "Dry run: print actions without creating/updating issues"
         required: false
         default: "false"
+        
+concurrency:
+  group: sync-ingress-nginx-${{ github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
   issues: read
@@ -44,6 +48,7 @@ jobs:
     # or when triggered manually.
     # Note: env context is not available in job-level if conditions in GitHub Actions.
     # The label value is hardcoded here intentionally — update in sync with env.SYNC_LABEL if changed.
+    # NOTE: Must match env.SYNC_label below (envnot available in job level if conditions)
     if: |
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.issue.labels.*.name, 'kind/ingress-nginx') ||
@@ -125,12 +130,9 @@ jobs:
             // Helper: collect labels to forward (skip labels that are internal
             // to the source repo, keep kind/* labels and the synced marker).
             function buildLabels(sourceIssue) {
-              const forwardedPrefixes = ['kind/', 'priority/', 'area/'];
-              const labels = sourceIssue.labels
-                .map(l => l.name)
-                .filter(name => forwardedPrefixes.some(p => name.startsWith(p)));
-              labels.push(syncedLabel);
-              return [...new Set(labels)];
+              // onlly apply the synced label to avoid validation issues in the target repo, and to make it easy to find synced issues.
+              //when label dont exist in target repo, the issue update will fail, so we only apply the synced label.
+              return [syncedLabel];
             }
 
             // ------------------------------------------------------------------
@@ -169,7 +171,7 @@ jobs:
                 const { data: issues } = await github.rest.issues.listForRepo({
                   owner, repo,
                   labels: syncLabel,
-                  state: 'open',
+                  state: 'all',
                   per_page: 100,
                   page,
                 });
@@ -295,3 +297,4 @@ jobs:
                 dryLog('updateIssue', { number: existing.number, title, labels, state: sourceIssue.state });
               }
             }
+              
