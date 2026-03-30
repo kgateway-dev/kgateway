@@ -2682,8 +2682,7 @@ func TestBasic(t *testing.T) {
 }
 
 func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	dir := fsutils.MustGetThisDir()
 	prevVersion := version.Version
@@ -2717,8 +2716,8 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 	resultTwo, ok := results[gatewayTwo]
 	require.True(t, ok, "expected second gateway result")
 
-	statusOne := resultOne.ReportsMap.BuildGWStatus(context.Background(), *resultOne.Gateways[gatewayOne], map[string]uint{"http": 1})
-	statusTwo := resultTwo.ReportsMap.BuildGWStatus(context.Background(), *resultTwo.Gateways[gatewayTwo], map[string]uint{"http": 1})
+	statusOne := resultOne.ReportsMap.BuildGWStatus(ctx, *resultOne.Gateways[gatewayOne], map[string]uint{"http": 1})
+	statusTwo := resultTwo.ReportsMap.BuildGWStatus(ctx, *resultTwo.Gateways[gatewayTwo], map[string]uint{"http": 1})
 	require.NotNil(t, statusOne)
 	require.NotNil(t, statusTwo)
 

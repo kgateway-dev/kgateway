@@ -13,6 +13,7 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -400,11 +401,14 @@ func applyGatewayBackendClientCertificateToTransportSocket(
 		return nil, err
 	}
 
-	clone := *transportSocket
+	clone, ok := proto.Clone(transportSocket).(*envoycorev3.TransportSocket)
+	if !ok {
+		return nil, errors.New("failed to clone transport socket")
+	}
 	clone.ConfigType = &envoycorev3.TransportSocket_TypedConfig{
 		TypedConfig: updatedTypedConfig,
 	}
-	return &clone, nil
+	return clone, nil
 }
 
 func applyGatewayBackendClientCertificateToTransportSocketMatch(
@@ -420,7 +424,10 @@ func applyGatewayBackendClientCertificateToTransportSocketMatch(
 		return nil, err
 	}
 
-	clone := *match
+	clone, ok := proto.Clone(match).(*envoyclusterv3.Cluster_TransportSocketMatch)
+	if !ok {
+		return nil, errors.New("failed to clone transport socket match")
+	}
 	clone.TransportSocket = transportSocket
-	return &clone, nil
+	return clone, nil
 }
