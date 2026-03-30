@@ -4,9 +4,12 @@ import (
 	"testing"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
+	envoycompositev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/composite/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -229,4 +232,69 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			tt.validateResult(t, result)
 		})
 	}
+}
+
+func TestBuildCompositeExtProcFilter(t *testing.T) {
+	grpcService := &envoycorev3.GrpcService{
+		TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+			EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+				ClusterName: "test-cluster",
+			},
+		},
+	}
+
+	tests := []struct {
+		name           string
+		provider       kgateway.ExtProcProvider
+		validateResult func(*testing.T, *envoy_ext_proc_v3.ExternalProcessor)
+	}{
+		{
+			name: "untyped metadata forwarding namespaces are propagated",
+			provider: kgateway.ExtProcProvider{
+				MetadataOptions: &kgateway.MetadataOptions{
+					Forwarding: &kgateway.MetadataNamespaces{
+						Untyped: []string{"my-namespace"},
+					},
+				},
+			},
+			validateResult: func(t *testing.T, ep *envoy_ext_proc_v3.ExternalProcessor) {
+				require.NotNil(t, ep.MetadataOptions)
+				require.NotNil(t, ep.MetadataOptions.ForwardingNamespaces)
+				assert.Equal(t, []string{"my-namespace"}, ep.MetadataOptions.ForwardingNamespaces.Untyped)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := buildCompositeExtProcFilter(tt.provider, grpcService)
+			ep := extractExternalProcessor(t, result)
+			tt.validateResult(t, ep)
+		})
+	}
+}
+
+// extractExternalProcessor unwraps the ExternalProcessor proto from an ExtensionWithMatcher
+// produced by buildCompositeExtProcFilter.
+func extractExternalProcessor(t *testing.T, ewm *envoymatchingv3.ExtensionWithMatcher) *envoy_ext_proc_v3.ExternalProcessor {
+	t.Helper()
+	require.NotNil(t, ewm)
+
+	matchers := ewm.XdsMatcher.GetMatcherList().GetMatchers()
+	require.Len(t, matchers, 1)
+
+	action := matchers[0].GetOnMatch().GetAction()
+	require.NotNil(t, action, "on_match action must be set")
+	require.NotNil(t, action.TypedConfig, "action TypedConfig must be set")
+
+	execAction := &envoycompositev3.ExecuteFilterAction{}
+	require.NoError(t, proto.Unmarshal(action.TypedConfig.Value, execAction))
+
+	require.NotNil(t, execAction.TypedConfig, "ExecuteFilterAction TypedConfig must be set")
+	require.NotNil(t, execAction.TypedConfig.TypedConfig, "inner TypedConfig Any must be set")
+
+	ep := &envoy_ext_proc_v3.ExternalProcessor{}
+	require.NoError(t, proto.Unmarshal(execAction.TypedConfig.TypedConfig.Value, ep))
+
+	return ep
 }
