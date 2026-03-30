@@ -26,6 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -676,6 +677,14 @@ func (tc TestCase) Run(
 		}
 		// add a creation timestamp to each object to ensure consistent application of policy
 		for _, obj := range objs {
+			if secret, ok := obj.(*corev1.Secret); ok && len(secret.StringData) > 0 {
+				if secret.Data == nil {
+					secret.Data = make(map[string][]byte, len(secret.StringData))
+				}
+				for key, value := range secret.StringData {
+					secret.Data[key] = []byte(value)
+				}
+			}
 			fakeNow = fakeNow.Add(time.Second)
 			obj.SetCreationTimestamp(metav1.NewTime(fakeNow))
 		}
