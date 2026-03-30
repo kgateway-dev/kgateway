@@ -1,7 +1,6 @@
 package listener
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
@@ -177,7 +176,6 @@ func needsProtective404VirtualHost(currentPattern string, siblingPatterns []stri
 }
 
 func buildHTTPSMisdirectedRequestVirtualHosts(
-	ctx context.Context,
 	parentName string,
 	listener ir.Listener,
 	currentPattern string,
@@ -190,7 +188,6 @@ func buildHTTPSMisdirectedRequestVirtualHosts(
 			continue
 		}
 		virtualHosts = append(virtualHosts, newSyntheticDirectResponseVirtualHost(
-			ctx,
 			parentName+"~misdirected-request",
 			siblingPattern,
 			http.StatusMisdirectedRequest,
@@ -201,7 +198,6 @@ func buildHTTPSMisdirectedRequestVirtualHosts(
 	if currentPattern != catchAllHostnamePattern && needsProtective404VirtualHost(currentPattern, siblingPatterns) {
 		if _, ok := actualDomains[currentPattern]; !ok {
 			virtualHosts = append(virtualHosts, newSyntheticDirectResponseVirtualHost(
-				ctx,
 				parentName+"~listener-hostspace",
 				currentPattern,
 				http.StatusNotFound,
@@ -214,14 +210,13 @@ func buildHTTPSMisdirectedRequestVirtualHosts(
 }
 
 func newSyntheticDirectResponseVirtualHost(
-	ctx context.Context,
 	parentName string,
 	hostname string,
 	statusCode uint32,
 	listener ir.Listener,
 ) *ir.VirtualHost {
 	return &ir.VirtualHost{
-		Name:     makeVhostName(ctx, parentName, hostname),
+		Name:     makeVhostName(parentName, hostname),
 		Hostname: hostname,
 		DirectResponse: &ir.DirectResponseIR{
 			StatusCode: statusCode,

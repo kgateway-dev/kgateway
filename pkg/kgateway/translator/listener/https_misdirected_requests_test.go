@@ -1,7 +1,6 @@
 package listener
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -199,7 +198,6 @@ func TestBuildHTTPSMisdirectedRequestVirtualHosts(t *testing.T) {
 		t.Parallel()
 
 		virtualHosts := buildHTTPSMisdirectedRequestVirtualHosts(
-			context.Background(),
 			"https-with-hostname",
 			ir.Listener{},
 			"second-example.org",
@@ -220,7 +218,6 @@ func TestBuildHTTPSMisdirectedRequestVirtualHosts(t *testing.T) {
 		t.Parallel()
 
 		virtualHosts := buildHTTPSMisdirectedRequestVirtualHosts(
-			context.Background(),
 			"https-with-wildcard-hostname",
 			ir.Listener{},
 			"*.wildcard.org",
@@ -237,7 +234,6 @@ func TestBuildHTTPSMisdirectedRequestVirtualHosts(t *testing.T) {
 		t.Parallel()
 
 		virtualHosts := buildHTTPSMisdirectedRequestVirtualHosts(
-			context.Background(),
 			"https",
 			ir.Listener{},
 			catchAllHostnamePattern,

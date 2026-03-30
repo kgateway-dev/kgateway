@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -15,7 +14,7 @@ const (
 	replacementChar = "_"
 )
 
-func SanitizeForEnvoy(ctx context.Context, resourceName, resourceTypeName string) string {
+func SanitizeForEnvoy(resourceName, resourceTypeName string) string {
 	if strings.Contains(resourceName, illegalChar) {
 		//nolint:sloglint // ignore formatting
 		slog.Debug(fmt.Sprintf("illegal character(s) '%s' in %s name [%s] will be replaced by '%s'",

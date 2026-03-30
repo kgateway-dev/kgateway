@@ -711,7 +711,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		sort.Stable(vhostRoutes)
 
 		// ensure we don't create duplicate vhosts
-		vhostName := makeVhostName(ctx, parentName, host)
+		vhostName := makeVhostName(parentName, host)
 		if virtualHostNames[vhostName] {
 			continue
 		}
@@ -792,7 +792,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		}
 
 		sort.Stable(vhostRoutes)
-		vhostName := makeVhostName(ctx, hfc.gatewayListenerName, host)
+		vhostName := makeVhostName(hfc.gatewayListenerName, host)
 		if !virtualHostNames[vhostName] {
 			virtualHostNames[vhostName] = true
 			virtualHost := &ir.VirtualHost{
@@ -808,7 +808,6 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	virtualHosts = append(
 		virtualHosts,
 		buildHTTPSMisdirectedRequestVirtualHosts(
-			ctx,
 			hfc.gatewayListenerName,
 			hfc.listener,
 			currentPattern,
@@ -1311,11 +1310,10 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 
 // makeVhostName computes the name of a virtual host based on the parent name and domain.
 func makeVhostName(
-	ctx context.Context,
 	parentName string,
 	domain string,
 ) string {
-	return utils.SanitizeForEnvoy(ctx, parentName+"~"+domain, "vHost")
+	return utils.SanitizeForEnvoy(parentName+"~"+domain, "vHost")
 }
 
 func GenerateListenerName(listener ir.Listener) string {

@@ -133,7 +133,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	ctx context.Context,
 	virtualHost *ir.VirtualHost,
 ) *envoyroutev3.VirtualHost {
-	sanitizedName := utils.SanitizeForEnvoy(ctx, virtualHost.Name, "virtual host")
+	sanitizedName := utils.SanitizeForEnvoy(virtualHost.Name, "virtual host")
 
 	domains := []string{virtualHost.Hostname}
 	if len(domains) == 0 || (len(domains) == 1 && domains[0] == "") {
