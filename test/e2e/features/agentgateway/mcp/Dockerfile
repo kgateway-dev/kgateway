@@ -1,10 +1,10 @@
 # Build stage: install once
-FROM node:20-alpine AS build
+FROM node:25-alpine AS build
 ENV NODE_ENV=production NPM_CONFIG_UPDATE_NOTIFIER=false
 RUN npm install -g @modelcontextprotocol/server-everything
 
 # Runtime stage: tiny, fast boot
-FROM node:20-alpine
+FROM node:25-alpine
 ENV NODE_ENV=production
 
 # Bring over node_modules AND bin shims (whatever they’re named)
