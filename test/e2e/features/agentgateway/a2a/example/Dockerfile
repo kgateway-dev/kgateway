@@ -1,5 +1,5 @@
 # Ultra-minimal A2A Rust test server
-FROM rust:1.82-alpine AS builder
+FROM rust:1.94-alpine AS builder
 
 # Install build dependencies including OpenSSL
 RUN apk add --no-cache musl-dev openssl-dev pkgconfig
