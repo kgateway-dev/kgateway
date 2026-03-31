@@ -37,7 +37,7 @@ require (
 	google.golang.org/grpc v1.77.0
 	google.golang.org/protobuf v1.36.11
 	helm.sh/helm/v3 v3.19.2
-	istio.io/api v1.28.0-alpha.0.0.20251210001900-ce7b5802387c
+	istio.io/api v1.29.1
 	istio.io/client-go v1.28.0-alpha.0.0.20251210002059-b67694478a4b
 	istio.io/istio v0.0.0-20251218162427-600ea84d2996
 	k8s.io/api v0.34.1
