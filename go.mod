@@ -33,8 +33,8 @@ require (
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
 	helm.sh/helm/v3 v3.19.2
-	istio.io/api v1.29.0-alpha.0.0.20260315093121-ce7e56c13e1d
-	istio.io/client-go v1.29.0-alpha.0.0.20260315093321-a99807642da7
+	istio.io/api v1.29.0-rc.1.0.20260209142455-7fea5efd57ca
+	istio.io/client-go v1.29.1
 	istio.io/istio v0.0.0-20260316163420-df8836984470
 	k8s.io/api v0.35.1
 	k8s.io/apiextensions-apiserver v0.35.1
