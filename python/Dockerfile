@@ -1,5 +1,5 @@
 # using ubuntu LTS version
-FROM python:3.12-slim-bookworm AS builder-image
+FROM python:3.14-slim-bookworm AS builder-image
 
 # avoid stuck build due to user prompt
 ARG DEBIAN_FRONTEND=noninteractive
@@ -26,7 +26,7 @@ RUN python3 -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
 ENV TLDEXTRACT_CACHE="/opt/tldextract"
 RUN python3 -m tldextract --update
 
-FROM python:3.12-slim-bookworm AS runner-image
+FROM python:3.14-slim-bookworm AS runner-image
 
 RUN apt-get update && apt-get install --no-install-recommends -y build-essential && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
