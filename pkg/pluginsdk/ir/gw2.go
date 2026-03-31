@@ -39,6 +39,8 @@ type HttpRouteRuleMatchIR struct {
 	MatchIndex int
 	Name       string
 
+	DirectResponse *DirectResponseIR
+
 	// PrecedenceWeight specifies the weight of this route rule relative to other route rules.
 	// Higher weight means higher priority, and are evaluated before routes with lower weight
 	PrecedenceWeight int32
@@ -70,7 +72,6 @@ type VirtualHost struct {
 	// if this changes, we can edit the IR; in the mean time keeping it simple.
 	Hostname         string
 	Rules            []HttpRouteRuleMatchIR
-	DirectResponse   *DirectResponseIR
 	AttachedPolicies AttachedPolicies
 	// ParentRef is the parent reference of the virtual host. Used to report status
 	// to the correct parent. This is either a listener from a gateway or a listener set.

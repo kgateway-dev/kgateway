@@ -176,32 +176,37 @@ Routes:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
   - domains:
-    - '*.wildcard.org'
-    name: https~misdirected-request~*_wildcard_org
+    - '*'
+    name: https~misdirected-request~*
     requireTls: ALL
     routes:
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^second-example\.org(?::[0-9]+)?$
         prefix: /
-  - domains:
-    - fourth-example.wildcard.org
-    name: https~misdirected-request~fourth-example_wildcard_org
-    requireTls: ALL
-    routes:
+      name: https~misdirected-request~*-route-0-matcher-0
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^[^.]+(?:\.[^.]+)*\.wildcard\.org(?::[0-9]+)?$
         prefix: /
-  - domains:
-    - second-example.org
-    name: https~misdirected-request~second-example_org
-    requireTls: ALL
-    routes:
+      name: https~misdirected-request~*-route-1-matcher-0
     - directResponse:
-        status: 421
+        status: 404
       match:
         prefix: /
+      name: https~misdirected-request~*-route-2-matcher-0
 - ignorePortInHostMatching: true
   name: https-with-hostname
   virtualHosts:
@@ -213,25 +218,19 @@ Routes:
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^[^.]+(?:\.[^.]+)*\.wildcard\.org(?::[0-9]+)?$
         prefix: /
-  - domains:
-    - '*.wildcard.org'
-    name: https-with-hostname~misdirected-request~*_wildcard_org
-    requireTls: ALL
-    routes:
+      name: https-with-hostname~misdirected-request~*-route-0-matcher-0
     - directResponse:
         status: 421
       match:
         prefix: /
-  - domains:
-    - fourth-example.wildcard.org
-    name: https-with-hostname~misdirected-request~fourth-example_wildcard_org
-    requireTls: ALL
-    routes:
-    - directResponse:
-        status: 421
-      match:
-        prefix: /
+      name: https-with-hostname~misdirected-request~*-route-1-matcher-0
   - domains:
     - second-example.org
     name: https-with-hostname~second-example_org
@@ -265,25 +264,30 @@ Routes:
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^second-example\.org(?::[0-9]+)?$
         prefix: /
-  - domains:
-    - '*.wildcard.org'
-    name: https-with-hostname-matching-wildcard~misdirected-request~*_wildcard_org
-    requireTls: ALL
-    routes:
+      name: https-with-hostname-matching-wildcard~misdirected-request~*-route-0-matcher-0
+    - directResponse:
+        status: 421
+      match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^[^.]+(?:\.[^.]+)*\.wildcard\.org(?::[0-9]+)?$
+        prefix: /
+      name: https-with-hostname-matching-wildcard~misdirected-request~*-route-1-matcher-0
     - directResponse:
         status: 421
       match:
         prefix: /
-  - domains:
-    - second-example.org
-    name: https-with-hostname-matching-wildcard~misdirected-request~second-example_org
-    requireTls: ALL
-    routes:
-    - directResponse:
-        status: 421
-      match:
-        prefix: /
+      name: https-with-hostname-matching-wildcard~misdirected-request~*-route-2-matcher-0
 - ignorePortInHostMatching: true
   name: https-with-wildcard-hostname
   virtualHosts:
@@ -292,9 +296,20 @@ Routes:
     name: https-with-wildcard-hostname~*_wildcard_org
     requireTls: ALL
     routes:
+    - directResponse:
+        status: 421
+      match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^fourth-example\.wildcard\.org(?::[0-9]+)?$
+        prefix: /
+      name: https-with-wildcard-hostname~*_wildcard_org-route-0-matcher-0
     - match:
         pathSeparatedPrefix: /detect-misdirected-requests
-      name: https-with-wildcard-hostname~*_wildcard_org-route-0-httproute-https-listener-detect-misdirected-requests-test-3-default-0-0-matcher-0
+      name: https-with-wildcard-hostname~*_wildcard_org-route-1-httproute-https-listener-detect-misdirected-requests-test-3-default-0-0-matcher-0
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -306,25 +321,19 @@ Routes:
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^second-example\.org(?::[0-9]+)?$
         prefix: /
-  - domains:
-    - fourth-example.wildcard.org
-    name: https-with-wildcard-hostname~misdirected-request~fourth-example_wildcard_org
-    requireTls: ALL
-    routes:
+      name: https-with-wildcard-hostname~misdirected-request~*-route-0-matcher-0
     - directResponse:
         status: 421
       match:
         prefix: /
-  - domains:
-    - second-example.org
-    name: https-with-wildcard-hostname~misdirected-request~second-example_org
-    requireTls: ALL
-    routes:
-    - directResponse:
-        status: 421
-      match:
-        prefix: /
+      name: https-with-wildcard-hostname~misdirected-request~*-route-1-matcher-0
 Statuses:
   gateways:
     default/same-namespace-with-https-listener:

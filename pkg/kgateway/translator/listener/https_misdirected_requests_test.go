@@ -2,6 +2,7 @@ package listener
 
 import (
 	"net/http"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,85 +11,39 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-func TestShouldShadowHTTPSVirtualHost(t *testing.T) {
+func TestHostnamePatternMatchesHost(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name           string
-		currentPattern string
-		hostPattern    string
-		allPatterns    []string
-		want           bool
+		name    string
+		pattern string
+		host    string
+		want    bool
 	}{
 		{
-			name:           "catch-all listener shadows exact host owned by exact sibling",
-			currentPattern: catchAllHostnamePattern,
-			hostPattern:    "second-example.org",
-			allPatterns:    []string{catchAllHostnamePattern, "second-example.org"},
-			want:           true,
+			name:    "wildcard matches single label",
+			pattern: "*.example.org",
+			host:    "a.example.org",
+			want:    true,
 		},
 		{
-			name:           "catch-all listener shadows exact host owned by wildcard sibling",
-			currentPattern: catchAllHostnamePattern,
-			hostPattern:    "third-example.wildcard.org",
-			allPatterns:    []string{catchAllHostnamePattern, "*.wildcard.org"},
-			want:           true,
+			name:    "wildcard matches multiple labels",
+			pattern: "*.example.org",
+			host:    "a.b.example.org",
+			want:    true,
 		},
 		{
-			name:           "wildcard listener shadows exact host owned by exact sibling",
-			currentPattern: "*.wildcard.org",
-			hostPattern:    "fourth-example.wildcard.org",
-			allPatterns:    []string{"*.wildcard.org", "fourth-example.wildcard.org"},
-			want:           true,
-		},
-		{
-			name:           "wildcard listener keeps exact host inside its own hostspace",
-			currentPattern: "*.wildcard.org",
-			hostPattern:    "third-example.wildcard.org",
-			allPatterns:    []string{"*.wildcard.org", "fourth-example.wildcard.org"},
-			want:           false,
-		},
-		{
-			name:           "exact listener keeps its own host over catch-all sibling",
-			currentPattern: "second-example.org",
-			hostPattern:    "second-example.org",
-			allPatterns:    []string{"second-example.org", catchAllHostnamePattern},
-			want:           false,
-		},
-		{
-			name:           "catch-all listener shadows wildcard hostspace owned by wildcard sibling",
-			currentPattern: catchAllHostnamePattern,
-			hostPattern:    "*.example.org",
-			allPatterns:    []string{catchAllHostnamePattern, "*.example.org"},
-			want:           true,
-		},
-		{
-			name:           "catch-all listener keeps wildcard hostspace when sibling exact only covers a subset",
-			currentPattern: catchAllHostnamePattern,
-			hostPattern:    "*.example.org",
-			allPatterns:    []string{catchAllHostnamePattern, "foo.example.org"},
-			want:           false,
-		},
-		{
-			name:           "wildcard listener keeps broader wildcard when sibling only covers a narrower subset",
-			currentPattern: "*.example.org",
-			hostPattern:    "*.example.org",
-			allPatterns:    []string{"*.example.org", "*.bar.example.org"},
-			want:           false,
-		},
-		{
-			name:           "catch-all wildcard route remains when no sibling owns all hostspace",
-			currentPattern: catchAllHostnamePattern,
-			hostPattern:    catchAllHostnamePattern,
-			allPatterns:    []string{catchAllHostnamePattern, "*.example.org"},
-			want:           false,
+			name:    "wildcard does not match bare suffix",
+			pattern: "*.example.org",
+			host:    "example.org",
+			want:    false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, shouldShadowHTTPSVirtualHost(tt.currentPattern, tt.hostPattern, tt.allPatterns))
+			assert.Equal(t, tt.want, hostnamePatternMatchesHost(tt.pattern, tt.host))
 		})
 	}
 }
@@ -142,105 +97,156 @@ func TestHostnamePatternContains(t *testing.T) {
 	}
 }
 
-func TestNeedsProtective404VirtualHost(t *testing.T) {
+func TestAuthorityRegexForHostnamePattern(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name           string
-		currentPattern string
-		siblings       []string
-		want           bool
-	}{
-		{
-			name:           "exact listener needs protection from catch-all sibling",
-			currentPattern: "second-example.org",
-			siblings:       []string{catchAllHostnamePattern},
-			want:           true,
-		},
-		{
-			name:           "exact listener needs protection from broader wildcard sibling",
-			currentPattern: "foo.example.org",
-			siblings:       []string{"*.example.org"},
-			want:           true,
-		},
-		{
-			name:           "wildcard listener needs protection from catch-all sibling",
-			currentPattern: "*.wildcard.org",
-			siblings:       []string{catchAllHostnamePattern},
-			want:           true,
-		},
-		{
-			name:           "wildcard listener does not protect against more specific exact sibling",
-			currentPattern: "*.wildcard.org",
-			siblings:       []string{"fourth-example.wildcard.org"},
-			want:           false,
-		},
-		{
-			name:           "catch-all listener does not need a protective vhost",
-			currentPattern: catchAllHostnamePattern,
-			siblings:       []string{"second-example.org"},
-			want:           false,
-		},
-	}
+	t.Run("exact hostname matches optional port", func(t *testing.T) {
+		t.Parallel()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equal(t, tt.want, needsProtective404VirtualHost(tt.currentPattern, tt.siblings))
-		})
-	}
+		matcher := regexp.MustCompile(authorityRegexForHostnamePattern("second-example.org"))
+		assert.True(t, matcher.MatchString("second-example.org"))
+		assert.True(t, matcher.MatchString("second-example.org:443"))
+		assert.False(t, matcher.MatchString("other-example.org"))
+	})
+
+	t.Run("wildcard hostname follows suffix semantics", func(t *testing.T) {
+		t.Parallel()
+
+		matcher := regexp.MustCompile(authorityRegexForHostnamePattern("*.example.org"))
+		assert.True(t, matcher.MatchString("a.example.org"))
+		assert.True(t, matcher.MatchString("a.b.example.org"))
+		assert.True(t, matcher.MatchString("a.b.example.org:8443"))
+		assert.False(t, matcher.MatchString("example.org"))
+		assert.False(t, matcher.MatchString("other.org"))
+	})
 }
 
-func TestBuildHTTPSMisdirectedRequestVirtualHosts(t *testing.T) {
+func TestBuildHTTPSMisdirectedRequestPlan(t *testing.T) {
 	t.Parallel()
 
-	t.Run("adds sibling 421 responses and current 404 protection when needed", func(t *testing.T) {
+	t.Run("catch-all listener uses residual routes for uncovered overlap only", func(t *testing.T) {
 		t.Parallel()
 
-		virtualHosts := buildHTTPSMisdirectedRequestVirtualHosts(
-			"https-with-hostname",
-			ir.Listener{},
-			"second-example.org",
-			[]string{catchAllHostnamePattern, "*.example.org"},
-			map[string]struct{}{},
-		)
-
-		require.Len(t, virtualHosts, 3)
-		assert.Equal(t, catchAllHostnamePattern, virtualHosts[0].Hostname)
-		assert.Equal(t, uint32(http.StatusMisdirectedRequest), virtualHosts[0].DirectResponse.StatusCode)
-		assert.Equal(t, "*.example.org", virtualHosts[1].Hostname)
-		assert.Equal(t, uint32(http.StatusMisdirectedRequest), virtualHosts[1].DirectResponse.StatusCode)
-		assert.Equal(t, "second-example.org", virtualHosts[2].Hostname)
-		assert.Equal(t, uint32(http.StatusNotFound), virtualHosts[2].DirectResponse.StatusCode)
-	})
-
-	t.Run("skips the protective 404 when the current hostspace already has a vhost", func(t *testing.T) {
-		t.Parallel()
-
-		virtualHosts := buildHTTPSMisdirectedRequestVirtualHosts(
-			"https-with-wildcard-hostname",
-			ir.Listener{},
-			"*.wildcard.org",
-			[]string{catchAllHostnamePattern},
-			map[string]struct{}{"*.wildcard.org": {}},
-		)
-
-		require.Len(t, virtualHosts, 1)
-		assert.Equal(t, catchAllHostnamePattern, virtualHosts[0].Hostname)
-		assert.Equal(t, uint32(http.StatusMisdirectedRequest), virtualHosts[0].DirectResponse.StatusCode)
-	})
-
-	t.Run("skips synthetic sibling vhosts that would duplicate actual domains", func(t *testing.T) {
-		t.Parallel()
-
-		virtualHosts := buildHTTPSMisdirectedRequestVirtualHosts(
-			"https",
-			ir.Listener{},
+		plan := buildHTTPSMisdirectedRequestPlan(
 			catchAllHostnamePattern,
-			[]string{"*.example.org"},
-			map[string]struct{}{"*.example.org": {}},
+			[]string{"second-example.org", "*.wildcard.org", "fourth-example.wildcard.org"},
+			[]string{"example.org"},
 		)
 
-		require.Empty(t, virtualHosts)
+		require.Empty(t, plan.routesByDomain["example.org"])
+		require.Len(t, plan.residualRoutes, 3)
+		assertDirectResponseRoute(t, plan.residualRoutes[0], http.StatusMisdirectedRequest, authorityRegexForHostnamePattern("second-example.org"))
+		assertDirectResponseRoute(t, plan.residualRoutes[1], http.StatusMisdirectedRequest, authorityRegexForHostnamePattern("*.wildcard.org"))
+		assertDirectResponseRoute(t, plan.residualRoutes[2], http.StatusNotFound, "")
+	})
+
+	t.Run("catch-all actual vhost gets the minimized overlap route set", func(t *testing.T) {
+		t.Parallel()
+
+		plan := buildHTTPSMisdirectedRequestPlan(
+			catchAllHostnamePattern,
+			[]string{"*.example.org", "foo.example.org"},
+			[]string{catchAllHostnamePattern},
+		)
+
+		require.Len(t, plan.routesByDomain, 1)
+		require.Len(t, plan.routesByDomain[catchAllHostnamePattern], 1)
+		assertDirectResponseRoute(t, plan.routesByDomain[catchAllHostnamePattern][0], http.StatusMisdirectedRequest, authorityRegexForHostnamePattern("*.example.org"))
+		require.Empty(t, plan.residualRoutes)
+	})
+
+	t.Run("wildcard listener injects exact 421 into the wildcard vhost", func(t *testing.T) {
+		t.Parallel()
+
+		plan := buildHTTPSMisdirectedRequestPlan(
+			"*.wildcard.org",
+			[]string{"fourth-example.wildcard.org"},
+			[]string{"*.wildcard.org"},
+		)
+
+		require.Len(t, plan.routesByDomain["*.wildcard.org"], 1)
+		assertDirectResponseRoute(t, plan.routesByDomain["*.wildcard.org"][0], http.StatusMisdirectedRequest, authorityRegexForHostnamePattern("fourth-example.wildcard.org"))
+		require.Empty(t, plan.residualRoutes)
+	})
+
+	t.Run("exact listener with catch-all sibling gets protective 404 and fallback 421", func(t *testing.T) {
+		t.Parallel()
+
+		plan := buildHTTPSMisdirectedRequestPlan(
+			"second-example.org",
+			[]string{catchAllHostnamePattern},
+			nil,
+		)
+
+		require.Len(t, plan.residualRoutes, 2)
+		assertDirectResponseRoute(t, plan.residualRoutes[0], http.StatusNotFound, authorityRegexForHostnamePattern("second-example.org"))
+		assertDirectResponseRoute(t, plan.residualRoutes[1], http.StatusMisdirectedRequest, "")
+	})
+
+	t.Run("exact listener with wildcard sibling protects its own hostname before 421 overlap routes", func(t *testing.T) {
+		t.Parallel()
+
+		plan := buildHTTPSMisdirectedRequestPlan(
+			"foo.example.org",
+			[]string{"*.example.org"},
+			nil,
+		)
+
+		require.Len(t, plan.residualRoutes, 3)
+		assertDirectResponseRoute(t, plan.residualRoutes[0], http.StatusNotFound, authorityRegexForHostnamePattern("foo.example.org"))
+		assertDirectResponseRoute(t, plan.residualRoutes[1], http.StatusMisdirectedRequest, authorityRegexForHostnamePattern("*.example.org"))
+		assertDirectResponseRoute(t, plan.residualRoutes[2], http.StatusNotFound, "")
 	})
 }
+
+func TestApplyHTTPSMisdirectedRequestRoutes(t *testing.T) {
+	t.Parallel()
+
+	virtualHosts := []*ir.VirtualHost{
+		{
+			Name:     "https~foo_example_org",
+			Hostname: "foo.example.org",
+			Rules: []ir.HttpRouteRuleMatchIR{
+				{Name: "real-route"},
+			},
+		},
+	}
+
+	out := applyHTTPSMisdirectedRequestRoutes(
+		"https",
+		ir.Listener{},
+		catchAllHostnamePattern,
+		[]string{"*.example.org"},
+		virtualHosts,
+	)
+
+	require.Len(t, out, 2)
+	fooVhost := out[0]
+	require.Len(t, fooVhost.Rules, 2)
+	assertDirectResponseRoute(t, fooVhost.Rules[0], http.StatusMisdirectedRequest, authorityRegexForHostnamePattern("foo.example.org"))
+	assert.Equal(t, "real-route", fooVhost.Rules[1].Name)
+
+	residualVhost := out[1]
+	assert.Equal(t, catchAllHostnamePattern, residualVhost.Hostname)
+	require.Len(t, residualVhost.Rules, 2)
+	assertDirectResponseRoute(t, residualVhost.Rules[0], http.StatusMisdirectedRequest, authorityRegexForHostnamePattern("*.example.org"))
+	assertDirectResponseRoute(t, residualVhost.Rules[1], http.StatusNotFound, "")
+}
+
+func assertDirectResponseRoute(t *testing.T, route ir.HttpRouteRuleMatchIR, wantStatus uint32, wantAuthorityRegex string) {
+	t.Helper()
+
+	require.NotNil(t, route.DirectResponse)
+	assert.Equal(t, wantStatus, route.DirectResponse.StatusCode)
+
+	if wantAuthorityRegex == "" {
+		assert.Empty(t, route.Match.Headers)
+		return
+	}
+
+	require.Len(t, route.Match.Headers, 1)
+	assert.Equal(t, gwAuthorityHeaderName, string(route.Match.Headers[0].Name))
+	assert.Equal(t, wantAuthorityRegex, route.Match.Headers[0].Value)
+}
+
+const gwAuthorityHeaderName = ":authority"

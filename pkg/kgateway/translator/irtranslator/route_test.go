@@ -6,7 +6,9 @@ import (
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -93,21 +95,30 @@ func TestValidateWeightedClusters(t *testing.T) {
 	}
 }
 
-func TestComputeVirtualHostDirectResponse(t *testing.T) {
+func TestEnvoyRoutesDirectResponse(t *testing.T) {
 	t.Parallel()
 
+	regexMatch := gwv1.HeaderMatchRegularExpression
 	translator := &httpRouteConfigurationTranslator{}
-	virtualHost := &ir.VirtualHost{
-		Name:     "https-listener~misdirected-request~second-example.org",
-		Hostname: "second-example.org",
+	route := translator.envoyRoutes(context.Background(), nil, ir.HttpRouteRuleMatchIR{
+		Match: gwv1.HTTPRouteMatch{
+			Headers: []gwv1.HTTPHeaderMatch{
+				{
+					Name:  gwv1.HTTPHeaderName(":authority"),
+					Value: `(?i)^foo\.example\.org(?::[0-9]+)?$`,
+					Type:  &regexMatch,
+				},
+			},
+		},
 		DirectResponse: &ir.DirectResponseIR{
 			StatusCode: 421,
 		},
-	}
+	}, "synthetic")
 
-	envoyVirtualHost := translator.computeVirtualHost(context.Background(), virtualHost)
-
-	assert.Equal(t, []string{"second-example.org"}, envoyVirtualHost.GetDomains())
-	assert.Len(t, envoyVirtualHost.GetRoutes(), 1)
-	assert.Equal(t, uint32(421), envoyVirtualHost.GetRoutes()[0].GetDirectResponse().GetStatus())
+	require.NotNil(t, route)
+	require.NotNil(t, route.GetDirectResponse())
+	assert.Equal(t, uint32(421), route.GetDirectResponse().GetStatus())
+	require.Len(t, route.GetMatch().GetHeaders(), 1)
+	assert.Equal(t, ":authority", route.GetMatch().GetHeaders()[0].GetName())
+	assert.NotNil(t, route.GetMatch().GetHeaders()[0].GetStringMatch().GetSafeRegex())
 }

@@ -106,14 +106,26 @@ Routes:
   name: tenant-a-https
   virtualHosts:
   - domains:
-    - tenant-b.example.com
-    name: tenant-a-https~misdirected-request~tenant-b_example_com
+    - '*'
+    name: tenant-a-https~misdirected-request~*
     requireTls: ALL
     routes:
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^tenant-b\.example\.com(?::[0-9]+)?$
         prefix: /
+      name: tenant-a-https~misdirected-request~*-route-0-matcher-0
+    - directResponse:
+        status: 404
+      match:
+        prefix: /
+      name: tenant-a-https~misdirected-request~*-route-1-matcher-0
   - domains:
     - tenant-a.example.com
     name: tenant-a-https~tenant-a_example_com
@@ -129,14 +141,26 @@ Routes:
   name: tenant-b-https
   virtualHosts:
   - domains:
-    - tenant-a.example.com
-    name: tenant-b-https~misdirected-request~tenant-a_example_com
+    - '*'
+    name: tenant-b-https~misdirected-request~*
     requireTls: ALL
     routes:
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^tenant-a\.example\.com(?::[0-9]+)?$
         prefix: /
+      name: tenant-b-https~misdirected-request~*-route-0-matcher-0
+    - directResponse:
+        status: 404
+      match:
+        prefix: /
+      name: tenant-b-https~misdirected-request~*-route-1-matcher-0
   - domains:
     - tenant-b.example.com
     name: tenant-b-https~tenant-b_example_com

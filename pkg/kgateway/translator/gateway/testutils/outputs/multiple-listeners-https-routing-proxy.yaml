@@ -89,26 +89,50 @@ Routes:
   name: https-bookinfo
   virtualHosts:
   - domains:
-    - httpbin.example.com
-    name: https-bookinfo~misdirected-request~httpbin_example_com
+    - '*'
+    name: https-bookinfo~misdirected-request~*
     requireTls: ALL
     routes:
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^httpbin\.example\.com(?::[0-9]+)?$
         prefix: /
+      name: https-bookinfo~misdirected-request~*-route-0-matcher-0
+    - directResponse:
+        status: 404
+      match:
+        prefix: /
+      name: https-bookinfo~misdirected-request~*-route-1-matcher-0
 - ignorePortInHostMatching: true
   name: https-httpbin
   virtualHosts:
   - domains:
-    - bookinfo.example.com
-    name: https-httpbin~misdirected-request~bookinfo_example_com
+    - '*'
+    name: https-httpbin~misdirected-request~*
     requireTls: ALL
     routes:
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^bookinfo\.example\.com(?::[0-9]+)?$
         prefix: /
+      name: https-httpbin~misdirected-request~*-route-0-matcher-0
+    - directResponse:
+        status: 404
+      match:
+        prefix: /
+      name: https-httpbin~misdirected-request~*-route-1-matcher-0
 Statuses:
   gateways:
     default/http:

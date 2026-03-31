@@ -146,22 +146,18 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	}
 
 	var envoyRoutes []*envoyroutev3.Route
-	if virtualHost.DirectResponse != nil {
-		envoyRoutes = []*envoyroutev3.Route{newDirectResponseRoute(virtualHost.DirectResponse.StatusCode, virtualHost.DirectResponse.Body)}
-	} else {
-		for i, route := range virtualHost.Rules {
-			var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
-			if route.Parent != nil {
-				// route may be a fake one that we don't really report,
-				// such as in the waypoint translator where we produce
-				// synthetic routes if there none are attached to the Gateway/Service.
-				routeReport = h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
-			}
-			generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
-			computedRoute := h.envoyRoutes(ctx, routeReport, route, generatedName)
-			if computedRoute != nil {
-				envoyRoutes = append(envoyRoutes, computedRoute)
-			}
+	for i, route := range virtualHost.Rules {
+		var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
+		if route.Parent != nil {
+			// route may be a fake one that we don't really report,
+			// such as in the waypoint translator where we produce
+			// synthetic routes if there none are attached to the Gateway/Service.
+			routeReport = h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
+		}
+		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
+		computedRoute := h.envoyRoutes(ctx, routeReport, route, generatedName)
+		if computedRoute != nil {
+			envoyRoutes = append(envoyRoutes, computedRoute)
 		}
 	}
 
@@ -208,20 +204,25 @@ func newDirectResponseRoute(statusCode uint32, body string) *envoyroutev3.Route 
 				Prefix: "/",
 			},
 		},
-		Action: &envoyroutev3.Route_DirectResponse{
-			DirectResponse: &envoyroutev3.DirectResponseAction{
-				Status: statusCode,
-			},
+		Action: newDirectResponseAction(statusCode, body),
+	}
+	return route
+}
+
+func newDirectResponseAction(statusCode uint32, body string) *envoyroutev3.Route_DirectResponse {
+	action := &envoyroutev3.Route_DirectResponse{
+		DirectResponse: &envoyroutev3.DirectResponseAction{
+			Status: statusCode,
 		},
 	}
 	if body != "" {
-		route.GetDirectResponse().Body = &envoycorev3.DataSource{
+		action.DirectResponse.Body = &envoycorev3.DataSource{
 			Specifier: &envoycorev3.DataSource_InlineString{
 				InlineString: body,
 			},
 		}
 	}
-	return route
+	return action
 }
 
 type backendConfigContext struct {
@@ -239,6 +240,10 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	generatedName string,
 ) *envoyroutev3.Route {
 	out := h.initRoutes(in, generatedName)
+	if in.DirectResponse != nil {
+		out.Action = newDirectResponseAction(in.DirectResponse.StatusCode, in.DirectResponse.Body)
+		return out
+	}
 
 	backendConfigCtx := backendConfigContext{typedPerFilterConfigRoute: ir.TypedFilterConfigMap(map[string]proto.Message{})}
 	if len(in.Backends) == 1 {

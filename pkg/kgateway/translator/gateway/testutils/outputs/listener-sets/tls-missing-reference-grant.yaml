@@ -221,44 +221,72 @@ Routes:
         cluster: kube_ls-2-ns_foo-svc_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
   - domains:
-    - ls1.tls.example.com
-    name: ls-2-ns/ls-2/tls-ls2~misdirected-request~ls1_tls_example_com
+    - '*'
+    name: ls-2-ns/ls-2/tls-ls2~misdirected-request~*
     requireTls: ALL
     routes:
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^ls1\.tls\.example\.com(?::[0-9]+)?$
         prefix: /
-  - domains:
-    - tls.example.com
-    name: ls-2-ns/ls-2/tls-ls2~misdirected-request~tls_example_com
-    requireTls: ALL
-    routes:
+      name: ls-2-ns/ls-2/tls-ls2~misdirected-request~*-route-0-matcher-0
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^tls\.example\.com(?::[0-9]+)?$
         prefix: /
+      name: ls-2-ns/ls-2/tls-ls2~misdirected-request~*-route-1-matcher-0
+    - directResponse:
+        status: 404
+      match:
+        prefix: /
+      name: ls-2-ns/ls-2/tls-ls2~misdirected-request~*-route-2-matcher-0
 - ignorePortInHostMatching: true
   name: tls-gw
   virtualHosts:
   - domains:
-    - ls1.tls.example.com
-    name: tls-gw~misdirected-request~ls1_tls_example_com
+    - '*'
+    name: tls-gw~misdirected-request~*
     requireTls: ALL
     routes:
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^ls1\.tls\.example\.com(?::[0-9]+)?$
         prefix: /
-  - domains:
-    - ls2.tls.example.com
-    name: tls-gw~misdirected-request~ls2_tls_example_com
-    requireTls: ALL
-    routes:
+      name: tls-gw~misdirected-request~*-route-0-matcher-0
     - directResponse:
         status: 421
       match:
+        headers:
+        - name: :authority
+          stringMatch:
+            safeRegex:
+              googleRe2: {}
+              regex: (?i)^ls2\.tls\.example\.com(?::[0-9]+)?$
         prefix: /
+      name: tls-gw~misdirected-request~*-route-1-matcher-0
+    - directResponse:
+        status: 404
+      match:
+        prefix: /
+      name: tls-gw~misdirected-request~*-route-2-matcher-0
 Statuses:
   gateways:
     default/example-gateway:

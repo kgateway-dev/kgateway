@@ -781,16 +781,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	)
 	currentPattern := normalizeHTTPSListenerHostnamePattern(hfc.sniDomain)
 	siblingPatterns := siblingHTTPSListenerHostnamePatterns(hfc.gatewayListenerName, samePortFilterChains)
-	allPatterns := make([]string, 0, len(siblingPatterns)+1)
-	allPatterns = append(allPatterns, currentPattern)
-	allPatterns = append(allPatterns, siblingPatterns...)
-	actualDomains := make(map[string]struct{}, len(routesByHost))
 	for host, vhostRoutes := range routesByHost {
-		normalizedHost := normalizeHTTPSHostnamePattern(host)
-		if shouldShadowHTTPSVirtualHost(currentPattern, normalizedHost, allPatterns) {
-			continue
-		}
-
 		sort.Stable(vhostRoutes)
 		vhostName := makeVhostName(hfc.gatewayListenerName, host)
 		if !virtualHostNames[vhostName] {
@@ -802,18 +793,14 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 				ParentRef: hfc.listener,
 			}
 			virtualHosts = append(virtualHosts, virtualHost)
-			actualDomains[normalizedHost] = struct{}{}
 		}
 	}
-	virtualHosts = append(
+	virtualHosts = applyHTTPSMisdirectedRequestRoutes(
+		hfc.gatewayListenerName,
+		hfc.listener,
+		currentPattern,
+		siblingPatterns,
 		virtualHosts,
-		buildHTTPSMisdirectedRequestVirtualHosts(
-			hfc.gatewayListenerName,
-			hfc.listener,
-			currentPattern,
-			siblingPatterns,
-			actualDomains,
-		)...,
 	)
 
 	var matcher ir.FilterChainMatch
