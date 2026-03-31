@@ -1,5 +1,5 @@
 # Use official golang image as the base image
-FROM golang:1.24-alpine
+FROM golang:1.26-alpine
 
 # Set working directory
 WORKDIR /app
