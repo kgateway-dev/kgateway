@@ -1588,8 +1588,8 @@ github.com/solo-io/envoy-gloo/go v0.0.0-20250924144543-9d47b99b2130/go.mod h1:N0
 github.com/solo-io/go-list-licenses v0.1.4 h1:u4xh1OUORT4iSWuAp3Q4NsfHcDaeUV8QRDH8ACQqbxw=
 github.com/solo-io/go-list-licenses v0.1.4/go.mod h1:x6LSp/NrYgVXwNum7ZOiaAYTpg6B3F6TrWYfcdHVroA=
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
-github.com/solo-io/go-utils v0.27.3 h1:1LxErw8pisPAuH1Vk6FKRgnvkwgm7mHrpjZow0hvfnA=
-github.com/solo-io/go-utils v0.27.3/go.mod h1:cwbQIYO1/BeU4aPB0Yy8WzzS77dfVTZyCVqbA4YsRSY=
+github.com/solo-io/go-utils v0.30.0 h1:+6BvtONijPXQLKGKMrmQ4KFkbXMPW3F39fcDkr66B20=
+github.com/solo-io/go-utils v0.30.0/go.mod h1:O3IvNQlI2WoZW2+4uLtaHBRBE8PCboOiGKm5PId7wTA=
 github.com/sonatard/noctx v0.4.0 h1:7MC/5Gg4SQ4lhLYR6mvOP6mQVSxCrdyiExo7atBs27o=
 github.com/sonatard/noctx v0.4.0/go.mod h1:64XdbzFb18XL4LporKXp8poqZtPKbCrqQ402CV+kJas=
 github.com/sourcegraph/conc v0.3.0 h1:OQTbbt6P72L20UqAkXXuLOj79LfEanQ+YQFNpLA9ySo=

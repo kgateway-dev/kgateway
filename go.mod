@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2
 
-go 1.25.8
+go 1.26.1
 
 require (
 	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go and test/deployer/testdata/*
@@ -28,7 +28,7 @@ require (
 	github.com/prometheus/common v0.67.5
 	github.com/solo-io/envoy-gloo/go v0.0.0-20250924144543-9d47b99b2130
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.27.3
+	github.com/solo-io/go-utils v0.30.0
 	github.com/spf13/afero v1.14.0
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
