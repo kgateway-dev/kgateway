@@ -96,7 +96,7 @@ jobs:
     # The dotenv action is used to load key-value pairs from files.
     # In this case, the file is specified in the matrix and will contain the versions of the tools to use
     - name: Dotenv Action
-      uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+      uses: falti/dotenv-action@73fafca04177425fd3e0a0849257015ae9d42034 # v1.2.0
       id: dotenv
       with:
         path: ${{ matrix.version-files.file }}
