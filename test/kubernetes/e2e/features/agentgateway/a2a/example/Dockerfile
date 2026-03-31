@@ -1,5 +1,5 @@
 # Ultra-minimal A2A test server
-FROM python:3.12-alpine AS builder
+FROM python:3.14-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache gcc musl-dev
@@ -23,7 +23,7 @@ COPY . .
 RUN uv sync --frozen --no-dev
 
 # Final stage - minimal runtime
-FROM python:3.12-alpine
+FROM python:3.14-alpine
 
 # Install only runtime dependencies
 RUN apk add --no-cache && pip install --no-cache-dir uv
