@@ -246,7 +246,6 @@ jobs:
           go tool helm install --create-namespace --namespace kgateway-system kgateway \
             oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
             --set image.registry=${{ env.IMAGE_REGISTRY }} \
-            --set controller.enableHttpsListenerMisdirectedRequests=true \
             --version ${{ needs.setup.outputs.version }} \
             --wait --timeout 5m
 

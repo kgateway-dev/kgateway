@@ -184,6 +184,15 @@ Routes:
   name: tls1
   virtualHosts:
   - domains:
+    - no-ratelimit-tls.example.com
+    name: tls1~misdirected-request~no-ratelimit-tls_example_com
+    requireTls: ALL
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
+  - domains:
     - tls.example.com
     name: tls1~tls_example_com
     requireTls: ALL
@@ -217,6 +226,15 @@ Routes:
 - ignorePortInHostMatching: true
   name: tls2
   virtualHosts:
+  - domains:
+    - tls.example.com
+    name: tls2~misdirected-request~tls_example_com
+    requireTls: ALL
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
   - domains:
     - no-ratelimit-tls.example.com
     name: tls2~no-ratelimit-tls_example_com

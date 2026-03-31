@@ -38,9 +38,8 @@ const (
 )
 
 type ListenerTranslatorConfig struct {
-	ListenerBindIpv6                       bool
-	EnableExperimentalGatewayAPIFeatures   bool
-	EnableHTTPSListenerMisdirectedRequests bool
+	ListenerBindIpv6                     bool
+	EnableExperimentalGatewayAPIFeatures bool
 }
 
 // TranslateListeners translates the set of ListenerIRs required to produce a full output proxy (either from one Gateway or multiple merged Gateways)
@@ -190,7 +189,6 @@ func (ml *MergedListeners) appendHttpsListener(
 		tls:                 tls,
 		routesWithHosts:     routesWithHosts,
 		attachedPolicies:    listener.AttachedPolicies,
-		settings:            ml.settings,
 	}
 
 	// Perform the port transformation away from privileged ports only once to use
@@ -758,7 +756,6 @@ type httpsFilterChain struct {
 	tls              *gwv1.ListenerTLSConfig
 	routesWithHosts  []*query.RouteInfo
 	attachedPolicies ir.AttachedPolicies
-	settings         ListenerTranslatorConfig
 }
 
 func (hfc *httpsFilterChain) translateHttpsFilterChain(
@@ -782,27 +779,16 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		virtualHostNames = map[string]bool{}
 		virtualHosts     = []*ir.VirtualHost{}
 	)
-	var (
-		currentPattern  string
-		siblingPatterns []string
-		allPatterns     []string
-		actualDomains   map[string]struct{}
-	)
-	if hfc.settings.EnableHTTPSListenerMisdirectedRequests {
-		currentPattern = normalizeHTTPSListenerHostnamePattern(hfc.sniDomain)
-		siblingPatterns = siblingHTTPSListenerHostnamePatterns(hfc.gatewayListenerName, samePortFilterChains)
-		allPatterns = make([]string, 0, len(siblingPatterns)+1)
-		allPatterns = append(allPatterns, currentPattern)
-		allPatterns = append(allPatterns, siblingPatterns...)
-		actualDomains = make(map[string]struct{}, len(routesByHost))
-	}
+	currentPattern := normalizeHTTPSListenerHostnamePattern(hfc.sniDomain)
+	siblingPatterns := siblingHTTPSListenerHostnamePatterns(hfc.gatewayListenerName, samePortFilterChains)
+	allPatterns := make([]string, 0, len(siblingPatterns)+1)
+	allPatterns = append(allPatterns, currentPattern)
+	allPatterns = append(allPatterns, siblingPatterns...)
+	actualDomains := make(map[string]struct{}, len(routesByHost))
 	for host, vhostRoutes := range routesByHost {
-		var normalizedHost string
-		if hfc.settings.EnableHTTPSListenerMisdirectedRequests {
-			normalizedHost = normalizeHTTPSHostnamePattern(host)
-			if shouldShadowHTTPSVirtualHost(currentPattern, normalizedHost, allPatterns) {
-				continue
-			}
+		normalizedHost := normalizeHTTPSHostnamePattern(host)
+		if shouldShadowHTTPSVirtualHost(currentPattern, normalizedHost, allPatterns) {
+			continue
 		}
 
 		sort.Stable(vhostRoutes)
@@ -816,23 +802,19 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 				ParentRef: hfc.listener,
 			}
 			virtualHosts = append(virtualHosts, virtualHost)
-			if hfc.settings.EnableHTTPSListenerMisdirectedRequests {
-				actualDomains[normalizedHost] = struct{}{}
-			}
+			actualDomains[normalizedHost] = struct{}{}
 		}
 	}
-	if hfc.settings.EnableHTTPSListenerMisdirectedRequests {
-		virtualHosts = append(
-			virtualHosts,
-			buildHTTPSMisdirectedRequestVirtualHosts(
-				hfc.gatewayListenerName,
-				hfc.listener,
-				currentPattern,
-				siblingPatterns,
-				actualDomains,
-			)...,
-		)
-	}
+	virtualHosts = append(
+		virtualHosts,
+		buildHTTPSMisdirectedRequestVirtualHosts(
+			hfc.gatewayListenerName,
+			hfc.listener,
+			currentPattern,
+			siblingPatterns,
+			actualDomains,
+		)...,
+	)
 
 	var matcher ir.FilterChainMatch
 	if hfc.sniDomain != nil {

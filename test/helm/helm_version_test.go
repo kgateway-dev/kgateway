@@ -220,12 +220,6 @@ func TestHelmChartTemplate(t *testing.T) {
 `,
 		},
 		{
-			name: "https-listener-misdirected-requests-enabled",
-			valuesYAML: `controller:
-  enableHttpsListenerMisdirectedRequests: true
-`,
-		},
-		{
 			name: "pdb-min-available",
 			valuesYAML: `controller:
   podDisruptionBudget:
