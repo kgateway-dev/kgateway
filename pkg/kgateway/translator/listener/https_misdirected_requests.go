@@ -3,6 +3,7 @@ package listener
 import (
 	"net/http"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -269,10 +270,8 @@ func residualFallbackStatus(currentPattern string, siblingPatterns []string) uin
 	if currentPattern == catchAllHostnamePattern {
 		return http.StatusNotFound
 	}
-	for _, siblingPattern := range siblingPatterns {
-		if siblingPattern == catchAllHostnamePattern {
-			return http.StatusMisdirectedRequest
-		}
+	if slices.Contains(siblingPatterns, catchAllHostnamePattern) {
+		return http.StatusMisdirectedRequest
 	}
 	return http.StatusNotFound
 }
