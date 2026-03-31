@@ -10,7 +10,7 @@ COPY . .
 ARG TARGETOS TARGETARCH
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH make server
 
-FROM alpine:3.17.6
+FROM alpine:3.23.3
 COPY --from=builder ./app/_output/server /server
 
 USER 10101
