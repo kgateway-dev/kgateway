@@ -23,7 +23,7 @@ RUN echo '[[example]]' >> a2a-rs/Cargo.toml && \
 RUN cargo build --release --package a2a-rs --example http_server_only --features "http-server" --target x86_64-unknown-linux-musl
 
 # Final stage - minimal runtime
-FROM alpine:3.19
+FROM alpine:3.23
 
 # Install only runtime dependencies
 RUN apk add --no-cache ca-certificates
