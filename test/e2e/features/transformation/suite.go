@@ -753,7 +753,10 @@ func (s *testingSuite) runTestCases(testCases []transformationTestCase) {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
-			resp := s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlReturnResponse(
+			// make sure to pass in subtest "t" below instead of the parent test s.T()
+			// otherwise, when the test fail the first time, it would call FailNow
+			// on the parent test and prevent retrying even with Eventually()
+			resp := s.TestInstallation.AssertionsT(t).AssertEventualCurlReturnResponse(
 				s.Ctx,
 				defaults.CurlPodExecOpt,
 				append(tc.opts,
@@ -761,6 +764,8 @@ func (s *testingSuite) runTestCases(testCases []transformationTestCase) {
 					curl.WithHostHeader(fmt.Sprintf("example-%s.com", tc.routeName)),
 					curl.WithPort(8080),
 					curl.WithPath(httpbin_echo_base_path+tc.url), // This is the endpoint for httpbin to return the request in json
+					curl.WithRetries(1, 1, 5),
+					curl.WithRetryConnectionRefused(true),
 				),
 				tc.resp,
 				6, /* timeout */
@@ -859,6 +864,12 @@ func (s *testingSuite) dynamicModuleAssertion(shouldBeLoaded bool) func(ctx cont
 		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
 			g.Expect(err).ToNot(gomega.HaveOccurred(), "failed to get listener")
+			if err != nil {
+				// when we get an error, the g.Expect() doesn't stop execution of this function
+				// but listener is nil and will cause a crash, Gomega will catch it and swallow it but
+				// will not retry even with Eventually()
+				return
+			}
 
 			// use a weak filter name check for cyclic imports
 			// also we dont intend for this to be long term so dont worry about pulling it out to wellknown or something like that for now
