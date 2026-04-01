@@ -178,7 +178,6 @@ func (c *Client) ConfigDumpCmd(ctx context.Context, queryParams map[string]strin
 	return c.Command(ctx,
 		curl.WithPath(ConfigDumpPath),
 		curl.WithQueryParameters(queryParams),
-		curl.WithConnectionTimeout(5),
 	)
 }
 
