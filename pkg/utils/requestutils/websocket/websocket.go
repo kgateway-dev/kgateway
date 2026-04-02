@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"fmt"
+	"maps"
 	"net/http"
 	"time"
 
@@ -25,12 +26,13 @@ func Dial(url, host string, deadline time.Duration, extraHeaders http.Header) (s
 	reqHeader := http.Header{
 		"Host": []string{host},
 	}
-	for k, v := range extraHeaders {
-		reqHeader[k] = v
-	}
+	maps.Copy(reqHeader, extraHeaders)
 
-	conn, _, err := dialer.Dial(url, reqHeader)
+	conn, resp, err := dialer.Dial(url, reqHeader)
 	if err != nil {
+		if resp != nil {
+			resp.Body.Close()
+		}
 		return "", fmt.Errorf("websocket handshake failed: %w", err)
 	}
 	defer conn.Close()
