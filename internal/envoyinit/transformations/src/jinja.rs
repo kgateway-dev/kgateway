@@ -372,6 +372,12 @@ fn render_and_set_body<T: TransformationOps>(
 }
 
 /// Processes set/add/remove header operations using the provided direction-specific ops.
+struct HeaderOps<T> {
+    set: fn(&mut T, &str, &[u8]) -> bool,
+    add: fn(&mut T, &str, &[u8]) -> bool,
+    remove: fn(&mut T, &str) -> bool,
+}
+
 fn process_headers<T: TransformationOps>(
     env: &Environment<'static>,
     ctx: &minijinja::Value,
@@ -379,10 +385,9 @@ fn process_headers<T: TransformationOps>(
     parsed_body_as_json: bool,
     errors: &mut Vec<Error>,
     ops: &mut T,
-    set_header: fn(&mut T, &str, &[u8]) -> bool,
-    add_header: fn(&mut T, &str, &[u8]) -> bool,
-    remove_header: fn(&mut T, &str) -> bool,
+    header_ops: HeaderOps<T>,
 ) -> Result<()> {
+    let HeaderOps { set: set_header, add: add_header, remove: remove_header } = header_ops;
     for NameValuePair { name: key, value } in &transform.set {
         if value.is_empty() {
             // This is following the classic transformation filter behavior
@@ -484,9 +489,11 @@ pub fn transform_request<T: TransformationOps>(
             parsed_body_as_json,
             &mut errors,
             &mut ops,
-            T::set_request_header,
-            T::add_request_header,
-            T::remove_request_header,
+            HeaderOps {
+                set: T::set_request_header,
+                add: T::add_request_header,
+                remove: T::remove_request_header,
+            },
         )?;
     }
     combine_errors("transform_request()", errors)
@@ -569,9 +576,11 @@ pub fn transform_response<T: TransformationOps>(
             parsed_body_as_json,
             &mut errors,
             &mut ops,
-            T::set_response_header,
-            T::add_response_header,
-            T::remove_response_header,
+            HeaderOps {
+                set: T::set_response_header,
+                add: T::add_response_header,
+                remove: T::remove_response_header,
+            },
         )?;
     }
 
