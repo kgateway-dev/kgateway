@@ -329,6 +329,13 @@ fn add_context_from_json_body(
     true
 }
 
+struct BodyOps<T> {
+    drain_body: fn(&mut T, usize) -> bool,
+    set_header: fn(&mut T, &str, &[u8]) -> bool,
+    append_body: fn(&mut T, &[u8]) -> bool,
+    remove_header: fn(&mut T, &str) -> bool,
+}
+
 /// Renders the body template, drains the old body, and sets the new body + content-length.
 /// If rendering fails or produces an empty result, sets content-length to 0 and removes
 /// content-type.
@@ -338,13 +345,16 @@ fn render_and_set_body<T: TransformationOps>(
     body_value: &str,
     template_key: &str,
     parsed_body_as_json: bool,
-    errors: &mut Vec<Error>,
     ops: &mut T,
-    drain_body: fn(&mut T, usize) -> bool,
-    set_header: fn(&mut T, &str, &[u8]) -> bool,
-    append_body: fn(&mut T, &[u8]) -> bool,
-    remove_header: fn(&mut T, &str) -> bool,
-) {
+    body_ops: BodyOps<T>,
+) -> Vec<Error> {
+    let BodyOps {
+        drain_body,
+        set_header,
+        append_body,
+        remove_header,
+    } = body_ops;
+    let mut errors = Vec::new();
     drain_body(ops, u64::MAX.try_into().unwrap());
     let rendered = match render(env, ctx, template_key, body_value, parsed_body_as_json) {
         Ok(str) => Some(str),
@@ -369,9 +379,9 @@ fn render_and_set_body<T: TransformationOps>(
         // removing the body as we don't have passthrough_body setting in kgateway
         remove_header(ops, "content-type");
     }
+    errors
 }
 
-/// Processes set/add/remove header operations using the provided direction-specific ops.
 struct HeaderOps<T> {
     set: fn(&mut T, &str, &[u8]) -> bool,
     add: fn(&mut T, &str, &[u8]) -> bool,
@@ -387,7 +397,11 @@ fn process_headers<T: TransformationOps>(
     ops: &mut T,
     header_ops: HeaderOps<T>,
 ) -> Result<()> {
-    let HeaderOps { set: set_header, add: add_header, remove: remove_header } = header_ops;
+    let HeaderOps {
+        set: set_header,
+        add: add_header,
+        remove: remove_header,
+    } = header_ops;
     for NameValuePair { name: key, value } in &transform.set {
         if value.is_empty() {
             // This is following the classic transformation filter behavior
@@ -464,19 +478,20 @@ pub fn transform_request<T: TransformationOps>(
     if flags.contains(ProcessFlags::BODY) {
         if let Some(body_transform) = transform.body.as_ref() {
             if !body_transform.value.is_empty() {
-                render_and_set_body(
+                errors.extend(render_and_set_body(
                     env,
                     &ctx,
                     &body_transform.value,
                     REQUEST_BODY_TEMPLATE_LOOKUP_KEY,
                     parsed_body_as_json,
-                    &mut errors,
                     &mut ops,
-                    T::drain_request_body,
-                    T::set_request_header,
-                    T::append_request_body,
-                    T::remove_request_header,
-                );
+                    BodyOps {
+                        drain_body: T::drain_request_body,
+                        set_header: T::set_request_header,
+                        append_body: T::append_request_body,
+                        remove_header: T::remove_request_header,
+                    },
+                ));
             }
         }
     }
@@ -551,19 +566,20 @@ pub fn transform_response<T: TransformationOps>(
     if flags.contains(ProcessFlags::BODY) {
         if let Some(body_transform) = transform.body.as_ref() {
             if !body_transform.value.is_empty() {
-                render_and_set_body(
+                errors.extend(render_and_set_body(
                     env,
                     &ctx,
                     &body_transform.value,
                     RESPONSE_BODY_TEMPLATE_LOOKUP_KEY,
                     parsed_body_as_json,
-                    &mut errors,
                     &mut ops,
-                    T::drain_response_body,
-                    T::set_response_header,
-                    T::append_response_body,
-                    T::remove_response_header,
-                );
+                    BodyOps {
+                        drain_body: T::drain_request_body,
+                        set_header: T::set_request_header,
+                        append_body: T::append_request_body,
+                        remove_header: T::remove_request_header,
+                    },
+                ));
             }
         }
     }
