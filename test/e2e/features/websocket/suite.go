@@ -73,6 +73,7 @@ func (s *testingSuite) TestWebSocketHappyPath() {
 // Test websocket will ignore explicit body transformation
 func (s *testingSuite) TestWebSocketWithBodyTransformation() {
 	g := gomega.NewWithT(s.T())
+	s.assertWebsocketUpgradeEnabled()
 	msg := s.dialWebSocket(g, "websocket-body-transform.example.com")
 	g.Expect(msg).To(gomega.Equal("websocket-e2e-ping"),
 		"echo-server should echo back the test payload; "+
@@ -82,6 +83,7 @@ func (s *testingSuite) TestWebSocketWithBodyTransformation() {
 // Test websocket will work with default transfomration buffering behavior
 func (s *testingSuite) TestWebSocketWithDefaultTransformationBuffering() {
 	g := gomega.NewWithT(s.T())
+	s.assertWebsocketUpgradeEnabled()
 	msg := s.dialWebSocket(g, "websocket-default-transform.example.com")
 	g.Expect(msg).To(gomega.Equal("websocket-e2e-ping"),
 		"echo-server should echo back the test payload; "+

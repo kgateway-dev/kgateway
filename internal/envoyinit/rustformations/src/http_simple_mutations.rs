@@ -513,18 +513,29 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
 
         let skip_buffering = self.skip_buffering(transform);
         if skip_buffering {
-            envoy_log_trace!("on_request_headers trasform_response skip buffering");
+            // when we skip_buffering, we ignore any body transformation,
+            // so only do the header transformation and continue. Technically,
+            // we could inject body from transformation if end_of_stream is true
+            // but that might create confusion on when body transformation will be
+            // ignored. So, for now, just ignore all body transformation if parseAs: None
+            // is set
+            envoy_log_trace!("on_request_headers trasform_request skip buffering");
             self.populate_request_headers_map(envoy_filter.get_request_headers());
             if self.transform_request(envoy_filter, ProcessFlags::HEADER) {
                 return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
             }
         } else if end_of_stream {
-            envoy_log_trace!("on_request_headers trasform_response eos");
+            // when we are NOT skip_buffering but it's end of stream, there is no body from the
+            // request but the transformation might inject one, so we need to process both HEADER
+            // and BODY for transformation
+            envoy_log_trace!("on_request_headers trasform_request eos");
             self.populate_request_headers_map(envoy_filter.get_request_headers());
             if self.transform_request(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
                 return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
             }
         } else {
+            // This is where we are not skip_buffering but there is a body, stop the iteration
+            // so we can buffer all data in on_request_body before continuing the filter chain
             envoy_log_trace!("on_request_headers buffering");
             return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration;
         }
@@ -590,18 +601,29 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
 
         let skip_buffering = self.skip_buffering(transform);
         if skip_buffering {
+            // when we skip_buffering, we ignore any body transformation,
+            // so only do the header transformation and continue. Technically,
+            // we could inject body from transformation if end_of_stream is true
+            // but that might create confusion on when body transformation will be
+            // ignored. So, for now, just ignore all body transformation if parseAs: None
+            // is set
             envoy_log_trace!("on_response_headers trasform_response skip buffering");
             self.populate_request_headers_map(envoy_filter.get_request_headers());
             if self.transform_response(envoy_filter, ProcessFlags::HEADER) {
                 return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
             }
         } else if end_of_stream {
+            // when we are NOT skip_buffering but it's end of stream, there is no body from the
+            // response but the transformation might inject one, so we need to process both HEADER
+            // and BODY for transformation
             envoy_log_trace!("on_response_headers trasform_response eos");
             self.populate_request_headers_map(envoy_filter.get_request_headers());
             if self.transform_response(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
                 return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
             }
         } else {
+            // This is where we are not skip_buffering but there is a body, stop the iteration
+            // so we can buffer all data in on_response_body before continuing the filter chain
             envoy_log_trace!("on_response_headers buffering");
             return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::StopIteration;
         }
