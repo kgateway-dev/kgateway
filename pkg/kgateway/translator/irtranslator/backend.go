@@ -129,9 +129,13 @@ func (t *BackendTranslator) runPolicies(
 		if policyPlugin.ProcessBackend == nil {
 			continue
 		}
+		policies := backend.AttachedPolicies.Policies[gk]
+		if policyPlugin.MergePolicies != nil && len(policies) > 0 {
+			policies = []ir.PolicyAtt{policyPlugin.MergePolicies(policies)}
+		}
 		// apply plugins to the backend. we want to skip applying the plugin if the
 		// attached IR encountered any errors during construction.
-		for _, polAttachment := range backend.AttachedPolicies.Policies[gk] {
+		for _, polAttachment := range policies {
 			if len(polAttachment.Errors) > 0 {
 				logger.Error("policy has errors", "gk", gk, "errors", polAttachment.Errors, "policyRef", polAttachment.PolicyRef)
 				errs = append(errs, polAttachment.Errors...)

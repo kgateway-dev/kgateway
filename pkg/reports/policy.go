@@ -32,10 +32,11 @@ func (r *PolicyReport) AncestorRef(ref gwv1.ParentReference) reporter.AncestorRe
 
 func (prr *AncestorRefReport) SetCondition(c reporter.PolicyCondition) {
 	condition := metav1.Condition{
-		Type:    c.Type,
-		Status:  c.Status,
-		Reason:  c.Reason,
-		Message: c.Message,
+		Type:               c.Type,
+		Status:             c.Status,
+		Reason:             c.Reason,
+		Message:            c.Message,
+		ObservedGeneration: c.ObservedGeneration,
 	}
 	meta.SetStatusCondition(&prr.Conditions, condition)
 }

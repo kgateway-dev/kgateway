@@ -158,6 +158,7 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 		// excludeGlobal=true since global policies are already included from the first lookup above.
 		if backendObj.PortName != "" {
 			portPolicies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, backendObj.PortName, backendObj.GetObjectLabels(), true)
+			policies = preferPortSpecificBackendTLSPolicies(policies, portPolicies)
 			policies = append(policies, portPolicies...)
 		}
 		anyHasRef := false
@@ -177,6 +178,7 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 			// Also look up port specific alias policies
 			if backendObj.PortName != "" {
 				aliasPortPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, backendObj.PortName, backendObj.GetObjectLabels(), true)
+				aliasPolicies = preferPortSpecificBackendTLSPolicies(aliasPolicies, aliasPortPolicies)
 				aliasPolicies = append(aliasPolicies, aliasPortPolicies...)
 			}
 			if !anyHasRef {
@@ -214,6 +216,28 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 	for _, aliasGK := range aliasKinds {
 		i.gkAliases[aliasGK] = append(i.gkAliases[aliasGK], gk)
 	}
+}
+
+func preferPortSpecificBackendTLSPolicies(basePolicies, portPolicies []ir.PolicyAtt) []ir.PolicyAtt {
+	hasPortSpecificBackendTLSPolicy := false
+	for _, policy := range portPolicies {
+		if policy.GroupKind == wellknown.BackendTLSPolicyGVK.GroupKind() {
+			hasPortSpecificBackendTLSPolicy = true
+			break
+		}
+	}
+	if !hasPortSpecificBackendTLSPolicy {
+		return basePolicies
+	}
+
+	filtered := make([]ir.PolicyAtt, 0, len(basePolicies))
+	for _, policy := range basePolicies {
+		if policy.GroupKind == wellknown.BackendTLSPolicyGVK.GroupKind() {
+			continue
+		}
+		filtered = append(filtered, policy)
+	}
+	return filtered
 }
 
 // if we want to make this function public, make it do ref grants

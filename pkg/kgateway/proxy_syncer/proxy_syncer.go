@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -257,10 +258,16 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		backends := krt.Fetch(kctx, finalBackendsWithPolicyStatus)
-		merged := GenerateBackendPolicyReport(backends)
+		excludedPolicyKinds := make(map[schema.GroupKind]struct{})
+		for gk, plugin := range s.plugins.ContributesPolicies {
+			if plugin.PolicyStatusFromGatewayReports {
+				excludedPolicyKinds[gk] = struct{}{}
+			}
+		}
+		merged := GenerateBackendPolicyReport(backends, excludedPolicyKinds)
 
 		for _, plugin := range s.plugins.ContributesPolicies {
-			if plugin.ProcessPolicyStaleStatusMarkers != nil && plugin.ProcessBackend != nil {
+			if plugin.ProcessPolicyStaleStatusMarkers != nil && plugin.ProcessBackend != nil && !plugin.PolicyStatusFromGatewayReports {
 				plugin.ProcessPolicyStaleStatusMarkers(kctx, &merged)
 			}
 		}
@@ -280,7 +287,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		s.commonCols.Routes.ProcessHTTPRouteStatusMarkers(objStatus, merged)
 
 		for _, plugin := range s.plugins.ContributesPolicies {
-			if plugin.ProcessPolicyStaleStatusMarkers != nil && plugin.ProcessBackend == nil {
+			if plugin.ProcessPolicyStaleStatusMarkers != nil && (plugin.ProcessBackend == nil || plugin.PolicyStatusFromGatewayReports) {
 				plugin.ProcessPolicyStaleStatusMarkers(kctx, &merged)
 			}
 		}

@@ -239,16 +239,20 @@ func (t *Translator) runListenerPlugins(
 func (t *Translator) newPass(reporter sdkreporter.Reporter) TranslationPassPlugins {
 	ret := TranslationPassPlugins{}
 	for k, v := range t.ContributedPolicies {
-		if v.NewGatewayTranslationPass == nil {
+		var tp ir.ProxyTranslationPass
+		if v.NewGatewayTranslationPass != nil {
+			tp = v.NewGatewayTranslationPass(ir.GwTranslationCtx{}, reporter)
+		}
+		if tp == nil && v.MergePolicies != nil {
+			tp = ir.UnimplementedProxyTranslationPass{}
+		}
+		if tp == nil {
 			continue
 		}
-		tp := v.NewGatewayTranslationPass(ir.GwTranslationCtx{}, reporter)
-		if tp != nil {
-			ret[k] = &TranslationPass{
-				ProxyTranslationPass: tp,
-				Name:                 v.Name,
-				MergePolicies:        v.MergePolicies,
-			}
+		ret[k] = &TranslationPass{
+			ProxyTranslationPass: tp,
+			Name:                 v.Name,
+			MergePolicies:        v.MergePolicies,
 		}
 	}
 	return ret

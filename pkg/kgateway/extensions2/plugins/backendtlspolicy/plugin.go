@@ -144,8 +144,11 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				Policies:                        tlsPolicyCol,
 				ProcessPolicyStaleStatusMarkers: processMarkers,
 				ProcessBackend:                  processBackend,
+				MergePolicies:                   MergePolicies,
 				GetPolicyStatus:                 getPolicyStatusFn(cli),
 				PatchPolicyStatus:               patchPolicyStatusFn(cli),
+				BuildPolicyStatus:               buildPolicyStatusFn(),
+				PolicyStatusFromGatewayReports:  true,
 			},
 		},
 	}
@@ -211,13 +214,19 @@ func buildTranslateFunc(
 				}
 				cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
 				if cfgmap == nil {
-					err := fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn)
+					err := &InvalidCACertificateRefError{
+						Ref:   localObjectRefString(refKind, certRef),
+						Cause: fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn),
+					}
 					logger.Error("error fetching ConfigMap", "error", err, "policy_name", policyCR.Name)
 					return &policyIr, err
 				}
 				caCert, err = sslutils.GetCACertFromConfigMap(*cfgmap)
 				if err != nil {
-					perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
+					perr := &InvalidCACertificateRefError{
+						Ref:   localObjectRefString(refKind, certRef),
+						Cause: err,
+					}
 					logger.Error("error extracting CA cert from ConfigMap", "error", perr, "policy_name", policyCR.Name)
 					return &policyIr, perr
 				}
@@ -225,22 +234,34 @@ func buildTranslateFunc(
 				// secret is always in the same namespace as the policy (LocalObjectReference), no need to check reference grant
 				secret, err := secrets.GetSecretWithoutRefGrant(krtctx, string(certRef.Name), policyCR.Namespace)
 				if err != nil {
-					perr := fmt.Errorf("%w: %v", ErrSecretNotFound, err)
+					perr := &InvalidCACertificateRefError{
+						Ref:   localObjectRefString(refKind, certRef),
+						Cause: fmt.Errorf("%w: %v", ErrSecretNotFound, err),
+					}
 					logger.Error("error fetching Secret", "error", perr, "policy_name", policyCR.Name)
 					return &policyIr, perr
 				}
 				caCert, err = sslutils.GetCACertFromSecret(secret)
 				if err != nil {
-					perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
+					perr := &InvalidCACertificateRefError{
+						Ref:   localObjectRefString(refKind, certRef),
+						Cause: err,
+					}
 					logger.Error("error extracting CA cert from Secret", "error", perr, "policy_name", policyCR.Name)
 					return &policyIr, perr
 				}
 			default:
-				return &policyIr, fmt.Errorf("%w: unsupported certificate reference kind: %s", ErrInvalidValidationSpec, refKind)
+				return &policyIr, &InvalidKindError{
+					Group: string(certRef.Group),
+					Kind:  refKind,
+				}
 			}
 			tlsContextDefault, err = tlsutils.ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
 			if err != nil {
-				perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
+				perr := &InvalidCACertificateRefError{
+					Ref:   localObjectRefString(refKind, certRef),
+					Cause: err,
+				}
 				logger.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)
 				return &policyIr, perr
 			}
@@ -262,6 +283,10 @@ func buildTranslateFunc(
 
 		return &policyIr, nil
 	}
+}
+
+func localObjectRefString(kind string, ref gwv1.LocalObjectReference) string {
+	return fmt.Sprintf("%s/%s", kind, ref.Name)
 }
 
 func convertSubjectAltNames(validation gwv1.BackendTLSPolicyValidation) []*envoytlsv3.SubjectAltNameMatcher {

@@ -674,28 +674,33 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			continue
 		}
 		status := rm.BuildPolicyStatus(ctx, key, s.controllerName, currentStatus)
+		if plugin.BuildPolicyStatus != nil {
+			status = plugin.BuildPolicyStatus(ctx, rm, key, s.controllerName, currentStatus)
+		}
 		if status == nil {
 			continue
 		}
 
 		var statusErr error
 
-		for _, ancestor := range status.Ancestors {
-			for _, cond := range ancestor.Conditions {
-				if cond.Type != string(shared.PolicyConditionAccepted) {
-					continue
+		if plugin.BuildPolicyStatus == nil {
+			for _, ancestor := range status.Ancestors {
+				for _, cond := range ancestor.Conditions {
+					if cond.Type != string(shared.PolicyConditionAccepted) {
+						continue
+					}
+
+					if cond.Reason != string(shared.PolicyReasonValid) &&
+						cond.Reason != string(shared.PolicyReasonPending) {
+						statusErr = fmt.Errorf("invalid policy condition")
+
+						break
+					}
 				}
 
-				if cond.Reason != string(shared.PolicyReasonValid) &&
-					cond.Reason != string(shared.PolicyReasonPending) {
-					statusErr = fmt.Errorf("invalid policy condition")
-
+				if statusErr != nil {
 					break
 				}
-			}
-
-			if statusErr != nil {
-				break
 			}
 		}
 

@@ -818,7 +818,9 @@ func (tc TestCase) Run(
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicyRequiringStatus() {
 			backendIRs = append(backendIRs, col.List()...)
 		}
-		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)
+		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs, map[schema.GroupKind]struct{}{
+			wellknown.BackendTLSPolicyGVK.GroupKind(): {},
+		})
 
 		// Merge gateway reports with backend policy reports
 		mergedReports := reportsMap
