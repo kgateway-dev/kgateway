@@ -101,8 +101,7 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         // Check buffered first; if None, fall back to received.
         // TODO: in envoy v1.38, there is a function received_buffered_request_body()
         //       to check if it's buffered
-        if self.envoy_filter.get_buffered_request_body().is_some() {
-            let buffers = self.envoy_filter.get_buffered_request_body().unwrap();
+        if let Some(buffers) = self.envoy_filter.get_buffered_request_body() {
             return Box::new(EnvoyBuffersReader::new(buffers));
         }
 
@@ -181,8 +180,7 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         // Check buffered first; if None, fall back to received.
         // TODO: in envoy v1.38, there is a function received_buffered_response_body()
         //       to check if it's buffered
-        if self.envoy_filter.get_buffered_response_body().is_some() {
-            let buffers = self.envoy_filter.get_buffered_response_body().unwrap();
+        if let Some(buffers) = self.envoy_filter.get_buffered_response_body() {
             return Box::new(EnvoyBuffersReader::new(buffers));
         }
 
@@ -519,8 +517,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             // but that might create confusion on when body transformation will be
             // ignored. So, for now, just ignore all body transformation if parseAs: None
             // is set
-            envoy_log_trace!("on_request_headers trasform_request skip buffering");
-            self.populate_request_headers_map(envoy_filter.get_request_headers());
+            envoy_log_trace!("on_request_headers transform_request skip buffering");
             if self.transform_request(envoy_filter, ProcessFlags::HEADER) {
                 return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
             }
@@ -528,8 +525,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             // when we are NOT skip_buffering but it's end of stream, there is no body from the
             // request but the transformation might inject one, so we need to process both HEADER
             // and BODY for transformation
-            envoy_log_trace!("on_request_headers trasform_request eos");
-            self.populate_request_headers_map(envoy_filter.get_request_headers());
+            envoy_log_trace!("on_request_headers transform_request eos");
             if self.transform_request(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
                 return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
             }
@@ -552,6 +548,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_body_status {
         self.set_per_route_config(envoy_filter);
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
         let Some(transform) = self.get_request_transform() else {
             envoy_log_trace!("on_request_body skipping");
             return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue;
@@ -574,7 +571,6 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         }
         envoy_log_trace!("on_request_body");
 
-        self.populate_request_headers_map(envoy_filter.get_request_headers());
         if self.transform_request(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
             return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue;
         }
@@ -590,6 +586,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_response_headers_status {
         self.set_per_route_config(envoy_filter);
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
         let Some(transform) = self.get_response_transform() else {
             envoy_log_trace!("on_response_headers skipping");
             return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
@@ -607,8 +604,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             // but that might create confusion on when body transformation will be
             // ignored. So, for now, just ignore all body transformation if parseAs: None
             // is set
-            envoy_log_trace!("on_response_headers trasform_response skip buffering");
-            self.populate_request_headers_map(envoy_filter.get_request_headers());
+            envoy_log_trace!("on_response_headers transform_response skip buffering");
             if self.transform_response(envoy_filter, ProcessFlags::HEADER) {
                 return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
             }
@@ -616,8 +612,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             // when we are NOT skip_buffering but it's end of stream, there is no body from the
             // response but the transformation might inject one, so we need to process both HEADER
             // and BODY for transformation
-            envoy_log_trace!("on_response_headers trasform_response eos");
-            self.populate_request_headers_map(envoy_filter.get_request_headers());
+            envoy_log_trace!("on_response_headers transform_response eos");
             if self.transform_response(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
                 return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
             }
@@ -640,6 +635,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_response_body_status {
         self.set_per_route_config(envoy_filter);
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
         let Some(transform) = self.get_response_transform() else {
             envoy_log_trace!("on_response_body skipping");
             return abi::envoy_dynamic_module_type_on_http_filter_response_body_status::Continue;
@@ -662,7 +658,6 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         }
         envoy_log_trace!("on_response_body");
 
-        self.populate_request_headers_map(envoy_filter.get_request_headers());
         if self.transform_response(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
             return abi::envoy_dynamic_module_type_on_http_filter_response_body_status::Continue;
         }

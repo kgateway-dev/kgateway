@@ -15,10 +15,10 @@ import (
 // the upgrade) are detected quickly.
 //
 // After a successful handshake it sends a short test message and returns the
-// echoed response. jmalloc/echo-server sends a greeting frame on connect
-// ("Request served by ..."), so this function reads (and discards) the greeting
+// echoed response. Some server like jmalloc/echo-server sends a greeting frame on connect
+// ("Request served by ..."), set discardGreeting to true to discard the greeting
 // before sending the test payload.
-func Dial(url, host string, deadline time.Duration, extraHeaders http.Header) (string, error) {
+func Dial(url, host string, deadline time.Duration, extraHeaders http.Header, discardGreeting bool) (string, error) {
 	dialer := gorillaws.Dialer{
 		HandshakeTimeout: deadline,
 	}
@@ -37,11 +37,13 @@ func Dial(url, host string, deadline time.Duration, extraHeaders http.Header) (s
 	}
 	defer conn.Close()
 
-	// Read and discard the server greeting frame (e.g. "Request served by <pod>").
-	conn.SetReadDeadline(time.Now().Add(deadline))
-	_, _, err = conn.ReadMessage()
-	if err != nil {
-		return "", fmt.Errorf("websocket read greeting failed: %w", err)
+	if discardGreeting {
+		// Read and discard the server greeting frame (e.g. "Request served by <pod>").
+		conn.SetReadDeadline(time.Now().Add(deadline))
+		_, _, err = conn.ReadMessage()
+		if err != nil {
+			return "", fmt.Errorf("websocket read greeting failed: %w", err)
+		}
 	}
 
 	// Send a test payload and read the echo.

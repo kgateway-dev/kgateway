@@ -53,7 +53,7 @@ func (s *testingSuite) dialWebSocket(g gomega.Gomega, host string) string {
 
 	var msg string
 	g.Eventually(func(ig gomega.Gomega) {
-		result, err := websocket.Dial(wsURL, host, dialTimeout, nil)
+		result, err := websocket.Dial(wsURL, host, dialTimeout, nil, true)
 		ig.Expect(err).NotTo(gomega.HaveOccurred(), "WebSocket dial failed for host %s", host)
 		msg = result
 	}).WithTimeout(eventualTimeout).WithPolling(pollInterval).Should(gomega.Succeed())
