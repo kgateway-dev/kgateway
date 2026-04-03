@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	websocketServiceManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "websocket-service.yaml")
-	httprouteWebsocketManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute-websocket.yaml")
-	listenerPolicyWebsocketManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-websocket.yaml")
-	httprouteWebsocketBodyTransformManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute-websocket-body-transform.yaml")
+	websocketServiceManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "websocket-service.yaml")
+	httprouteWebsocketManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute-websocket.yaml")
+	listenerPolicyWebsocketManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-websocket.yaml")
+	httprouteWebsocketBodyTransformManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute-websocket-body-transform.yaml")
+	httprouteWebsocketDefaultTransformManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute-websocket-default-transform-buffering.yaml")
 
 	setup = base.TestCase{
 		Manifests: []string{
@@ -28,6 +29,9 @@ var (
 		},
 		"TestWebSocketWithBodyTransformation": {
 			Manifests: []string{httprouteWebsocketBodyTransformManifest},
+		},
+		"TestWebSocketWithDefaultTransformationBuffering": {
+			Manifests: []string{httprouteWebsocketDefaultTransformManifest},
 		},
 	}
 )

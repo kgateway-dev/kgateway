@@ -51,8 +51,7 @@ func (s *testingSuite) dialWebSocket(g gomega.Gomega, host string) string {
 }
 
 // TestWebSocketHappyPath verifies that a WebSocket upgrade succeeds through a
-// route with no transformation policies. No dynamic module filter is added to
-// the Envoy config, so this isolates the test from the body-buffering bug.
+// route with no transformation policies.
 func (s *testingSuite) TestWebSocketHappyPath() {
 	g := gomega.NewWithT(s.T())
 	msg := s.dialWebSocket(g, "websocket.example.com")
@@ -60,20 +59,20 @@ func (s *testingSuite) TestWebSocketHappyPath() {
 		"echo-server should echo back the test payload")
 }
 
-// TestWebSocketWithBodyTransformation is a bug-reproduction test.
-//
-// When a route has a TrafficPolicy with request body transformation (body.parseAs != None and a
-// non-empty body value template), the http_simple_mutations dynamic module filter returns
-// StopIterationAndBuffer on each body chunk until end_of_stream is true. For a WebSocket upgrade
-// request the upgrade HTTP handshake never sends a body, so Envoy waits forever — the connection
-// hangs and the test times out.
-//
-// This test asserts the DESIRED behavior (dial succeeds) so it fails before the bug is fixed and
-// passes once the fix is in place.
+// Test websocket will ignore explicit body transformation
 func (s *testingSuite) TestWebSocketWithBodyTransformation() {
 	g := gomega.NewWithT(s.T())
 	msg := s.dialWebSocket(g, "websocket-body-transform.example.com")
 	g.Expect(msg).To(gomega.Equal("websocket-e2e-ping"),
 		"echo-server should echo back the test payload; "+
-			"if this hangs/times out the Envoy body-buffering bug is present")
+			"if this hangs/times out the Envoy is buffing the body")
+}
+
+// Test websocket will work with default transfomration buffering behavior
+func (s *testingSuite) TestWebSocketWithDefaultTransformationBuffering() {
+	g := gomega.NewWithT(s.T())
+	msg := s.dialWebSocket(g, "websocket-default-transform.example.com")
+	g.Expect(msg).To(gomega.Equal("websocket-e2e-ping"),
+		"echo-server should echo back the test payload; "+
+			"if this hangs/times out the Envoy is buffing the body")
 }

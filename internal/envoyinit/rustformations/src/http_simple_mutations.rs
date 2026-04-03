@@ -125,7 +125,7 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         self.get_request_body_reader()
             .read_to_end(&mut body)
             .unwrap_or_else(|e| {
-                envoy_log_warn!("failed to read response body: {e}");
+                envoy_log_warn!("failed to read request body: {e}");
                 0
             });
         body
