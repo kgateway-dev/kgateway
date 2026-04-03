@@ -574,10 +574,10 @@ pub fn transform_response<T: TransformationOps>(
                     parsed_body_as_json,
                     &mut ops,
                     BodyOps {
-                        drain_body: T::drain_request_body,
-                        set_header: T::set_request_header,
-                        append_body: T::append_request_body,
-                        remove_header: T::remove_request_header,
+                        drain_body: T::drain_response_body,
+                        set_header: T::set_response_header,
+                        append_body: T::append_response_body,
+                        remove_header: T::remove_response_header,
                     },
                 ));
             }

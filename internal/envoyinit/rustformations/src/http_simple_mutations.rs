@@ -511,19 +511,27 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
         }
 
-        if !end_of_stream && !self.skip_buffering(transform) {
+        let skip_buffering = self.skip_buffering(transform);
+        if skip_buffering {
+            envoy_log_trace!("on_request_headers trasform_response skip buffering");
+            self.populate_request_headers_map(envoy_filter.get_request_headers());
+            if self.transform_request(envoy_filter, ProcessFlags::HEADER) {
+                return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
+            }
+        } else if end_of_stream {
+            envoy_log_trace!("on_request_headers trasform_response eos");
+            self.populate_request_headers_map(envoy_filter.get_request_headers());
+            if self.transform_request(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
+                return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
+            }
+        } else {
             envoy_log_trace!("on_request_headers buffering");
             return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration;
-        }
-        envoy_log_trace!("on_request_headers");
-
-        self.populate_request_headers_map(envoy_filter.get_request_headers());
-        if self.transform_request(envoy_filter, ProcessFlags::HEADER) {
-            return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
         }
 
         // If transform had a critical error, it would have sent a local reply with 400 already,
         // so return StopIteration here
+        envoy_log_trace!("on_request_headers transform_request failed");
         abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration
     }
 
@@ -580,18 +588,27 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
         }
 
-        if !end_of_stream && !self.skip_buffering(transform) {
+        let skip_buffering = self.skip_buffering(transform);
+        if skip_buffering {
+            envoy_log_trace!("on_response_headers trasform_response skip buffering");
+            self.populate_request_headers_map(envoy_filter.get_request_headers());
+            if self.transform_response(envoy_filter, ProcessFlags::HEADER) {
+                return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
+            }
+        } else if end_of_stream {
+            envoy_log_trace!("on_response_headers trasform_response eos");
+            self.populate_request_headers_map(envoy_filter.get_request_headers());
+            if self.transform_response(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
+                return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
+            }
+        } else {
             envoy_log_trace!("on_response_headers buffering");
             return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::StopIteration;
-        }
-        envoy_log_trace!("on_response_headers");
-        self.populate_request_headers_map(envoy_filter.get_request_headers());
-        if self.transform_response(envoy_filter, ProcessFlags::HEADER) {
-            return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
         }
 
         // If transform had a critical error, it would have sent a local reply with 400 already,
         // so return StopIteration here
+        envoy_log_trace!("on_response_headers transform_response failed");
         abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::StopIteration
     }
 

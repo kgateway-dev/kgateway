@@ -111,8 +111,8 @@ type testingSuite struct {
 // select specific test cases to run. Mainly for speeding up local testing
 // when working on a specific test case. By default, when indices is empty,
 // it returns all test cases. -1 index select the last one.
-func selectCommonTestCases(indices ...int) []transformationTestCase {
-	commonTestCases := []transformationTestCase{
+func selectTestCases(indices ...int) []transformationTestCase {
+	testCases := []transformationTestCase{
 		{
 			// test 0
 			name:      "basic-gateway-attached",
@@ -763,18 +763,18 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 
 	// If no indices are provided, return the full original slice.
 	if len(indices) == 0 {
-		return commonTestCases
+		return testCases
 	}
 
 	var selected []transformationTestCase
 
 	for _, index := range indices {
 		if index < 0 {
-			index = len(commonTestCases) + index
+			index = len(testCases) + index
 		}
 
-		if index >= 0 && index < len(commonTestCases) {
-			selected = append(selected, commonTestCases[index])
+		if index >= 0 && index < len(testCases) {
+			selected = append(selected, testCases[index])
 		} else {
 			fmt.Printf("warning: Index %d out of bounds. Skipping.\n", index)
 		}
@@ -790,7 +790,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		// Enter a list of indices to select specific tests, -1 means the last test.
 		// Default will return all common test cases.
 		// reviewers: please flag the PR if the argument is not empty!
-		selectCommonTestCases(),
+		selectTestCases(),
 	}
 }
 
