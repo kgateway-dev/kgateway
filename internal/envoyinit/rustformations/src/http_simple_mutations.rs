@@ -101,7 +101,8 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         // Check buffered first; if None, fall back to received.
         // TODO: in envoy v1.38, there is a function received_buffered_request_body()
         //       to check if it's buffered
-        if let Some(buffers) = self.envoy_filter.get_buffered_request_body() {
+        if self.envoy_filter.get_buffered_request_body().is_some() {
+            let buffers = self.envoy_filter.get_buffered_request_body().unwrap();
             return Box::new(EnvoyBuffersReader::new(buffers));
         }
 
@@ -180,7 +181,8 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         // Check buffered first; if None, fall back to received.
         // TODO: in envoy v1.38, there is a function received_buffered_response_body()
         //       to check if it's buffered
-        if let Some(buffers) = self.envoy_filter.get_buffered_response_body() {
+        if self.envoy_filter.get_buffered_response_body().is_some() {
+            let buffers = self.envoy_filter.get_buffered_response_body().unwrap();
             return Box::new(EnvoyBuffersReader::new(buffers));
         }
 
