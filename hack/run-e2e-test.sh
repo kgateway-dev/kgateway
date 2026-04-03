@@ -23,7 +23,8 @@ set -eEuo pipefail
 #                           regardless of test success or failure. Use --skip-teardown flag.
 #   AUTO_SETUP            - If set to true/1/yes/y, will automatically clean up conflicting
 #                           Helm releases if detected. Otherwise, will error out.
-#   CLUSTER_NAME          - Name of the kind cluster (default: kind)
+#   CLUSTER_TYPE          - Cluster type: "kind" or "k3d" (default: kind)
+#   CLUSTER_NAME          - Name of the cluster (default: "kind" for kind, "k3d" for k3d)
 #   TEST_PKG              - Go test package to run (default: ./test/e2e/tests)
 #
 # Usage: ./hack/run-e2e-test.sh [OPTIONS] [TEST_PATTERN]
@@ -84,9 +85,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${REPO_ROOT}"
 
-# Check if KIND is available
+# Cluster type: "kind" or "k3d"
+CLUSTER_TYPE="${CLUSTER_TYPE:-kind}"
 KIND="${KIND:-kind}"
-CLUSTER_NAME="${CLUSTER_NAME:-kind}"
+K3D="${K3D:-k3d}"
+
+# Default cluster name based on cluster type
+if [[ "$CLUSTER_TYPE" == "k3d" ]]; then
+    CLUSTER_NAME="${CLUSTER_NAME:-k3d}"
+else
+    CLUSTER_NAME="${CLUSTER_NAME:-kind}"
+fi
 
 log_info() {
     echo -e "INFO: $*" >&2
@@ -113,6 +122,38 @@ is_truthy() {
 # Check if kind cluster exists
 kind_cluster_exists() {
     ${KIND} get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"
+}
+
+# Check if k3d cluster exists
+k3d_cluster_exists() {
+    ${K3D} cluster list -o json 2>/dev/null | jq -e ".[] | select(.name==\"${CLUSTER_NAME}\")" > /dev/null 2>&1
+}
+
+# Check if cluster exists (dispatches based on CLUSTER_TYPE)
+cluster_exists() {
+    if [[ "$CLUSTER_TYPE" == "k3d" ]]; then
+        k3d_cluster_exists
+    else
+        kind_cluster_exists
+    fi
+}
+
+# Delete cluster (dispatches based on CLUSTER_TYPE)
+delete_cluster() {
+    if [[ "$CLUSTER_TYPE" == "k3d" ]]; then
+        ${K3D} cluster delete "${CLUSTER_NAME}" 2>/dev/null || true
+    else
+        ${KIND} delete cluster --name "${CLUSTER_NAME}"
+    fi
+}
+
+# Run make setup for the appropriate cluster type
+run_setup() {
+    if [[ "$CLUSTER_TYPE" == "k3d" ]]; then
+        make setup-k3d K3D_CLUSTER_NAME="${CLUSTER_NAME}"
+    else
+        make setup
+    fi
 }
 
 # Check for and handle conflicting Helm releases
@@ -474,11 +515,12 @@ Options:
   --dry-run, -n             Print the test command that would be run without executing it
 
 Environment Variables:
-  PERSIST_INSTALL           If set to true/1/yes/y, skip 'make setup' if kind cluster exists
+  CLUSTER_TYPE              Cluster type: "kind" or "k3d" (default: kind)
+  CLUSTER_NAME              Name of the cluster (default: "kind" for kind, "k3d" for k3d)
+  PERSIST_INSTALL           If set to true/1/yes/y, skip setup if cluster exists
   FAIL_FAST_AND_PERSIST     If set to true (default), skip cleanup on test failure
   SKIP_ALL_TEARDOWN         If set to true/1/yes/y, skip all cleanup/teardown operations
   AUTO_SETUP                If set to true/1/yes/y, automatically cleanup conflicting Helm releases
-  CLUSTER_NAME              Name of the kind cluster (default: kind)
   TEST_PKG                  Go test package to run (default: ./test/e2e/tests)
 
 Examples:
@@ -632,17 +674,17 @@ main() {
         echo ""
     # Handle cluster rebuild
     elif [[ "$rebuild_cluster" == "true" ]]; then
-        log_info "Rebuild flag set: deleting and recreating kind cluster"
-        if kind_cluster_exists; then
-            log_info "Deleting existing kind cluster '${CLUSTER_NAME}'..."
-            ${KIND} delete cluster --name "${CLUSTER_NAME}"
+        log_info "Rebuild flag set: deleting and recreating ${CLUSTER_TYPE} cluster"
+        if cluster_exists; then
+            log_info "Deleting existing ${CLUSTER_TYPE} cluster '${CLUSTER_NAME}'..."
+            delete_cluster
             echo ""
         else
-            log_info "Kind cluster '${CLUSTER_NAME}' does not exist"
+            log_info "${CLUSTER_TYPE} cluster '${CLUSTER_NAME}' does not exist"
         fi
 
-        log_info "Running 'make setup' to rebuild images and create fresh cluster..."
-        make setup
+        log_info "Running setup to rebuild images and create fresh cluster..."
+        run_setup
         echo ""
     else
         # Check for conflicting Helm releases before proceeding
@@ -655,23 +697,23 @@ main() {
 
         if is_truthy PERSIST_INSTALL; then
             log_info "PERSIST_INSTALL is set"
-            if kind_cluster_exists; then
+            if cluster_exists; then
                 if [[ $cleanup_performed -eq 1 ]]; then
-                    log_info "Kind cluster '${CLUSTER_NAME}' exists, but cleanup was performed, so running setup"
+                    log_info "${CLUSTER_TYPE} cluster '${CLUSTER_NAME}' exists, but cleanup was performed, so running setup"
                     should_setup=true
                 else
-                    log_info "Kind cluster '${CLUSTER_NAME}' already exists, skipping setup"
+                    log_info "${CLUSTER_TYPE} cluster '${CLUSTER_NAME}' already exists, skipping setup"
                     should_setup=false
                 fi
             else
-                log_info "Kind cluster '${CLUSTER_NAME}' does not exist, will run setup"
+                log_info "${CLUSTER_TYPE} cluster '${CLUSTER_NAME}' does not exist, will run setup"
             fi
         fi
 
         # Run setup if needed
         if [[ "$should_setup" == "true" ]]; then
-            log_info "Running 'make setup'..."
-            make setup
+            log_info "Running setup..."
+            run_setup
             echo ""
         else
             log_info "Packaging charts (required for tests)..."
@@ -685,7 +727,14 @@ main() {
     log_info "Test package: ${test_pkg}"
     echo ""
 
-    # Export PERSIST_INSTALL so the test code can use it
+    # Export environment variables so the test code can use them
+    export CLUSTER_TYPE
+    export CLUSTER_NAME
+    # For k3d on macOS, the gateway is accessible via localhost since k3d's
+    # loadbalancer maps host ports directly to the cluster (e.g., 80:80, 443:443).
+    if [[ "$CLUSTER_TYPE" == "k3d" && -z "${GATEWAY_ADDRESS_OVERRIDE:-}" ]]; then
+        export GATEWAY_ADDRESS_OVERRIDE="localhost"
+    fi
     if is_truthy PERSIST_INSTALL; then
         export PERSIST_INSTALL
     fi
@@ -703,6 +752,11 @@ main() {
         echo "    TEST_PKG=\"${test_pkg}\" TEST_TAG=e2e"
         echo ""
         log_info "Environment variables:"
+        echo "  CLUSTER_TYPE=${CLUSTER_TYPE}"
+        echo "  CLUSTER_NAME=${CLUSTER_NAME}"
+        if [[ "$CLUSTER_TYPE" == "k3d" ]]; then
+            echo "  GATEWAY_ADDRESS_OVERRIDE=${GATEWAY_ADDRESS_OVERRIDE:-localhost}"
+        fi
         if is_truthy PERSIST_INSTALL; then
             echo "  PERSIST_INSTALL=true"
         fi

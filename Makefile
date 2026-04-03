@@ -855,6 +855,52 @@ kind-load: kind-load-sds
 kind-load: kind-load-dummy-idp
 
 #----------------------------------------------------------------------------------
+# k3d Development
+#----------------------------------------------------------------------------------
+
+K3D ?= k3d
+K3D_CLUSTER_NAME ?= k3d
+K3D_NODE_IMAGE ?= rancher/k3s:v1.31.4-k3s1
+
+.PHONY: k3d-create
+k3d-create: ## Create a single-node k3d cluster with port mapping for gateway traffic
+	# The plumbing looks like:
+	# host:80 -> k3d-serverlb (nginx proxy) in docker not k8s -> node:80 (hostPort)
+	#         -> klipper iptables DNAT -> 10.43.220.103:80 (ClusterIP) -> gateway pod
+	$(K3D) cluster list -o json | jq -e '.[] | select(.name=="$(K3D_CLUSTER_NAME)")' > /dev/null 2>&1 || \
+		$(K3D) cluster create $(K3D_CLUSTER_NAME) --image $(K3D_NODE_IMAGE) \
+			--k3s-arg "--disable=traefik@server:0" \
+			-p "80:80@loadbalancer" \
+			-p "443:443@loadbalancer"
+
+k3d-load-%:
+	$(K3D) image import $(IMAGE_REGISTRY)/$*:$(VERSION) -c $(K3D_CLUSTER_NAME)
+
+k3d-build-and-load-%: %-docker k3d-load-% ; ## Use to build specified image and load it into k3d
+
+.PHONY: k3d-build-and-load ## Use to build all images and load them into k3d
+k3d-build-and-load: k3d-build-and-load-kgateway
+k3d-build-and-load: k3d-build-and-load-envoy-wrapper
+k3d-build-and-load: k3d-build-and-load-sds
+k3d-build-and-load: k3d-build-and-load-dummy-idp
+
+.PHONY: k3d-load-dummy-idp
+k3d-load-dummy-idp:
+	$(K3D) image import $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) -c $(K3D_CLUSTER_NAME)
+
+.PHONY: k3d-load-extproc-server
+k3d-load-extproc-server:
+	$(K3D) image import $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION) -c $(K3D_CLUSTER_NAME)
+
+.PHONY: setup-base-k3d
+setup-base-k3d: k3d-create gw-api-crds ## Setup k3d base infrastructure (cluster, CRDs). Uses k3s ServiceLB instead of MetalLB.
+
+.PHONY: setup-k3d
+setup-k3d: setup-base-k3d k3d-build-and-load package-kgateway-charts dummy-idp-docker k3d-load-dummy-idp ## Setup complete k3d infrastructure
+
+k3d-reload-%: k3d-build-and-load-% kind-set-image-% ; ## Use to build specified image, load it into k3d, and restart its deployment
+
+#----------------------------------------------------------------------------------
 # Load Testing
 #----------------------------------------------------------------------------------
 

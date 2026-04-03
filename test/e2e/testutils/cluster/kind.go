@@ -25,15 +25,22 @@ func MustKindContext(clusterName string) *Context {
 
 // MustKindContextWithScheme returns the Context for a KinD cluster with the given name and scheme
 func MustKindContextWithScheme(clusterName string, scheme *runtime.Scheme) *Context {
+	clusterType := os.Getenv("CLUSTER_TYPE")
 	if len(clusterName) == 0 {
-		// We fall back to the cluster named `kind` if no cluster name was provided
-		clusterName = "kind"
+		if clusterType == "k3d" {
+			clusterName = "k3d"
+		} else {
+			clusterName = "kind"
+		}
 	}
 
 	kubeCtx := os.Getenv(testutils.KubeCtx)
 	if kubeCtx == "" {
-		// Default KubeCtx used is "kind-<ClusterName>" as documented in testutils.KubeCtx
-		kubeCtx = "kind-" + clusterName
+		if clusterType == "k3d" {
+			kubeCtx = "k3d-" + clusterName
+		} else {
+			kubeCtx = "kind-" + clusterName
+		}
 	}
 	restCfg, err := kubeutils.GetRestConfigWithKubeContext(kubeCtx)
 	if err != nil {
