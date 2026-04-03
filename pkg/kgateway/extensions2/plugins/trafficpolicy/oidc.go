@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/avast/retry-go/v4"
+	"golang.org/x/sync/singleflight"
 )
 
 const (
@@ -22,6 +23,9 @@ type oidcProviderConfigDiscoverer struct {
 	// caches oidcProviderConfig per issuer URI
 	cache                sync.Map
 	cacheRefreshInterval time.Duration
+	// discoverGroup deduplicates concurrent discover() calls for the same issuer URI,
+	// preventing redundant HTTP requests when the cache is cleared.
+	discoverGroup singleflight.Group
 }
 
 // oidcProviderConfig maps the OpenID provider config response.
@@ -63,15 +67,26 @@ func (o *oidcProviderConfigDiscoverer) get(issuerURI string) (*oidcProviderConfi
 		return v.(*oidcProviderConfig), nil
 	}
 
-	// discover configuration
-	cfg, err := o.discover(issuerURI)
+	// Use singleflight to deduplicate concurrent discovery calls for the same issuer.
+	// After a cache.Clear(), multiple goroutines may call get() simultaneously;
+	// singleflight ensures only one discover() HTTP request is made per issuer URI.
+	result, err, _ := o.discoverGroup.Do(issuerURI, func() (any, error) {
+		// Re-check the cache inside the singleflight function, as another caller
+		// may have populated it between our initial Load and entering the group.
+		if v, ok := o.cache.Load(issuerURI); ok {
+			return v, nil
+		}
+		cfg, err := o.discover(issuerURI)
+		if err != nil {
+			return nil, err
+		}
+		o.cache.Store(issuerURI, cfg)
+		return cfg, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	// Cache the configuration
-	o.cache.Store(issuerURI, cfg)
-	return cfg, nil
+	return result.(*oidcProviderConfig), nil
 }
 
 func (o *oidcProviderConfigDiscoverer) discover(issuerURI string) (*oidcProviderConfig, error) {
