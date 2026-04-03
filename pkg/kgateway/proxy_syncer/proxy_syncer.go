@@ -218,15 +218,22 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		queries,
 		s.commonCols.GatewayIndex.Gateways,
 	)
-	gatewayBackendVariantBackends := krt.NewCollection(gatewayBackendVariants, func(kctx krt.HandlerContext, backendForGateway gatewayScopedBackend) **ir.BackendObjectIR {
-		backend := backendForGateway.backend
+	gatewayBackendVariantBackends := krt.NewCollection(gatewayBackendVariants, func(kctx krt.HandlerContext, backendForGateway gatewayScopedBackend) *ir.BackendObjectIR {
+		if backendForGateway.backend == nil {
+			return nil
+		}
+		backend := *backendForGateway.backend
 		return &backend
 	}, krtopts.ToOptions("GatewayBackendClientCertificateVariantBackends")...)
+	gatewayBackendVariantBackendsWithPolicy, _ := s.commonCols.BackendIndex.AttachPoliciesToCollection(
+		gatewayBackendVariantBackends,
+		"GatewayBackendClientCertificateVariantBackendsWithPolicy",
+	)
 	gatewayBackendVariantEndpoints := newGatewayBackendVariantEndpoints(krtopts, gatewayBackendVariants, s.commonCols.Endpoints)
 
 	// all backends with policies attached in a single collection
 	finalBackends := krt.JoinCollection(
-		append(s.commonCols.BackendIndex.BackendsWithPolicy(), gatewayBackendVariantBackends),
+		append(s.commonCols.BackendIndex.BackendsWithPolicy(), gatewayBackendVariantBackendsWithPolicy),
 		// WithJoinUnchecked enables a more optimized lookup on the hotpath by assuming we do not have any overlapping ResourceName
 		// in the backend collection.
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...)
