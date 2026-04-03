@@ -10,6 +10,7 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/websocket"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -17,7 +18,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	envoyadmincli "github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -89,7 +89,7 @@ func (s *testingSuite) TestWebSocketWithDefaultTransformationBuffering() {
 }
 
 func (s *testingSuite) assertWebsocketUpgradeEnabled() {
-	var proxyObjectMeta = metav1.ObjectMeta{
+	proxyObjectMeta := metav1.ObjectMeta{
 		Name:      common.BaseGateway.Name,
 		Namespace: common.BaseGateway.Namespace,
 	}
@@ -134,5 +134,4 @@ func (s *testingSuite) assertPodsRunning() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, "kgateway-base", metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=websocket-backend", defaults.WellKnownAppLabel),
 	})
-
 }
