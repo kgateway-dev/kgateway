@@ -7,11 +7,11 @@ set -o nounset
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-CLOUD_PROVIDER_KIND_CMD="go tool -modfile=tools/go.mod cloud-provider-kind"
-CLOUD_PROVIDER_KIND_ARGS="--gateway-channel=disabled"
+CLOUD_PROVIDER_KIND_CMD=(go tool -modfile="${ROOT_DIR}/tools/go.mod" cloud-provider-kind)
+CLOUD_PROVIDER_KIND_ARGS=(--gateway-channel=disabled)
 
 cloud_provider_kind_running() {
-  pgrep cloud-provider-kind
+  pgrep -x cloud-provider-kind >/dev/null
 }
 
 start_cloud_provider_kind() {
@@ -21,8 +21,7 @@ start_cloud_provider_kind() {
   fi
 
   echo "starting cloud-provider-kind with sudo"
-  cd "${ROOT_DIR}"
-  sudo -b ${CLOUD_PROVIDER_KIND_CMD} ${CLOUD_PROVIDER_KIND_ARGS}
+  sudo -b "${CLOUD_PROVIDER_KIND_CMD[@]}" "${CLOUD_PROVIDER_KIND_ARGS[@]}"
 }
 
 start_cloud_provider_kind

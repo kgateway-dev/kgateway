@@ -791,7 +791,7 @@ cloud-provider-kind:
 
 .PHONY: cleanup-cloud-provider-kind
 cleanup-cloud-provider-kind: ## Stop any running cloud-provider-kind host processes
-	sudo pkill cloud-provider-kind
+	sudo pkill -x cloud-provider-kind || true
 
 .PHONY: deploy-kgateway
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
