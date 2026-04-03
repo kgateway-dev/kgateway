@@ -95,7 +95,7 @@ func TestBuildPolicyStatusFn(t *testing.T) {
 		Name:      "tls-policy",
 	}
 	ancestorRef := gwv1.ParentReference{
-		Group:     ptrTo(gwv1.Group(gwv1.GroupVersion.Group)),
+		Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
 		Kind:      ptrTo(gwv1.Kind("Gateway")),
 		Namespace: ptrTo(gwv1.Namespace("default")),
 		Name:      gwv1.ObjectName("gw"),
@@ -190,6 +190,7 @@ func findCondition(conditions []metav1.Condition, conditionType string) *metav1.
 	return nil
 }
 
+//go:fix inline
 func ptrTo[T any](v T) *T {
-	return &v
+	return new(v)
 }
