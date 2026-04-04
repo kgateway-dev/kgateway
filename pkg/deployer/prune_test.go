@@ -14,6 +14,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 func init() {
@@ -315,6 +316,109 @@ func TestPruneRemovedResources(t *testing.T) {
 		}
 		if len(hpaList.Items) != 0 {
 			t.Errorf("expected 0 HPAs, got %d", len(hpaList.Items))
+		}
+	})
+}
+
+func TestPruneRemovedResourcesLongGatewayName(t *testing.T) {
+	var (
+		ns  = "test-ns"
+		ctx = context.Background()
+	)
+	// Gateway name > 63 chars - will be truncated in labels
+	longGwName := "very-long-gateway-name-for-testing-80-char-limit-exactly-this-many-chars"
+	safeGwName := kubeutils.SafeGatewayLabelValue(longGwName)
+
+	createGateway := func(name string) *gwv1.Gateway {
+		gw := &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns,
+			},
+			Spec: gwv1.GatewaySpec{
+				GatewayClassName: wellknown.DefaultGatewayClassName,
+			},
+		}
+		gw.SetGroupVersionKind(wellknown.GatewayGVK)
+		return gw
+	}
+
+	createPDB := func(name string, gatewayName string) *policyv1.PodDisruptionBudget {
+		pdb := &policyv1.PodDisruptionBudget{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       wellknown.PodDisruptionBudgetGVK.Kind,
+				APIVersion: wellknown.PodDisruptionBudgetGVK.GroupVersion().String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns,
+				Labels: map[string]string{
+					wellknown.GatewayNameLabel: gatewayName,
+				},
+			},
+			Spec: policyv1.PodDisruptionBudgetSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{"app": "test"},
+				},
+			},
+		}
+		return pdb
+	}
+
+	t.Run("prunes resources with long gateway name using safe label value", func(t *testing.T) {
+		gw := createGateway(longGwName)
+		// PDB labeled with the SAFE name (truncated + hash), not the original long name
+		pdb := createPDB("test-pdb", safeGwName)
+
+		fc := fake.NewClient(t, gw, pdb)
+		d := &Deployer{client: fc}
+
+		// Desired set is empty - PDB should be pruned because the label selector
+		// uses SafeGatewayLabelValue(longGwName) which equals safeGwName
+		err := d.PruneRemovedResources(ctx, gw, []client.Object{})
+		if err != nil {
+			t.Fatalf("PruneRemovedResources returned error: %v", err)
+		}
+
+		// Verify PDB was deleted
+		gvr, err := wellknown.GVKToGVR(wellknown.PodDisruptionBudgetGVK)
+		if err != nil {
+			t.Fatalf("failed to get GVR: %v", err)
+		}
+		list, err := fc.Dynamic().Resource(gvr).Namespace(ns).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			t.Fatalf("failed to list PDBs: %v", err)
+		}
+		if len(list.Items) != 0 {
+			t.Errorf("expected 0 PDBs, got %d", len(list.Items))
+		}
+	})
+
+	t.Run("keeps resources when desired set includes them with safe label value", func(t *testing.T) {
+		gw := createGateway(longGwName)
+		pdb := createPDB("test-pdb", safeGwName)
+
+		fc := fake.NewClient(t, gw, pdb)
+		d := &Deployer{client: fc}
+
+		// Desired set includes PDB with the safe label value - should be kept
+		desiredPDB := createPDB("test-pdb", safeGwName)
+		err := d.PruneRemovedResources(ctx, gw, []client.Object{desiredPDB})
+		if err != nil {
+			t.Fatalf("PruneRemovedResources returned error: %v", err)
+		}
+
+		// Verify PDB still exists
+		gvr, err := wellknown.GVKToGVR(wellknown.PodDisruptionBudgetGVK)
+		if err != nil {
+			t.Fatalf("failed to get GVR: %v", err)
+		}
+		list, err := fc.Dynamic().Resource(gvr).Namespace(ns).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			t.Fatalf("failed to list PDBs: %v", err)
+		}
+		if len(list.Items) != 1 {
+			t.Errorf("expected 1 PDB, got %d", len(list.Items))
 		}
 	})
 }

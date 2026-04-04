@@ -167,6 +167,7 @@ Statuses:
           group: gateway.networking.k8s.io
           kind: ListenerSet
           name: ls-tls-options
+          sectionName: https-ls
   listenerSets:
     default/ls-tls-options:
       conditions:

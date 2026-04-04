@@ -49,10 +49,50 @@ spec:
                 description: |-
                   Body defines the content to be returned in the HTTP response body.
                   The maximum length of the body is restricted to prevent excessively large responses.
-                  If this field is omitted, no body is included in the response.
+                  If this field and BodyFormat are both omitted, no body is included in the response.
+                  Mutually exclusive with BodyFormat.
                 maxLength: 4096
                 minLength: 1
                 type: string
+              bodyFormat:
+                description: |-
+                  BodyFormat defines the content to be returned in the HTTP response body as an Envoy format string.
+                  If this field and Body are both omitted, no body is included in the response.
+                  Mutually exclusive with Body.
+                  See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-directresponseaction-body-format for details.
+                properties:
+                  contentType:
+                    description: |-
+                      ContentType defines the HTTP Content-Type header to be sent with the response.
+                      By default, `text/plain` is used for the Text format and `application/json` for the JSON format.
+                      Note: This setting does not currently take effect due to a bug in Envoy, a fix for which is pending release.
+                      The option is included for completeness and will become effective with a future version of Envoy.
+                    type: string
+                  json:
+                    description: |-
+                      JSON is a format object by which Envoy will produce a JSON response body.
+                      Mutually exclusive with Text.
+                      See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-json-format for details.
+
+                      Setting a field to `null` in the JSON object requires the use of
+                      `kubectl apply --server-side` or equivalent. With the default client-side
+                      `kubectl apply`, null values are stripped by kubectl before reaching
+                      the API server.
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  text:
+                    description: |-
+                      Text is a format string by which Envoy will format the response body.
+                      Mutually exclusive with JSON.
+                      See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-text-format for details.
+                    maxLength: 4096
+                    minLength: 1
+                    type: string
+                type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [json text] must be set
+                  rule: '[has(self.json),has(self.text)].filter(x,x==true).size()
+                    == 1'
               status:
                 description: StatusCode defines the HTTP status code to return for
                   this route.
@@ -63,6 +103,10 @@ spec:
             required:
             - status
             type: object
+            x-kubernetes-validations:
+            - message: at most one of the fields in [body bodyFormat] may be set
+              rule: '[has(self.body),has(self.bodyFormat)].filter(x,x==true).size()
+                <= 1'
           status:
             description: |-
               PolicyStatus defines the common attributes that all Policies should include within

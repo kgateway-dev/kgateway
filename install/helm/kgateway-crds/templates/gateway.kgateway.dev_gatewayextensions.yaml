@@ -1109,6 +1109,7 @@ spec:
                   authorizationEndpoint:
                     description: |-
                       AuthorizationEndpoint specifies the endpoint to redirect to for authorization in response to unauthorized requests.
+                      If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
                       Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-3.1 for more details.
                     pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
                     type: string
@@ -1368,6 +1369,7 @@ spec:
                       EndSessionEndpoint specifies the URL that redirects a user's browser to in order to initiate a single logout
                       across all applications and the OpenID provider. Users are directed to this endpoint when they access the logout path.
                       This should only be set when the OpenID provider supports RP-Initiated Logout and "openid" is included in the list of scopes.
+                      If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
                       Refer to https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout for more details.
                     pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
                     type: string
@@ -1382,12 +1384,125 @@ spec:
                       IssuerURI specifies the OpenID provider's issuer URL to discover the OpenID provider's configuration.
                       The Issuer must be a URI RFC 3986 [RFC3986] with a scheme component that must be https, a host component,
                       and optionally, port and path components and no query or fragment components.
-                      It discovers the authorizationEndpoint, tokenEndpoint, and endSessionEndpoint if specified in the discovery response.
+                      It discovers the authorizationEndpoint, tokenEndpoint, endSessionEndpoint, and jwksURI if specified in the discovery response.
+                      Explicit configuration of these options will take precedence over the discovered values.
                       Refer to https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig for more details.
                       Note that the OpenID provider configuration is cached and only refreshed periodically when the GatewayExtension object
                       is reprocessed.
                     pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?$
                     type: string
+                  jwt:
+                    description: JWT specifies the configuration for whether and how
+                      to process the retrieved access and ID tokens as JSON Web Token.
+                    properties:
+                      accessToken:
+                        description: |-
+                          AccessToken specifies how to process the retrieved access token.
+                          This requires the access token cookie to be enabled. Requests missing the token will be rejected.
+                          The token will be verified against the provided JWKS.
+                          Successfully processed tokens have their payload made available as the 'accessToken' dynamic metadata in the 'envoy.filters.http.jwt_authn' namespace.
+                          If omitted, the token will not be attempted to be parsed and verified at all.
+                        properties:
+                          audiences:
+                            description: |-
+                              Audiences is the list of audiences to be used for the processed token.
+                              If specified the token must have an 'aud' claim, and it must be in this list.
+                              If not specified, the audiences will not be checked in the token.
+                            items:
+                              type: string
+                            maxItems: 32
+                            minItems: 1
+                            type: array
+                          claimsToHeaders:
+                            description: |-
+                              ClaimsToHeaders is a list of claims from the token that should be forwarded upstream as a header.
+                              Optionally set the claims from the JWT payload that you want to extract and add as headers
+                              to the request before the request is forwarded to the upstream destination.
+                              Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
+                              This allows the JWT filter to correctly affect routing decisions.
+                            items:
+                              description: JWTClaimToHeader allows copying verified
+                                claims to headers sent upstream
+                              properties:
+                                header:
+                                  description: Header is the header the claim will
+                                    be copied to, for example, "x-sub".
+                                  maxLength: 2048
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  description: Name is the JWT claim name, for example,
+                                    "sub".
+                                  maxLength: 2048
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - header
+                              - name
+                              type: object
+                            maxItems: 32
+                            minItems: 1
+                            type: array
+                        type: object
+                      idToken:
+                        description: |-
+                          IDToken specifies how to process the retrieved ID token.
+                          This requires the ID token cookie to be enabled. Requests missing the token will be rejected.
+                          The token will be verified against the provided JWKS.
+                          Successfully processed tokens have their payload made available as the 'idToken' dynamic metadata in the 'envoy.filters.http.jwt_authn' namespace.
+                          If omitted, the token will not be attempted to be parsed and verified at all.
+                        properties:
+                          audiences:
+                            description: |-
+                              Audiences is the list of audiences to be used for the processed token.
+                              If specified the token must have an 'aud' claim, and it must be in this list.
+                              If not specified, the audiences will not be checked in the token.
+                            items:
+                              type: string
+                            maxItems: 32
+                            minItems: 1
+                            type: array
+                          claimsToHeaders:
+                            description: |-
+                              ClaimsToHeaders is a list of claims from the token that should be forwarded upstream as a header.
+                              Optionally set the claims from the JWT payload that you want to extract and add as headers
+                              to the request before the request is forwarded to the upstream destination.
+                              Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
+                              This allows the JWT filter to correctly affect routing decisions.
+                            items:
+                              description: JWTClaimToHeader allows copying verified
+                                claims to headers sent upstream
+                              properties:
+                                header:
+                                  description: Header is the header the claim will
+                                    be copied to, for example, "x-sub".
+                                  maxLength: 2048
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  description: Name is the JWT claim name, for example,
+                                    "sub".
+                                  maxLength: 2048
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - header
+                              - name
+                              type: object
+                            maxItems: 32
+                            minItems: 1
+                            type: array
+                        type: object
+                      jwksURI:
+                        description: |-
+                          JWKSURI specifies the URL that public keys for validating JWTs should be retrieved from.
+                          This must be set if the retrieved access or ID token need to be parsed and IssuerURI is not set for discovery.
+                          If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
+                          The URL must point to a valid JWKS definition.
+                          Refer to https://datatracker.ietf.org/doc/html/rfc7517#section-5 for more details.
+                        pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
+                        type: string
+                    type: object
                   logoutPath:
                     default: /logout
                     description: |-
@@ -1413,6 +1528,7 @@ spec:
                   tokenEndpoint:
                     description: |-
                       TokenEndpoint specifies the endpoint on the authorization server to retrieve the access token from.
+                      If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
                       Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-3.2 for more details.
                     pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
                     type: string
@@ -1425,6 +1541,15 @@ spec:
                     must be specified
                   rule: has(self.issuerURI) || (has(self.authorizationEndpoint) &&
                     has(self.tokenEndpoint))
+                - message: Either issuerURI or jwksURI must be specified for JWT parsing
+                  rule: '!(has(self.?jwt.accessToken) || has(self.?jwt.idToken)) ||
+                    (has(self.issuerURI) || has(self.?jwt.jwksURI))'
+                - message: Access token cookie must not be disabled when the token
+                    should be parsed
+                  rule: '!has(self.?jwt.accessToken) || !self.?cookies.?disableAccessTokenSetCookie.orValue(false)'
+                - message: ID token cookie must not be disabled when the token should
+                    be parsed
+                  rule: '!has(self.?jwt.idToken) || !self.?cookies.?disableIDTokenSetCookie.orValue(false)'
               rateLimit:
                 description: RateLimit configuration for RateLimit extension type.
                 properties:

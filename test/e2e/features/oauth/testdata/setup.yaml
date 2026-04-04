@@ -88,6 +88,7 @@ spec:
           REALM=master
           USERNAME=kgateway
           PASSWORD=kgateway
+          USER_EMAIL=kgateway@example.com
           CLIENT_ID=kgateway-client-id
           CLIENT_SECRET=kgateway-client-secret
           REDIRECT_URL=https://example.com/oauth2/redirect # must match the HTTPRoute/oauth host and path
@@ -101,6 +102,8 @@ spec:
           /opt/keycloak/bin/kcadm.sh create users \
           -s username="${USERNAME}" \
           -s enabled=true \
+          -s email="${USER_EMAIL}" \
+          -s emailVerified=true \
           --server "${KEYCLOAK_SERVER}" \
           --realm "${REALM}" \
           --user "${KEYCLOAK_ADMIN}" \
@@ -213,6 +216,7 @@ spec:
     envoyContainer:
       bootstrap:
         componentLogLevels:
+          jwt: debug
           oauth2: debug
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -230,6 +234,12 @@ spec:
     - path:
         type: PathPrefix
         value: /
+    filters:
+      - type: RequestHeaderModifier
+        requestHeaderModifier:
+          set:
+            - name: x-oauth2-token-types
+              value: "%DYNAMIC_METADATA(envoy.filters.http.jwt_authn:accessToken:typ)%, %DYNAMIC_METADATA(envoy.filters.http.jwt_authn:idToken:typ)%"
     backendRefs:
     - name: httpbin
       port: 8443
@@ -286,7 +296,19 @@ spec:
     redirectURI: https://example.com/oauth2/redirect # must match the REDIRECT_URL used in Keycloak setup
     logoutPath: /logout
     forwardAccessToken: true
-    scopes: ["openid"]
+    scopes: ["openid", "email"]
+    jwt:
+      jwksURI: https://keycloak/realms/master/protocol/openid-connect/certs
+      accessToken:
+        audiences:
+          - account
+        claimsToHeaders:
+          - name: preferred_username
+            header: x-oauth2-preferred-username
+      idToken:
+        claimsToHeaders:
+          - name: email
+            header: x-oauth2-email
 ---
 apiVersion: v1
 kind: Secret

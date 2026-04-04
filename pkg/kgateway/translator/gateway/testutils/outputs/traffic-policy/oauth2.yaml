@@ -108,6 +108,7 @@ Listeners:
             config:
               authScopes:
               - email
+              - groups
               authorizationEndpoint: https://provider-2.com/auth
               credentials:
                 clientId: client-id
@@ -210,6 +211,41 @@ Listeners:
                 cluster: backend_default_oauth-provider-2_0
                 timeout: 15s
                 uri: https://provider-2.com/token
+        - disabled: true
+          name: envoy.filters.http.oauth2/jwt/default/oauth-listener-1
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+            providers:
+              oauth2/accessToken:
+                fromCookies:
+                  - AccessToken-848c62dd0a574e97
+                payloadInMetadata: accessToken
+                audiences:
+                  - test.com
+                remoteJwks:
+                  httpUri:
+                    cluster: backend_default_oauth-provider-2_0
+                    timeout: 5s
+                    uri: https://provider-2.com/jwks.json
+              oauth2/idToken:
+                fromCookies:
+                  - IdToken-848c62dd0a574e97
+                payloadInMetadata: idToken
+                claimToHeaders:
+                  - claimName: groups
+                    headerName: x-oauth2-groups
+                clearRouteCache: true
+                remoteJwks:
+                  httpUri:
+                    cluster: backend_default_oauth-provider-2_0
+                    timeout: 5s
+                    uri: https://provider-2.com/jwks.json
+            requirementMap:
+              oauth2:
+                requiresAll:
+                  requirements:
+                    - providerName: oauth2/accessToken
+                    - providerName: oauth2/idToken
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -282,6 +318,9 @@ Routes:
       envoy.filters.http.oauth2/default/oauth-listener-1:
         '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
         config: {}
+      envoy.filters.http.oauth2/jwt/default/oauth-listener-1:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
+        requirementName: oauth2
 Secrets:
 - genericSecret:
     secret:

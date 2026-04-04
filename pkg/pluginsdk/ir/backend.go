@@ -108,6 +108,10 @@ type BackendObjectIR struct {
 	// optional port for if ObjectSource is a service that can have multiple ports.
 	// +krtEqualsTodo propagate backend port differences in equality
 	Port int32
+	// optional port name for the backend (e.g., "https", "http"). Used for sectionName based
+	// policy attachment (e.g., BackendTLSPolicy targeting a specific port by name).
+	// +krtEqualsTodo propagate backend port name differences in equality
+	PortName string
 	// optional application protocol for the backend. Can be used to enable http2.
 	// +krtEqualsTodo include AppProtocol in backend equality
 	AppProtocol AppProtocol
