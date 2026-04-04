@@ -164,6 +164,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: https-invalid-secret
     default/valid-route:
       parents:
       - conditions:
@@ -182,3 +183,4 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: https-valid-secret

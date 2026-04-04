@@ -113,3 +113,4 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: tcp-with-routes

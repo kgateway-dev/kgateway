@@ -22,29 +22,29 @@ serviceAccount:
 # -- Add annotations to the kgateway deployment.
 deploymentAnnotations: {}
 
-# -- Add annotations to the kgateway pods.
+# -- Add annotations to the kgateway pods. This field is deprecated in favor of controller.podAnnotations and will be removed in v3.0.
 podAnnotations:
   prometheus.io/scrape: "true"
 
-# -- Set the pod-level security context. For example, 'fsGroup: 2000' sets the filesystem group to 2000.
+# -- Set the pod-level security context. For example, 'fsGroup: 2000' sets the filesystem group to 2000. This field is deprecated in favor of controller.podSecurityContext and will be removed in v3.0.
 podSecurityContext: {}
 
-# -- Set the container-level security context, such as 'runAsNonRoot: true'.
+# -- Set the container-level security context, such as 'runAsNonRoot: true'. This field is deprecated in favor of controller.securityContext and will be removed in v3.0.
 securityContext: {}
 
-# -- Configure resource requests and limits for the container, such as 'limits.cpu: 100m' or 'requests.memory: 128Mi'.
+# -- Configure resource requests and limits for the container, such as 'limits.cpu: 100m' or 'requests.memory: 128Mi'. This field is deprecated in favor of controller.resources and will be removed in v3.0.
 resources: {}
 
-# -- Set node selector labels for pod scheduling, such as 'kubernetes.io/arch: amd64'.
+# -- Set node selector labels for pod scheduling, such as 'kubernetes.io/arch: amd64'. This field is deprecated in favor of controller.nodeSelector and will be removed in v3.0.
 nodeSelector: {}
 
-# -- Set tolerations for pod scheduling, such as 'key: "nvidia.com/gpu"'.
+# -- Set tolerations for pod scheduling, such as 'key: "nvidia.com/gpu"'. This field is deprecated in favor of controller.tolerations and will be removed in v3.0.
 tolerations: []
 
-# -- Set affinity rules for pod scheduling, such as 'nodeAffinity:'.
+# -- Set affinity rules for pod scheduling, such as 'nodeAffinity:'. This field is deprecated in favor of controller.affinity and will be removed in v3.0.
 affinity: {}
 
-# -- Set topology spread constraints for pod scheduling.
+# -- Set topology spread constraints for pod scheduling. This field is deprecated in favor of controller.topologySpreadConstraints and will be removed in v3.0.
 # E.g.:
 # topologySpreadConstraints:
 #   - maxSkew: 1
@@ -73,6 +73,22 @@ controller:
     pullPolicy: ""
     # -- Set the image tag for the controller.
     tag: ""
+  # -- Add annotations to the controller pods.
+  podAnnotations: null
+  # -- Set the pod-level security context for the controller pod.
+  podSecurityContext: null
+  # -- Set the container-level security context for the controller container.
+  securityContext: null
+  # -- Configure resource requests and limits for the controller container.
+  resources: null
+  # -- Set node selector labels for controller pod scheduling.
+  nodeSelector: null
+  # -- Set tolerations for controller pod scheduling.
+  tolerations: null
+  # -- Set affinity rules for controller pod scheduling.
+  affinity: null
+  # -- Set topology spread constraints for controller pod scheduling.
+  topologySpreadConstraints: null
   # -- Controller service configuration.
   service:
     # -- Create the controller Service.

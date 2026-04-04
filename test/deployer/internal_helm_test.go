@@ -40,6 +40,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -537,10 +538,48 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 		{
 			Name:      "gateway with name exactly 63 characters",
 			InputFile: "long-gateway-name-exactly-63-chars",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				gwName := "very-long-gateway-name-that-is-exactly-sixty-three-characterslo"
+				safeName := kubeutils.SafeGatewayLabelValue(gwName)
+				// Go SafeGatewayLabelValue must match helm's safeLabelValue
+				assert.Contains(t, outputYaml,
+					wellknown.GatewayNameLabel+": "+safeName,
+					"SafeGatewayLabelValue(%q) = %q should match the %s label in helm output",
+					gwName, safeName, wellknown.GatewayNameLabel)
+				// Full name annotation preserves original name
+				assert.Contains(t, outputYaml,
+					wellknown.GatewayNameAnnotation+": "+gwName,
+					"the %s annotation should contain the full gateway name",
+					wellknown.GatewayNameAnnotation)
+				// 63-char name should NOT be truncated
+				assert.Equal(t, gwName, safeName,
+					"SafeGatewayLabelValue should return 63-char names unchanged")
+			},
 		},
 		{
 			Name:      "gateway with name over 63 characters",
 			InputFile: "long-gateway-name-over-63-chars",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				gwName := "extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements"
+				safeName := kubeutils.SafeGatewayLabelValue(gwName)
+				// Go SafeGatewayLabelValue must match helm's safeLabelValue
+				assert.Contains(t, outputYaml,
+					wellknown.GatewayNameLabel+": "+safeName,
+					"SafeGatewayLabelValue(%q) = %q should match the %s label in helm output",
+					gwName, safeName, wellknown.GatewayNameLabel)
+				// Full name annotation preserves original name
+				assert.Contains(t, outputYaml,
+					wellknown.GatewayNameAnnotation+": "+gwName,
+					"the %s annotation should contain the full gateway name",
+					wellknown.GatewayNameAnnotation)
+				// Name >63 chars must be truncated
+				assert.NotEqual(t, gwName, safeName,
+					"SafeGatewayLabelValue should truncate names longer than 63 characters")
+				assert.LessOrEqual(t, len(safeName), 63,
+					"SafeGatewayLabelValue output should be at most 63 characters, got %d", len(safeName))
+			},
 		},
 	}
 

@@ -113,6 +113,7 @@ Statuses:
           group: gateway.networking.k8s.io
           kind: ListenerSet
           name: example-listenerset
+          sectionName: http
   listenerSets:
     default/example-listenerset:
       conditions:

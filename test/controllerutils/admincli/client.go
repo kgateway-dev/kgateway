@@ -38,8 +38,8 @@ func NewClient() *Client {
 			curl.WithScheme("http"),
 			curl.WithHost("127.0.0.1"),
 			curl.WithPort(int(wellknown.KgatewayAdminPort)),
-			// 3 retries, exponential back-off, 10 second max
-			curl.WithRetries(3, 0, 10),
+			curl.WithRetries(10, 1, 10),
+			curl.WithRetryConnectionRefused(true),
 		},
 	}
 }

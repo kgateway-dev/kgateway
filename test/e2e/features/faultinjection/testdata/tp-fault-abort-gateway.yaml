@@ -1,0 +1,14 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: tp-fault-abort-gateway
+  namespace: kgateway-base
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+  faultInjection:
+    abort:
+      httpStatus: 503
+      percentage: 100

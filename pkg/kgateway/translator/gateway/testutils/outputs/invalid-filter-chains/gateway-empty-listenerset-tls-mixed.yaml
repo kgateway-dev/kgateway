@@ -134,3 +134,4 @@ Statuses:
           group: gateway.networking.k8s.io
           kind: ListenerSet
           name: example-listenerset
+          sectionName: tls-with-routes

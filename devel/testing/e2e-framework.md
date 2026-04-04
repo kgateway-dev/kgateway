@@ -77,7 +77,7 @@ Tests run against a local [kind](https://kind.sigs.k8s.io/) cluster provisioned 
 
 1. Creates a kind cluster (defaulting to the name `kind`).
 2. Loads locally-built Docker images into the cluster so tests don't require a registry.
-3. Installs supporting infrastructure (e.g., MetalLB for `LoadBalancer` support via `setup-metalllb-on-kind.sh`).
+3. Installs supporting infrastructure for `LoadBalancer` access. By default this uses MetalLB. If `CLOUD_PROVIDER_KIND=true`, it starts `cloud-provider-kind` instead, which is useful on macOS with Docker Desktop where MetalLB is not a good fit.
 
 The cluster name and kubeconfig context can be overridden at runtime:
 
@@ -85,6 +85,7 @@ The cluster name and kubeconfig context can be overridden at runtime:
 |---|---|---|
 | `CLUSTER_NAME` | `kind` | Name of the kind cluster (used by `testruntime.NewContext()`) |
 | `KUBE_CTX` | `kind-<CLUSTER_NAME>` | Kubernetes context to use (overrides the default when set) |
+| `CLOUD_PROVIDER_KIND` | `false` | Use `cloud-provider-kind` instead of MetalLB for local `LoadBalancer` support. |
 
  The `testruntime.NewContext()` helper reads `CLUSTER_NAME` (defaulting it to `kind`), stores it as `runtimeContext.ClusterName`, and then `cluster.MustKindContext(runtimeContext.ClusterName)` in [`testutils/cluster/kind.go`](../../test/e2e/testutils/cluster/kind.go) uses that name and, if set, `KUBE_CTX` to build a `cluster.Context` that holds:
 

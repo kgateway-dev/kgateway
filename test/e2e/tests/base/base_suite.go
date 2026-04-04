@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -660,7 +661,7 @@ func (s *BaseTestingSuite) loadDynamicResources(testCase *TestCase) {
 			// to be created, so add them to the dynamic resource list
 			if !selfManaged {
 				proxyObjectMeta := metav1.ObjectMeta{
-					Name:      gw.GetName(),
+					Name:      kubeutils.SafeGatewayLabelValue(gw.GetName()),
 					Namespace: gw.GetNamespace(),
 				}
 				proxyResources := []client.Object{
