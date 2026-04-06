@@ -33,17 +33,22 @@ const (
 // OAuth2Provider specifies the configuration for OAuth2 extension provider.
 //
 // +kubebuilder:validation:XValidation:message="Either issuerURI, or both authorizationEndpoint and tokenEndpoint must be specified",rule="has(self.issuerURI) || (has(self.authorizationEndpoint) && has(self.tokenEndpoint))"
+// +kubebuilder:validation:XValidation:message="Either issuerURI or jwksURI must be specified for JWT parsing",rule="!(has(self.?jwt.accessToken) || has(self.?jwt.idToken)) || (has(self.issuerURI) || has(self.?jwt.jwksURI))"
+// +kubebuilder:validation:XValidation:message="Access token cookie must not be disabled when the token should be parsed",rule="!has(self.?jwt.accessToken) || !self.?cookies.?disableAccessTokenSetCookie.orValue(false)"
+// +kubebuilder:validation:XValidation:message="ID token cookie must not be disabled when the token should be parsed",rule="!has(self.?jwt.idToken) || !self.?cookies.?disableIDTokenSetCookie.orValue(false)"
 type OAuth2Provider struct {
 	// BackendRef specifies the Backend to use for the OAuth2 provider.
 	// +required
 	BackendRef gwv1.BackendRef `json:"backendRef"`
 
 	// AuthorizationEndpoint specifies the endpoint to redirect to for authorization in response to unauthorized requests.
+	// If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
 	// Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-3.1 for more details.
 	// +optional
 	AuthorizationEndpoint *HttpsUri `json:"authorizationEndpoint,omitempty"`
 
 	// TokenEndpoint specifies the endpoint on the authorization server to retrieve the access token from.
+	// If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
 	// Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-3.2 for more details.
 	// +optional
 	TokenEndpoint *HttpsUri `json:"tokenEndpoint,omitempty"`
@@ -82,7 +87,8 @@ type OAuth2Provider struct {
 	// IssuerURI specifies the OpenID provider's issuer URL to discover the OpenID provider's configuration.
 	// The Issuer must be a URI RFC 3986 [RFC3986] with a scheme component that must be https, a host component,
 	// and optionally, port and path components and no query or fragment components.
-	// It discovers the authorizationEndpoint, tokenEndpoint, and endSessionEndpoint if specified in the discovery response.
+	// It discovers the authorizationEndpoint, tokenEndpoint, endSessionEndpoint, and jwksURI if specified in the discovery response.
+	// Explicit configuration of these options will take precedence over the discovered values.
 	// Refer to https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig for more details.
 	// Note that the OpenID provider configuration is cached and only refreshed periodically when the GatewayExtension object
 	// is reprocessed.
@@ -94,6 +100,7 @@ type OAuth2Provider struct {
 	// EndSessionEndpoint specifies the URL that redirects a user's browser to in order to initiate a single logout
 	// across all applications and the OpenID provider. Users are directed to this endpoint when they access the logout path.
 	// This should only be set when the OpenID provider supports RP-Initiated Logout and "openid" is included in the list of scopes.
+	// If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
 	// Refer to https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout for more details.
 	// +optional
 	EndSessionEndpoint *HttpsUri `json:"endSessionEndpoint,omitempty"`
@@ -101,6 +108,10 @@ type OAuth2Provider struct {
 	// Cookies specifies the configuration for the OAuth2 cookies.
 	// +optional
 	Cookies *OAuth2CookieConfig `json:"cookies,omitempty"`
+
+	// JWT specifies the configuration for whether and how to process the retrieved access and ID tokens as JSON Web Token.
+	// +optional
+	JWT *OAuth2JWTConfig `json:"jwt,omitempty"`
 
 	// DenyRedirectMatcher specifies the matcher to match requests that should be denied redirects to the authorization endpoint.
 	// Matching requests will receive a 401 Unauthorized response instead of being redirected.
@@ -179,6 +190,54 @@ type OAuth2CookieNames struct {
 	//
 	// +kubebuilder:validation:MinLength=1
 	IDToken *string `json:"idToken,omitempty"`
+}
+
+// OAuth2JWTConfig specifies how retrieved tokens are to be parsed and verified as JWT if at all.
+type OAuth2JWTConfig struct {
+	// JWKSURI specifies the URL that public keys for validating JWTs should be retrieved from.
+	// This must be set if the retrieved access or ID token need to be parsed and IssuerURI is not set for discovery.
+	// If both IssuerURI and this value are specified, the value discovered from the issuer will *not* be used and this takes precedence.
+	// The URL must point to a valid JWKS definition.
+	// Refer to https://datatracker.ietf.org/doc/html/rfc7517#section-5 for more details.
+	// +optional
+	JWKSURI *HttpsUri `json:"jwksURI,omitempty"`
+
+	// AccessToken specifies how to process the retrieved access token.
+	// This requires the access token cookie to be enabled. Requests missing the token will be rejected.
+	// The token will be verified against the provided JWKS.
+	// Successfully processed tokens have their payload made available as the 'accessToken' dynamic metadata in the 'envoy.filters.http.jwt_authn' namespace.
+	// If omitted, the token will not be attempted to be parsed and verified at all.
+	// +optional
+	AccessToken *OAuth2JWTProcessingConfig `json:"accessToken,omitempty"`
+
+	// IDToken specifies how to process the retrieved ID token.
+	// This requires the ID token cookie to be enabled. Requests missing the token will be rejected.
+	// The token will be verified against the provided JWKS.
+	// Successfully processed tokens have their payload made available as the 'idToken' dynamic metadata in the 'envoy.filters.http.jwt_authn' namespace.
+	// If omitted, the token will not be attempted to be parsed and verified at all.
+	// +optional
+	IDToken *OAuth2JWTProcessingConfig `json:"idToken,omitempty"`
+}
+
+// OAuth2JWTProcessingConfig specifies how individual JWTs are to be processed further.
+type OAuth2JWTProcessingConfig struct {
+	// Audiences is the list of audiences to be used for the processed token.
+	// If specified the token must have an 'aud' claim, and it must be in this list.
+	// If not specified, the audiences will not be checked in the token.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=32
+	// +optional
+	Audiences []string `json:"audiences,omitempty"`
+
+	// ClaimsToHeaders is a list of claims from the token that should be forwarded upstream as a header.
+	// Optionally set the claims from the JWT payload that you want to extract and add as headers
+	// to the request before the request is forwarded to the upstream destination.
+	// Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
+	// This allows the JWT filter to correctly affect routing decisions.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=32
+	// +optional
+	ClaimsToHeaders []JWTClaimToHeader `json:"claimsToHeaders,omitempty"`
 }
 
 // OAuth2DenyRedirectMatcher specifies the matcher to match requests that should be denied redirects to the authorization endpoint.

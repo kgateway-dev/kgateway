@@ -554,6 +554,9 @@ func buildValidationContext(tlsConfig *ir.TLSConfig) *envoytlsv3.CertificateVali
 				validationContext = &envoytlsv3.CertificateValidationContext{}
 			}
 			validationContext.TrustedCa = bytesDataSource(combinedCA)
+			if tlsConfig.ClientCertificateValidation.AllowInsecureFallback {
+				validationContext.TrustChainVerification = envoytlsv3.CertificateValidationContext_ACCEPT_UNTRUSTED
+			}
 		}
 	}
 

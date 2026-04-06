@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -412,6 +413,77 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
+}
+
+// PruneRemovedResources deletes PDB/HPA/VPA resources that are owned by the
+// owner but are no longer in the desired set of objects. This prevents stale
+// resources from persisting when configuration changes. ownerReferences is
+// insufficient because the owner might still exist.
+func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Object, desiredObjs []client.Object) error {
+	ownerNamespace := owner.GetNamespace()
+	// Kubernetes label values are limited to 63 characters, but Gateway names can exceed this limit.
+	// The deployed resources (Deployments, Services) use truncated names via the Helm chart's
+	// safeLabelValue function. Therefore, we must use the safe label value to match the actual labels
+	// on resources.
+	labelSelector := fmt.Sprintf("%s=%s", wellknown.GatewayNameLabel, kubeutils.SafeGatewayLabelValue(owner.GetName()))
+	desiredByGVK := make(map[schema.GroupVersionKind]map[string]bool)
+	for _, obj := range desiredObjs {
+		gvk := obj.GetObjectKind().GroupVersionKind()
+		if _, exists := desiredByGVK[gvk]; !exists {
+			desiredByGVK[gvk] = make(map[string]bool)
+		}
+		desiredByGVK[gvk][obj.GetName()] = true
+	}
+	targetGVKs := []schema.GroupVersionKind{
+		wellknown.PodDisruptionBudgetGVK,
+		wellknown.HorizontalPodAutoscalerGVK,
+		wellknown.VerticalPodAutoscalerGVK,
+	}
+	var pruningErrors []error
+	for _, gvk := range targetGVKs {
+		gvr, err := d.gvkToGVR(gvk)
+		if err != nil {
+			logger.Debug("skipping pruning for unknown GVK", "gvk", gvk.String(), "error", err)
+			continue
+		}
+		client := d.client.Dynamic().Resource(gvr).Namespace(ownerNamespace)
+		list, err := client.List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				// Resource type doesn't exist (e.g., VPA CRD not installed)
+				logger.Debug("resource type not found, skipping pruning", "gvk", gvk.String())
+				continue
+			}
+			return fmt.Errorf("failed to list resources for pruning %s: %w", gvk.String(), err)
+		}
+		for _, item := range list.Items {
+			resourceName := item.GetName()
+			if desiredSet, exists := desiredByGVK[gvk]; exists && desiredSet[resourceName] {
+				continue
+			}
+			logger.Info("pruning removed resource",
+				"gvk", gvk.String(),
+				"namespace", ownerNamespace,
+				"name", resourceName,
+				"owner", owner.GetName())
+			err := client.Delete(ctx, resourceName, metav1.DeleteOptions{})
+			if err != nil && !apierrors.IsNotFound(err) {
+				pruningErrors = append(
+					pruningErrors,
+					fmt.Errorf("failed to delete resource %s/%s: %w", gvk.String(), resourceName, err))
+				logger.Debug("error pruning removed resource",
+					"gvk", gvk.String(),
+					"namespace", ownerNamespace,
+					"name", resourceName,
+					"owner", owner.GetName(),
+					"error", err.Error())
+			}
+		}
+	}
+	if len(pruningErrors) > 0 {
+		return errors.Join(pruningErrors...)
+	}
+	return nil
 }
 
 // kindPriority returns a numeric priority for a Kubernetes resource kind.

@@ -143,6 +143,44 @@ spec:
                 x-kubernetes-validations:
                 - message: invalid duration value
                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+              dns:
+                description: |-
+                  DNS contains DNS configuration. Note that this only applies to backends that resolve to Envoy DNS clusters, i.e.,
+                  Backends of type Static, AWS, or GCP.
+                properties:
+                  jitter:
+                    description: |-
+                      Jitter adds a random delay of up to this duration before each DNS refresh,
+                      spreading query load over time and helping prevent thundering-herd spikes.
+                      Must be less than or equal to refreshRate when both are set.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  refreshRate:
+                    description: |-
+                      RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
+
+                      Minimum value is 1ms. If unset, Envoy's default of 5s is used.
+                      When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
+                      so RefreshRate acts as the maximum polling interval.
+                      Recommended value for large-scale deployments is 60s or higher.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: refreshRate must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
+                  respectTTL:
+                    description: |-
+                      RespectTTL instructs Envoy to honor TTL values returned by DNS responses.
+                      When enabled, TTLs lower than RefreshRate effectively become the refresh interval.
+                    type: boolean
+                type: object
+                x-kubernetes-validations:
+                - message: jitter must be less than or equal to refreshRate
+                  rule: '!(has(self.jitter) && has(self.refreshRate)) || duration(self.jitter)
+                    <= duration(self.refreshRate)'
               healthCheck:
                 description: HealthCheck contains the options necessary to configure
                   the health check.
@@ -919,8 +957,9 @@ spec:
                       WellKnownCACertificates specifies whether to use a well-known set of CA
                       certificates for validating the backend's certificate chain. Currently,
                       only the system certificate pool is supported via SDS.
-                    enum:
-                    - System
+                    maxLength: 253
+                    minLength: 1
+                    pattern: ^(System|([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/([A-Za-z0-9][-A-Za-z0-9_.]{0,61})?[A-Za-z0-9]))$
                     type: string
                 type: object
                 x-kubernetes-validations:
@@ -928,6 +967,21 @@ spec:
                     wellKnownCACertificates] must be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
+              upstreamProxyProtocol:
+                description: |-
+                  UpstreamProxyProtocol configures the PROXY protocol for upstream connections to the backend.
+                  When enabled, the proxy protocol header is prepended to upstream connections,
+                  allowing backend services to see the original client connection information.
+                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/proxy_protocol/v3/upstream_proxy_protocol.proto) for more details.
+                properties:
+                  version:
+                    default: V1
+                    description: Version is the PROXY protocol version to use.
+                    enum:
+                    - V1
+                    - V2
+                    type: string
+                type: object
             type: object
             x-kubernetes-validations:
             - message: at most one of the fields in [http1ProtocolOptions http2ProtocolOptions]

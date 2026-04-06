@@ -218,6 +218,41 @@ spec:
 			wantErrors: []string{"Aggression, if specified, must be a string representing a number greater than 0.0"},
 		},
 		{
+			name: "BackendConfigPolicy: refreshRate must be at least 1ms",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-dns-refresh-too-small
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  dns:
+    refreshRate: 0s
+`,
+			wantErrors: []string{"spec.dns.refreshRate: Invalid value: .*: refreshRate must be at least 1ms"},
+		},
+		{
+			name: "BackendConfigPolicy: jitter must not exceed refreshRate",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-dns-jitter-too-large
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  dns:
+    refreshRate: 5s
+    jitter: 10s
+`,
+			wantErrors: []string{"jitter must be less than or equal to refreshRate"},
+		},
+		{
 			name: "BackendConfigPolicy: invalid durations",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -277,8 +312,8 @@ spec:
   - group: gateway.networking.k8s.io
     kind: GRPCRoute
     name: test-grpc-route
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
     name: test-listener
   targetSelectors:
   - group: gateway.networking.k8s.io
@@ -361,8 +396,8 @@ metadata:
   name: http-listener-policy-invalid-target
 spec:
   targetRefs:
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
     name: test-listener
 `,
 			wantErrors: []string{"targetRefs may only reference Gateway resources"},

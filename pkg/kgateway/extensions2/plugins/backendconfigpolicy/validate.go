@@ -5,9 +5,11 @@ import (
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
@@ -26,20 +28,22 @@ func validateXDS(
 		return nil
 	}
 
-	// default to STATIC cluster for validation, but switch to STRICT_DNS when
-	// useHostnameForHashing is enabled to avoid false positives. The load balancer
-	// logic requires STRICT_DNS clusters for hostname-based hashing to work properly.
-	discoveryType := envoyclusterv3.Cluster_STATIC
-	if policyIR.loadBalancerConfig != nil && policyIR.loadBalancerConfig.useHostnameForHashing {
-		discoveryType = envoyclusterv3.Cluster_STRICT_DNS
-	}
-
 	testCluster := &envoyclusterv3.Cluster{
-		Name: "test-cluster-for-validation",
-		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
-			Type: discoveryType,
-		},
-		ConnectTimeout: durationpb.New(5 * time.Second),
+		Name:                 "test-cluster-for-validation",
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC},
+		ConnectTimeout:       durationpb.New(5 * time.Second),
+	}
+	if requiresDnsClusterValidation(policyIR) {
+		dnsClusterConfig, err := utils.MessageToAny(&envoydnsv3.DnsCluster{})
+		if err != nil {
+			return err
+		}
+		testCluster.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
+			ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+				Name:        dnsClusterExtensionName,
+				TypedConfig: dnsClusterConfig,
+			},
+		}
 	}
 	dummyBackend := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
@@ -60,4 +64,11 @@ func validateXDS(
 	}
 
 	return v.Validate(ctx, bootstrap)
+}
+
+func requiresDnsClusterValidation(policyIR *BackendConfigPolicyIR) bool {
+	return (policyIR.loadBalancerConfig != nil && policyIR.loadBalancerConfig.useHostnameForHashing) ||
+		policyIR.dnsRefreshRate != nil ||
+		policyIR.dnsJitter != nil ||
+		policyIR.respectDnsTtl != nil
 }

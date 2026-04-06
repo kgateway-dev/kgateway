@@ -7,6 +7,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoycommonv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/common/v3"
 	envoyleastrequestv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/least_request/v3"
 	envoymaglevv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/maglev/v3"
@@ -27,6 +28,7 @@ const (
 	cookieAttributeHttpOnly = "HttpOnly"
 	cookieAttributeSameSite = "SameSite"
 	cookieValueTrue         = "true"
+	dnsClusterExtensionName = "envoy.clusters.dns"
 )
 
 type LoadBalancerConfigIR struct {
@@ -227,8 +229,8 @@ func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *envoyclusterv3.C
 		return
 	}
 
-	if config.useHostnameForHashing && out.GetType() != envoyclusterv3.Cluster_STRICT_DNS {
-		logger.Error("useHostnameForHashing is only supported for STRICT_DNS clusters. Ignoring useHostnameForHashing.",
+	if config.useHostnameForHashing && !supportsHostnameForHashing(out) {
+		logger.Error("useHostnameForHashing is only supported for strict DNS clusters. Ignoring useHostnameForHashing.",
 			"cluster", out.GetName())
 		if config.loadBalancingPolicy != nil && len(config.loadBalancingPolicy.Policies) > 0 {
 			typedCfg := config.loadBalancingPolicy.Policies[0].GetTypedExtensionConfig()
@@ -238,6 +240,29 @@ func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *envoyclusterv3.C
 
 	out.CommonLbConfig = config.commonLbConfig
 	out.LoadBalancingPolicy = config.loadBalancingPolicy
+}
+
+func supportsHostnameForHashing(cluster *envoyclusterv3.Cluster) bool {
+	switch cdt := cluster.GetClusterDiscoveryType().(type) {
+	case *envoyclusterv3.Cluster_Type:
+		return cdt.Type == envoyclusterv3.Cluster_STRICT_DNS
+	case *envoyclusterv3.Cluster_ClusterType:
+		if cdt.ClusterType.GetName() != dnsClusterExtensionName || cdt.ClusterType.GetTypedConfig() == nil {
+			return false
+		}
+		msg, err := utils.AnyToMessage(cdt.ClusterType.GetTypedConfig())
+		if err != nil {
+			logger.Error("failed to unpack dns cluster config", "cluster", cluster.GetName(), "error", err)
+			return false
+		}
+		dnsCluster, ok := msg.(*envoydnsv3.DnsCluster)
+		if !ok {
+			return false
+		}
+		return !dnsCluster.GetAllAddressesInSingleEndpoint()
+	default:
+		return false
+	}
 }
 
 // disableUseHostnameForHashingIfPresent ensures that if a load balancing policy

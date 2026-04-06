@@ -210,11 +210,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
         status: "True"
@@ -328,6 +323,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: tenant-a-https
     default/tenant-b-route:
       parents:
       - conditions:
@@ -346,6 +342,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: tenant-b-https
     default/tenant-c-route:
       parents:
       - conditions:
@@ -364,6 +361,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: tenant-c-https
   policies:
     ListenerPolicy/default/per-listener-mtls-a:
       ancestors:

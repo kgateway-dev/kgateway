@@ -56,6 +56,32 @@ func TestDockerfileVersionsMatchGoMod(t *testing.T) {
 	})
 }
 
+func TestToolsGoModVersionMatchesRoot(t *testing.T) {
+	t.Parallel()
+
+	rootDir := repoRoot(t)
+
+	goVersion := func(path string) string {
+		t.Helper()
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		m := regexp.MustCompile(`(?m)^go\s+(\S+)\s*$`).FindSubmatch(data)
+		if m == nil {
+			t.Fatalf("no 'go' directive found in %s", path)
+		}
+		return string(m[1])
+	}
+
+	rootVersion := goVersion(filepath.Join(rootDir, "go.mod"))
+	toolsVersion := goVersion(filepath.Join(rootDir, "tools", "go.mod"))
+
+	if rootVersion != toolsVersion {
+		t.Errorf("go version mismatch: go.mod has %q but tools/go.mod has %q; they must be kept in sync", rootVersion, toolsVersion)
+	}
+}
+
 func repoRoot(t *testing.T) string {
 	t.Helper()
 

@@ -314,7 +314,7 @@ func (s *ControllerSuite) TestGatewayClassStatus() {
 		require.Equal(c, gc.Generation, condition.ObservedGeneration)
 
 		// Check SupportedFeatures
-		require.ElementsMatch(c, gc.Status.SupportedFeatures, deployer.GetSupportedFeaturesForStandardGateway())
+		require.ElementsMatch(c, gc.Status.SupportedFeatures, deployer.GetSupportedFeaturesForStandardGateway(true))
 	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass to be present")
 }
 
@@ -749,7 +749,7 @@ func (s *ControllerSuite) startController(
 		CommonCollections:        commonCols,
 	}
 
-	supportedFeatures := deployer.GetSupportedFeaturesForStandardGateway()
+	supportedFeatures := deployer.GetSupportedFeaturesForStandardGateway(true)
 	classConfigs := map[string]*deployer.GatewayClassInfo{
 		altGatewayClassName: {
 			Description:       "alt GatewayClass",
@@ -813,7 +813,7 @@ func newCommonCols(ctx context.Context, kubeClient apiclient.Client) (*collectio
 		return nil, fmt.Errorf("error building CommonCollections: %w", err)
 	}
 
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName, *settings, nil)
+	plugins := registry.Plugins(ctx, commoncol, *settings, nil)
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
 

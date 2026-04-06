@@ -58,6 +58,11 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
+	// DNS contains DNS configuration. Note that this only applies to backends that resolve to Envoy DNS clusters, i.e.,
+	// Backends of type Static, AWS, or GCP.
+	// +optional
+	DNS *DNS `json:"dns,omitempty"`
+
 	// Soft limit on the size of the cluster's connections read and write buffers.
 	// If unspecified, an implementation-defined default is applied (1MiB).
 	// +optional
@@ -104,6 +109,13 @@ type BackendConfigPolicySpec struct {
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking) for more details.
 	// +optional
 	CircuitBreakers *CircuitBreakers `json:"circuitBreakers,omitempty"`
+
+	// UpstreamProxyProtocol configures the PROXY protocol for upstream connections to the backend.
+	// When enabled, the proxy protocol header is prepended to upstream connections,
+	// allowing backend services to see the original client connection information.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/proxy_protocol/v3/upstream_proxy_protocol.proto) for more details.
+	// +optional
+	UpstreamProxyProtocol *UpstreamProxyProtocol `json:"upstreamProxyProtocol,omitempty"`
 }
 
 // CircuitBreakers contains the options to configure circuit breaker thresholds for the default priority.
@@ -133,6 +145,32 @@ type CircuitBreakers struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	MaxRetries *int32 `json:"maxRetries,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:rule="!(has(self.jitter) && has(self.refreshRate)) || duration(self.jitter) <= duration(self.refreshRate)",message="jitter must be less than or equal to refreshRate"
+type DNS struct {
+	// RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
+	//
+	// Minimum value is 1ms. If unset, Envoy's default of 5s is used.
+	// When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
+	// so RefreshRate acts as the maximum polling interval.
+	// Recommended value for large-scale deployments is 60s or higher.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="refreshRate must be at least 1ms"
+	RefreshRate *metav1.Duration `json:"refreshRate,omitempty"`
+
+	// Jitter adds a random delay of up to this duration before each DNS refresh,
+	// spreading query load over time and helping prevent thundering-herd spikes.
+	// Must be less than or equal to refreshRate when both are set.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	Jitter *metav1.Duration `json:"jitter,omitempty"`
+
+	// RespectTTL instructs Envoy to honor TTL values returned by DNS responses.
+	// When enabled, TTLs lower than RefreshRate effectively become the refresh interval.
+	// +optional
+	RespectTTL *bool `json:"respectTTL,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -663,3 +701,23 @@ type Cookie struct {
 }
 
 type SourceIP struct{}
+
+// UpstreamProxyProtocol configures the PROXY protocol for upstream connections.
+type UpstreamProxyProtocol struct {
+	// Version is the PROXY protocol version to use.
+	// +optional
+	// +kubebuilder:default=V1
+	// +kubebuilder:validation:Enum=V1;V2
+	Version *ProxyProtocolVersion `json:"version,omitempty"`
+}
+
+// ProxyProtocolVersion defines the PROXY protocol version.
+// +kubebuilder:validation:Enum=V1;V2
+type ProxyProtocolVersion string
+
+const (
+	// ProxyProtocolVersionV1 is the human-readable PROXY protocol version 1.
+	ProxyProtocolVersionV1 ProxyProtocolVersion = "V1"
+	// ProxyProtocolVersionV2 is the binary PROXY protocol version 2.
+	ProxyProtocolVersionV2 ProxyProtocolVersion = "V2"
+)

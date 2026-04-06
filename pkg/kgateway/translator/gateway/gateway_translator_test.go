@@ -723,6 +723,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with fault injection attached to route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/fault-injection-route.yaml",
+			outputFile: "traffic-policy/fault-injection-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with fault injection attached to gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/fault-injection-gateway.yaml",
+			outputFile: "traffic-policy/fault-injection-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with fault injection disable overriding gateway policy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/fault-injection-disable.yaml",
+			outputFile: "traffic-policy/fault-injection-disable.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with header modifiers attached to gateway", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/header-modifiers-gateway.yaml",
@@ -780,6 +813,39 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/url-rewrite.yaml",
 			outputFile: "traffic-policy/url-rewrite.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with route tracing sampling overrides", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-tracing-sampling.yaml",
+			outputFile: "traffic-policy/route-tracing-sampling.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with route tracing disabled", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-tracing-disable.yaml",
+			outputFile: "traffic-policy/route-tracing-disable.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with route tracing custom tags", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-tracing-custom-tags.yaml",
+			outputFile: "traffic-policy/route-tracing-custom-tags.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1029,6 +1095,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend TLS Policy with sectionName", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendtlspolicy/tls-section-name.yaml",
+			outputFile: "backendtlspolicy/tls-section-name.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend TLS Policy with SAN", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backendtlspolicy/tls-san.yaml",
@@ -1088,6 +1165,39 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "directresponse/invalid-backendref-filter.yaml",
 			outputFile: "directresponse/invalid-backendref-filter.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("DirectResponse with text body format", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "directresponse/body-format-text.yaml",
+			outputFile: "directresponse/body-format-text.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("DirectResponse with JSON body format", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "directresponse/body-format-json.yaml",
+			outputFile: "directresponse/body-format-json.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("DirectResponse with content type in body format", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "directresponse/body-format-content-type.yaml",
+			outputFile: "directresponse/body-format-content-type.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1689,6 +1799,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with DNS settings", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendconfigpolicy/dns.yaml",
+			outputFile: "backendconfigpolicy/dns.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy with Health Check", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backendconfigpolicy/healthcheck.yaml",
@@ -1810,6 +1931,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with upstream proxy protocol V1", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendconfigpolicy/upstream-proxy-protocol-v1.yaml",
+			outputFile: "backendconfigpolicy/upstream-proxy-protocol-v1.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend Config Policy with upstream proxy protocol V2", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendconfigpolicy/upstream-proxy-protocol-v2.yaml",
+			outputFile: "backendconfigpolicy/upstream-proxy-protocol-v2.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with explicit generation", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/generation.yaml",
@@ -1851,19 +1994,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		})
-	})
-
-	t.Run("basic listener set with experimental features disabled", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFile:  "listener-sets/basic.yaml",
-			outputFile: "listener-sets/basic-experimental-disabled.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalGatewayAPIFeatures = false
 		})
 	})
 
@@ -2212,6 +2342,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy/per-port.yaml",
 			outputFile: "listener-policy/per-port.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with RBAC per port settings", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/rbac-network-per-port.yaml",
+			outputFile: "listener-policy/rbac-network-per-port.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

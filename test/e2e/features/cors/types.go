@@ -37,10 +37,10 @@ var (
 			Manifests: []string{httpRoutesManifest, gwCorsTrafficPolicyManifest, routeCorsTrafficPolicyManifest},
 		},
 		"TestHttpRouteCorsInRouteRules": {
-			Manifests: []string{httpRoutesManifest, corsHttpRoutesManifest},
+			Manifests: []string{corsHttpRoutesManifest},
 		},
 		"TestHttpRouteAndTrafficPolicyCors": {
-			Manifests:       []string{httpRoutesManifest, corsHttpRoutesManifest, gwCorsTrafficPolicyManifest},
+			Manifests:       []string{corsHttpRoutesManifest, gwCorsTrafficPolicyManifest},
 			MinGwApiVersion: base.GwApiRequireCorsFilters,
 		},
 	}

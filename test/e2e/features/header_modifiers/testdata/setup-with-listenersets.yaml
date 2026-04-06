@@ -15,8 +15,8 @@ spec:
     namespaces:
       from: All
 ---
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: ls
 spec:
@@ -38,8 +38,8 @@ metadata:
   name: svc-route-2
 spec:
   parentRefs:
-    - kind: XListenerSet
-      group: gateway.networking.x-k8s.io
+    - kind: ListenerSet
+      group: gateway.networking.k8s.io
       name: ls
       namespace: default
   hostnames:

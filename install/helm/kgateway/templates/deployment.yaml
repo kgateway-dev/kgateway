@@ -1,3 +1,11 @@
+{{- $controllerPodAnnotations := ternary .Values.controller.podAnnotations .Values.podAnnotations (not (kindIs "invalid" .Values.controller.podAnnotations)) }}
+{{- $controllerPodSecurityContext := ternary .Values.controller.podSecurityContext .Values.podSecurityContext (not (kindIs "invalid" .Values.controller.podSecurityContext)) }}
+{{- $controllerSecurityContext := ternary .Values.controller.securityContext .Values.securityContext (not (kindIs "invalid" .Values.controller.securityContext)) }}
+{{- $controllerResources := ternary .Values.controller.resources .Values.resources (not (kindIs "invalid" .Values.controller.resources)) }}
+{{- $controllerNodeSelector := ternary .Values.controller.nodeSelector .Values.nodeSelector (not (kindIs "invalid" .Values.controller.nodeSelector)) }}
+{{- $controllerAffinity := ternary .Values.controller.affinity .Values.affinity (not (kindIs "invalid" .Values.controller.affinity)) }}
+{{- $controllerTolerations := ternary .Values.controller.tolerations .Values.tolerations (not (kindIs "invalid" .Values.controller.tolerations)) }}
+{{- $controllerTopologySpreadConstraints := ternary .Values.controller.topologySpreadConstraints .Values.topologySpreadConstraints (not (kindIs "invalid" .Values.controller.topologySpreadConstraints)) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,7 +18,9 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  {{- if not (kindIs "invalid" .Values.controller.replicaCount) }}
   replicas: {{ .Values.controller.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "kgateway.selectorLabels" . | nindent 6 }}
@@ -23,9 +33,12 @@ spec:
       annotations:
         prometheus.io/path: "/metrics"
         prometheus.io/port: {{ .Values.controller.service.ports.metrics | default 9092 | quote}}
-        {{- toYaml .Values.podAnnotations | nindent 8 }}
+        {{- with $controllerPodAnnotations }}
+        {{- toYaml $controllerPodAnnotations | nindent 8 }}
+        {{- end }}
       labels:
         {{- include "kgateway.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: controller
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -35,13 +48,13 @@ spec:
       priorityClassName: {{ .Values.controller.priorityClassName | quote }}
       {{- end }}
       serviceAccountName: {{ include "kgateway.serviceAccountName" . }}
-      {{- with .Values.podSecurityContext }}
+      {{- with $controllerPodSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: controller
-          {{- with .Values.securityContext }}
+          {{- with $controllerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -123,7 +136,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml $controllerResources | nindent 12 }}
           {{- if .Values.controller.xds.tls.enabled }}
           volumeMounts:
             - name: xds-tls
@@ -136,19 +149,19 @@ spec:
           secret:
             secretName: kgateway-xds-cert
       {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- with $controllerNodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with $controllerAffinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with $controllerTolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.topologySpreadConstraints }}
+      {{- with $controllerTopologySpreadConstraints }}
       topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}

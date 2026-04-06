@@ -6,16 +6,20 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	"istio.io/api/annotation"
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/kube/krt"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
+
+const dnsClusterExtensionName = "envoy.clusters.dns"
 
 func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
 	se, ok := in.Obj.(*networkingclient.ServiceEntry)
@@ -34,12 +38,20 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 			}
 		}
 	case networking.ServiceEntry_DNS:
-		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
-			Type: envoyclusterv3.Cluster_STRICT_DNS,
+		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
+			ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+				Name:        dnsClusterExtensionName,
+				TypedConfig: utils.MustMessageToAny(&envoydnsv3.DnsCluster{}),
+			},
 		}
 	case networking.ServiceEntry_DNS_ROUND_ROBIN:
-		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
-			Type: envoyclusterv3.Cluster_LOGICAL_DNS,
+		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
+			ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+				Name: dnsClusterExtensionName,
+				TypedConfig: utils.MustMessageToAny(&envoydnsv3.DnsCluster{
+					AllAddressesInSingleEndpoint: true,
+				}),
+			},
 		}
 	}
 

@@ -107,12 +107,8 @@ Routes:
 Statuses:
   gateways:
     default/example-gateway:
+      attachedListenerSets: 1
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsAttached
-        status: "True"
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
@@ -168,9 +164,10 @@ Statuses:
           type: ResolvedRefs
         controllerName: kgateway
         parentRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: ls-tls-options
+          sectionName: https-ls
   listenerSets:
     default/ls-tls-options:
       conditions:
@@ -208,7 +205,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: https-ls
-        port: 443
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute

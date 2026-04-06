@@ -83,6 +83,14 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	backend.GvPrefix = BackendClusterPrefix
 	backend.CanonicalHostname = kubeutils.GetServiceHostname(svc.Name, svc.Namespace)
 
+	// Set the port name for sectionName based policy attachment
+	for _, p := range svc.Spec.Ports {
+		if p.Port == svcPort {
+			backend.PortName = p.Name
+			break
+		}
+	}
+
 	// If the trafficDistribution is specified in the spec, use that.
 	// If both annotations and spec are specified, the spec takes precedence.
 	// The field was added as beta in Kubernetes 1.31

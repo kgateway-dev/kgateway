@@ -7,7 +7,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -324,8 +323,8 @@ func TestMergeProxyReports(t *testing.T) {
 }
 
 func TestIsListenerSetStatusEqual(t *testing.T) {
-	status1 := &gwxv1a1.ListenerSetStatus{
-		Listeners: []gwxv1a1.ListenerEntryStatus{
+	status1 := &gwv1.ListenerSetStatus{
+		Listeners: []gwv1.ListenerEntryStatus{
 			{
 				Name:           "listener-1",
 				AttachedRoutes: 2,
@@ -333,8 +332,8 @@ func TestIsListenerSetStatusEqual(t *testing.T) {
 		},
 	}
 	// same as status1
-	status2 := &gwxv1a1.ListenerSetStatus{
-		Listeners: []gwxv1a1.ListenerEntryStatus{
+	status2 := &gwv1.ListenerSetStatus{
+		Listeners: []gwv1.ListenerEntryStatus{
 			{
 				Name:           "listener-1",
 				AttachedRoutes: 2,
@@ -342,8 +341,8 @@ func TestIsListenerSetStatusEqual(t *testing.T) {
 		},
 	}
 	// different from status1
-	status3 := &gwxv1a1.ListenerSetStatus{
-		Listeners: []gwxv1a1.ListenerEntryStatus{
+	status3 := &gwv1.ListenerSetStatus{
+		Listeners: []gwv1.ListenerEntryStatus{
 			{
 				Name:           "listener-2",
 				AttachedRoutes: 1,
@@ -353,8 +352,8 @@ func TestIsListenerSetStatusEqual(t *testing.T) {
 
 	tests := []struct {
 		name string
-		objA *gwxv1a1.ListenerSetStatus
-		objB *gwxv1a1.ListenerSetStatus
+		objA *gwv1.ListenerSetStatus
+		objB *gwv1.ListenerSetStatus
 		want bool
 	}{
 		{"EqualStatus", status1, status2, true},

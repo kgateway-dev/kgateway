@@ -49,11 +49,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: 'Some listeners are not programmed: tls-no-routes: TCP/TLS listener
           has no valid backends or routes'
         reason: ListenersNotValid
@@ -91,8 +86,6 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: TLSRoute
-        - group: gateway.networking.k8s.io
-          kind: TCPRoute
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
@@ -140,3 +133,4 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: tls-with-routes

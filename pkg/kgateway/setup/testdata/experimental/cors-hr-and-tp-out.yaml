@@ -102,4 +102,5 @@ routes:
           allowMethods: POST
           allowOriginStringMatch:
           - exact: https://notexample.com
+          forwardNotMatchingPreflights: false
           maxAge: "5"

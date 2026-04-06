@@ -1,5 +1,5 @@
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: valid-ls
   namespace: allowed-ns
@@ -29,8 +29,8 @@ metadata:
   name: ls-route
 spec:
   parentRefs:
-    - kind: XListenerSet
-      group: gateway.networking.x-k8s.io
+    - kind: ListenerSet
+      group: gateway.networking.k8s.io
       name: valid-ls
       namespace: allowed-ns
   hostnames:
@@ -46,8 +46,8 @@ metadata:
   name: ls-specific-route
 spec:
   parentRefs:
-    - kind: XListenerSet
-      group: gateway.networking.x-k8s.io
+    - kind: ListenerSet
+      group: gateway.networking.k8s.io
       name: valid-ls
       namespace: allowed-ns
       sectionName: http-2

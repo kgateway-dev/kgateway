@@ -103,11 +103,6 @@ Statuses:
     gwtest/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
           Failed to create pre-route filter config: Failed to initialize per-route
           dynamic module'

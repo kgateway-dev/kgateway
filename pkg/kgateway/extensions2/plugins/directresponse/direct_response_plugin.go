@@ -11,14 +11,19 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
+
+var logger = logging.New("plugin/directresponse")
 
 type directResponse struct {
 	// +noKrtEquals
@@ -47,13 +52,14 @@ type directResponsePluginGwPass struct {
 var _ ir.ProxyTranslationPass = &directResponsePluginGwPass{}
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
-	col := krt.WrapClient(kclient.NewFilteredDelayed[*kgateway.DirectResponse](
+	cli := kclient.NewFilteredDelayed[*kgateway.DirectResponse](
 		commoncol.Client,
 		wellknown.DirectResponseGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
-	), commoncol.KrtOpts.ToOptions("DirectResponse")...)
-
+	)
+	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("DirectResponse")...)
 	gk := wellknown.DirectResponseGVK.GroupKind()
+
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.DirectResponse) *ir.PolicyWrapper {
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -74,6 +80,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			wellknown.DirectResponseGVK.GroupKind(): {
 				Name:                      "directresponse",
 				Policies:                  policyCol,
+				GetPolicyStatus:           getPolicyStatusFn(cli),
+				PatchPolicyStatus:         patchPolicyStatusFn(cli),
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 			},
 		},
@@ -114,6 +122,33 @@ func (p *directResponsePluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, output
 				InlineString: *dr.spec.Body,
 			},
 		}
+	} else if dr.spec.BodyFormat != nil {
+		switch {
+		case dr.spec.BodyFormat.Text != nil:
+			drAction.BodyFormat = &envoycorev3.SubstitutionFormatString{
+				Format: &envoycorev3.SubstitutionFormatString_TextFormatSource{
+					TextFormatSource: &envoycorev3.DataSource{
+						Specifier: &envoycorev3.DataSource_InlineString{
+							InlineString: *dr.spec.BodyFormat.Text,
+						},
+					},
+				},
+			}
+		case dr.spec.BodyFormat.JSON != nil:
+			jsonStruct, err := utils.JSONToProtoStruct(dr.spec.BodyFormat.JSON.Raw)
+			if err != nil {
+				return fmt.Errorf("DirectResponse body format JSON is invalid: %w", err)
+			}
+			drAction.BodyFormat = &envoycorev3.SubstitutionFormatString{
+				Format: &envoycorev3.SubstitutionFormatString_JsonFormat{
+					JsonFormat: jsonStruct,
+				},
+			}
+		}
+		if drAction.BodyFormat == nil {
+			return fmt.Errorf("DirectResponse body format must specify either text or json")
+		}
+		drAction.BodyFormat.ContentType = ptr.Deref(dr.spec.BodyFormat.ContentType, "")
 	}
 	outputRoute.Action = &envoyroutev3.Route_DirectResponse{
 		DirectResponse: drAction,

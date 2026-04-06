@@ -30,6 +30,7 @@ type oidcProviderConfig struct {
 	TokenEndpoint         string  `json:"token_endpoint"`
 	AuthorizationEndpoint string  `json:"authorization_endpoint"`
 	EndSessionEndpoint    *string `json:"end_session_endpoint,omitempty"`
+	JWKSURI               string  `json:"jwks_uri"`
 }
 
 // newOIDCProviderConfigDiscoverer returns a oidcProviderConfigDiscoverer instance that is responsible

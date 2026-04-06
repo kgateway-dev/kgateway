@@ -35,12 +35,8 @@ If Strict Mode Validation is needed, see the [Classic Transformation Deprecation
 
 Starting from v2.2.0, we supports building on arm64 architecture and uses Envoy arm64 binary directly from upstream Envoy container.
 
-### add header function not supported with Rustformation on arm64
 
-The rust transformation dynamic module is building with v1.36 Envoy and unfortunately, the add header function has not been exposed in the rust sdk, so on arm64 build, the add header function in Transformation is a no-op. Please use set header instead. This will be addressed when Envoy is upgraded to v1.37 in the future.
-
-The add header function works correctly on x86 architecture because we are still using a custom build Envoy binary and we have patched the rust sdk there to support add header.
 
 ## Classic Transformation Deprecation
 
-Starting from v2.2.0, Classic Transformation is being deprecated and will be removed in future release. On x86_64 architecture, this release is still using the custom envoy build, so it is possible to switch back to the Classic Transformation if needed by using the helm settings `controller.extraEnv.KGW_USE_RUST_FORMATIONS=false`.
+As of v2.3.0, Classic Transformation has been removed.

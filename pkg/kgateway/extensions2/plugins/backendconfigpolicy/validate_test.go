@@ -9,6 +9,7 @@ import (
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -114,7 +115,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 			wantErr: false, // No error because validation is skipped
 		},
 		{
-			name: "policy with useHostnameForHashing uses STRICT_DNS cluster for validation",
+			name: "policy with useHostnameForHashing uses DnsCluster for validation",
 			policyIR: &BackendConfigPolicyIR{
 				ct: time.Now(),
 				loadBalancerConfig: &LoadBalancerConfigIR{
@@ -123,15 +124,62 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 			},
 			validator: &mockValidator{
 				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
-					// Verify that the cluster uses STRICT_DNS when useHostnameForHashing is enabled
 					cluster := config.StaticResources.Clusters[0]
 					if len(config.StaticResources.Clusters) != 1 {
 						return errors.New("expected exactly one cluster in bootstrap")
 					}
-					if cluster.GetType() != envoyclusterv3.Cluster_STRICT_DNS {
-						return fmt.Errorf("expected STRICT_DNS cluster type, got %v", cluster.GetType())
+					clusterType := cluster.GetClusterType()
+					if clusterType == nil {
+						return errors.New("expected custom dns cluster type")
 					}
-					return nil // Validation passes
+					if clusterType.GetName() != dnsClusterExtensionName {
+						return fmt.Errorf("expected %s cluster type, got %s", dnsClusterExtensionName, clusterType.GetName())
+					}
+					var dnsCluster envoydnsv3.DnsCluster
+					if err := clusterType.GetTypedConfig().UnmarshalTo(&dnsCluster); err != nil {
+						return fmt.Errorf("failed to unmarshal dns cluster config: %w", err)
+					}
+					if dnsCluster.GetAllAddressesInSingleEndpoint() {
+						return errors.New("expected strict DNS semantics for hostname hashing validation")
+					}
+					return nil
+				},
+			},
+			mode:    apisettings.ValidationStrict,
+			wantErr: false,
+		},
+		{
+			name: "policy with dns refresh config uses DnsCluster for validation",
+			policyIR: &BackendConfigPolicyIR{
+				ct:             time.Now(),
+				dnsRefreshRate: durationpb.New(60 * time.Second),
+				dnsJitter:      durationpb.New(15 * time.Second),
+				respectDnsTtl:  new(true),
+			},
+			validator: &mockValidator{
+				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
+					if len(config.StaticResources.Clusters) != 1 {
+						return errors.New("expected exactly one cluster in bootstrap")
+					}
+					cluster := config.StaticResources.Clusters[0]
+					clusterType := cluster.GetClusterType()
+					if clusterType == nil {
+						return errors.New("expected custom dns cluster type")
+					}
+					var dnsCluster envoydnsv3.DnsCluster
+					if err := clusterType.GetTypedConfig().UnmarshalTo(&dnsCluster); err != nil {
+						return fmt.Errorf("failed to unmarshal dns cluster config: %w", err)
+					}
+					if dnsCluster.GetDnsRefreshRate().AsDuration() != 60*time.Second {
+						return fmt.Errorf("expected dns refresh rate to be 60s, got %v", dnsCluster.GetDnsRefreshRate().AsDuration())
+					}
+					if dnsCluster.GetDnsJitter().AsDuration() != 15*time.Second {
+						return fmt.Errorf("expected dns jitter to be 15s, got %v", dnsCluster.GetDnsJitter().AsDuration())
+					}
+					if !dnsCluster.GetRespectDnsTtl() {
+						return errors.New("expected respect dns ttl to be true")
+					}
+					return nil
 				},
 			},
 			mode:    apisettings.ValidationStrict,

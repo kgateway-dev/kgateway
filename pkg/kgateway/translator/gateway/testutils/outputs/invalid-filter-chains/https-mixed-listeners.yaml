@@ -78,11 +78,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: 'Some listeners are not programmed: https-invalid-secret: Secret
           default/invalid-https-secret not found.'
         reason: ListenersNotValid
@@ -169,6 +164,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: https-invalid-secret
     default/valid-route:
       parents:
       - conditions:
@@ -187,3 +183,4 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: https-valid-secret

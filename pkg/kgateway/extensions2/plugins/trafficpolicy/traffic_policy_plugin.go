@@ -5,7 +5,7 @@ import (
 	"time"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	envoy_api_key_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
@@ -14,13 +14,12 @@ import (
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
+	faulthttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	// TODO(nfuden): remove once rustformations are able to be used in a production environment
-	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
@@ -45,7 +44,6 @@ import (
 )
 
 const (
-	transformationFilterNamePrefix = "transformation"
 	rustformationFilterNamePrefix  = "dynamic_modules/simple_mutations"
 	localRateLimitFilterNamePrefix = "ratelimit/local"
 	localRateLimitStatPrefix       = "http_local_rate_limiter"
@@ -86,7 +84,6 @@ type TrafficPolicy struct {
 type trafficPolicySpecIr struct {
 	buffer          *bufferIR
 	extProc         *extprocIR
-	transformation  *transformationIR
 	rustformation   *rustformationIR
 	extAuth         *extAuthIR
 	localRateLimit  *localRateLimitIR
@@ -105,6 +102,8 @@ type trafficPolicySpecIr struct {
 	urlRewrite      *urlRewriteIR
 	apiKeyAuth      *apiKeyAuthIR
 	oauth2          *oauthIR
+	tracing         *routeTracingIR
+	faultInjection  *faultInjectionIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -120,9 +119,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 
-	if !d.spec.transformation.Equals(d2.spec.transformation) {
-		return false
-	}
 	if !d.spec.rustformation.Equals(d2.spec.rustformation) {
 		return false
 	}
@@ -183,6 +179,12 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.oauth2.Equals(d2.spec.oauth2) {
 		return false
 	}
+	if !d.spec.tracing.Equals(d2.spec.tracing) {
+		return false
+	}
+	if !d.spec.faultInjection.Equals(d2.spec.faultInjection) {
+		return false
+	}
 	return true
 }
 
@@ -191,7 +193,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 // PGV validation is always performed regardless of route replacement mode.
 func (p *TrafficPolicy) Validate() error {
 	var validators []func() error
-	validators = append(validators, p.spec.transformation.Validate)
 	validators = append(validators, p.spec.rustformation.Validate)
 	validators = append(validators, p.spec.localRateLimit.Validate)
 	validators = append(validators, p.spec.globalRateLimit.Validate)
@@ -210,6 +211,8 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.urlRewrite.Validate)
 	validators = append(validators, p.spec.apiKeyAuth.Validate)
 	validators = append(validators, p.spec.oauth2.Validate)
+	validators = append(validators, p.spec.tracing.Validate)
+	validators = append(validators, p.spec.faultInjection.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -223,7 +226,6 @@ type trafficPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 
 	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
-	listenerTransform        *transformationpb.RouteTransformations
 	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
 	extAuthPerProvider       ProviderNeededMap
 	extProcPerProvider       ProviderNeededMap
@@ -239,22 +241,14 @@ type trafficPolicyPluginGwPass struct {
 	decompressorInChain      map[string]*decompressorv3.Decompressor
 	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
 	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
+	faultInChain             map[string]*faulthttpv3.HTTPFault
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
 
 var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
 
-var useRustformations bool
-
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, mergeSettings string, v validator.Validator) sdk.Plugin {
-	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
-	if useRustformations {
-		logger.Info("transformation is using Rust Dynamic Module.")
-	} else {
-		logger.Warn("class transformation using envoy-gloo is being deprecated in v2.2 and will be removed in v2.3")
-	}
-
 	cli := kclient.NewFilteredDelayed[*kgateway.TrafficPolicy](
 		commoncol.Client,
 		wellknown.TrafficPolicyGVR,
@@ -410,6 +404,13 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	stagedFilters := []filters.StagedHttpFilter{}
 
+	// Add Fault injection filter (FaultStage is the first stage in the filter chain).
+	if f := p.faultInChain[fcc.FilterChainName]; f != nil {
+		filter := filters.MustNewStagedFilter(faultFilterName, f, filters.DuringStage(filters.FaultStage))
+		filter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, filter)
+	}
+
 	// Add global ExtProc disable filter when there are providers
 	if len(p.extProcPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
@@ -436,33 +437,16 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, stagedExtProcFilter)
 	}
 
-	// register classic transforms
-	if p.setTransformationInChain[fcc.FilterChainName] && !useRustformations {
-		// TODO(nfuden): support stages such as early
-		transformationCfg := transformationpb.FilterTransformations{}
-		if p.listenerTransform != nil {
-			convertClassicRouteToListener(&transformationCfg, p.listenerTransform)
-		}
-		filter := filters.MustNewStagedFilter(transformationFilterNamePrefix,
-			&transformationCfg,
-			filters.BeforeStage(filters.AcceptedStage),
-		)
-		filter.Filter.Disabled = true
-		stagedFilters = append(stagedFilters, filter)
-	}
-	if p.setTransformationInChain[fcc.FilterChainName] && useRustformations {
-		cfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
+	if p.setTransformationInChain[fcc.FilterChainName] {
+		cfg := utils.MustMessageToAny(&wrapperspb.StringValue{
 			Value: "{}",
 		})
 		rustCfg := dynamicmodulesv3.DynamicModuleFilter{
-			DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
+			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 				Name: "rust_module",
 			},
 			FilterName:   "http_simple_mutations",
 			FilterConfig: cfg,
-		}
-		if p.listenerTransform != nil {
-			// TODO: Add the listener level transform config here?
 		}
 
 		rustFilter := filters.MustNewStagedFilter(rustformationFilterNamePrefix,
@@ -518,6 +502,21 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 		stagedFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, stagedFilter)
+
+		jwtFilter := provider.Extension.OAuth2.jwtCfg
+		if jwtFilter == nil {
+			continue
+		}
+
+		stagedJwtFilter := filters.MustNewStagedFilterWithWeight(
+			oauthJWTFilterName(provider.Name),
+			jwtFilter,
+			filters.DuringStage(filters.AuthNStage),
+			provider.Extension.PrecedenceWeight,
+		)
+
+		stagedJwtFilter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, stagedJwtFilter)
 	}
 
 	if len(p.jwtPerProvider.Providers[fcc.FilterChainName]) > 0 {
@@ -637,11 +636,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	typedFilterConfig *ir.TypedFilterConfigMap,
 	spec trafficPolicySpecIr,
 ) {
-	if useRustformations {
-		p.handleRustTransformation(fcn, typedFilterConfig, spec.rustformation)
-	} else {
-		p.handleTransformation(fcn, typedFilterConfig, spec.transformation)
-	}
+	p.handleRustFormation(fcn, typedFilterConfig, spec.rustformation)
 
 	// Apply ExtAuthz configuration if present
 	// ExtAuth does not allow for most information such as destination
@@ -661,6 +656,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleBasicAuth(fcn, typedFilterConfig, spec.basicAuth)
 	p.handleAPIKeyAuth(fcn, typedFilterConfig, spec.apiKeyAuth)
 	p.handleOauth2(fcn, typedFilterConfig, spec.oauth2)
+	p.handleFaultInjection(fcn, typedFilterConfig, spec.faultInjection)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level
@@ -668,8 +664,9 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	spec trafficPolicySpecIr,
 	out *envoyroutev3.Route,
 ) {
-	// A parent route rule with a delegated backend will not have RouteAction set
-	if out.GetAction() == nil {
+	// A parent route rule with a delegated backend will not have RouteAction set.
+	// Routes with redirect/direct response also do not have RouteAction.
+	if out.GetRoute() == nil {
 		return
 	}
 
@@ -701,6 +698,9 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 
 	// Apply URL rewrite configuration
 	applyURLRewrite(spec.urlRewrite, out)
+
+	// Apply route-level tracing overrides
+	p.handleRouteTracing(spec, out)
 }
 
 // handlePerVHostPolicies handles policies that are meant to be processed at the vhost level

@@ -47,6 +47,9 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 					Namespace: new(gwv1.Namespace(obj.GetObjectSource().Namespace)),
 					Name:      gwv1.ObjectName(obj.GetObjectSource().Name),
 				}
+				if polAtt.PolicyRef.SectionName != "" {
+					ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
+				}
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{

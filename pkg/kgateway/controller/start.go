@@ -213,7 +213,6 @@ func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsF
 		plugins := registry.Plugins(
 			ctx,
 			commoncol,
-			cfg.WaypointGatewayClassName,
 			*cfg.SetupOpts.GlobalSettings,
 			cfg.Validator,
 		)
@@ -311,7 +310,7 @@ func GetDefaultClassInfo(
 			Labels:            map[string]string{},
 			Annotations:       map[string]string{},
 			ControllerName:    controllerName,
-			SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(),
+			SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(globalSettings.EnableExperimentalGatewayAPIFeatures),
 		}
 		applyGatewayClassParametersRef(classInfos[gatewayClassName], gatewayClassName, refOverrides)
 	}
@@ -324,7 +323,7 @@ func GetDefaultClassInfo(
 				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
 			},
 			ControllerName:    controllerName,
-			SupportedFeatures: deployer.GetSupportedFeaturesForWaypointGateway(),
+			SupportedFeatures: deployer.GetSupportedFeaturesForWaypointGateway(globalSettings.EnableExperimentalGatewayAPIFeatures),
 		}
 		applyGatewayClassParametersRef(classInfos[waypointGatewayClassName], waypointGatewayClassName, refOverrides)
 	}

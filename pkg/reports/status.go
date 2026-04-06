@@ -14,26 +14,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 // Status message constants
 const (
-	GatewayAcceptedMessage       = "Successfully accepted Gateway"
-	GatewayProgrammedMessage     = "Successfully programmed Gateway"
-	ListenerSetAcceptedMessage   = "Successfully accepted ListenerSet"
-	ListenerSetProgrammedMessage = "Successfully programmed ListenerSet"
-	ListenerAcceptedMessage      = "Successfully accepted Listener"
-	ListenerNoConflictsMessage   = "Successfully verified that Listener has no conflicts"
-	ValidRefsMessage             = "Successfully resolved all references"
-	ListenerProgrammedMessage    = "Successfully programmed Listener"
-	RouteAcceptedMessage         = "Successfully accepted Route"
-	GatewayClassAcceptedMessage  = "GatewayClass accepted by kgateway controller"
+	GatewayAcceptedMessage         = "Successfully accepted Gateway"
+	GatewayProgrammedMessage       = "Successfully programmed Gateway"
+	GatewayInsecureFallbackMessage = "Gateway frontend validation is configured to allow insecure fallback"
+	ListenerSetAcceptedMessage     = "Successfully accepted ListenerSet"
+	ListenerSetProgrammedMessage   = "Successfully programmed ListenerSet"
+	ListenerAcceptedMessage        = "Successfully accepted Listener"
+	ListenerNoConflictsMessage     = "Successfully verified that Listener has no conflicts"
+	ValidRefsMessage               = "Successfully resolved all references"
+	ListenerProgrammedMessage      = "Successfully programmed Listener"
+	RouteAcceptedMessage           = "Successfully accepted Route"
+	GatewayClassAcceptedMessage    = "GatewayClass accepted by kgateway controller"
 )
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
@@ -102,6 +101,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	}
 
 	handleInvalidAddresses(gwReport, &gw)
+	handleInsecureFrontendValidationMode(gwReport, &gw)
 
 	addMissingGatewayConditions(r.Gateway(&gw), &gw)
 
@@ -118,7 +118,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	// If there are conditions on the Gateway that are not owned by our reporter, include
 	// them in the final list of conditions to preseve conditions we do not own
 	for _, condition := range gw.Status.Conditions {
-		if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
+		if shouldPreserveGatewayCondition(condition, finalConditions) {
 			finalConditions = append(finalConditions, condition)
 		}
 	}
@@ -127,6 +127,9 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	finalGwStatus.Addresses = gw.Status.Addresses
 	finalGwStatus.Conditions = finalConditions
 	finalGwStatus.Listeners = finalListeners
+	if gwReport.attachedListenerSets > 0 {
+		finalGwStatus.AttachedListenerSets = &gwReport.attachedListenerSets
+	}
 	return &finalGwStatus
 }
 
@@ -155,7 +158,67 @@ func handleInvalidAddresses(report *GatewayReport, g *gwv1.Gateway) {
 	}
 }
 
-func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XListenerSet) *gwxv1a1.ListenerSetStatus {
+func handleInsecureFrontendValidationMode(report *GatewayReport, g *gwv1.Gateway) {
+	if !gatewayUsesInsecureFrontendValidationMode(g) {
+		return
+	}
+
+	report.SetCondition(reporter.GatewayCondition{
+		Type:    gwv1.GatewayConditionInsecureFrontendValidationMode,
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.GatewayReasonConfigurationChanged,
+		Message: GatewayInsecureFallbackMessage,
+	})
+}
+
+func gatewayUsesInsecureFrontendValidationMode(g *gwv1.Gateway) bool {
+	if g == nil || g.Spec.TLS == nil || g.Spec.TLS.Frontend == nil {
+		return false
+	}
+
+	if validationUsesInsecureFrontendMode(g.Spec.TLS.Frontend.Default.Validation) {
+		return true
+	}
+
+	for _, perPort := range g.Spec.TLS.Frontend.PerPort {
+		if validationUsesInsecureFrontendMode(perPort.TLS.Validation) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func validationUsesInsecureFrontendMode(validation *gwv1.FrontendTLSValidation) bool {
+	return validation != nil && validation.Mode == gwv1.AllowInsecureFallback
+}
+
+func isReporterOwnedGatewayConditionType(conditionType gwv1.GatewayConditionType) bool {
+	switch conditionType {
+	case gwv1.GatewayConditionAccepted,
+		gwv1.GatewayConditionProgrammed,
+		gwv1.GatewayConditionInsecureFrontendValidationMode:
+		return true
+	default:
+		return false
+	}
+}
+
+func shouldPreserveGatewayCondition(condition metav1.Condition, finalConditions []metav1.Condition) bool {
+	if meta.FindStatusCondition(finalConditions, condition.Type) != nil {
+		return false
+	}
+
+	if condition.Type == string(gwv1.GatewayConditionAccepted) &&
+		condition.Status == metav1.ConditionFalse &&
+		condition.Reason == string(gwv1.GatewayReasonInvalidParameters) {
+		return true
+	}
+
+	return !isReporterOwnedGatewayConditionType(gwv1.GatewayConditionType(condition.Type))
+}
+
+func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
 	lsReport := r.ListenerSet(&ls)
 	if lsReport == nil {
 		return nil
@@ -180,7 +243,7 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 			AddMissingListenerConditions(lisReport)
 
 			finalConditions := make([]metav1.Condition, 0, len(lisReport.Status.Conditions))
-			oldLisStatusIndex := slices.IndexFunc(ls.Status.Listeners, func(l gwxv1a1.ListenerEntryStatus) bool {
+			oldLisStatusIndex := slices.IndexFunc(ls.Status.Listeners, func(l gwv1.ListenerEntryStatus) bool {
 				return l.Name == lis.Name
 			})
 			for _, lisCondition := range lisReport.Status.Conditions {
@@ -222,6 +285,24 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 		})
 	}
 
+	// If there are no valid listeners, reject the listenerSet
+	if len(finalListeners) != 0 {
+		if len(invalidListeners) == len(finalListeners) {
+			lsReport.SetCondition(reporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: "No valid listeners",
+			})
+			lsReport.SetCondition(reporter.GatewayCondition{
+				Type:    gwv1.GatewayConditionProgrammed,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: "No valid listeners",
+			})
+		}
+	}
+
 	AddMissingListenerSetConditions(r.ListenerSet(&ls))
 
 	finalConditions := make([]metav1.Condition, 0)
@@ -242,20 +323,12 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 		}
 	}
 
-	finalLsStatus := gwxv1a1.ListenerSetStatus{}
+	finalLsStatus := gwv1.ListenerSetStatus{}
 	finalLsStatus.Conditions = finalConditions
-	fl := make([]gwxv1a1.ListenerEntryStatus, 0, len(finalListeners))
-	for i, f := range finalListeners {
-		listener := ls.Spec.Listeners[i]
-		port, err := kubeutils.DetectListenerPortNumber(listener.Protocol, listener.Port)
-		if err != nil {
-			// Set a random value until upstream to allows 0 for implementations that do not support dynamic port assignment
-			port = 65535
-		}
-
-		fl = append(fl, gwxv1a1.ListenerEntryStatus{
+	fl := make([]gwv1.ListenerEntryStatus, 0, len(finalListeners))
+	for _, f := range finalListeners {
+		fl = append(fl, gwv1.ListenerEntryStatus{
 			Name:           f.Name,
-			Port:           port,
 			SupportedKinds: f.SupportedKinds,
 			AttachedRoutes: f.AttachedRoutes,
 			Conditions:     f.Conditions,
@@ -308,6 +381,12 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
 	case *gwv1a2.TCPRoute:
+		existingStatus = route.Status.RouteStatus
+		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
+		if len(parentRefs) == 0 {
+			parentRefs = append(parentRefs, routeReport.parentRefs()...)
+		}
+	case *gwv1.TLSRoute:
 		existingStatus = route.Status.RouteStatus
 		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
 		if len(parentRefs) == 0 {

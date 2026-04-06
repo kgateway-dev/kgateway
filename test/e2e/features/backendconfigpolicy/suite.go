@@ -10,6 +10,7 @@ import (
 	"time"
 
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
@@ -60,6 +61,10 @@ func (s *testingSuite) SetupSuite() {
 		"TestBackendConfigPolicy": {
 			setupManifest,
 		},
+		"TestBackendConfigPolicyDNS": {
+			nginxManifest,
+			dnsManifest,
+		},
 		"TestBackendConfigPolicyTLSInsecureSkipVerify": {
 			tlsInsecureManifest,
 			nginxManifest,
@@ -78,6 +83,9 @@ func (s *testingSuite) SetupSuite() {
 		},
 		"TestBackendConfigPolicyClearStaleStatus": {
 			setupManifest,
+		},
+		"TestBackendConfigPolicyUpstreamProxyProtocol": {
+			upstreamProxyProtocolManifest,
 		},
 	}
 }
@@ -228,6 +236,41 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 	})
 }
 
+func (s *testingSuite) TestBackendConfigPolicyDNS() {
+	s.testInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.ctx,
+		"dns-route",
+		"kgateway-base",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
+		s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+			clusters, err := adminClient.GetDynamicClusters(ctx)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get dynamic clusters")
+
+			cluster, ok := clusters["backend_kgateway-base_dns-backend_0"]
+			g.Expect(ok).To(gomega.BeTrue(), "dns backend cluster should be in Envoy xDS")
+			g.Expect(cluster).NotTo(gomega.BeNil())
+
+			clusterType := cluster.GetClusterType()
+			g.Expect(clusterType).NotTo(gomega.BeNil(), "dns backend should use a custom cluster type")
+			g.Expect(clusterType.GetName()).To(gomega.Equal("envoy.clusters.dns"))
+
+			dnsCluster := &envoydnsv3.DnsCluster{}
+			err = clusterType.GetTypedConfig().UnmarshalTo(dnsCluster)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "can unmarshal dns cluster config")
+			g.Expect(dnsCluster.GetDnsRefreshRate().AsDuration()).To(gomega.Equal(60 * time.Second))
+			g.Expect(dnsCluster.GetDnsJitter().AsDuration()).To(gomega.Equal(15 * time.Second))
+		}).
+			WithContext(ctx).
+			WithTimeout(10 * time.Second).
+			WithPolling(200 * time.Millisecond).
+			Should(gomega.Succeed())
+	})
+}
+
 func (s *testingSuite) TestBackendConfigPolicyTLSInsecureSkipVerify() {
 	common.BaseGateway.Send(
 		s.T(),
@@ -330,6 +373,27 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 			// If this fails, be aware of `lb_healthy_panic`.
 		}).WithTimeout(20 * time.Second).WithPolling(time.Second).Should(gomega.Succeed())
 	})
+}
+
+func (s *testingSuite) TestBackendConfigPolicyUpstreamProxyProtocol() {
+	// This test deploys nginx configured to accept only PROXY protocol connections.
+	// If the BackendConfigPolicy correctly enables upstream proxy protocol on Envoy,
+	// nginx will accept the connection and respond with 200. Without proxy protocol,
+	// nginx would reject the connection with a 400 error.
+	// The nginx config also echoes back the client address received via PROXY protocol
+	// in the X-Proxy-Protocol-Addr response header.
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("proxy-protocol-ok"),
+			Headers: map[string]any{
+				"X-Proxy-Protocol-Addr": gomega.Not(gomega.BeEmpty()),
+			},
+		},
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(80),
+	)
 }
 
 const (

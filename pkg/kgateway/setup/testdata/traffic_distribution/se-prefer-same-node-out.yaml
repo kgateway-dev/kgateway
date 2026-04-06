@@ -2,7 +2,6 @@ clusters:
 - commonLbConfig:
     localityWeightedLbConfig: {}
   connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: istio-se_gwtest_inlined-se_se-a.example.com_80
     endpoints:
@@ -74,19 +73,6 @@ endpoints:
     - endpoint:
         address:
           socketAddress:
-            address: 3.3.3.3
-            portValue: 80
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-    locality:
-      region: r2
-      subZone: r2z1s1
-      zone: r2z1
-    priority: 5
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
             address: 1.1.1.1
             portValue: 80
       loadBalancingWeight: 1
@@ -108,6 +94,19 @@ endpoints:
       region: r1
       subZone: r1z3s4
       zone: r1z3
+    priority: 5
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 3.3.3.3
+            portValue: 80
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    locality:
+      region: r2
+      subZone: r2z1s1
+      zone: r2z1
     priority: 5
 listeners:
 - address:

@@ -41,6 +41,9 @@ func NewPlugin(
 	ctx context.Context,
 	commonCols *collections.CommonCollections,
 ) sdk.Plugin {
+	if !commonCols.Settings.EnableIstioIntegration {
+		return sdk.Plugin{}
+	}
 	return NewPluginWithOpts(ctx, commonCols, Options{
 		Aliaser: HostnameAliaser,
 	})

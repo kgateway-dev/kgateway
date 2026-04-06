@@ -108,6 +108,10 @@ type BackendObjectIR struct {
 	// optional port for if ObjectSource is a service that can have multiple ports.
 	// +krtEqualsTodo propagate backend port differences in equality
 	Port int32
+	// optional port name for the backend (e.g., "https", "http"). Used for sectionName based
+	// policy attachment (e.g., BackendTLSPolicy targeting a specific port by name).
+	// +krtEqualsTodo propagate backend port name differences in equality
+	PortName string
 	// optional application protocol for the backend. Can be used to enable http2.
 	// +krtEqualsTodo include AppProtocol in backend equality
 	AppProtocol AppProtocol
@@ -369,6 +373,10 @@ type ClientCertificateValidationIR struct {
 	// RequireClientCertificate indicates whether client certificates are required
 	// +noKrtEquals
 	RequireClientCertificate bool
+	// AllowInsecureFallback indicates whether untrusted client certificates should
+	// still be accepted at the TLS handshake layer.
+	// +noKrtEquals
+	AllowInsecureFallback bool
 }
 
 func (c *ClientCertificateValidationIR) Equals(in any) bool {
@@ -419,6 +427,9 @@ func equalsClientCertValidationIR(a, b *ClientCertificateValidationIR) bool {
 		return a == b
 	}
 	if a.RequireClientCertificate != b.RequireClientCertificate {
+		return false
+	}
+	if a.AllowInsecureFallback != b.AllowInsecureFallback {
 		return false
 	}
 	if len(a.CACertificateRefs) != len(b.CACertificateRefs) {

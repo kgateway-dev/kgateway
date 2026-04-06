@@ -94,6 +94,9 @@ func (r *PolicyReport) ancestorRefs() []gwv1.ParentReference {
 			Name:      gwv1.ObjectName(key.Name),
 			Namespace: ns,
 		}
+		if key.SectionName != "" {
+			parentRef.SectionName = new(gwv1.SectionName(key.SectionName))
+		}
 		refs = append(refs, parentRef)
 	}
 	return refs

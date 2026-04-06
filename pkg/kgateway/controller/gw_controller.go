@@ -198,11 +198,11 @@ func NewGatewayReconciler(
 		r.gwParamClient.AddEventHandler(gwParamEventHandler)
 	}
 
-	// Custom event handler for XListenerSet changes
+	// Custom event handler for ListenerSet changes
 	cfg.CommonCollections.GatewayIndex.GatewaysForDeployer.Register(func(o krt.Event[ir.GatewayForDeployer]) {
 		gw := o.Latest()
 		ref := types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name}
-		logger.Debug("reconciling Gateway due to XListenerSet change", "ref", ref)
+		logger.Debug("reconciling Gateway due to ListenerSet change", "ref", ref)
 		r.queue.Add(ref)
 	})
 
@@ -343,6 +343,12 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	err = r.deployer.DeployObjsWithSource(ctx, objs, gw)
 	if err != nil {
 		return err
+	}
+
+	// Prune any PDB/HPA/VPA resources that are no longer desired
+	err = r.deployer.PruneRemovedResources(ctx, gw, objs)
+	if err != nil {
+		return fmt.Errorf("error pruning removed resources for Gateway %s: %w", req, err)
 	}
 
 	// find the name/ns of the service we own so we can grab addresses
