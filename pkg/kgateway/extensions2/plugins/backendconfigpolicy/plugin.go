@@ -6,6 +6,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoyrawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -52,6 +53,9 @@ type BackendConfigPolicyIR struct {
 	healthCheck                   *envoycorev3.HealthCheck
 	outlierDetection              *envoyclusterv3.OutlierDetection
 	circuitBreakers               *envoyclusterv3.CircuitBreakers
+	dnsRefreshRate                *durationpb.Duration
+	dnsJitter                     *durationpb.Duration
+	respectDnsTtl                 *bool
 	upstreamProxyProtocol         *envoycorev3.ProxyProtocolConfig
 }
 
@@ -119,10 +123,19 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 
-	if !proto.Equal(d.upstreamProxyProtocol, d2.upstreamProxyProtocol) {
+	if !proto.Equal(d.dnsRefreshRate, d2.dnsRefreshRate) {
 		return false
 	}
 
+	if !proto.Equal(d.dnsJitter, d2.dnsJitter) {
+		return false
+	}
+	if !cmputils.PointerValsEqual(d.respectDnsTtl, d2.respectDnsTtl) {
+		return false
+	}
+	if !proto.Equal(d.upstreamProxyProtocol, d2.upstreamProxyProtocol) {
+		return false
+	}
 	return true
 }
 
@@ -254,6 +267,8 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	if pol.circuitBreakers != nil {
 		out.CircuitBreakers = pol.circuitBreakers
 	}
+
+	applyDnsClusterConfig(pol, out)
 }
 
 func translate(
@@ -324,11 +339,53 @@ func translate(
 		}
 	}
 
+	if pol.Spec.DNS != nil {
+		if pol.Spec.DNS.RefreshRate != nil {
+			ir.dnsRefreshRate = durationpb.New(pol.Spec.DNS.RefreshRate.Duration)
+		}
+		if pol.Spec.DNS.Jitter != nil {
+			ir.dnsJitter = durationpb.New(pol.Spec.DNS.Jitter.Duration)
+		}
+		ir.respectDnsTtl = pol.Spec.DNS.RespectTTL
+	}
 	if pol.Spec.UpstreamProxyProtocol != nil {
 		ir.upstreamProxyProtocol = translateUpstreamProxyProtocol(pol.Spec.UpstreamProxyProtocol)
 	}
-
 	return &ir, errs
+}
+
+func applyDnsClusterConfig(pol *BackendConfigPolicyIR, out *envoyclusterv3.Cluster) {
+	if pol.dnsRefreshRate == nil && pol.dnsJitter == nil && pol.respectDnsTtl == nil {
+		return
+	}
+
+	clusterType := out.GetClusterType()
+	if clusterType == nil || clusterType.GetName() != dnsClusterExtensionName || clusterType.GetTypedConfig() == nil {
+		return
+	}
+
+	dnsCluster := &envoydnsv3.DnsCluster{}
+	if err := clusterType.GetTypedConfig().UnmarshalTo(dnsCluster); err != nil {
+		logger.Error("failed to unpack dns cluster config", "cluster", out.GetName(), "error", err)
+		return
+	}
+
+	if pol.dnsRefreshRate != nil {
+		dnsCluster.DnsRefreshRate = pol.dnsRefreshRate
+	}
+	if pol.dnsJitter != nil {
+		dnsCluster.DnsJitter = pol.dnsJitter
+	}
+	if pol.respectDnsTtl != nil {
+		dnsCluster.RespectDnsTtl = *pol.respectDnsTtl
+	}
+
+	typedConfig, err := utils.MessageToAny(dnsCluster)
+	if err != nil {
+		logger.Error("failed to pack dns cluster config", "cluster", out.GetName(), "error", err)
+		return
+	}
+	clusterType.TypedConfig = typedConfig
 }
 
 func translateUpstreamProxyProtocol(cfg *kgateway.UpstreamProxyProtocol) *envoycorev3.ProxyProtocolConfig {

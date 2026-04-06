@@ -905,6 +905,112 @@ spec:
                     be set
                   rule: '[has(self.extensionRef),has(self.disable)].filter(x,x==true).size()
                     == 1'
+              faultInjection:
+                description: |-
+                  FaultInjection configures fault injection for chaos engineering and
+                  resiliency testing. Supports delay injection, abort injection,
+                  and response rate limiting.
+                properties:
+                  abort:
+                    description: Abort injects HTTP or gRPC errors to terminate requests
+                      early.
+                    properties:
+                      grpcStatus:
+                        description: GrpcStatus is the gRPC status code to return
+                          when aborting a request.
+                        format: int32
+                        maximum: 16
+                        minimum: 0
+                        type: integer
+                      httpStatus:
+                        description: HttpStatus is the HTTP status code to return
+                          when aborting a request.
+                        format: int32
+                        maximum: 599
+                        minimum: 200
+                        type: integer
+                      percentage:
+                        default: 100
+                        description: Percentage of requests to abort. Defaults to
+                          100.
+                        format: int32
+                        maximum: 100
+                        minimum: 0
+                        type: integer
+                    type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of the fields in [httpStatus grpcStatus]
+                        must be set
+                      rule: '[has(self.httpStatus),has(self.grpcStatus)].filter(x,x==true).size()
+                        == 1'
+                  delay:
+                    description: Delay injects latency into requests before forwarding
+                      upstream.
+                    properties:
+                      fixedDelay:
+                        description: FixedDelay is the duration to delay before forwarding
+                          the request.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
+                        - message: must not exceed 1h
+                          rule: duration(self) <= duration('1h')
+                      percentage:
+                        default: 100
+                        description: Percentage of requests to inject the delay on.
+                          Defaults to 100.
+                        format: int32
+                        maximum: 100
+                        minimum: 0
+                        type: integer
+                    required:
+                    - fixedDelay
+                    type: object
+                  disable:
+                    description: |-
+                      Disable the fault injection filter.
+                      Can be used to disable fault injection policies applied at a higher level
+                      in the config hierarchy.
+                    type: object
+                  maxActiveFaults:
+                    description: |-
+                      MaxActiveFaults limits the number of concurrent active faults.
+                      When this limit is reached, new requests will not have faults injected.
+                      If not specified, defaults to unlimited.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  responseRateLimit:
+                    description: |-
+                      ResponseRateLimit limits the response body data rate to simulate
+                      slow or degraded upstream connections.
+                    properties:
+                      kbitsPerSecond:
+                        description: KbitsPerSecond limits the response rate to the
+                          specified kilobits per second.
+                        format: int64
+                        minimum: 1
+                        type: integer
+                      percentage:
+                        default: 100
+                        description: Percentage of requests to apply the rate limit
+                          on. Defaults to 100.
+                        format: int32
+                        maximum: 100
+                        minimum: 0
+                        type: integer
+                    required:
+                    - kbitsPerSecond
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: at least one of the fields in [delay abort responseRateLimit
+                    disable] must be set
+                  rule: '[has(self.delay),has(self.abort),has(self.responseRateLimit),has(self.disable)].filter(x,x==true).size()
+                    >= 1'
               headerModifiers:
                 description: HeaderModifiers defines the policy to modify request
                   and response headers.

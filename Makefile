@@ -760,6 +760,9 @@ INSTALL_NAMESPACE ?= kgateway-system
 # This version should stay in sync with `hack/kind/setup-kind.sh`.
 CLUSTER_NODE_VERSION ?= v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f
 
+# If true, use cloud-provider-kind instead of MetalLB for LoadBalancer support.
+CLOUD_PROVIDER_KIND ?= false
+
 .PHONY: kind-create
 kind-create: ## Create a KinD cluster
 	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
@@ -778,15 +781,28 @@ else
 endif
 endif
 
-.PHONY: kind-metallb
+.PHONY: metallb
 metallb: ## Install the MetalLB load balancer
 	./hack/kind/setup-metalllb-on-kind.sh
+
+.PHONY: cloud-provider-kind
+cloud-provider-kind:
+	./hack/kind/setup-cloud-provider-kind.sh
+
+.PHONY: cleanup-cloud-provider-kind
+cleanup-cloud-provider-kind: ## Stop any running cloud-provider-kind host processes
+	sudo pkill -x cloud-provider-kind || true
 
 .PHONY: deploy-kgateway
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
 .PHONY: setup-base
-setup-base: kind-create gw-api-crds metallb ## Setup the base infrastructure (kind cluster, CRDs, and MetalLB)
+setup-base: kind-create gw-api-crds ## Setup the base infrastructure (kind cluster, CRDs, and load balancer)
+ifeq ($(CLOUD_PROVIDER_KIND),true)
+	$(MAKE) cloud-provider-kind
+else
+	$(MAKE) metallb
+endif
 
 # Creates a functional kind cluster, builds and loads all images, and packages charts
 # Does NOT deploy anything to the cluster

@@ -58,6 +58,11 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
+	// DNS contains DNS configuration. Note that this only applies to backends that resolve to Envoy DNS clusters, i.e.,
+	// Backends of type Static, AWS, or GCP.
+	// +optional
+	DNS *DNS `json:"dns,omitempty"`
+
 	// Soft limit on the size of the cluster's connections read and write buffers.
 	// If unspecified, an implementation-defined default is applied (1MiB).
 	// +optional
@@ -140,6 +145,32 @@ type CircuitBreakers struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	MaxRetries *int32 `json:"maxRetries,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:rule="!(has(self.jitter) && has(self.refreshRate)) || duration(self.jitter) <= duration(self.refreshRate)",message="jitter must be less than or equal to refreshRate"
+type DNS struct {
+	// RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
+	//
+	// Minimum value is 1ms. If unset, Envoy's default of 5s is used.
+	// When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
+	// so RefreshRate acts as the maximum polling interval.
+	// Recommended value for large-scale deployments is 60s or higher.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="refreshRate must be at least 1ms"
+	RefreshRate *metav1.Duration `json:"refreshRate,omitempty"`
+
+	// Jitter adds a random delay of up to this duration before each DNS refresh,
+	// spreading query load over time and helping prevent thundering-herd spikes.
+	// Must be less than or equal to refreshRate when both are set.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	Jitter *metav1.Duration `json:"jitter,omitempty"`
+
+	// RespectTTL instructs Envoy to honor TTL values returned by DNS responses.
+	// When enabled, TTLs lower than RefreshRate effectively become the refresh interval.
+	// +optional
+	RespectTTL *bool `json:"respectTTL,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.

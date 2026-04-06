@@ -243,3 +243,66 @@ func TestUniqueClients(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeGatewayRole(t *testing.T) {
+	testCases := []struct {
+		name         string
+		originalRole string
+		namespace    string
+		labels       map[string]string
+		expectedRole string
+	}{
+		{
+			name:         "nil labels returns original role unchanged",
+			originalRole: "original-role",
+			namespace:    "test-ns",
+			labels:       nil,
+			expectedRole: "original-role",
+		},
+		{
+			name:         "labels with GatewayNameAnnotation returns constructed role",
+			originalRole: "original-role",
+			namespace:    "test-ns",
+			labels: map[string]string{
+				wellknown.GatewayNameAnnotation: "my-gateway",
+			},
+			expectedRole: "kgateway-kube-gateway-api~test-ns~my-gateway",
+		},
+		{
+			name:         "labels with GatewayNameLabel returns constructed role",
+			originalRole: "original-role",
+			namespace:    "test-ns",
+			labels: map[string]string{
+				wellknown.GatewayNameLabel: "my-gateway",
+			},
+			expectedRole: "kgateway-kube-gateway-api~test-ns~my-gateway",
+		},
+		{
+			name:         "labels with both annotation and label uses annotation",
+			originalRole: "original-role",
+			namespace:    "test-ns",
+			labels: map[string]string{
+				wellknown.GatewayNameAnnotation: "gateway-from-annotation",
+				wellknown.GatewayNameLabel:      "gateway-from-label",
+			},
+			expectedRole: "kgateway-kube-gateway-api~test-ns~gateway-from-annotation",
+		},
+		{
+			name:         "labels without gateway name keys returns original role unchanged",
+			originalRole: "original-role",
+			namespace:    "test-ns",
+			labels: map[string]string{
+				"app": "my-app",
+			},
+			expectedRole: "original-role",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			result := NormalizeGatewayRole(tc.originalRole, tc.namespace, tc.labels)
+			g.Expect(result).To(Equal(tc.expectedRole))
+		})
+	}
+}

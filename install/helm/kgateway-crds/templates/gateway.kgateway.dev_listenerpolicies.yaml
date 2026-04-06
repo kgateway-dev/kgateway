@@ -1969,6 +1969,62 @@ spec:
                       This is commonly used when kgateway is behind a load balancer that preserves client IP information.
                       See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/listener/proxy_protocol/v3/proxy_protocol.proto
                     type: object
+                  rbac:
+                    description: |-
+                      RBAC specifies network-level role-based access control for this listener.
+                      Network RBAC is evaluated at the TCP connection level, before any HTTP processing begins.
+                      This allows filtering based on connection attributes such as source IP address, destination port,
+                      and TLS client certificate information.
+
+                      Available CEL attributes for network RBAC include:
+                        - source.address: Source IP address (e.g., "192.168.1.100")
+                        - source.port: Source port number
+                        - destination.address: Destination IP address
+                        - destination.port: Destination port (e.g., 443, 8080)
+                        - connection.tls.subject: TLS client certificate subject
+                        - connection.tls.uri_san: TLS URI Subject Alternative Name
+
+                      Example: Allow only corporate network IPs
+                        rbac:
+                          policy:
+                            matchExpressions:
+                              - 'source.address.startsWith("10.0.0.")'
+                              - 'source.address.startsWith("192.168.0.")'
+                          action: Allow
+                    properties:
+                      action:
+                        default: Allow
+                        description: |-
+                          Action defines whether the rule allows or denies the request if matched.
+                          If unspecified, the default is "Allow".
+                        enum:
+                        - Allow
+                        - Deny
+                        type: string
+                      policy:
+                        description: |-
+                          Policy specifies the Authorization rule to evaluate.
+                          A policy matches when **any** of the conditions evaluates to true.
+                        properties:
+                          matchExpressions:
+                            description: |-
+                              MatchExpressions defines a set of conditions that must be satisfied for the rule to match.
+                              These expression should be in the form of a Common Expression Language (CEL) expression.
+                            items:
+                              description: CELExpression represents a Common Expression
+                                Language (CEL) expression.
+                              maxLength: 16384
+                              minLength: 1
+                              type: string
+                            maxItems: 256
+                            minItems: 1
+                            type: array
+                        required:
+                        - matchExpressions
+                        type: object
+                    required:
+                    - policy
+                    type: object
                 type: object
               perPort:
                 description: |-
@@ -3836,6 +3892,62 @@ spec:
                             When set, Envoy will expect connections to include the PROXY protocol header.
                             This is commonly used when kgateway is behind a load balancer that preserves client IP information.
                             See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/listener/proxy_protocol/v3/proxy_protocol.proto
+                          type: object
+                        rbac:
+                          description: |-
+                            RBAC specifies network-level role-based access control for this listener.
+                            Network RBAC is evaluated at the TCP connection level, before any HTTP processing begins.
+                            This allows filtering based on connection attributes such as source IP address, destination port,
+                            and TLS client certificate information.
+
+                            Available CEL attributes for network RBAC include:
+                              - source.address: Source IP address (e.g., "192.168.1.100")
+                              - source.port: Source port number
+                              - destination.address: Destination IP address
+                              - destination.port: Destination port (e.g., 443, 8080)
+                              - connection.tls.subject: TLS client certificate subject
+                              - connection.tls.uri_san: TLS URI Subject Alternative Name
+
+                            Example: Allow only corporate network IPs
+                              rbac:
+                                policy:
+                                  matchExpressions:
+                                    - 'source.address.startsWith("10.0.0.")'
+                                    - 'source.address.startsWith("192.168.0.")'
+                                action: Allow
+                          properties:
+                            action:
+                              default: Allow
+                              description: |-
+                                Action defines whether the rule allows or denies the request if matched.
+                                If unspecified, the default is "Allow".
+                              enum:
+                              - Allow
+                              - Deny
+                              type: string
+                            policy:
+                              description: |-
+                                Policy specifies the Authorization rule to evaluate.
+                                A policy matches when **any** of the conditions evaluates to true.
+                              properties:
+                                matchExpressions:
+                                  description: |-
+                                    MatchExpressions defines a set of conditions that must be satisfied for the rule to match.
+                                    These expression should be in the form of a Common Expression Language (CEL) expression.
+                                  items:
+                                    description: CELExpression represents a Common
+                                      Expression Language (CEL) expression.
+                                    maxLength: 16384
+                                    minLength: 1
+                                    type: string
+                                  maxItems: 256
+                                  minItems: 1
+                                  type: array
+                              required:
+                              - matchExpressions
+                              type: object
+                          required:
+                          - policy
                           type: object
                       type: object
                     port:

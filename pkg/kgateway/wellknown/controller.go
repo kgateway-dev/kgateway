@@ -18,6 +18,7 @@ const (
 	// GatewayNameLabel is a label on GW pods to indicate the name of the gateway
 	// they are associated with. For gateway names > 63 chars, this contains a
 	// truncated name with hash suffix. Use GatewayNameAnnotation for the full name.
+	// Use kubeutils.SafeGatewayLabelValue to compute the value of this label safely
 	GatewayNameLabel = "gateway.networking.k8s.io/gateway-name"
 	// GatewayNameAnnotation is an annotation on GW pods containing the full gateway name.
 	// This is used when the gateway name exceeds the 63-char label value limit.
