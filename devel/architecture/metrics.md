@@ -40,6 +40,7 @@ var rErr error
 finishMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
   Name:       "gateway.Name",
   Namespace:  "gateway.Namespace",
+  Translator: "TranslateGateway",
 })
 defer func() {
   finishMetrics(rErr)
