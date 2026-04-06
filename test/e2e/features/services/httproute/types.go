@@ -10,14 +10,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/crds"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
 const (
-	kgatewayControllerName = wellknown.DefaultGatewayControllerName
-	otherControllerName    = "other-controller.example.com/controller"
+	otherControllerName = "other-controller.example.com/controller"
 )
 
 var (

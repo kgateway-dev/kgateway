@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -124,12 +125,14 @@ func (s *testingSuite) TestClearStaleStatus() {
 	err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeWithGwManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
+	controllerName := s.gatewayClassControllerName(wellknown.DefaultGatewayClassName)
+
 	// Inject fake parent status from another controller
 	s.addParentStatus("example-route", "default", "other-gateway", otherControllerName)
 
 	// Verify status
 	s.assertParentStatuses("gateway", map[string]bool{
-		kgatewayControllerName: true,
+		controllerName: true,
 	})
 	s.assertParentStatuses("other-gateway", map[string]bool{
 		otherControllerName: true,
@@ -141,11 +144,23 @@ func (s *testingSuite) TestClearStaleStatus() {
 
 	// Verify kgateway status is cleared but other controller status remains
 	s.assertParentStatuses("gateway", map[string]bool{
-		kgatewayControllerName: false,
+		controllerName: false,
 	})
 	s.assertParentStatuses("other-gateway", map[string]bool{
 		otherControllerName: true,
 	})
+}
+
+// gatewayClassControllerName returns the controller name for the given GatewayClass.
+func (s *testingSuite) gatewayClassControllerName(className string) string {
+	gc := &gwv1.GatewayClass{}
+	err := s.TestInstallation.ClusterContext.Client.Get(
+		s.Ctx,
+		client.ObjectKey{Name: className},
+		gc,
+	)
+	s.Require().NoError(err, "failed to get GatewayClass %s", className)
+	return string(gc.Spec.ControllerName)
 }
 
 func (s *testingSuite) addParentStatus(routeName, routeNamespace, gwName, controllerName string) {
