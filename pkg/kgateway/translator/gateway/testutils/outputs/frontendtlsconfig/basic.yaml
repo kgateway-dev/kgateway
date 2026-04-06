@@ -337,3 +337,4 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: https-mtls-strict-validation

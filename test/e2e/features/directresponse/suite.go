@@ -52,8 +52,11 @@ func (s *testingSuite) SetupSuite() {
 
 	// Only include functional test manifests - negative test cases moved to gateway translator suite
 	s.manifests = map[string][]string{
-		"TestBasicDirectResponse": {basicDirectResponseManifests},
-		"TestDelegation":          {basicDelegationManifests},
+		"TestBasicDirectResponse":   {basicDirectResponseManifests},
+		"TestDelegation":            {basicDelegationManifests},
+		"TestBodyFormatText":        {bodyFormatTextManifests},
+		"TestBodyFormatJSON":        {bodyFormatJSONManifests},
+		"TestBodyFormatContentType": {bodyFormatContentTypeManifests},
 		// "TestInvalidDelegationConflictingFilters": {invalidDelegationConflictingFiltersManifests},
 		// "TestInvalidMultipleRouteActions":         {invalidMultipleRouteActionsManifests},
 	}
@@ -141,6 +144,55 @@ func (s *testingSuite) TestDelegation() {
 		},
 		curl.WithHostHeader("www.example.com"),
 		curl.WithPath("/child"),
+	)
+}
+
+func (s *testingSuite) TestBodyFormatText() {
+	common.BaseGateway.Send(
+		s.T(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Headers: map[string]any{
+				"Content-Type": "text/plain",
+			},
+			Body: ContainSubstring("Disallow: /robots.txt"),
+		},
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/robots.txt"),
+	)
+}
+
+func (s *testingSuite) TestBodyFormatJSON() {
+	common.BaseGateway.Send(
+		s.T(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Headers: map[string]any{
+				// TODO: Switch to JSON once upstream fix for Content-Type is released
+				"Content-Type": "text/plain",
+				//"Content-Type": "application/json",
+			},
+			Body: ContainSubstring(`{"path":"/data.json","preservedNull":null}`),
+		},
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/data.json"),
+	)
+}
+
+func (s *testingSuite) TestBodyFormatContentType() {
+	common.BaseGateway.Send(
+		s.T(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Headers: map[string]any{
+				// TODO: Switch to HTML once upstream fix for Content-Type is released
+				"Content-Type": "text/plain",
+				//"Content-Type": "text/html",
+			},
+			Body: ContainSubstring("<strong>Requested Path:</strong> /test.html"),
+		},
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/test.html"),
 	)
 }
 

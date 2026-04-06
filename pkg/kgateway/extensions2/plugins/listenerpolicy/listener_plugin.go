@@ -56,6 +56,7 @@ type listenerPolicy struct {
 	perConnectionBufferLimitBytes *uint32
 	// only for default policy
 	clientCertificateValidation *ir.ClientCertificateValidationIR
+	rbacNetworkFilter           *anypb.Any
 	// +noKrtEquals
 	http *HttpListenerPolicyIr
 }
@@ -67,15 +68,30 @@ func newListenerPolicy(
 	if i == nil {
 		return listenerPolicy{}, nil
 	}
+	var errs []error
+
 	var perConnectionBufferLimitBytes *uint32
 	if i.PerConnectionBufferLimitBytes != nil {
 		perConnectionBufferLimitBytes = new(uint32(*i.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
 	}
-	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
+
+	// Translate network RBAC if configured
+	var rbacNetworkFilter *anypb.Any
+	if i.RBAC != nil {
+		filter, err := translateNetworkRbac(i.RBAC, objSrc)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		rbacNetworkFilter = filter
+	}
+
+	http, httpErrs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
+	errs = append(errs, httpErrs...)
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
+		rbacNetworkFilter:             rbacNetworkFilter,
 		http:                          http,
 	}, errs
 }
@@ -137,13 +153,15 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 		return false
 	}
 
+	if !proto.Equal(d.rbacNetworkFilter, d2.rbacNetworkFilter) {
+		return false
+	}
 	if (d.clientCertificateValidation == nil) != (d2.clientCertificateValidation == nil) {
 		return false
 	}
 	if d.clientCertificateValidation != nil && !d.clientCertificateValidation.Equals(d2.clientCertificateValidation) {
 		return false
 	}
-
 	if (d.http == nil) != (d2.http == nil) {
 		return false
 	}
@@ -194,7 +212,9 @@ type listenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 	reporter reporter.Reporter
 
-	healthCheckPolicy map[uint32]*healthcheckv3.HealthCheck
+	healthCheckPolicy  map[uint32]*healthcheckv3.HealthCheck
+	rbacNetworkFilters map[uint32]*anypb.Any // Track RBAC filters per port
+	currentPort        uint32                // Current listener port being translated
 }
 
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
@@ -303,8 +323,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &listenerPolicyPluginGwPass{
-		reporter:          reporter,
-		healthCheckPolicy: map[uint32]*healthcheckv3.HealthCheck{},
+		reporter:           reporter,
+		healthCheckPolicy:  map[uint32]*healthcheckv3.HealthCheck{},
+		rbacNetworkFilters: map[uint32]*anypb.Any{},
 	}
 }
 
@@ -341,9 +362,39 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	if cfg.perConnectionBufferLimitBytes != nil {
 		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *cfg.perConnectionBufferLimitBytes}
 	}
+	// Store RBAC network filter for this port; apply it during filter chain construction via NetworkFilters()
+
+	if cfg.rbacNetworkFilter != nil {
+		p.rbacNetworkFilters[pCtx.Port] = cfg.rbacNetworkFilter
+	}
+
+	// Track the current port being translated
+	p.currentPort = pCtx.Port
 	if http := cfg.http; http != nil {
 		p.healthCheckPolicy[pCtx.Port] = http.healthCheckPolicy
 	}
+}
+
+// NetworkFilters returns the RBAC network filter for the current listener port.
+func (p *listenerPolicyPluginGwPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
+	rbacFilter := p.rbacNetworkFilters[p.currentPort]
+	if rbacFilter == nil {
+		return nil, nil
+	}
+
+	envoyFilter := &envoylistenerv3.Filter{
+		Name: "envoy.filters.network.rbac",
+		ConfigType: &envoylistenerv3.Filter_TypedConfig{
+			TypedConfig: rbacFilter,
+		},
+	}
+
+	return []filters.StagedNetworkFilter{
+		{
+			Filter: envoyFilter,
+			Stage:  filters.BeforeStage(filters.AuthZStage),
+		},
+	}, nil
 }
 
 func (p *listenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {

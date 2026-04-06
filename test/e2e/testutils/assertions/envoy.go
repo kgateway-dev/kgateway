@@ -37,7 +37,8 @@ func (p *Provider) AssertEnvoyAdminApi(
 	adminClient := admincli.NewClient().
 		WithReceiver(io.Discard). // adminAssertion can overwrite this
 		WithCurlOptions(
-			curl.WithRetries(3, 0, 10),
+			curl.WithRetries(10, 1, 10),
+			curl.WithRetryConnectionRefused(true),
 			curl.WithHostPort(portForwarder.Address()),
 		)
 
