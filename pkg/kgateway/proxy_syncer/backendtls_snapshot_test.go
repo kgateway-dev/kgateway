@@ -1,12 +1,12 @@
 package proxy_syncer
 
 import (
-	"context"
 	"strings"
 	"testing"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -204,7 +204,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
-		_, cluster := fetchNonBaseClusterFromSnapshotWithPrefix(
+		clusterName, cluster := fetchNonBaseClusterFromSnapshotWithPrefix(
 			krt.TestingDummyContext{},
 			snapshots,
 			ucc.ResourceName(),
@@ -222,7 +222,10 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		if err := transportSocket.GetTypedConfig().UnmarshalTo(tlsContext); err != nil {
 			return false
 		}
-		return tlsContext.GetSni() == "other.example.com"
+		if tlsContext.GetSni() != "other.example.com" {
+			return false
+		}
+		return fetchEndpointFromSnapshot(krt.TestingDummyContext{}, snapshots, ucc.ResourceName(), clusterName) != nil
 	}, 5*time.Second, 50*time.Millisecond)
 }
 
@@ -236,6 +239,26 @@ func fetchClusterFromSnapshot(kctx krt.HandlerContext, snapshots krt.Collection[
 		return nil
 	}
 	return res.Resource.(*envoyclusterv3.Cluster)
+}
+
+func fetchEndpointFromSnapshot(
+	kctx krt.HandlerContext,
+	snapshots krt.Collection[XdsSnapWrapper],
+	snapshotKey, clusterName string,
+) *envoyendpointv3.ClusterLoadAssignment {
+	snap := krt.FetchOne(kctx, snapshots, krt.FilterKey(snapshotKey))
+	if snap == nil {
+		return nil
+	}
+	res, ok := snap.snap.Resources[envoycachetypes.Endpoint].Items[clusterName]
+	if !ok {
+		return nil
+	}
+	endpoint, ok := res.Resource.(*envoyendpointv3.ClusterLoadAssignment)
+	if !ok {
+		return nil
+	}
+	return endpoint
 }
 
 func fetchNonBaseClusterFromSnapshotWithPrefix(
@@ -258,11 +281,6 @@ func fetchNonBaseClusterFromSnapshotWithPrefix(
 		return name, cluster
 	}
 	return "", nil
-}
-
-//go:fix inline
-func stringPtr(in string) *string {
-	return new(in)
 }
 
 //go:fix inline

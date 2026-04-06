@@ -280,8 +280,6 @@ func hashBackendTLSPolicy(policy PolicyAtt) uint64 {
 	sb.WriteString(backendTLSPolicyRefString(policy.PolicyRef))
 	sb.WriteRune('|')
 	sb.WriteString(strconv.FormatInt(policy.Generation, 10))
-	sb.WriteRune('|')
-	sb.WriteString(strconv.FormatInt(policy.PolicyIr.CreationTime().UnixNano(), 10))
 	for _, err := range policy.Errors {
 		sb.WriteRune('|')
 		if err != nil {

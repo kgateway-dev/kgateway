@@ -6,7 +6,7 @@ Clusters:
       dnsLookupFamily: V4_PREFERRED
   connectTimeout: 5s
   loadAssignment:
-    clusterName: backend_default_backend1_btls1rz6tsk33jt28_0
+    clusterName: backend_default_backend1_btls2r4k9d3i827lv_0
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -18,7 +18,7 @@ Clusters:
             hostname: example.com
           hostname: example.com
   metadata: {}
-  name: backend_default_backend1_btls1rz6tsk33jt28_0
+  name: backend_default_backend1_btls2r4k9d3i827lv_0
   transportSocket:
     name: envoy.transport_sockets.tls
     typedConfig:
@@ -58,7 +58,7 @@ Clusters:
       dnsLookupFamily: V4_PREFERRED
   connectTimeout: 5s
   loadAssignment:
-    clusterName: backend_default_backend2_btls3it8p864t484p_0
+    clusterName: backend_default_backend2_btls3a5hvblufkn3t_0
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -70,7 +70,7 @@ Clusters:
             hostname: example2.com
           hostname: example2.com
   metadata: {}
-  name: backend_default_backend2_btls3it8p864t484p_0
+  name: backend_default_backend2_btls3a5hvblufkn3t_0
   transportSocket:
     name: envoy.transport_sockets.tls
     typedConfig:
@@ -92,7 +92,7 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_default_backend-service_btlsk9tsnre1q22h_443
+  name: kube_default_backend-service_btls1nx1zsvfo4jkm_443
   transportSocket:
     name: envoy.transport_sockets.tls
     typedConfig:
@@ -168,7 +168,7 @@ Routes:
         prefix: /
       name: listener~80~*-route-0-httproute-example-route-default-0-0-matcher-0
       route:
-        cluster: backend_default_backend1_btls1rz6tsk33jt28_0
+        cluster: backend_default_backend1_btls2r4k9d3i827lv_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:

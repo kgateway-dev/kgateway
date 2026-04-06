@@ -1,7 +1,6 @@
 package proxy_syncer
 
 import (
-	"context"
 	"testing"
 	"time"
 

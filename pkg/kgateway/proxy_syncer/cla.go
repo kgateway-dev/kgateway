@@ -6,6 +6,7 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"istio.io/istio/pkg/kube/krt"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
@@ -17,6 +18,7 @@ type UccWithEndpoints struct {
 	Endpoints     *envoyendpointv3.ClusterLoadAssignment
 	EndpointsHash uint64
 	endpointsName string
+	clusterName   string
 }
 
 func (c UccWithEndpoints) ResourceName() string {
@@ -24,7 +26,10 @@ func (c UccWithEndpoints) ResourceName() string {
 }
 
 func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
-	return c.Client.Equals(in.Client) && c.EndpointsHash == in.EndpointsHash && c.endpointsName == in.endpointsName
+	return c.Client.Equals(in.Client) &&
+		c.EndpointsHash == in.EndpointsHash &&
+		c.endpointsName == in.endpointsName &&
+		c.clusterName == in.clusterName
 }
 
 type PerClientEnvoyEndpoints struct {
@@ -47,11 +52,16 @@ func NewPerClientEnvoyEndpoints(
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {
 			cla, additionalHash := translateEndpoints(kctx, ucc, ep)
+			clusterName := ""
+			if cla != nil {
+				clusterName = cla.GetClusterName()
+			}
 			u := UccWithEndpoints{
 				Client:        ucc,
 				Endpoints:     cla,
-				EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash,
+				EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash ^ utils.HashString(clusterName),
 				endpointsName: ep.ResourceName(),
+				clusterName:   clusterName,
 			}
 			uccWithEndpointsRet = append(uccWithEndpointsRet, u)
 		}
