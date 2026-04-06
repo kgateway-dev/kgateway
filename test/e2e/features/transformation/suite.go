@@ -41,23 +41,24 @@ const (
 
 var (
 	// manifests
-	simpleServiceManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
-	gatewayManifest                         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
-	transformForCustomFunctionsManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-custom-functions.yaml")
-	transformForHeadersManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-headers.yaml")
-	transformForPseudoHeadersManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-pseudo-headers.yaml")
-	rustformationForBodyJsonManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json-rust.yaml")
-	rustformationForModelExtractionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-model-extraction-rust.yaml")
-	transformForBodyAsStringManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-as-string.yaml")
-	gatewayAttachedTransformManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-attached-transform.yaml")
-	transformForMatchPathManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-path.yaml")
-	transformForMatchHeaderManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-header.yaml")
-	transformForMatchQueryManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-query.yaml")
-	transformForMatchMethodManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-method.yaml")
-	transformForHeaderToBodyJsonManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-header-to-body-json.yaml")
-	transformForBodyLocalReplyManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-local-reply.yaml")
-	transformSkipBufferingManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-skip-buffering.yaml")
-	transformSkipBufferingBodyFuncManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-skip-buffering-with-body-func.yaml")
+	simpleServiceManifest                       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	gatewayManifest                             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
+	transformForCustomFunctionsManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-custom-functions.yaml")
+	transformForHeadersManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-headers.yaml")
+	transformForPseudoHeadersManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-pseudo-headers.yaml")
+	rustformationForBodyJsonManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json-rust.yaml")
+	rustformationForModelExtractionManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-model-extraction-rust.yaml")
+	transformForBodyAsStringManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-as-string.yaml")
+	gatewayAttachedTransformManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-attached-transform.yaml")
+	transformForMatchPathManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-path.yaml")
+	transformForMatchHeaderManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-header.yaml")
+	transformForMatchQueryManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-query.yaml")
+	transformForMatchMethodManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-method.yaml")
+	transformForHeaderToBodyJsonManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-header-to-body-json.yaml")
+	transformForBodyLocalReplyManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-local-reply.yaml")
+	transformSkipBufferingManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-skip-buffering.yaml")
+	transformSkipBufferingBodyFuncManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-skip-buffering-with-body-func.yaml")
+	transformModelExtractionParseAsNoneManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-model-extraction-parseas-none.yaml")
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -85,6 +86,7 @@ var (
 			transformSkipBufferingManifest,
 			transformSkipBufferingBodyFuncManifest,
 			rustformationForModelExtractionManifest,
+			transformModelExtractionParseAsNoneManifest,
 		},
 	}
 )
@@ -759,6 +761,20 @@ func selectTestCases(indices ...int) []transformationTestCase {
 				Body: "12345",
 			},
 		},
+		{
+			// test 23
+			// using inja template to extract json from body would case 400 response
+			// when parseAs is set to None
+			name:      "model-field-extracted-from-parseas-none",
+			routeName: "route-for-model-extraction-parseas-none",
+			opts: []curl.Option{
+				curl.WithPostBody(`{"messages": [{"role": "user", "content": "test"}], "model": "gpt-4"}`),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusBadRequest,
+			},
+			req: &testmatchers.HttpRequest{},
+		},
 	}
 
 	// If no indices are provided, return the full original slice.
@@ -788,7 +804,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		base.NewBaseTestingSuite(ctx, testInst, setup, nil),
 		// For local development only!
 		// Enter a list of indices to select specific tests, -1 means the last test.
-		// Default will return all common test cases.
+		// By default, selectTestCases returns the full testCases slice.
 		// reviewers: please flag the PR if the argument is not empty!
 		selectTestCases(),
 	}
@@ -918,6 +934,7 @@ func (s *testingSuite) assertSuiteResourceStatus() {
 		"example-route-for-model-extraction",
 		"example-route-for-skip-buffering",
 		"example-route-for-skip-buffering-body-func",
+		"example-route-for-model-extraction-parseas-none",
 	}
 	trafficPoliciesToCheck := []string{
 		"example-traffic-policy-for-body-as-string",
@@ -934,6 +951,7 @@ func (s *testingSuite) assertSuiteResourceStatus() {
 		"example-traffic-policy-for-model-extraction",
 		"example-traffic-policy-for-skip-buffering",
 		"example-traffic-policy-for-skip-buffering-body-func",
+		"example-traffic-policy-for-model-extraction-parseas-none",
 	}
 	s.assertRouteAndTrafficPolicyStatus(routesToCheck, trafficPoliciesToCheck)
 }

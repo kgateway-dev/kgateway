@@ -1027,4 +1027,48 @@ mod tests {
             abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
         );
     }
+
+    #[test]
+    fn test_detect_upgrade_request() {
+        fn h(pairs: &[(&str, &str)]) -> HashMap<String, String> {
+            pairs
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect()
+        }
+
+        // detect websocket upgrade regardless of casing
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            "upgrade",
+            "websocket"
+        )])));
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            "upgrade",
+            "WEBSOCKET"
+        )])));
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            "upgrade",
+            "WebSocket"
+        )])));
+
+        // detect CONNECT request regardless of casing
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            ":method", "connect"
+        )])));
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            ":method", "CONNECT"
+        )])));
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            ":method", "Connect"
+        )])));
+
+        // no headers — no match
+        assert!(!Filter::detect_upgrade_request(&h(&[])));
+
+        // upgrade header with non-websocket value — no match
+        assert!(!Filter::detect_upgrade_request(&h(&[("upgrade", "h2c")])));
+
+        // :method with non-CONNECT value — no match
+        assert!(!Filter::detect_upgrade_request(&h(&[(":method", "GET")])));
+    }
 }

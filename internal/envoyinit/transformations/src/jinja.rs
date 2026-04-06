@@ -621,7 +621,7 @@ pub fn create_env_with_templates(
             env.add_template_owned(pair.value.clone(), pair.value.clone())?;
         }
         if let Some(body) = &request.body {
-            if !body.value.is_empty() {
+            if !matches!(body.parse_as, BodyParseBehavior::None) && !body.value.is_empty() {
                 env.add_template_owned(REQUEST_BODY_TEMPLATE_LOOKUP_KEY, body.value.clone())?;
             }
         }
@@ -640,7 +640,7 @@ pub fn create_env_with_templates(
             env.add_template_owned(pair.value.clone(), pair.value.clone())?;
         }
         if let Some(body) = &response.body {
-            if !body.value.is_empty() {
+            if !matches!(body.parse_as, BodyParseBehavior::None) && !body.value.is_empty() {
                 env.add_template_owned(RESPONSE_BODY_TEMPLATE_LOOKUP_KEY, body.value.clone())?;
             }
         }

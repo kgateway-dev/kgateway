@@ -77,17 +77,17 @@ func (s *testingSuite) TestWebSocketWithBodyTransformation() {
 	msg := s.dialWebSocket(g, "websocket-body-transform.example.com")
 	g.Expect(msg).To(gomega.Equal("websocket-e2e-ping"),
 		"echo-server should echo back the test payload; "+
-			"if this hangs/times out the Envoy is buffing the body")
+			"if this hangs/times out the Envoy is buffering the body")
 }
 
-// Test websocket will work with default transfomration buffering behavior
+// Test websocket will work with default transformation buffering behavior
 func (s *testingSuite) TestWebSocketWithDefaultTransformationBuffering() {
 	g := gomega.NewWithT(s.T())
 	s.assertWebsocketUpgradeEnabled()
 	msg := s.dialWebSocket(g, "websocket-default-transform.example.com")
 	g.Expect(msg).To(gomega.Equal("websocket-e2e-ping"),
 		"echo-server should echo back the test payload; "+
-			"if this hangs/times out the Envoy is buffing the body")
+			"if this hangs/times out the Envoy is buffering the body")
 }
 
 func (s *testingSuite) assertWebsocketUpgradeEnabled() {

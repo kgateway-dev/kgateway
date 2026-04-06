@@ -23,16 +23,15 @@ func Dial(url, host string, deadline time.Duration, extraHeaders http.Header, di
 		HandshakeTimeout: deadline,
 	}
 
-	reqHeader := http.Header{
-		"Host": []string{host},
-	}
+	reqHeader := http.Header{}
 	maps.Copy(reqHeader, extraHeaders)
+	reqHeader["Host"] = []string{host}
 
 	conn, resp, err := dialer.Dial(url, reqHeader)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
-		if resp != nil {
-			resp.Body.Close()
-		}
 		return "", fmt.Errorf("websocket handshake failed: %w", err)
 	}
 	defer conn.Close()
