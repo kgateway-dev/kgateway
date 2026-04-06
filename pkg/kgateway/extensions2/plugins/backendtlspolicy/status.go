@@ -103,11 +103,6 @@ func buildPolicyStatusFn() pluginsdk.BuildPolicyStatusFn {
 				}
 				meta.SetStatusCondition(&finalConditions, condition)
 			}
-			for _, condition := range currentParentConditions {
-				if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
-					finalConditions = append(finalConditions, condition)
-				}
-			}
 
 			status.Ancestors = append(status.Ancestors, gwv1.PolicyAncestorStatus{
 				AncestorRef:    ancestorRef,

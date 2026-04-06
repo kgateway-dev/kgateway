@@ -119,6 +119,13 @@ func TestBuildPolicyStatusFn(t *testing.T) {
 						ObservedGeneration: 7,
 						LastTransitionTime: metav1.NewTime(time.Unix(1, 0)),
 					},
+					{
+						Type:               "Attached",
+						Status:             metav1.ConditionTrue,
+						Reason:             "Attached",
+						ObservedGeneration: 0,
+						LastTransitionTime: metav1.NewTime(time.Unix(0, 0)),
+					},
 				},
 			},
 			{
