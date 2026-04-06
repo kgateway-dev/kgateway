@@ -83,10 +83,12 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 	// with this cmd's stdout/err.
 	fwdOut, err := c.cmd.StdoutPipe()
 	if err != nil {
+		cmdCancel()
 		return err
 	}
 	fwdErr, err := c.cmd.StderrPipe()
 	if err != nil {
+		cmdCancel()
 		return err
 	}
 
@@ -96,6 +98,7 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 
 	// short circuit error return if we can't even start
 	if err := c.cmd.Start(); err != nil {
+		cmdCancel()
 		return err
 	}
 
@@ -114,6 +117,7 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 	// If we get here, we didn't get any stdout, so grab stderr and return it as error
 	stdErr := bufio.NewScanner(fwdErr)
 	stdErr.Scan()
+	cmdCancel()
 	return fmt.Errorf("failed to start port-forward: %s", stdErr.Text())
 }
 
