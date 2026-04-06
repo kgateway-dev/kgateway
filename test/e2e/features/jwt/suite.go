@@ -13,11 +13,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/remotejwtauth"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -30,11 +28,6 @@ var (
 	jwtHTTPRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-httproute.yaml")
 	jwtDisableManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-disable.yaml")
 	jwtRemoteManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-remote.yaml")
-
-	gatewayObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
-	}
 
 	// Matches
 	expectedJwtMissingFailedResponse = &matchers.HttpResponse{
@@ -86,12 +79,12 @@ var (
 	// claim has email=dev2@kgateway.io
 	dev2JwtToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2Rldi5leGFtcGxlLmNvbSIsImV4cCI6NDgwNDMyNDczNiwiaWF0IjoxNjQ4NjUxMTM2LCJvcmciOiJpbnRlcm5hbCIsImVtYWlsIjoiZGV2MkBrZ2F0ZXdheS5pbyIsImdyb3VwIjoiZW5naW5lZXJpbmciLCJzY29wZSI6ImlzOmRldmVsb3BlciJ9.S0a_Lu2y0gaXBCnO3ydGJCnXt5R-QMxBvJOjYOTzorcnUOcaOTMOd3fUBY8ojZR-f0xTEy6M6K1V0yKxeq6Mys9Le9SE6oabP6gttktnwL5c9e9rzMcmGz1NVyUBav2N8Yiuw7Va8gyIod02vJrllQteMfZSqoAUmDLmpFs3bvkIgMlWDtVAWPqoGJ4ZI-yf0WfTSmW-kFbaiIz4pQNm03Q9M_ZMiHyOTtCDZuc0pSQ0_uvjnqHrefBgJJkFEv58pVqZVJphEOAfl7CpWlT9dXiPVoMhy4RTezkfrjuCqvW7dDwGZGSUqLYDZsOJ8yeIdeW9LKMaGcPag1AbRCe4HQ" //gosec:disable G101
 
+	// jwt subject is "ignore@kgateway.dev", signed with remote JWKS key
+	// generated with: go run hack/utils/jwt/jwt-generator.go
+	jwtRemoteOrgOne = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjUzNTAyMzEyMTkzMDYwMzg2OTIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2tnYXRld2F5LmRldiIsInN1YiI6Imlnbm9yZUBrZ2F0ZXdheS5kZXYiLCJleHAiOjIwNzExNjM0MDcsIm5iZiI6MTc2MzU3OTQwNywiaWF0IjoxNzYzNTc5NDA3fQ.TsHCCdd0_629wibU4EviEi1-_UXaFUX1NuLgXCrC-tr7kqlcnUJIJC0WSab1EgXKtF8gTfwTUeQcAQNrunwngQU-K9DFcH5-2vnGeiXV3_X3SokkPq74ceRrCFEL2d7YNaGfhq_UNyvKRJsRz-pwdKK7QIPXALmWaUHn7EV7zU-CcPCKNwmt62P88qNp5HYSbgqz_WfnzIIH8LANpCC8fUqVedgTJMJ86E06pfDNUuuXe_fhjgMQXlfyDeUxIuzJunvS2qIqt4IYMzjcQbl2QI1QK3xz37tridSP_WVuuMUe2Lqo0oDjWVpxqPb5fb90W6a6khRP59Pf6qKMbQ9SQg" //gosec:disable G101
+
 	setup = base.TestCase{
-		Manifests: []string{
-			setupManifest,
-			testdefaults.HttpbinManifest,
-			testdefaults.CurlPodManifest,
-		},
+		Manifests: []string{setupManifest},
 	}
 
 	testCases = map[string]*base.TestCase{
@@ -131,7 +124,7 @@ func (s *testingSuite) TestJwtAuthentication() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route",
-		"default",
+		"kgateway-base",
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -156,7 +149,7 @@ func (s *testingSuite) TestJwtAuthenticationHTTPRoute() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route-get",
-		"default",
+		"kgateway-base",
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -191,7 +184,7 @@ func (s *testingSuite) TestJwtAuthenticationRemote() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route-get",
-		"default",
+		"kgateway-base",
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -200,7 +193,7 @@ func (s *testingSuite) TestJwtAuthenticationRemote() {
 	s.assertResponseWithoutAuth("/status/200", expectedJwtMissingFailedResponse)
 
 	s.T().Log("status route should succeed when correct JWT is provided")
-	s.assertResponse("/status/200", remotejwtauth.JwtOrgOne, expectStatus200Success)
+	s.assertResponse("/status/200", jwtRemoteOrgOne, expectStatus200Success)
 
 	s.T().Log("The /get route has a JWT config applied, should fail when no JWT is provided")
 	s.assertResponseWithoutAuth("/get", expectedJwtMissingFailedResponse)
@@ -209,7 +202,7 @@ func (s *testingSuite) TestJwtAuthenticationRemote() {
 	s.assertResponse("/get", badJwtToken, expectedJwtIssuerNotConfigured)
 
 	s.T().Log("The /get route has a JWT config applied, should succeed when correct JWT is provided")
-	s.assertResponse("/get", remotejwtauth.JwtOrgOne, expectStatus200Success)
+	s.assertResponse("/get", jwtRemoteOrgOne, expectStatus200Success)
 }
 
 // TestJwtDisable tests that JWT can be disabled at the route level
@@ -218,7 +211,7 @@ func (s *testingSuite) TestJwtDisable() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route-jwt",
-		"default",
+		"kgateway-base",
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -226,7 +219,7 @@ func (s *testingSuite) TestJwtDisable() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route-no-jwt",
-		"default",
+		"kgateway-base",
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -244,30 +237,22 @@ func (s *testingSuite) TestJwtDisable() {
 }
 
 func (s *testingSuite) assertResponse(path, authHeader string, expected *matchers.HttpResponse) {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithHostHeader("httpbin"),
-			curl.WithHeader("Authorization", "Bearer "+authHeader),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		expected,
+		curl.WithPath(path),
+		curl.WithHostHeader("httpbin"),
+		curl.WithHeader("Authorization", "Bearer "+authHeader),
+		curl.WithPort(80),
 	)
 }
 
 func (s *testingSuite) assertResponseWithoutAuth(path string, expected *matchers.HttpResponse) {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithPath(path),
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithHostHeader("httpbin"),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		expected,
+		curl.WithPath(path),
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
 	)
 }

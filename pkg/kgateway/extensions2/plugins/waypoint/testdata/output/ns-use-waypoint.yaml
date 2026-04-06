@@ -1,6 +1,5 @@
 Clusters:
 - connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: istio-se_infra_se-c_se-c.infra.svc.cluster.local_9000
     endpoints:

@@ -1,0 +1,38 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: example-policy
+spec:
+  targetRefs:
+    - name: example-backend
+      group: gateway.kgateway.dev
+      kind: Backend
+  dns:
+    refreshRate: 60s
+    jitter: 15s
+    respectTTL: true
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: example-backend
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: example.com
+      port: 8080

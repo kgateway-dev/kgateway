@@ -28,7 +28,6 @@ env:
   # this uses the `github.repository_owner` to support releases from forks (useful for testing).
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   VANITY_REGISTRY: cr.kgateway.dev/kgateway-dev
-  AGW_VANITY_REGISTRY: cr.agentgateway.dev
   MAIN_VERSION: v2.3.0-main
   GORELEASER_DISABLE_RELEASE: false
 
@@ -46,7 +45,7 @@ jobs:
       needs_release: ${{ steps.set_vars.outputs.needs_release }}
       previous_tag: ${{ steps.set_vars.outputs.previous_tag }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
       - name: Set the release related variables
@@ -60,7 +59,7 @@ jobs:
             VERSION="${{ inputs.version }}"
             # Validate semver format. Modified version from the recommended semver format.
             # See https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string.
-            if ! echo "$VERSION" | grep -E "^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-((0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$" > /dev/null; then
+            if ! echo "$VERSION" | grep -q -i -E '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-z-][0-9a-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-z-][0-9a-z-]*))*))?(\+([0-9a-z-]+(\.[0-9a-z-]+)*))?$'; then
               echo "Error: Version '$VERSION' does not match required semver format (e.g., v1.2.3, v2.0.0-alpha.1)"
               exit 1
             fi
@@ -93,21 +92,21 @@ jobs:
 
   helm:
     name: Package helm charts
-    needs: setup
+    needs: [setup, goreleaser]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Helm login to ${{ env.IMAGE_REGISTRY }}
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Package kgateway and agentgateway charts
-        run: make package-kgateway-charts package-agentgateway-charts
+      - name: Package kgateway charts
+        run: make package-kgateway-charts
         env:
           VERSION: ${{ needs.setup.outputs.version }}
 
-      - name: Push kgateway and agentgateway charts to registry
+      - name: Push kgateway charts to registry
         if: ${{ github.event_name != 'pull_request' }}
         run: make release-charts
         env:
@@ -119,7 +118,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
         with:
           fetch-depth: 0
@@ -144,10 +143,10 @@ jobs:
 
   goreleaser:
     name: goreleaser
-    needs: [setup, helm, release-notes]
+    needs: [setup, release-notes]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
       - name: Prep Go Runner
@@ -167,7 +166,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: "docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392" # v3.6.0
-      - uses: "docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2" # v3.10 .0
+      - uses: "docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2" # v3.10.0
 
       - name: Download release notes
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
@@ -186,13 +185,40 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{ needs.setup.outputs.version }}
           GORELEASER_DISABLE_RELEASE: ${{ env.GORELEASER_DISABLE_RELEASE }}
 
+      - name: Install container-structure-test
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -LO https://github.com/GoogleContainerTools/container-structure-test/releases/download/v1.19.3/container-structure-test-linux-amd64
+          echo "fa0fa333bb6ba5c14065e7468d2904f5c82d021d7e1c763c9a45c5f2fbe9ff5f  container-structure-test-linux-amd64" | sha256sum --check
+          chmod +x container-structure-test-linux-amd64
+          sudo mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
+
+      - name: Run container structure tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arch in amd64 arm64; do
+            for image in kgateway sds envoy-wrapper; do
+              echo "Testing ${image} (${arch})..."
+              container-structure-test test \
+                --image "${{ env.IMAGE_REGISTRY }}/${image}:${{ needs.setup.outputs.version }}-${arch}" \
+                --platform "linux/${arch}" \
+                --config "test/container-structure/${image}.yaml"
+            done
+          done
+
   validate:
-    name: Validate release artifacts
+    name: Validate release artifacts e2e (${{ matrix.arch }})
     needs: [setup, helm, goreleaser]
     if: ${{ inputs.validate }}
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ 'amd64', 'arm64' ]
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
 
@@ -221,14 +247,13 @@ jobs:
             oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
             --set image.registry=${{ env.IMAGE_REGISTRY }} \
             --version ${{ needs.setup.outputs.version }} \
-            --set inferenceExtension.enabled=true \
             --wait --timeout 5m
 
       - name: Wait for the kgateway deployment to be ready
         run: |
           kubectl wait --for=condition=available --timeout=5m deployment/kgateway -n kgateway-system
 
-      - name: Run Gateway API and Inference Extension Conformance Tests
+      - name: Run Gateway API Conformance Tests
         run: make all-conformance
         shell: bash
         env:
@@ -240,7 +265,7 @@ jobs:
     if: ${{ inputs.run_load_tests }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
 
@@ -269,7 +294,6 @@ jobs:
             oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
             --set image.registry=${{ env.IMAGE_REGISTRY }} \
             --version ${{ needs.setup.outputs.version }} \
-            --set inferenceExtension.enabled=true \
             --wait --timeout 5m
 
       - name: Wait for the kgateway deployment to be ready

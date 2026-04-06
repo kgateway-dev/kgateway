@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/directresponse"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extproc"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/faultinjection"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/frontendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/header_modifiers"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/jwt"
@@ -49,14 +50,10 @@ import (
 
 func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner := e2e.NewSuiteRunner(false)
-	kubeGatewaySuiteRunner.Register("ExtAuth", extauth.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("AccessLog", accesslog.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("Backends", backends.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("BackendTLSPolicies", backendtls.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("BasicRouting", basicrouting.NewTestingSuite)
+
 	kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("DynamicForwardProxy", dfp.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
+
+	// Slow tests not yet migrated to use the more modern testing approach
 	kubeGatewaySuiteRunner.Register("ListenerPolicy", listener_policy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
@@ -66,6 +63,21 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("GRPCRouteServices", grpcroute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Transforms", transformation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("ExtProc", extproc.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Tracing", tracing.NewTestingSuite)
+	// kubeGatewaySuiteRunner.Register("RouteProbe", loadtesting.NewRouteProbeSuite)
+	// kubeGatewaySuiteRunner.Register("RouteChange", loadtesting.NewRouteChangeSuite)
+	kubeGatewaySuiteRunner.Register("LeaderElection", leaderelection.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("HeaderModifiers", header_modifiers.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("FrontendTLS", frontendtls.NewTestingSuite)
+
+	// Fast tests
+	kubeGatewaySuiteRunner.Register("AccessLog", accesslog.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("ExtAuth", extauth.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Backends", backends.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("BackendTLSPolicies", backendtls.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("BasicRouting", basicrouting.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("DynamicForwardProxy", dfp.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
@@ -73,23 +85,18 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Buffer", buffer.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Compression", compression.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("FaultInjection", faultinjection.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("Tracing", tracing.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AttachedRoutes", loadtesting.NewAttachedRoutesSuite)
-	// kubeGatewaySuiteRunner.Register("RouteProbe", loadtesting.NewRouteProbeSuite)
-	// kubeGatewaySuiteRunner.Register("RouteChange", loadtesting.NewRouteChangeSuite)
 	kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PathMatching", path_matching.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("LeaderElection", leaderelection.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("HeaderModifiers", header_modifiers.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("APIKeyAuth", apikeyauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("FrontendTLS", frontendtls.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
 

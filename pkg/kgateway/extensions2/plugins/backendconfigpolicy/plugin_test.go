@@ -7,8 +7,13 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
+	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
+	envoyrawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_http_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -17,7 +22,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -37,23 +41,23 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			name: "full configuration",
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
-					ConnectTimeout:                ptr.To(metav1.Duration{Duration: 5 * time.Second}),
-					PerConnectionBufferLimitBytes: ptr.To(int32(1024)),
+					ConnectTimeout:                new(metav1.Duration{Duration: 5 * time.Second}),
+					PerConnectionBufferLimitBytes: new(int32(1024)),
 					TCPKeepalive: &kgateway.TCPKeepalive{
-						KeepAliveProbes:   ptr.To(int32(3)),
-						KeepAliveTime:     ptr.To(metav1.Duration{Duration: 30 * time.Second}),
-						KeepAliveInterval: ptr.To(metav1.Duration{Duration: 5 * time.Second}),
+						KeepAliveProbes:   new(int32(3)),
+						KeepAliveTime:     new(metav1.Duration{Duration: 30 * time.Second}),
+						KeepAliveInterval: new(metav1.Duration{Duration: 5 * time.Second}),
 					},
 					CommonHttpProtocolOptions: &kgateway.CommonHttpProtocolOptions{
-						IdleTimeout:              ptr.To(metav1.Duration{Duration: 60 * time.Second}),
-						MaxHeadersCount:          ptr.To(int32(100)),
-						MaxStreamDuration:        ptr.To(metav1.Duration{Duration: 30 * time.Second}),
-						MaxRequestsPerConnection: ptr.To(int32(100)),
+						IdleTimeout:              new(metav1.Duration{Duration: 60 * time.Second}),
+						MaxHeadersCount:          new(int32(100)),
+						MaxStreamDuration:        new(metav1.Duration{Duration: 30 * time.Second}),
+						MaxRequestsPerConnection: new(int32(100)),
 					},
 					Http1ProtocolOptions: &kgateway.Http1ProtocolOptions{
-						EnableTrailers:                          ptr.To(true),
-						PreserveHttp1HeaderCase:                 ptr.To(true),
-						OverrideStreamErrorOnInvalidHttpMessage: ptr.To(true),
+						EnableTrailers:                          new(true),
+						PreserveHttp1HeaderCase:                 new(true),
+						OverrideStreamErrorOnInvalidHttpMessage: new(true),
 					},
 				},
 			},
@@ -102,9 +106,9 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			name: "minimal configuration",
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
-					ConnectTimeout: ptr.To(metav1.Duration{Duration: 2 * time.Second}),
+					ConnectTimeout: new(metav1.Duration{Duration: 2 * time.Second}),
 					CommonHttpProtocolOptions: &kgateway.CommonHttpProtocolOptions{
-						MaxRequestsPerConnection: ptr.To(int32(50)),
+						MaxRequestsPerConnection: new(int32(50)),
 					},
 				},
 			},
@@ -138,7 +142,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
 					Http1ProtocolOptions: &kgateway.Http1ProtocolOptions{
-						EnableTrailers: ptr.To(true),
+						EnableTrailers: new(true),
 					},
 				},
 			},
@@ -178,10 +182,10 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
 					Http2ProtocolOptions: &kgateway.Http2ProtocolOptions{
-						InitialStreamWindowSize:                 ptr.To(resource.MustParse("64Ki")),
-						InitialConnectionWindowSize:             ptr.To(resource.MustParse("64Ki")),
-						MaxConcurrentStreams:                    ptr.To(int32(100)),
-						OverrideStreamErrorOnInvalidHttpMessage: ptr.To(true),
+						InitialStreamWindowSize:                 new(resource.MustParse("64Ki")),
+						InitialConnectionWindowSize:             new(resource.MustParse("64Ki")),
+						MaxConcurrentStreams:                    new(int32(100)),
+						OverrideStreamErrorOnInvalidHttpMessage: new(true),
 					},
 				},
 			},
@@ -226,7 +230,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
 					Http2ProtocolOptions: &kgateway.Http2ProtocolOptions{
-						MaxConcurrentStreams: ptr.To(int32(100)),
+						MaxConcurrentStreams: new(int32(100)),
 					},
 				},
 			},
@@ -240,7 +244,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
 					CircuitBreakers: &kgateway.CircuitBreakers{
-						MaxConnections: ptr.To(int32(100)),
+						MaxConnections: new(int32(100)),
 					},
 				},
 			},
@@ -260,10 +264,10 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
 					CircuitBreakers: &kgateway.CircuitBreakers{
-						MaxConnections:     ptr.To(int32(1000)),
-						MaxPendingRequests: ptr.To(int32(500)),
-						MaxRequests:        ptr.To(int32(2000)),
-						MaxRetries:         ptr.To(int32(10)),
+						MaxConnections:     new(int32(1000)),
+						MaxPendingRequests: new(int32(500)),
+						MaxRequests:        new(int32(2000)),
+						MaxRetries:         new(int32(10)),
 					},
 				},
 			},
@@ -276,6 +280,105 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 							MaxRequests:        &wrapperspb.UInt32Value{Value: 2000},
 							MaxRetries:         &wrapperspb.UInt32Value{Value: 10},
 						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "upstream proxy protocol V1 without TLS",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					UpstreamProxyProtocol: &kgateway.UpstreamProxyProtocol{
+						Version: new(kgateway.ProxyProtocolVersionV1),
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				TransportSocket: &envoycorev3.TransportSocket{
+					Name: TransportSocketUpstreamProxyProtocol,
+					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
+							Config: &envoycorev3.ProxyProtocolConfig{
+								Version: envoycorev3.ProxyProtocolConfig_V1,
+							},
+							TransportSocket: &envoycorev3.TransportSocket{
+								Name: envoywellknown.TransportSocketRawBuffer,
+								ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+									TypedConfig: mustMessageToAny(t, &envoyrawbufferv3.RawBuffer{}),
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "upstream proxy protocol V2 without TLS",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					UpstreamProxyProtocol: &kgateway.UpstreamProxyProtocol{
+						Version: new(kgateway.ProxyProtocolVersionV2),
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				TransportSocket: &envoycorev3.TransportSocket{
+					Name: TransportSocketUpstreamProxyProtocol,
+					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
+							Config: &envoycorev3.ProxyProtocolConfig{
+								Version: envoycorev3.ProxyProtocolConfig_V2,
+							},
+							TransportSocket: &envoycorev3.TransportSocket{
+								Name: envoywellknown.TransportSocketRawBuffer,
+								ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+									TypedConfig: mustMessageToAny(t, &envoyrawbufferv3.RawBuffer{}),
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "upstream proxy protocol V1 with TLS",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					UpstreamProxyProtocol: &kgateway.UpstreamProxyProtocol{
+						Version: new(kgateway.ProxyProtocolVersionV1),
+					},
+				},
+			},
+			cluster: &envoyclusterv3.Cluster{
+				TransportSocket: &envoycorev3.TransportSocket{
+					Name: envoywellknown.TransportSocketTls,
+					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+						TypedConfig: mustMessageToAny(t, &envoytlsv3.UpstreamTlsContext{
+							Sni: "example.com",
+						}),
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				TransportSocket: &envoycorev3.TransportSocket{
+					Name: TransportSocketUpstreamProxyProtocol,
+					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
+							Config: &envoycorev3.ProxyProtocolConfig{
+								Version: envoycorev3.ProxyProtocolConfig_V1,
+							},
+							TransportSocket: &envoycorev3.TransportSocket{
+								Name: envoywellknown.TransportSocketTls,
+								ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+									TypedConfig: mustMessageToAny(t, &envoytlsv3.UpstreamTlsContext{
+										Sni: "example.com",
+									}),
+								},
+							},
+						}),
 					},
 				},
 			},
@@ -306,6 +409,121 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			assert.Equal(t, tt.want, cluster)
 		})
 	}
+}
+
+func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
+	t.Run("applies dns settings to hostname-based static backends", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				DNS: &kgateway.DNS{
+					RefreshRate: &metav1.Duration{Duration: 60 * time.Second},
+					Jitter:      &metav1.Duration{Duration: 15 * time.Second},
+					RespectTTL:  new(true),
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := &envoyclusterv3.Cluster{
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+					Name:        dnsClusterExtensionName,
+					TypedConfig: mustMessageToAny(t, &envoydnsv3.DnsCluster{}),
+				},
+			},
+		}
+		backend := ir.BackendObjectIR{
+			Obj: &kgateway.Backend{
+				Spec: kgateway.BackendSpec{
+					Static: &kgateway.StaticBackend{
+						Hosts: []kgateway.Host{{
+							Host: "example.com",
+							Port: 8080,
+						}},
+					},
+				},
+			},
+		}
+
+		processBackend(context.Background(), policyIR, backend, cluster)
+
+		var dnsCluster envoydnsv3.DnsCluster
+		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
+		require.NoError(t, err)
+		assert.Equal(t, durationpb.New(60*time.Second), dnsCluster.GetDnsRefreshRate())
+		assert.Equal(t, durationpb.New(15*time.Second), dnsCluster.GetDnsJitter())
+		assert.True(t, dnsCluster.GetRespectDnsTtl())
+	})
+
+	t.Run("applies dns settings when cluster is dns", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				DNS: &kgateway.DNS{
+					RefreshRate: &metav1.Duration{Duration: 60 * time.Second},
+					Jitter:      &metav1.Duration{Duration: 15 * time.Second},
+					RespectTTL:  new(true),
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := &envoyclusterv3.Cluster{
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+					Name:        dnsClusterExtensionName,
+					TypedConfig: mustMessageToAny(t, &envoydnsv3.DnsCluster{}),
+				},
+			},
+		}
+		backend := ir.BackendObjectIR{
+			Obj: &kgateway.Backend{
+				Spec: kgateway.BackendSpec{
+					Static: &kgateway.StaticBackend{
+						Hosts: []kgateway.Host{{
+							Host: "10.0.0.1",
+							Port: 8080,
+						}},
+					},
+				},
+			},
+		}
+
+		processBackend(context.Background(), policyIR, backend, cluster)
+
+		var dnsCluster envoydnsv3.DnsCluster
+		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
+		require.NoError(t, err)
+		assert.Equal(t, durationpb.New(60*time.Second), dnsCluster.GetDnsRefreshRate())
+		assert.Equal(t, durationpb.New(15*time.Second), dnsCluster.GetDnsJitter())
+		assert.True(t, dnsCluster.GetRespectDnsTtl())
+	})
+
+	t.Run("ignores dns settings for non-dns clusters", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				DNS: &kgateway.DNS{
+					RefreshRate: &metav1.Duration{Duration: 60 * time.Second},
+					Jitter:      &metav1.Duration{Duration: 15 * time.Second},
+					RespectTTL:  new(true),
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := &envoyclusterv3.Cluster{
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+					Name:        "envoy.clusters.aggregate",
+					TypedConfig: mustMessageToAny(t, &wrapperspb.StringValue{Value: "unchanged"}),
+				},
+			},
+		}
+
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		assert.Equal(t, "envoy.clusters.aggregate", cluster.GetClusterType().GetName())
+		assert.True(t, proto.Equal(mustMessageToAny(t, &wrapperspb.StringValue{Value: "unchanged"}), cluster.GetClusterType().GetTypedConfig()))
+	})
 }
 
 // mustMessageToAny is a helper function to handle MessageToAny error in test cases

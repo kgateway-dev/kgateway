@@ -14,29 +14,31 @@ import (
 
 var (
 	// manifests
-	setupManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	nginxManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx.yaml")
-	tlsInsecureManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-insecure.yaml")
-	simpleTLSManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "simple-tls.yaml")
-	systemCAManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "system-ca.yaml")
-	outlierDetectionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
-	missingTargetManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "missing-target.yaml")
+	setupManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	nginxManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx.yaml")
+	dnsManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "dns.yaml")
+	tlsInsecureManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-insecure.yaml")
+	simpleTLSManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "simple-tls.yaml")
+	systemCAManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "system-ca.yaml")
+	outlierDetectionManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
+	missingTargetManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "missing-target.yaml")
+	upstreamProxyProtocolManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "upstream-proxy-protocol.yaml")
+
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
+		Name:      "gateway",
+		Namespace: "kgateway-base",
 	}
-	proxyService = &corev1.Service{ObjectMeta: proxyObjectMeta}
 
 	nginxPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx",
-			Namespace: "default",
+			Namespace: "kgateway-base",
 		},
 	}
 	httpbinMeta = metav1.ObjectMeta{
 		Name:      "httpbin",
-		Namespace: "default",
+		Namespace: "kgateway-base",
 	}
 	httpbinDeployment = &appsv1.Deployment{ObjectMeta: httpbinMeta}
 )

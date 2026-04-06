@@ -79,7 +79,6 @@ func (p *Provider) AssertEventualGrpcurlJsonResponseMatches(
 	p.Gomega.Eventually(func(g Gomega) {
 		var err error
 		resp, err = p.clusterContext.Cli.GrpcurlFromPod(ctx, podOpts, grpcurlOptions...)
-
 		// First, ensure the grpcurl command itself succeeded (exit code 0)
 		if err != nil {
 			errMsg := fmt.Sprintf("grpcurl command failed. Stdout: %s, Stderr: %s, Error: %v", resp.StdOut, resp.StdErr, err)

@@ -11,6 +11,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
     another-label: "true"
     extra-label-key: extra-label-value
@@ -91,6 +92,30 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - autoscaling.k8s.io
+  resources:
+  - verticalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
@@ -109,8 +134,6 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
-  - agentgatewaybackends
-  - agentgatewaypolicies
   - backendconfigpolicies
   - backends
   - directresponses
@@ -126,8 +149,6 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
-  - agentgatewaybackends/status
-  - agentgatewaypolicies/status
   - backendconfigpolicies/status
   - backends/status
   - directresponses/status
@@ -147,6 +168,7 @@ rules:
   - gateways
   - grpcroutes
   - httproutes
+  - listenersets
   - referencegrants
   - tcproutes
   - tlsroutes
@@ -162,6 +184,7 @@ rules:
   - gateways/status
   - grpcroutes/status
   - httproutes/status
+  - listenersets/status
   - tcproutes/status
   - tlsroutes/status
   verbs:
@@ -204,6 +227,18 @@ rules:
   - list
   - watch
 - apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - security.istio.io
   resources:
   - authorizationpolicies
@@ -238,6 +273,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
     another-label: "true"
     extra-label-key: extra-label-value
@@ -273,6 +309,7 @@ metadata:
     app.kubernetes.io/name: kgateway
     app.kubernetes.io/instance: test-release
     app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
     another-label: "true"
     extra-label-key: extra-label-value
@@ -293,6 +330,7 @@ spec:
         kgateway: kgateway
         app.kubernetes.io/name: kgateway
         app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: controller
     spec:
       serviceAccountName: test-release-kgateway
       containers:
@@ -321,7 +359,6 @@ spec:
               port: 9093
             initialDelaySeconds: 0
             periodSeconds: 1
-            
             failureThreshold: 120
           env:
             - name: GOMEMLIMIT
@@ -352,8 +389,6 @@ spec:
               value: "{}"
             - name: KGW_VALIDATION_MODE
               value: "standard"
-            - name: KGW_ENABLE_AGENTGATEWAY
-              value: "false"
             - name: KGW_ENABLE_ENVOY
               value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS

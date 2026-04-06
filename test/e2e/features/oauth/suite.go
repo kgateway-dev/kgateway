@@ -4,6 +4,7 @@ package oauth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	neturl "net/url"
@@ -26,6 +27,7 @@ import (
 
 const (
 	backendURLFirst                = "https://example.com"
+	backendURLGet                  = "https://example.com/get"
 	backendURLSecond               = "https://example.com/anything/second"
 	logoutURL                      = "https://example.com/logout"
 	endSessionEndpoint             = "https://keycloak/realms/master/protocol/openid-connect/logout"
@@ -119,11 +121,21 @@ func (s *tsuite) TestOIDC() {
 	s.T().Logf("found session cookies for %s: %v", backendURLFirst, foundCookies)
 
 	// Attempt to access the backend again without needing to login again; disable redirects
-	resp, err := client.Get(ctx, backendURLFirst, false)
+	resp, err := client.Get(ctx, backendURLGet, false)
 	r.NoError(err)
 	r.NotNil(resp)
 	r.Equal(http.StatusOK, resp.StatusCode)
-	r.Contains(string(resp.Body), expectedHttpbinResponseSubstr)
+
+	var httpBinResponse map[string]any
+	err = json.Unmarshal(resp.Body, &httpBinResponse)
+	r.NoError(err)
+	httpBinRequestHeaders := httpBinResponse["headers"].(map[string]any)
+	xOAuth2PreferredUsernameHeaders := httpBinRequestHeaders["X-Oauth2-Preferred-Username"].([]any)
+	xOAuth2EmailHeaders := httpBinRequestHeaders["X-Oauth2-Email"].([]any)
+	xOAuth2TokenTypesHeaders := httpBinRequestHeaders["X-Oauth2-Token-Types"].([]any)
+	r.Contains(xOAuth2PreferredUsernameHeaders, "kgateway")
+	r.Contains(xOAuth2EmailHeaders, "kgateway@example.com")
+	r.Contains(xOAuth2TokenTypesHeaders, "Bearer, ID")
 
 	// Initiate a logout with redirects disabled and verify that the set-cookie headers are present to delete
 	// the session cookies

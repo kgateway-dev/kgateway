@@ -157,11 +157,6 @@ Statuses:
     gwtest/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
         status: "True"
@@ -277,6 +272,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: http-a
     gwtest/route-b:
       parents:
       - conditions:
@@ -295,6 +291,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: http-b
     gwtest/route-isolated:
       parents:
       - conditions:
@@ -313,6 +310,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: http-isolated
   policies:
     TrafficPolicy/gwtest/listener-merge-invalid-policy:
       ancestors:

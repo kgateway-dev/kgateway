@@ -93,12 +93,6 @@ func TestImageTagVPrefix(t *testing.T) {
 			repository:       "kgateway",
 			hasDefaultEnvTag: true,
 		},
-		{
-			name:             "agentgateway",
-			path:             filepath.Join("..", "..", "install", "helm", "agentgateway"),
-			repository:       "controller",
-			hasDefaultEnvTag: false,
-		},
 	}
 
 	testCases := []struct {
@@ -204,10 +198,10 @@ func extractImageLines(output string) string {
 	return strings.Join(lines, "\n")
 }
 
-// TestHelmChartTemplate tests helm template output for both kgateway and agentgateway charts
+// TestHelmChartTemplate tests helm template output for the kgateway chart
 // with different values configurations.
 func TestHelmChartTemplate(t *testing.T) {
-	charts := []string{"kgateway", "agentgateway"}
+	charts := []string{"kgateway"}
 
 	valuesCases := []struct {
 		name       string
@@ -311,6 +305,176 @@ func TestHelmChartTemplate(t *testing.T) {
 			valuesYAML: `commonLabels:
     extra-label-key: extra-label-value
     another-label: "true"
+`,
+		},
+		{
+			name: "topology-spread-constraints",
+			valuesYAML: `topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: kgateway
+`,
+		},
+		{
+			name: "tolerations",
+			valuesYAML: `tolerations:
+  - key: top-level
+    operator: Exists
+    effect: NoSchedule
+`,
+		},
+		{
+			name: "controller-empty-tolerations-override",
+			valuesYAML: `tolerations:
+  - key: top-level
+    operator: Exists
+    effect: NoSchedule
+controller:
+  tolerations: []
+`,
+		},
+		{
+			name: "controller-null-tolerations-fallback",
+			valuesYAML: `tolerations:
+  - key: top-level
+    operator: Exists
+    effect: NoSchedule
+controller:
+  tolerations: null
+`,
+		},
+		{
+			name: "controller-empty-topology-spread-constraints-override",
+			valuesYAML: `topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: kgateway
+controller:
+  topologySpreadConstraints: []
+`,
+		},
+		{
+			name: "controller-null-topology-spread-constraints-fallback",
+			valuesYAML: `topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: kgateway
+controller:
+  topologySpreadConstraints: null
+`,
+		},
+		{
+			name: "controller-overrides-top-level-values",
+			valuesYAML: `podAnnotations:
+  top-level-only: "true"
+  overridden: top-level
+podSecurityContext:
+  fsGroup: 2000
+securityContext:
+  allowPrivilegeEscalation: false
+resources:
+  requests:
+    cpu: 100m
+nodeSelector:
+  kubernetes.io/os: linux
+tolerations:
+  - key: top-level
+    operator: Exists
+    effect: NoSchedule
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+                - linux
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        source: top-level
+controller:
+  podAnnotations:
+    controller-only: "true"
+    overridden: controller
+  podSecurityContext:
+    runAsNonRoot: true
+  securityContext:
+    readOnlyRootFilesystem: true
+  resources:
+    limits:
+      cpu: 200m
+  nodeSelector:
+    kubernetes.io/arch: amd64
+  tolerations:
+    - key: controller
+      operator: Exists
+      effect: NoExecute
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: kgateway
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          source: controller
+ `,
+		},
+		{
+			name: "controller-overrides-replace-not-merge",
+			valuesYAML: `nodeSelector:
+  kubernetes.io/os: linux
+  topology.kubernetes.io/zone: us-east-1a
+controller:
+  nodeSelector:
+    kubernetes.io/arch: amd64
+`,
+		},
+		{
+			name: "controller-empty-pod-annotations",
+			valuesYAML: `podAnnotations: null
+controller:
+  podAnnotations: {}
+`,
+		},
+		{
+			name: "controller-null-pod-annotations",
+			valuesYAML: `podAnnotations: null
+controller:
+  podAnnotations: null
+`,
+		},
+		{
+			name: "replicas-zero",
+			valuesYAML: `controller:
+  replicaCount: 0
+`,
+		},
+		{
+			name: "replicas-null",
+			valuesYAML: `controller:
+  replicaCount: null
 `,
 		},
 	}

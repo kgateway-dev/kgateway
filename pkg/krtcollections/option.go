@@ -3,7 +3,6 @@ package krtcollections
 import (
 	"istio.io/istio/pkg/kube/krt"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -34,7 +33,7 @@ func WithGatewayForEnvoyTransformationFunc(f GatewaysForEnvoyTransformationFunct
 }
 
 func processGatewayIndexConfig(config *GatewayIndexConfig, opts ...GatewayIndexConfigOption) {
-	config.byParentRefIndex = krtpkg.UnnamedIndex(config.ListenerSets, func(in *gwxv1a1.XListenerSet) []TargetRefIndexKey {
+	config.byParentRefIndex = krtpkg.UnnamedIndex(config.ListenerSets, func(in *gwv1.ListenerSet) []TargetRefIndexKey {
 		pRef := in.Spec.ParentRef
 		ns := strOr(pRef.Namespace, "")
 		if ns == "" {

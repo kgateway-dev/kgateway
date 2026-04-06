@@ -16,7 +16,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/security"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
@@ -71,7 +70,7 @@ func (x *callbacks) getPeerInfo(sid int64, r *envoy_service_discovery_v3.Discove
 		// xDS auth is disabled, retrieve the role from Node metadata
 		p.role = roleFromRequest(r)
 		if usePod && r.GetNode() != nil {
-			p.podRef = ptr.To(getRef(r.GetNode()))
+			p.podRef = new(getRef(r.GetNode()))
 		}
 		return p, nil
 	}
@@ -201,6 +200,25 @@ func roleFromRequest(r *envoy_service_discovery_v3.DiscoveryRequest) string {
 	return r.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
 }
 
+// NormalizeGatewayRole returns a normalized Gateway API proxy identity
+// derived from the namespace and gateway name in labels.
+// If no gateway name is found, it returns originalRole unchanged.
+func NormalizeGatewayRole(originalRole, namespace string, labels map[string]string) string {
+	if labels == nil {
+		return originalRole
+	}
+
+	gwName := labels[wellknown.GatewayNameAnnotation]
+	if gwName == "" {
+		gwName = labels[wellknown.GatewayNameLabel]
+	}
+	if gwName == "" {
+		return originalRole
+	}
+
+	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, namespace, gwName)
+}
+
 func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (string, bool, error) {
 	var pod *LocalityPod
 	// see if user wants to use pod locality info; this is only possible when podRef is set in getPeerInfo
@@ -224,6 +242,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 				locality = pod.Locality
 				ns = pod.Namespace
 				labels = pod.AugmentedLabels
+				peer.role = NormalizeGatewayRole(peer.role, ns, labels)
 			}
 		}
 		x.logger.Debug("adding xds client", "locality", locality, "ns", ns, "labels", labels, "role", peer.role)
@@ -342,7 +361,14 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 	podRef := getRef(r.GetNode())
 	k := krt.Named{Name: podRef.Name, Namespace: podRef.Namespace}.ResourceName()
 	pod = x.augmentedPods.GetKey(k)
-	ucc := ir.NewUniqlyConnectedClient(roleFromRequest(r), pod.Namespace, pod.AugmentedLabels, pod.Locality)
+	if pod == nil {
+		return fmt.Errorf("pod not found for node %v", r.GetNode())
+	}
+
+	role := roleFromRequest(r)
+	role = NormalizeGatewayRole(role, pod.Namespace, pod.AugmentedLabels)
+
+	ucc := ir.NewUniqlyConnectedClient(role, pod.Namespace, pod.AugmentedLabels, pod.Locality)
 
 	nodeMd := r.GetNode().GetMetadata()
 	if nodeMd == nil {

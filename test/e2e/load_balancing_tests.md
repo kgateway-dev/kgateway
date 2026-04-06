@@ -12,9 +12,9 @@ Our previous strategy was to group tests by domain. This did not scale well beca
 ### What is our current strategy?
 Our current strategy is to group tests by runtime. This allows us to easily move tests between clusters as necessary, following the Kubernetes mantra "cattle, not pets".
 
-The groupings are defined in our [GitHub action matrix](/.github/workflows/pr-kubernetes-tests.yaml). This allows us to isolate this complexity to our CI pipeline and not impact local development.
+The groupings are defined in our [GitHub action matrix](/.github/workflows/e2e.yaml). This allows us to isolate this complexity to our CI pipeline and not impact local development.
 
- _A side effect of this approach is that if you add a new test function and forget to add it in CI, it will not run. In the short term we have accepted this drawback, expecting PR review to identify it. If this is not sufficient, we will build automation to detect this._.
+ `TestAllE2ETestsInShards` in `test/e2e/tests/shards_test.go` verifies that every registered e2e test is covered by at least one shard regex, so forgetting to add a new test to CI will be caught automatically.
 
 ## Re-Balancing
 
@@ -25,7 +25,7 @@ Re-balancing of tests is intentionally a very easy action, though it shouldn't n
 
 ### Steps to take
 1. Review the recent results from CI, and identify which tests can be migrated
-2. Adjust the run functions that are invoked in our [GitHub action matrix](/.github/workflows/pr-kubernetes-tests.yaml)
+2. Adjust the run functions that are invoked in our [GitHub action matrix](/.github/workflows/e2e.yaml)
 4. Document the **new** results, on the matrix that runs the tests
 4. Open a PR clearly documenting in the PR body the results before and after the change
 
@@ -34,4 +34,4 @@ Re-balancing of tests is intentionally a very easy action, though it shouldn't n
 When adding a new test suite:
 1. Check the most recently merged PR's action for Kubernetes tests
 2. Determine the cluster with the lowest runtime
-3. Add your test suite to that cluster's definition in our [GitHub action matrix](/.github/workflows/pr-kubernetes-tests.yaml)
+3. Add your test suite to that cluster's definition in our [GitHub action matrix](/.github/workflows/e2e.yaml)

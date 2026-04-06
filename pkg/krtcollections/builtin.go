@@ -526,7 +526,7 @@ func parseRedirectStatusCode(
 		return nil, fmt.Errorf("invalid redirect status code: %s; %s", val, httpRedirectStatusCodesAllowedMsg)
 	}
 
-	return ptr.To(code), nil
+	return new(code), nil
 }
 
 // MIRROR IR
@@ -809,15 +809,9 @@ func (h *RoutesIndex) convertfilterIR(
 			policy = uw
 		}
 	case gwv1.HTTPRouteFilterCORS:
-		// ON_EXPERIMENTAL_PROMOTION : Remove this block
-		// Ref: https://github.com/kgateway-dev/kgateway/issues/12826
-		if h.enableExperimentalGatewayAPIFeatures {
-			ci := convertCORSIR(kctx, f.CORS)
-			if ci != nil {
-				policy = ci
-			}
-		} else {
-			logger.Warn("experimental gateway api features are disabled but HTTPRouteFilterCORS is configured. Skipping")
+		ci := convertCORSIR(kctx, f.CORS)
+		if ci != nil {
+			policy = ci
 		}
 	}
 	if policy == nil {

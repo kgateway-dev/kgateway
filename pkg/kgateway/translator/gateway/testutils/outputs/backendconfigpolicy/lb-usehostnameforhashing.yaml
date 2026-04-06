@@ -1,7 +1,11 @@
 Clusters:
-- commonLbConfig: {}
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  commonLbConfig: {}
   connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: backend_default_example-backend_0
     endpoints:
@@ -26,7 +30,6 @@ Clusters:
           minimumRingSize: "1024"
   metadata: {}
   name: backend_default_example-backend_0
-  type: STRICT_DNS
 - commonLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
@@ -82,11 +85,6 @@ Statuses:
   gateways:
     default/example-gateway:
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted

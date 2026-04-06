@@ -675,7 +675,7 @@ main() {
             echo ""
         else
             log_info "Packaging charts (required for tests)..."
-            make package-kgateway-charts package-agentgateway-charts
+            make package-kgateway-charts
             echo ""
         fi
     fi

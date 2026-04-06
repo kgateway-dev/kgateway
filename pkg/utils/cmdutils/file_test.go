@@ -10,9 +10,7 @@ import (
 )
 
 var _ = Describe("File", func() {
-
 	Context("RunCommandOutputToFileFunc", func() {
-
 		var (
 			cmd     Cmd
 			tmpFile string
@@ -50,7 +48,5 @@ var _ = Describe("File", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileInfo.Size()).NotTo(BeZero(), "process data was written to file")
 		})
-
 	})
-
 })

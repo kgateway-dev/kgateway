@@ -90,7 +90,7 @@ func (w *waypointQueries) GetAuthorizationPoliciesForGateway(
 	// Get all indexed policies targeting this gateway
 	allPolicies := krt.Fetch(kctx, w.authzPolicies, krt.FilterIndex(w.byTargetRefKey, gwKey))
 
-	//GatewayClass policies can be in rootNamespace or the gateway namespace
+	// GatewayClass policies can be in rootNamespace or the gateway namespace
 	if rootNamespace != "" && rootNamespace != gateway.GetNamespace() {
 		gwClassKey := ir.ObjectSource{
 			Name:      "kgateway-waypoint",
@@ -108,7 +108,8 @@ func (w *waypointQueries) GetAuthorizationPoliciesForGateway(
 func (w *waypointQueries) GetAuthorizationPoliciesForService(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	svc *Service) []*authcr.AuthorizationPolicy {
+	svc *Service,
+) []*authcr.AuthorizationPolicy {
 	seen := sets.New[types.NamespacedName]()
 	var svcPolicies []*authcr.AuthorizationPolicy
 	for _, k := range svc.Keys() {

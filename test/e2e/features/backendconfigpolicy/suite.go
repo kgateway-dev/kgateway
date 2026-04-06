@@ -10,6 +10,7 @@ import (
 	"time"
 
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
@@ -21,9 +22,9 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -58,32 +59,33 @@ func (s *testingSuite) SetupSuite() {
 	// define which manifests are applied for each test
 	s.manifests = map[string][]string{
 		"TestBackendConfigPolicy": {
-			testdefaults.CurlPodManifest,
 			setupManifest,
 		},
+		"TestBackendConfigPolicyDNS": {
+			nginxManifest,
+			dnsManifest,
+		},
 		"TestBackendConfigPolicyTLSInsecureSkipVerify": {
-			testdefaults.CurlPodManifest,
 			tlsInsecureManifest,
 			nginxManifest,
 		},
 		"TestBackendConfigPolicySimpleTLS": {
-			testdefaults.CurlPodManifest,
 			simpleTLSManifest,
 			nginxManifest,
 		},
 		"TestBackendConfigPolicyTLSSystemCA": {
-			testdefaults.CurlPodManifest,
 			nginxManifest,
 			systemCAManifest,
 		},
 		"TestBackendConfigPolicyOutlierDetection": {
-			testdefaults.CurlPodManifest,
 			setupManifest,
 			outlierDetectionManifest,
 		},
 		"TestBackendConfigPolicyClearStaleStatus": {
-			testdefaults.CurlPodManifest,
 			setupManifest,
+		},
+		"TestBackendConfigPolicyUpstreamProxyProtocol": {
+			upstreamProxyProtocolManifest,
 		},
 	}
 }
@@ -107,12 +109,6 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	}
 
 	// wait for common resources for all tests
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=gw",
-	})
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
@@ -137,20 +133,36 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, "kgateway-base", metav1.ListOptions{
+		LabelSelector: testdefaults.WellKnownAppLabel + "=httpbin",
+	})
+	s.testInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.ctx,
+		"example-route",
+		"kgateway-base",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// Wait until Envoy has the example-svc cluster in its dynamic config.
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
+		s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+			clusters, err := adminClient.GetDynamicClusters(ctx)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get dynamic clusters")
+			_, ok := clusters["kube_kgateway-base_example-svc_8080"]
+			g.Expect(ok).To(gomega.BeTrue(), "example-svc cluster should be in Envoy xDS")
+		}).WithTimeout(120 * time.Second).WithPolling(2 * time.Second).Should(gomega.Succeed())
+	})
 
 	// Should have a successful response
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
 		},
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(80),
 	)
 
 	// envoy config should reflect the backend config policy
@@ -160,7 +172,7 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get dynamic clusters from config dump")
 			g.Expect(clusters).NotTo(gomega.BeEmpty())
 
-			cluster, ok := clusters["kube_default_example-svc_8080"]
+			cluster, ok := clusters["kube_kgateway-base_example-svc_8080"]
 			g.Expect(ok).To(gomega.BeTrue(), "cluster should be in list")
 			g.Expect(cluster).NotTo(gomega.BeNil())
 			g.Expect(cluster.PerConnectionBufferLimitBytes.Value).To(gomega.Equal(uint32(1024)))
@@ -181,7 +193,7 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 
 			// check that a BackendConfigPolicy for HTTP2 backend is applied
 			// when only CommonHttpProtocolOptions is set
-			h2cCluster, ok := clusters["kube_default_httpbin-h2c_8080"]
+			h2cCluster, ok := clusters["kube_kgateway-base_httpbin-h2c_8080"]
 			g.Expect(ok).To(gomega.BeTrue(), "cluster should be in list")
 			g.Expect(h2cCluster).NotTo(gomega.BeNil())
 
@@ -200,7 +212,7 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 
 			// check that a BackendConfigPolicy for HTTP1 backend is applied
 			// when only CommonHttpProtocolOptions is set
-			http1Cluster, ok := clusters["kube_default_httpbin_8080"]
+			http1Cluster, ok := clusters["kube_kgateway-base_httpbin_8080"]
 			g.Expect(ok).To(gomega.BeTrue(), "cluster should be in list")
 			g.Expect(http1Cluster).NotTo(gomega.BeNil())
 
@@ -224,51 +236,74 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 	})
 }
 
-func (s *testingSuite) TestBackendConfigPolicyTLSInsecureSkipVerify() {
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+func (s *testingSuite) TestBackendConfigPolicyDNS() {
+	s.testInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPath("/"),
-			curl.WithPort(8080),
-			curl.WithHeadersOnly(),
-		},
+		"dns-route",
+		"kgateway-base",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
+		s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+			clusters, err := adminClient.GetDynamicClusters(ctx)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get dynamic clusters")
+
+			cluster, ok := clusters["backend_kgateway-base_dns-backend_0"]
+			g.Expect(ok).To(gomega.BeTrue(), "dns backend cluster should be in Envoy xDS")
+			g.Expect(cluster).NotTo(gomega.BeNil())
+
+			clusterType := cluster.GetClusterType()
+			g.Expect(clusterType).NotTo(gomega.BeNil(), "dns backend should use a custom cluster type")
+			g.Expect(clusterType.GetName()).To(gomega.Equal("envoy.clusters.dns"))
+
+			dnsCluster := &envoydnsv3.DnsCluster{}
+			err = clusterType.GetTypedConfig().UnmarshalTo(dnsCluster)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "can unmarshal dns cluster config")
+			g.Expect(dnsCluster.GetDnsRefreshRate().AsDuration()).To(gomega.Equal(60 * time.Second))
+			g.Expect(dnsCluster.GetDnsJitter().AsDuration()).To(gomega.Equal(15 * time.Second))
+		}).
+			WithContext(ctx).
+			WithTimeout(10 * time.Second).
+			WithPolling(200 * time.Millisecond).
+			Should(gomega.Succeed())
+	})
+}
+
+func (s *testingSuite) TestBackendConfigPolicyTLSInsecureSkipVerify() {
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 		},
+		curl.WithPath("/"),
+		curl.WithPort(80),
+		curl.WithHeadersOnly(),
 	)
 }
 
 func (s *testingSuite) TestBackendConfigPolicySimpleTLS() {
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPath("/"),
-			curl.WithPort(8080),
-			curl.WithHeadersOnly(),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 		},
+		curl.WithPath("/"),
+		curl.WithPort(80),
+		curl.WithHeadersOnly(),
 	)
 }
 
 func (s *testingSuite) TestBackendConfigPolicyTLSSystemCA() {
 	// self-signed upstream should fail when using system CA certificates
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithHeadersOnly(),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusServiceUnavailable, // 503 expected on TLS validation failure
 		},
+		curl.WithPort(80),
+		curl.WithHeadersOnly(),
 	)
 }
 
@@ -279,9 +314,6 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 	// many backends are rejected. We use the 'stats' API in Envoy to verify
 	// that rejection functions as expected.
 
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
@@ -301,19 +333,16 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 			expectedStatusCode = 200
 		}
 		path := fmt.Sprintf("/status/%v", expectedStatusCode)
-		s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-			s.ctx,
-			testdefaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-				curl.WithHostHeader("httpbin.example.com"),
-				curl.WithPort(8080),
-				curl.WithPath(path),
-			},
+		common.BaseGateway.Send(
+			s.T(),
 			&testmatchers.HttpResponse{
 				StatusCode: expectedStatusCode,
 			},
+			curl.WithHostHeader("httpbin.example.com"),
+			curl.WithPort(80),
+			curl.WithPath(path),
 		)
+
 		time.Sleep(10 * time.Millisecond) // see also OutlierDetection.Interval
 	}
 
@@ -325,7 +354,7 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 	// floor(0.51 * |replicas|) = floor(1.02) = 1 backends.
 	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
 		s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
-			metricPrefix := "cluster.kube_default_httpbin_8080"
+			metricPrefix := "cluster.kube_kgateway-base_httpbin_8080"
 			out, err := adminClient.GetStats(ctx, map[string]string{
 				// see https://www.envoyproxy.io/docs/envoy/latest/operations/admin#get--stats
 				"format": "json",
@@ -346,6 +375,27 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 	})
 }
 
+func (s *testingSuite) TestBackendConfigPolicyUpstreamProxyProtocol() {
+	// This test deploys nginx configured to accept only PROXY protocol connections.
+	// If the BackendConfigPolicy correctly enables upstream proxy protocol on Envoy,
+	// nginx will accept the connection and respond with 200. Without proxy protocol,
+	// nginx would reject the connection with a 400 error.
+	// The nginx config also echoes back the client address received via PROXY protocol
+	// in the X-Proxy-Protocol-Addr response header.
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("proxy-protocol-ok"),
+			Headers: map[string]any{
+				"X-Proxy-Protocol-Addr": gomega.Not(gomega.BeEmpty()),
+			},
+		},
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(80),
+	)
+}
+
 const (
 	kgatewayControllerName = "kgateway.dev/kgateway"
 	otherControllerName    = "other-controller.example.com/controller"
@@ -355,7 +405,7 @@ const (
 func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
 	// Test applies setup.yaml via BeforeTest which includes "example-policy" targeting Service "example-svc"
 	// Add fake ancestor status from another controller
-	s.addAncestorStatus("example-policy", "default", otherControllerName)
+	s.addAncestorStatus("example-policy", "kgateway-base", otherControllerName)
 
 	// Verify both kgateway and other controller statuses exist
 	s.assertAncestorStatuses("example-svc", map[string]bool{
@@ -420,7 +470,7 @@ func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedContr
 		policy := &kgateway.BackendConfigPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,
-			types.NamespacedName{Name: "example-policy", Namespace: "default"},
+			types.NamespacedName{Name: "example-policy", Namespace: "kgateway-base"},
 			policy,
 		)
 		g.Expect(err).NotTo(gomega.HaveOccurred())

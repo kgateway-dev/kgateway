@@ -27,15 +27,10 @@ inputs:
     required: false
     default: "false"
     description: Whether to install localstack
-  agentgateway:
-    required: false
-    default: "false"
-    description: Whether this test only needs agentgateway
-
 runs:
   using: "composite"
   steps:
-    - uses: azure/setup-kubectl@v4
+    - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4.0.1
       id: kubectl
       with:
         version: ${{ inputs.kubectl-version }}
@@ -48,6 +43,5 @@ runs:
         CONFORMANCE_VERSION: ${{ inputs.gateway-api-version }}
         CONFORMANCE_CHANNEL: ${{ inputs.gateway-api-channel }}
         LOCALSTACK: ${{ inputs.localstack }}
-        AGENTGATEWAY: ${{ inputs.agentgateway }}
       run: |
         ./hack/kind/setup-kind.sh

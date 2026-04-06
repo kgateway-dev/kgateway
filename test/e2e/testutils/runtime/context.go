@@ -23,7 +23,7 @@ type Context struct {
 }
 
 func NewContext() Context {
-	var runSource = LocalDevelopment
+	runSource := LocalDevelopment
 
 	if envutils.IsEnvDefined(testutils.GithubAction) {
 		runSource = PullRequest

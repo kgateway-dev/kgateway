@@ -1,6 +1,10 @@
 Clusters:
-- connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
   loadAssignment:
     clusterName: backend_default_example-backend_0
     endpoints:
@@ -15,7 +19,6 @@ Clusters:
           hostname: example.com
   metadata: {}
   name: backend_default_example-backend_0
-  type: STRICT_DNS
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -68,11 +71,6 @@ Statuses:
   gateways:
     default/example-gateway:
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted

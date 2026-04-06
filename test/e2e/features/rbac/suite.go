@@ -9,10 +9,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 )
 
@@ -32,98 +31,84 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // TestRBACHeaderAuthorization tests header based rbac with RBAC applied at the route level
 func (s *testingSuite) TestRBACHeaderAuthorizationWithRouteLevelRBAC() {
 	// Verify HTTPRoute is accepted before running the test
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
-	statusReqCurlOpts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-		curl.WithHostHeader("httpbin"),
-		curl.WithPort(8080),
-		curl.WithPath("/status/200"),
-	}
 	// missing header, no rbac on route, should succeed
 	s.T().Log("The /status route has no rbac")
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		statusReqCurlOpts,
+	common.BaseGateway.Send(
+		s.T(),
 		expectStatus200Success,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
 	)
 
-	getReqCurlOpts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-		curl.WithHostHeader("httpbin"),
-		curl.WithPort(8080),
-		curl.WithPath("/get"),
-	}
 	// missing header, should fail
 	s.T().Log("The /get route has an rbac policy applied at the route level, should fail when the header is missing")
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getReqCurlOpts,
+	common.BaseGateway.Send(
+		s.T(),
 		expectRBACDenied,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/get"),
 	)
+
 	// has header, should succeed
 	s.T().Log("The /get route has an rbac policy applied at the route level, should succeed when the header is present")
-	getWithHeaderCurlOpts := append(getReqCurlOpts, curl.WithHeader("x-my-header", "cool-beans"))
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getWithHeaderCurlOpts,
+	common.BaseGateway.Send(
+		s.T(),
 		expectStatus200Success,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/get"),
+		curl.WithHeader("x-my-header", "cool-beans"),
 	)
 }
 
 // TestRBACHeaderAuthorization tests header based rbac
 func (s *testingSuite) TestRBACHeaderAuthorization() {
 	// Verify HTTPRoute is accepted before running the test
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 
-	statusReqCurlOpts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-		curl.WithHostHeader("httpbin"),
-		curl.WithPort(8080),
-		curl.WithPath("/status/200"),
-	}
 	// rbac applied to all routes, missing header, should fail
 	s.T().Log("The /status route has rbac applied to all routes, should fail")
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		statusReqCurlOpts,
+	common.BaseGateway.Send(
+		s.T(),
 		expectRBACDenied,
-	)
-	// has header, should succeed
-	s.T().Log("The /status route has rbac applied to all routes, should succeed when the header is present")
-	getWithHeaderCurlOpts := append(statusReqCurlOpts, curl.WithHeader("x-my-header", "cool-beans"))
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getWithHeaderCurlOpts,
-		expectStatus200Success,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
 	)
 
-	getReqCurlOpts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+	// has header, should succeed
+	s.T().Log("The /status route has rbac applied to all routes, should succeed when the header is present")
+	common.BaseGateway.Send(
+		s.T(),
+		expectStatus200Success,
 		curl.WithHostHeader("httpbin"),
-		curl.WithPort(8080),
-		curl.WithPath("/get"),
-	}
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("x-my-header", "cool-beans"),
+	)
+
 	// missing header, should fail
 	s.T().Log("The /get route has an rbac policy applied at the route level, should fail when the header is missing")
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getReqCurlOpts,
+	common.BaseGateway.Send(
+		s.T(),
 		expectRBACDenied,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/get"),
 	)
+
 	// has header, should succeed
 	s.T().Log("The /get route has an rbac policy applied at the route level, should succeed when the header is present")
-	getWithHeaderCurlOpts = append(getReqCurlOpts, curl.WithHeader("x-my-header", "cool-beans"))
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getWithHeaderCurlOpts,
+	common.BaseGateway.Send(
+		s.T(),
 		expectStatus200Success,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/get"),
+		curl.WithHeader("x-my-header", "cool-beans"),
 	)
 }

@@ -126,7 +126,7 @@ The [kgateway.dev repo](https://github.com/kgateway-dev/kgateway.dev) does not u
 
 
 ### Push Changes (All Versions)
-Sign, commit, and push the changes to the Gateway API Inference Extension repo.
+Sign, commit, and push the changes.
 
 ```shell
 FORK=<name_of_my_fork>
@@ -140,11 +140,6 @@ Submit a pull request to merge the changes from your fork to the kgateway.dev up
 
 The following projects consume Kgateway and should be updated or an issue created to reference
 the new release (not required for a patch release):
-
-- Create an issue and submit a pull request to [Inference Gateway](https://github.com/kubernetes-sigs/gateway-api-inference-extension)
-  to bump the Kgateway version. See [PR 1094](https://github.com/kubernetes-sigs/gateway-api-inference-extension/pull/1094) as an example.
-  **Note** The [getting started](https://gateway-api-inference-extension.sigs.k8s.io/guides/) guide should be tested with the new Kgateway
-  version before submitting the PR.
 
 - Create an issue and submit a pull request to [llm-d-infra](https://github.com/llm-d-incubation/llm-d-infra) to bump the Kgateway version.
   See [PR 146](https://github.com/llm-d-incubation/llm-d-infra/pull/146) as an example. **Note** The [quickstart](https://github.com/llm-d-incubation/llm-d-infra/tree/main/quickstart) guide should be tested with the new Kgateway version before submitting the PR.

@@ -21,6 +21,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -131,7 +132,12 @@ func constructJwt(
 		return pluginutils.ErrInvalidExtensionType(kgateway.GatewayExtensionTypeJWT)
 	}
 
-	requirementsName := fmt.Sprintf("%s_%s_requirements", spec.ExtensionRef.Name, in.Namespace)
+	extNamespace := ptr.Deref(spec.ExtensionRef.Namespace, "")
+	if extNamespace == "" {
+		extNamespace = gwv1.Namespace(in.Namespace)
+	}
+
+	requirementsName := fmt.Sprintf("%s_%s_requirements", spec.ExtensionRef.Name, extNamespace)
 	perRouteConfig := translatePerRouteConfig(requirementsName)
 
 	out.jwt = &jwtIr{
@@ -183,18 +189,11 @@ func ProviderName(resourceName, providerName string) string {
 func translateProvider(
 	krtctx krt.HandlerContext,
 	provider kgateway.JWTProvider,
-	policyNs string,
 	configMaps krt.Collection[*corev1.ConfigMap],
 	resolver backendResolver,
 	gwExtObj ir.ObjectSource,
 ) (*jwtauthnv3.JwtProvider, error) {
-	var claimToHeaders []*jwtauthnv3.JwtClaimToHeader
-	for _, claim := range provider.ClaimsToHeaders {
-		claimToHeaders = append(claimToHeaders, &jwtauthnv3.JwtClaimToHeader{
-			ClaimName:  claim.Name,
-			HeaderName: claim.Header,
-		})
-	}
+	claimToHeaders := translateJWTClaimsToHeaders(provider.ClaimsToHeaders)
 	var shouldForward bool
 	if provider.ForwardToken != nil && *provider.ForwardToken {
 		shouldForward = true
@@ -211,11 +210,22 @@ func translateProvider(
 		jwtProvider.ClearRouteCache = true
 	}
 	translateTokenSource(provider, jwtProvider)
-	err := translateJwks(krtctx, provider.JWKS, policyNs, jwtProvider, configMaps, resolver, gwExtObj)
+	err := translateJwks(krtctx, provider.JWKS, jwtProvider, configMaps, resolver, gwExtObj)
 	if err != nil {
 		return nil, err
 	}
 	return jwtProvider, nil
+}
+
+func translateJWTClaimsToHeaders(claimsToHeaders []kgateway.JWTClaimToHeader) []*jwtauthnv3.JwtClaimToHeader {
+	var claimToHeaders []*jwtauthnv3.JwtClaimToHeader
+	for _, claim := range claimsToHeaders {
+		claimToHeaders = append(claimToHeaders, &jwtauthnv3.JwtClaimToHeader{
+			ClaimName:  claim.Name,
+			HeaderName: claim.Header,
+		})
+	}
+	return claimToHeaders
 }
 
 func translateTokenSource(provider kgateway.JWTProvider, out *jwtauthnv3.JwtProvider) {
@@ -246,7 +256,6 @@ type backendResolver interface {
 func translateJwks(
 	krtctx krt.HandlerContext,
 	jwkConfig kgateway.JWKS,
-	policyNs string,
 	out *jwtauthnv3.JwtProvider,
 	configMaps krt.Collection[*corev1.ConfigMap],
 	resolver backendResolver,
@@ -262,7 +271,7 @@ func translateJwks(
 			}
 			out.JwksSourceSpecifier = jwkSource
 		case jwkConfig.LocalJWKS.ConfigMapRef != nil:
-			cm, err := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, policyNs)
+			cm, err := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, gwExtObj.Namespace)
 			if err != nil {
 				return fmt.Errorf("failed to find configmap %s: %v", jwkConfig.LocalJWKS.ConfigMapRef.Name, err)
 			}

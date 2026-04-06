@@ -10,7 +10,6 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -179,11 +178,7 @@ func runValidation(
 	if err != nil {
 		return fmt.Errorf("failed to build bootstrap config: %w", err)
 	}
-	data, err := protojson.Marshal(bootstrap)
-	if err != nil {
-		return fmt.Errorf("failed to marshal bootstrap config for validation: %w", err)
-	}
-	if err := v.Validate(ctx, string(data)); err != nil {
+	if err := v.Validate(ctx, bootstrap); err != nil {
 		return fmt.Errorf("validation failed: %w", err)
 	}
 	return nil

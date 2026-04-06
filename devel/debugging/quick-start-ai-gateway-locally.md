@@ -1,5 +1,9 @@
 
-# Quick Start: Using Ollama with AI Gateway
+# DEPRECATED: Quick Start: Using Ollama with AI Gateway
+
+## Deprecation
+
+AI Gateway for Envoy-based gateway proxies is deprecated and is planned to be removed in version 2.2. If you want to use AI capabilities, use [agentgateway](https://github.com/agentgateway/agentgateway) instead.
 
 ## Setup Gateway
 
@@ -74,7 +78,6 @@ EOF
 
     ```yaml
     kubectl apply -f- <<EOF
-    # TODO: Update this to use the agw based Backend API.
     apiVersion: gateway.kgateway.dev/v1alpha1
     kind: Backend
     metadata:

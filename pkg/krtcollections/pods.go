@@ -37,7 +37,7 @@ var (
 	_ krt.Equaler[NodeMetadata] = NodeMetadata{}
 )
 
-// WrappedPod is used by agentgateway as a stripped down representation of the pod
+// WrappedPod is a stripped down representation of the pod
 type WrappedPod struct {
 	krt.Named
 	HostNetwork        bool

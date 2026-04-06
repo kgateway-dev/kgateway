@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -55,27 +54,61 @@ type ListenerPolicyIR struct {
 type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
 	perConnectionBufferLimitBytes *uint32
+	// only for default policy
+	clientCertificateValidation *ir.ClientCertificateValidationIR
+	rbacNetworkFilter           *anypb.Any
 	// +noKrtEquals
 	http *HttpListenerPolicyIr
 }
 
 func newListenerPolicy(
 	krtctx krt.HandlerContext, commoncol *collections.CommonCollections,
-	objSrc ir.ObjectSource, i *kgateway.ListenerConfig) (listenerPolicy, []error) {
+	objSrc ir.ObjectSource, i *kgateway.ListenerConfig,
+) (listenerPolicy, []error) {
 	if i == nil {
 		return listenerPolicy{}, nil
 	}
+	var errs []error
+
 	var perConnectionBufferLimitBytes *uint32
 	if i.PerConnectionBufferLimitBytes != nil {
-		perConnectionBufferLimitBytes = ptr.To(uint32(*i.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
+		perConnectionBufferLimitBytes = new(uint32(*i.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
 	}
-	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
+
+	// Translate network RBAC if configured
+	var rbacNetworkFilter *anypb.Any
+	if i.RBAC != nil {
+		filter, err := translateNetworkRbac(i.RBAC, objSrc)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		rbacNetworkFilter = filter
+	}
+
+	http, httpErrs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
+	errs = append(errs, httpErrs...)
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
+		rbacNetworkFilter:             rbacNetworkFilter,
 		http:                          http,
 	}, errs
+}
+
+func newDefaultListenerPolicy(
+	krtctx krt.HandlerContext, commoncol *collections.CommonCollections,
+	objSrc ir.ObjectSource, i *kgateway.ListenerDefaultConfig,
+) (listenerPolicy, []error) {
+	if i == nil {
+		return listenerPolicy{}, nil
+	}
+
+	listenerPolicy, errs := newListenerPolicy(krtctx, commoncol, objSrc, &i.ListenerConfig)
+
+	listenerPolicy.clientCertificateValidation = convertClientCertificateValidationConfig(objSrc, i.ClientCertificateValidation)
+
+	return listenerPolicy, errs
 }
 
 func (d *ListenerPolicyIR) CreationTime() time.Time {
@@ -102,6 +135,15 @@ func (d *ListenerPolicyIR) Equals(in any) bool {
 	return true
 }
 
+// GetClientCertificateValidation returns the ClientCertificateValidation of the ListenerPolicy.
+func (d *ListenerPolicyIR) GetClientCertificateValidation() *ir.ClientCertificateValidationIR {
+	if d == nil {
+		return nil
+	}
+
+	return d.defaultPolicy.clientCertificateValidation
+}
+
 func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	if !proto.Equal(d.proxyProtocol, d2.proxyProtocol) {
 		return false
@@ -111,6 +153,15 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 		return false
 	}
 
+	if !proto.Equal(d.rbacNetworkFilter, d2.rbacNetworkFilter) {
+		return false
+	}
+	if (d.clientCertificateValidation == nil) != (d2.clientCertificateValidation == nil) {
+		return false
+	}
+	if d.clientCertificateValidation != nil && !d.clientCertificateValidation.Equals(d2.clientCertificateValidation) {
+		return false
+	}
 	if (d.http == nil) != (d2.http == nil) {
 		return false
 	}
@@ -161,7 +212,9 @@ type listenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 	reporter reporter.Reporter
 
-	healthCheckPolicy map[uint32]*healthcheckv3.HealthCheck
+	healthCheckPolicy  map[uint32]*healthcheckv3.HealthCheck
+	rbacNetworkFilters map[uint32]*anypb.Any // Track RBAC filters per port
+	currentPort        uint32                // Current listener port being translated
 }
 
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
@@ -183,8 +236,10 @@ func NewListenerPolicyIR(
 		perPort[uint32(portConfig.Port)] = pol //nolint:gosec // G115: we have CEL validation that this is at least 1.
 		errs = append(errs, errs2...)
 	}
-	defaultPolicy, errs2 := newListenerPolicy(krtctx, commoncol, objSrc, spec.Default)
+
+	defaultPolicy, errs2 := newDefaultListenerPolicy(krtctx, commoncol, objSrc, spec.Default)
 	errs = append(errs, errs2...)
+
 	return &ListenerPolicyIR{
 		ct:            ct,
 		defaultPolicy: defaultPolicy,
@@ -223,7 +278,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			ObjectSource: objSrc,
 			Policy:       i,
 			PolicyIR:     polIr,
-			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
+			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefsWithSectionName(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:       errs,
 		}
 
@@ -268,14 +323,16 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &listenerPolicyPluginGwPass{
-		reporter:          reporter,
-		healthCheckPolicy: map[uint32]*healthcheckv3.HealthCheck{},
+		reporter:           reporter,
+		healthCheckPolicy:  map[uint32]*healthcheckv3.HealthCheck{},
+		rbacNetworkFilters: map[uint32]*anypb.Any{},
 	}
 }
 
 func (p *listenerPolicyPluginGwPass) Name() string {
 	return "listenerpolicy"
 }
+
 func (p *listenerPolicyPluginGwPass) getPolicy(policy ir.PolicyIR, port uint32) listenerPolicy {
 	pol, ok := policy.(*ListenerPolicyIR)
 	if !ok || pol == nil {
@@ -305,9 +362,39 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	if cfg.perConnectionBufferLimitBytes != nil {
 		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *cfg.perConnectionBufferLimitBytes}
 	}
+	// Store RBAC network filter for this port; apply it during filter chain construction via NetworkFilters()
+
+	if cfg.rbacNetworkFilter != nil {
+		p.rbacNetworkFilters[pCtx.Port] = cfg.rbacNetworkFilter
+	}
+
+	// Track the current port being translated
+	p.currentPort = pCtx.Port
 	if http := cfg.http; http != nil {
 		p.healthCheckPolicy[pCtx.Port] = http.healthCheckPolicy
 	}
+}
+
+// NetworkFilters returns the RBAC network filter for the current listener port.
+func (p *listenerPolicyPluginGwPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
+	rbacFilter := p.rbacNetworkFilters[p.currentPort]
+	if rbacFilter == nil {
+		return nil, nil
+	}
+
+	envoyFilter := &envoylistenerv3.Filter{
+		Name: "envoy.filters.network.rbac",
+		ConfigType: &envoylistenerv3.Filter_TypedConfig{
+			TypedConfig: rbacFilter,
+		},
+	}
+
+	return []filters.StagedNetworkFilter{
+		{
+			Filter: envoyFilter,
+			Stage:  filters.BeforeStage(filters.AuthZStage),
+		},
+	}, nil
 }
 
 func (p *listenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
@@ -370,6 +457,25 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	// translate xffNumTrustedHops
 	if policy.xffNumTrustedHops != nil {
 		out.XffNumTrustedHops = *policy.xffNumTrustedHops
+	}
+
+	// translate xffConfig (as extension)
+	if policy.xffConfig != nil {
+		xffConfig, err := utils.MessageToAny(policy.xffConfig)
+		if err != nil {
+			return err
+		}
+		out.OriginalIpDetectionExtensions = []*envoycorev3.TypedExtensionConfig{
+			{
+				Name:        "envoy.http.original_ip_detection.xff",
+				TypedConfig: xffConfig,
+			},
+		}
+	}
+
+	// translate skipXffAppend
+	if policy.skipXffAppend != nil {
+		out.SkipXffAppend = *policy.skipXffAppend
 	}
 
 	// translate serverHeaderTransformation
@@ -464,6 +570,19 @@ func convertProxyProtocolConfig(objSrc ir.ObjectSource, config *kgateway.ProxyPr
 			"error", err)
 	}
 	return proxyProtocolAny
+}
+
+func convertClientCertificateValidationConfig(_ ir.ObjectSource, config *kgateway.ClientCertificateValidationConfig) *ir.ClientCertificateValidationIR {
+	if config == nil {
+		return nil
+	}
+
+	requireClientCertificate := config.Mode == kgateway.ClientCertificateValidationModeRequire
+
+	return &ir.ClientCertificateValidationIR{
+		RequireClientCertificate: requireClientCertificate,
+		CACertificateRefs:        config.CACertificateRefs,
+	}
 }
 
 func (p *listenerPolicyPluginGwPass) applyProxyProtocol(

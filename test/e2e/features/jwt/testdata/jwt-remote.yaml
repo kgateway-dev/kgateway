@@ -3,15 +3,15 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: httpbin-route-status
-  namespace: default
+  namespace: kgateway-base
 spec:
   hostnames:
     - httpbin
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: gw
-      namespace: default
+      name: gateway
+      namespace: kgateway-base
   rules:
     - backendRefs:
         - group: ""
@@ -28,15 +28,15 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: httpbin-route-get
-  namespace: default
+  namespace: kgateway-base
 spec:
   hostnames:
     - httpbin
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: gw
-      namespace: default
+      name: gateway
+      namespace: kgateway-base
   rules:
     - backendRefs:
         - group: ""
@@ -53,11 +53,12 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: jwt-policy
+  namespace: kgateway-base
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: gw
+      name: gateway
   jwtAuth:
     extensionRef:
       name: basic-jwt-provider
@@ -66,6 +67,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
   name: basic-jwt-provider
+  namespace: kgateway-base
 spec:
   jwt:
     providers:
@@ -73,20 +75,20 @@ spec:
       issuer: https://kgateway.dev
       jwks:
         remote:
-          url: https://dummy-idp.default:8443/org-one/keys
+          url: https://dummy-idp.kgateway-base:8443/org-one/keys
           backendRef:
             name: dummy-idp
-            namespace: default
+            namespace: kgateway-base
             kind: Service
             port: 8443
     - name: my-example2
       issuer: https://kgateway.dev
       jwks:
         remote:
-          url: https://dummy-idp.default:8443/org-two/keys
+          url: https://dummy-idp.kgateway-base:8443/org-two/keys
           backendRef:
             name: dummy-idp
-            namespace: default
+            namespace: kgateway-base
             kind: Service
             port: 8443
 ---
@@ -94,7 +96,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:
   name: dummy-idp-tls
-  namespace: default
+  namespace: kgateway-base
 spec:
   targetRefs:
     - group: ""
@@ -107,7 +109,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: dummy-idp
-  namespace: default
+  namespace: kgateway-base
   labels:
     app: dummy-idp
 spec:
@@ -122,6 +124,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: dummy-idp
+  namespace: kgateway-base
 spec:
   replicas: 1
   selector:

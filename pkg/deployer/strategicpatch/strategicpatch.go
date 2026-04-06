@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -30,23 +29,6 @@ type ResourceOverlays struct {
 	PodDisruptionBudget     *shared.KubernetesResourceOverlay
 	HorizontalPodAutoscaler *shared.KubernetesResourceOverlay
 	VerticalPodAutoscaler   *shared.KubernetesResourceOverlay
-}
-
-// FromAgentgatewayParameters converts AgentgatewayParameters overlays to generic ResourceOverlays.
-func FromAgentgatewayParameters(params *agentgateway.AgentgatewayParameters) *ResourceOverlays {
-	if params == nil {
-		return nil
-	}
-	overlays := params.Spec.AgentgatewayParametersOverlays
-	return &ResourceOverlays{
-		Deployment:              overlays.Deployment,
-		Service:                 overlays.Service,
-		ServiceAccount:          overlays.ServiceAccount,
-		PodDisruptionBudget:     overlays.PodDisruptionBudget,
-		HorizontalPodAutoscaler: overlays.HorizontalPodAutoscaler,
-		// AgentgatewayParameters does not have VPA support
-		VerticalPodAutoscaler: nil,
-	}
 }
 
 // FromGatewayParameters converts GatewayParameters overlays to generic ResourceOverlays.
@@ -68,11 +50,6 @@ func FromGatewayParameters(params *kgateway.GatewayParameters) *ResourceOverlays
 // OverlayApplier applies overlays to rendered k8s objects using strategic merge patch semantics.
 type OverlayApplier struct {
 	overlays *ResourceOverlays
-}
-
-// NewOverlayApplier creates a new OverlayApplier from AgentgatewayParameters.
-func NewOverlayApplier(params *agentgateway.AgentgatewayParameters) *OverlayApplier {
-	return &OverlayApplier{overlays: FromAgentgatewayParameters(params)}
 }
 
 // NewOverlayApplierFromGatewayParameters creates a new OverlayApplier from GatewayParameters.
@@ -292,6 +269,7 @@ func createPodDisruptionBudget(deployment *appsv1.Deployment, overlay *shared.Ku
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deployment.Name,
 			Namespace: deployment.Namespace,
+			Labels:    maps.Clone(deployment.GetLabels()),
 		},
 		Spec: policyv1.PodDisruptionBudgetSpec{
 			Selector: deployment.Spec.Selector,
@@ -319,6 +297,7 @@ func createHorizontalPodAutoscaler(deployment *appsv1.Deployment, overlay *share
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deployment.Name,
 			Namespace: deployment.Namespace,
+			Labels:    maps.Clone(deployment.GetLabels()),
 		},
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
 			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
@@ -361,6 +340,7 @@ func createVerticalPodAutoscaler(deployment *appsv1.Deployment, overlay *shared.
 		},
 	}
 	vpa.SetGroupVersionKind(wellknown.VerticalPodAutoscalerGVK)
+	vpa.SetLabels(maps.Clone(deployment.GetLabels()))
 
 	// Apply the overlay - for VPA we need to handle it specially since it's unstructured
 	if overlay.Metadata != nil {

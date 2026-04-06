@@ -1,0 +1,46 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin
+  namespace: httpbin
+  labels:
+    app: httpbin
+spec:
+  hostnames:
+  - "www.example.com"
+  parentRefs:
+  - name: gateway
+    namespace: kgateway-base
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /test.html
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        name: test-html
+        group: gateway.kgateway.dev
+        kind: DirectResponse
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: DirectResponse
+metadata:
+  name: test-html
+  namespace: httpbin
+spec:
+  status: 200
+  bodyFormat:
+    contentType: text/html
+    text: |
+      <div>
+        <strong>Requested Path:</strong> %REQ(:path)%
+      </div>

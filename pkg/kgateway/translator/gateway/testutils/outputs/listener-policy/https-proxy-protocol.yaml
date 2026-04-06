@@ -92,11 +92,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
         status: "True"
@@ -133,6 +128,8 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
   httpRoutes:
     default/example-route:
       parents:

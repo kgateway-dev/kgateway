@@ -6,18 +6,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 )
 
 func TestOverlayApplier_ApplyOverlays_NilParams(t *testing.T) {
-	applier := NewOverlayApplier(nil)
+	applier := NewOverlayApplierFromGatewayParameters(nil)
 	objs := []client.Object{
 		&appsv1.Deployment{
 			TypeMeta: metav1.TypeMeta{
@@ -36,13 +39,15 @@ func TestOverlayApplier_ApplyOverlays_NilParams(t *testing.T) {
 }
 
 func TestOverlayApplier_ApplyOverlays_MetadataLabels(t *testing.T) {
-	params := &agentgateway.AgentgatewayParameters{
-		Spec: agentgateway.AgentgatewayParametersSpec{
-			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Deployment: &shared.KubernetesResourceOverlay{
-					Metadata: &shared.ObjectMetadata{
-						Labels: map[string]string{
-							"custom-label": "custom-value",
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DeploymentOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{
+							Labels: map[string]string{
+								"custom-label": "custom-value",
+							},
 						},
 					},
 				},
@@ -50,7 +55,7 @@ func TestOverlayApplier_ApplyOverlays_MetadataLabels(t *testing.T) {
 		},
 	}
 
-	applier := NewOverlayApplier(params)
+	applier := NewOverlayApplierFromGatewayParameters(params)
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -74,13 +79,15 @@ func TestOverlayApplier_ApplyOverlays_MetadataLabels(t *testing.T) {
 }
 
 func TestOverlayApplier_ApplyOverlays_MetadataAnnotations(t *testing.T) {
-	params := &agentgateway.AgentgatewayParameters{
-		Spec: agentgateway.AgentgatewayParametersSpec{
-			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Service: &shared.KubernetesResourceOverlay{
-					Metadata: &shared.ObjectMetadata{
-						Annotations: map[string]string{
-							"custom-annotation": "custom-value",
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					ServiceOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{
+							Annotations: map[string]string{
+								"custom-annotation": "custom-value",
+							},
 						},
 					},
 				},
@@ -88,7 +95,7 @@ func TestOverlayApplier_ApplyOverlays_MetadataAnnotations(t *testing.T) {
 		},
 	}
 
-	applier := NewOverlayApplier(params)
+	applier := NewOverlayApplierFromGatewayParameters(params)
 	svc := &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -114,7 +121,7 @@ func TestOverlayApplier_ApplyOverlays_DeploymentSpec(t *testing.T) {
 		"template": {
 			"spec": {
 				"containers": [{
-					"name": "agent-gateway",
+					"name": "kgateway-proxy",
 					"resources": {
 						"limits": {
 							"memory": "512Mi"
@@ -125,17 +132,19 @@ func TestOverlayApplier_ApplyOverlays_DeploymentSpec(t *testing.T) {
 		}
 	}`)
 
-	params := &agentgateway.AgentgatewayParameters{
-		Spec: agentgateway.AgentgatewayParametersSpec{
-			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Deployment: &shared.KubernetesResourceOverlay{
-					Spec: &apiextensionsv1.JSON{Raw: specPatch},
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DeploymentOverlay: &shared.KubernetesResourceOverlay{
+						Spec: &apiextensionsv1.JSON{Raw: specPatch},
+					},
 				},
 			},
 		},
 	}
 
-	applier := NewOverlayApplier(params)
+	applier := NewOverlayApplierFromGatewayParameters(params)
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -150,8 +159,8 @@ func TestOverlayApplier_ApplyOverlays_DeploymentSpec(t *testing.T) {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:  "agent-gateway",
-							Image: "cr.agentgateway.dev/agentgateway:latest",
+							Name:  "kgateway-proxy",
+							Image: "foo/envoy-wrapper:latest",
 						},
 					},
 				},
@@ -165,7 +174,7 @@ func TestOverlayApplier_ApplyOverlays_DeploymentSpec(t *testing.T) {
 
 	result := objs[0].(*appsv1.Deployment)
 	assert.Equal(t, int32(3), *result.Spec.Replicas)
-	assert.Equal(t, "cr.agentgateway.dev/agentgateway:latest", result.Spec.Template.Spec.Containers[0].Image)
+	assert.Equal(t, "foo/envoy-wrapper:latest", result.Spec.Template.Spec.Containers[0].Image)
 	assert.NotNil(t, result.Spec.Template.Spec.Containers[0].Resources.Limits)
 	assert.Equal(t, "512Mi", result.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String())
 }
@@ -183,17 +192,19 @@ func TestOverlayApplier_ApplyOverlays_DeleteContainerWithPatchDirective(t *testi
 		}
 	}`)
 
-	params := &agentgateway.AgentgatewayParameters{
-		Spec: agentgateway.AgentgatewayParametersSpec{
-			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Deployment: &shared.KubernetesResourceOverlay{
-					Spec: &apiextensionsv1.JSON{Raw: specPatch},
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DeploymentOverlay: &shared.KubernetesResourceOverlay{
+						Spec: &apiextensionsv1.JSON{Raw: specPatch},
+					},
 				},
 			},
 		},
 	}
 
-	applier := NewOverlayApplier(params)
+	applier := NewOverlayApplierFromGatewayParameters(params)
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -207,8 +218,8 @@ func TestOverlayApplier_ApplyOverlays_DeleteContainerWithPatchDirective(t *testi
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:  "agent-gateway",
-							Image: "cr.agentgateway.dev/agentgateway:latest",
+							Name:  "kgateway-proxy",
+							Image: "foo/envoy-wrapper:latest",
 						},
 						{
 							Name:  "sidecar",
@@ -226,7 +237,7 @@ func TestOverlayApplier_ApplyOverlays_DeleteContainerWithPatchDirective(t *testi
 
 	result := objs[0].(*appsv1.Deployment)
 	require.Len(t, result.Spec.Template.Spec.Containers, 1)
-	assert.Equal(t, "agent-gateway", result.Spec.Template.Spec.Containers[0].Name)
+	assert.Equal(t, "kgateway-proxy", result.Spec.Template.Spec.Containers[0].Name)
 }
 
 func TestOverlayApplier_ApplyOverlays_ServiceSpec(t *testing.T) {
@@ -234,17 +245,19 @@ func TestOverlayApplier_ApplyOverlays_ServiceSpec(t *testing.T) {
 		"type": "NodePort"
 	}`)
 
-	params := &agentgateway.AgentgatewayParameters{
-		Spec: agentgateway.AgentgatewayParametersSpec{
-			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Service: &shared.KubernetesResourceOverlay{
-					Spec: &apiextensionsv1.JSON{Raw: specPatch},
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					ServiceOverlay: &shared.KubernetesResourceOverlay{
+						Spec: &apiextensionsv1.JSON{Raw: specPatch},
+					},
 				},
 			},
 		},
 	}
 
-	applier := NewOverlayApplier(params)
+	applier := NewOverlayApplierFromGatewayParameters(params)
 	svc := &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -267,29 +280,31 @@ func TestOverlayApplier_ApplyOverlays_ServiceSpec(t *testing.T) {
 }
 
 func TestOverlayApplier_ApplyOverlays_MultipleObjects(t *testing.T) {
-	params := &agentgateway.AgentgatewayParameters{
-		Spec: agentgateway.AgentgatewayParametersSpec{
-			AgentgatewayParametersOverlays: agentgateway.AgentgatewayParametersOverlays{
-				Deployment: &shared.KubernetesResourceOverlay{
-					Metadata: &shared.ObjectMetadata{
-						Labels: map[string]string{"app": "modified"},
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DeploymentOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{
+							Labels: map[string]string{"app": "modified"},
+						},
 					},
-				},
-				Service: &shared.KubernetesResourceOverlay{
-					Metadata: &shared.ObjectMetadata{
-						Labels: map[string]string{"svc": "modified"},
+					ServiceOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{
+							Labels: map[string]string{"svc": "modified"},
+						},
 					},
-				},
-				ServiceAccount: &shared.KubernetesResourceOverlay{
-					Metadata: &shared.ObjectMetadata{
-						Labels: map[string]string{"sa": "modified"},
+					ServiceAccountOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{
+							Labels: map[string]string{"sa": "modified"},
+						},
 					},
 				},
 			},
 		},
 	}
 
-	applier := NewOverlayApplier(params)
+	applier := NewOverlayApplierFromGatewayParameters(params)
 	objs := []client.Object{
 		&appsv1.Deployment{
 			TypeMeta:   metav1.TypeMeta{APIVersion: "apps/v1", Kind: "Deployment"},
@@ -327,4 +342,133 @@ func TestOverlayApplier_ApplyOverlays_MultipleObjects(t *testing.T) {
 	// Check configmap (should be unchanged, no overlay for it)
 	cm := objs[3].(*corev1.ConfigMap)
 	assert.Empty(t, cm.Labels)
+}
+
+// deploymentWithLabels returns a Deployment carrying the given labels and a
+// matching label selector, suitable for use as the base object when testing
+// PDB / HPA / VPA creation.
+func deploymentWithLabels(labels map[string]string) *appsv1.Deployment {
+	return &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{APIVersion: "apps/v1", Kind: "Deployment"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gw",
+			Namespace: "default",
+			Labels:    labels,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{MatchLabels: labels},
+		},
+	}
+}
+
+var gatewayLabels = map[string]string{
+	"app.kubernetes.io/instance":                   "gw",
+	"app.kubernetes.io/managed-by":                 "kgateway",
+	"app.kubernetes.io/name":                       "gw",
+	"app.kubernetes.io/version":                    "1.0.0-dev",
+	"gateway.networking.k8s.io/gateway-class-name": "kgateway",
+	"gateway.networking.k8s.io/gateway-name":       "gw",
+	"kgateway":                                     "kube-gateway",
+}
+
+func TestCreatePodDisruptionBudget_InheritsDeploymentLabels(t *testing.T) {
+	dep := deploymentWithLabels(gatewayLabels)
+	overlay := &shared.KubernetesResourceOverlay{}
+
+	obj, err := createPodDisruptionBudget(dep, overlay)
+	require.NoError(t, err)
+
+	pdb := obj.(*policyv1.PodDisruptionBudget)
+	assert.Equal(t, gatewayLabels, pdb.GetLabels())
+}
+
+func TestCreatePodDisruptionBudget_OverlayLabelsMergeOnTop(t *testing.T) {
+	dep := deploymentWithLabels(gatewayLabels)
+	overlay := &shared.KubernetesResourceOverlay{
+		Metadata: &shared.ObjectMetadata{
+			Labels: map[string]string{"extra": "label"},
+		},
+	}
+
+	obj, err := createPodDisruptionBudget(dep, overlay)
+	require.NoError(t, err)
+
+	pdb := obj.(*policyv1.PodDisruptionBudget)
+	assert.Equal(t, "label", pdb.GetLabels()["extra"])
+	for k, v := range gatewayLabels {
+		assert.Equal(t, v, pdb.GetLabels()[k])
+	}
+}
+
+func TestCreateHorizontalPodAutoscaler_InheritsDeploymentLabels(t *testing.T) {
+	dep := deploymentWithLabels(gatewayLabels)
+	overlay := &shared.KubernetesResourceOverlay{}
+
+	obj, err := createHorizontalPodAutoscaler(dep, overlay)
+	require.NoError(t, err)
+
+	hpa := obj.(*autoscalingv2.HorizontalPodAutoscaler)
+	assert.Equal(t, gatewayLabels, hpa.GetLabels())
+}
+
+func TestCreateHorizontalPodAutoscaler_OverlayLabelsMergeOnTop(t *testing.T) {
+	dep := deploymentWithLabels(gatewayLabels)
+	overlay := &shared.KubernetesResourceOverlay{
+		Metadata: &shared.ObjectMetadata{
+			Labels: map[string]string{"extra": "label"},
+		},
+	}
+
+	obj, err := createHorizontalPodAutoscaler(dep, overlay)
+	require.NoError(t, err)
+
+	hpa := obj.(*autoscalingv2.HorizontalPodAutoscaler)
+	assert.Equal(t, "label", hpa.GetLabels()["extra"])
+	for k, v := range gatewayLabels {
+		assert.Equal(t, v, hpa.GetLabels()[k])
+	}
+}
+
+func TestCreateVerticalPodAutoscaler_InheritsDeploymentLabels(t *testing.T) {
+	dep := deploymentWithLabels(gatewayLabels)
+	overlay := &shared.KubernetesResourceOverlay{}
+
+	obj, err := createVerticalPodAutoscaler(dep, overlay)
+	require.NoError(t, err)
+
+	vpa := obj.(*unstructured.Unstructured)
+	assert.Equal(t, gatewayLabels, vpa.GetLabels())
+}
+
+func TestCreateVerticalPodAutoscaler_OverlayLabelsMergeOnTop(t *testing.T) {
+	dep := deploymentWithLabels(gatewayLabels)
+	overlay := &shared.KubernetesResourceOverlay{
+		Metadata: &shared.ObjectMetadata{
+			Labels: map[string]string{"extra": "label"},
+		},
+	}
+
+	obj, err := createVerticalPodAutoscaler(dep, overlay)
+	require.NoError(t, err)
+
+	vpa := obj.(*unstructured.Unstructured)
+	assert.Equal(t, "label", vpa.GetLabels()["extra"])
+	for k, v := range gatewayLabels {
+		assert.Equal(t, v, vpa.GetLabels()[k])
+	}
+}
+
+func TestCreatePodDisruptionBudget_DeploymentLabelsNotMutated(t *testing.T) {
+	dep := deploymentWithLabels(gatewayLabels)
+	overlay := &shared.KubernetesResourceOverlay{
+		Metadata: &shared.ObjectMetadata{
+			Labels: map[string]string{"extra": "label"},
+		},
+	}
+
+	_, err := createPodDisruptionBudget(dep, overlay)
+	require.NoError(t, err)
+
+	// The original deployment labels must not have been mutated.
+	assert.NotContains(t, dep.GetLabels(), "extra")
 }

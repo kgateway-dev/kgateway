@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -20,10 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -36,13 +34,9 @@ var logger = logging.New("deployer")
 type ControlPlaneInfo struct {
 	XdsHost      string
 	XdsPort      uint32
-	AgwXdsPort   uint32
 	XdsTLS       bool
 	XdsTlsCaPath string
 }
-
-// InferenceExtInfo defines the runtime state of Gateway API inference extensions.
-type InferenceExtInfo struct{}
 
 type ImageInfo struct {
 	Registry   string
@@ -53,13 +47,10 @@ type ImageInfo struct {
 // Custom patcher; used for testing since SSA does not work with Dynamic fake client
 type Patcher func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error
 
-// A Deployer is responsible for deploying proxies and inference extensions.
+// A Deployer is responsible for deploying proxies.
 type Deployer struct {
 	controllerName                       string
-	agwControllerName                    string
-	agwGatewayClassName                  string
 	chart                                *chart.Chart
-	agentgatewayChart                    *chart.Chart
 	scheme                               *runtime.Scheme
 	client                               apiclient.Client
 	helmValues                           HelmValuesGenerator
@@ -82,11 +73,9 @@ func WithGVKToGVRMapper(m map[schema.GroupVersionKind]schema.GroupVersionResourc
 	}
 }
 
-// NewDeployer creates a new gateway/inference pool/etc
-// TODO [danehans]: Reloading the chart for every reconciliation is inefficient.
-// See https://github.com/kgateway-dev/kgateway/issues/10672 for details.
+// NewDeployer creates a new deployer for managed resources.
 func NewDeployer(
-	controllerName, agwControllerName, agwGatewayClassName string,
+	controllerName string,
 	scheme *runtime.Scheme,
 	client apiclient.Client,
 	chart *chart.Chart,
@@ -96,41 +85,9 @@ func NewDeployer(
 ) *Deployer {
 	d := &Deployer{
 		controllerName:                       controllerName,
-		agwControllerName:                    agwControllerName,
-		agwGatewayClassName:                  agwGatewayClassName,
 		scheme:                               scheme,
 		client:                               client,
 		chart:                                chart,
-		agentgatewayChart:                    nil,
-		helmValues:                           hvg,
-		helmReleaseNameAndNamespaceGenerator: helmReleaseNameAndNamespaceGenerator,
-		patcher:                              applyPatch,
-	}
-	for _, o := range opts {
-		o(d)
-	}
-	return d
-}
-
-// NewDeployerWithMultipleCharts creates a new gateway deployer that supports both envoy and agentgateway charts
-func NewDeployerWithMultipleCharts(
-	controllerName, agwControllerName, agwGatewayClassName string,
-	scheme *runtime.Scheme,
-	client apiclient.Client,
-	envoyChart *chart.Chart,
-	agentgatewayChart *chart.Chart,
-	hvg HelmValuesGenerator,
-	helmReleaseNameAndNamespaceGenerator func(obj client.Object) (string, string),
-	opts ...Option,
-) *Deployer {
-	d := &Deployer{
-		controllerName:                       controllerName,
-		agwControllerName:                    agwControllerName,
-		agwGatewayClassName:                  agwGatewayClassName,
-		scheme:                               scheme,
-		client:                               client,
-		chart:                                envoyChart,
-		agentgatewayChart:                    agentgatewayChart,
 		helmValues:                           hvg,
 		helmReleaseNameAndNamespaceGenerator: helmReleaseNameAndNamespaceGenerator,
 		patcher:                              applyPatch,
@@ -144,7 +101,7 @@ func NewDeployerWithMultipleCharts(
 func applyPatch(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
 	c := client.Dynamic().Resource(gvr).Namespace(namespace)
 	_, err := c.Patch(context.Background(), name, types.ApplyPatchType, data, metav1.PatchOptions{
-		Force:        ptr.To(true),
+		Force:        new(true),
 		FieldManager: fieldManager,
 	}, subresources...)
 	return err
@@ -203,15 +160,7 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 	install.ClientOnly = true
 	installCtx := context.Background()
 
-	// Select the appropriate chart based on whether agentgateway is enabled
-	chartToUse := d.chart
-	if d.agentgatewayChart != nil {
-		if _, ok := vals["agentgateway"].(map[string]any); ok {
-			chartToUse = d.agentgatewayChart
-		}
-	}
-
-	release, err := install.RunWithContext(installCtx, chartToUse, vals)
+	release, err := install.RunWithContext(installCtx, d.chart, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render helm chart for %s.%s: %w", ns, name, err)
 	}
@@ -228,9 +177,8 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 //
 // * returns the objects to be deployed by the caller
 //
-// obj can currently be a pointer to a Gateway (https://github.com/kubernetes-sigs/gateway-api/blob/main/apis/v1/gateway_types.go#L35) or
-//
-//	a pointer to an InferencePool (https://github.com/kubernetes-sigs/gateway-api-inference-extension/blob/main/api/v1alpha2/inferencepool_types.go#L30)
+// obj can currently be a pointer to a Gateway
+// (https://github.com/kubernetes-sigs/gateway-api/blob/main/apis/v1/gateway_types.go#L35).
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]client.Object, error) {
 	vals, err := d.helmValues.GetValues(ctx, obj)
 	if err != nil {
@@ -288,7 +236,7 @@ func (d *Deployer) SetNamespaceAndOwnerWithGVK(owner client.Object, ownerGVK sch
 				Kind:       ownerGVK.Kind,
 				Name:       owner.GetName(),
 				UID:        owner.GetUID(),
-				Controller: ptr.To(true),
+				Controller: new(true),
 			}})
 		} else {
 			// TODO [danehans]: Not sure why a ns must be set for cluster-scoped objects:
@@ -301,42 +249,17 @@ func (d *Deployer) SetNamespaceAndOwnerWithGVK(owner client.Object, ownerGVK sch
 	return objs
 }
 
-// getControllerNameForGatewayClass looks up the GatewayClass and returns the controller name
-// from its spec, falling back to class name comparison if the lookup fails.
-func (d *Deployer) getControllerNameForGatewayClass(ctx context.Context, gatewayClassName string) string {
-	gwc, err := d.client.GatewayAPI().GatewayV1().GatewayClasses().Get(ctx, gatewayClassName, metav1.GetOptions{})
-	if err != nil {
-		logger.Debug("failed to look up GatewayClass, falling back to class name comparison",
-			"gateway_class_name", gatewayClassName, "error", err)
-		if gatewayClassName == d.agwGatewayClassName {
-			return d.agwControllerName
-		}
-		return d.controllerName
-	}
-	if string(gwc.Spec.ControllerName) == d.agwControllerName {
-		return d.agwControllerName
-	}
-	return d.controllerName
-}
-
 func (d *Deployer) DeployObjs(ctx context.Context, objs []client.Object) error {
 	return d.DeployObjsWithSource(ctx, objs, nil)
 }
 
 func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Object, sourceObj client.Object) error {
-	// Determine the correct controller name based on the source object
 	controllerName := d.controllerName
-	if sourceObj != nil {
-		if gw, ok := sourceObj.(*gwv1.Gateway); ok {
-			controllerName = d.getControllerNameForGatewayClass(ctx, string(gw.Spec.GatewayClassName))
-		}
-		// For InferencePool objects, use the agwControllerName if this deployer was configured
-		// with the agent gateway controller name as the primary controller
-		if _, ok := sourceObj.(*inf.InferencePool); ok && d.controllerName == d.agwControllerName {
-			controllerName = d.agwControllerName
-		}
-		// For other object types, use the default controllerName
-	}
+
+	// Sort objects so infrastructure resources (RBAC, ServiceAccounts, ConfigMaps)
+	// are applied before workload resources (Deployments). This prevents race
+	// conditions where a Pod starts before its RBAC resources exist.
+	SortByKindPriority(objs)
 
 	for _, obj := range objs {
 		u, err := kubeutils.ToUnstructured(obj)
@@ -474,6 +397,9 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 		if realObj, err := scheme.New(gvk); err == nil {
 			if realObj, ok := realObj.(client.Object); ok {
 				if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, realObj); err == nil {
+					// FromUnstructured does not preserve TypeMeta on typed objects,
+					// so explicitly set the GVK to ensure it's available for sorting/filtering.
+					realObj.GetObjectKind().SetGroupVersionKind(gvk)
 					objs = append(objs, realObj)
 					continue
 				}
@@ -487,4 +413,108 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
+}
+
+// PruneRemovedResources deletes PDB/HPA/VPA resources that are owned by the
+// owner but are no longer in the desired set of objects. This prevents stale
+// resources from persisting when configuration changes. ownerReferences is
+// insufficient because the owner might still exist.
+func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Object, desiredObjs []client.Object) error {
+	ownerNamespace := owner.GetNamespace()
+	// Kubernetes label values are limited to 63 characters, but Gateway names can exceed this limit.
+	// The deployed resources (Deployments, Services) use truncated names via the Helm chart's
+	// safeLabelValue function. Therefore, we must use the safe label value to match the actual labels
+	// on resources.
+	labelSelector := fmt.Sprintf("%s=%s", wellknown.GatewayNameLabel, kubeutils.SafeGatewayLabelValue(owner.GetName()))
+	desiredByGVK := make(map[schema.GroupVersionKind]map[string]bool)
+	for _, obj := range desiredObjs {
+		gvk := obj.GetObjectKind().GroupVersionKind()
+		if _, exists := desiredByGVK[gvk]; !exists {
+			desiredByGVK[gvk] = make(map[string]bool)
+		}
+		desiredByGVK[gvk][obj.GetName()] = true
+	}
+	targetGVKs := []schema.GroupVersionKind{
+		wellknown.PodDisruptionBudgetGVK,
+		wellknown.HorizontalPodAutoscalerGVK,
+		wellknown.VerticalPodAutoscalerGVK,
+	}
+	var pruningErrors []error
+	for _, gvk := range targetGVKs {
+		gvr, err := d.gvkToGVR(gvk)
+		if err != nil {
+			logger.Debug("skipping pruning for unknown GVK", "gvk", gvk.String(), "error", err)
+			continue
+		}
+		client := d.client.Dynamic().Resource(gvr).Namespace(ownerNamespace)
+		list, err := client.List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				// Resource type doesn't exist (e.g., VPA CRD not installed)
+				logger.Debug("resource type not found, skipping pruning", "gvk", gvk.String())
+				continue
+			}
+			return fmt.Errorf("failed to list resources for pruning %s: %w", gvk.String(), err)
+		}
+		for _, item := range list.Items {
+			resourceName := item.GetName()
+			if desiredSet, exists := desiredByGVK[gvk]; exists && desiredSet[resourceName] {
+				continue
+			}
+			logger.Info("pruning removed resource",
+				"gvk", gvk.String(),
+				"namespace", ownerNamespace,
+				"name", resourceName,
+				"owner", owner.GetName())
+			err := client.Delete(ctx, resourceName, metav1.DeleteOptions{})
+			if err != nil && !apierrors.IsNotFound(err) {
+				pruningErrors = append(
+					pruningErrors,
+					fmt.Errorf("failed to delete resource %s/%s: %w", gvk.String(), resourceName, err))
+				logger.Debug("error pruning removed resource",
+					"gvk", gvk.String(),
+					"namespace", ownerNamespace,
+					"name", resourceName,
+					"owner", owner.GetName(),
+					"error", err.Error())
+			}
+		}
+	}
+	if len(pruningErrors) > 0 {
+		return errors.Join(pruningErrors...)
+	}
+	return nil
+}
+
+// kindPriority returns a numeric priority for a Kubernetes resource kind.
+// Lower values are applied first, ensuring infrastructure resources (RBAC,
+// ServiceAccounts, ConfigMaps) are created before workload resources (Deployments).
+func kindPriority(kind string) int {
+	switch kind {
+	case "Namespace":
+		return 0
+	case "ServiceAccount":
+		return 1
+	case "Secret", "ConfigMap":
+		return 2
+	case "ClusterRole", "Role":
+		return 3
+	case "ClusterRoleBinding", "RoleBinding":
+		return 4
+	case "Service":
+		return 5
+	default:
+		return 6
+	}
+}
+
+// SortByKindPriority sorts objects in-place so that infrastructure resources
+// (RBAC, ServiceAccounts, ConfigMaps, etc.) are ordered before workload
+// resources (Deployments). This prevents race conditions where a Deployment's
+// Pod starts before its RBAC resources exist.
+func SortByKindPriority(objs []client.Object) {
+	slices.SortStableFunc(objs, func(a, b client.Object) int {
+		return kindPriority(a.GetObjectKind().GroupVersionKind().Kind) -
+			kindPriority(b.GetObjectKind().GroupVersionKind().Kind)
+	})
 }

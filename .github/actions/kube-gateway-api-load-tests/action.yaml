@@ -29,7 +29,6 @@ runs:
           --namespace kgateway-system --create-namespace \
           --set image.tag=${VERSION:-v1.0.0-ci1} \
           --set image.registry=ghcr.io/kgateway-dev \
-          --set inferenceExtension.enabled=true \
           --wait --timeout 5m
 
     - name: Wait for KGateway deployment to be ready

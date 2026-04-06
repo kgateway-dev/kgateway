@@ -89,6 +89,8 @@ func mergeListenerPolicy(
 	mergeFuncs := []func(string, *listenerPolicy, *listenerPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
 		mergeProxyProtocol,
 		mergePerConnectionBufferLimitBytes,
+		mergeRbacNetworkFilter,
+		// Not merging ClientCertificateValidation since its only used for tls config.
 		mergeHttpSettings,
 	}
 
@@ -128,6 +130,7 @@ func mergePerConnectionBufferLimitBytes(
 	p1.perConnectionBufferLimitBytes = p2.perConnectionBufferLimitBytes
 	mergeOrigins.SetOne(origin+"perConnectionBufferLimitBytes", p2Ref, p2MergeOrigins)
 }
+
 func mergeHttpSettings(
 	origin string,
 	p1, p2 *listenerPolicy,
@@ -146,4 +149,20 @@ func mergeHttpSettings(
 		origin += "httpSettings."
 	}
 	MergeHttpPolicies(origin, p1.http, p2.http, p2Ref, p2MergeOrigins, opts, mergeOrigins, "" /*no merge settings*/)
+}
+
+func mergeRbacNetworkFilter(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.rbacNetworkFilter, p2.rbacNetworkFilter, opts) {
+		return
+	}
+
+	p1.rbacNetworkFilter = p2.rbacNetworkFilter
+	mergeOrigins.SetOne(origin+"rbacNetworkFilter", p2Ref, p2MergeOrigins)
 }

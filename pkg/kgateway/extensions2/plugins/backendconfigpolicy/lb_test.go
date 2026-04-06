@@ -7,6 +7,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoycommonv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/common/v3"
 	leastrequestv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/least_request/v3"
 	maglevv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/maglev/v3"
@@ -19,7 +20,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -35,7 +35,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "HealthyPanicThreshold",
 			config: &kgateway.LoadBalancer{
-				HealthyPanicThreshold: ptr.To(int32(100)),
+				HealthyPanicThreshold: new(int32(100)),
 			},
 			expected: &envoyclusterv3.Cluster{
 				Name: "test",
@@ -110,8 +110,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						Window: &metav1.Duration{
 							Duration: 10 * time.Second,
 						},
-						Aggression:       ptr.To("1.1"),
-						MinWeightPercent: ptr.To(int32(10)),
+						Aggression:       new("1.1"),
+						MinWeightPercent: new(int32(10)),
 					},
 				},
 			},
@@ -176,8 +176,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						Window: &metav1.Duration{
 							Duration: 10 * time.Second,
 						},
-						Aggression:       ptr.To("1.1"),
-						MinWeightPercent: ptr.To(int32(10)),
+						Aggression:       new("1.1"),
+						MinWeightPercent: new(int32(10)),
 					},
 				},
 			},
@@ -230,8 +230,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			name: "RingHash full config",
 			config: &kgateway.LoadBalancer{
 				RingHash: &kgateway.LoadBalancerRingHashConfig{
-					MinimumRingSize: ptr.To(int64(10)),
-					MaximumRingSize: ptr.To(int64(100)),
+					MinimumRingSize: new(int64(10)),
+					MaximumRingSize: new(int64(100)),
 				},
 			},
 			expected: func() *envoyclusterv3.Cluster {
@@ -376,7 +376,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "CloseConnectionsOnHostSetChange",
 			config: &kgateway.LoadBalancer{
-				CloseConnectionsOnHostSetChange: ptr.To(true),
+				CloseConnectionsOnHostSetChange: new(true),
 			},
 			expected: &envoyclusterv3.Cluster{
 				Name: "test",
@@ -389,7 +389,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			name: "RingHash: UseHostnameForHashing, STRICT_DNS",
 			config: &kgateway.LoadBalancer{
 				RingHash: &kgateway.LoadBalancerRingHashConfig{
-					UseHostnameForHashing: ptr.To(true),
+					UseHostnameForHashing: new(true),
 				},
 			},
 			cluster: &envoyclusterv3.Cluster{
@@ -419,10 +419,104 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			}(),
 		},
 		{
+			name: "RingHash: UseHostnameForHashing, DnsCluster",
+			config: &kgateway.LoadBalancer{
+				RingHash: &kgateway.LoadBalancerRingHashConfig{
+					UseHostnameForHashing: new(true),
+				},
+			},
+			cluster: func() *envoyclusterv3.Cluster {
+				dnsClusterMsg, _ := utils.MessageToAny(&envoydnsv3.DnsCluster{})
+				return &envoyclusterv3.Cluster{
+					ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+						ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+							Name:        dnsClusterExtensionName,
+							TypedConfig: dnsClusterMsg,
+						},
+					},
+				}
+			}(),
+			expected: func() *envoyclusterv3.Cluster {
+				dnsClusterMsg, _ := utils.MessageToAny(&envoydnsv3.DnsCluster{})
+				msg, _ := utils.MessageToAny(&ringhashv3.RingHash{
+					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
+						UseHostnameForHashing: true,
+					},
+				})
+				return &envoyclusterv3.Cluster{
+					Name: "test",
+					ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+						ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+							Name:        dnsClusterExtensionName,
+							TypedConfig: dnsClusterMsg,
+						},
+					},
+					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
+						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+								Name:        "envoy.load_balancing_policies.ring_hash",
+								TypedConfig: msg,
+							},
+						}},
+					},
+					CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+				}
+			}(),
+		},
+		{
+			name: "RingHash: UseHostnameForHashing, DnsCluster AllAddressesInSingleEndpoint",
+			config: &kgateway.LoadBalancer{
+				RingHash: &kgateway.LoadBalancerRingHashConfig{
+					UseHostnameForHashing: new(true),
+				},
+			},
+			cluster: func() *envoyclusterv3.Cluster {
+				dnsClusterMsg, _ := utils.MessageToAny(&envoydnsv3.DnsCluster{
+					AllAddressesInSingleEndpoint: true,
+				})
+				return &envoyclusterv3.Cluster{
+					ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+						ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+							Name:        dnsClusterExtensionName,
+							TypedConfig: dnsClusterMsg,
+						},
+					},
+				}
+			}(),
+			expected: func() *envoyclusterv3.Cluster {
+				dnsClusterMsg, _ := utils.MessageToAny(&envoydnsv3.DnsCluster{
+					AllAddressesInSingleEndpoint: true,
+				})
+				msg, _ := utils.MessageToAny(&ringhashv3.RingHash{
+					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
+						UseHostnameForHashing: false,
+					},
+				})
+				return &envoyclusterv3.Cluster{
+					Name: "test",
+					ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+						ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+							Name:        dnsClusterExtensionName,
+							TypedConfig: dnsClusterMsg,
+						},
+					},
+					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
+						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+								Name:        "envoy.load_balancing_policies.ring_hash",
+								TypedConfig: msg,
+							},
+						}},
+					},
+					CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+				}
+			}(),
+		},
+		{
 			name: "Ringhash: UseHostnameForHashing, EDS",
 			config: &kgateway.LoadBalancer{
 				RingHash: &kgateway.LoadBalancerRingHashConfig{
-					UseHostnameForHashing: ptr.To(true),
+					UseHostnameForHashing: new(true),
 				},
 			},
 			cluster: &envoyclusterv3.Cluster{
@@ -495,7 +589,7 @@ func TestConstructHashPolicy(t *testing.T) {
 					Header: &kgateway.Header{
 						Name: "x-user-id",
 					},
-					Terminal: ptr.To(true),
+					Terminal: new(true),
 				},
 			},
 			expected: []*envoyroutev3.RouteAction_HashPolicy{
@@ -538,9 +632,9 @@ func TestConstructHashPolicy(t *testing.T) {
 						TTL: &metav1.Duration{
 							Duration: 30 * time.Minute,
 						},
-						Path: ptr.To("/api"),
+						Path: new("/api"),
 					},
-					Terminal: ptr.To(true),
+					Terminal: new(true),
 				},
 			},
 			expected: []*envoyroutev3.RouteAction_HashPolicy{
@@ -562,9 +656,9 @@ func TestConstructHashPolicy(t *testing.T) {
 				{
 					Cookie: &kgateway.Cookie{
 						Name:     "session-id",
-						Secure:   ptr.To(true),
-						HttpOnly: ptr.To(true),
-						SameSite: ptr.To("Strict"),
+						Secure:   new(true),
+						HttpOnly: new(true),
+						SameSite: new("Strict"),
 					},
 				},
 			},
@@ -589,7 +683,7 @@ func TestConstructHashPolicy(t *testing.T) {
 			hashPolicies: []kgateway.HashPolicy{
 				{
 					SourceIP: &kgateway.SourceIP{},
-					Terminal: ptr.To(false),
+					Terminal: new(false),
 				},
 			},
 			expected: []*envoyroutev3.RouteAction_HashPolicy{
@@ -610,7 +704,7 @@ func TestConstructHashPolicy(t *testing.T) {
 					Header: &kgateway.Header{
 						Name: "x-user-id",
 					},
-					Terminal: ptr.To(true),
+					Terminal: new(true),
 				},
 				{
 					Cookie: &kgateway.Cookie{
@@ -659,9 +753,9 @@ func TestConstructHashPolicy(t *testing.T) {
 					Cookie: &kgateway.Cookie{
 						Name: "session-id",
 						TTL:  nil,
-						Path: ptr.To("/api"),
+						Path: new("/api"),
 					},
-					Terminal: ptr.To(false),
+					Terminal: new(false),
 				},
 			},
 			expected: []*envoyroutev3.RouteAction_HashPolicy{

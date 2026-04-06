@@ -1,6 +1,11 @@
 clusters:
-- connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      allAddressesInSingleEndpoint: true
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
   loadAssignment:
     clusterName: backend_gwtest_lambda-dev_0
     endpoints:
@@ -17,7 +22,6 @@ clusters:
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       sni: lambda.us-east-1.amazonaws.com
-  type: LOGICAL_DNS
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -38,8 +42,13 @@ clusters:
       - name: envoy.filters.http.upstream_codec
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
-- connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      allAddressesInSingleEndpoint: true
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
   loadAssignment:
     clusterName: backend_gwtest_lambda-latest_0
     endpoints:
@@ -56,7 +65,6 @@ clusters:
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       sni: lambda.us-east-1.amazonaws.com
-  type: LOGICAL_DNS
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -77,8 +85,13 @@ clusters:
       - name: envoy.filters.http.upstream_codec
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
-- connectTimeout: 5s
-  dnsLookupFamily: V4_PREFERRED
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      allAddressesInSingleEndpoint: true
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
   loadAssignment:
     clusterName: backend_gwtest_lambda-prod_0
     endpoints:
@@ -95,7 +108,6 @@ clusters:
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       sni: lambda.us-east-1.amazonaws.com
-  type: LOGICAL_DNS
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions

@@ -7,16 +7,23 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
+
+const dnsClusterExtensionName = "envoy.clusters.dns"
 
 // StaticIr is the internal representation of a static backend.
 type StaticIr struct {
 	// +noKrtEquals
 	clusterType envoyclusterv3.Cluster_DiscoveryType
+	// +noKrtEquals
+	clusterTypeConfig *anypb.Any
 	// +noKrtEquals
 	loadAssignment *envoyendpointv3.ClusterLoadAssignment
 }
@@ -29,6 +36,7 @@ func (u *StaticIr) Equals(other any) bool {
 	}
 	return cmputils.CompareWithNils(u, otherStatic, func(a, b *StaticIr) bool {
 		return a.clusterType == b.clusterType &&
+			proto.Equal(a.clusterTypeConfig, b.clusterTypeConfig) &&
 			proto.Equal(a.loadAssignment, b.loadAssignment)
 	})
 }
@@ -92,12 +100,11 @@ func buildStaticIr(in *kgateway.StaticBackend) (*StaticIr, error) {
 
 	// the upstream has a DNS name. We need Envoy to resolve the DNS name
 	if hostname != "" {
-		// set the type to strict dns
-		ir.clusterType = envoyclusterv3.Cluster_STRICT_DNS
-
-		// do we still need this?
-		//		// fix issue where ipv6 addr cannot bind
-		//		out.DnsLookupFamily = envoyclusterv3.Cluster_V4_ONLY
+		dnsClusterConfig, err := utils.MessageToAny(&envoydnsv3.DnsCluster{})
+		if err != nil {
+			return nil, err
+		}
+		ir.clusterTypeConfig = dnsClusterConfig
 	}
 
 	return ir, nil
@@ -105,8 +112,17 @@ func buildStaticIr(in *kgateway.StaticBackend) (*StaticIr, error) {
 
 // processStatic applies the static IR to the envoy cluster.
 func processStatic(ir *StaticIr, out *envoyclusterv3.Cluster) {
-	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
-		Type: ir.clusterType,
+	if ir.clusterTypeConfig != nil {
+		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
+			ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+				Name:        dnsClusterExtensionName,
+				TypedConfig: proto.Clone(ir.clusterTypeConfig).(*anypb.Any),
+			},
+		}
+	} else {
+		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+			Type: ir.clusterType,
+		}
 	}
 
 	if ir.loadAssignment != nil {

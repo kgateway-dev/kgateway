@@ -11,7 +11,7 @@ metadata:
   labels:
     {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
 spec:
-  {{- if $gateway.replicaCount }}
+  {{- if not (kindIs "invalid" $gateway.replicaCount) }}
   replicas: {{ $gateway.replicaCount }}
   {{- end }}
   selector:
@@ -39,6 +39,7 @@ spec:
           (dict "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName)
           (include "kgateway.gateway.selectorLabels" . | fromYaml)
           (dict "kgateway" "kube-gateway")
+          (dict "app.kubernetes.io/component" "proxy")
           ($gateway.gatewayLabels | default dict)
           ($gateway.extraPodLabels | default dict)
         ) | nindent 8 }}
@@ -92,10 +93,28 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         - name: ENVOY_UID
           value: "0"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.namespace=$(POD_NAMESPACE),service.instance.id=$(POD_UID),{{- if .Chart.AppVersion }}service.version={{ .Chart.AppVersion }},{{- end }}k8s.namespace.name=$(POD_NAMESPACE),k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.node.name=$(NODE_NAME),k8s.deployment.name={{ include "kgateway.gateway.fullname" . }},k8s.container.name={{ .Chart.Name }}{{- range $gateway.env }}{{- if and (eq .name "OTEL_RESOURCE_ATTRIBUTES") .value }},{{ .value }}{{- end }}{{- end }}"
 {{- if $gateway.env }}
-{{ toYaml $gateway.env | indent 8 }}
+{{- $filteredEnv := list }}
+{{- range $gateway.env }}
+{{- if ne .name "OTEL_RESOURCE_ATTRIBUTES" }}
+{{- $filteredEnv = append $filteredEnv . }}
+{{- end }}
+{{- end }}
+{{- if $filteredEnv }}
+{{ toYaml $filteredEnv | indent 8 }}
+{{- end }}
 {{- end }}{{/* if $gateway.env */}}
         ports:
         {{- range $p := $gateway.ports }}

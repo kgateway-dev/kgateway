@@ -78,11 +78,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: 'Some listeners are not programmed: https-invalid-secret: Secret
           default/invalid-https-secret not found.'
         reason: ListenersNotValid
@@ -120,6 +115,8 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
@@ -146,6 +143,8 @@ Statuses:
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
   httpRoutes:
     default/invalid-route:
       parents:
@@ -165,6 +164,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: https-invalid-secret
     default/valid-route:
       parents:
       - conditions:
@@ -183,3 +183,4 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: https-valid-secret

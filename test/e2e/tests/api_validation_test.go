@@ -178,7 +178,7 @@ spec:
     kind: Deployment
     name: test-deployment
 `,
-			wantErrors: []string{"TargetRefs must reference either a Kubernetes Service or a Backend API"},
+			wantErrors: []string{"TargetRefs must reference either a Kubernetes Service, a Backend, or an Istio Hostname"},
 		},
 		{
 			name: "BackendConfigPolicy: invalid target selector",
@@ -194,7 +194,7 @@ spec:
     matchLabels:
       app: myapp
 `,
-			wantErrors: []string{"TargetSelectors must reference either a Kubernetes Service or a Backend API"},
+			wantErrors: []string{"TargetSelectors must reference either a Kubernetes Service, a Backend, or an Istio Hostname"},
 		},
 		{
 			name: "BackendConfigPolicy: invalid aggression",
@@ -216,6 +216,41 @@ spec:
         minWeightPercent: 10
 `,
 			wantErrors: []string{"Aggression, if specified, must be a string representing a number greater than 0.0"},
+		},
+		{
+			name: "BackendConfigPolicy: refreshRate must be at least 1ms",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-dns-refresh-too-small
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  dns:
+    refreshRate: 0s
+`,
+			wantErrors: []string{"spec.dns.refreshRate: Invalid value: .*: refreshRate must be at least 1ms"},
+		},
+		{
+			name: "BackendConfigPolicy: jitter must not exceed refreshRate",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-dns-jitter-too-large
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  dns:
+    refreshRate: 5s
+    jitter: 10s
+`,
+			wantErrors: []string{"jitter must be less than or equal to refreshRate"},
 		},
 		{
 			name: "BackendConfigPolicy: invalid durations",
@@ -274,8 +309,11 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: test-route
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+  - group: gateway.networking.k8s.io
+    kind: GRPCRoute
+    name: test-grpc-route
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
     name: test-listener
   targetSelectors:
   - group: gateway.networking.k8s.io
@@ -297,7 +335,7 @@ spec:
     kind: Deployment
     name: test-deployment
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, or ListenerSet resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, GRPCRoute, or ListenerSet resources"},
 		},
 		{
 			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",
@@ -358,8 +396,8 @@ metadata:
   name: http-listener-policy-invalid-target
 spec:
   targetRefs:
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
     name: test-listener
 `,
 			wantErrors: []string{"targetRefs may only reference Gateway resources"},

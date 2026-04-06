@@ -42,8 +42,8 @@ spec:
       - name: example-svc
         port: 8000
 ---
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: ls
 spec:
@@ -65,8 +65,8 @@ metadata:
   name: svc-route-2
 spec:
   parentRefs:
-    - kind: XListenerSet
-      group: gateway.networking.x-k8s.io
+    - kind: ListenerSet
+      group: gateway.networking.k8s.io
       name: ls
       namespace: default
   hostnames:
@@ -111,8 +111,8 @@ metadata:
   name: header-modifiers-ls-policy
 spec:
   targetRefs:
-  - group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
     name: ls
   headerModifiers:
     request:

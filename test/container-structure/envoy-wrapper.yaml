@@ -1,0 +1,69 @@
+schemaVersion: 2.0.0
+
+# Container structure tests for the envoy-wrapper image
+# Contains envoyinit binary, Rust dynamic modules, and docker-entrypoint.sh
+
+# UID 10101 must match the helm chart's securityContext.runAsUser
+# (see pkg/deployer/gateway_parameters.go)
+metadataTest:
+  user: "10101"
+  entrypoint: ["/docker-entrypoint.sh"]
+  envVars:
+    - key: "ENVOY_DYNAMIC_MODULES_SEARCH_PATH"
+      value: "/usr/local/lib"
+
+fileExistenceTests:
+  - name: "envoyinit binary exists"
+    path: "/usr/local/bin/envoyinit"
+    shouldExist: true
+    permissions: "-rwxr-xr-x"
+    isExecutableBy: "owner"
+
+  - name: "docker-entrypoint.sh exists"
+    path: "/docker-entrypoint.sh"
+    shouldExist: true
+    permissions: "-rwxr-xr-x"
+    isExecutableBy: "owner"
+
+  - name: "Rust dynamic module exists"
+    path: "/usr/local/lib/librust_module.so"
+    shouldExist: true
+
+  - name: "envoy binary exists"
+    path: "/usr/local/bin/envoy"
+    shouldExist: true
+    isExecutableBy: "any"
+
+  - name: "ca-certificates installed"
+    path: "/etc/ssl/certs/ca-certificates.crt"
+    shouldExist: true
+
+  - name: "wget installed"
+    path: "/usr/bin/wget"
+    shouldExist: true
+    isExecutableBy: "any"
+
+fileContentTests:
+  - name: "entrypoint script has correct shebang"
+    path: "/docker-entrypoint.sh"
+    expectedContents: ["#!/bin/sh"]
+
+  - name: "entrypoint handles ENVOY_SIDECAR mode"
+    path: "/docker-entrypoint.sh"
+    expectedContents: ["ENVOY_SIDECAR"]
+
+commandTests:
+  - name: "envoyinit binary is a valid ELF executable"
+    command: "/bin/sh"
+    args: ["-c", "head -c 4 /usr/local/bin/envoyinit | od -A n -t x1 | grep -q '7f 45 4c 46'"]
+    exitCode: 0
+
+  - name: "envoy binary is a valid executable"
+    command: "/usr/local/bin/envoy"
+    args: ["--version"]
+    exitCode: 0
+
+  - name: "running as non-root user"
+    command: "id"
+    args: ["-u"]
+    expectedOutput: ["10101"]

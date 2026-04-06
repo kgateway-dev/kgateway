@@ -86,13 +86,16 @@ func (r *PolicyReport) ancestorRefs() []gwv1.ParentReference {
 	for key := range r.Ancestors {
 		var ns *gwv1.Namespace
 		if key.Namespace != "" {
-			ns = ptr.To(gwv1.Namespace(key.Namespace))
+			ns = new(gwv1.Namespace(key.Namespace))
 		}
 		parentRef := gwv1.ParentReference{
-			Group:     ptr.To(gwv1.Group(key.Group)),
-			Kind:      ptr.To(gwv1.Kind(key.Kind)),
+			Group:     new(gwv1.Group(key.Group)),
+			Kind:      new(gwv1.Kind(key.Kind)),
 			Name:      gwv1.ObjectName(key.Name),
 			Namespace: ns,
+		}
+		if key.SectionName != "" {
+			parentRef.SectionName = new(gwv1.SectionName(key.SectionName))
 		}
 		refs = append(refs, parentRef)
 	}

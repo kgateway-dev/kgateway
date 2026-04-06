@@ -58,11 +58,11 @@ jobs:
                         {file: "./.github/workflows/.env/nightly-tests/min_versions.env", label: "min_versions"} ]
         gateway-api-channel: [ 'experimental', 'standard' ]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       with:
         ref: ${{ env.BRANCH }}
     - name: Dotenv Action
-      uses: falti/dotenv-action@v1.1.4
+      uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
       id: dotenv
       with:
         path: ${{ matrix.env-versions.file }}
@@ -73,6 +73,7 @@ jobs:
         api-channel: ${{ matrix.gateway-api-channel }}
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+        summarize-report: true
 
   kube_gateway_api_load_tests:
     name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
@@ -85,13 +86,13 @@ jobs:
         kube-version: [ { node: 'v1.30.13@sha256:397209b3d947d154f6641f2d0ce8d473732bd91c87d9575ade99049aa33cd648', kubectl: 'v1.30.14', kind: 'v0.29.0' },
                         { node: 'v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f', kubectl: 'v1.35.0', kind: 'v0.31.0' }]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       with:
         ref: ${{ env.BRANCH }}
     - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
-    name: E2E (${{ matrix.controllers.agentgateway && 'AGW' || 'KGW' }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
+    name: E2E (k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
@@ -100,24 +101,23 @@ jobs:
       matrix:
         env-versions: [ {file: "./.github/workflows/.env/nightly-tests/max_versions.env", label: "max"},
                         {file: "./.github/workflows/.env/nightly-tests/min_versions.env", label: "min"} ]
-        gateway-api-version: [ { version: 'v1.4.1', channel: 'experimental' },
+        gateway-api-version: [ { version: 'v1.5.1', channel: 'experimental' },
+                              { version: 'v1.5.1', channel: 'standard' },
+                              { version: 'v1.4.1', channel: 'experimental' },
                               { version: 'v1.4.1', channel: 'standard' },
                               { version: 'v1.3.0', channel: 'experimental' },
-                              { version: 'v1.3.0', channel: 'standard' },
-                              { version: 'v1.2.1', channel: 'experimental' },
-                              { version: 'v1.2.1', channel: 'standard' }]
+                              { version: 'v1.3.0', channel: 'standard' }]
         controllers: [
-          {regex: "^TestAgentgateway", agentgateway: true},
-          {regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestParallelControllers$$|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$", agentgateway: false}
+          {regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$"}
         ]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       with:
         ref: ${{ env.BRANCH }}
     - name: Prep Go Runner
       uses: ./.github/actions/prep-go-runner
     - name: Dotenv Action
-      uses: falti/dotenv-action@v1.1.4
+      uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
       id: dotenv
       with:
         path: ${{ matrix.env-versions.file }}
@@ -131,7 +131,6 @@ jobs:
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-        agentgateway: ${{ matrix.controllers.agentgateway }}
         localstack: "true"
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests

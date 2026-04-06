@@ -63,6 +63,7 @@ func NewUniqlyConnectedClient(roleFromEnvoy string, ns string, labels map[string
 		resourceName: resourceName,
 	}
 }
+
 func labeledRole(role string, labels map[string]string) string {
 	return fmt.Sprintf("%s%s%d", role, KeyDelimiter, utils.HashLabels(labels))
 }

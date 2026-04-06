@@ -120,6 +120,15 @@ type Service struct {
 	//
 	// +optional
 	LoadBalancerClass *string `json:"loadBalancerClass,omitempty"`
+
+	// LoadBalancerSourceRanges restricts traffic through the cloud-provider load-balancer
+	// to the specified client IPs. This field will be ignored if the cloud-provider does
+	// not support the feature.
+	// More info: https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/
+	//
+	// +optional
+	// +listType=atomic
+	LoadBalancerSourceRanges []string `json:"loadBalancerSourceRanges,omitempty"`
 }
 
 func (in *Service) GetPorts() []Port {
@@ -200,6 +209,13 @@ func (in *Service) GetLoadBalancerClass() *string {
 		return nil
 	}
 	return in.LoadBalancerClass
+}
+
+func (in *Service) GetLoadBalancerSourceRanges() []string {
+	if in == nil {
+		return nil
+	}
+	return in.LoadBalancerSourceRanges
 }
 
 type ServiceAccount struct {
@@ -446,7 +462,13 @@ func (in *Pod) GetPriorityClassName() *string {
 }
 
 type GracefulShutdownSpec struct {
-	// Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter
+	// Enable grace period before shutdown to finish current requests.  When
+	// enabled, a preStop hook calls /healthcheck/fail on Envoy's admin port,
+	// which causes the /ready endpoint to return 503 (DRAINING). This makes
+	// the Kubernetes readiness probe fail, removing the pod from Service
+	// endpoints so new traffic stops arriving (unless all endpoints are
+	// draining -- see KEP-1669: Proxy Terminating Endpoints). The hook then
+	// sleeps for SleepTimeSeconds to allow in-flight requests to complete.
 	//
 	// +optional
 	Enabled *bool `json:"enabled,omitempty"`

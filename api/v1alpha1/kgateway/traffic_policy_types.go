@@ -41,6 +41,7 @@ type TrafficPolicyList struct {
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
 // +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetRefs[].sectionName must be set when targeting Gateway resources with retry policy"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy"
@@ -50,12 +51,12 @@ type TrafficPolicySpec struct {
 	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet')))",message="targetRefs may only reference Gateway, HTTPRoute, or ListenerSet resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute' || r.kind.endsWith('ListenerSet')))",message="targetRefs may only reference Gateway, HTTPRoute, GRPCRoute, or ListenerSet resources"
 	TargetRefs []shared.LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
 
 	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet')))",message="targetSelectors may only reference Gateway, HTTPRoute, or ListenerSet resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute' || r.kind.endsWith('ListenerSet')))",message="targetSelectors may only reference Gateway, HTTPRoute, GRPCRoute, or ListenerSet resources"
 	TargetSelectors []shared.LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
 
 	// Transformation is used to mutate and transform requests and responses
@@ -107,7 +108,7 @@ type TrafficPolicySpec struct {
 	Timeouts *shared.Timeouts `json:"timeouts,omitempty"`
 
 	// Retry defines the policy for retrying requests.
-	// It is applicable to HTTPRoutes, Gateway listeners and XListenerSets, and ignored for other targeted kinds.
+	// It is applicable to HTTPRoutes, Gateway listeners and ListenerSets, and ignored for other targeted kinds.
 	// +optional
 	Retry *Retry `json:"retry,omitempty"`
 
@@ -150,6 +151,22 @@ type TrafficPolicySpec struct {
 	// malicious social engineering.
 	// +optional
 	OAuth2 *OAuth2Policy `json:"oauth2,omitempty"`
+
+	// Tracing configures per-route tracing overrides.
+	// These settings override the listener-level tracing configuration
+	// (configured via ListenerPolicy) for matched routes.
+	// The tracing provider (e.g., OpenTelemetry collector endpoint) must be
+	// configured at the listener level via ListenerPolicy. Without a listener-level
+	// tracing provider, route-level settings have no effect.
+	// NOTE: This field is only honored for HTTPRoute and GRPCRoute targets.
+	// +optional
+	Tracing *RouteTracing `json:"tracing,omitempty"`
+
+	// FaultInjection configures fault injection for chaos engineering and
+	// resiliency testing. Supports delay injection, abort injection,
+	// and response rate limiting.
+	// +optional
+	FaultInjection *FaultInjectionPolicy `json:"faultInjection,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
@@ -607,4 +624,138 @@ type RequestDecompression struct {
 	// Disables decompression.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+}
+
+// RouteTracing configures per-route tracing overrides.
+// These settings override the listener-level tracing configuration for matched routes.
+// The tracing provider (e.g., OpenTelemetry collector endpoint) must still be
+// configured at the listener level via ListenerPolicy. Without a listener-level tracing
+// provider, route-level settings have no effect.
+// Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#config-route-v3-tracing
+//
+// +kubebuilder:validation:XValidation:rule="!has(self.disable) || (!has(self.clientSampling) && !has(self.randomSampling) && !has(self.overallSampling) && !has(self.attributes))",message="disable is mutually exclusive with other tracing fields"
+type RouteTracing struct {
+	// Target percentage of requests that will be force traced if the
+	// x-client-trace-id header is set. Overrides the listener-level setting.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	ClientSampling *int32 `json:"clientSampling,omitempty"`
+
+	// Target percentage of requests that will be randomly selected for
+	// trace generation. Overrides the listener-level setting.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	RandomSampling *int32 `json:"randomSampling,omitempty"`
+
+	// Target percentage of requests that will be traced after all other
+	// sampling checks have been applied. This acts as an upper limit on
+	// the total configured sampling rate. Overrides the listener-level setting.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	OverallSampling *int32 `json:"overallSampling,omitempty"`
+
+	// Additional attributes to add to active spans for this route.
+	// These are merged with listener-level attributes configured via ListenerPolicy.
+	// On name collision, route-level attributes take priority.
+	// +optional
+	// +kubebuilder:validation:MaxItems=16
+	Attributes []CustomAttribute `json:"attributes,omitempty"`
+
+	// Disable tracing for this route.
+	// Can be used to disable tracing for specific routes when listener-level
+	// tracing is configured via ListenerPolicy.
+	// +optional
+	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+}
+
+// FaultInjectionPolicy configures fault injection for testing service resiliency.
+// At least one of delay, abort, responseRateLimit, or disable must be specified.
+//
+// +kubebuilder:validation:AtLeastOneOf=delay;abort;responseRateLimit;disable
+type FaultInjectionPolicy struct {
+	// Delay injects latency into requests before forwarding upstream.
+	// +optional
+	Delay *FaultDelay `json:"delay,omitempty"`
+
+	// Abort injects HTTP or gRPC errors to terminate requests early.
+	// +optional
+	Abort *FaultAbort `json:"abort,omitempty"`
+
+	// ResponseRateLimit limits the response body data rate to simulate
+	// slow or degraded upstream connections.
+	// +optional
+	ResponseRateLimit *FaultResponseRateLimit `json:"responseRateLimit,omitempty"`
+
+	// MaxActiveFaults limits the number of concurrent active faults.
+	// When this limit is reached, new requests will not have faults injected.
+	// If not specified, defaults to unlimited.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MaxActiveFaults *uint32 `json:"maxActiveFaults,omitempty"`
+
+	// Disable the fault injection filter.
+	// Can be used to disable fault injection policies applied at a higher level
+	// in the config hierarchy.
+	// +optional
+	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+}
+
+// FaultDelay configures latency injection.
+type FaultDelay struct {
+	// FixedDelay is the duration to delay before forwarding the request.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
+	// +kubebuilder:validation:XValidation:rule="duration(self) <= duration('1h')",message="must not exceed 1h"
+	FixedDelay metav1.Duration `json:"fixedDelay"`
+
+	// Percentage of requests to inject the delay on. Defaults to 100.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:default=100
+	Percentage *int32 `json:"percentage,omitempty"`
+}
+
+// FaultAbort configures request abort injection.
+//
+// +kubebuilder:validation:ExactlyOneOf=httpStatus;grpcStatus
+type FaultAbort struct {
+	// HttpStatus is the HTTP status code to return when aborting a request.
+	// +optional
+	// +kubebuilder:validation:Minimum=200
+	// +kubebuilder:validation:Maximum=599
+	HttpStatus *int32 `json:"httpStatus,omitempty"`
+
+	// GrpcStatus is the gRPC status code to return when aborting a request.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=16
+	GrpcStatus *int32 `json:"grpcStatus,omitempty"`
+
+	// Percentage of requests to abort. Defaults to 100.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:default=100
+	Percentage *int32 `json:"percentage,omitempty"`
+}
+
+// FaultResponseRateLimit configures response body rate limiting to simulate
+// slow upstream connections.
+type FaultResponseRateLimit struct {
+	// KbitsPerSecond limits the response rate to the specified kilobits per second.
+	// +required
+	// +kubebuilder:validation:Minimum=1
+	KbitsPerSecond uint64 `json:"kbitsPerSecond"`
+
+	// Percentage of requests to apply the rate limit on. Defaults to 100.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:default=100
+	Percentage *int32 `json:"percentage,omitempty"`
 }

@@ -10,7 +10,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -140,8 +139,10 @@ type syncStartInfo struct {
 // Buffered channel to handle resource sync metrics updates.
 // The buffer size is assumed to be sufficient for any reasonable load.
 // But, this may need to be configurable in the future, if needed for very high load.
-var syncCh = make(chan *syncStartInfo, 1024)
-var syncChLock sync.RWMutex
+var (
+	syncCh     = make(chan *syncStartInfo, 1024)
+	syncChLock sync.RWMutex
+)
 
 // StartResourceSyncMetricsProcessing starts a goroutine that processes resource sync metrics.
 func StartResourceSyncMetricsProcessing(ctx context.Context) {
@@ -547,15 +548,17 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 				namespaceOld = clientObjectOld.(*gwv1.Gateway).Namespace
 				namesOld = []string{clientObjectOld.(*gwv1.Gateway).Name}
 			}
-		case *gwxv1a1.XListenerSet:
+		case *gwv1.ListenerSet:
+			// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
+			// follow-up cleanup so dashboards, tests, and emitters can be updated together.
 			resourceType = "XListenerSet"
 			resourceName = obj.Name
 			namespace = obj.Namespace
 			names = []string{string(obj.Spec.ParentRef.Name)}
 
 			if clientObjectOld != nil {
-				namespaceOld = clientObjectOld.(*gwxv1a1.XListenerSet).Namespace
-				namesOld = []string{string(clientObjectOld.(*gwxv1a1.XListenerSet).Spec.ParentRef.Name)}
+				namespaceOld = clientObjectOld.(*gwv1.ListenerSet).Namespace
+				namesOld = []string{string(clientObjectOld.(*gwv1.ListenerSet).Spec.ParentRef.Name)}
 			}
 		}
 

@@ -10,9 +10,6 @@ import (
 // Priority order:
 // 1. Waypoint class name (adds mesh port)
 // 2. Default gateway parameters
-//
-// Note: Agentgateway controllers are NOT supported - this function errors if called with
-// an agentgateway controllerName because agentgateway uses agwHelmValuesGenerator.
 func TestGetInMemoryGatewayParameters(t *testing.T) {
 	imageInfo := &deployer.ImageInfo{
 		Registry:   "test-registry",
@@ -22,7 +19,6 @@ func TestGetInMemoryGatewayParameters(t *testing.T) {
 
 	const (
 		envoyController = "kgateway.dev/kgateway"
-		agwController   = "agentgateway.dev/agentgateway"
 		waypointClass   = "waypoint"
 	)
 
@@ -45,7 +41,7 @@ func TestGetInMemoryGatewayParameters(t *testing.T) {
 			controllerName:       "some.other/controller",
 			className:            waypointClass,
 			expectedServicePorts: 1, // waypoint adds a mesh port
-			description:          "When class name matches waypoint with non-agw controller, it should return waypoint parameters",
+			description:          "When class name matches waypoint with non-envoy controller, it should return waypoint parameters",
 		},
 		{
 			name:                 "default - envoy controller",
@@ -70,7 +66,6 @@ func TestGetInMemoryGatewayParameters(t *testing.T) {
 				ClassName:                  tt.className,
 				ImageInfo:                  imageInfo,
 				WaypointClassName:          waypointClass,
-				AgwControllerName:          agwController,
 				OmitDefaultSecurityContext: false,
 			}
 

@@ -12,6 +12,11 @@ Data-plane related macros:
 
 {{/*
 Generate a unique name for the gateway that is RFC1123 label compliant (<64 chars)
+
+This must stay in sync with the Go function SafeGatewayLabelValue
+defined in pkg/utils/kubeutils/dns.go.
+TestSafeGatewayNameMatchesHelmOutput in test/deployer/internal_helm_test.go
+verifies that these two functions produce the same output.
 */}}
 {{- define "kgateway.gateway.safeLabelValue" -}}
 {{- $name := . -}}
@@ -55,12 +60,14 @@ Common labels
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
+app.kubernetes.io/component: proxy
 gateway.networking.k8s.io/gateway-class-name: {{ .Values.gateway.gatewayClassName }}
 app.kubernetes.io/managed-by: kgateway
 {{- end }}
 
 {{- define "kgateway.gateway.podLabels" -}}
 {{ include "kgateway.gateway.selectorLabels" . }}
+app.kubernetes.io/component: proxy
 gateway.networking.k8s.io/gateway-class-name: {{ .Values.gateway.gatewayClassName }}
 {{- end }}
 
@@ -88,6 +95,7 @@ All labels including selector labels, standard labels, and custom gateway labels
 {{- $gateway := .Values.gateway -}}
 {{- $labels := merge (dict
   "kgateway" "kube-gateway"
+  "app.kubernetes.io/component" "proxy"
   "app.kubernetes.io/managed-by" "kgateway"
   "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName
   )

@@ -145,10 +145,6 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 func (s *testingSuite) getLeader() string {
 	var leaderPodName string
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		// Determine the actual lease name based on the chart type
-		// kgateway chart: only Envoy enabled -> lease is "kgateway-envoy"
-		// agentgateway chart: only Agentgateway enabled -> lease is "kgateway-agentgateway"
-		// both controllers enabled (not typical in tests): lease is "kgateway"
 		leaseID := s.getLeaderElectionID()
 		holder, err := s.TestInstallation.Actions.Kubectl().GetLeaseHolder(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, leaseID)
 		assert.NoError(c, err, "failed to get lease")
@@ -164,21 +160,10 @@ func (s *testingSuite) getLeader() string {
 	return leaderPodName
 }
 
-// getLeaderElectionID returns the leader election ID based on the chart type.
-// This matches the logic in pkg/kgateway/setup/setup.go lines 285-296.
+// getLeaderElectionID returns the leader election ID.
+// This matches the logic in pkg/kgateway/setup/setup.go.
 func (s *testingSuite) getLeaderElectionID() string {
-	chartType := s.TestInstallation.Metadata.GetChartType()
-	switch chartType {
-	case "kgateway":
-		// kgateway chart has EnableEnvoy=true, EnableAgentgateway=false
-		return wellknown.LeaderElectionID + "-envoy"
-	case "agentgateway":
-		// agentgateway chart has EnableEnvoy=false, EnableAgentgateway=true
-		return wellknown.LeaderElectionID + "-agentgateway"
-	default:
-		// Fallback to default (both enabled or unknown chart type)
-		return wellknown.LeaderElectionID
-	}
+	return wellknown.LeaderElectionID
 }
 
 func (s *testingSuite) leadershipChanges(oldLeader string) {
