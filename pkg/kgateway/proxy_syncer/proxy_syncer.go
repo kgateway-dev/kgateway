@@ -217,6 +217,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		// WithJoinUnchecked enables a more optimized lookup on the hotpath by assuming we do not have any overlapping ResourceName
 		// in the backend collection.
 		append(krtopts.ToOptions("FinalBackendsWithPolicyStatus"), krt.WithJoinUnchecked())...)
+	finalEndpoints := newFinalBackendEndpoints(krtopts, finalBackends, s.commonCols.Endpoints)
 
 	s.translator.Init(ctx)
 
@@ -237,7 +238,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	epPerClient := NewPerClientEnvoyEndpoints(
 		krtopts,
 		s.uniqueClients,
-		s.commonCols.Endpoints,
+		finalEndpoints,
 		s.translator.TranslateEndpoints,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(

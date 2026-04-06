@@ -6,7 +6,7 @@ Clusters:
       dnsLookupFamily: V4_PREFERRED
   connectTimeout: 5s
   loadAssignment:
-    clusterName: backend_default_backend1_0
+    clusterName: backend_default_backend1_btls32ind6ueynk51_0
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -18,7 +18,7 @@ Clusters:
             hostname: example.com
           hostname: example.com
   metadata: {}
-  name: backend_default_backend1_0
+  name: backend_default_backend1_btls32ind6ueynk51_0
   transportSocket:
     name: envoy.transport_sockets.tls
     typedConfig:
@@ -61,7 +61,7 @@ Clusters:
       dnsLookupFamily: V4_PREFERRED
   connectTimeout: 5s
   loadAssignment:
-    clusterName: backend_default_backend2_0
+    clusterName: backend_default_backend2_btls9k4y7qmg5jie_0
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -73,7 +73,7 @@ Clusters:
             hostname: example2.com
           hostname: example2.com
   metadata: {}
-  name: backend_default_backend2_0
+  name: backend_default_backend2_btls9k4y7qmg5jie_0
   transportSocket:
     name: envoy.transport_sockets.tls
     typedConfig:
@@ -132,7 +132,7 @@ Routes:
         prefix: /
       name: listener~80~*-route-0-httproute-example-route-default-0-0-matcher-0
       route:
-        cluster: backend_default_backend1_0
+        cluster: backend_default_backend1_btls32ind6ueynk51_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:

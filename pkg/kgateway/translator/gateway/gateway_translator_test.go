@@ -1140,6 +1140,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend TLS Policy conflict resolution", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendtlspolicy/conflict-resolution.yaml",
+			outputFile: "backendtlspolicy/conflict-resolution.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Proxy with no routes", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "edge-cases/no_route.yaml",
