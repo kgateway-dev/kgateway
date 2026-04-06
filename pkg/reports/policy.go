@@ -51,6 +51,8 @@ func (r *statusReporter) Policy(key reporter.PolicyKey, observedGeneration int64
 	pr := r.report.policy(key)
 	if pr == nil {
 		pr = r.report.newPolicyReport(key, observedGeneration)
+	} else {
+		pr.observedGeneration = observedGeneration
 	}
 	return pr
 }

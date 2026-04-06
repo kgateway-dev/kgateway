@@ -215,9 +215,4 @@ Statuses:
           reason: Accepted
           status: "True"
           type: Accepted
-        - lastTransitionTime: null
-          message: ""
-          reason: Pending
-          status: "False"
-          type: Attached
         controllerName: kgateway.dev/kgateway
