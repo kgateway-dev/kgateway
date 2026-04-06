@@ -174,11 +174,11 @@ func buildPolicyStatus(
 	policyKey pluginreporter.PolicyKey,
 	currentStatus gwv1.PolicyStatus,
 ) *gwv1.PolicyStatus {
-	status := reportsMap.BuildPolicyStatus(context.Background(), policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
 	if plugin, ok := policyPlugins[schema.GroupKind{Group: policyKey.Group, Kind: policyKey.Kind}]; ok && plugin.BuildPolicyStatus != nil {
-		status = plugin.BuildPolicyStatus(context.Background(), reportsMap, policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
+		return plugin.BuildPolicyStatus(context.Background(), reportsMap, policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
 	}
-	return status
+
+	return reportsMap.BuildPolicyStatus(context.Background(), policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
 }
 
 // normalizeStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing
