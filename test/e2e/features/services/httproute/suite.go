@@ -154,12 +154,16 @@ func (s *testingSuite) TestClearStaleStatus() {
 // gatewayClassControllerName returns the controller name for the given GatewayClass.
 func (s *testingSuite) gatewayClassControllerName(className string) string {
 	gc := &gwv1.GatewayClass{}
-	err := s.TestInstallation.ClusterContext.Client.Get(
-		s.Ctx,
-		client.ObjectKey{Name: className},
-		gc,
-	)
-	s.Require().NoError(err, "failed to get GatewayClass %s", className)
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			client.ObjectKey{Name: className},
+			gc,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get GatewayClass %s", className)
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 	return string(gc.Spec.ControllerName)
 }
 
