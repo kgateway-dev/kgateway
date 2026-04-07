@@ -68,6 +68,10 @@ func newDelayedDynamicUnstructuredInformer(
 	gvr schema.GroupVersionResource,
 	filter kclient.Filter,
 ) kclient.Informer[*unstructured.Unstructured] {
+	if c.Ext() == nil {
+		return newDynamicUnstructuredInformer(c, gvr, filter)
+	}
+
 	served, err := crdServesVersion(c.Ext(), gvr)
 	if err == nil && served {
 		return newDynamicUnstructuredInformer(c, gvr, filter)
@@ -90,11 +94,14 @@ func newDelayedDynamicUnstructuredInformer(
 
 func crdServesVersion(extClient apiextensionsclient.Interface, gvr schema.GroupVersionResource) (bool, error) {
 	if extClient == nil {
-		return false, fmt.Errorf("apiextensions client is not available")
+		return false, nil
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), crdLookupTimeout)
+	defer cancel()
+
 	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(
-		context.Background(),
+		ctx,
 		fmt.Sprintf("%s.%s", gvr.Resource, gvr.Group),
 		metav1.GetOptions{},
 	)

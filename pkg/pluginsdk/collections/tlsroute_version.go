@@ -1,7 +1,6 @@
 package collections
 
 import (
-	"context"
 	"log/slog"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -35,27 +34,17 @@ type servedTLSRouteVersions struct {
 }
 
 func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTLSRouteVersions {
-	if extClient == nil {
+	discovered := getServedVersions(extClient, "tlsroutes.gateway.networking.k8s.io", gwv1.GroupVersion.Version, wellknown.LegacyTLSRouteVersion, gwv1a2.GroupVersion.Version)
+	if !discovered.Authoritative {
 		return servedTLSRouteVersions{Promoted: true, Legacy: true, LegacyGVR: legacyTLSRouteGVR}
 	}
 
-	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.Background(), "tlsroutes.gateway.networking.k8s.io", metav1.GetOptions{})
-	if err != nil {
-		return servedTLSRouteVersions{Promoted: true, Legacy: true, LegacyGVR: legacyTLSRouteGVR}
+	versions := servedTLSRouteVersions{
+		Promoted:      discovered.Served[gwv1.GroupVersion.Version],
+		Authoritative: true,
 	}
-
-	versions := servedTLSRouteVersions{Authoritative: true}
-	servedVersions := map[string]bool{}
-	for _, version := range crd.Spec.Versions {
-		if !version.Served {
-			continue
-		}
-		servedVersions[version.Name] = true
-	}
-
-	versions.Promoted = servedVersions[gwv1.GroupVersion.Version]
 	for _, legacyVersion := range []string{wellknown.LegacyTLSRouteVersion, gwv1a2.GroupVersion.Version} {
-		if servedVersions[legacyVersion] {
+		if discovered.Served[legacyVersion] {
 			versions.Legacy = true
 			versions.LegacyGVR = schema.GroupVersionResource{
 				Group:    wellknown.GatewayGroup,
@@ -105,11 +94,7 @@ func convertLegacyTLSRouteToV1Alpha2(in *unstructured.Unstructured) *gwv1a2.TLSR
 		)
 		return nil
 	}
-	if gvk := in.GroupVersionKind(); !gvk.Empty() {
-		out.SetGroupVersionKind(gvk)
-	} else {
-		out.SetGroupVersionKind(legacyTLSRouteGVR.GroupVersion().WithKind(wellknown.TLSRouteKind))
-	}
+	out.SetGroupVersionKind(wellknown.TLSRouteGVK)
 	return out
 }
 

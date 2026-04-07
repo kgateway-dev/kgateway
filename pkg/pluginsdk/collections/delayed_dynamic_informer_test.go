@@ -79,6 +79,12 @@ func TestDelayedDynamicUnstructuredInformerBypassesCrdWatcherFilterForLegacyTLSR
 	}, time.Second, 10*time.Millisecond, "legacy TLSRoute should still be discoverable through the dynamic informer path")
 }
 
+func TestCrdServesVersionWithNilClientIsNonAuthoritative(t *testing.T) {
+	served, err := crdServesVersion(nil, wellknown.LegacyTLSRouteGVR)
+	require.NoError(t, err)
+	require.False(t, served)
+}
+
 func makeServedCRD(t *testing.T, client kube.Client, resource schema.GroupVersionResource, bundleVersion string) {
 	t.Helper()
 

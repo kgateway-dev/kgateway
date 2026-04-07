@@ -124,7 +124,7 @@ func TestConvertTLSRouteV1ToV1Alpha2(t *testing.T) {
 func TestConvertLegacyTLSRouteToV1Alpha2(t *testing.T) {
 	route := &unstructured.Unstructured{
 		Object: map[string]any{
-			"apiVersion": gwv1a2.GroupVersion.String(),
+			"apiVersion": wellknown.LegacyTLSRouteGVK.GroupVersion().String(),
 			"kind":       wellknown.TLSRouteKind,
 			"metadata": map[string]any{
 				"name":      "tls-route",
@@ -162,6 +162,7 @@ func TestConvertLegacyTLSRouteToV1Alpha2(t *testing.T) {
 	require.Equal(t, route.GetNamespace(), converted.Namespace)
 	require.Equal(t, map[string]string{"app": "test"}, converted.Labels)
 	require.Equal(t, gwv1a2.GroupVersion.String(), converted.APIVersion)
+	require.Equal(t, wellknown.TLSRouteGVK, converted.GroupVersionKind())
 	require.Equal(t, []gwv1a2.Hostname{"example.com"}, converted.Spec.Hostnames)
 	require.Len(t, converted.Spec.ParentRefs, 1)
 	require.Equal(t, gwv1.SectionName("listener-443"), ptr.Deref(converted.Spec.ParentRefs[0].SectionName, ""))

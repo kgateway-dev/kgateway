@@ -3,7 +3,6 @@ package fake
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
@@ -182,7 +181,7 @@ func seedCRDs(t test.Failer, c kube.Client, gvrs []schema.GroupVersionResource) 
 					Group: gvr.Group,
 					Names: apiextensionsv1.CustomResourceDefinitionNames{
 						Plural: gvr.Resource,
-						Kind:   strings.TrimSuffix(gvr.Resource, "s"),
+						Kind:   kindForSeededCRD(gvr),
 					},
 					Scope: apiextensionsv1.NamespaceScoped,
 				},
@@ -221,5 +220,58 @@ func seedCRDs(t test.Failer, c kube.Client, gvrs []schema.GroupVersionResource) 
 		if err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func kindForSeededCRD(resource schema.GroupVersionResource) string {
+	switch resource {
+	case gvr.KubernetesGateway:
+		return wellknown.GatewayKind
+	case gvr.GatewayClass:
+		return wellknown.GatewayClassKind
+	case gvr.HTTPRoute:
+		return wellknown.HTTPRouteKind
+	case gvr.GRPCRoute:
+		return wellknown.GRPCRouteKind
+	case gvr.TCPRoute:
+		return wellknown.TCPRouteKind
+	case gvr.TLSRoute, wellknown.LegacyTLSRouteGVR:
+		return wellknown.TLSRouteKind
+	case gvr.ReferenceGrant:
+		return wellknown.ReferenceGrantKind
+	case gvr.BackendTLSPolicy, wellknown.BackendTLSPolicyGVR:
+		return wellknown.BackendTLSPolicyKind
+	case wellknown.XListenerSetGVR:
+		return wellknown.XListenerSetKind
+	case wellknown.ListenerSetGVR:
+		return wellknown.ListenerSetKind
+	case gvr.Service:
+		return wellknown.ServiceKind
+	case gvr.Pod:
+		return "Pod"
+	case gvr.ServiceEntry:
+		return "ServiceEntry"
+	case gvr.WorkloadEntry:
+		return "WorkloadEntry"
+	case gvr.AuthorizationPolicy:
+		return "AuthorizationPolicy"
+	case wellknown.BackendGVR:
+		return wellknown.BackendGVK.Kind
+	case wellknown.BackendConfigPolicyGVR:
+		return wellknown.BackendConfigPolicyGVK.Kind
+	case wellknown.TrafficPolicyGVR:
+		return wellknown.TrafficPolicyGVK.Kind
+	case wellknown.HTTPListenerPolicyGVR:
+		return wellknown.HTTPListenerPolicyGVK.Kind
+	case wellknown.ListenerPolicyGVR:
+		return wellknown.ListenerPolicyGVK.Kind
+	case wellknown.DirectResponseGVR:
+		return wellknown.DirectResponseGVK.Kind
+	case wellknown.GatewayExtensionGVR:
+		return wellknown.GatewayExtensionGVK.Kind
+	case wellknown.GatewayParametersGVR:
+		return wellknown.GatewayParametersGVK.Kind
+	default:
+		return resource.Resource
 	}
 }
