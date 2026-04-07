@@ -63,7 +63,6 @@ func (c *CommonCollections) InitCollections(
 			c.KrtOpts.ToOptions("KubeListenerSets")...,
 		)
 	} else {
-		// If disabled, still build a collection but make it always empty
 		kubeRawListenerSets = promotedListenerSets
 	}
 	metrics.RegisterEvents(kubeRawListenerSets, kmetrics.GetResourceMetricEventHandler[*gwv1.ListenerSet]())
@@ -126,15 +125,15 @@ func (c *CommonCollections) InitCollections(
 		}
 		if servedTLSRouteVersions.Legacy && (!servedTLSRouteVersions.Authoritative || !servedTLSRouteVersions.Promoted) {
 			legacyTLSRoutesRaw := krt.WrapClient(
-				newDelayedDynamicUnstructuredInformer(c.Client, legacyTLSRouteGVR, filter),
-				c.KrtOpts.ToOptions("TLSRouteV1Alpha2Raw")...,
+				newDelayedDynamicUnstructuredInformer(c.Client, servedTLSRouteVersions.LegacyGVR, filter),
+				c.KrtOpts.ToOptions("TLSRouteLegacyRaw")...,
 			)
 			tlsRouteCollections = append(tlsRouteCollections, krt.NewManyCollection(legacyTLSRoutesRaw, func(kctx krt.HandlerContext, i *unstructured.Unstructured) []*gwv1a2.TLSRoute {
 				if converted := convertLegacyTLSRouteToV1Alpha2(i); converted != nil {
 					return []*gwv1a2.TLSRoute{converted}
 				}
 				return nil
-			}, c.KrtOpts.ToOptions("TLSRouteV1Alpha2")...))
+			}, c.KrtOpts.ToOptions("TLSRouteLegacy")...))
 		}
 
 		switch len(tlsRouteCollections) {

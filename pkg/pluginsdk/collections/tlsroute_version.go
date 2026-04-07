@@ -23,36 +23,46 @@ var promotedTLSRouteGVR = schema.GroupVersionResource{
 
 var legacyTLSRouteGVR = schema.GroupVersionResource{
 	Group:    wellknown.GatewayGroup,
-	Version:  gwv1a2.GroupVersion.Version,
+	Version:  wellknown.LegacyTLSRouteVersion,
 	Resource: "tlsroutes",
 }
 
 type servedTLSRouteVersions struct {
 	Promoted      bool
 	Legacy        bool
+	LegacyGVR     schema.GroupVersionResource
 	Authoritative bool
 }
 
 func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTLSRouteVersions {
 	if extClient == nil {
-		return servedTLSRouteVersions{Promoted: true, Legacy: true}
+		return servedTLSRouteVersions{Promoted: true, Legacy: true, LegacyGVR: legacyTLSRouteGVR}
 	}
 
 	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.Background(), "tlsroutes.gateway.networking.k8s.io", metav1.GetOptions{})
 	if err != nil {
-		return servedTLSRouteVersions{Promoted: true, Legacy: true}
+		return servedTLSRouteVersions{Promoted: true, Legacy: true, LegacyGVR: legacyTLSRouteGVR}
 	}
 
 	versions := servedTLSRouteVersions{Authoritative: true}
+	servedVersions := map[string]bool{}
 	for _, version := range crd.Spec.Versions {
 		if !version.Served {
 			continue
 		}
-		switch version.Name {
-		case gwv1.GroupVersion.Version:
-			versions.Promoted = true
-		case gwv1a2.GroupVersion.Version:
+		servedVersions[version.Name] = true
+	}
+
+	versions.Promoted = servedVersions[gwv1.GroupVersion.Version]
+	for _, legacyVersion := range []string{wellknown.LegacyTLSRouteVersion, gwv1a2.GroupVersion.Version} {
+		if servedVersions[legacyVersion] {
 			versions.Legacy = true
+			versions.LegacyGVR = schema.GroupVersionResource{
+				Group:    wellknown.GatewayGroup,
+				Version:  legacyVersion,
+				Resource: "tlsroutes",
+			}
+			break
 		}
 	}
 
@@ -95,10 +105,19 @@ func convertLegacyTLSRouteToV1Alpha2(in *unstructured.Unstructured) *gwv1a2.TLSR
 		)
 		return nil
 	}
-	if out.GroupVersionKind().Empty() {
+	if gvk := in.GroupVersionKind(); !gvk.Empty() {
+		out.SetGroupVersionKind(gvk)
+	} else {
 		out.SetGroupVersionKind(legacyTLSRouteGVR.GroupVersion().WithKind(wellknown.TLSRouteKind))
 	}
 	return out
+}
+
+// ConvertLegacyTLSRouteToV1Alpha2ForStatus normalizes legacy TLSRoute objects
+// served from experimental Gateway API bundles so status code can reuse the
+// existing gwv1a2-based report builder.
+func ConvertLegacyTLSRouteToV1Alpha2ForStatus(in *unstructured.Unstructured) *gwv1a2.TLSRoute {
+	return convertLegacyTLSRouteToV1Alpha2(in)
 }
 
 func convertTLSRouteHostnamesV1ToV1Alpha2(in []gwv1.Hostname) []gwv1a2.Hostname {

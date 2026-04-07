@@ -1,13 +1,18 @@
 package collections
 
 import (
+	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
-	"istio.io/istio/pkg/kube/kubetypes"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	klabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -17,7 +22,11 @@ import (
 type delayedUnstructuredInformer struct {
 	inf *atomic.Pointer[kclient.Informer[*unstructured.Unstructured]]
 
-	watcher kubetypes.CrdWatcher
+	extClient        apiextensionsclient.Interface
+	gvr              schema.GroupVersionResource
+	newInformer      func() kclient.Informer[*unstructured.Unstructured]
+	verifiedNotReady atomic.Bool
+	pollingStarted   atomic.Bool
 
 	mu       sync.Mutex
 	handlers []delayedUnstructuredHandler
@@ -59,26 +68,50 @@ func newDelayedDynamicUnstructuredInformer(
 	gvr schema.GroupVersionResource,
 	filter kclient.Filter,
 ) kclient.Informer[*unstructured.Unstructured] {
-	watcher := c.CrdWatcher()
-	if watcher == nil {
-		panic("newDelayedDynamicUnstructuredInformer called without a CRD watcher enabled")
-	}
-
-	delayed := &delayedUnstructuredInformer{
-		inf:     new(atomic.Pointer[kclient.Informer[*unstructured.Unstructured]]),
-		watcher: watcher,
-	}
-
-	readyNow := watcher.KnownOrCallback(gvr, func(stop <-chan struct{}) {
-		inf := newDynamicUnstructuredInformer(c, gvr, filter)
-		inf.Start(stop)
-		delayed.set(inf)
-	})
-	if readyNow {
+	served, err := crdServesVersion(c.Ext(), gvr)
+	if err == nil && served {
 		return newDynamicUnstructuredInformer(c, gvr, filter)
 	}
 
+	delayed := &delayedUnstructuredInformer{
+		inf:       new(atomic.Pointer[kclient.Informer[*unstructured.Unstructured]]),
+		extClient: c.Ext(),
+		gvr:       gvr,
+		newInformer: func() kclient.Informer[*unstructured.Unstructured] {
+			return newDynamicUnstructuredInformer(c, gvr, filter)
+		},
+	}
+	if err == nil {
+		delayed.verifiedNotReady.Store(true)
+	}
+
 	return delayed
+}
+
+func crdServesVersion(extClient apiextensionsclient.Interface, gvr schema.GroupVersionResource) (bool, error) {
+	if extClient == nil {
+		return false, fmt.Errorf("apiextensions client is not available")
+	}
+
+	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(
+		context.Background(),
+		fmt.Sprintf("%s.%s", gvr.Resource, gvr.Group),
+		metav1.GetOptions{},
+	)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	for _, version := range crd.Spec.Versions {
+		if version.Name == gvr.Version {
+			return version.Served, nil
+		}
+	}
+
+	return false, nil
 }
 
 func newDynamicUnstructuredInformer(
@@ -190,7 +223,8 @@ func (d *delayedUnstructuredInformer) AddEventHandler(h cache.ResourceEventHandl
 	defer d.mu.Unlock()
 
 	reg := delayedHandlerRegistration{hasSynced: new(atomic.Pointer[func() bool])}
-	reg.hasSynced.Store(new(d.watcher.HasSynced))
+	hasSynced := d.HasSynced
+	reg.hasSynced.Store(&hasSynced)
 	d.handlers = append(d.handlers, delayedUnstructuredHandler{
 		ResourceEventHandler: h,
 		hasSynced:            reg,
@@ -202,14 +236,14 @@ func (d *delayedUnstructuredInformer) HasSynced() bool {
 	if inf := d.inf.Load(); inf != nil {
 		return (*inf).HasSynced()
 	}
-	return d.watcher.HasSynced()
+	return d.verifiedNotReady.Load()
 }
 
 func (d *delayedUnstructuredInformer) HasSyncedIgnoringHandlers() bool {
 	if inf := d.inf.Load(); inf != nil {
 		return (*inf).HasSyncedIgnoringHandlers()
 	}
-	return d.watcher.HasSynced()
+	return d.verifiedNotReady.Load()
 }
 
 func (d *delayedUnstructuredInformer) ShutdownHandlers() {
@@ -247,8 +281,10 @@ func (d *delayedUnstructuredInformer) Start(stop <-chan struct{}) {
 	}
 
 	d.mu.Lock()
-	defer d.mu.Unlock()
 	d.started = stop
+	d.mu.Unlock()
+
+	d.startPolling(stop)
 }
 
 func (d *delayedUnstructuredInformer) Index(name string, extract func(o *unstructured.Unstructured) []string) kclient.RawIndexer {
@@ -266,6 +302,38 @@ func (d *delayedUnstructuredInformer) Index(name string, extract func(o *unstruc
 	}
 	d.indexers = append(d.indexers, index)
 	return index
+}
+
+func (d *delayedUnstructuredInformer) startPolling(stop <-chan struct{}) {
+	if !d.pollingStarted.CompareAndSwap(false, true) {
+		return
+	}
+
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
+		for {
+			if d.inf.Load() != nil {
+				return
+			}
+
+			served, err := crdServesVersion(d.extClient, d.gvr)
+			if err == nil {
+				d.verifiedNotReady.Store(!served)
+				if served {
+					d.set(d.newInformer())
+					return
+				}
+			}
+
+			select {
+			case <-stop:
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
 }
 
 func (d *delayedUnstructuredInformer) set(inf kclient.Informer[*unstructured.Unstructured]) {

@@ -3,10 +3,15 @@ package fake
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/test"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	extfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -28,6 +33,8 @@ import (
 var _ apiclient.Client = (*cli)(nil)
 
 func init() {
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+
 	// Register the legacy XListenerSet list kind so the fake dynamic client can
 	// back the delayed legacy informer used by older Gateway API versions.
 	kube.FakeIstioScheme.AddKnownTypeWithName(
@@ -58,6 +65,7 @@ func NewClientWithExtraGVRs(t test.Failer, extraGVRs []schema.GroupVersionResour
 			consts.BundleVersionAnnotation: consts.BundleVersion,
 		})
 	}
+	seedCRDs(t, c.Client, allCRDs)
 
 	apiclient.RegisterTypes()
 
@@ -153,4 +161,65 @@ func getGVR(obj client.Object, scheme *runtime.Scheme) (schema.GroupVersionResou
 		gvr.Group = ""
 	}
 	return gvr, nil
+}
+
+func seedCRDs(t test.Failer, c kube.Client, gvrs []schema.GroupVersionResource) {
+	t.Helper()
+
+	crds := map[string]*apiextensionsv1.CustomResourceDefinition{}
+	for _, gvr := range gvrs {
+		name := fmt.Sprintf("%s.%s", gvr.Resource, gvr.Group)
+		crd := crds[name]
+		if crd == nil {
+			crd = &apiextensionsv1.CustomResourceDefinition{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+					Annotations: map[string]string{
+						consts.BundleVersionAnnotation: consts.BundleVersion,
+					},
+				},
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+					Group: gvr.Group,
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
+						Plural: gvr.Resource,
+						Kind:   strings.TrimSuffix(gvr.Resource, "s"),
+					},
+					Scope: apiextensionsv1.NamespaceScoped,
+				},
+			}
+			crds[name] = crd
+		}
+
+		foundVersion := false
+		for _, version := range crd.Spec.Versions {
+			if version.Name == gvr.Version {
+				foundVersion = true
+				break
+			}
+		}
+		if foundVersion {
+			continue
+		}
+
+		crd.Spec.Versions = append(crd.Spec.Versions, apiextensionsv1.CustomResourceDefinitionVersion{
+			Name:    gvr.Version,
+			Served:  true,
+			Storage: len(crd.Spec.Versions) == 0,
+		})
+	}
+
+	for _, crd := range crds {
+		extClient, ok := c.Ext().(*extfake.Clientset)
+		if !ok {
+			t.Fatal("unexpected apiextensions fake client type")
+		}
+
+		err := extClient.Tracker().Add(crd)
+		if apierrors.IsAlreadyExists(err) {
+			err = extClient.Tracker().Update(gvr.CustomResourceDefinition, crd, "")
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 }

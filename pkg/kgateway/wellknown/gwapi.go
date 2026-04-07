@@ -48,6 +48,10 @@ const (
 
 	// Gateway API CRD names
 	TCPRouteCRDName = "tcproutes.gateway.networking.k8s.io"
+
+	// LegacyTLSRouteVersion is the experimental TLSRoute API version served by
+	// Gateway API experimental bundles prior to promotion to v1.
+	LegacyTLSRouteVersion = "v1alpha3"
 )
 
 var (
@@ -89,6 +93,16 @@ var (
 	TLSRouteGVR = schema.GroupVersionResource{
 		Group:    GatewayGroup,
 		Version:  gwv1a2.GroupVersion.Version,
+		Resource: "tlsroutes",
+	}
+	LegacyTLSRouteGVK = schema.GroupVersionKind{
+		Group:   GatewayGroup,
+		Version: LegacyTLSRouteVersion,
+		Kind:    TLSRouteKind,
+	}
+	LegacyTLSRouteGVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  LegacyTLSRouteVersion,
 		Resource: "tlsroutes",
 	}
 	TCPRouteGVK = schema.GroupVersionKind{

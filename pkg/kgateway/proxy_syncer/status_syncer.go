@@ -172,6 +172,12 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
+				case *unstructured.Unstructured:
+					if legacyTLSRoute := collections.ConvertLegacyTLSRouteToV1Alpha2ForStatus(r); legacyTLSRoute != nil {
+						for _, parentRef := range legacyTLSRoute.Spec.ParentRefs {
+							gatewayNames = append(gatewayNames, string(parentRef.Name))
+						}
+					}
 				case *gwv1.GRPCRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
@@ -286,6 +292,16 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 				return nil, nil
 			}
 			r.Status.RouteStatus = *status
+		case *unstructured.Unstructured:
+			legacyTLSRoute := collections.ConvertLegacyTLSRouteToV1Alpha2ForStatus(r)
+			if legacyTLSRoute == nil {
+				return nil, nil
+			}
+			status = rm.BuildRouteStatus(ctx, legacyTLSRoute, s.controllerName)
+			if status == nil || isRouteStatusEqual(&legacyTLSRoute.Status.RouteStatus, status) {
+				return nil, nil
+			}
+			return status, patchLegacyTLSRouteStatus(ctx, s.mgr.GetClient().Status(), r, *status)
 		case *gwv1.GRPCRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
@@ -368,10 +384,22 @@ type objectGetter interface {
 	Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
 }
 
+type statusWriter interface {
+	Update(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error
+}
+
 func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key client.ObjectKey) (client.Object, error) {
 	promotedTLSRoute := &gwv1.TLSRoute{}
 	if err := kubeClient.Get(ctx, key, promotedTLSRoute); err == nil {
 		return promotedTLSRoute, nil
+	} else if !shouldFallbackTLSRouteLookup(err) {
+		return nil, err
+	}
+
+	legacyTLSRouteRaw := &unstructured.Unstructured{}
+	legacyTLSRouteRaw.SetGroupVersionKind(wellknown.LegacyTLSRouteGVK)
+	if err := kubeClient.Get(ctx, key, legacyTLSRouteRaw); err == nil {
+		return legacyTLSRouteRaw, nil
 	} else if !shouldFallbackTLSRouteLookup(err) {
 		return nil, err
 	}
@@ -385,6 +413,17 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 
 func shouldFallbackTLSRouteLookup(err error) bool {
 	return apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err)
+}
+
+func patchLegacyTLSRouteStatus(ctx context.Context, writer statusWriter, route *unstructured.Unstructured, status gwv1.RouteStatus) error {
+	statusMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&gwv1a2.TLSRouteStatus{
+		RouteStatus: status,
+	})
+	if err != nil {
+		return err
+	}
+	route.Object["status"] = statusMap
+	return writer.Update(ctx, route)
 }
 
 // syncGatewayStatus will build and update status for all Gateways in a reportMap

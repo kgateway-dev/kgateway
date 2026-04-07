@@ -8,6 +8,7 @@ import (
 	apiextensionsfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -21,16 +22,46 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "tlsroutes.gateway.networking.k8s.io"},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-					{Name: gwv1a2.GroupVersion.Version, Served: true},
+					{Name: wellknown.LegacyTLSRouteVersion, Served: true},
 					{Name: gwv1.GroupVersion.Version, Served: true},
 				},
 			},
 		})
 
-		require.Equal(t, servedTLSRouteVersions{Promoted: true, Legacy: true, Authoritative: true}, getServedTLSRouteVersions(client))
+		require.Equal(t, servedTLSRouteVersions{
+			Promoted:      true,
+			Legacy:        true,
+			LegacyGVR:     wellknown.LegacyTLSRouteGVR,
+			Authoritative: true,
+		}, getServedTLSRouteVersions(client))
 	})
 
 	t.Run("returns only legacy when promoted v1 is not served", func(t *testing.T) {
+		client := apiextensionsfake.NewClientset(&apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{Name: "tlsroutes.gateway.networking.k8s.io"},
+			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+					{Name: wellknown.LegacyTLSRouteVersion, Served: true},
+				},
+			},
+		})
+
+		require.Equal(t, servedTLSRouteVersions{
+			Legacy:        true,
+			LegacyGVR:     wellknown.LegacyTLSRouteGVR,
+			Authoritative: true,
+		}, getServedTLSRouteVersions(client))
+	})
+
+	t.Run("defaults to legacy when discovery is unavailable", func(t *testing.T) {
+		require.Equal(t, servedTLSRouteVersions{
+			Promoted:  true,
+			Legacy:    true,
+			LegacyGVR: wellknown.LegacyTLSRouteGVR,
+		}, getServedTLSRouteVersions(nil))
+	})
+
+	t.Run("falls back to v1alpha2 when that is the only served legacy version", func(t *testing.T) {
 		client := apiextensionsfake.NewClientset(&apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: "tlsroutes.gateway.networking.k8s.io"},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -40,11 +71,11 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			},
 		})
 
-		require.Equal(t, servedTLSRouteVersions{Legacy: true, Authoritative: true}, getServedTLSRouteVersions(client))
-	})
-
-	t.Run("defaults to legacy when discovery is unavailable", func(t *testing.T) {
-		require.Equal(t, servedTLSRouteVersions{Promoted: true, Legacy: true}, getServedTLSRouteVersions(nil))
+		require.Equal(t, servedTLSRouteVersions{
+			Legacy:        true,
+			LegacyGVR:     schema.GroupVersionResource{Group: wellknown.GatewayGroup, Version: gwv1a2.GroupVersion.Version, Resource: "tlsroutes"},
+			Authoritative: true,
+		}, getServedTLSRouteVersions(client))
 	})
 }
 
