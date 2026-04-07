@@ -70,7 +70,6 @@ func (f *fakeDelayedUnstructuredInformer) ListUnfiltered(string, labels.Selector
 func (f *fakeDelayedUnstructuredInformer) AddEventHandler(h cache.ResourceEventHandler) cache.ResourceEventHandlerRegistration {
 	if f.addEventHandlerEntered != nil {
 		close(f.addEventHandlerEntered)
-		f.addEventHandlerEntered = nil
 	}
 	if f.addEventHandlerRelease != nil {
 		<-f.addEventHandlerRelease
@@ -105,7 +104,6 @@ func (f *fakeDelayedUnstructuredInformer) ShutdownHandler(registration cache.Res
 func (f *fakeDelayedUnstructuredInformer) Start(<-chan struct{}) {
 	if f.startEntered != nil {
 		close(f.startEntered)
-		f.startEntered = nil
 	}
 	if f.startRelease != nil {
 		<-f.startRelease
