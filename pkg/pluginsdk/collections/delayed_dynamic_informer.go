@@ -348,7 +348,8 @@ func (d *delayedUnstructuredInformer) set(inf kclient.Informer[*unstructured.Uns
 
 	for _, handler := range d.handlers {
 		reg := inf.AddEventHandler(handler)
-		handler.hasSynced.hasSynced.Store(new(reg.HasSynced))
+		hasSynced := reg.HasSynced
+		handler.hasSynced.hasSynced.Store(&hasSynced)
 	}
 	d.handlers = nil
 
