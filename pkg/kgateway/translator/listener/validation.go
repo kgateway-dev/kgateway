@@ -313,21 +313,6 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 		return validListeners
 	}
 
-	// TODO: Maybe this can be handled in the prior loop itself ?
-	attachedListenerSet := map[string]struct{}{}
-	for _, listener := range validListeners {
-		parent, ok := listener.Parent.(*gwv1.ListenerSet)
-		if ok {
-			nns := fmt.Sprintf("%s/%s", parent.GetNamespace(), parent.GetName())
-			attachedListenerSet[nns] = struct{}{}
-		}
-	}
-	attachedListenerSetCount := len(attachedListenerSet)
-
-	if attachedListenerSetCount > 0 {
-		reporter.Gateway(gw.Obj).SetAttachedListenerSets(int32(attachedListenerSetCount)) //nolint:gosec // disable G115 directive.
-	}
-
 	return validListeners
 }
 

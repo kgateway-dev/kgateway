@@ -6,7 +6,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -234,6 +233,61 @@ var _ = Describe("Reporting Infrastructure", func() {
 			acceptedCond = meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionAccepted))
 			newTransitionTime := acceptedCond.LastTransitionTime
 			Expect(newTransitionTime).To(Equal(oldTransitionTime))
+		})
+
+		It("should count attached listener sets for the current gateway across listener set gvks", func() {
+			gateway := gw()
+			otherGw := gw()
+			otherGw.Name = "other-gtw"
+
+			standardListenerSet := lsForGateway(gateway)
+			legacyListenerSet := lsForGateway(gateway)
+			legacyListenerSet.Name = "legacy-listener-set"
+			legacyListenerSet.SetGroupVersionKind(wellknown.XListenerSetGVK)
+
+			otherGatewayListenerSet := lsForGateway(otherGw)
+			otherGatewayListenerSet.Name = "other-gateway-listener-set"
+
+			rm := reports.NewReportMap()
+			r := reports.NewReporter(&rm)
+			r.Gateway(gateway)
+			r.Gateway(otherGw)
+			r.ListenerSet(standardListenerSet).ListenerName("http").SetAttachedRoutes(1)
+			r.ListenerSet(legacyListenerSet).ListenerName("http").SetAttachedRoutes(1)
+			r.ListenerSet(otherGatewayListenerSet).ListenerName("http").SetAttachedRoutes(1)
+
+			status := rm.BuildGWStatus(context.Background(), *gateway, nil)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.AttachedListenerSets).NotTo(BeNil())
+			Expect(*status.AttachedListenerSets).To(Equal(int32(2)))
+		})
+
+		It("should exclude listener sets without any attached listeners", func() {
+			gateway := gw()
+			invalidListenerSet := lsForGateway(gateway)
+			invalidListenerSet.Name = "invalid-listener-set"
+			deniedListenerSet := lsForGateway(gateway)
+			deniedListenerSet.Name = "denied-listener-set"
+
+			rm := reports.NewReportMap()
+			r := reports.NewReporter(&rm)
+			r.Gateway(gateway)
+			r.ListenerSet(invalidListenerSet).ListenerName("http").SetCondition(reporter.ListenerCondition{
+				Type:   gwv1.ListenerConditionProgrammed,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.ListenerReasonInvalid,
+			})
+			r.ListenerSet(deniedListenerSet).SetCondition(reporter.GatewayCondition{
+				Type:   gwv1.GatewayConditionType(gwv1.ListenerSetConditionAccepted),
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonNotAllowed),
+			})
+
+			status := rm.BuildGWStatus(context.Background(), *gateway, nil)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.AttachedListenerSets).To(BeNil())
 		})
 
 		// TODO(Law): add multiple gws/listener tests
@@ -972,10 +1026,10 @@ func delegateeRoute(conditions ...metav1.Condition) client.Object {
 
 func parentRouteRef() *gwv1.ParentReference {
 	return &gwv1.ParentReference{
-		Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-		Kind:      ptr.To(gwv1.Kind("HTTPRoute")),
+		Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+		Kind:      new(gwv1.Kind("HTTPRoute")),
 		Name:      "parent-route",
-		Namespace: ptr.To(gwv1.Namespace("default")),
+		Namespace: new(gwv1.Namespace("default")),
 	}
 }
 
@@ -1007,6 +1061,15 @@ func ls() *gwv1.ListenerSet {
 		{
 			Name: "http",
 		},
+	}
+	return ls
+}
+
+func lsForGateway(gw *gwv1.Gateway) *gwv1.ListenerSet {
+	ls := ls()
+	ls.Spec.ParentRef = gwv1.ParentGatewayReference{
+		Name:      gwv1.ObjectName(gw.Name),
+		Namespace: new(gwv1.Namespace(gw.Namespace)),
 	}
 	return ls
 }

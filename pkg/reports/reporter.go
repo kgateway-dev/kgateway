@@ -6,6 +6,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,16 +29,16 @@ type ReportMap struct {
 }
 
 type GatewayReport struct {
-	conditions           []metav1.Condition
-	listeners            map[string]*ListenerReport
-	observedGeneration   int64
-	attachedListenerSets int32
+	conditions         []metav1.Condition
+	listeners          map[string]*ListenerReport
+	observedGeneration int64
 }
 
 type ListenerSetReport struct {
 	conditions         []metav1.Condition
 	listeners          map[string]*ListenerReport
 	observedGeneration int64
+	parentGateway      types.NamespacedName
 }
 
 type ListenerReport struct {
@@ -136,6 +138,7 @@ func (r *ReportMap) ListenerSet(listenerSet client.Object) *ListenerSetReport {
 func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSetReport {
 	lsr := &ListenerSetReport{
 		observedGeneration: listenerSet.GetGeneration(),
+		parentGateway:      listenerSetParentGateway(listenerSet),
 	}
 
 	gvk := listenerSet.GetObjectKind().GroupVersionKind()
@@ -148,6 +151,44 @@ func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSet
 	key := key(listenerSet)
 	r.ListenerSets[gvk][key] = lsr
 	return lsr
+}
+
+func listenerSetParentGateway(listenerSet client.Object) types.NamespacedName {
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(listenerSet)
+	if err != nil {
+		slog.Debug("failed to convert listener set to unstructured", "name", key(listenerSet), "error", err)
+		return types.NamespacedName{}
+	}
+
+	parentRef, found, err := unstructured.NestedMap(content, "spec", "parentRef")
+	if err != nil || !found {
+		if err != nil {
+			slog.Debug("failed to read listener set parentRef", "name", key(listenerSet), "error", err)
+		}
+		return types.NamespacedName{}
+	}
+
+	parentName, _, err := unstructured.NestedString(parentRef, "name")
+	if err != nil || parentName == "" {
+		if err != nil {
+			slog.Debug("failed to read listener set parentRef name", "name", key(listenerSet), "error", err)
+		}
+		return types.NamespacedName{}
+	}
+
+	parentNamespace, _, err := unstructured.NestedString(parentRef, "namespace")
+	if err != nil {
+		slog.Debug("failed to read listener set parentRef namespace", "name", key(listenerSet), "error", err)
+		return types.NamespacedName{}
+	}
+	if parentNamespace == "" {
+		parentNamespace = listenerSet.GetNamespace()
+	}
+
+	return types.NamespacedName{
+		Namespace: parentNamespace,
+		Name:      parentName,
+	}
 }
 
 // route returns a RouteReport for the provided route object, nil if a report is not present.
@@ -245,10 +286,6 @@ func (g *GatewayReport) SetCondition(gc reporter.GatewayCondition) {
 	meta.SetStatusCondition(&g.conditions, condition)
 }
 
-func (g *GatewayReport) SetAttachedListenerSets(count int32) {
-	g.attachedListenerSets = count
-}
-
 func (g *ListenerSetReport) Listener(listener *gwv1.Listener) reporter.ListenerReporter {
 	return g.listener(string(listener.Name))
 }
@@ -292,10 +329,6 @@ func (g *ListenerSetReport) SetCondition(gc reporter.GatewayCondition) {
 
 func (g *ListenerSetReport) GetObservedGeneration() int64 {
 	return g.observedGeneration
-}
-
-func (g *ListenerSetReport) SetAttachedListenerSets(count int32) {
-	panic("This should not be called")
 }
 
 func NewListenerReport(name string) *ListenerReport {

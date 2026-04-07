@@ -11,6 +11,7 @@ import (
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -127,10 +128,43 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	finalGwStatus.Addresses = gw.Status.Addresses
 	finalGwStatus.Conditions = finalConditions
 	finalGwStatus.Listeners = finalListeners
-	if gwReport.attachedListenerSets > 0 {
-		finalGwStatus.AttachedListenerSets = &gwReport.attachedListenerSets
+	if attachedListenerSets := r.countAttachedListenerSets(key(&gw)); attachedListenerSets > 0 {
+		finalGwStatus.AttachedListenerSets = &attachedListenerSets
 	}
 	return &finalGwStatus
+}
+
+func (r *ReportMap) countAttachedListenerSets(gatewayKey types.NamespacedName) int32 {
+	var attachedListenerSets int32
+
+	for _, listenerSetsByName := range r.ListenerSets {
+		for _, listenerSetReport := range listenerSetsByName {
+			if listenerSetReport.parentGateway == gatewayKey && listenerSetHasAttachedListener(listenerSetReport) {
+				attachedListenerSets++
+			}
+		}
+	}
+
+	return attachedListenerSets
+}
+
+func listenerSetHasAttachedListener(listenerSetReport *ListenerSetReport) bool {
+	if listenerSetReport == nil {
+		return false
+	}
+
+	for _, listenerReport := range listenerSetReport.listeners {
+		if listenerReport == nil {
+			continue
+		}
+
+		programmed := meta.FindStatusCondition(listenerReport.Status.Conditions, string(gwv1.ListenerConditionProgrammed))
+		if programmed == nil || programmed.Status != metav1.ConditionFalse {
+			return true
+		}
+	}
+
+	return false
 }
 
 func handleInvalidAddresses(report *GatewayReport, g *gwv1.Gateway) {
