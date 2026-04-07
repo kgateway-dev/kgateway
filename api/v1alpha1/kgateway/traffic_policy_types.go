@@ -282,7 +282,7 @@ type BodyTransformation struct {
 	// ParseAs defines what auto formatting should be applied to the body.
 	// This can make interacting with keys within a json body much easier if AsJson is selected.
 	// When set to None, it will not buffer the body and will skip all body processing. In
-	// addition, attemp to extract json variables from the body using inja template in the header
+	// addition, attempt to extract json variables from the body using inja template in the header
 	// will result in 400 response.
 	// +kubebuilder:default=AsString
 	// +optional
