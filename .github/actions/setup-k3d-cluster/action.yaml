@@ -27,6 +27,10 @@ inputs:
     required: false
     default: "false"
     description: Whether to install localstack
+  github-token:
+    required: false
+    default: ""
+    description: GitHub token to avoid API rate limiting when installing k3d
 runs:
   using: "composite"
   steps:
@@ -36,6 +40,9 @@ runs:
         version: ${{ inputs.kubectl-version }}
     - name: Install k3d
       uses: nolar/setup-k3d-k3s@62c9d1bd2bc843275c85d2e7dcd696edc1160eee # v1.1.0
+      with:
+        skip-creation: true
+        github-token: ${{ inputs.github-token }}
     - name: Setup test env
       shell: bash
       env:

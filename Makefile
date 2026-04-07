@@ -211,8 +211,18 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # truthy. As it stands, a developer who runs `make unit` or `go test ./...`
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
+# CLUSTER_TYPE controls whether images are loaded via kind or k3d (default: kind)
+CLUSTER_TYPE ?= kind
+
+.PHONY: cluster-load-extproc-server
+ifeq ($(CLUSTER_TYPE),k3d)
+cluster-load-extproc-server: k3d-load-extproc-server
+else
+cluster-load-extproc-server: kind-load-extproc-server
+endif
+
 .PHONY: e2e-test
-e2e-test: extproc-server-docker kind-load-extproc-server
+e2e-test: extproc-server-docker cluster-load-extproc-server
 e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
@@ -859,7 +869,11 @@ kind-load: kind-load-dummy-idp
 #----------------------------------------------------------------------------------
 
 K3D ?= k3d
+ifeq ($(CLUSTER_TYPE),k3d)
+K3D_CLUSTER_NAME ?= $(CLUSTER_NAME)
+else
 K3D_CLUSTER_NAME ?= k3d
+endif
 K3D_NODE_IMAGE ?= rancher/k3s:v1.31.4-k3s1
 
 .PHONY: k3d-create
