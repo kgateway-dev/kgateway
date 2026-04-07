@@ -198,12 +198,11 @@ func (d *delayedUnstructuredInformer) ListUnfiltered(namespace string, selector 
 }
 
 func (d *delayedUnstructuredInformer) AddEventHandler(h cache.ResourceEventHandler) cache.ResourceEventHandlerRegistration {
+	d.mu.Lock()
 	if inf := d.inf.Load(); inf != nil {
+		d.mu.Unlock()
 		return (*inf).AddEventHandler(h)
 	}
-
-	d.mu.Lock()
-	defer d.mu.Unlock()
 
 	reg := delayedHandlerRegistration{hasSynced: new(atomic.Pointer[func() bool])}
 	hasSynced := d.HasSynced
@@ -212,6 +211,7 @@ func (d *delayedUnstructuredInformer) AddEventHandler(h cache.ResourceEventHandl
 		ResourceEventHandler: h,
 		hasSynced:            reg,
 	})
+	d.mu.Unlock()
 	return reg
 }
 
@@ -230,24 +230,23 @@ func (d *delayedUnstructuredInformer) HasSyncedIgnoringHandlers() bool {
 }
 
 func (d *delayedUnstructuredInformer) ShutdownHandlers() {
+	d.mu.Lock()
 	if inf := d.inf.Load(); inf != nil {
+		d.mu.Unlock()
 		(*inf).ShutdownHandlers()
 		return
 	}
-
-	d.mu.Lock()
-	defer d.mu.Unlock()
 	d.handlers = nil
+	d.mu.Unlock()
 }
 
 func (d *delayedUnstructuredInformer) ShutdownHandler(registration cache.ResourceEventHandlerRegistration) {
+	d.mu.Lock()
 	if inf := d.inf.Load(); inf != nil {
+		d.mu.Unlock()
 		(*inf).ShutdownHandler(registration)
 		return
 	}
-
-	d.mu.Lock()
-	defer d.mu.Unlock()
 
 	filtered := d.handlers[:0]
 	for _, handler := range d.handlers {
@@ -256,27 +255,29 @@ func (d *delayedUnstructuredInformer) ShutdownHandler(registration cache.Resourc
 		}
 	}
 	d.handlers = filtered
+	d.mu.Unlock()
 }
 
 func (d *delayedUnstructuredInformer) Start(stop <-chan struct{}) {
-	if inf := d.inf.Load(); inf != nil {
-		(*inf).Start(stop)
-	}
-
 	d.mu.Lock()
 	d.started = stop
+	inf := d.inf.Load()
 	d.mu.Unlock()
+
+	if inf != nil {
+		(*inf).Start(stop)
+		return
+	}
 
 	d.startPolling(stop)
 }
 
 func (d *delayedUnstructuredInformer) Index(name string, extract func(o *unstructured.Unstructured) []string) kclient.RawIndexer {
+	d.mu.Lock()
 	if inf := d.inf.Load(); inf != nil {
+		d.mu.Unlock()
 		return (*inf).Index(name, extract)
 	}
-
-	d.mu.Lock()
-	defer d.mu.Unlock()
 
 	index := delayedUnstructuredIndex{
 		name:    name,
@@ -284,6 +285,7 @@ func (d *delayedUnstructuredInformer) Index(name string, extract func(o *unstruc
 		extract: extract,
 	}
 	d.indexers = append(d.indexers, index)
+	d.mu.Unlock()
 	return index
 }
 
@@ -334,8 +336,6 @@ func (d *delayedUnstructuredInformer) set(inf kclient.Informer[*unstructured.Uns
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	d.inf.Store(&inf)
-
 	for _, handler := range d.handlers {
 		reg := inf.AddEventHandler(handler)
 		hasSynced := reg.HasSynced
@@ -352,6 +352,10 @@ func (d *delayedUnstructuredInformer) set(inf kclient.Informer[*unstructured.Uns
 	if d.started != nil {
 		inf.Start(d.started)
 	}
+
+	// Publish the informer only after replaying delayed state so callers never
+	// observe a partially initialized informer transition.
+	d.inf.Store(&inf)
 }
 
 var (
