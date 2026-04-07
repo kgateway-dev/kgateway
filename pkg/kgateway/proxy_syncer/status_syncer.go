@@ -301,7 +301,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 			if status == nil || isRouteStatusEqual(&legacyTLSRoute.Status.RouteStatus, status) {
 				return nil, nil
 			}
-			return status, patchLegacyTLSRouteStatus(ctx, s.mgr.GetClient().Status(), r, *status)
+			return status, updateLegacyTLSRouteStatus(ctx, s.mgr.GetClient().Status(), r, *status)
 		case *gwv1.GRPCRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
@@ -415,7 +415,7 @@ func shouldFallbackTLSRouteLookup(err error) bool {
 	return apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err)
 }
 
-func patchLegacyTLSRouteStatus(ctx context.Context, writer statusWriter, route *unstructured.Unstructured, status gwv1.RouteStatus) error {
+func updateLegacyTLSRouteStatus(ctx context.Context, writer statusWriter, route *unstructured.Unstructured, status gwv1.RouteStatus) error {
 	statusMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&gwv1a2.TLSRouteStatus{
 		RouteStatus: status,
 	})

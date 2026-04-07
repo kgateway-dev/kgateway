@@ -55,7 +55,7 @@ func TestGetTLSRouteForStatus(t *testing.T) {
 	})
 }
 
-func TestPatchLegacyTLSRouteStatus(t *testing.T) {
+func TestUpdateLegacyTLSRouteStatus(t *testing.T) {
 	kubeClient := newFakeTLSRouteClient(t, legacyTLSRouteUnstructured("route"))
 
 	routeObj, err := getTLSRouteForStatus(context.Background(), kubeClient, types.NamespacedName{Name: "route", Namespace: "default"})
@@ -68,7 +68,7 @@ func TestPatchLegacyTLSRouteStatus(t *testing.T) {
 		}},
 	}
 
-	require.NoError(t, patchLegacyTLSRouteStatus(context.Background(), kubeClient.Status(), routeObj.(*unstructured.Unstructured), routeStatus))
+	require.NoError(t, updateLegacyTLSRouteStatus(context.Background(), kubeClient.Status(), routeObj.(*unstructured.Unstructured), routeStatus))
 
 	updated := &unstructured.Unstructured{}
 	updated.SetGroupVersionKind(wellknown.LegacyTLSRouteGVK)

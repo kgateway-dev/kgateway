@@ -81,7 +81,7 @@ func TestDelayedDynamicUnstructuredInformerBypassesCrdWatcherFilterForLegacyTLSR
 
 func TestCrdServesVersionWithNilClientIsNonAuthoritative(t *testing.T) {
 	served, err := crdServesVersion(nil, wellknown.LegacyTLSRouteGVR)
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.False(t, served)
 }
 

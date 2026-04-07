@@ -1,7 +1,6 @@
 package collections
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -11,8 +10,6 @@ import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	klabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -93,32 +90,11 @@ func newDelayedDynamicUnstructuredInformer(
 }
 
 func crdServesVersion(extClient apiextensionsclient.Interface, gvr schema.GroupVersionResource) (bool, error) {
-	if extClient == nil {
-		return false, nil
+	result := getServedVersions(extClient, fmt.Sprintf("%s.%s", gvr.Resource, gvr.Group), gvr.Version)
+	if !result.Authoritative {
+		return false, fmt.Errorf("CRD discovery not authoritative for %s", gvr)
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), crdLookupTimeout)
-	defer cancel()
-
-	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(
-		ctx,
-		fmt.Sprintf("%s.%s", gvr.Resource, gvr.Group),
-		metav1.GetOptions{},
-	)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	for _, version := range crd.Spec.Versions {
-		if version.Name == gvr.Version {
-			return version.Served, nil
-		}
-	}
-
-	return false, nil
+	return result.Served[gvr.Version], nil
 }
 
 func newDynamicUnstructuredInformer(
@@ -317,8 +293,13 @@ func (d *delayedUnstructuredInformer) startPolling(stop <-chan struct{}) {
 	}
 
 	go func() {
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
+		const (
+			initialInterval = time.Second
+			maxInterval     = 30 * time.Second
+		)
+		interval := initialInterval
+		timer := time.NewTimer(interval)
+		defer timer.Stop()
 
 		for {
 			if d.inf.Load() != nil {
@@ -337,7 +318,9 @@ func (d *delayedUnstructuredInformer) startPolling(stop <-chan struct{}) {
 			select {
 			case <-stop:
 				return
-			case <-ticker.C:
+			case <-timer.C:
+				interval = min(interval*2, maxInterval)
+				timer.Reset(interval)
 			}
 		}
 	}()
@@ -348,10 +331,10 @@ func (d *delayedUnstructuredInformer) set(inf kclient.Informer[*unstructured.Uns
 		return
 	}
 
-	d.inf.Swap(&inf)
-
 	d.mu.Lock()
 	defer d.mu.Unlock()
+
+	d.inf.Store(&inf)
 
 	for _, handler := range d.handlers {
 		reg := inf.AddEventHandler(handler)
