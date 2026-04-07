@@ -75,7 +75,10 @@ func (vcs *VClusterSimulator) SetupSimulation(config *VClusterConfig) error {
 
 	steps := []func() error{
 		vcs.createSimulationNamespace,
-		vcs.createFakeNodes,
+		// Note: we intentionally skip creating fake Node objects. kgateway does not
+		// watch Nodes, so they add no value to the load test. Worse, they cause
+		// kindnetd to crash-loop because it tries to set up routes to unreachable
+		// fake node IPs. FakeNodeCount is still used to distribute services.
 		vcs.createFakeServicesWithEndpoints,
 	}
 
@@ -290,7 +293,7 @@ func (vcs *VClusterSimulator) calculateMetrics(setupDuration time.Duration) {
 		TotalFakeEndpoints: totalEndpoints,
 		SetupDuration:      setupDuration,
 		MemoryFootprint:    int64(totalServices * MemoryFootprintPerService),
-		APICallsGenerated:  int64(vcs.config.FakeNodeCount + (totalServices * 2)),
+		APICallsGenerated:  int64(totalServices * 2),
 	}
 }
 
