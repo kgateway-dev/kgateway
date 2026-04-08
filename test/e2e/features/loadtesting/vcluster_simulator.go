@@ -9,7 +9,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -75,7 +74,11 @@ func (vcs *VClusterSimulator) SetupSimulation(config *VClusterConfig) error {
 
 	steps := []func() error{
 		vcs.createSimulationNamespace,
-		vcs.createFakeNodes,
+		// Note: we intentionally skip creating fake Node objects for this load test.
+		// This simulation does not require pod-locality or other Node-backed data;
+		// FakeNodeCount is only used to distribute services. Creating fake Nodes can
+		// also cause kindnetd to crash-loop when it tries to set up routes to
+		// unreachable fake node IPs.
 		vcs.createFakeServicesWithEndpoints,
 	}
 
@@ -141,49 +144,6 @@ func (vcs *VClusterSimulator) createResource(resource client.Object) error {
 	}
 	vcs.createdResources = append(vcs.createdResources, resource)
 	return nil
-}
-
-func (vcs *VClusterSimulator) createFakeNodes() error {
-	for i := 0; i < vcs.config.FakeNodeCount; i++ {
-		node := vcs.buildFakeNode(i)
-		if err := vcs.createResource(node); err != nil {
-			return fmt.Errorf("failed to create fake node %s: %w", node.Name, err)
-		}
-	}
-	return nil
-}
-
-func (vcs *VClusterSimulator) buildFakeNode(index int) *corev1.Node {
-	return &corev1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("sim-node-%s-%d", vcs.config.SimulationName, index),
-			Labels: map[string]string{
-				"vcluster-simulation":     "true",
-				"simulation":              vcs.config.SimulationName,
-				"node.kubernetes.io/role": "worker",
-				"beta.kubernetes.io/arch": "amd64",
-				"beta.kubernetes.io/os":   "linux",
-			},
-		},
-		Spec: corev1.NodeSpec{Unschedulable: true},
-		Status: corev1.NodeStatus{
-			Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-			Addresses: []corev1.NodeAddress{{
-				Type:    corev1.NodeInternalIP,
-				Address: fmt.Sprintf("10.0.%d.%d", index/255, index%255),
-			}},
-			Capacity:    vcs.getNodeResources(),
-			Allocatable: vcs.getNodeResources(),
-		},
-	}
-}
-
-func (vcs *VClusterSimulator) getNodeResources() corev1.ResourceList {
-	return corev1.ResourceList{
-		corev1.ResourceCPU:    *resource.NewQuantity(4, resource.DecimalSI),
-		corev1.ResourceMemory: *resource.NewQuantity(16*1024*1024*1024, resource.BinarySI),
-		corev1.ResourcePods:   *resource.NewQuantity(110, resource.DecimalSI),
-	}
 }
 
 func (vcs *VClusterSimulator) createFakeServicesWithEndpoints() error {
@@ -290,7 +250,8 @@ func (vcs *VClusterSimulator) calculateMetrics(setupDuration time.Duration) {
 		TotalFakeEndpoints: totalEndpoints,
 		SetupDuration:      setupDuration,
 		MemoryFootprint:    int64(totalServices * MemoryFootprintPerService),
-		APICallsGenerated:  int64(vcs.config.FakeNodeCount + (totalServices * 2)),
+		// One Namespace + one Service and one EndpointSlice per fake service.
+		APICallsGenerated: int64(totalServices*2 + 1),
 	}
 }
 
