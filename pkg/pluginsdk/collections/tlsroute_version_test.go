@@ -54,6 +54,12 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 		}, getServedTLSRouteVersions(client))
 	})
 
+	t.Run("tracks absence authoritatively", func(t *testing.T) {
+		require.Equal(t, servedTLSRouteVersions{
+			Authoritative: true,
+		}, getServedTLSRouteVersions(apiextensionsfake.NewClientset()))
+	})
+
 	t.Run("defaults to legacy when discovery is unavailable", func(t *testing.T) {
 		require.Equal(t, servedTLSRouteVersions{
 			Promoted:  true,

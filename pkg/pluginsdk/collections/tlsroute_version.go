@@ -1,9 +1,11 @@
 package collections
 
 import (
+	"context"
 	"log/slog"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,18 +36,48 @@ type servedTLSRouteVersions struct {
 	Authoritative bool
 }
 
+// getServedTLSRouteVersions resolves which TLSRoute API versions are currently
+// served by the cluster. When discovery is unavailable, we conservatively allow
+// both promoted and legacy watches so startup does not incorrectly disable
+// TLSRoute support.
 func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTLSRouteVersions {
-	discovered := getServedVersions(extClient, "tlsroutes.gateway.networking.k8s.io", gwv1.GroupVersion.Version, wellknown.LegacyTLSRouteVersion, gwv1a2.GroupVersion.Version)
-	if !discovered.Authoritative {
+	if extClient == nil {
+		// If discovery is unavailable, keep both paths enabled and let the delayed
+		// informer logic determine what is actually readable at runtime.
 		return servedTLSRouteVersions{Promoted: true, Legacy: true, LegacyGVR: legacyTLSRouteGVR}
 	}
 
-	versions := servedTLSRouteVersions{
-		Promoted:      discovered.Served[gwv1.GroupVersion.Version],
-		Authoritative: true,
+	ctx, cancel := context.WithTimeout(context.Background(), crdLookupTimeout)
+	defer cancel()
+
+	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, "tlsroutes.gateway.networking.k8s.io", metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return servedTLSRouteVersions{Authoritative: true}
+		}
+		return servedTLSRouteVersions{Promoted: true, Legacy: true, LegacyGVR: legacyTLSRouteGVR}
 	}
+
+	versions := servedTLSRouteVersions{Authoritative: true}
+	servedLegacyVersions := map[string]bool{}
+	for _, version := range crd.Spec.Versions {
+		if !version.Served {
+			continue
+		}
+
+		switch version.Name {
+		case gwv1.GroupVersion.Version:
+			versions.Promoted = true
+		case wellknown.LegacyTLSRouteVersion, gwv1a2.GroupVersion.Version:
+			servedLegacyVersions[version.Name] = true
+		}
+	}
+
+	// Prefer v1alpha3 over v1alpha2 when both legacy versions are served so we
+	// consistently watch the most recent pre-promotion API and avoid duplicate
+	// logical TLSRoutes from multiple legacy watches.
 	for _, legacyVersion := range []string{wellknown.LegacyTLSRouteVersion, gwv1a2.GroupVersion.Version} {
-		if discovered.Served[legacyVersion] {
+		if servedLegacyVersions[legacyVersion] {
 			versions.Legacy = true
 			versions.LegacyGVR = schema.GroupVersionResource{
 				Group:    wellknown.GatewayGroup,

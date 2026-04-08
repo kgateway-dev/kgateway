@@ -137,6 +137,25 @@ func TestCrdServesVersionWithNilClientIsNonAuthoritative(t *testing.T) {
 	require.False(t, served)
 }
 
+func TestCrdServesVersionTracksAbsenceAuthoritatively(t *testing.T) {
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	client := kube.NewFakeClient()
+
+	served, err := crdServesVersion(client.Ext(), wellknown.LegacyTLSRouteGVR)
+	require.NoError(t, err)
+	require.False(t, served)
+}
+
+func TestCrdServesVersionReturnsTrueWhenVersionIsServed(t *testing.T) {
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	client := kube.NewFakeClient()
+	makeServedCRD(t, client, wellknown.LegacyTLSRouteGVR, "v1.4.1")
+
+	served, err := crdServesVersion(client.Ext(), wellknown.LegacyTLSRouteGVR)
+	require.NoError(t, err)
+	require.True(t, served)
+}
+
 func TestDelayedDynamicUnstructuredInformerSetPublishesInformerAfterReplay(t *testing.T) {
 	handlerSynced := func() bool { return false }
 	delayedReg := delayedHandlerRegistration{hasSynced: new(atomic.Pointer[func() bool])}

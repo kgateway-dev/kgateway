@@ -1,6 +1,7 @@
 package collections
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -10,11 +11,15 @@ import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	klabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 )
+
+const crdLookupTimeout = 5 * time.Second
 
 type delayedInformer[T controllers.ComparableObject] struct {
 	inf *atomic.Pointer[kclient.Informer[T]]
@@ -104,11 +109,28 @@ func newDelayedDynamicUnstructuredInformer(
 }
 
 func crdServesVersion(extClient apiextensionsclient.Interface, gvr schema.GroupVersionResource) (bool, error) {
-	result := getServedVersions(extClient, fmt.Sprintf("%s.%s", gvr.Resource, gvr.Group), gvr.Version)
-	if !result.Authoritative {
+	if extClient == nil {
 		return false, fmt.Errorf("CRD discovery not authoritative for %s", gvr)
 	}
-	return result.Served[gvr.Version], nil
+
+	ctx, cancel := context.WithTimeout(context.Background(), crdLookupTimeout)
+	defer cancel()
+
+	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, fmt.Sprintf("%s.%s", gvr.Resource, gvr.Group), metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("CRD discovery not authoritative for %s: %w", gvr, err)
+	}
+
+	for _, version := range crd.Spec.Versions {
+		if version.Name == gvr.Version {
+			return version.Served, nil
+		}
+	}
+
+	return false, nil
 }
 
 func newDynamicUnstructuredInformer(

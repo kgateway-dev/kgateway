@@ -2,7 +2,6 @@ package collections
 
 import (
 	"context"
-	"log/slog"
 
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube/kclient"
@@ -52,8 +51,7 @@ func (c *CommonCollections) InitCollections(
 	)
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12827
-	xListenerSetVersions := getServedVersions(c.Client.Ext(), wellknown.XListenerSetGVR.Resource+"."+wellknown.XListenerSetGVR.Group, wellknown.XListenerSetGVR.Version)
-	if globalSettings.EnableExperimentalGatewayAPIFeatures && (!xListenerSetVersions.Authoritative || xListenerSetVersions.Served[wellknown.XListenerSetGVR.Version]) {
+	if globalSettings.EnableExperimentalGatewayAPIFeatures {
 		legacyListenerSetsRaw := krt.WrapClient(
 			newDelayedDynamicUnstructuredInformer(c.Client, wellknown.XListenerSetGVR, filter),
 			c.KrtOpts.ToOptions("KubeLegacyXListenerSets")...,
@@ -112,12 +110,13 @@ func (c *CommonCollections) InitCollections(
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12880
 	var tlsRoutes krt.Collection[*gwv1a2.TLSRoute]
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
-		tcpVersions := getServedVersions(c.Client.Ext(), gvr.TCPRoute.Resource+"."+gvr.TCPRoute.Group, gvr.TCPRoute.Version)
-		if !tcpVersions.Authoritative || !tcpVersions.Exists || tcpVersions.Served[gvr.TCPRoute.Version] {
-			tcproutes = krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](c.Client, gvr.TCPRoute, kubetypes.StandardInformer, filter), c.KrtOpts.ToOptions("TCPRoute")...)
-		} else {
-			tcproutes = krt.NewStaticCollection[*gwv1a2.TCPRoute](nil, nil, c.KrtOpts.ToOptions("disable/TCPRoute")...)
-		}
+		tcproutes = krt.WrapClient(
+			newDelayedTypedInformer(c.Client, gvr.TCPRoute, func() kclient.Informer[*gwv1a2.TCPRoute] {
+				return kclient.NewFiltered[*gwv1a2.TCPRoute](c.Client, filter)
+			}),
+			c.KrtOpts.ToOptions("TCPRoute")...,
+		)
+
 		servedTLSRouteVersions := getServedTLSRouteVersions(c.Client.Ext())
 		var tlsRouteCollections []krt.Collection[*gwv1a2.TLSRoute]
 		// Prefer the promoted watch when discovery confirms it is served; watching both
@@ -157,8 +156,6 @@ func (c *CommonCollections) InitCollections(
 					}
 					return nil
 				}, c.KrtOpts.ToOptions("TLSRouteLegacyV1Alpha3ToV1Alpha2")...))
-			default:
-				slog.Warn("ignoring unsupported legacy TLSRoute version", "version", servedTLSRouteVersions.LegacyGVR.Version)
 			}
 		}
 
