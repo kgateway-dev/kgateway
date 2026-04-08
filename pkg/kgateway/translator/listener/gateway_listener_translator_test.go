@@ -3,10 +3,12 @@ package listener_test
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8scert "k8s.io/client-go/util/cert"
 	"k8s.io/utils/ptr"
@@ -32,6 +34,7 @@ var (
 	gateway          *gwv1.Gateway
 	listenerReporter reporter.ListenerReporter
 	statusReporter   reporter.Reporter
+	reportMap        reports.ReportMap
 	ml               *listener.MergedListeners
 	ctrl             *gomock.Controller
 	queries          *mocks.MockGatewayQueries
@@ -98,6 +101,36 @@ func tlsToIr(tlsRoute *gwv1a2.TLSRoute) *ir.TlsRouteIR {
 	return routeir
 }
 
+func makeTCPRoute(name string, ts time.Time, spec gwv1a2.TCPRouteSpec) *gwv1a2.TCPRoute {
+	route := tcpRoute(name)
+	route.CreationTimestamp = metav1.NewTime(ts)
+	route.Spec = spec
+	return route
+}
+
+func assertRouteAccepted(
+	ctx context.Context,
+	rm reports.ReportMap,
+	route *gwv1a2.TCPRoute,
+	expectAccepted bool,
+	expectedReason string,
+) {
+	status := rm.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayControllerName)
+	Expect(status).NotTo(BeNil())
+	Expect(status.Parents).To(HaveLen(1))
+
+	accepted := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+	Expect(accepted).NotTo(BeNil())
+
+	expectedStatus := metav1.ConditionFalse
+	if expectAccepted {
+		expectedStatus = metav1.ConditionTrue
+	}
+
+	Expect(accepted.Status).To(Equal(expectedStatus))
+	Expect(accepted.Reason).To(Equal(expectedReason))
+}
+
 var _ = Describe("Translator TCPRoute Listener", func() {
 	Context("TCP", func() {
 		BeforeEach(func() {
@@ -115,8 +148,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-gateway", Namespace: "default"},
 			}
 
-			rm := reports.NewReportMap()
-			statusReporter = reports.NewReporter(&rm)
+			reportMap = reports.NewReportMap()
+			statusReporter = reports.NewReporter(&reportMap)
 			gatewayReporter := statusReporter.Gateway(gateway)
 			listenerReporter = gatewayReporter.Listener(&gwListener)
 			ml = &listener.MergedListeners{
@@ -642,6 +675,53 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			Expect(programmedCondition.Reason).To(Equal(string(gwv1.ListenerReasonInvalid)))
 			Expect(programmedCondition.Message).To(ContainSubstring("TCP/TLS listener has no valid backends or routes"))
 		})
+
+		It("should keep the oldest TCPRoute and mark newer ones conflicted", func() {
+			spec := gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
+						{
+							Name:      gwv1.ObjectName("test-gateway"),
+							Namespace: ptr.To(gwv1.Namespace("default")),
+							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+						},
+					},
+				},
+				Rules: []gwv1a2.TCPRouteRule{
+					{
+						BackendRefs: []gwv1.BackendRef{
+							{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Name:      "backend-svc1",
+									Namespace: ptr.To(gwv1.Namespace("default")),
+									Port:      ptr.To(gwv1.PortNumber(8081)),
+								},
+							},
+						},
+					},
+				},
+			}
+
+			oldestRoute := makeTCPRoute("oldest-tcp-route", time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC), spec)
+			newerRoute := makeTCPRoute("newer-tcp-route", time.Date(2026, 4, 2, 0, 0, 0, 0, time.UTC), spec)
+
+			routes := []*query.RouteInfo{
+				{Object: tcpToIr(newerRoute)},
+				{Object: tcpToIr(oldestRoute)},
+			}
+
+			ml.AppendTcpListener(lisToIr(gwListener), routes, listenerReporter)
+
+			Expect(ml.Listeners).To(HaveLen(1))
+
+			translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
+			Expect(translatedListener).NotTo(BeNil())
+			Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
+			Expect(translatedListener.TcpFilterChain[0].FilterChainCommon.FilterChainName).To(ContainSubstring("oldest-tcp-route"))
+
+			assertRouteAccepted(ctx, reportMap, oldestRoute, true, string(gwv1.RouteReasonAccepted))
+			assertRouteAccepted(ctx, reportMap, newerRoute, false, string(listener.RouteReasonConflicted))
+		})
 	})
 	Context("TLS", func() {
 		BeforeEach(func() {
@@ -661,8 +741,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-gateway", Namespace: "default"},
 			}
 
-			rm := reports.NewReportMap()
-			statusReporter = reports.NewReporter(&rm)
+			reportMap = reports.NewReportMap()
+			statusReporter = reports.NewReporter(&reportMap)
 			gatewayReporter := statusReporter.Gateway(gateway)
 			listenerReporter = gatewayReporter.Listener(&gwListener)
 			ml = &listener.MergedListeners{
@@ -963,8 +1043,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-gateway", Namespace: "default"},
 			}
 
-			rm := reports.NewReportMap()
-			statusReporter = reports.NewReporter(&rm)
+			reportMap = reports.NewReportMap()
+			statusReporter = reports.NewReporter(&reportMap)
 			gatewayReporter := statusReporter.Gateway(gateway)
 			listenerReporter = gatewayReporter.Listener(&gwListener)
 			ml = &listener.MergedListeners{
