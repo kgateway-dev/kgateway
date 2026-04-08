@@ -65,9 +65,11 @@ func (d delayedIndex[T]) Lookup(key string) []any {
 	return nil
 }
 
-type delayedUnstructuredInformer = delayedInformer[*unstructured.Unstructured]
-type delayedUnstructuredHandler = delayedHandler[*unstructured.Unstructured]
-type delayedUnstructuredIndex = delayedIndex[*unstructured.Unstructured]
+type (
+	delayedUnstructuredInformer = delayedInformer[*unstructured.Unstructured]
+	delayedUnstructuredHandler  = delayedHandler[*unstructured.Unstructured]
+	delayedUnstructuredIndex    = delayedIndex[*unstructured.Unstructured]
+)
 
 func newDelayedTypedInformer[T controllers.ComparableObject](
 	c kube.Client,
