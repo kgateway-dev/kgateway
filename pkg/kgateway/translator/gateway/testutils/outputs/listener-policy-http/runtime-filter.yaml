@@ -1,0 +1,138 @@
+Clusters:
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        accessLog:
+        - filter:
+            runtimeFilter:
+              percentSampled:
+                numerator: 50
+              runtimeKey: access_log.enabled
+              useIndependentRandomness: true
+          name: envoy.access_loggers.file
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+            logFormat:
+              formatters:
+              - name: envoy.formatter.req_without_query
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.formatter.req_without_query.v3.ReqWithoutQuery
+              - name: envoy.formatter.metadata
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.formatter.metadata.v3.Metadata
+              textFormatSource:
+                inlineString: |
+                  %START_TIME% %REQ(:METHOD)% %RESPONSE_CODE%
+            path: /dev/stdout
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.accessLog:
+        - gateway.kgateway.dev/ListenerPolicy/default/runtime-filter-policy
+        default.httpSettings.accessLogConfig:
+        - gateway.kgateway.dev/ListenerPolicy/default/runtime-filter-policy
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.accessLog:
+        - gateway.kgateway.dev/ListenerPolicy/default/runtime-filter-policy
+        default.httpSettings.accessLogConfig:
+        - gateway.kgateway.dev/ListenerPolicy/default/runtime-filter-policy
+  name: listener~8080
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        observedGeneration: 3
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        observedGeneration: 3
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          observedGeneration: 3
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          observedGeneration: 3
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          observedGeneration: 3
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          observedGeneration: 3
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+  policies:
+    ListenerPolicy/default/runtime-filter-policy:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
