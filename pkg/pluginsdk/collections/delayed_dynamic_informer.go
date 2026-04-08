@@ -16,22 +16,22 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type delayedUnstructuredInformer struct {
-	inf *atomic.Pointer[kclient.Informer[*unstructured.Unstructured]]
+type delayedInformer[T controllers.ComparableObject] struct {
+	inf *atomic.Pointer[kclient.Informer[T]]
 
 	extClient        apiextensionsclient.Interface
 	gvr              schema.GroupVersionResource
-	newInformer      func() kclient.Informer[*unstructured.Unstructured]
+	newInformer      func() kclient.Informer[T]
 	verifiedNotReady atomic.Bool
 	pollingStarted   atomic.Bool
 
 	mu       sync.Mutex
-	handlers []delayedUnstructuredHandler
-	indexers []delayedUnstructuredIndex
+	handlers []delayedHandler[T]
+	indexers []delayedIndex[T]
 	started  <-chan struct{}
 }
 
-type delayedUnstructuredHandler struct {
+type delayedHandler[T controllers.ComparableObject] struct {
 	cache.ResourceEventHandler
 	hasSynced delayedHandlerRegistration
 }
@@ -47,39 +47,43 @@ func (r delayedHandlerRegistration) HasSynced() bool {
 	return false
 }
 
-type delayedUnstructuredIndex struct {
+type delayedIndex[T controllers.ComparableObject] struct {
 	name    string
 	indexer *atomic.Pointer[kclient.RawIndexer]
-	extract func(o *unstructured.Unstructured) []string
+	extract func(o T) []string
 }
 
-func (d delayedUnstructuredIndex) Lookup(key string) []any {
+func (d delayedIndex[T]) Lookup(key string) []any {
 	if indexer := d.indexer.Load(); indexer != nil {
 		return (*indexer).Lookup(key)
 	}
 	return nil
 }
 
-func newDelayedDynamicUnstructuredInformer(
+type delayedUnstructuredInformer = delayedInformer[*unstructured.Unstructured]
+type delayedUnstructuredHandler = delayedHandler[*unstructured.Unstructured]
+type delayedUnstructuredIndex = delayedIndex[*unstructured.Unstructured]
+
+func newDelayedTypedInformer[T controllers.ComparableObject](
 	c kube.Client,
 	gvr schema.GroupVersionResource,
-	filter kclient.Filter,
-) kclient.Informer[*unstructured.Unstructured] {
+	newInformer func() kclient.Informer[T],
+) kclient.Informer[T] {
 	if c.Ext() == nil {
-		return newDynamicUnstructuredInformer(c, gvr, filter)
+		return newInformer()
 	}
 
 	served, err := crdServesVersion(c.Ext(), gvr)
 	if err == nil && served {
-		return newDynamicUnstructuredInformer(c, gvr, filter)
+		return newInformer()
 	}
 
-	delayed := &delayedUnstructuredInformer{
-		inf:       new(atomic.Pointer[kclient.Informer[*unstructured.Unstructured]]),
+	delayed := &delayedInformer[T]{
+		inf:       new(atomic.Pointer[kclient.Informer[T]]),
 		extClient: c.Ext(),
 		gvr:       gvr,
-		newInformer: func() kclient.Informer[*unstructured.Unstructured] {
-			return newDynamicUnstructuredInformer(c, gvr, filter)
+		newInformer: func() kclient.Informer[T] {
+			return newInformer()
 		},
 	}
 	if err == nil {
@@ -87,6 +91,16 @@ func newDelayedDynamicUnstructuredInformer(
 	}
 
 	return delayed
+}
+
+func newDelayedDynamicUnstructuredInformer(
+	c kube.Client,
+	gvr schema.GroupVersionResource,
+	filter kclient.Filter,
+) kclient.Informer[*unstructured.Unstructured] {
+	return newDelayedTypedInformer(c, gvr, func() kclient.Informer[*unstructured.Unstructured] {
+		return newDynamicUnstructuredInformer(c, gvr, filter)
+	})
 }
 
 func crdServesVersion(extClient apiextensionsclient.Interface, gvr schema.GroupVersionResource) (bool, error) {
@@ -176,28 +190,29 @@ func (t *typedDynamicUnstructuredInformer) Index(name string, extract func(o *un
 	})
 }
 
-func (d *delayedUnstructuredInformer) Get(name, namespace string) *unstructured.Unstructured {
+func (d *delayedInformer[T]) Get(name, namespace string) T {
 	if inf := d.inf.Load(); inf != nil {
 		return (*inf).Get(name, namespace)
 	}
-	return nil
+	var empty T
+	return empty
 }
 
-func (d *delayedUnstructuredInformer) List(namespace string, selector klabels.Selector) []*unstructured.Unstructured {
+func (d *delayedInformer[T]) List(namespace string, selector klabels.Selector) []T {
 	if inf := d.inf.Load(); inf != nil {
 		return (*inf).List(namespace, selector)
 	}
 	return nil
 }
 
-func (d *delayedUnstructuredInformer) ListUnfiltered(namespace string, selector klabels.Selector) []*unstructured.Unstructured {
+func (d *delayedInformer[T]) ListUnfiltered(namespace string, selector klabels.Selector) []T {
 	if inf := d.inf.Load(); inf != nil {
 		return (*inf).ListUnfiltered(namespace, selector)
 	}
 	return nil
 }
 
-func (d *delayedUnstructuredInformer) AddEventHandler(h cache.ResourceEventHandler) cache.ResourceEventHandlerRegistration {
+func (d *delayedInformer[T]) AddEventHandler(h cache.ResourceEventHandler) cache.ResourceEventHandlerRegistration {
 	d.mu.Lock()
 	if inf := d.inf.Load(); inf != nil {
 		d.mu.Unlock()
@@ -207,7 +222,7 @@ func (d *delayedUnstructuredInformer) AddEventHandler(h cache.ResourceEventHandl
 	reg := delayedHandlerRegistration{hasSynced: new(atomic.Pointer[func() bool])}
 	hasSynced := d.HasSynced
 	reg.hasSynced.Store(&hasSynced)
-	d.handlers = append(d.handlers, delayedUnstructuredHandler{
+	d.handlers = append(d.handlers, delayedHandler[T]{
 		ResourceEventHandler: h,
 		hasSynced:            reg,
 	})
@@ -215,21 +230,21 @@ func (d *delayedUnstructuredInformer) AddEventHandler(h cache.ResourceEventHandl
 	return reg
 }
 
-func (d *delayedUnstructuredInformer) HasSynced() bool {
+func (d *delayedInformer[T]) HasSynced() bool {
 	if inf := d.inf.Load(); inf != nil {
 		return (*inf).HasSynced()
 	}
 	return d.verifiedNotReady.Load()
 }
 
-func (d *delayedUnstructuredInformer) HasSyncedIgnoringHandlers() bool {
+func (d *delayedInformer[T]) HasSyncedIgnoringHandlers() bool {
 	if inf := d.inf.Load(); inf != nil {
 		return (*inf).HasSyncedIgnoringHandlers()
 	}
 	return d.verifiedNotReady.Load()
 }
 
-func (d *delayedUnstructuredInformer) ShutdownHandlers() {
+func (d *delayedInformer[T]) ShutdownHandlers() {
 	d.mu.Lock()
 	if inf := d.inf.Load(); inf != nil {
 		d.mu.Unlock()
@@ -240,7 +255,7 @@ func (d *delayedUnstructuredInformer) ShutdownHandlers() {
 	d.mu.Unlock()
 }
 
-func (d *delayedUnstructuredInformer) ShutdownHandler(registration cache.ResourceEventHandlerRegistration) {
+func (d *delayedInformer[T]) ShutdownHandler(registration cache.ResourceEventHandlerRegistration) {
 	d.mu.Lock()
 	if inf := d.inf.Load(); inf != nil {
 		d.mu.Unlock()
@@ -258,7 +273,7 @@ func (d *delayedUnstructuredInformer) ShutdownHandler(registration cache.Resourc
 	d.mu.Unlock()
 }
 
-func (d *delayedUnstructuredInformer) Start(stop <-chan struct{}) {
+func (d *delayedInformer[T]) Start(stop <-chan struct{}) {
 	d.mu.Lock()
 	d.started = stop
 	inf := d.inf.Load()
@@ -272,14 +287,14 @@ func (d *delayedUnstructuredInformer) Start(stop <-chan struct{}) {
 	d.startPolling(stop)
 }
 
-func (d *delayedUnstructuredInformer) Index(name string, extract func(o *unstructured.Unstructured) []string) kclient.RawIndexer {
+func (d *delayedInformer[T]) Index(name string, extract func(o T) []string) kclient.RawIndexer {
 	d.mu.Lock()
 	if inf := d.inf.Load(); inf != nil {
 		d.mu.Unlock()
 		return (*inf).Index(name, extract)
 	}
 
-	index := delayedUnstructuredIndex{
+	index := delayedIndex[T]{
 		name:    name,
 		indexer: new(atomic.Pointer[kclient.RawIndexer]),
 		extract: extract,
@@ -289,7 +304,7 @@ func (d *delayedUnstructuredInformer) Index(name string, extract func(o *unstruc
 	return index
 }
 
-func (d *delayedUnstructuredInformer) startPolling(stop <-chan struct{}) {
+func (d *delayedInformer[T]) startPolling(stop <-chan struct{}) {
 	if !d.pollingStarted.CompareAndSwap(false, true) {
 		return
 	}
@@ -328,7 +343,7 @@ func (d *delayedUnstructuredInformer) startPolling(stop <-chan struct{}) {
 	}()
 }
 
-func (d *delayedUnstructuredInformer) set(inf kclient.Informer[*unstructured.Unstructured]) {
+func (d *delayedInformer[T]) set(inf kclient.Informer[T]) {
 	if inf == nil {
 		return
 	}
@@ -360,5 +375,5 @@ func (d *delayedUnstructuredInformer) set(inf kclient.Informer[*unstructured.Uns
 
 var (
 	_ kclient.Informer[*unstructured.Unstructured] = &typedDynamicUnstructuredInformer{}
-	_ kclient.Informer[*unstructured.Unstructured] = &delayedUnstructuredInformer{}
+	_ kclient.Informer[*unstructured.Unstructured] = &delayedInformer[*unstructured.Unstructured]{}
 )

@@ -1,11 +1,9 @@
 package collections
 
 import (
-	"context"
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	istiogvr "istio.io/istio/pkg/config/schema/gvr"
@@ -121,60 +119,16 @@ func (f *fakeDelayedUnstructuredInformer) Index(name string, _ func(o *unstructu
 	return &fakeDelayedRawIndexer{}
 }
 
-func TestDelayedDynamicUnstructuredInformerReportsSyncedWithoutTLSRouteCRD_Issue13661(t *testing.T) {
+func TestDelayedDynamicUnstructuredInformerReportsSyncedWithoutCRD(t *testing.T) {
 	stop := test.NewStop(t)
 	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
 	client := kube.NewFakeClient()
 
-	inf := newDelayedDynamicUnstructuredInformer(client, wellknown.LegacyTLSRouteGVR, kclient.Filter{})
+	inf := newDelayedDynamicUnstructuredInformer(client, wellknown.XListenerSetGVR, kclient.Filter{})
 	inf.Start(stop)
 
-	require.True(t, inf.HasSynced(), "missing legacy TLSRoute CRDs should not block startup")
+	require.True(t, inf.HasSynced(), "missing CRDs should not block startup")
 	require.Empty(t, inf.List(metav1.NamespaceAll, labels.Everything()))
-}
-
-func TestDelayedDynamicUnstructuredInformerBypassesCrdWatcherFilterForLegacyTLSRoute_Issue13735(t *testing.T) {
-	stop := test.NewStop(t)
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
-	client := kube.NewFakeClient()
-	makeServedCRD(t, client, wellknown.LegacyTLSRouteGVR, "v1.4.1")
-
-	_, err := client.Dynamic().Resource(wellknown.LegacyTLSRouteGVR).Namespace("default").Create(
-		context.Background(),
-		&unstructured.Unstructured{
-			Object: map[string]any{
-				"apiVersion": wellknown.LegacyTLSRouteGVK.GroupVersion().String(),
-				"kind":       wellknown.TLSRouteKind,
-				"metadata": map[string]any{
-					"name":      "legacy-route",
-					"namespace": "default",
-				},
-				"spec": map[string]any{
-					"parentRefs": []any{
-						map[string]any{
-							"name": "gateway",
-						},
-					},
-					"hostnames": []any{"example.com"},
-				},
-			},
-		},
-		metav1.CreateOptions{},
-	)
-	require.NoError(t, err)
-
-	client.RunAndWait(stop)
-
-	require.False(t, client.CrdWatcher().KnownOrCallback(wellknown.LegacyTLSRouteGVR, func(<-chan struct{}) {}),
-		"Gateway API v1.4.x legacy TLSRoute should be filtered from CrdWatcher known state")
-
-	inf := newDelayedDynamicUnstructuredInformer(client, wellknown.LegacyTLSRouteGVR, kclient.Filter{})
-	inf.Start(stop)
-
-	require.Eventually(t, inf.HasSynced, time.Second, 10*time.Millisecond)
-	require.Eventually(t, func() bool {
-		return len(inf.List("default", labels.Everything())) == 1
-	}, time.Second, 10*time.Millisecond, "legacy TLSRoute should still be discoverable through the dynamic informer path")
 }
 
 func TestCrdServesVersionWithNilClientIsNonAuthoritative(t *testing.T) {

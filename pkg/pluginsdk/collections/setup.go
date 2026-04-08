@@ -2,6 +2,7 @@ package collections
 
 import (
 	"context"
+	"log/slog"
 
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube/kclient"
@@ -12,8 +13,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
@@ -29,6 +32,8 @@ func (c *CommonCollections) InitCollections(
 	plugins pluginsdk.Plugin,
 	globalSettings apisettings.Settings,
 ) (*krtcollections.GatewayIndex, *krtcollections.RoutesIndex, *krtcollections.BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
+	apiclient.RegisterTypes()
+
 	// discovery filter
 	filter := kclient.Filter{ObjectFilter: c.Client.ObjectFilter()}
 
@@ -130,16 +135,31 @@ func (c *CommonCollections) InitCollections(
 			}, c.KrtOpts.ToOptions("TLSRouteV1ToV1Alpha2")...))
 		}
 		if servedTLSRouteVersions.Legacy && (!servedTLSRouteVersions.Authoritative || !servedTLSRouteVersions.Promoted) {
-			legacyTLSRoutesRaw := krt.WrapClient(
-				newDelayedDynamicUnstructuredInformer(c.Client, servedTLSRouteVersions.LegacyGVR, filter),
-				c.KrtOpts.ToOptions("TLSRouteLegacyRaw")...,
-			)
-			tlsRouteCollections = append(tlsRouteCollections, krt.NewManyCollection(legacyTLSRoutesRaw, func(kctx krt.HandlerContext, i *unstructured.Unstructured) []*gwv1a2.TLSRoute {
-				if converted := convertLegacyTLSRouteToV1Alpha2(i); converted != nil {
-					return []*gwv1a2.TLSRoute{converted}
-				}
-				return nil
-			}, c.KrtOpts.ToOptions("TLSRouteLegacy")...))
+			switch servedTLSRouteVersions.LegacyGVR.Version {
+			case gwv1a2.GroupVersion.Version:
+				legacyTLSRoutes := krt.WrapClient(
+					newDelayedTypedInformer(c.Client, servedTLSRouteVersions.LegacyGVR, func() kclient.Informer[*gwv1a2.TLSRoute] {
+						return kclient.NewFiltered[*gwv1a2.TLSRoute](c.Client, filter)
+					}),
+					c.KrtOpts.ToOptions("TLSRouteLegacyV1Alpha2")...,
+				)
+				tlsRouteCollections = append(tlsRouteCollections, legacyTLSRoutes)
+			case wellknown.LegacyTLSRouteVersion:
+				legacyTLSRoutes := krt.WrapClient(
+					newDelayedTypedInformer(c.Client, servedTLSRouteVersions.LegacyGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+						return kclient.NewFiltered[*gwv1a3.TLSRoute](c.Client, filter)
+					}),
+					c.KrtOpts.ToOptions("TLSRouteLegacyV1Alpha3")...,
+				)
+				tlsRouteCollections = append(tlsRouteCollections, krt.NewManyCollection(legacyTLSRoutes, func(kctx krt.HandlerContext, i *gwv1a3.TLSRoute) []*gwv1a2.TLSRoute {
+					if converted := convertTLSRouteV1Alpha3ToV1Alpha2(i); converted != nil {
+						return []*gwv1a2.TLSRoute{converted}
+					}
+					return nil
+				}, c.KrtOpts.ToOptions("TLSRouteLegacyV1Alpha3ToV1Alpha2")...))
+			default:
+				slog.Warn("ignoring unsupported legacy TLSRoute version", "version", servedTLSRouteVersions.LegacyGVR.Version)
+			}
 		}
 
 		switch len(tlsRouteCollections) {
