@@ -31,4 +31,4 @@ spec:
             percentSampled:
               numerator: 50
               denominator: HUNDRED
-            useIndependentRandomness: true 
+            useIndependentRandomness: true
