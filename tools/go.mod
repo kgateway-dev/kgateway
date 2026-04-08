@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2/tools
 
-go 1.25.8
+go 1.25.9
 
 tool (
 	github.com/goreleaser/goreleaser/v2
