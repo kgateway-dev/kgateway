@@ -28,6 +28,7 @@ gateway_api_version="v1.2.1"
 gateway_api_channel="standard"
 enable_metallb=false
 metallb_version="v0.13.7"
+enable_cloud_provider_kind=false
 enable_gateway=true
 gateway_name="kgw"
 gateway_class_name="kgateway"
@@ -53,6 +54,7 @@ Options:
   --gateway-api-channel CHAN     standard or experimental       (default: standard)
   --metallb                      Install MetalLB (off by default)
   --metallb-version VER          MetalLB version                (default: v0.13.7)
+  --cloud-provider-kind          Run cloud-provider-kind for LoadBalancer support (off by default)
   --no-gateway                   Skip GatewayClass/Gateway/HTTPRoute creation
   --gateway-name NAME            Name for the Gateway           (default: kgw)
   --gateway-class-name NAME      Name for the GatewayClass      (default: kgateway)
@@ -66,6 +68,9 @@ Examples:
 
   # Specific k8s version with MetalLB
   ./hack/setup-kind-via-release.sh -k v1.31.12 --metallb
+
+  # With cloud-provider-kind for LoadBalancer IP assignment
+  ./hack/setup-kind-via-release.sh --cloud-provider-kind
 
   # Install kgateway only, no Gateway resources
   ./hack/setup-kind-via-release.sh --no-gateway
@@ -97,6 +102,8 @@ while [[ $# -gt 0 ]]; do
             enable_metallb=true; shift ;;
         --metallb-version)
             metallb_version="$2"; shift 2 ;;
+        --cloud-provider-kind)
+            enable_cloud_provider_kind=true; shift ;;
         --no-gateway)
             enable_gateway=false; shift ;;
         --gateway-name)
@@ -150,6 +157,18 @@ maybe_install_metallb() {
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     METALLB_VERSION="${metallb_version}" . "${script_dir}/kind/setup-metalllb-on-kind.sh"
     echo "MetalLB configured"
+}
+
+maybe_start_cloud_provider_kind() {
+    if [[ "${enable_cloud_provider_kind}" != "true" ]]; then
+        echo "Skipping cloud-provider-kind (use --cloud-provider-kind to enable)"
+        return
+    fi
+
+    echo "Starting cloud-provider-kind..."
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    . "${script_dir}/kind/setup-cloud-provider-kind.sh"
 }
 
 install_gateway_api_crds() {
@@ -254,6 +273,7 @@ echo ""
 
 create_kind_cluster
 maybe_install_metallb
+maybe_start_cloud_provider_kind
 install_gateway_api_crds
 install_kgateway
 maybe_create_gateway
