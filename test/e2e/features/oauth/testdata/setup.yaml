@@ -7,11 +7,11 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 9080
+  - port: 80
     targetPort: 8080
     name: http
     protocol: TCP
-  - port: 9443
+  - port: 443
     targetPort: 8443
     name: https
     protocol: TCP
@@ -285,10 +285,10 @@ spec:
     backendRef:
       kind: Service
       name: keycloak
-      port: 9443
-    tokenEndpoint: https://keycloak:9443/realms/master/protocol/openid-connect/token
-    authorizationEndpoint: https://keycloak:9443/realms/master/protocol/openid-connect/auth
-    endSessionEndpoint: https://keycloak:9443/realms/master/protocol/openid-connect/logout
+      port: 443
+    tokenEndpoint: https://keycloak/realms/master/protocol/openid-connect/token
+    authorizationEndpoint: https://keycloak/realms/master/protocol/openid-connect/auth
+    endSessionEndpoint: https://keycloak/realms/master/protocol/openid-connect/logout
     credentials:
       clientID: kgateway-client-id # must match the clientId created in Keycloak
       clientSecretRef:
@@ -298,7 +298,7 @@ spec:
     forwardAccessToken: true
     scopes: ["openid", "email"]
     jwt:
-      jwksURI: https://keycloak:9443/realms/master/protocol/openid-connect/certs
+      jwksURI: https://keycloak/realms/master/protocol/openid-connect/certs
       accessToken:
         audiences:
           - account

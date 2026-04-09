@@ -45,6 +45,7 @@ function create_k3d_cluster_or_skip() {
   $K3D cluster create "$CLUSTER_NAME" \
     --image "$K3D_NODE_IMAGE" \
     --k3s-arg "--disable=traefik@server:0" \
+    --k3s-arg "--disable=servicelb@server:0" \
     -p "80:80@loadbalancer" \
     -p "443:443@loadbalancer"
   echo "Finished setting up cluster $CLUSTER_NAME"
@@ -72,7 +73,10 @@ function create_and_setup() {
     kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
   fi
 
-  # k3s has built-in ServiceLB (klipper), so no MetalLB needed
+  # Install MetalLB for proper LoadBalancer support (each service gets a unique IP).
+  # k3s built-in ServiceLB uses host ports, causing conflicts when multiple services
+  # share the same port number.
+  METALLB_NETWORK="k3d-${CLUSTER_NAME}" . "$SCRIPT_DIR/../kind/setup-metalllb-on-kind.sh"
 }
 
 # 1. Create a k3d cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)
