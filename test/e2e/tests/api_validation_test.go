@@ -459,6 +459,7 @@ spec:
     attempts: 2
     perTryTimeout: 2s
     backoffBaseInterval: 50ms
+    hostSelectionAttempts: 5
   timeouts:
     request: 5s
     streamIdle: 60s
@@ -477,6 +478,21 @@ spec:
     perTryTimeout: 2s
 `,
 			wantErrors: []string{"retryOn or statusCodes must be set"},
+		},
+		{
+			name: "TrafficPolicy: retry.hostSelectionAttempts must be at least 1",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    hostSelectionAttempts: 0
+`,
+			wantErrors: []string{"hostSelectionAttempts in body should be greater than or equal to 1"},
 		},
 		{
 			name: "TrafficPolicy: retry.perTryTimeout must be less than timeouts.request",

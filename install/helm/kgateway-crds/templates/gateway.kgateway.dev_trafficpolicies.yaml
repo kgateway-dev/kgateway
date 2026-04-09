@@ -1600,6 +1600,13 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: retry.backoffBaseInterval must be at least 1ms.
                       rule: duration(self) >= duration('1ms')
+                  hostSelectionAttempts:
+                    description: |-
+                      HostSelectionAttempts specifies how many times Envoy should attempt to select a different upstream host for a retry.
+                      When set, kgateway also configures the previous-hosts retry predicate so Envoy avoids retrying the same host.
+                    format: int32
+                    minimum: 1
+                    type: integer
                   perTryTimeout:
                     description: |-
                       PerTryTimeout specifies the timeout per retry attempt (incliding the initial attempt).

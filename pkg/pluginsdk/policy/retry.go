@@ -4,13 +4,17 @@ import (
 	"strings"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	previous_hostsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/host/previous_hosts/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
+
+const previousHostsRetryPredicateName = "envoy.retry_host_predicates.previous_hosts"
 
 func BuildRetryPolicy(in *kgateway.Retry) *envoyroutev3.RetryPolicy {
 	if in == nil {
@@ -29,6 +33,16 @@ func BuildRetryPolicy(in *kgateway.Retry) *envoyroutev3.RetryPolicy {
 		policy.RetryBackOff = &envoyroutev3.RetryPolicy_RetryBackOff{
 			BaseInterval: durationpb.New(in.BackoffBaseInterval.Duration),
 		}
+	}
+	if in.HostSelectionAttempts != nil {
+		previousHostsPredicate := utils.MustMessageToAny(&previous_hostsv3.PreviousHostsPredicate{})
+		policy.HostSelectionRetryMaxAttempts = int64(*in.HostSelectionAttempts)
+		policy.RetryHostPredicate = []*envoyroutev3.RetryPolicy_RetryHostPredicate{{
+			Name: previousHostsRetryPredicateName,
+			ConfigType: &envoyroutev3.RetryPolicy_RetryHostPredicate_TypedConfig{
+				TypedConfig: previousHostsPredicate,
+			},
+		}}
 	}
 
 	return policy

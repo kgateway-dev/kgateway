@@ -5,6 +5,7 @@ import (
 	"time"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	previous_hostsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/host/previous_hosts/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -14,9 +15,12 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
 func TestBuildRetryPolicy(t *testing.T) {
+	previousHostsPredicate := utils.MustMessageToAny(&previous_hostsv3.PreviousHostsPredicate{})
+	hostSelectionAttempts := int32(5)
 	tests := []struct {
 		name  string
 		input *kgateway.Retry
@@ -136,6 +140,26 @@ func TestBuildRetryPolicy(t *testing.T) {
 				RetryOn:              "5xx,gateway-error,reset",
 				NumRetries:           wrapperspb.UInt32(3),
 				RetriableStatusCodes: nil,
+			},
+		},
+		{
+			name: "retry policy with host selection attempts adds host predicate",
+			input: &kgateway.Retry{
+				RetryOn:               []kgateway.RetryOnCondition{"5xx"},
+				Attempts:              int32(3),
+				HostSelectionAttempts: &hostSelectionAttempts,
+			},
+			want: &envoyroutev3.RetryPolicy{
+				RetryOn:                       "5xx",
+				NumRetries:                    wrapperspb.UInt32(3),
+				RetriableStatusCodes:          nil,
+				HostSelectionRetryMaxAttempts: int64(hostSelectionAttempts),
+				RetryHostPredicate: []*envoyroutev3.RetryPolicy_RetryHostPredicate{{
+					Name: previousHostsRetryPredicateName,
+					ConfigType: &envoyroutev3.RetryPolicy_RetryHostPredicate_TypedConfig{
+						TypedConfig: previousHostsPredicate,
+					},
+				}},
 			},
 		},
 	}

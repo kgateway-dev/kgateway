@@ -58,4 +58,11 @@ type Retry struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.backoffBaseInterval must be at least 1ms."
 	BackoffBaseInterval *metav1.Duration `json:"backoffBaseInterval,omitempty"`
+
+	// HostSelectionAttempts specifies how many times Envoy should attempt to select a different upstream host for a retry.
+	// When set, kgateway also configures the previous-hosts retry predicate so Envoy avoids retrying the same host.
+	// +optional
+	//
+	// +kubebuilder:validation:Minimum=1
+	HostSelectionAttempts *int32 `json:"hostSelectionAttempts,omitempty"`
 }
