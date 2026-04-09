@@ -39,10 +39,10 @@ spec:
     backendRef:
       kind: Service
       name: keycloak
-      port: 443
-    tokenEndpoint: https://keycloak/realms/master/protocol/openid-connect/token
-    authorizationEndpoint: https://keycloak/realms/master/protocol/openid-connect/auth
-    endSessionEndpoint: https://keycloak/realms/master/protocol/openid-connect/logout
+      port: 9443
+    tokenEndpoint: https://keycloak:9443/realms/master/protocol/openid-connect/token
+    authorizationEndpoint: https://keycloak:9443/realms/master/protocol/openid-connect/auth
+    endSessionEndpoint: https://keycloak:9443/realms/master/protocol/openid-connect/logout
     credentials:
       clientID: kgateway-client-id # must match the clientId created in Keycloak
       clientSecretRef:

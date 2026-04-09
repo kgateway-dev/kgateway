@@ -30,12 +30,13 @@ const (
 	backendURLGet                  = "https://example.com/get"
 	backendURLSecond               = "https://example.com/anything/second"
 	logoutURL                      = "https://example.com/logout"
-	endSessionEndpoint             = "https://keycloak/realms/master/protocol/openid-connect/logout"
+	endSessionEndpoint             = "https://keycloak:9443/realms/master/protocol/openid-connect/logout"
 	expectedHttpbinResponseSubstr  = "httpbin"
 	expectedAnythingResponseSubstr = "/anything/second"
 	tlsPort                        = "443"
+	keycloakPort                   = "9443"
 	backendHostPort                = "example.com:443"
-	keycloakHost                   = "keycloak:443"
+	keycloakHost                   = "keycloak:9443"
 	clientUsername                 = "kgateway"
 	clientPassword                 = "kgateway"
 	nonOAuthBackendURL             = "https://test.com"
@@ -87,7 +88,7 @@ func (s *tsuite) SetupSuite() {
 
 		keycloakIP, err = s.getServiceExternalIP(keycloak)
 		assert.NoError(c, err)
-		s.keycloakAddr = keycloakIP + ":" + tlsPort
+		s.keycloakAddr = keycloakIP + ":" + keycloakPort
 	}, 15*time.Second, 500*time.Millisecond, "failed to get external IPs for gateway or keycloak service")
 }
 
