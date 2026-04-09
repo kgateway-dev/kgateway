@@ -14,13 +14,15 @@ import (
 
 var (
 	// manifests
-	setupManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	nginxManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx.yaml")
-	tlsInsecureManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-insecure.yaml")
-	simpleTLSManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "simple-tls.yaml")
-	systemCAManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "system-ca.yaml")
-	outlierDetectionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
-	missingTargetManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "missing-target.yaml")
+	setupManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	nginxManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx.yaml")
+	dnsManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "dns.yaml")
+	tlsInsecureManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-insecure.yaml")
+	simpleTLSManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "simple-tls.yaml")
+	systemCAManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "system-ca.yaml")
+	outlierDetectionManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
+	missingTargetManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "missing-target.yaml")
+	upstreamProxyProtocolManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "upstream-proxy-protocol.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{

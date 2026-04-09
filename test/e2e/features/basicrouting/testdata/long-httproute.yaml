@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: httpbin
+  namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: default
+  labels:
+    app.kubernetes.io/name: httpbin
+spec:
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8080
+  selector:
+    app.kubernetes.io/name: httpbin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: httpbin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: httpbin
+    spec:
+      serviceAccountName: httpbin
+      containers:
+        - image: docker.io/mccutchen/go-httpbin:v2.6.0
+          imagePullPolicy: IfNotPresent
+          name: httpbin
+          ports:
+            - containerPort: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: very-long-httproute-name-to-verify-routing-behavior-still-works-much-more-longer
+  namespace: default
+spec:
+  parentRefs:
+    - name: gateway
+  hostnames:
+    - "long.example.com"
+  rules:
+    - backendRefs:
+        - name: httpbin
+          port: 8000

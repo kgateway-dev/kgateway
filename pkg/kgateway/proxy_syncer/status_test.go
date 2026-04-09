@@ -211,3 +211,85 @@ func TestBackendPolicyStatus(t *testing.T) {
 	)
 	a.Empty(diff)
 }
+
+func TestBackendPolicyStatusWithSectionName(t *testing.T) {
+	tlsPolicyWithSectionName := ir.PolicyAtt{
+		GroupKind: wellknown.BackendTLSPolicyGVK.GroupKind(),
+		PolicyRef: &ir.AttachedPolicyRef{
+			Group:       wellknown.BackendTLSPolicyGVK.Group,
+			Kind:        wellknown.BackendTLSPolicyKind,
+			Name:        "tls-policy-with-section",
+			Namespace:   "default",
+			SectionName: "https",
+		},
+		Errors: []error{},
+	}
+
+	backend := ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Group:     "",
+			Kind:      "Service",
+			Namespace: "default",
+			Name:      "my-svc",
+		},
+		AttachedPolicies: ir.AttachedPolicies{
+			Policies: map[schema.GroupKind][]ir.PolicyAtt{
+				wellknown.BackendTLSPolicyGVK.GroupKind(): {
+					tlsPolicyWithSectionName,
+				},
+			},
+		},
+	}
+	backends := []*ir.BackendObjectIR{&backend}
+
+	a := assert.New(t)
+	rm := GenerateBackendPolicyReport(backends)
+
+	a.Len(rm.Policies, 1)
+
+	policyReport := rm.Policies[reporter.PolicyKey{
+		Group:     wellknown.BackendTLSPolicyGVK.Group,
+		Kind:      wellknown.BackendTLSPolicyKind,
+		Namespace: "default",
+		Name:      "tls-policy-with-section",
+	}]
+	a.NotNil(policyReport)
+	a.Len(policyReport.Ancestors, 1)
+
+	// Verify the ancestor report is keyed with SectionName
+	ancestorReport := policyReport.Ancestors[reports.ParentRefKey{
+		Group:          "",
+		Kind:           "Service",
+		NamespacedName: types.NamespacedName{Namespace: "default", Name: "my-svc"},
+		SectionName:    "https",
+	}]
+	a.NotNil(ancestorReport, "ancestor report should be keyed with SectionName")
+
+	diff := cmp.Diff(
+		ancestorReport.Conditions,
+		[]metav1.Condition{
+			{
+				Type:    string(shared.PolicyConditionAccepted),
+				Status:  metav1.ConditionTrue,
+				Reason:  string(shared.PolicyReasonValid),
+				Message: reporter.PolicyAcceptedMsg,
+			},
+			{
+				Type:    string(shared.PolicyConditionAttached),
+				Status:  metav1.ConditionTrue,
+				Reason:  string(shared.PolicyReasonAttached),
+				Message: reporter.PolicyAttachedMsg,
+			},
+		},
+		cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
+	)
+	a.Empty(diff)
+
+	// Verify that looking up without SectionName returns nil
+	ancestorNoSection := policyReport.Ancestors[reports.ParentRefKey{
+		Group:          "",
+		Kind:           "Service",
+		NamespacedName: types.NamespacedName{Namespace: "default", Name: "my-svc"},
+	}]
+	a.Nil(ancestorNoSection, "ancestor report without SectionName should not exist")
+}

@@ -15,7 +15,7 @@ The underlying implementation is based on [github.com/prometheus/client_golang/p
 * Metrics are expected to have a namespace and subsystem defined in their options
   * The default namespace of "kgateway" will be used if no namespace is provided. This will likely be the correct namespace.
 * When passing labels to methods such as `Add(...)` or `Set(...)`, consider creating a struct to hold the label values with a method to convert it into a slice of Labels. This improves readability and ensures that any missed labels are present with a default ("") value.
-  * See [`resourceMetricLabels`](/pkg/kgateway/krtcollections/metrics.go) for an example.
+  * See [`resourceMetricLabels`](/pkg/krtcollections/metrics/metrics.go) for an example.
 * Follow the [Prometheus Metric and Label Naming Guide](https://prometheus.io/docs/practices/naming/) when possible.
   * `promlinter` is now used in static code analysis to validate metric names, types, and metadata.
 * The metrics package supports an `Active() bool` method with the underlying value evaluated at startup, and can not be meaningfully changed during execution.
@@ -23,12 +23,10 @@ The underlying implementation is based on [github.com/prometheus/client_golang/p
 
 ## Metric collection packages
 Several packages have interfaces created to standardize collection of metrics around existing frameworks
-* [controllerMetricsRecorder](/pkg/kgateway/controller/metrics.go) for [/pkg/kgateway/controller](/pkg/kgateway/controller/)
-  * Created by `newControllerMetricsRecorder(controllerName string) controllerMetricsRecorder `
-* [TranslatorMetricsRecorder](/pkg/kgateway/translator/metrics/metrics.go) for [/pkg/kgateway/translator/](/pkg/kgateway/translator/)
-  * Created by `NewTranslatorMetricsRecorder(translatorName string) TranslatorMetricsRecorder`
-* [StartResourceSync and EndResourceSync](/pkg/kgateway/translator/metrics/metrics.go) are used to track metrics related to resource sync.
-  * Used with `StartResourceSync(resourceName string, labels ResourceMetricLabels)` and `EndResourceSync(details ResourceSyncDetails, isXDSSnapshot bool, totalCounter metrics.Counter durationHistogram metrics.Histogram)`
+* [CollectTranslationMetrics](/pkg/kgateway/translator/metrics/metrics.go) for [/pkg/kgateway/translator/](/pkg/kgateway/translator/)
+  * Called with `CollectTranslationMetrics(labels TranslatorMetricLabels) func(error)` at the start of a translation function; the returned function is deferred to complete recording
+* [StartResourceStatusSync, StartResourceXDSSync, EndResourceStatusSync, and EndResourceXDSSync](/pkg/krtcollections/metrics/metrics.go) are used to track metrics related to resource sync.
+  * Used with `StartResourceStatusSync(details ResourceSyncDetails)` / `StartResourceXDSSync(details ResourceSyncDetails)` and their corresponding `End*` counterparts
   * `StartResourceSyncMetricsProcessing(ctx context.Context)` must be called at process startup to handle processing of resource metrics.
 * [statusSyncMetricsRecorder](/pkg/kgateway/proxy_syncer/metrics.go) for the status syncer in [/pkg/kgateway/proxy_syncer/](/pkg/kgateway/proxy_syncer/)
   * Created by `NewStatusSyncMetricsRecorder(syncerName string) statusSyncMetricsRecorder`
@@ -39,7 +37,11 @@ These objects all support a "CollectMetrics()" method, that can be called at the
 ```go
 var rErr error
 
-finishMetrics := metrics.CollectTranslationMetrics("TranslateGateway")
+finishMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
+  Name:       "gateway.Name",
+  Namespace:  "gateway.Namespace",
+  Translator: "TranslateGateway",
+})
 defer func() {
   finishMetrics(rErr)
 }()
@@ -62,9 +64,9 @@ KRT collection is modified.
 		MyEventHandler(o)
 	})
 ```
-* This is used along with a helper function to instrument several KRT collections during [setup](pkg/kgateway/krtcollections/setup.go):
+* This is used along with a helper function to instrument several KRT collections during [setup](/pkg/pluginsdk/collections/setup.go):
 ```go
-metrics.RegisterEvents(httpRoutes, GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
+metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
 ```
 
 ### `kgateway_resources_updates_dropped_total` Metric

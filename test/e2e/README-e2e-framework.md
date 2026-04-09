@@ -48,6 +48,10 @@ The scripts will automatically:
 If you prefer to run tests manually:
 
 1. Make sure you have a kind cluster running with the images loaded. You can do this by running `./hack/kind/setup-kind.sh`
+   - By default, local setup uses MetalLB for `LoadBalancer` support.
+   - Set `CLOUD_PROVIDER_KIND=true` to use `cloud-provider-kind` instead. This is useful on macOS with Docker Desktop, where MetalLB does not provide host-reachable `LoadBalancer` addresses.
+   - On macOS, setup starts `cloud-provider-kind` with `sudo`, so you will be prompted for your password.
+   - Example: `CLOUD_PROVIDER_KIND=true ./hack/kind/setup-kind.sh`
 2. The `make unit` command will not run e2e tests; `make e2e-test` does. To run a specific e2e test, you can use `go test -tags=e2e` directly. This is accomplished via go build tags, so when you add a new test, be sure to make the first line of each go source file read `//go:build e2e`.
 
 To run a specific test suite directly (everything that starts with `TestKgateway`):
@@ -218,7 +222,6 @@ This framework was inspired by the following projects:
 - [Kubernetes Gateway API](https://github.com/kubernetes-sigs/gateway-api/tree/main/conformance)
 
 ### Areas of Improvement
->
 > **Help Wanted:**
 > This framework is not feature complete, and we welcome any improvements to it.
 

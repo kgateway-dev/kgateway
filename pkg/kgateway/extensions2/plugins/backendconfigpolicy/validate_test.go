@@ -149,6 +149,43 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "policy with dns refresh config uses DnsCluster for validation",
+			policyIR: &BackendConfigPolicyIR{
+				ct:             time.Now(),
+				dnsRefreshRate: durationpb.New(60 * time.Second),
+				dnsJitter:      durationpb.New(15 * time.Second),
+				respectDnsTtl:  new(true),
+			},
+			validator: &mockValidator{
+				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
+					if len(config.StaticResources.Clusters) != 1 {
+						return errors.New("expected exactly one cluster in bootstrap")
+					}
+					cluster := config.StaticResources.Clusters[0]
+					clusterType := cluster.GetClusterType()
+					if clusterType == nil {
+						return errors.New("expected custom dns cluster type")
+					}
+					var dnsCluster envoydnsv3.DnsCluster
+					if err := clusterType.GetTypedConfig().UnmarshalTo(&dnsCluster); err != nil {
+						return fmt.Errorf("failed to unmarshal dns cluster config: %w", err)
+					}
+					if dnsCluster.GetDnsRefreshRate().AsDuration() != 60*time.Second {
+						return fmt.Errorf("expected dns refresh rate to be 60s, got %v", dnsCluster.GetDnsRefreshRate().AsDuration())
+					}
+					if dnsCluster.GetDnsJitter().AsDuration() != 15*time.Second {
+						return fmt.Errorf("expected dns jitter to be 15s, got %v", dnsCluster.GetDnsJitter().AsDuration())
+					}
+					if !dnsCluster.GetRespectDnsTtl() {
+						return errors.New("expected respect dns ttl to be true")
+					}
+					return nil
+				},
+			},
+			mode:    apisettings.ValidationStrict,
+			wantErr: false,
+		},
+		{
 			name: "policy without useHostnameForHashing uses STATIC cluster for validation",
 			policyIR: &BackendConfigPolicyIR{
 				ct:             time.Now(),

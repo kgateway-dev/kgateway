@@ -161,6 +161,12 @@ type TrafficPolicySpec struct {
 	// NOTE: This field is only honored for HTTPRoute and GRPCRoute targets.
 	// +optional
 	Tracing *RouteTracing `json:"tracing,omitempty"`
+
+	// FaultInjection configures fault injection for chaos engineering and
+	// resiliency testing. Supports delay injection, abort injection,
+	// and response rate limiting.
+	// +optional
+	FaultInjection *FaultInjectionPolicy `json:"faultInjection,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
@@ -663,4 +669,93 @@ type RouteTracing struct {
 	// tracing is configured via ListenerPolicy.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+}
+
+// FaultInjectionPolicy configures fault injection for testing service resiliency.
+// At least one of delay, abort, responseRateLimit, or disable must be specified.
+//
+// +kubebuilder:validation:AtLeastOneOf=delay;abort;responseRateLimit;disable
+type FaultInjectionPolicy struct {
+	// Delay injects latency into requests before forwarding upstream.
+	// +optional
+	Delay *FaultDelay `json:"delay,omitempty"`
+
+	// Abort injects HTTP or gRPC errors to terminate requests early.
+	// +optional
+	Abort *FaultAbort `json:"abort,omitempty"`
+
+	// ResponseRateLimit limits the response body data rate to simulate
+	// slow or degraded upstream connections.
+	// +optional
+	ResponseRateLimit *FaultResponseRateLimit `json:"responseRateLimit,omitempty"`
+
+	// MaxActiveFaults limits the number of concurrent active faults.
+	// When this limit is reached, new requests will not have faults injected.
+	// If not specified, defaults to unlimited.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MaxActiveFaults *uint32 `json:"maxActiveFaults,omitempty"`
+
+	// Disable the fault injection filter.
+	// Can be used to disable fault injection policies applied at a higher level
+	// in the config hierarchy.
+	// +optional
+	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+}
+
+// FaultDelay configures latency injection.
+type FaultDelay struct {
+	// FixedDelay is the duration to delay before forwarding the request.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
+	// +kubebuilder:validation:XValidation:rule="duration(self) <= duration('1h')",message="must not exceed 1h"
+	FixedDelay metav1.Duration `json:"fixedDelay"`
+
+	// Percentage of requests to inject the delay on. Defaults to 100.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:default=100
+	Percentage *int32 `json:"percentage,omitempty"`
+}
+
+// FaultAbort configures request abort injection.
+//
+// +kubebuilder:validation:ExactlyOneOf=httpStatus;grpcStatus
+type FaultAbort struct {
+	// HttpStatus is the HTTP status code to return when aborting a request.
+	// +optional
+	// +kubebuilder:validation:Minimum=200
+	// +kubebuilder:validation:Maximum=599
+	HttpStatus *int32 `json:"httpStatus,omitempty"`
+
+	// GrpcStatus is the gRPC status code to return when aborting a request.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=16
+	GrpcStatus *int32 `json:"grpcStatus,omitempty"`
+
+	// Percentage of requests to abort. Defaults to 100.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:default=100
+	Percentage *int32 `json:"percentage,omitempty"`
+}
+
+// FaultResponseRateLimit configures response body rate limiting to simulate
+// slow upstream connections.
+type FaultResponseRateLimit struct {
+	// KbitsPerSecond limits the response rate to the specified kilobits per second.
+	// +required
+	// +kubebuilder:validation:Minimum=1
+	KbitsPerSecond uint64 `json:"kbitsPerSecond"`
+
+	// Percentage of requests to apply the rate limit on. Defaults to 100.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:default=100
+	Percentage *int32 `json:"percentage,omitempty"`
 }

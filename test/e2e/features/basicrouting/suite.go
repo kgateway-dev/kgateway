@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
@@ -24,9 +25,11 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
 	// manifests
-	serviceManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
-	headlessServiceManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "headless-service.yaml")
-	gatewayWithRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-with-route.yaml")
+	serviceManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	headlessServiceManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "headless-service.yaml")
+	gatewayWithRouteManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-with-route.yaml")
+	longHTTPRouteManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "long-httproute.yaml")
+	samePrefixLongGatewayManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-with-same-prefix-80char-names.yaml")
 
 	// test cases
 	setup = base.TestCase{
@@ -40,6 +43,12 @@ var (
 		},
 		"TestHeadlessService": {
 			Manifests: []string{headlessServiceManifest},
+		},
+		"TestLongHTTPRouteName": {
+			Manifests: []string{longHTTPRouteManifest},
+		},
+		"TestSamePrefixLongGatewayNameRouting": {
+			Manifests: []string{serviceManifest, samePrefixLongGatewayManifest},
 		},
 	}
 
@@ -84,6 +93,57 @@ func (s *testingSuite) TestGatewayWithRoute() {
 
 func (s *testingSuite) TestHeadlessService() {
 	s.assertSuccessfulResponse()
+}
+
+func (s *testingSuite) TestLongHTTPRouteName() {
+	s.localGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+		curl.WithHostHeader("long.example.com"),
+		curl.WithPort(80),
+	)
+}
+
+func (s *testingSuite) TestSamePrefixLongGatewayNameRouting() {
+	const (
+		gwNameOne = "very-long-gateway-name-for-testing-80-char-limit-exactly-this-many-chars-aaa-one"
+		gwNameTwo = "very-long-gateway-name-for-testing-80-char-limit-exactly-this-many-chars-bbb-two"
+	)
+
+	// Verify the two long names with the same prefix produce different safe names
+	s.Require().NotEqual(kubeutils.SafeGatewayLabelValue(gwNameOne), kubeutils.SafeGatewayLabelValue(gwNameTwo))
+
+	// Get addresses for both Gateways
+	firstGateway := common.Gateway{
+		NamespacedName: types.NamespacedName{Name: gwNameOne, Namespace: "default"},
+		Address:        s.TestInstallation.Assertions.EventuallyGatewayAddress(s.Ctx, gwNameOne, "default"),
+	}
+	secondGateway := common.Gateway{
+		NamespacedName: types.NamespacedName{Name: gwNameTwo, Namespace: "default"},
+		Address:        s.TestInstallation.Assertions.EventuallyGatewayAddress(s.Ctx, gwNameTwo, "default"),
+	}
+
+	// Verify routing works for both Gateways independently
+	firstGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
+		},
+		curl.WithHostHeader("long-80-a.example.com"),
+		curl.WithPort(8080),
+	)
+	secondGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
+		},
+		curl.WithHostHeader("long-80-b.example.com"),
+		curl.WithPort(8080),
+	)
 }
 
 func (s *testingSuite) assertSuccessfulResponse() {

@@ -1,7 +1,6 @@
 package listenerpolicy
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -16,9 +15,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	otelv1 "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -160,9 +157,9 @@ func createFileAccessLog(fileSink *kgateway.FileSink) (proto.Message, error) {
 			},
 		}
 	case fileSink.JsonFormat != nil:
-		jsonStruct, err := convertJsonFormat(fileSink.JsonFormat)
+		jsonStruct, err := utils.JSONToProtoStruct(fileSink.JsonFormat.Raw)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid access log jsonFormat: %w", err)
 		}
 		fileCfg.AccessLogFormat = &envoyalfile.FileAccessLog_LogFormat{
 			LogFormat: &envoycorev3.SubstitutionFormatString{
@@ -369,24 +366,6 @@ func translateFilter(filter *kgateway.FilterType) (*envoyaccesslogv3.AccessLogFi
 	}
 
 	return alCfg, nil
-}
-
-func convertJsonFormat(jsonFormat *runtime.RawExtension) (*structpb.Struct, error) {
-	if jsonFormat == nil {
-		return nil, nil
-	}
-
-	var formatMap map[string]any
-	if err := json.Unmarshal(jsonFormat.Raw, &formatMap); err != nil {
-		return nil, fmt.Errorf("invalid access log jsonFormat: %w", err)
-	}
-
-	structVal, err := structpb.NewStruct(formatMap)
-	if err != nil {
-		return nil, fmt.Errorf("invalid access log jsonFormat: %w", err)
-	}
-
-	return structVal, nil
 }
 
 func generateCommonAccessLogGrpcConfig(grpcService kgateway.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoygrpc.CommonGrpcAccessLogConfig, error) {

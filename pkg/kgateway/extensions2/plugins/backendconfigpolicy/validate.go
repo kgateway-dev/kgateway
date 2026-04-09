@@ -33,7 +33,7 @@ func validateXDS(
 		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC},
 		ConnectTimeout:       durationpb.New(5 * time.Second),
 	}
-	if policyIR.loadBalancerConfig != nil && policyIR.loadBalancerConfig.useHostnameForHashing {
+	if requiresDnsClusterValidation(policyIR) {
 		dnsClusterConfig, err := utils.MessageToAny(&envoydnsv3.DnsCluster{})
 		if err != nil {
 			return err
@@ -64,4 +64,11 @@ func validateXDS(
 	}
 
 	return v.Validate(ctx, bootstrap)
+}
+
+func requiresDnsClusterValidation(policyIR *BackendConfigPolicyIR) bool {
+	return (policyIR.loadBalancerConfig != nil && policyIR.loadBalancerConfig.useHostnameForHashing) ||
+		policyIR.dnsRefreshRate != nil ||
+		policyIR.dnsJitter != nil ||
+		policyIR.respectDnsTtl != nil
 }

@@ -84,6 +84,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
 	constructBuffer(policyCR.Spec, &outSpec)
+	// Construct fault injection specific IR
+	constructFaultInjection(policyCR.Spec, &outSpec)
 	// Construct timeout and retry specific IR
 	constructTimeoutRetry(policyCR.Spec, &outSpec)
 

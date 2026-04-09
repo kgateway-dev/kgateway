@@ -220,6 +220,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: tenant-a-https
     default/tenant-b-route:
       parents:
       - conditions:
@@ -238,6 +239,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: tenant-b-https
   policies:
     ListenerPolicy/default/per-listener-mtls:
       ancestors:

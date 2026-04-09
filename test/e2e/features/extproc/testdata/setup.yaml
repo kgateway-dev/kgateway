@@ -51,7 +51,7 @@ spec:
         app.kubernetes.io/name: backend-0
     spec:
       containers:
-        - image: gcr.io/k8s-staging-gateway-api/echo-basic:v20231214-v1.0.0-140-gf544a46e
+        - image: registry.k8s.io/gateway-api/echo-basic:v1.5.0@sha256:fcbdfab85b3c4441e2fe8fdedd382904332ccb8253a5d51f6006c16903e7ae40
           imagePullPolicy: IfNotPresent
           name: backend-0
           ports:

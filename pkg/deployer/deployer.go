@@ -67,6 +67,12 @@ func WithPatcher(p Patcher) Option {
 	}
 }
 
+func WithGVKToGVRMapper(m map[schema.GroupVersionKind]schema.GroupVersionResource) Option {
+	return func(d *Deployer) {
+		d.gvkToGVRMapper = m
+	}
+}
+
 // NewDeployer creates a new deployer for managed resources.
 func NewDeployer(
 	controllerName string,
@@ -415,7 +421,11 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 // insufficient because the owner might still exist.
 func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Object, desiredObjs []client.Object) error {
 	ownerNamespace := owner.GetNamespace()
-	labelSelector := fmt.Sprintf("%s=%s", wellknown.GatewayNameLabel, owner.GetName())
+	// Kubernetes label values are limited to 63 characters, but Gateway names can exceed this limit.
+	// The deployed resources (Deployments, Services) use truncated names via the Helm chart's
+	// safeLabelValue function. Therefore, we must use the safe label value to match the actual labels
+	// on resources.
+	labelSelector := fmt.Sprintf("%s=%s", wellknown.GatewayNameLabel, kubeutils.SafeGatewayLabelValue(owner.GetName()))
 	desiredByGVK := make(map[schema.GroupVersionKind]map[string]bool)
 	for _, obj := range desiredObjs {
 		gvk := obj.GetObjectKind().GroupVersionKind()

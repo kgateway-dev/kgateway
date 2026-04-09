@@ -45,7 +45,7 @@ jobs:
         # December 4, 2025: ~22 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^ListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$'
+          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^ListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$|^TestKgateway$$/^FaultInjection$$'
           localstack: 'true'
         # December 4, 2025: ~19 minutes
         - cluster-name: 'cluster-four'

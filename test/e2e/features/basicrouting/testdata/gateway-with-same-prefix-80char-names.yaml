@@ -1,0 +1,55 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: very-long-gateway-name-for-testing-80-char-limit-exactly-this-many-chars-aaa-one
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: long-gateway-example-route-a
+spec:
+  parentRefs:
+    - name: very-long-gateway-name-for-testing-80-char-limit-exactly-this-many-chars-aaa-one
+  hostnames:
+    - "long-80-a.example.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 8080
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: very-long-gateway-name-for-testing-80-char-limit-exactly-this-many-chars-bbb-two
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: long-gateway-example-route-b
+spec:
+  parentRefs:
+    - name: very-long-gateway-name-for-testing-80-char-limit-exactly-this-many-chars-bbb-two
+  hostnames:
+    - "long-80-b.example.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 8080

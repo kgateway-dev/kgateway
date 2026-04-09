@@ -140,7 +140,16 @@ spec:
     logoutPath: /log-out
     endSessionEndpoint: https://provider-2.com/logout
     forwardAccessToken: true
-    scopes: ["email"]
+    scopes: ["email", "groups"]
+    jwt:
+      jwksURI: https://provider-2.com/jwks.json
+      accessToken:
+        audiences:
+          - test.com
+      idToken:
+        claimsToHeaders:
+          - name: groups
+            header: x-oauth2-groups
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension

@@ -309,6 +309,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: http
     default/cross-namespace-denied:
       parents:
       - conditions:
@@ -328,6 +329,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: http
     default/gateway-level-route:
       parents:
       - conditions:
@@ -346,6 +348,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: http
     default/listener-level-route:
       parents:
       - conditions:
@@ -364,6 +367,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: http2
   policies:
     TrafficPolicy/default/gateway-policy:
       ancestors:

@@ -14,6 +14,7 @@ import (
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
+	faulthttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
@@ -102,6 +103,7 @@ type trafficPolicySpecIr struct {
 	apiKeyAuth      *apiKeyAuthIR
 	oauth2          *oauthIR
 	tracing         *routeTracingIR
+	faultInjection  *faultInjectionIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -180,6 +182,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.tracing.Equals(d2.spec.tracing) {
 		return false
 	}
+	if !d.spec.faultInjection.Equals(d2.spec.faultInjection) {
+		return false
+	}
 	return true
 }
 
@@ -207,6 +212,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.apiKeyAuth.Validate)
 	validators = append(validators, p.spec.oauth2.Validate)
 	validators = append(validators, p.spec.tracing.Validate)
+	validators = append(validators, p.spec.faultInjection.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -235,6 +241,7 @@ type trafficPolicyPluginGwPass struct {
 	decompressorInChain      map[string]*decompressorv3.Decompressor
 	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
 	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
+	faultInChain             map[string]*faulthttpv3.HTTPFault
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
@@ -397,6 +404,13 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	stagedFilters := []filters.StagedHttpFilter{}
 
+	// Add Fault injection filter (FaultStage is the first stage in the filter chain).
+	if f := p.faultInChain[fcc.FilterChainName]; f != nil {
+		filter := filters.MustNewStagedFilter(faultFilterName, f, filters.DuringStage(filters.FaultStage))
+		filter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, filter)
+	}
+
 	// Add global ExtProc disable filter when there are providers
 	if len(p.extProcPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
@@ -488,6 +502,21 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 		stagedFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, stagedFilter)
+
+		jwtFilter := provider.Extension.OAuth2.jwtCfg
+		if jwtFilter == nil {
+			continue
+		}
+
+		stagedJwtFilter := filters.MustNewStagedFilterWithWeight(
+			oauthJWTFilterName(provider.Name),
+			jwtFilter,
+			filters.DuringStage(filters.AuthNStage),
+			provider.Extension.PrecedenceWeight,
+		)
+
+		stagedJwtFilter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, stagedJwtFilter)
 	}
 
 	if len(p.jwtPerProvider.Providers[fcc.FilterChainName]) > 0 {
@@ -627,6 +656,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleBasicAuth(fcn, typedFilterConfig, spec.basicAuth)
 	p.handleAPIKeyAuth(fcn, typedFilterConfig, spec.apiKeyAuth)
 	p.handleOauth2(fcn, typedFilterConfig, spec.oauth2)
+	p.handleFaultInjection(fcn, typedFilterConfig, spec.faultInjection)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level
