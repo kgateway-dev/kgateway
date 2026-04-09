@@ -153,6 +153,39 @@ func TestBuildPolicyStatusFn(t *testing.T) {
 	requireCondition(t, ours.Conditions, string(gwv1.BackendTLSPolicyConditionResolvedRefs), metav1.ConditionTrue, string(gwv1.BackendTLSPolicyReasonResolvedRefs))
 }
 
+func TestBuildPolicyStatusFnCapsAncestorsAtAPILimit(t *testing.T) {
+	key := pluginreporter.PolicyKey{
+		Group:     gwv1.GroupVersion.Group,
+		Kind:      "BackendTLSPolicy",
+		Namespace: "default",
+		Name:      "tls-policy",
+	}
+
+	rm := reports.NewReportMap()
+	reporter := reports.NewReporter(&rm)
+	policyReporter := reporter.Policy(key, 1)
+	for i := range reports.MaxPolicyStatusAncestors + 1 {
+		ancestorRef := gwv1.ParentReference{
+			Group:     ptrTo(gwv1.Group(gwv1.GroupVersion.Group)),
+			Kind:      ptrTo(gwv1.Kind("Gateway")),
+			Namespace: ptrTo(gwv1.Namespace("default")),
+			Name:      gwv1.ObjectName("gw-" + string(rune('a'+i))),
+		}
+
+		ancestorReporter := policyReporter.AncestorRef(ancestorRef)
+		for _, condition := range BuildPolicyConditions(newTestPolicyAtt("tls-policy", time.Unix(10, 0)), nil) {
+			ancestorReporter.SetCondition(condition)
+		}
+	}
+
+	status := buildPolicyStatusFn()(t.Context(), rm, key, "kgateway.dev/kgateway", gwv1.PolicyStatus{})
+	require.NotNil(t, status)
+	require.Len(t, status.Ancestors, reports.MaxPolicyStatusAncestors)
+	for _, ancestor := range status.Ancestors {
+		require.NotEqual(t, gwv1.ObjectName("StatusSummary"), ancestor.AncestorRef.Name)
+	}
+}
+
 func newTestPolicyAtt(name string, created time.Time) ir.PolicyAtt {
 	return ir.PolicyAtt{
 		Generation: 1,

@@ -7,6 +7,9 @@ import (
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
+// newFinalBackendEndpoints remaps raw endpoint data onto the final backend view
+// so EDS stays aligned with the cluster names and resource identities selected
+// for routes and clusters after policy attachment.
 func newFinalBackendEndpoints(
 	krtopts krtutil.KrtOptions,
 	finalBackends krt.Collection[*ir.BackendObjectIR],

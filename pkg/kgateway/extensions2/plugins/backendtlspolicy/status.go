@@ -3,7 +3,6 @@ package backendtlspolicy
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"slices"
 	"strings"
 
@@ -12,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -90,7 +88,7 @@ func buildPolicyStatusFn() pluginsdk.BuildPolicyStatusFn {
 			var currentParentConditions []metav1.Condition
 			currentParentRefIdx := slices.IndexFunc(currentStatus.Ancestors, func(s gwv1.PolicyAncestorStatus) bool {
 				return s.ControllerName == gwv1.GatewayController(controller) &&
-					reflect.DeepEqual(s.AncestorRef, ancestorRef)
+					reports.ParentRefEqual(s.AncestorRef, ancestorRef)
 			})
 			if currentParentRefIdx != -1 {
 				currentParentConditions = currentStatus.Ancestors[currentParentRefIdx].Conditions
@@ -121,24 +119,11 @@ func buildPolicyStatusFn() pluginsdk.BuildPolicyStatusFn {
 			return strings.Compare(reports.ParentString(a.AncestorRef), reports.ParentString(b.AncestorRef))
 		})
 
-		if len(status.Ancestors) > 15 {
-			ignored := status.Ancestors[15:]
-			status.Ancestors = status.Ancestors[:15]
-			status.Ancestors = append(status.Ancestors, gwv1.PolicyAncestorStatus{
-				AncestorRef: gwv1.ParentReference{
-					Group: ptr.To(gwv1.Group("gateway.kgateway.dev")),
-					Name:  "StatusSummary",
-				},
-				ControllerName: gwv1.GatewayController(controller),
-				Conditions: []metav1.Condition{
-					{
-						Type:    "StatusSummarized",
-						Status:  metav1.ConditionTrue,
-						Reason:  "StatusSummary",
-						Message: fmt.Sprintf("%d AncestorRefs ignored due to max status size", len(ignored)),
-					},
-				},
-			})
+		if len(status.Ancestors) > reports.MaxPolicyStatusAncestors {
+			// Gateway API caps PolicyStatus.ancestors at 16 real entries. Overflow needs
+			// to be signaled on related resources instead of inventing a synthetic
+			// ancestor entry in the policy status itself.
+			status.Ancestors = status.Ancestors[:reports.MaxPolicyStatusAncestors]
 		}
 
 		return &status
