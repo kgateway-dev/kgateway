@@ -232,9 +232,11 @@ data:
             cluster_name: xds_cluster
       cds_config:
         resource_api_version: V3
+        initial_fetch_timeout: 0s
         ads: {}
       lds_config:
         resource_api_version: V3
+        initial_fetch_timeout: 0s
         ads: {}
   xds_service_account_token.json: |
     {"resources":[{
