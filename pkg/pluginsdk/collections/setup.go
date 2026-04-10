@@ -133,11 +133,11 @@ func (c *CommonCollections) InitCollections(
 				return nil
 			}, c.KrtOpts.ToOptions("TLSRouteV1ToV1Alpha2")...))
 		}
-		if servedTLSRouteVersions.Legacy && (!servedTLSRouteVersions.Authoritative || !servedTLSRouteVersions.Promoted) {
-			switch servedTLSRouteVersions.LegacyGVR.Version {
+		for _, legacyTLSRouteGVR := range legacyTLSRouteWatchGVRs(servedTLSRouteVersions) {
+			switch legacyTLSRouteGVR.Version {
 			case gwv1a2.GroupVersion.Version:
 				legacyTLSRoutes := krt.WrapClient(
-					newDelayedTypedInformer(c.Client, servedTLSRouteVersions.LegacyGVR, func() kclient.Informer[*gwv1a2.TLSRoute] {
+					newDelayedTypedInformer(c.Client, legacyTLSRouteGVR, func() kclient.Informer[*gwv1a2.TLSRoute] {
 						return kclient.NewFiltered[*gwv1a2.TLSRoute](c.Client, filter)
 					}),
 					c.KrtOpts.ToOptions("TLSRouteLegacyV1Alpha2")...,
@@ -145,7 +145,7 @@ func (c *CommonCollections) InitCollections(
 				tlsRouteCollections = append(tlsRouteCollections, legacyTLSRoutes)
 			case wellknown.LegacyTLSRouteVersion:
 				legacyTLSRoutes := krt.WrapClient(
-					newDelayedTypedInformer(c.Client, servedTLSRouteVersions.LegacyGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+					newDelayedTypedInformer(c.Client, legacyTLSRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
 						return kclient.NewFiltered[*gwv1a3.TLSRoute](c.Client, filter)
 					}),
 					c.KrtOpts.ToOptions("TLSRouteLegacyV1Alpha3")...,

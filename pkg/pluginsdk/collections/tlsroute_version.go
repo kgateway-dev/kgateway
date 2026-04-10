@@ -29,6 +29,12 @@ var legacyTLSRouteGVR = schema.GroupVersionResource{
 	Resource: "tlsroutes",
 }
 
+var legacyTLSRouteV1Alpha2GVR = schema.GroupVersionResource{
+	Group:    wellknown.GatewayGroup,
+	Version:  gwv1a2.GroupVersion.Version,
+	Resource: "tlsroutes",
+}
+
 type servedTLSRouteVersions struct {
 	Promoted      bool
 	Legacy        bool
@@ -42,6 +48,21 @@ func fallbackTLSRouteVersions() servedTLSRouteVersions {
 		Legacy:    true,
 		LegacyGVR: legacyTLSRouteGVR,
 	}
+}
+
+// legacyTLSRouteWatchGVRs returns the legacy TLSRoute API versions that should
+// be watched for the current discovery result. When discovery is authoritative,
+// prefer a single served version to avoid duplicate logical TLSRoutes. When
+// discovery is non-authoritative, keep both legacy versions active so clusters
+// that only serve v1alpha2 remain discoverable.
+func legacyTLSRouteWatchGVRs(versions servedTLSRouteVersions) []schema.GroupVersionResource {
+	if !versions.Legacy || (versions.Authoritative && versions.Promoted) {
+		return nil
+	}
+	if versions.Authoritative {
+		return []schema.GroupVersionResource{versions.LegacyGVR}
+	}
+	return []schema.GroupVersionResource{legacyTLSRouteGVR, legacyTLSRouteV1Alpha2GVR}
 }
 
 // getServedTLSRouteVersions resolves which TLSRoute API versions are currently

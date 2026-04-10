@@ -88,6 +88,33 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 	})
 }
 
+func TestLegacyTLSRouteWatchGVRs(t *testing.T) {
+	t.Run("returns no legacy watches when promoted discovery is authoritative", func(t *testing.T) {
+		require.Empty(t, legacyTLSRouteWatchGVRs(servedTLSRouteVersions{
+			Promoted:      true,
+			Legacy:        true,
+			LegacyGVR:     wellknown.LegacyTLSRouteGVR,
+			Authoritative: true,
+		}))
+	})
+
+	t.Run("returns the discovered legacy watch when promoted v1 is not served", func(t *testing.T) {
+		require.Equal(t, []schema.GroupVersionResource{legacyTLSRouteV1Alpha2GVR}, legacyTLSRouteWatchGVRs(servedTLSRouteVersions{
+			Legacy:        true,
+			LegacyGVR:     legacyTLSRouteV1Alpha2GVR,
+			Authoritative: true,
+		}))
+	})
+
+	t.Run("returns both legacy fallbacks when discovery is non-authoritative", func(t *testing.T) {
+		require.Equal(t, []schema.GroupVersionResource{wellknown.LegacyTLSRouteGVR, legacyTLSRouteV1Alpha2GVR}, legacyTLSRouteWatchGVRs(servedTLSRouteVersions{
+			Promoted:  true,
+			Legacy:    true,
+			LegacyGVR: wellknown.LegacyTLSRouteGVR,
+		}))
+	})
+}
+
 func TestConvertTLSRouteV1ToV1Alpha2(t *testing.T) {
 	route := &gwv1.TLSRoute{
 		ObjectMeta: metav1.ObjectMeta{
