@@ -61,3 +61,5 @@ dist/
 
 # Rust target directory created by cargo
 internal/envoyinit/rustformations/target/*
+
+nohup.out

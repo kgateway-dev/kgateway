@@ -730,10 +730,14 @@ main() {
     # Export environment variables so the test code can use them
     export CLUSTER_TYPE
     export CLUSTER_NAME
-    # For k3d on macOS, the gateway is accessible via localhost since k3d's
-    # loadbalancer maps host ports directly to the cluster (e.g., 80:80, 443:443).
-    if [[ "$CLUSTER_TYPE" == "k3d" && -z "${GATEWAY_ADDRESS_OVERRIDE:-}" ]]; then
-        export GATEWAY_ADDRESS_OVERRIDE="localhost"
+    # Ensure the k3d LoadBalancer IP assigner is running (needed when --persist
+    # skips setup, or if the process died).
+    if [[ "$CLUSTER_TYPE" == "k3d" ]]; then
+        if ! pgrep -f "k3d-loadbalancer.sh ${CLUSTER_NAME}" > /dev/null 2>&1; then
+            log_info "Starting k3d LoadBalancer IP assigner"
+            bash "${SCRIPT_DIR}/k3d/k3d-loadbalancer.sh" "${CLUSTER_NAME}" &
+            disown
+        fi
     fi
     if is_truthy PERSIST_INSTALL; then
         export PERSIST_INSTALL

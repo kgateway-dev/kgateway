@@ -73,10 +73,11 @@ function create_and_setup() {
     kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
   fi
 
-  # Install MetalLB for proper LoadBalancer support (each service gets a unique IP).
-  # k3s built-in ServiceLB uses host ports, causing conflicts when multiple services
-  # share the same port number.
-  METALLB_NETWORK="k3d-${CLUSTER_NAME}" . "$SCRIPT_DIR/../kind/setup-metalllb-on-kind.sh"
+  # Start the lightweight LoadBalancer IP assigner in the background.
+  # k3s ServiceLB uses host ports, causing conflicts when multiple services share
+  # the same port. This script assigns unique IPs from the Docker network instead.
+  nohup "$SCRIPT_DIR/k3d-loadbalancer.sh" "$CLUSTER_NAME" > /tmp/k3d-lb-"${CLUSTER_NAME}".log 2>&1 &
+  disown
 }
 
 # 1. Create a k3d cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)
