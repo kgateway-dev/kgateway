@@ -44,14 +44,14 @@ Name|Version|License
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20251213004720-97cd9d5aeac2|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.77.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.11|BSD 3-clause "New" or "Revised" License
-[helm/v3](https://helm.sh/helm/v3)|v3.19.2|Apache License 2.0
+[helm/v3](https://helm.sh/helm/v3)|v3.19.5|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.28.0-alpha.0.0.20251210001900-ce7b5802387c|Apache License 2.0
 [istio.io/client-go](https://istio.io/client-go)|v1.28.0-alpha.0.0.20251210002059-b67694478a4b|Apache License 2.0
 [istio.io/istio](https://istio.io/istio)|v0.0.0-20251218162427-600ea84d2996|Apache License 2.0
-[k8s.io/api](https://k8s.io/api)|v0.34.1|Apache License 2.0
-[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.34.1|Apache License 2.0
+[k8s.io/api](https://k8s.io/api)|v0.34.2|Apache License 2.0
+[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.34.2|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.34.3|Apache License 2.0
-[k8s.io/client-go](https://k8s.io/client-go)|v0.34.1|Apache License 2.0
+[k8s.io/client-go](https://k8s.io/client-go)|v0.34.2|Apache License 2.0
 [klog/v2](https://k8s.io/klog/v2)|v2.130.1|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20251002143259-bc988d571ff4|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.22.3|Apache License 2.0
