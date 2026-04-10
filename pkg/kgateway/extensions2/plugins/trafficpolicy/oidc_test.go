@@ -211,7 +211,7 @@ func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
 	const goroutines = 10
 	errs := make(chan error, goroutines)
 	configs := make(chan *oidcProviderConfig, goroutines)
-	for i := 0; i < goroutines; i++ {
+	for range goroutines {
 		go func() {
 			cfg, err := o.get(issuer)
 			errs <- err
@@ -220,7 +220,7 @@ func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
 	}
 
 	// All goroutines should succeed.
-	for i := 0; i < goroutines; i++ {
+	for range goroutines {
 		r.NoError(<-errs)
 		cfg := <-configs
 		r.NotNil(cfg)
