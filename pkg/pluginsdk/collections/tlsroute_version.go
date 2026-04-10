@@ -36,15 +36,24 @@ type servedTLSRouteVersions struct {
 	Authoritative bool
 }
 
+func fallbackTLSRouteVersions() servedTLSRouteVersions {
+	return servedTLSRouteVersions{
+		Promoted:  true,
+		Legacy:    true,
+		LegacyGVR: legacyTLSRouteGVR,
+	}
+}
+
 // getServedTLSRouteVersions resolves which TLSRoute API versions are currently
-// served by the cluster. When discovery is unavailable, we conservatively allow
-// both promoted and legacy watches so startup does not incorrectly disable
-// TLSRoute support.
+// served by the cluster. When discovery is unavailable, or the CRD is not yet
+// installed, we conservatively allow both promoted and legacy watches so
+// startup does not incorrectly disable TLSRoute support before delayed
+// informers can recover.
 func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTLSRouteVersions {
 	if extClient == nil {
 		// If discovery is unavailable, keep both paths enabled and let the delayed
 		// informer logic determine what is actually readable at runtime.
-		return servedTLSRouteVersions{Promoted: true, Legacy: true, LegacyGVR: legacyTLSRouteGVR}
+		return fallbackTLSRouteVersions()
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), crdLookupTimeout)
@@ -53,9 +62,9 @@ func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTL
 	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, "tlsroutes.gateway.networking.k8s.io", metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return servedTLSRouteVersions{Authoritative: true}
+			return fallbackTLSRouteVersions()
 		}
-		return servedTLSRouteVersions{Promoted: true, Legacy: true, LegacyGVR: legacyTLSRouteGVR}
+		return fallbackTLSRouteVersions()
 	}
 
 	versions := servedTLSRouteVersions{Authoritative: true}

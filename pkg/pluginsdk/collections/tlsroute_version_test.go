@@ -54,9 +54,11 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 		}, getServedTLSRouteVersions(client))
 	})
 
-	t.Run("tracks absence authoritatively", func(t *testing.T) {
+	t.Run("defaults to startup fallback when the CRD is absent", func(t *testing.T) {
 		require.Equal(t, servedTLSRouteVersions{
-			Authoritative: true,
+			Promoted:  true,
+			Legacy:    true,
+			LegacyGVR: wellknown.LegacyTLSRouteGVR,
 		}, getServedTLSRouteVersions(apiextensionsfake.NewClientset()))
 	})
 
