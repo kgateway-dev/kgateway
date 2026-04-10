@@ -567,7 +567,15 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	// TODO: we should never get here
 	case 1:
 		// Only set the cluster name if unspecified since a plugin may have set it.
-		if action.GetCluster() == "" {
+		if clusters[0].GetWeight().GetValue() == 0 {
+			if action.GetWeightedClusters() == nil {
+				action.ClusterSpecifier = &envoyroutev3.RouteAction_WeightedClusters{
+					WeightedClusters: &envoyroutev3.WeightedCluster{
+						Clusters: clusters,
+					},
+				}
+			}
+		} else if action.GetCluster() == "" {
 			action.ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{
 				Cluster: clusters[0].GetName(),
 			}

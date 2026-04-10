@@ -6,6 +6,9 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestValidateWeightedClusters(t *testing.T) {
@@ -88,4 +91,55 @@ func TestValidateWeightedClusters(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTranslateRouteAction(t *testing.T) {
+	h := &httpRouteConfigurationTranslator{
+		gw: ir.GatewayIR{
+			SourceObject: &ir.Gateway{
+				Obj: &gwv1.Gateway{},
+			},
+		},
+	}
+
+	t.Run("single backend with weight 0 uses WeightedClusters", func(t *testing.T) {
+		in := ir.HttpRouteRuleMatchIR{
+			Backends: []ir.HttpBackend{
+				{
+					Backend: ir.BackendRefIR{
+						ClusterName: "cluster-1",
+						Weight:      0,
+					},
+				},
+			},
+		}
+
+		outRoute := &envoyroutev3.Route{}
+		action := h.translateRouteAction(in, outRoute, nil)
+
+		weightedClusters := action.Route.GetWeightedClusters()
+		assert.NotNil(t, weightedClusters, "expected RouteAction_WeightedClusters when weight is 0")
+		assert.Len(t, weightedClusters.GetClusters(), 1)
+		assert.Equal(t, uint32(0), weightedClusters.GetClusters()[0].GetWeight().GetValue())
+	})
+
+	t.Run("single backend with weight > 0 uses Cluster", func(t *testing.T) {
+		in := ir.HttpRouteRuleMatchIR{
+			Backends: []ir.HttpBackend{
+				{
+					Backend: ir.BackendRefIR{
+						ClusterName: "cluster-1",
+						Weight:      1,
+					},
+				},
+			},
+		}
+
+		outRoute := &envoyroutev3.Route{}
+		action := h.translateRouteAction(in, outRoute, nil)
+
+		cluster := action.Route.GetCluster()
+		assert.Equal(t, "cluster-1", cluster)
+		assert.Nil(t, action.Route.GetWeightedClusters())
+	})
 }
