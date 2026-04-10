@@ -6,7 +6,7 @@ Name|Version|License
 [agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.12.0|Apache License 2.0
 [anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go)|v1.19.0|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.7.0|MIT License
-[xds/go](https://github.com/cncf/xds)|v0.0.0-20251110193048-8bfbf64dc13e|Apache License 2.0
+[xds/go](https://github.com/cncf/xds)|v0.0.0-20251210132809-ee656c7534f5|Apache License 2.0
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.14.0|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250627145903-197b96a9c7f8|Apache License 2.0
 [go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.36.1-0.20251120180717-7c66c7f1d0b2|Apache License 2.0
@@ -36,13 +36,13 @@ Name|Version|License
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.2|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
-[proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.9.0|Apache License 2.0
+[proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.10.0|Apache License 2.0
 [go.uber.org/atomic](https://go.uber.org/atomic)|v1.11.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.1|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20251209150349-8475f28825e9|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.14.0|BSD 3-clause "New" or "Revised" License
-[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20251213004720-97cd9d5aeac2|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.77.0|Apache License 2.0
+[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260401024825-9d38bb4040a9|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.80.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.11|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.19.5|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.28.0-alpha.0.0.20251210001900-ce7b5802387c|Apache License 2.0
