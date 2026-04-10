@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"sync"
 
 	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kubetypes"
@@ -15,8 +16,15 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
-// RegisterTypes registers all the types used by our API Client
+var registerOnce sync.Once
+
+// RegisterTypes registers all the types used by our API Client.
+// Safe to call multiple times; registration is performed only once.
 func RegisterTypes() {
+	registerOnce.Do(registerTypes)
+}
+
+func registerTypes() {
 	// kgateway types
 	kubeclient.Register(
 		wellknown.GatewayParametersGVR,

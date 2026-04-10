@@ -93,9 +93,11 @@ func newDelayedTypedInformer[T controllers.ComparableObject](
 			return newInformer()
 		},
 	}
-	if err == nil {
-		delayed.verifiedNotReady.Store(true)
-	}
+	// Always unblock HasSynced when constructing a delayed informer. If
+	// discovery errored (RBAC, timeout, etc.) we are non-authoritative and
+	// must not block startup; if err==nil && !served, the CRD genuinely
+	// doesn't exist yet. Either way, verifiedNotReady = true is correct.
+	delayed.verifiedNotReady.Store(true)
 
 	return delayed
 }
@@ -348,7 +350,11 @@ func (d *delayedInformer[T]) startPolling(stop <-chan struct{}) {
 			}
 
 			served, err := crdServesVersion(d.extClient, d.gvr)
-			if err == nil {
+			if err != nil {
+				// Discovery is non-authoritative; unblock HasSynced so
+				// startup is not held indefinitely by a flaky API call.
+				d.verifiedNotReady.Store(true)
+			} else {
 				d.verifiedNotReady.Store(!served)
 				if served {
 					d.set(d.newInformer())
