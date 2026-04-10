@@ -108,7 +108,7 @@ const (
 )
 
 // sendJSONResponse sends a JSON response with CORS headers
-func sendJSONResponse(w http.ResponseWriter, r *http.Request, data interface{}, statusCode int) {
+func sendJSONResponse(w http.ResponseWriter, r *http.Request, data any, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	origin := r.Header.Get("Origin")
 	if origin == "" {
@@ -133,7 +133,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	registration := map[string]interface{}{
+	registration := map[string]any{
 		"client_id":                  hardcodedClientID,
 		"client_secret":              hardcodedClientSecret,
 		"client_name":                "Test Client",
@@ -202,7 +202,7 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 		// Be lenient for generic MCP inspectors/SPAs using PKCE:
 		// - Do not require client_secret (public client)
 		// - Accept any code/redirect_uri/code_verifier
-		response := map[string]interface{}{
+		response := map[string]any{
 			"access_token":  string(orgOneJwt),
 			"refresh_token": hardcodedRefreshToken,
 			"token_type":    "bearer",
@@ -217,7 +217,7 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Accept any refresh_token for testing purposes
-		response := map[string]interface{}{
+		response := map[string]any{
 			"access_token":  string(orgOneJwt),
 			"refresh_token": hardcodedRefreshToken,
 			"token_type":    "bearer",
@@ -267,7 +267,7 @@ func handleDiscovery(w http.ResponseWriter, r *http.Request) {
 	}
 	baseURL := fmt.Sprintf("%s://%s", scheme, host)
 
-	discovery := map[string]interface{}{
+	discovery := map[string]any{
 		"issuer":                                "https://kgateway.dev",
 		"authorization_endpoint":                fmt.Sprintf("%s/authorize", baseURL),
 		"token_endpoint":                        fmt.Sprintf("%s/token", baseURL),
