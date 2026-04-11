@@ -21,7 +21,7 @@ func NamespaceSelector(namespaces krt.Collection[NamespaceMetadata], sel labels.
 	return func(kctx krt.HandlerContext, namespace string) bool {
 		ns := krt.FetchOne(kctx, namespaces, krt.FilterKey(namespace))
 		if ns == nil {
-			return false
+			return sel.Empty()
 		}
 		return sel.Matches(labels.Set(ns.Labels))
 	}

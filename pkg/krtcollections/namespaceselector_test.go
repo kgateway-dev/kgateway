@@ -18,6 +18,14 @@ func TestNamespaceSelectorReturnsFalseForMissingNamespace(t *testing.T) {
 	assert.False(t, matches(krt.TestingDummyContext{}, "missing"), "missing namespaces should not match selectors")
 }
 
+func TestNamespaceSelectorMatchesMissingNamespaceForMatchAllSelector(t *testing.T) {
+	namespaces := krt.NewStaticCollection[NamespaceMetadata](nil, nil)
+
+	matches := NamespaceSelector(namespaces, klabels.Everything())
+
+	assert.True(t, matches(krt.TestingDummyContext{}, "missing"), "missing namespaces should match an empty selector")
+}
+
 func TestNamespaceSelectorMatchesExistingNamespace(t *testing.T) {
 	namespaces := krt.NewStaticCollection[NamespaceMetadata](nil, []NamespaceMetadata{{
 		Name: "default",
