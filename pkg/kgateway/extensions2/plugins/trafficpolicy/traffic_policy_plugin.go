@@ -472,6 +472,9 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 
 	// Add OIDC filters for providers
+	if len(p.oauth2PerProvider.Providers[fcc.FilterChainName]) > 0 {
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, OauthEnabledFilterName)
+	}
 	for _, provider := range p.oauth2PerProvider.Providers[fcc.FilterChainName] {
 		oidcFilter := provider.Extension.OAuth2.cfg
 		if oidcFilter == nil {
@@ -489,7 +492,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 		stagedFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, stagedFilter)
-		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, OauthEnabledFilterName)
 
 		jwtFilter := provider.Extension.OAuth2.jwtCfg
 		if jwtFilter == nil {
@@ -509,6 +511,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 	if len(p.jwtPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, jwtGlobalDisableFilterName, jwtGlobalDisableFilterMetadataNamespace)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, JwtEnabledFilterName)
 	}
 	for _, provider := range p.jwtPerProvider.Providers[fcc.FilterChainName] {
 		jwtFilter := provider.Extension.Jwt
@@ -526,7 +529,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 		stagedJwtFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, stagedJwtFilter)
-		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, JwtEnabledFilterName)
 	}
 
 	if f := p.localRateLimitInChain[fcc.FilterChainName]; f != nil {
