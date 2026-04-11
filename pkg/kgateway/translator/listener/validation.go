@@ -254,6 +254,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 
 	// reset valid listeners
 	validListeners = []ir.Listener{}
+	attachedListenerSets := map[string]struct{}{}
 
 	// This loop validates listeners based on any port / protocol / hostname conflict
 	// Based on the example, the list of validListeners will as follows
@@ -294,6 +295,12 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonInvalid, err.Error())
 			} else {
 				validListeners = append(validListeners, listener)
+				// skip listeners that are attached to a gateway
+				if _, ok := listener.Parent.(*gwv1.Gateway); ok {
+					continue
+				}
+				nns := fmt.Sprintf("%s/%s", listener.Parent.GetNamespace(), listener.Parent.GetName())
+				attachedListenerSets[nns] = struct{}{}
 			}
 		}
 	}
@@ -313,19 +320,8 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 		return validListeners
 	}
 
-	// TODO: Maybe this can be handled in the prior loop itself ?
-	attachedListenerSet := map[string]struct{}{}
-	for _, listener := range validListeners {
-		parent, ok := listener.Parent.(*gwv1.ListenerSet)
-		if ok {
-			nns := fmt.Sprintf("%s/%s", parent.GetNamespace(), parent.GetName())
-			attachedListenerSet[nns] = struct{}{}
-		}
-	}
-	attachedListenerSetCount := len(attachedListenerSet)
-
-	if attachedListenerSetCount > 0 {
-		reporter.Gateway(gw.Obj).SetAttachedListenerSets(int32(attachedListenerSetCount)) //nolint:gosec // disable G115 directive.
+	if len(attachedListenerSets) > 0 {
+		reporter.Gateway(gw.Obj).SetAttachedListenerSets(int32(len(attachedListenerSets))) //nolint:gosec // disable G115 directive.
 	}
 
 	return validListeners
@@ -333,8 +329,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 
 func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter) []ir.Listener {
 	rejectDeniedListenerSets(consolidatedGateway, reporter)
-	validatedListeners := validateListeners(consolidatedGateway, reporter)
-	return validatedListeners
+	return validateListeners(consolidatedGateway, reporter)
 }
 
 func protocolConflict(portProtocol portProtocol, listener ir.Listener) bool {

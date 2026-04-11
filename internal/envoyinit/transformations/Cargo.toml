@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.100"
+bitflags = "2.9.4"
 base64 = "0.22.1"
 minijinja = { version = "2.12.0", features = ["loader"] }
 once_cell = "1.21.3"

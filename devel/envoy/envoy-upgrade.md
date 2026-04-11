@@ -2,7 +2,7 @@
 
 ## Envoy version
 
-as of v2.3.0, kgateway uses vanilla upstream [envoy](https://github.com/envoyproxy/envoy).
+As of v2.3.0, kgateway uses vanilla upstream [envoy](https://github.com/envoyproxy/envoy).
 The [release page](https://github.com/envoyproxy/envoy/releases) lists the latest release versions.
 
 ## Upgrading

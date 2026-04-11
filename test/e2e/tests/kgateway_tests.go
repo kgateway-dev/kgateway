@@ -45,6 +45,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/tracing"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/trafficpolicystatus"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/transformation"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/websocket"
 )
 
 func KubeGatewaySuiteRunner() e2e.SuiteRunner {
@@ -97,6 +98,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("WebSocket", websocket.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }
