@@ -30,7 +30,7 @@ Name|Version|License
 [openai/openai-go](https://github.com/openai/openai-go)|v1.12.0|Apache License 2.0
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.23.2|Apache License 2.0
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
-[prometheus/common](https://github.com/prometheus/common)|v0.67.1|Apache License 2.0
+[prometheus/common](https://github.com/prometheus/common)|v0.67.5|Apache License 2.0
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.3.2-0.20230802210424-5b0b94c5c0d3|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.15.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.2|Apache License 2.0
@@ -48,10 +48,10 @@ Name|Version|License
 [istio.io/api](https://istio.io/api)|v1.28.0-alpha.0.0.20251210001900-ce7b5802387c|Apache License 2.0
 [istio.io/client-go](https://istio.io/client-go)|v1.28.0-alpha.0.0.20251210002059-b67694478a4b|Apache License 2.0
 [istio.io/istio](https://istio.io/istio)|v0.0.0-20251218162427-600ea84d2996|Apache License 2.0
-[k8s.io/api](https://k8s.io/api)|v0.34.2|Apache License 2.0
-[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.34.2|Apache License 2.0
+[k8s.io/api](https://k8s.io/api)|v0.34.3|Apache License 2.0
+[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.34.3|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.34.3|Apache License 2.0
-[k8s.io/client-go](https://k8s.io/client-go)|v0.34.2|Apache License 2.0
+[k8s.io/client-go](https://k8s.io/client-go)|v0.34.3|Apache License 2.0
 [klog/v2](https://k8s.io/klog/v2)|v2.130.1|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20251002143259-bc988d571ff4|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.22.3|Apache License 2.0
