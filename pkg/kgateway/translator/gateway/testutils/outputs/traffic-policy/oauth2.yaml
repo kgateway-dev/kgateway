@@ -246,6 +246,16 @@ Listeners:
                   requirements:
                   - providerName: oauth2/accessToken
                   - providerName: oauth2/idToken
+        - disabled: true
+          name: oauth2_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -277,6 +287,14 @@ Routes:
     envoy.filters.http.oauth2/default/oauth-gateway-1:
       '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
       config: {}
+    oauth2_enabled:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":"true"}]},"response":{"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":"true"}]}}'
+      perRouteConfigName: http_simple_mutations
   virtualHosts:
   - domains:
     - test.com
@@ -302,6 +320,14 @@ Routes:
         envoy.filters.http.oauth2/default/oauth-route-1:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
+        oauth2_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":"true"}]},"response":{"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":"true"}]}}'
+          perRouteConfigName: http_simple_mutations
     - match:
         pathSeparatedPrefix: /route-1
       name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0
@@ -321,6 +347,14 @@ Routes:
       envoy.filters.http.oauth2/jwt/default/oauth-listener-1:
         '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
         requirementName: oauth2
+      oauth2_enabled:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+        dynamicModuleConfig:
+          name: rust_module
+        filterConfig:
+          '@type': type.googleapis.com/google.protobuf.StringValue
+          value: '{"request":{"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":"true"}]},"response":{"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":"true"}]}}'
+        perRouteConfigName: http_simple_mutations
 Secrets:
 - genericSecret:
     secret:
