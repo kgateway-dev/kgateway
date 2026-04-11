@@ -5,6 +5,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 type ProviderNeededMap struct {
@@ -59,4 +60,29 @@ func newSetMetadataConfig(metadataNamespace string) *set_metadata.Config {
 			},
 		},
 	}
+}
+
+func AddAuthEnabledFilterIfNeeded(
+	stagedFilters []filters.StagedHttpFilter,
+	filterName string,
+) []filters.StagedHttpFilter {
+	for _, f := range stagedFilters {
+		if f.Filter.GetName() == filterName {
+			return stagedFilters
+		}
+	}
+
+	f := filters.MustNewStagedFilter(filterName,
+		generateBlankTransformationConfig(),
+		filters.AfterStage(filters.AuthNStage),
+	)
+	f.Filter.Disabled = true
+	stagedFilters = append(stagedFilters, f)
+	return stagedFilters
+}
+
+func AddAuthSucceededMetadata(perFilterConfig *ir.TypedFilterConfigMap, filterName string) {
+	perFilterConfig.AddTypedConfig(filterName, generateDynamicMetadata(AuthPolicyMetadataNamespace, map[string]string{
+		AuthSucceededMetadataKey: "true",
+	}))
 }

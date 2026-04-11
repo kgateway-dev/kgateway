@@ -13,6 +13,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+const (
+	TransformationRustModule          = "rust_module"
+	TransformationHTTPSimpleMutations = "http_simple_mutations"
+)
+
 type rustformationIR struct {
 	config *dynamicmodulesv3.DynamicModuleFilterPerRoute
 }
@@ -77,9 +82,9 @@ func toRustFormationPerRouteConfig(t *kgateway.TransformationPolicy) (*dynamicmo
 	}
 	rustCfg := &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-			Name: "rust_module",
+			Name: TransformationRustModule,
 		},
-		PerRouteConfigName: "http_simple_mutations",
+		PerRouteConfigName: TransformationHTTPSimpleMutations,
 		FilterConfig:       filterCfg,
 	}
 
@@ -93,5 +98,57 @@ func (p *trafficPolicyPluginGwPass) handleRustFormation(fcn string, typedFilterC
 	if rustTransform.config != nil {
 		typedFilterConfig.AddTypedConfig(rustformationFilterNamePrefix, rustTransform.config)
 		p.setTransformationInChain[fcn] = true
+	}
+}
+
+func generateBlankTransformationConfig() *dynamicmodulesv3.DynamicModuleFilter {
+	return &dynamicmodulesv3.DynamicModuleFilter{
+		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+			Name: TransformationRustModule,
+		},
+		FilterName: TransformationHTTPSimpleMutations,
+		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
+			Value: "{}",
+		}),
+	}
+}
+
+func generateBlankTransformationConfigPerRoute() *dynamicmodulesv3.DynamicModuleFilterPerRoute {
+	return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
+		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+			Name: TransformationRustModule,
+		},
+		PerRouteConfigName: TransformationHTTPSimpleMutations,
+		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
+			Value: "{}",
+		}),
+	}
+}
+
+func generateDynamicMetadata(ns string, kv map[string]string) *dynamicmodulesv3.DynamicModuleFilterPerRoute {
+	var metadata []kgateway.DynamicMetadataTransformation
+	for k, v := range kv {
+		metadata = append(metadata, kgateway.DynamicMetadataTransformation{
+			Namespace: ns,
+			Key:       k,
+			Value:     kgateway.InjaTemplate(v),
+		})
+	}
+	b, _ := json.Marshal(&kgateway.TransformationPolicy{
+		Request: &kgateway.Transform{
+			DynamicMetadata: metadata,
+		},
+		Response: &kgateway.Transform{
+			DynamicMetadata: metadata,
+		},
+	})
+	return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
+		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+			Name: TransformationRustModule,
+		},
+		PerRouteConfigName: TransformationHTTPSimpleMutations,
+		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
+			Value: string(b),
+		}),
 	}
 }

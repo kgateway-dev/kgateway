@@ -243,9 +243,9 @@ func mergeRustformation(
 			})
 			p1.spec.rustformation = &rustformationIR{config: &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-					Name: "rust_module",
+					Name: TransformationRustModule,
 				},
-				PerRouteConfigName: "http_simple_mutations",
+				PerRouteConfigName: TransformationHTTPSimpleMutations,
 				FilterConfig:       filterCfg,
 			}}
 		}

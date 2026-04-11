@@ -38,6 +38,8 @@ const (
 	jwtGlobalDisableFilterName              = "global_disable/jwt"
 	jwtGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_jwt"
 	remoteJWKSTimeoutSecs                   = 5
+
+	JwtEnabledFilterName = "jwt_enabled"
 )
 
 type jwtIr struct {
@@ -81,6 +83,9 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 
 	if jwtIr.disableAllProviders {
 		pCtxTypedFilterConfig.AddTypedConfig(jwtGlobalDisableFilterName, EnableFilterPerRoute())
+		// Explicitly set the JwtEnabledFilterName to a blank transformation.
+		// This ensures that the metadata is not set if auth is not configured on the route
+		pCtxTypedFilterConfig.AddTypedConfig(JwtEnabledFilterName, generateBlankTransformationConfigPerRoute())
 		return
 	}
 
@@ -89,6 +94,12 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 		jwtName := jwtFilterName(providerName)
 		pCtxTypedFilterConfig.AddTypedConfig(jwtName, cfg.perRouteConfig)
 		p.jwtPerProvider.Add(fcn, providerName, cfg.provider)
+	}
+
+	// TODO: Is this condition necessary ? Would it introduce a bug ?
+	if len(jwtIr.perProviderConfig) > 0 {
+		// Set the AuthSucceeded metadata field indicates that the request has successfully been authed
+		AddAuthSucceededMetadata(pCtxTypedFilterConfig, JwtEnabledFilterName)
 	}
 }
 

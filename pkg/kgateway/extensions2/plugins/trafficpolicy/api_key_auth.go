@@ -18,6 +18,8 @@ import (
 
 const (
 	apiKeyAuthFilterNamePrefix = "envoy.filters.http.api_key_auth" //nolint:gosec
+
+	APIKeyAuthEnabledFilterName = "api_key_auth_enabled"
 )
 
 // apiKeyAuthIR is the internal representation of an API key authentication policy.
@@ -220,6 +222,10 @@ func (p *trafficPolicyPluginGwPass) handleAPIKeyAuth(
 	// Handle disable case - set disabled flag to override parent policy
 	if apiKeyAuthIr.disable {
 		pCtxTypedFilterConfig.AddTypedConfig(apiKeyAuthFilterNamePrefix, &envoyroutev3.FilterConfig{Disabled: true})
+
+		// Explicitly set the APIKeyAuthEnabledFilterName to a blank transformation.
+		// This ensures that the metadata is not set if auth is not configured on the route
+		pCtxTypedFilterConfig.AddTypedConfig(APIKeyAuthEnabledFilterName, generateBlankTransformationConfigPerRoute())
 		return
 	}
 
@@ -230,6 +236,9 @@ func (p *trafficPolicyPluginGwPass) handleAPIKeyAuth(
 	// Adds the ApiKeyAuthPerRoute to the typed_per_filter_config.
 	// Also requires API key auth http_filter to be added to the filter chain.
 	pCtxTypedFilterConfig.AddTypedConfig(apiKeyAuthFilterNamePrefix, apiKeyAuthIr.config)
+
+	// Set the AuthSucceeded metadata field indicates that the request has successfully been authed
+	AddAuthSucceededMetadata(pCtxTypedFilterConfig, APIKeyAuthEnabledFilterName)
 
 	// Add a filter to the chain. When having an api key auth policy for a route we need to also have a
 	// globally api key auth http filter in the chain otherwise it will be ignored.

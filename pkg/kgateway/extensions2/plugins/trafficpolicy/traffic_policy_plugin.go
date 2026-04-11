@@ -5,7 +5,6 @@ import (
 	"time"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	envoy_api_key_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
@@ -13,7 +12,6 @@ import (
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
-	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	faulthttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
@@ -21,14 +19,12 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -438,19 +434,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 
 	if p.setTransformationInChain[fcc.FilterChainName] {
-		cfg := utils.MustMessageToAny(&wrapperspb.StringValue{
-			Value: "{}",
-		})
-		rustCfg := dynamicmodulesv3.DynamicModuleFilter{
-			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-				Name: "rust_module",
-			},
-			FilterName:   "http_simple_mutations",
-			FilterConfig: cfg,
-		}
-
 		rustFilter := filters.MustNewStagedFilter(rustformationFilterNamePrefix,
-			&rustCfg,
+			generateBlankTransformationConfig(),
 			filters.BeforeStage(filters.AcceptedStage),
 		)
 		rustFilter.Filter.Disabled = true
@@ -461,6 +446,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	if len(p.extAuthPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
 		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, ExtAuthGlobalDisableFilterName, ExtAuthGlobalDisableFilterMetadataNamespace)
+
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, ExtAuthEnabledFilterName)
 	}
 	// Add Ext_authz filter for listener
 	for _, provider := range p.extAuthPerProvider.Providers[fcc.FilterChainName] {
@@ -502,6 +489,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 		stagedFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, stagedFilter)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, OauthEnabledFilterName)
 
 		jwtFilter := provider.Extension.OAuth2.jwtCfg
 		if jwtFilter == nil {
@@ -538,6 +526,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 		stagedJwtFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, stagedJwtFilter)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, JwtEnabledFilterName)
 	}
 
 	if f := p.localRateLimitInChain[fcc.FilterChainName]; f != nil {
@@ -605,6 +594,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		filter := filters.MustNewStagedFilter(basicAuthFilterName, f, filters.DuringStage(filters.AuthNStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
+
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, BasicAuthEnabledFilterName)
 	}
 
 	// Add API key auth filter to the chain
@@ -612,6 +603,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		filter := filters.MustNewStagedFilter(apiKeyAuthFilterNamePrefix, f, filters.DuringStage(filters.AuthNStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
+
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, APIKeyAuthEnabledFilterName)
 	}
 
 	if len(stagedFilters) == 0 {
