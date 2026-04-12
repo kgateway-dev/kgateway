@@ -34,6 +34,7 @@ Name|Version|License
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.10.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.1|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20251209150349-8475f28825e9|BSD 3-clause "New" or "Revised" License
+[x/sync](https://golang.org/x/sync)|v0.19.0|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.14.0|BSD 3-clause "New" or "Revised" License
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260209200024-4cfbd4190f57|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.79.3|Apache License 2.0
