@@ -6,6 +6,7 @@ import (
 
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -61,6 +62,8 @@ func TestFilterChains(t *testing.T) {
 	// Create test gateway and listener IR
 	gateway := ir.GatewayIR{SourceObject: &ir.Gateway{Obj: &gwv1.Gateway{}}}
 	listener := ir.ListenerIR{
+		BindAddress: "0.0.0.0",
+		BindPort:    8080,
 		HttpFilterChain: []ir.HttpFilterChainIR{{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: "httpchain",
@@ -95,6 +98,7 @@ func TestFilterChains(t *testing.T) {
 		listener,
 		reporter,
 	)
+	require.NotNil(t, envoyListener, "expected non-nil listener for valid bind address")
 
 	expectedChainCount := len(listener.HttpFilterChain) + len(listener.TcpFilterChain)
 	assert.Equal(t, expectedChainCount, len(envoyListener.FilterChains), "unexpected number of Envoy filter chains")
