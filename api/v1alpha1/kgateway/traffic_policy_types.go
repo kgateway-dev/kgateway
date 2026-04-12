@@ -265,7 +265,7 @@ type (
 
 // BodyparseBehavior defines how the body should be parsed
 // If set to json and the body is not json then the filter will not perform the transformation.
-// +kubebuilder:validation:Enum=AsString;AsJson
+// +kubebuilder:validation:Enum=AsString;AsJson;None
 type BodyParseBehavior string
 
 const (
@@ -273,18 +273,24 @@ const (
 	BodyParseBehaviorAsString BodyParseBehavior = "AsString"
 	// BodyParseBehaviorAsJSON will parse the body as a json object.
 	BodyParseBehaviorAsJSON BodyParseBehavior = "AsJson"
+	// BodyParseBehaviorNone will skip any body buffering and processing.
+	BodyParseBehaviorNone BodyParseBehavior = "None"
 )
 
 // BodyTransformation controls how the body should be parsed and transformed.
 type BodyTransformation struct {
 	// ParseAs defines what auto formatting should be applied to the body.
 	// This can make interacting with keys within a json body much easier if AsJson is selected.
+	// When set to None, it will not buffer the body and will skip all body processing. In
+	// addition, attempt to extract json variables from the body using inja template in the header
+	// will result in 400 response.
 	// +kubebuilder:default=AsString
 	// +optional
 	ParseAs BodyParseBehavior `json:"parseAs,omitempty"`
 
 	// Value is the template to apply to generate the output value for the body.
-	// Only Inja templates are supported.
+	// Only Inja templates are supported. If ParseAs field is set to None,
+	// this Value field is ignored and no body transformation will be done.
 	// +optional
 	Value *InjaTemplate `json:"value,omitempty"`
 }

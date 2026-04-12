@@ -1987,14 +1987,19 @@ spec:
                             description: |-
                               ParseAs defines what auto formatting should be applied to the body.
                               This can make interacting with keys within a json body much easier if AsJson is selected.
+                              When set to None, it will not buffer the body and will skip all body processing. In
+                              addition, attempt to extract json variables from the body using inja template in the header
+                              will result in 400 response.
                             enum:
                             - AsString
                             - AsJson
+                            - None
                             type: string
                           value:
                             description: |-
                               Value is the template to apply to generate the output value for the body.
-                              Only Inja templates are supported.
+                              Only Inja templates are supported. If ParseAs field is set to None,
+                              this Value field is ignored and no body transformation will be done.
                             type: string
                         type: object
                       remove:
@@ -2063,14 +2068,19 @@ spec:
                             description: |-
                               ParseAs defines what auto formatting should be applied to the body.
                               This can make interacting with keys within a json body much easier if AsJson is selected.
+                              When set to None, it will not buffer the body and will skip all body processing. In
+                              addition, attempt to extract json variables from the body using inja template in the header
+                              will result in 400 response.
                             enum:
                             - AsString
                             - AsJson
+                            - None
                             type: string
                           value:
                             description: |-
                               Value is the template to apply to generate the output value for the body.
-                              Only Inja templates are supported.
+                              Only Inja templates are supported. If ParseAs field is set to None,
+                              this Value field is ignored and no body transformation will be done.
                             type: string
                         type: object
                       remove:

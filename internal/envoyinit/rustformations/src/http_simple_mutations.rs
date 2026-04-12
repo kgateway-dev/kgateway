@@ -5,7 +5,8 @@ use once_cell::sync::Lazy;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use transformations::{
-    LocalTransform, LocalTransformationConfig, TransformationError, TransformationOps,
+    jinja::ProcessFlags, LocalTransform, LocalTransformationConfig, TransformationError,
+    TransformationOps,
 };
 
 #[cfg(test)]
@@ -16,6 +17,46 @@ static EMPTY_MAP: Lazy<HashMap<String, String>> = Lazy::new(HashMap::new);
 pub struct FilterConfig {
     transformations: LocalTransformationConfig,
     env: Environment<'static>,
+}
+
+struct EnvoyBuffersReader<'a> {
+    buffers: Vec<EnvoyMutBuffer<'a>>,
+    chunk_idx: usize,
+    offset: usize,
+}
+
+impl<'a> EnvoyBuffersReader<'a> {
+    fn new(buffers: Vec<EnvoyMutBuffer<'a>>) -> Self {
+        Self {
+            buffers,
+            chunk_idx: 0,
+            offset: 0,
+        }
+    }
+}
+
+impl std::io::Read for EnvoyBuffersReader<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let mut filled = 0;
+        while filled < buf.len() && self.chunk_idx < self.buffers.len() {
+            let chunk = self.buffers[self.chunk_idx].as_slice();
+            let remaining = &chunk[self.offset..];
+            if remaining.is_empty() {
+                self.chunk_idx += 1;
+                self.offset = 0;
+                continue;
+            }
+            let n = remaining.len().min(buf.len() - filled);
+            buf[filled..filled + n].copy_from_slice(&remaining[..n]);
+            self.offset += n;
+            filled += n;
+            if self.offset >= chunk.len() {
+                self.chunk_idx += 1;
+                self.offset = 0;
+            }
+        }
+        Ok(filled)
+    }
 }
 
 struct EnvoyTransformationOps<'a, EHF: EnvoyHttpFilter> {
@@ -45,37 +86,49 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         self.envoy_filter.remove_request_header(key)
     }
     fn parse_request_json_body(&mut self) -> Result<JsonValue> {
-        let body = self.get_request_body();
-        if body.is_empty() {
+        use std::io::Read as _;
+        let mut reader = self.get_request_body_reader();
+        let mut peek = [0u8; 1];
+        if reader.read(&mut peek)? == 0 {
             return Ok(JsonValue::Null);
         }
-        serde_json::from_slice(&body).context("failed to parse request body as json")
+        let chained = std::io::Cursor::new(peek).chain(reader);
+        serde_json::from_reader(chained).context("failed to parse request body as json")
     }
-    fn get_request_body(&mut self) -> Vec<u8> {
+    fn get_request_body_reader(&mut self) -> Box<dyn std::io::Read + '_> {
         self.used_received_request_body = Some(false);
 
-        let mut buffers = self.envoy_filter.get_buffered_request_body();
-
-        if buffers.is_none() {
-            // When the body arrives in a single chunk (common for small JSON
-            // payloads), the first on_request_body callback fires with
-            // end_of_stream=true before any prior StopIterationAndBuffer could
-            // populate the buffered body.  In that case the data is only in the
-            // "received" buffer — mirror the same fallback used for responses.
-            buffers = self.envoy_filter.get_received_request_body();
-            if buffers.is_some() {
-                self.used_received_request_body = Some(true);
-            }
+        // Check buffered first; if None, fall back to received.
+        // TODO: in envoy v1.38, there is a function received_buffered_request_body()
+        //       to check if it's buffered
+        if self.envoy_filter.get_buffered_request_body().is_some() {
+            let buffers = self.envoy_filter.get_buffered_request_body().unwrap();
+            return Box::new(EnvoyBuffersReader::new(buffers));
         }
 
-        match buffers {
-            None => Vec::default(),
+        // When the body arrives in a single chunk (common for small JSON
+        // payloads), the first on_request_body callback fires with
+        // end_of_stream=true before any prior StopIterationAndBuffer could
+        // populate the buffered body.  In that case the data is only in the
+        // "received" buffer — mirror the same fallback used for responses.
+        match self.envoy_filter.get_received_request_body() {
             Some(buffers) => {
-                // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
-                let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
-                chunks.concat()
+                self.used_received_request_body = Some(true);
+                Box::new(EnvoyBuffersReader::new(buffers))
             }
+            None => Box::new(std::io::empty()),
         }
+    }
+    fn get_request_body(&mut self) -> Vec<u8> {
+        // TODO: switch to use read_whole_request_body() after upgrading to v1.38 envoy
+        let mut body = Vec::new();
+        self.get_request_body_reader()
+            .read_to_end(&mut body)
+            .unwrap_or_else(|e| {
+                envoy_log_warn!("failed to read request body: {e}");
+                0
+            });
+        body
     }
     fn drain_request_body(&mut self, number_of_bytes: usize) -> bool {
         if self.used_received_request_body.is_none() {
@@ -113,33 +166,45 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         self.envoy_filter.remove_response_header(key)
     }
     fn parse_response_json_body(&mut self) -> Result<JsonValue> {
-        let body = self.get_response_body();
-        if body.is_empty() {
+        use std::io::Read as _;
+        let mut reader = self.get_response_body_reader();
+        let mut peek = [0u8; 1];
+        if reader.read(&mut peek)? == 0 {
             return Ok(JsonValue::Null);
         }
-        serde_json::from_slice(&body).context("failed to parse response body as json")
+        let chained = std::io::Cursor::new(peek).chain(reader);
+        serde_json::from_reader(chained).context("failed to parse response body as json")
     }
-    fn get_response_body(&mut self) -> Vec<u8> {
+    fn get_response_body_reader(&mut self) -> Box<dyn std::io::Read + '_> {
         self.used_received_response_body = Some(false);
 
-        let mut buffers = self.envoy_filter.get_buffered_response_body();
-
-        if buffers.is_none() {
-            // For LocalReply, the body is in the "received_response_body"
-            buffers = self.envoy_filter.get_received_response_body();
-            if buffers.is_some() {
-                self.used_received_response_body = Some(true);
-            }
+        // Check buffered first; if None, fall back to received.
+        // TODO: in envoy v1.38, there is a function received_buffered_response_body()
+        //       to check if it's buffered
+        if self.envoy_filter.get_buffered_response_body().is_some() {
+            let buffers = self.envoy_filter.get_buffered_response_body().unwrap();
+            return Box::new(EnvoyBuffersReader::new(buffers));
         }
 
-        match buffers {
-            None => Vec::default(),
+        // For LocalReply, the body is in the "received_response_body"
+        match self.envoy_filter.get_received_response_body() {
             Some(buffers) => {
-                // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
-                let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
-                chunks.concat()
+                self.used_received_response_body = Some(true);
+                Box::new(EnvoyBuffersReader::new(buffers))
             }
+            None => Box::new(std::io::empty()),
         }
+    }
+    fn get_response_body(&mut self) -> Vec<u8> {
+        // TODO: switch to use read_whole_response_body() after upgrading to v1.38 envoy
+        let mut body = Vec::new();
+        self.get_response_body_reader()
+            .read_to_end(&mut body)
+            .unwrap_or_else(|e| {
+                envoy_log_warn!("failed to read response body: {e}");
+                0
+            });
+        body
     }
     fn drain_response_body(&mut self, number_of_bytes: usize) -> bool {
         // With testing, it seems to be unnecessary to detect
@@ -222,6 +287,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
             filter_config: self.clone(),
             per_route_config: None,
             request_headers_map: None,
+            is_upgrade_request: false,
         })
     }
 }
@@ -230,6 +296,7 @@ pub struct Filter {
     filter_config: FilterConfig,
     per_route_config: Option<Box<PerRouteConfig>>,
     request_headers_map: Option<HashMap<String, String>>,
+    is_upgrade_request: bool,
 }
 
 impl Filter {
@@ -303,15 +370,6 @@ impl Filter {
     }
 
     // set_per_route_config() has to be called before calling this function
-    fn has_request_transform(&self) -> bool {
-        let Some(transform) = self.get_request_transform() else {
-            return false;
-        };
-
-        !transform.is_empty()
-    }
-
-    // set_per_route_config() has to be called before calling this function
     fn get_response_transform(&self) -> &Option<LocalTransform> {
         match self.get_per_route_config() {
             Some(config) => &config.transformations.response,
@@ -319,100 +377,117 @@ impl Filter {
         }
     }
 
-    // set_per_route_config() has to be called before calling this function
-    fn has_response_transform(&self) -> bool {
-        let Some(transform) = self.get_response_transform() else {
+    // Returns true if the request is a WebSocket upgrade or an HTTP CONNECT request,
+    fn detect_upgrade_request(headers: &HashMap<String, String>) -> bool {
+        if headers
+            .get("upgrade")
+            .is_some_and(|v| v.eq_ignore_ascii_case("websocket"))
+        {
+            return true;
+        }
+        if headers
+            .get(":method")
+            .is_some_and(|v| v.eq_ignore_ascii_case("connect"))
+        {
+            return true;
+        }
+        false
+    }
+
+    // Returns true if buffering should be skipped, either because the transform
+    // itself requests it or because the request is an upgrade/tunnel request.
+    fn skip_buffering(&self, transform: &LocalTransform) -> bool {
+        self.is_upgrade_request || transform.skip_buffering()
+    }
+
+    // Handles a transformation error by sending a 400 response for known error
+    // types. Returns false if the caller should abort (response was sent), true
+    // if processing can continue.
+    fn handle_transform_error<EHF: EnvoyHttpFilter>(
+        err: anyhow::Error,
+        envoy_filter: &mut EHF,
+    ) -> bool {
+        if let Some(e) = err.downcast_ref::<TransformationError>() {
+            match e {
+                TransformationError::UndeclaredJsonVariables(_msg) => {
+                    envoy_log_error!("{:#}", err);
+                    envoy_filter.send_response(
+                        400,
+                        Vec::default(),
+                        None,
+                        Some("undeclared json variables in transformation template"),
+                    );
+                    return false;
+                }
+            }
+        } else if let Some(e) = err.downcast_ref::<serde_json::error::Error>() {
+            envoy_log_error!("json parsing error: {:#}", e);
+            envoy_filter.send_response(
+                400,
+                Vec::default(),
+                None,
+                Some("json parsing error in transformation template"),
+            );
             return false;
+        } else {
+            envoy_log_warn!("{:#}", err);
+        }
+        true
+    }
+
+    fn transform_request<EHF: EnvoyHttpFilter>(
+        &self,
+        envoy_filter: &mut EHF,
+        flags: ProcessFlags,
+    ) -> bool {
+        let Some(transform) = self.get_request_transform() else {
+            return true;
         };
 
-        !transform.is_empty()
-    }
-
-    fn transform_request<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) -> bool {
-        if let Some(transform) = self.get_request_transform() {
-            match transformations::jinja::transform_request(
-                self.get_env(),
-                transform,
-                self.get_request_headers_map(),
-                EnvoyTransformationOps::new(envoy_filter),
-            ) {
-                Ok(()) => {}
-                Err(err) => {
-                    if let Some(e) = err.downcast_ref::<TransformationError>() {
-                        match e {
-                            TransformationError::UndeclaredJsonVariables(_msg) => {
-                                envoy_log_error!("{:#}", err);
-                                envoy_filter.send_response(
-                                    400,
-                                    Vec::default(),
-                                    None,
-                                    Some("undeclared json variables in transformation template"),
-                                );
-                                return false;
-                            }
-                        }
-                    } else if let Some(e) = err.downcast_ref::<serde_json::error::Error>() {
-                        envoy_log_error!("json parsing error: {:#}", e);
-                        envoy_filter.send_response(
-                            400,
-                            Vec::default(),
-                            None,
-                            Some("json parsing error in transformation template"),
-                        );
-                        return false;
-                    } else {
-                        envoy_log_warn!("{:#}", err);
-                    }
-                }
+        let mut retval = true;
+        match transformations::jinja::transform_request(
+            self.get_env(),
+            transform,
+            self.get_request_headers_map(),
+            flags,
+            EnvoyTransformationOps::new(envoy_filter),
+        ) {
+            Ok(()) => {}
+            Err(err) => {
+                retval = Filter::handle_transform_error(err, envoy_filter);
             }
         }
 
-        true
+        retval
     }
 
-    fn transform_response<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) -> bool {
-        if let Some(transform) = self.get_response_transform() {
-            let response_headers_map = self.create_headers_map(envoy_filter.get_response_headers());
+    fn transform_response<EHF: EnvoyHttpFilter>(
+        &self,
+        envoy_filter: &mut EHF,
+        flags: ProcessFlags,
+    ) -> bool {
+        let Some(transform) = self.get_response_transform() else {
+            return true;
+        };
 
-            match transformations::jinja::transform_response(
-                self.get_env(),
-                transform,
-                self.get_request_headers_map(),
-                &response_headers_map,
-                EnvoyTransformationOps::new(envoy_filter),
-            ) {
-                Ok(()) => {}
-                Err(err) => {
-                    if let Some(e) = err.downcast_ref::<TransformationError>() {
-                        match e {
-                            TransformationError::UndeclaredJsonVariables(_msg) => {
-                                envoy_log_error!("{:#}", err);
-                                envoy_filter.send_response(
-                                    400,
-                                    Vec::default(),
-                                    None,
-                                    Some("undeclared json variables in transformation template"),
-                                );
-                                return false;
-                            }
-                        }
-                    } else if let Some(e) = err.downcast_ref::<serde_json::error::Error>() {
-                        envoy_log_error!("json parsing error: {:#}", e);
-                        envoy_filter.send_response(
-                            400,
-                            Vec::default(),
-                            None,
-                            Some("json parsing error in transformation template"),
-                        );
-                        return false;
-                    } else {
-                        envoy_log_warn!("{:#}", err);
-                    }
-                }
+        let response_headers_map = self.create_headers_map(envoy_filter.get_response_headers());
+
+        let mut retval = true;
+        match transformations::jinja::transform_response(
+            self.get_env(),
+            transform,
+            self.get_request_headers_map(),
+            &response_headers_map,
+            flags,
+            EnvoyTransformationOps::new(envoy_filter),
+        ) {
+            Ok(()) => {}
+            Err(err) => {
+                retval = Filter::handle_transform_error(err, envoy_filter);
             }
         }
 
-        true
+        retval
     }
 }
 
@@ -421,30 +496,51 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
     fn on_request_headers(
         &mut self,
         envoy_filter: &mut EHF,
-        _end_of_stream: bool,
+        end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_headers_status {
         self.set_per_route_config(envoy_filter);
-        if !self.has_request_transform() {
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
+        self.is_upgrade_request = Filter::detect_upgrade_request(self.get_request_headers_map());
+
+        let Some(transform) = self.get_request_transform() else {
+            envoy_log_trace!("on_request_headers skipping");
+            return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
+        };
+        if transform.is_empty() {
             envoy_log_trace!("on_request_headers skipping");
             return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
         }
 
-        if !_end_of_stream {
-            // TODO: this here always stop iteration to wait for the full request body,
-            //       need to support body passthrough
+        let skip_buffering = self.skip_buffering(transform);
+        if skip_buffering {
+            // when we skip_buffering, we ignore any body transformation,
+            // so only do the header transformation and continue. Technically,
+            // we could inject body from transformation if end_of_stream is true
+            // but that might create confusion on when body transformation will be
+            // ignored. So, for now, just ignore all body transformation if parseAs: None
+            // is set
+            envoy_log_trace!("on_request_headers transform_request skip buffering");
+            if self.transform_request(envoy_filter, ProcessFlags::HEADER) {
+                return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
+            }
+        } else if end_of_stream {
+            // when we are NOT skip_buffering but it's end of stream, there is no body from the
+            // request but the transformation might inject one, so we need to process both HEADER
+            // and BODY for transformation
+            envoy_log_trace!("on_request_headers transform_request eos");
+            if self.transform_request(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
+                return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
+            }
+        } else {
+            // This is where we are not skip_buffering but there is a body, stop the iteration
+            // so we can buffer all data in on_request_body before continuing the filter chain
             envoy_log_trace!("on_request_headers buffering");
-            //            return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopAllIterationAndBuffer;
             return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration;
-        }
-        envoy_log_trace!("on_request_headers");
-
-        self.populate_request_headers_map(envoy_filter.get_request_headers());
-        if self.transform_request(envoy_filter) {
-            return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
         }
 
         // If transform had a critical error, it would have sent a local reply with 400 already,
         // so return StopIteration here
+        envoy_log_trace!("on_request_headers transform_request failed");
         abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration
     }
 
@@ -454,8 +550,17 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_body_status {
         self.set_per_route_config(envoy_filter);
-        if !self.has_request_transform() {
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
+        let Some(transform) = self.get_request_transform() else {
             envoy_log_trace!("on_request_body skipping");
+            return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue;
+        };
+        if transform.is_empty() {
+            envoy_log_trace!("on_request_body skipping");
+            return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue;
+        }
+        if self.skip_buffering(transform) {
+            envoy_log_trace!("on_request_body skipped buffering and processing");
             return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue;
         }
 
@@ -468,8 +573,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         }
         envoy_log_trace!("on_request_body");
 
-        self.populate_request_headers_map(envoy_filter.get_request_headers());
-        if self.transform_request(envoy_filter) {
+        if self.transform_request(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
             return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue;
         }
 
@@ -484,23 +588,46 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_response_headers_status {
         self.set_per_route_config(envoy_filter);
-        if !self.has_response_transform() {
-            envoy_log_trace!("on_response_header skipping");
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
+        let Some(transform) = self.get_response_transform() else {
+            envoy_log_trace!("on_response_headers skipping");
+            return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
+        };
+        if transform.is_empty() {
+            envoy_log_trace!("on_response_headers skipping");
             return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
         }
 
-        if !end_of_stream {
+        let skip_buffering = self.skip_buffering(transform);
+        if skip_buffering {
+            // when we skip_buffering, we ignore any body transformation,
+            // so only do the header transformation and continue. Technically,
+            // we could inject body from transformation if end_of_stream is true
+            // but that might create confusion on when body transformation will be
+            // ignored. So, for now, just ignore all body transformation if parseAs: None
+            // is set
+            envoy_log_trace!("on_response_headers transform_response skip buffering");
+            if self.transform_response(envoy_filter, ProcessFlags::HEADER) {
+                return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
+            }
+        } else if end_of_stream {
+            // when we are NOT skip_buffering but it's end of stream, there is no body from the
+            // response but the transformation might inject one, so we need to process both HEADER
+            // and BODY for transformation
+            envoy_log_trace!("on_response_headers transform_response eos");
+            if self.transform_response(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
+                return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
+            }
+        } else {
+            // This is where we are not skip_buffering but there is a body, stop the iteration
+            // so we can buffer all data in on_response_body before continuing the filter chain
             envoy_log_trace!("on_response_headers buffering");
             return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::StopIteration;
-        }
-        envoy_log_trace!("on_response_headers");
-        self.populate_request_headers_map(envoy_filter.get_request_headers());
-        if self.transform_response(envoy_filter) {
-            return abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue;
         }
 
         // If transform had a critical error, it would have sent a local reply with 400 already,
         // so return StopIteration here
+        envoy_log_trace!("on_response_headers transform_response failed");
         abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::StopIteration
     }
 
@@ -510,10 +637,20 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_response_body_status {
         self.set_per_route_config(envoy_filter);
-        if !self.has_response_transform() {
+        self.populate_request_headers_map(envoy_filter.get_request_headers());
+        let Some(transform) = self.get_response_transform() else {
+            envoy_log_trace!("on_response_body skipping");
+            return abi::envoy_dynamic_module_type_on_http_filter_response_body_status::Continue;
+        };
+        if transform.is_empty() {
             envoy_log_trace!("on_response_body skipping");
             return abi::envoy_dynamic_module_type_on_http_filter_response_body_status::Continue;
         }
+        if self.skip_buffering(transform) {
+            envoy_log_trace!("on_response_body skipped buffering and processing");
+            return abi::envoy_dynamic_module_type_on_http_filter_response_body_status::Continue;
+        }
+
         if !end_of_stream {
             envoy_log_trace!("on_response_body buffering");
             // This is mimicking the C++ transformation filter behavior to always buffer the response body by
@@ -523,8 +660,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         }
         envoy_log_trace!("on_response_body");
 
-        self.populate_request_headers_map(envoy_filter.get_request_headers());
-        if self.transform_response(envoy_filter) {
+        if self.transform_response(envoy_filter, ProcessFlags::HEADER | ProcessFlags::BODY) {
             return abi::envoy_dynamic_module_type_on_http_filter_response_body_status::Continue;
         }
 
@@ -537,6 +673,98 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Read;
+
+    // --- EnvoyBuffersReader unit tests ---
+
+    #[test]
+    fn test_envoy_buffers_reader_empty_buffers() {
+        let mut reader = EnvoyBuffersReader::new(vec![]);
+        let mut out = Vec::new();
+        reader.read_to_end(&mut out).unwrap();
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    #[allow(static_mut_refs)]
+    fn test_envoy_buffers_reader_single_chunk() {
+        static mut CHUNK: [u8; 5] = *b"hello";
+        let buffers = vec![EnvoyMutBuffer::new(unsafe { &mut CHUNK })];
+        let mut reader = EnvoyBuffersReader::new(buffers);
+        let mut out = Vec::new();
+        reader.read_to_end(&mut out).unwrap();
+        assert_eq!(out, b"hello");
+    }
+
+    #[test]
+    #[allow(static_mut_refs)]
+    fn test_envoy_buffers_reader_multiple_chunks() {
+        static mut CHUNK_X: [u8; 3] = *b"foo";
+        static mut CHUNK_Y: [u8; 1] = *b"-";
+        static mut CHUNK_Z: [u8; 3] = *b"bar";
+        let buffers = vec![
+            EnvoyMutBuffer::new(unsafe { &mut CHUNK_X }),
+            EnvoyMutBuffer::new(unsafe { &mut CHUNK_Y }),
+            EnvoyMutBuffer::new(unsafe { &mut CHUNK_Z }),
+        ];
+        let mut reader = EnvoyBuffersReader::new(buffers);
+        let mut out = Vec::new();
+        reader.read_to_end(&mut out).unwrap();
+        assert_eq!(out, b"foo-bar");
+    }
+
+    #[test]
+    #[allow(static_mut_refs)]
+    fn test_envoy_buffers_reader_small_read_buf() {
+        // Read buffer smaller than a single chunk — verifies partial-read and
+        // offset advancement within a chunk.
+        static mut CHUNK_X: [u8; 6] = *b"abcdef";
+        static mut CHUNK_Y: [u8; 5] = *b"ghijk";
+        let buffers = vec![
+            EnvoyMutBuffer::new(unsafe { &mut CHUNK_X }),
+            EnvoyMutBuffer::new(unsafe { &mut CHUNK_Y }),
+        ];
+        let mut reader = EnvoyBuffersReader::new(buffers);
+
+        let mut tmp = [0u8; 4];
+        let n1 = reader.read(&mut tmp).unwrap();
+        assert_eq!(n1, 4);
+        assert_eq!(&tmp[..n1], b"abcd");
+
+        // read across chunk boundary
+        let n2 = reader.read(&mut tmp).unwrap();
+        assert_eq!(n2, 4);
+        assert_eq!(&tmp[..n2], b"efgh");
+
+        // read the rest to make sure we don't read over
+        let n3 = reader.read(&mut tmp).unwrap();
+        assert_eq!(n3, 3);
+        assert_eq!(&tmp[..n3], b"ijk");
+
+        // Reader exhausted — next read returns 0.
+        let n4 = reader.read(&mut tmp).unwrap();
+        assert_eq!(n4, 0);
+    }
+
+    #[test]
+    #[allow(static_mut_refs)]
+    fn test_envoy_buffers_reader_empty_chunk_skipped() {
+        static mut CHUNK_BEFORE: [u8; 3] = *b"abc";
+        static mut CHUNK_EMPTY: [u8; 0] = [];
+        static mut CHUNK_AFTER: [u8; 3] = *b"xyz";
+        let buffers = vec![
+            EnvoyMutBuffer::new(unsafe { &mut CHUNK_BEFORE }),
+            EnvoyMutBuffer::new(unsafe { &mut CHUNK_EMPTY }),
+            EnvoyMutBuffer::new(unsafe { &mut CHUNK_AFTER }),
+        ];
+        let mut reader = EnvoyBuffersReader::new(buffers);
+        let mut out = Vec::new();
+        reader.read_to_end(&mut out).unwrap();
+        assert_eq!(out, b"abcxyz");
+    }
+
+    // --- end EnvoyBuffersReader unit tests ---
+
     #[test]
     fn test_injected_functions() {
         // get envoy's mockall impl for httpfilter
@@ -798,5 +1026,49 @@ mod tests {
             filter.on_request_body(&mut envoy_filter, true),
             abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
         );
+    }
+
+    #[test]
+    fn test_detect_upgrade_request() {
+        fn h(pairs: &[(&str, &str)]) -> HashMap<String, String> {
+            pairs
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect()
+        }
+
+        // detect websocket upgrade regardless of casing
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            "upgrade",
+            "websocket"
+        )])));
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            "upgrade",
+            "WEBSOCKET"
+        )])));
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            "upgrade",
+            "WebSocket"
+        )])));
+
+        // detect CONNECT request regardless of casing
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            ":method", "connect"
+        )])));
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            ":method", "CONNECT"
+        )])));
+        assert!(Filter::detect_upgrade_request(&h(&[(
+            ":method", "Connect"
+        )])));
+
+        // no headers — no match
+        assert!(!Filter::detect_upgrade_request(&h(&[])));
+
+        // upgrade header with non-websocket value — no match
+        assert!(!Filter::detect_upgrade_request(&h(&[("upgrade", "h2c")])));
+
+        // :method with non-CONNECT value — no match
+        assert!(!Filter::detect_upgrade_request(&h(&[(":method", "GET")])));
     }
 }

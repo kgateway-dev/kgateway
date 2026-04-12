@@ -5,6 +5,7 @@ _test
 *.code-workspace
 .venv
 .cursor
+.envrc
 
 # ignore local pollution from kind setup script
 docker-local
@@ -64,3 +65,5 @@ internal/envoyinit/rustformations/target/*
 .gocache/ 
 .gomodcache/ 
 .gotmp/ 
+internal/envoyinit/rustformations/vendor/*
+internal/envoyinit/target/*

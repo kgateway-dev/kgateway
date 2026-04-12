@@ -11,13 +11,14 @@ Name|Version|License
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.9.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
-[go-jose/v4](https://github.com/go-jose/go-jose)|v4.1.3|Apache License 2.0
+[go-jose/v4](https://github.com/go-jose/go-jose)|v4.1.4|Apache License 2.0
 [go-logr/logr](https://github.com/go-logr/logr)|v1.4.3|Apache License 2.0
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [jwt/v5](https://github.com/golang-jwt/jwt)|v5.3.0|MIT License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License
 [google/cel-go](https://github.com/google/cel-go)|v0.26.1|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
+[gorilla/websocket](https://github.com/gorilla/websocket)|v1.5.4-0.20250319132907-e064f32e3674|BSD 2-clause "Simplified" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.1.0|MIT License
@@ -33,6 +34,7 @@ Name|Version|License
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.10.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.1|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20251209150349-8475f28825e9|BSD 3-clause "New" or "Revised" License
+[x/sync](https://golang.org/x/sync)|v0.19.0|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.14.0|BSD 3-clause "New" or "Revised" License
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260209200024-4cfbd4190f57|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.79.3|Apache License 2.0
