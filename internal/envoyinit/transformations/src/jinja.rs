@@ -512,8 +512,23 @@ pub fn transform_request<T: TransformationOps>(
         )?;
     }
 
-    for meta in transform.dynamic_metadata.iter() {
+    for (i, meta) in transform.dynamic_metadata.iter().enumerate() {
         if meta.namespace.is_empty() || meta.key.is_empty() || meta.value.is_empty() {
+            let mut missing_fields = Vec::new();
+            if meta.namespace.is_empty() {
+                missing_fields.push("namespace");
+            }
+            if meta.key.is_empty() {
+                missing_fields.push("key");
+            }
+            if meta.value.is_empty() {
+                missing_fields.push("value");
+            }
+            errors.push(Error::msg(format!(
+                "request.dynamicMetadata[{}] is invalid: empty {}",
+                i,
+                missing_fields.join(", ")
+            )));
             continue;
         }
         let template_key = format!("request.dynamicMetadata[{}.{}]", meta.namespace, meta.key);
@@ -621,8 +636,23 @@ pub fn transform_response<T: TransformationOps>(
         )?;
     }
 
-    for meta in transform.dynamic_metadata.iter() {
+    for (i, meta) in transform.dynamic_metadata.iter().enumerate() {
         if meta.namespace.is_empty() || meta.key.is_empty() || meta.value.is_empty() {
+            let mut missing_fields = Vec::new();
+            if meta.namespace.is_empty() {
+                missing_fields.push("namespace");
+            }
+            if meta.key.is_empty() {
+                missing_fields.push("key");
+            }
+            if meta.value.is_empty() {
+                missing_fields.push("value");
+            }
+            errors.push(Error::msg(format!(
+                "response.dynamicMetadata[{}] is invalid: empty {}",
+                i,
+                missing_fields.join(", ")
+            )));
             continue;
         }
         let template_key = format!("response.dynamicMetadata[{}.{}]", meta.namespace, meta.key);
