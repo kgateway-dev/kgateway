@@ -973,7 +973,7 @@ mod tests {
               { "name": "X-User", "value": "{{ header(\"x-user-id\") }}" }
             ],
             "dynamicMetadata": [
-              { "namespace": "com.example.auth", "key": "user-id", "value": "{{ header(\"x-user-id\") }}" }
+              { "namespace": "com.example.auth", "key": "user-id", "value": { "stringValue": "{{ header(\"x-user-id\") }}" } }
             ]
           }
         }

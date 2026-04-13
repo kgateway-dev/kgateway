@@ -536,7 +536,7 @@ pub fn transform_request<T: TransformationOps>(
             env,
             &ctx,
             &template_key,
-            &meta.value,
+            meta.value.as_str_template().unwrap_or_default(),
             parsed_body_as_json,
             &mut errors,
         )?;
@@ -660,7 +660,7 @@ pub fn transform_response<T: TransformationOps>(
             env,
             &ctx,
             &template_key,
-            &meta.value,
+            meta.value.as_str_template().unwrap_or_default(),
             parsed_body_as_json,
             &mut errors,
         )?;
@@ -702,7 +702,7 @@ pub fn create_env_with_templates(
             }
             env.add_template_owned(
                 format!("request.dynamicMetadata[{}.{}]", meta.namespace, meta.key),
-                meta.value.clone(),
+                meta.value.string_value.clone().unwrap_or_default(),
             )?;
         }
     }
@@ -730,7 +730,7 @@ pub fn create_env_with_templates(
             }
             env.add_template_owned(
                 format!("response.dynamicMetadata[{}.{}]", meta.namespace, meta.key),
-                meta.value.clone(),
+                meta.value.string_value.clone().unwrap_or_default(),
             )?;
         }
     }

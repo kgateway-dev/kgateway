@@ -90,7 +90,27 @@ pub struct NameValuePair {
 pub struct MetadataValuePair {
     pub namespace: String,
     pub key: String,
-    pub value: String,
+    pub value: MetadataValue,
+}
+
+/// Defines the value to set in dynamic metadata.
+/// Exactly one field should be set.
+#[derive(Default, Clone, Deserialize)]
+pub struct MetadataValue {
+    /// An Inja template whose rendered output is stored as the metadata string value.
+    #[serde(rename = "stringValue")]
+    pub string_value: Option<String>,
+}
+
+impl MetadataValue {
+    /// Returns the string template if set and non-empty.
+    pub fn as_str_template(&self) -> Option<&str> {
+        self.string_value.as_deref().filter(|s| !s.is_empty())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.as_str_template().is_none()
+    }
 }
 
 #[derive(Default, Clone, Deserialize)]

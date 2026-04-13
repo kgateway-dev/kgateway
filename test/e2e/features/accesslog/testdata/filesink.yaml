@@ -13,12 +13,14 @@ spec:
       dynamicMetadata:
       - namespace: access.logs
         key: request_metadata
-        value: access.logs.request.metadata.value
+        value:
+          stringValue: access.logs.request.metadata.value
     response:
       dynamicMetadata:
       - namespace: access.logs
         key: response_metadata
-        value: access.logs.response.metadata.value
+        value:
+          stringValue: access.logs.response.metadata.value
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: HTTPListenerPolicy

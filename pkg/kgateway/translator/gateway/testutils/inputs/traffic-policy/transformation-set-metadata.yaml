@@ -46,7 +46,8 @@ spec:
       dynamicMetadata:
       - namespace: com.example.auth
         key: user-id-request
-        value: '{{ header("x-user-id") }}'
+        value:
+          stringValue: '{{ header("x-user-id") }}'
     response:
       set:
       - name: x-user-response
@@ -54,7 +55,8 @@ spec:
       dynamicMetadata:
       - namespace: com.example.auth
         key: user-id-response
-        value: '{{ header("x-user-id") }}'
+        value:
+          stringValue: '{{ header("x-user-id") }}'
 ---
 apiVersion: v1
 kind: Service

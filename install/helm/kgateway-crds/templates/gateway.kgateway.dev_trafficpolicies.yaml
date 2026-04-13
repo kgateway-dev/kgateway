@@ -2005,8 +2005,8 @@ spec:
                       dynamicMetadata:
                         description: |-
                           DynamicMetadata is a list of dynamic metadata entries to set.
-                          The rendered values are stored as strings in Envoy dynamic metadata and
-                          can be used in access log templates or consumed by downstream filters.
+                          The values are stored in Envoy dynamic metadata and can be used in access log
+                          templates or consumed by other filters down the chain.
                         items:
                           description: DynamicMetadataTransformation defines a single
                             dynamic metadata entry to set.
@@ -2022,10 +2022,20 @@ spec:
                               minLength: 1
                               type: string
                             value:
-                              description: Value is the Inja template whose rendered
-                                output is stored as the metadata value.
-                              minLength: 1
-                              type: string
+                              description: Value is the value to set in dynamic metadata.
+                              properties:
+                                stringValue:
+                                  description: StringValue is an Inja template whose
+                                    rendered output is stored as the metadata string
+                                    value.
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [stringValue]
+                                  must be set
+                                rule: '[has(self.stringValue)].filter(x,x==true).size()
+                                  == 1'
                           required:
                           - key
                           - namespace
@@ -2118,8 +2128,8 @@ spec:
                       dynamicMetadata:
                         description: |-
                           DynamicMetadata is a list of dynamic metadata entries to set.
-                          The rendered values are stored as strings in Envoy dynamic metadata and
-                          can be used in access log templates or consumed by downstream filters.
+                          The values are stored in Envoy dynamic metadata and can be used in access log
+                          templates or consumed by other filters down the chain.
                         items:
                           description: DynamicMetadataTransformation defines a single
                             dynamic metadata entry to set.
@@ -2135,10 +2145,20 @@ spec:
                               minLength: 1
                               type: string
                             value:
-                              description: Value is the Inja template whose rendered
-                                output is stored as the metadata value.
-                              minLength: 1
-                              type: string
+                              description: Value is the value to set in dynamic metadata.
+                              properties:
+                                stringValue:
+                                  description: StringValue is an Inja template whose
+                                    rendered output is stored as the metadata string
+                                    value.
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [stringValue]
+                                  must be set
+                                rule: '[has(self.stringValue)].filter(x,x==true).size()
+                                  == 1'
                           required:
                           - key
                           - namespace

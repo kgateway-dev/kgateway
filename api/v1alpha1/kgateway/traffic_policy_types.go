@@ -242,8 +242,8 @@ type Transform struct {
 	Body *BodyTransformation `json:"body,omitempty"`
 
 	// DynamicMetadata is a list of dynamic metadata entries to set.
-	// The rendered values are stored as strings in Envoy dynamic metadata and
-	// can be used in access log templates or consumed by downstream filters.
+	// The values are stored in Envoy dynamic metadata and can be used in access log
+	// templates or consumed by other filters down the chain.
 	// +optional
 	// +listType=atomic
 	// +kubebuilder:validation:MaxItems=16
@@ -264,10 +264,19 @@ type DynamicMetadataTransformation struct {
 	// +kubebuilder:validation:MaxLength=256
 	Key string `json:"key"`
 
-	// Value is the Inja template whose rendered output is stored as the metadata value.
+	// Value is the value to set in dynamic metadata.
 	// +required
+	Value DynamicMetadataValue `json:"value"`
+}
+
+// DynamicMetadataValue defines the value to set in dynamic metadata.
+// Exactly one field must be set.
+// +kubebuilder:validation:ExactlyOneOf=stringValue
+type DynamicMetadataValue struct {
+	// StringValue is an Inja template whose rendered output is stored as the metadata string value.
+	// +optional
 	// +kubebuilder:validation:MinLength=1
-	Value InjaTemplate `json:"value"`
+	StringValue *InjaTemplate `json:"stringValue,omitempty"`
 }
 
 type InjaTemplate string
