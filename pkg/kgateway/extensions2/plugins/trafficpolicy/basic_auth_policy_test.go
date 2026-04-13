@@ -203,7 +203,8 @@ func TestBasicAuthPolicyPlugin(t *testing.T) {
 		assert.True(t, ok)
 		assert.NotNil(t, basicAuthConfig)
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[BasicAuthEnabledFilterName])
-		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[BasicAuthEnabledFilterName]), `\"key\":\"auth_succeeded\",\"value\":\"true\"`, "basic_key_auth_enabled must set dynamic metadata")
+		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[BasicAuthEnabledFilterName]),
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "basic_key_auth_enabled must set dynamic metadata")
 	})
 
 	t.Run("handles disabled basic auth configuration", func(t *testing.T) {

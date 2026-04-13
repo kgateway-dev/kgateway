@@ -293,7 +293,8 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		assert.NotNil(t, extAuthConfig)
 		assert.Empty(t, pCtx.TypedFilterConfig[ExtAuthGlobalDisableFilterName])
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[ExtAuthEnabledFilterName])
-		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[ExtAuthEnabledFilterName]), `\"key\":\"auth_succeeded\",\"value\":\"true\"`, "ext_auth_enabled must set dynamic metadata")
+		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[ExtAuthEnabledFilterName]),
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "ext_auth_enabled must set dynamic metadata")
 	})
 
 	t.Run("handles disabled ext auth configuration", func(t *testing.T) {

@@ -419,7 +419,8 @@ func TestAPIKeyAuthPolicyPlugin(t *testing.T) {
 		assert.True(t, ok)
 		assert.NotNil(t, apiKeyAuthConfig)
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[APIKeyAuthEnabledFilterName])
-		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[APIKeyAuthEnabledFilterName]), `\"key\":\"auth_succeeded\",\"value\":\"true\"`, "api_key_auth_enabled must set dynamic metadata")
+		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[APIKeyAuthEnabledFilterName]),
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "api_key_auth_enabled must set dynamic metadata")
 	})
 
 	t.Run("handles disabled api key auth configuration", func(t *testing.T) {

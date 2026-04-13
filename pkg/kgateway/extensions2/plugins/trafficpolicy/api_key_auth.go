@@ -19,7 +19,7 @@ import (
 const (
 	apiKeyAuthFilterNamePrefix = "envoy.filters.http.api_key_auth" //nolint:gosec
 
-	APIKeyAuthEnabledFilterName = "api_key_auth_enabled"
+	APIKeyAuthEnabledFilterName = "api_key_auth_enabled" //nolint:gosec // G101: Potential hardcoded credentials
 )
 
 // apiKeyAuthIR is the internal representation of an API key authentication policy.

@@ -762,7 +762,8 @@ func TestJwtPolicyPlugin(t *testing.T) {
 		assert.NotNil(t, jwtConfig)
 		assert.Empty(t, pCtx.TypedFilterConfig[jwtGlobalDisableFilterName])
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[JwtEnabledFilterName])
-		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[JwtEnabledFilterName]), `\"key\":\"auth_succeeded\",\"value\":\"true\"`, "jwt_enabled must set dynamic metadata")
+		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[JwtEnabledFilterName]),
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "jwt_enabled must set dynamic metadata")
 	})
 
 	t.Run("handles disabled jwt configuration", func(t *testing.T) {

@@ -120,6 +120,7 @@ func TestOAuth2PolicyPlugin(t *testing.T) {
 		assert.True(t, ok)
 		assert.NotNil(t, oauthConfig)
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[OauthEnabledFilterName])
-		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[OauthEnabledFilterName]), `\"key\":\"auth_succeeded\",\"value\":\"true\"`, "oauth2_enabled must set dynamic metadata")
+		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[OauthEnabledFilterName]),
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "oauth2_enabled must set dynamic metadata")
 	})
 }
