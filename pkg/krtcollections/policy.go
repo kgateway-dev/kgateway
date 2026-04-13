@@ -335,7 +335,7 @@ func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.Gr
 		if out == nil {
 			out = res // first result
 		} else if res.Obj.GetCreationTimestamp().Time.Before(out.Obj.GetCreationTimestamp().Time) {
-			out = res // newer
+			out = res // older
 		} else if res.Obj.GetCreationTimestamp().Time.Equal(out.Obj.GetCreationTimestamp().Time) &&
 			res.ResourceName() < out.ResourceName() {
 			out = res // use name for tiebreaker
