@@ -103,7 +103,7 @@ Routes:
           name: rust_module
         filterConfig:
           '@type': type.googleapis.com/google.protobuf.StringValue
-          value: '{"request":{"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":"true"}]},"response":{"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":"true"}]}}'
+          value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]}}'
         perRouteConfigName: http_simple_mutations
       envoy.filters.http.basic_auth:
         '@type': type.googleapis.com/envoy.extensions.filters.http.basic_auth.v3.BasicAuthPerRoute
