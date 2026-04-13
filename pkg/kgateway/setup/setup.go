@@ -313,11 +313,23 @@ func (s *setup) Start(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		// certWatcher.Start() sets up file watches (polling up to 10s) then blocks
+		// in a ticker loop on success. If file watch setup fails, it returns an error
+		// immediately. We monitor for early return to catch startup failures instead
+		// of silently running without cert rotation.
+		certWatcherStarted := make(chan error, 1)
 		go func() {
-			if err := certWatcher.Start(ctx); err != nil {
-				slog.Error("failed to start TLS certificate watcher", "error", err)
+			certWatcherStarted <- certWatcher.Start(ctx)
+		}()
+		go func() {
+			select {
+			case err := <-certWatcherStarted:
+				// Start() returned — it only does this on failure or context cancellation.
+				if err != nil && ctx.Err() == nil {
+					slog.Error("TLS certificate watcher failed, cert rotation will not work", "error", err)
+				}
+			case <-ctx.Done():
 			}
-			slog.Info("started TLS certificate watcher")
 		}()
 	}
 
