@@ -71,11 +71,12 @@ func TestKgatewayWaypoint(t *testing.T) {
 		// enabled by default in 1.25; we test as far back as 1.23
 		"--set", "values.cni.ambient.dnsCapture=true",
 	}
-	// k3s stores CNI config and binaries in non-standard locations
+	// k3s stores CNI config and binaries in non-standard locations.
+	// See https://istio.io/latest/docs/ambient/install/platform-prerequisites/#k3s.
 	if os.Getenv("CLUSTER_TYPE") == "k3d" {
 		istioArgs = append(istioArgs,
 			"--set", "values.cni.cniConfDir=/var/lib/rancher/k3s/agent/etc/cni/net.d",
-			"--set", "values.cni.cniBinDir=/bin",
+			"--set", "values.cni.cniBinDir=/var/lib/rancher/k3s/data/current/bin",
 		)
 	}
 	err = testInstallation.InstallRevisionedIstio(
