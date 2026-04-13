@@ -2,3 +2,7 @@ gatewayClassParametersRefs:
   kgateway:
     name: custom-gwp-2
     namespace: kgateway-test
+controller:
+  tolerations:
+    - operator: Exists
+      effect: NoSchedule

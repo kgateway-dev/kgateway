@@ -185,6 +185,7 @@ func TestCustomGWP(t *testing.T) {
 			ValuesFiles:     []string{e2e.CommonRecommendationManifest, e2e.ManifestPath("custom-gwp-2.yaml")},
 			ReleaseName:     helmutils.ChartName,
 			ChartUri:        chartUri,
+			ExtraArgs:       []string{"--wait", "--timeout", "2m"},
 		})
 	if err != nil {
 		t.Fatalf("failed to upgrade Helm: %v", err)
