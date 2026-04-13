@@ -225,7 +225,7 @@ func (p *trafficPolicyPluginGwPass) handleAPIKeyAuth(
 
 		// Explicitly set the APIKeyAuthEnabledFilterName to a blank transformation.
 		// This ensures that the metadata is not set if auth is not configured on the route
-		pCtxTypedFilterConfig.AddTypedConfig(APIKeyAuthEnabledFilterName, generateBlankTransformationConfigPerRoute())
+		pCtxTypedFilterConfig.AddTypedConfig(APIKeyAuthEnabledFilterName, GenerateBlankTransformationConfigPerRoute())
 		return
 	}
 

@@ -189,7 +189,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 
 		// Explicitly set the ExtAuthEnabledFilter to a blank transformation.
 		// This ensures that the metadata is not set if auth is not configured on the route
-		pCtxTypedFilterConfig.AddTypedConfig(ExtAuthEnabledFilterName, generateBlankTransformationConfigPerRoute())
+		pCtxTypedFilterConfig.AddTypedConfig(ExtAuthEnabledFilterName, GenerateBlankTransformationConfigPerRoute())
 		return
 	}
 

@@ -85,7 +85,7 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 		pCtxTypedFilterConfig.AddTypedConfig(jwtGlobalDisableFilterName, EnableFilterPerRoute())
 		// Explicitly set the JwtEnabledFilterName to a blank transformation.
 		// This ensures that the metadata is not set if auth is not configured on the route
-		pCtxTypedFilterConfig.AddTypedConfig(JwtEnabledFilterName, generateBlankTransformationConfigPerRoute())
+		pCtxTypedFilterConfig.AddTypedConfig(JwtEnabledFilterName, GenerateBlankTransformationConfigPerRoute())
 		return
 	}
 

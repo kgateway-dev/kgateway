@@ -71,7 +71,7 @@ func (p *trafficPolicyPluginGwPass) handleBasicAuth(
 
 		// Explicitly set the BasicAuthEnabledFilterName to a blank transformation.
 		// This ensures that the metadata is not set if auth is not configured on the route
-		pCtxTypedFilterConfig.AddTypedConfig(BasicAuthEnabledFilterName, generateBlankTransformationConfigPerRoute())
+		pCtxTypedFilterConfig.AddTypedConfig(BasicAuthEnabledFilterName, GenerateBlankTransformationConfigPerRoute())
 		return
 	}
 

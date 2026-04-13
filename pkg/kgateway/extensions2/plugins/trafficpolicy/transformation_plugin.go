@@ -101,7 +101,7 @@ func (p *trafficPolicyPluginGwPass) handleRustFormation(fcn string, typedFilterC
 	}
 }
 
-func generateBlankTransformationConfig() *dynamicmodulesv3.DynamicModuleFilter {
+func GenerateBlankTransformationConfig() *dynamicmodulesv3.DynamicModuleFilter {
 	return &dynamicmodulesv3.DynamicModuleFilter{
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 			Name: TransformationRustModule,
@@ -113,7 +113,7 @@ func generateBlankTransformationConfig() *dynamicmodulesv3.DynamicModuleFilter {
 	}
 }
 
-func generateBlankTransformationConfigPerRoute() *dynamicmodulesv3.DynamicModuleFilterPerRoute {
+func GenerateBlankTransformationConfigPerRoute() *dynamicmodulesv3.DynamicModuleFilterPerRoute {
 	return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 			Name: TransformationRustModule,
@@ -125,21 +125,29 @@ func generateBlankTransformationConfigPerRoute() *dynamicmodulesv3.DynamicModule
 	}
 }
 
-func generateDynamicMetadata(ns string, kv map[string]string) *dynamicmodulesv3.DynamicModuleFilterPerRoute {
+func generateDynamicMetadata(ns string, kv map[string]kgateway.InjaTemplate) *dynamicmodulesv3.DynamicModuleFilterPerRoute {
 	var metadata []kgateway.DynamicMetadataTransformation
 	for k, v := range kv {
 		metadata = append(metadata, kgateway.DynamicMetadataTransformation{
 			Namespace: ns,
 			Key:       k,
-			Value:     kgateway.InjaTemplate(v),
+			Value: kgateway.DynamicMetadataValue{
+				StringValue: &v,
+			},
 		})
 	}
 	b, _ := json.Marshal(&kgateway.TransformationPolicy{
 		Request: &kgateway.Transform{
 			DynamicMetadata: metadata,
+			Body: &kgateway.BodyTransformation{
+				ParseAs: kgateway.BodyParseBehaviorNone,
+			},
 		},
 		Response: &kgateway.Transform{
 			DynamicMetadata: metadata,
+			Body: &kgateway.BodyTransformation{
+				ParseAs: kgateway.BodyParseBehaviorNone,
+			},
 		},
 	})
 	return &dynamicmodulesv3.DynamicModuleFilterPerRoute{

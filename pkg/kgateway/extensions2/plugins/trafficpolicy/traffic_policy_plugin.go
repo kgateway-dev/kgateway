@@ -435,7 +435,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 	if p.setTransformationInChain[fcc.FilterChainName] {
 		rustFilter := filters.MustNewStagedFilter(rustformationFilterNamePrefix,
-			generateBlankTransformationConfig(),
+			GenerateBlankTransformationConfig(),
 			filters.BeforeStage(filters.AcceptedStage),
 		)
 		rustFilter.Filter.Disabled = true
