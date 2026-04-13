@@ -13,23 +13,17 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-//go:fix inline
-func ptr32(i int32) *int32 { return new(i) }
-
-//go:fix inline
-func ptrU32(i uint32) *uint32 { return new(i) }
-
 func TestFaultInjectionIREquals(t *testing.T) {
 	delay100ms := &kgateway.FaultInjectionPolicy{
 		Delay: &kgateway.FaultDelay{
 			FixedDelay: metav1.Duration{Duration: 100 * time.Millisecond},
-			Percentage: ptr32(50),
+			Percentage: new(int32(50)),
 		},
 	}
 	delay200ms := &kgateway.FaultInjectionPolicy{
 		Delay: &kgateway.FaultDelay{
 			FixedDelay: metav1.Duration{Duration: 200 * time.Millisecond},
-			Percentage: ptr32(50),
+			Percentage: new(int32(50)),
 		},
 	}
 
@@ -94,7 +88,7 @@ func TestConstructFaultInjection(t *testing.T) {
 			spec: kgateway.FaultInjectionPolicy{
 				Delay: &kgateway.FaultDelay{
 					FixedDelay: metav1.Duration{Duration: 100 * time.Millisecond},
-					Percentage: ptr32(75),
+					Percentage: new(int32(75)),
 				},
 			},
 			verify: func(t *testing.T, out *trafficPolicySpecIr) {
@@ -110,8 +104,8 @@ func TestConstructFaultInjection(t *testing.T) {
 			name: "abort with HTTP status",
 			spec: kgateway.FaultInjectionPolicy{
 				Abort: &kgateway.FaultAbort{
-					HttpStatus: ptr32(503),
-					Percentage: ptr32(100),
+					HttpStatus: new(int32(503)),
+					Percentage: new(int32(100)),
 				},
 			},
 			verify: func(t *testing.T, out *trafficPolicySpecIr) {
@@ -125,8 +119,8 @@ func TestConstructFaultInjection(t *testing.T) {
 			name: "abort with gRPC status",
 			spec: kgateway.FaultInjectionPolicy{
 				Abort: &kgateway.FaultAbort{
-					GrpcStatus: ptr32(14), // UNAVAILABLE
-					Percentage: ptr32(100),
+					GrpcStatus: new(int32(14)), // UNAVAILABLE
+					Percentage: new(int32(100)),
 				},
 			},
 			verify: func(t *testing.T, out *trafficPolicySpecIr) {
@@ -140,7 +134,7 @@ func TestConstructFaultInjection(t *testing.T) {
 			spec: kgateway.FaultInjectionPolicy{
 				ResponseRateLimit: &kgateway.FaultResponseRateLimit{
 					KbitsPerSecond: 512,
-					Percentage:     ptr32(100),
+					Percentage:     new(int32(100)),
 				},
 			},
 			verify: func(t *testing.T, out *trafficPolicySpecIr) {
@@ -155,7 +149,7 @@ func TestConstructFaultInjection(t *testing.T) {
 				Delay: &kgateway.FaultDelay{
 					FixedDelay: metav1.Duration{Duration: 50 * time.Millisecond},
 				},
-				MaxActiveFaults: ptrU32(10),
+				MaxActiveFaults: new(uint32(10)),
 			},
 			verify: func(t *testing.T, out *trafficPolicySpecIr) {
 				assert.NotNil(t, out.faultInjection)
@@ -168,11 +162,11 @@ func TestConstructFaultInjection(t *testing.T) {
 			spec: kgateway.FaultInjectionPolicy{
 				Delay: &kgateway.FaultDelay{
 					FixedDelay: metav1.Duration{Duration: 200 * time.Millisecond},
-					Percentage: ptr32(50),
+					Percentage: new(int32(50)),
 				},
 				Abort: &kgateway.FaultAbort{
-					HttpStatus: ptr32(500),
-					Percentage: ptr32(25),
+					HttpStatus: new(int32(500)),
+					Percentage: new(int32(25)),
 				},
 			},
 			verify: func(t *testing.T, out *trafficPolicySpecIr) {

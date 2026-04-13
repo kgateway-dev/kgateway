@@ -26,6 +26,8 @@ KIND="${KIND:-go tool kind}"
 HELM="${HELM:-go tool helm}"
 # If true, use localstack for lambda functions
 LOCALSTACK="${LOCALSTACK:-false}"
+# If true, use cloud-provider-kind instead of MetalLB for LoadBalancer support.
+CLOUD_PROVIDER_KIND="${CLOUD_PROVIDER_KIND:-false}"
 # Registry cache reference for envoyinit Docker build (optional)
 ENVOYINIT_CACHE_REF="${ENVOYINIT_CACHE_REF:-}"
 
@@ -70,8 +72,12 @@ function create_and_setup() {
     kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
   fi
 
-  # TODO: extract metallb install to a diff function so we can let it run in the background
-  . $SCRIPT_DIR/setup-metalllb-on-kind.sh
+  if [[ "$CLOUD_PROVIDER_KIND" == "true" ]]; then
+    . "$SCRIPT_DIR/setup-cloud-provider-kind.sh"
+  else
+    # TODO: extract metallb install to a diff function so we can let it run in the background
+    . "$SCRIPT_DIR/setup-metalllb-on-kind.sh"
+  fi
 }
 
 # 1. Create a kind cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)

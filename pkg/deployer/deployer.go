@@ -67,6 +67,12 @@ func WithPatcher(p Patcher) Option {
 	}
 }
 
+func WithGVKToGVRMapper(m map[schema.GroupVersionKind]schema.GroupVersionResource) Option {
+	return func(d *Deployer) {
+		d.gvkToGVRMapper = m
+	}
+}
+
 // NewDeployer creates a new deployer for managed resources.
 func NewDeployer(
 	controllerName string,

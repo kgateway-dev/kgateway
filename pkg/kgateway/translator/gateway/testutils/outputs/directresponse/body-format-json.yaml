@@ -39,7 +39,7 @@ Routes:
     - directResponse:
         bodyFormat:
           jsonFormat:
-            path: "%REQ(:path)%"
+            path: '%REQ(:path)%'
         status: 200
       match:
         prefix: /
