@@ -9,6 +9,10 @@ import (
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=directresponses,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=directresponses/status,verbs=get;update;patch
 
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Accepted')].status",description="Direct response acceptance status"
+// +kubebuilder:printcolumn:name="Attached",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Attached')].status",description="Direct response attachment status"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=".metadata.creationTimestamp",description="The age of the direct response."
+
 // DirectResponse contains configuration for defining direct response routes.
 //
 // +genclient
