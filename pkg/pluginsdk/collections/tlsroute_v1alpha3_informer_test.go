@@ -19,38 +19,38 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
-func TestDelayedLegacyTLSRouteInformerReportsSyncedWithoutCRD_Issue13661(t *testing.T) {
+func TestDelayedTLSRouteV1Alpha3InformerReportsSyncedWithoutCRD_Issue13661(t *testing.T) {
 	stop := test.NewStop(t)
 	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
 	apiclient.RegisterTypes()
 
 	client := kube.NewFakeClient()
-	inf := newDelayedTypedInformer(client, wellknown.LegacyTLSRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+	inf := newDelayedTypedInformer(client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
 		return kclient.NewFiltered[*gwv1a3.TLSRoute](client, kclient.Filter{})
 	})
 	inf.Start(stop)
 
-	require.True(t, inf.HasSynced(), "missing legacy TLSRoute CRDs should not block startup")
+	require.True(t, inf.HasSynced(), "missing v1alpha3 TLSRoute CRDs should not block startup")
 	require.Empty(t, inf.List(metav1.NamespaceAll, labels.Everything()))
 }
 
-func TestDelayedLegacyTLSRouteInformerBypassesCrdWatcherFilterForLegacyTLSRoute_Issue13735(t *testing.T) {
+func TestDelayedTLSRouteV1Alpha3InformerBypassesCrdWatcherFilter_Issue13735(t *testing.T) {
 	stop := test.NewStop(t)
 	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
 	apiclient.RegisterTypes()
 
 	client := kube.NewFakeClient()
-	makeServedCRD(t, client, wellknown.LegacyTLSRouteGVR, "v1.4.1")
+	makeServedCRD(t, client, wellknown.TLSRouteV1Alpha3GVR, "v1.4.1")
 
 	_, err := client.GatewayAPI().GatewayV1alpha3().TLSRoutes("default").Create(
 		context.Background(),
 		&gwv1a3.TLSRoute{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: wellknown.LegacyTLSRouteGVK.GroupVersion().String(),
+				APIVersion: wellknown.TLSRouteV1Alpha3GVK.GroupVersion().String(),
 				Kind:       wellknown.TLSRouteKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "legacy-route",
+				Name:      "v1alpha3-route",
 				Namespace: "default",
 			},
 			Spec: gwv1.TLSRouteSpec{
@@ -68,10 +68,10 @@ func TestDelayedLegacyTLSRouteInformerBypassesCrdWatcherFilterForLegacyTLSRoute_
 
 	client.RunAndWait(stop)
 
-	require.False(t, client.CrdWatcher().KnownOrCallback(wellknown.LegacyTLSRouteGVR, func(<-chan struct{}) {}),
-		"Gateway API v1.4.x legacy TLSRoute should be filtered from CrdWatcher known state")
+	require.False(t, client.CrdWatcher().KnownOrCallback(wellknown.TLSRouteV1Alpha3GVR, func(<-chan struct{}) {}),
+		"Gateway API v1.4.x v1alpha3 TLSRoute should be filtered from CrdWatcher known state")
 
-	inf := newDelayedTypedInformer(client, wellknown.LegacyTLSRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+	inf := newDelayedTypedInformer(client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
 		return kclient.NewFiltered[*gwv1a3.TLSRoute](client, kclient.Filter{})
 	})
 	inf.Start(stop)
@@ -79,5 +79,5 @@ func TestDelayedLegacyTLSRouteInformerBypassesCrdWatcherFilterForLegacyTLSRoute_
 	require.Eventually(t, inf.HasSynced, time.Second, 10*time.Millisecond)
 	require.Eventually(t, func() bool {
 		return len(inf.List("default", labels.Everything())) == 1
-	}, time.Second, 10*time.Millisecond, "legacy TLSRoute should still be discoverable through the typed informer path")
+	}, time.Second, 10*time.Millisecond, "v1alpha3 TLSRoute should still be discoverable through the typed informer path")
 }

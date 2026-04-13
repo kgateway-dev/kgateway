@@ -300,17 +300,24 @@ func (d *delayedInformer[T]) ShutdownHandler(registration cache.ResourceEventHan
 }
 
 func (d *delayedInformer[T]) Start(stop <-chan struct{}) {
-	d.mu.Lock()
-	d.started = stop
-	inf := d.inf.Load()
-	d.mu.Unlock()
-
+	inf := d.recordStart(stop)
 	if inf != nil {
 		(*inf).Start(stop)
 		return
 	}
 
 	d.startPolling(stop)
+}
+
+// recordStart stores the stop channel and returns the currently published
+// informer (if any) while holding d.mu. Kept in its own function so defer
+// guarantees the lock is released even if a future change introduces a panic
+// between acquisition and release.
+func (d *delayedInformer[T]) recordStart(stop <-chan struct{}) *kclient.Informer[T] {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.started = stop
+	return d.inf.Load()
 }
 
 func (d *delayedInformer[T]) Index(name string, extract func(o T) []string) kclient.RawIndexer {

@@ -49,9 +49,15 @@ const (
 	// Gateway API CRD names
 	TCPRouteCRDName = "tcproutes.gateway.networking.k8s.io"
 
-	// LegacyTLSRouteVersion is the experimental TLSRoute API version served by
-	// Gateway API experimental bundles prior to promotion to v1.
-	LegacyTLSRouteVersion = "v1alpha3"
+	// TLSRouteV1Alpha3Version names the v1alpha3 TLSRoute API. kgateway's
+	// internal routing representation is *gwv1a2.TLSRoute — v1 and v1alpha3
+	// are both converted into it on read — but status updates are written
+	// back in whichever served version each object was read as, not
+	// re-pivoted through v1alpha2. This symbol exists so we can discover,
+	// watch (including via the dynamic/unstructured fallback when Istio's
+	// CRDWatcher hides the v1alpha3 CRD from the typed client), and write
+	// status on v1alpha3 objects.
+	TLSRouteV1Alpha3Version = "v1alpha3"
 )
 
 var (
@@ -95,14 +101,14 @@ var (
 		Version:  gwv1a2.GroupVersion.Version,
 		Resource: "tlsroutes",
 	}
-	LegacyTLSRouteGVK = schema.GroupVersionKind{
+	TLSRouteV1Alpha3GVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: LegacyTLSRouteVersion,
+		Version: TLSRouteV1Alpha3Version,
 		Kind:    TLSRouteKind,
 	}
-	LegacyTLSRouteGVR = schema.GroupVersionResource{
+	TLSRouteV1Alpha3GVR = schema.GroupVersionResource{
 		Group:    GatewayGroup,
-		Version:  LegacyTLSRouteVersion,
+		Version:  TLSRouteV1Alpha3Version,
 		Resource: "tlsroutes",
 	}
 	TCPRouteGVK = schema.GroupVersionKind{

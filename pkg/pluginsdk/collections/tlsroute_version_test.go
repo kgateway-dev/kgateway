@@ -23,7 +23,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "tlsroutes.gateway.networking.k8s.io"},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-					{Name: wellknown.LegacyTLSRouteVersion, Served: true},
+					{Name: wellknown.TLSRouteV1Alpha3Version, Served: true},
 					{Name: gwv1.GroupVersion.Version, Served: true},
 				},
 			},
@@ -32,7 +32,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 		require.Equal(t, servedTLSRouteVersions{
 			Promoted:      true,
 			Legacy:        true,
-			LegacyGVR:     wellknown.LegacyTLSRouteGVR,
+			LegacyGVR:     wellknown.TLSRouteV1Alpha3GVR,
 			Authoritative: true,
 		}, getServedTLSRouteVersions(client))
 	})
@@ -42,14 +42,14 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "tlsroutes.gateway.networking.k8s.io"},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-					{Name: wellknown.LegacyTLSRouteVersion, Served: true},
+					{Name: wellknown.TLSRouteV1Alpha3Version, Served: true},
 				},
 			},
 		})
 
 		require.Equal(t, servedTLSRouteVersions{
 			Legacy:        true,
-			LegacyGVR:     wellknown.LegacyTLSRouteGVR,
+			LegacyGVR:     wellknown.TLSRouteV1Alpha3GVR,
 			Authoritative: true,
 		}, getServedTLSRouteVersions(client))
 	})
@@ -58,7 +58,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 		require.Equal(t, servedTLSRouteVersions{
 			Promoted:  true,
 			Legacy:    true,
-			LegacyGVR: wellknown.LegacyTLSRouteGVR,
+			LegacyGVR: wellknown.TLSRouteV1Alpha3GVR,
 		}, getServedTLSRouteVersions(apiextensionsfake.NewClientset()))
 	})
 
@@ -66,7 +66,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 		require.Equal(t, servedTLSRouteVersions{
 			Promoted:  true,
 			Legacy:    true,
-			LegacyGVR: wellknown.LegacyTLSRouteGVR,
+			LegacyGVR: wellknown.TLSRouteV1Alpha3GVR,
 		}, getServedTLSRouteVersions(nil))
 	})
 
@@ -93,7 +93,7 @@ func TestLegacyTLSRouteWatchGVRs(t *testing.T) {
 		require.Empty(t, legacyTLSRouteWatchGVRs(servedTLSRouteVersions{
 			Promoted:      true,
 			Legacy:        true,
-			LegacyGVR:     wellknown.LegacyTLSRouteGVR,
+			LegacyGVR:     wellknown.TLSRouteV1Alpha3GVR,
 			Authoritative: true,
 		}))
 	})
@@ -107,10 +107,10 @@ func TestLegacyTLSRouteWatchGVRs(t *testing.T) {
 	})
 
 	t.Run("returns both legacy fallbacks when discovery is non-authoritative", func(t *testing.T) {
-		require.Equal(t, []schema.GroupVersionResource{wellknown.LegacyTLSRouteGVR, legacyTLSRouteV1Alpha2GVR}, legacyTLSRouteWatchGVRs(servedTLSRouteVersions{
+		require.Equal(t, []schema.GroupVersionResource{wellknown.TLSRouteV1Alpha3GVR, legacyTLSRouteV1Alpha2GVR}, legacyTLSRouteWatchGVRs(servedTLSRouteVersions{
 			Promoted:  true,
 			Legacy:    true,
-			LegacyGVR: wellknown.LegacyTLSRouteGVR,
+			LegacyGVR: wellknown.TLSRouteV1Alpha3GVR,
 		}))
 	})
 }
@@ -207,10 +207,10 @@ func TestConvertTLSRouteV1Alpha3ToV1Alpha2(t *testing.T) {
 	require.Equal(t, route.Status.RouteStatus, converted.Status.RouteStatus)
 }
 
-func TestConvertLegacyTLSRouteToV1Alpha2(t *testing.T) {
+func TestConvertUnstructuredTLSRouteToV1Alpha2(t *testing.T) {
 	route := &unstructured.Unstructured{
 		Object: map[string]any{
-			"apiVersion": wellknown.LegacyTLSRouteGVK.GroupVersion().String(),
+			"apiVersion": wellknown.TLSRouteV1Alpha3GVK.GroupVersion().String(),
 			"kind":       wellknown.TLSRouteKind,
 			"metadata": map[string]any{
 				"name":      "tls-route",
@@ -242,7 +242,7 @@ func TestConvertLegacyTLSRouteToV1Alpha2(t *testing.T) {
 		},
 	}
 
-	converted := convertLegacyTLSRouteToV1Alpha2(route)
+	converted := convertUnstructuredTLSRouteToV1Alpha2(route)
 	require.NotNil(t, converted)
 	require.Equal(t, route.GetName(), converted.Name)
 	require.Equal(t, route.GetNamespace(), converted.Namespace)

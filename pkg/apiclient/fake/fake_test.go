@@ -18,7 +18,7 @@ func TestKindForSeededCRD(t *testing.T) {
 	}{
 		{name: "backend tls policy", gvr: gvr.BackendTLSPolicy, want: wellknown.BackendTLSPolicyKind},
 		{name: "grpc route", gvr: gvr.GRPCRoute, want: wellknown.GRPCRouteKind},
-		{name: "legacy tls route", gvr: wellknown.LegacyTLSRouteGVR, want: wellknown.TLSRouteKind},
+		{name: "tls route v1alpha3", gvr: wellknown.TLSRouteV1Alpha3GVR, want: wellknown.TLSRouteKind},
 		{name: "listener policy", gvr: wellknown.ListenerPolicyGVR, want: wellknown.ListenerPolicyGVK.Kind},
 	}
 

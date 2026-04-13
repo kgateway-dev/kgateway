@@ -143,7 +143,7 @@ func (c *CommonCollections) InitCollections(
 					c.KrtOpts.ToOptions("TLSRouteLegacyV1Alpha2")...,
 				)
 				tlsRouteCollections = append(tlsRouteCollections, legacyTLSRoutes)
-			case wellknown.LegacyTLSRouteVersion:
+			case wellknown.TLSRouteV1Alpha3Version:
 				legacyTLSRoutes := krt.WrapClient(
 					newDelayedTypedInformer(c.Client, legacyTLSRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
 						return kclient.NewFiltered[*gwv1a3.TLSRoute](c.Client, filter)

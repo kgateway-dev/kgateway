@@ -23,9 +23,9 @@ var promotedTLSRouteGVR = schema.GroupVersionResource{
 	Resource: "tlsroutes",
 }
 
-var legacyTLSRouteGVR = schema.GroupVersionResource{
+var tlsRouteV1Alpha3GVR = schema.GroupVersionResource{
 	Group:    wellknown.GatewayGroup,
-	Version:  wellknown.LegacyTLSRouteVersion,
+	Version:  wellknown.TLSRouteV1Alpha3Version,
 	Resource: "tlsroutes",
 }
 
@@ -46,7 +46,7 @@ func fallbackTLSRouteVersions() servedTLSRouteVersions {
 	return servedTLSRouteVersions{
 		Promoted:  true,
 		Legacy:    true,
-		LegacyGVR: legacyTLSRouteGVR,
+		LegacyGVR: tlsRouteV1Alpha3GVR,
 	}
 }
 
@@ -62,7 +62,7 @@ func legacyTLSRouteWatchGVRs(versions servedTLSRouteVersions) []schema.GroupVers
 	if versions.Authoritative {
 		return []schema.GroupVersionResource{versions.LegacyGVR}
 	}
-	return []schema.GroupVersionResource{legacyTLSRouteGVR, legacyTLSRouteV1Alpha2GVR}
+	return []schema.GroupVersionResource{tlsRouteV1Alpha3GVR, legacyTLSRouteV1Alpha2GVR}
 }
 
 // getServedTLSRouteVersions resolves which TLSRoute API versions are currently
@@ -98,7 +98,7 @@ func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTL
 		switch version.Name {
 		case gwv1.GroupVersion.Version:
 			versions.Promoted = true
-		case wellknown.LegacyTLSRouteVersion, gwv1a2.GroupVersion.Version:
+		case wellknown.TLSRouteV1Alpha3Version, gwv1a2.GroupVersion.Version:
 			servedLegacyVersions[version.Name] = true
 		}
 	}
@@ -106,7 +106,7 @@ func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTL
 	// Prefer v1alpha3 over v1alpha2 when both legacy versions are served so we
 	// consistently watch the most recent pre-promotion API and avoid duplicate
 	// logical TLSRoutes from multiple legacy watches.
-	for _, legacyVersion := range []string{wellknown.LegacyTLSRouteVersion, gwv1a2.GroupVersion.Version} {
+	for _, legacyVersion := range []string{wellknown.TLSRouteV1Alpha3Version, gwv1a2.GroupVersion.Version} {
 		if servedLegacyVersions[legacyVersion] {
 			versions.Legacy = true
 			versions.LegacyGVR = schema.GroupVersionResource{
@@ -168,14 +168,14 @@ func convertTLSRouteV1Alpha3ToV1Alpha2(in *gwv1a3.TLSRoute) *gwv1a2.TLSRoute {
 	}
 }
 
-func convertLegacyTLSRouteToV1Alpha2(in *unstructured.Unstructured) *gwv1a2.TLSRoute {
+func convertUnstructuredTLSRouteToV1Alpha2(in *unstructured.Unstructured) *gwv1a2.TLSRoute {
 	if in == nil {
 		return nil
 	}
 
 	out := &gwv1a2.TLSRoute{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(in.Object, out); err != nil {
-		slog.Warn("ignoring legacy TLSRoute with invalid payload",
+		slog.Warn("ignoring unstructured TLSRoute with invalid payload",
 			"name", in.GetName(),
 			"namespace", in.GetNamespace(),
 			"error", err,
@@ -186,11 +186,15 @@ func convertLegacyTLSRouteToV1Alpha2(in *unstructured.Unstructured) *gwv1a2.TLSR
 	return out
 }
 
-// ConvertLegacyTLSRouteToV1Alpha2ForStatus normalizes legacy TLSRoute objects
-// served from experimental Gateway API bundles so status code can reuse the
-// existing gwv1a2-based report builder.
-func ConvertLegacyTLSRouteToV1Alpha2ForStatus(in *unstructured.Unstructured) *gwv1a2.TLSRoute {
-	return convertLegacyTLSRouteToV1Alpha2(in)
+// ConvertUnstructuredTLSRouteToV1Alpha2ForStatus normalizes TLSRoute objects
+// fetched as *unstructured.Unstructured by getTLSRouteForStatus. Status sync
+// uses an unstructured Get against the controller-runtime manager client for
+// TLSRoute versions that are not registered in the manager scheme (today:
+// v1alpha3 — see pkg/schemes/scheme.go). This helper converts that
+// unstructured object into *gwv1a2.TLSRoute so the existing gwv1a2-typed
+// status report builder can process it.
+func ConvertUnstructuredTLSRouteToV1Alpha2ForStatus(in *unstructured.Unstructured) *gwv1a2.TLSRoute {
+	return convertUnstructuredTLSRouteToV1Alpha2(in)
 }
 
 func convertTLSRouteHostnamesV1ToV1Alpha2(in []gwv1.Hostname) []gwv1a2.Hostname {

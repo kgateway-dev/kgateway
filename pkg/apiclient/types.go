@@ -53,8 +53,8 @@ func registerTypes() {
 		},
 	)
 	kubeclient.Register(
-		wellknown.LegacyTLSRouteGVR,
-		wellknown.LegacyTLSRouteGVK,
+		wellknown.TLSRouteV1Alpha3GVR,
+		wellknown.TLSRouteV1Alpha3GVK,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return c.GatewayAPI().GatewayV1alpha3().TLSRoutes(namespace).List(context.Background(), o)
 		},
