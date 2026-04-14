@@ -7,12 +7,10 @@ ARG GOARCH=amd64
 # means its not too useful
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update our deps to make cve toil lower
-#install wget for our default probes
+# Install the minimal runtime packages we need without a full distro upgrade.
+# Full apt upgrades in emulated release builds have proven brittle under qemu.
 RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install --no-install-recommends -y  ca-certificates \
-    && apt-get install wget -y \
+    && apt-get install --no-install-recommends -y ca-certificates wget \
     && rm -rf  /var/log/*log /var/lib/apt/lists/* /var/log/apt/* /var/lib/dpkg/*-old /var/cache/debconf/*-old
 
 COPY kgateway-linux-$GOARCH /usr/local/bin/kgateway

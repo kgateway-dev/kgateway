@@ -44,11 +44,10 @@ RUN cp /build/target/${RUST_BUILD_ARCH}-unknown-linux-gnu/debug/librust_module.s
 FROM --platform=$TARGETPLATFORM ${ENVOY_IMAGE} AS envoy
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update our deps to make cve toil lower
-# install wget for our default probes
+# Install the minimal runtime packages we need without a full distro upgrade.
+# Full apt upgrades in emulated release builds have proven brittle under qemu.
 RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install wget ca-certificates -y \
+    && apt-get install --no-install-recommends -y wget ca-certificates \
     && rm -rf  /var/log/*log /var/lib/apt/lists/* /var/log/apt/* /var/lib/dpkg/*-old /var/cache/debconf/*-old
 
 ARG GOARCH=amd64
