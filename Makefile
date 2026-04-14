@@ -810,7 +810,7 @@ deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgatew
 setup-base: kind-create gw-api-crds ## Setup the base infrastructure (kind cluster, CRDs, and load balancer)
 ifeq ($(CLOUD_PROVIDER_KIND),true)
 	$(MAKE) cloud-provider-kind
-else
+else ifneq ($(METAL_LB),false)
 	$(MAKE) metallb
 endif
 
