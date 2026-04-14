@@ -1,4 +1,28 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: enrich-access-logs
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gateway
+  transformation:
+    request:
+      dynamicMetadata:
+      - namespace: access.logs
+        key: request_metadata
+        value:
+          stringValue: access.logs.request.metadata.value
+    response:
+      dynamicMetadata:
+      - namespace: access.logs
+        key: response_metadata
+        value:
+          stringValue: access.logs.response.metadata.value
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: HTTPListenerPolicy
 metadata:
   name: access-logs
@@ -28,3 +52,5 @@ spec:
           authority: "%REQ(:AUTHORITY)%"
           backendHost: "%UPSTREAM_HOST%"
           backendCluster: "%UPSTREAM_CLUSTER%"
+          transformation_request_metadata: "%DYNAMIC_METADATA(access.logs:request_metadata)%"
+          transformation_response_metadata: "%DYNAMIC_METADATA(access.logs:response_metadata)%"

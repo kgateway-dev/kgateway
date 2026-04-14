@@ -38,9 +38,9 @@ Routes:
     routes:
     - directResponse:
         bodyFormat:
-          contentType: "text/html"
+          contentType: text/html
           textFormatSource:
-            inlineString: "<div><strong>Requested Path:</strong> %REQ(:path)%</div>"
+            inlineString: <div><strong>Requested Path:</strong> %REQ(:path)%</div>
         status: 200
       match:
         prefix: /

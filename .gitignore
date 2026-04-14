@@ -5,6 +5,7 @@ _test
 *.code-workspace
 .venv
 .cursor
+.envrc
 
 # ignore local pollution from kind setup script
 docker-local
@@ -61,3 +62,5 @@ dist/
 
 # Rust target directory created by cargo
 internal/envoyinit/rustformations/target/*
+internal/envoyinit/rustformations/vendor/*
+internal/envoyinit/target/*
