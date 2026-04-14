@@ -5,8 +5,8 @@ package common
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
-	"strings"
 	"testing"
 
 	"istio.io/istio/pkg/log"
@@ -53,7 +53,7 @@ var BaseGateway Gateway
 
 func (g *Gateway) Send(t *testing.T, match *matchers.HttpResponse, opts ...curl.Option) {
 	var hostOpt curl.Option
-	if strings.Contains(g.Address, ":") {
+	if _, _, err := net.SplitHostPort(g.Address); err == nil {
 		hostOpt = curl.WithHostPort(g.Address)
 	} else {
 		hostOpt = curl.WithHost(g.Address)

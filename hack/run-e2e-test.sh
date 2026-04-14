@@ -87,6 +87,10 @@ cd "${REPO_ROOT}"
 
 # Cluster type: "kind" or "k3d"
 CLUSTER_TYPE="${CLUSTER_TYPE:-kind}"
+if [[ "$CLUSTER_TYPE" != "kind" && "$CLUSTER_TYPE" != "k3d" ]]; then
+    log_error "CLUSTER_TYPE must be 'kind' or 'k3d', got '${CLUSTER_TYPE}'"
+    exit 1
+fi
 KIND="${KIND:-kind}"
 K3D="${K3D:-k3d}"
 
@@ -126,6 +130,10 @@ kind_cluster_exists() {
 
 # Check if k3d cluster exists
 k3d_cluster_exists() {
+    if ! command -v jq >/dev/null 2>&1; then
+        log_error "jq is required when CLUSTER_TYPE=k3d. Please install jq and try again."
+        exit 1
+    fi
     ${K3D} cluster list -o json 2>/dev/null | jq -e ".[] | select(.name==\"${CLUSTER_NAME}\")" > /dev/null 2>&1
 }
 

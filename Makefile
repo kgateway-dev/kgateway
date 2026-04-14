@@ -901,8 +901,12 @@ k3d-create: ## Create a single-node k3d cluster with lightweight LoadBalancer IP
 			-p "80:80@loadbalancer" \
 			-p "443:443@loadbalancer"
 	@# Start background LB IP assigner (lightweight alternative to MetalLB).
-	@# Disown so make doesn't wait for it.
-	@nohup $(ROOTDIR)/hack/k3d/k3d-loadbalancer.sh $(K3D_CLUSTER_NAME) > /tmp/k3d-lb-$(K3D_CLUSTER_NAME).log 2>&1 & disown
+	@# Only launch if one is not already running for this cluster.
+	@if pgrep -f 'k3d-loadbalancer.sh $(K3D_CLUSTER_NAME)$$' > /dev/null 2>&1; then \
+		echo "k3d load balancer assigner already running for cluster $(K3D_CLUSTER_NAME)"; \
+	else \
+		nohup $(ROOTDIR)/hack/k3d/k3d-loadbalancer.sh $(K3D_CLUSTER_NAME) > /tmp/k3d-lb-$(K3D_CLUSTER_NAME).log 2>&1 & disown; \
+	fi
 
 k3d-load-%:
 	$(K3D) image import $(IMAGE_REGISTRY)/$*:$(VERSION) -c $(K3D_CLUSTER_NAME)

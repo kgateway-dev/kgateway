@@ -18,12 +18,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// MustKindContext returns the Context for a KinD cluster with the given name
+// MustKindContext returns the Context for a local cluster (kind or k3d) with the given name.
+// The cluster type is determined by the CLUSTER_TYPE environment variable (default: kind).
 func MustKindContext(clusterName string) *Context {
 	return MustKindContextWithScheme(clusterName, schemes.GatewayScheme())
 }
 
-// MustKindContextWithScheme returns the Context for a KinD cluster with the given name and scheme
+// MustKindContextWithScheme returns the Context for a local cluster (kind or k3d) with the
+// given name and scheme. The cluster type is determined by the CLUSTER_TYPE env var.
 func MustKindContextWithScheme(clusterName string, scheme *runtime.Scheme) *Context {
 	clusterType := os.Getenv("CLUSTER_TYPE")
 	if len(clusterName) == 0 {

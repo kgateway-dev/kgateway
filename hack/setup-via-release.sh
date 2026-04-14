@@ -205,10 +205,14 @@ maybe_setup_loadbalancer() {
         if [[ "${enable_cloud_provider_kind}" == "true" ]]; then
             echo "Note: --cloud-provider-kind is ignored for k3d; using lightweight IP assigner instead"
         fi
-        echo "Starting k3d LoadBalancer IP assigner..."
-        nohup "${script_dir}/k3d/k3d-loadbalancer.sh" "${cluster_name}" > "/tmp/k3d-lb-${cluster_name}.log" 2>&1 &
-        disown
-        echo "k3d LoadBalancer IP assigner running (log: /tmp/k3d-lb-${cluster_name}.log)"
+        if pgrep -f "k3d-loadbalancer.sh ${cluster_name}$" > /dev/null 2>&1; then
+            echo "k3d LoadBalancer IP assigner already running for cluster ${cluster_name}"
+        else
+            echo "Starting k3d LoadBalancer IP assigner..."
+            nohup "${script_dir}/k3d/k3d-loadbalancer.sh" "${cluster_name}" > "/tmp/k3d-lb-${cluster_name}.log" 2>&1 &
+            disown
+            echo "k3d LoadBalancer IP assigner running (log: /tmp/k3d-lb-${cluster_name}.log)"
+        fi
         return
     fi
 

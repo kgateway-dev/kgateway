@@ -76,8 +76,13 @@ function create_and_setup() {
   # Start the lightweight LoadBalancer IP assigner in the background.
   # k3s ServiceLB uses host ports, causing conflicts when multiple services share
   # the same port. This script assigns unique IPs from the Docker network instead.
-  nohup "$SCRIPT_DIR/k3d-loadbalancer.sh" "$CLUSTER_NAME" > /tmp/k3d-lb-"${CLUSTER_NAME}".log 2>&1 &
-  disown
+  # Only launch if one is not already running for this cluster.
+  if pgrep -f "k3d-loadbalancer.sh ${CLUSTER_NAME}$" > /dev/null 2>&1; then
+    echo "k3d load balancer assigner already running for cluster ${CLUSTER_NAME}"
+  else
+    nohup "$SCRIPT_DIR/k3d-loadbalancer.sh" "$CLUSTER_NAME" > /tmp/k3d-lb-"${CLUSTER_NAME}".log 2>&1 &
+    disown
+  fi
 }
 
 # 1. Create a k3d cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)
