@@ -159,7 +159,7 @@ func TestExtAuthForSpec(t *testing.T) {
 func TestApplyForRoute(t *testing.T) {
 	t.Run("applies ext auth configuration to route", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{enableAuthSucceededMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
@@ -218,6 +218,7 @@ func TestHttpFilters(t *testing.T) {
 	t.Run("adds ext auth filter to filter chain", func(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{
+			enableAuthSucceededMetadata: true,
 			extAuthPerProvider: ProviderNeededMap{
 				Providers: map[string][]Provider{
 					"test-filter-chain": {
@@ -257,7 +258,7 @@ func TestHttpFilters(t *testing.T) {
 func TestExtAuthPolicyPlugin(t *testing.T) {
 	t.Run("applies ext auth configuration to route", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{enableAuthSucceededMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
@@ -299,7 +300,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 
 	t.Run("handles disabled ext auth configuration", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{enableAuthSucceededMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{

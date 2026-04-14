@@ -36,10 +36,11 @@ func TestBasic(t *testing.T) {
 			version.Version = prevVersion
 		}()
 
-		// Prepend setting EnableExperimentalGatewayAPIFeatures to true so it can be overwritten by settingOpts
+		// Prepend settings to true so they can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
 			func(s *apisettings.Settings) {
 				s.EnableExperimentalGatewayAPIFeatures = true
+				s.EnableAuthSucceededMetadata = true
 			},
 		}, settingOpts...)
 		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
@@ -2783,6 +2784,7 @@ func TestValidation(t *testing.T) {
 		settingOpts := func(s *apisettings.Settings) {
 			s.ValidationMode = mode
 			s.EnableExperimentalGatewayAPIFeatures = true
+			s.EnableAuthSucceededMetadata = true
 		}
 		translatortest.TestTranslation(t, ctx, []string{inputFile}, outputFile, gwNN, settingOpts)
 	}
@@ -2819,6 +2821,7 @@ func TestRouteDelegation(t *testing.T) {
 		}
 		settingOpt := func(s *apisettings.Settings) {
 			s.EnableExperimentalGatewayAPIFeatures = true
+			s.EnableAuthSucceededMetadata = true
 		}
 		translatortest.TestTranslation(t, ctx, inputFiles, outputFile, gwNN, settingOpt)
 	}
@@ -2957,6 +2960,7 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
 			func(s *apisettings.Settings) {
 				s.DiscoveryNamespaceSelectors = cfgJSON
 				s.EnableExperimentalGatewayAPIFeatures = true
+				s.EnableAuthSucceededMetadata = true
 			},
 		}
 

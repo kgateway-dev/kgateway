@@ -85,7 +85,7 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 		pCtxTypedFilterConfig.AddTypedConfig(jwtGlobalDisableFilterName, EnableFilterPerRoute())
 		// Explicitly set the JwtEnabledFilterName to a blank transformation.
 		// This ensures that the metadata is not set if auth is not configured on the route
-		pCtxTypedFilterConfig.AddTypedConfig(JwtEnabledFilterName, GenerateBlankTransformationConfigPerRoute())
+		AddBlankTransformationIfNeeded(pCtxTypedFilterConfig, JwtEnabledFilterName, p.enableAuthSucceededMetadata)
 		return
 	}
 
@@ -99,7 +99,7 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 	// TODO: Is this condition necessary ? Would it introduce a bug ?
 	if len(jwtIr.perProviderConfig) > 0 {
 		// Set the AuthSucceeded metadata field indicates that the request has successfully been authed
-		AddAuthSucceededMetadata(pCtxTypedFilterConfig, JwtEnabledFilterName)
+		AddAuthSucceededMetadataIfNeeded(pCtxTypedFilterConfig, JwtEnabledFilterName, p.enableAuthSucceededMetadata)
 	}
 }
 

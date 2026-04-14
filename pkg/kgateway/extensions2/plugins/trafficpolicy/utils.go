@@ -66,7 +66,11 @@ func newSetMetadataConfig(metadataNamespace string) *set_metadata.Config {
 func AddAuthEnabledFilterIfNeeded(
 	stagedFilters []filters.StagedHttpFilter,
 	filterName string,
+	enableAuthSucceededMetadata bool,
 ) []filters.StagedHttpFilter {
+	if !enableAuthSucceededMetadata {
+		return stagedFilters
+	}
 	for _, f := range stagedFilters {
 		if f.Filter.GetName() == filterName {
 			return stagedFilters
@@ -82,8 +86,23 @@ func AddAuthEnabledFilterIfNeeded(
 	return stagedFilters
 }
 
-func AddAuthSucceededMetadata(perFilterConfig *ir.TypedFilterConfigMap, filterName string) {
+// AddAuthSucceededMetadataIfNeeded sets the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata
+// via the transformation filter when enableAuthSucceededMetadata is true
+func AddAuthSucceededMetadataIfNeeded(perFilterConfig *ir.TypedFilterConfigMap, filterName string, enableAuthSucceededMetadata bool) {
+	if !enableAuthSucceededMetadata {
+		return
+	}
 	perFilterConfig.AddTypedConfig(filterName, generateDynamicMetadata(AuthPolicyMetadataNamespace, map[string]kgateway.InjaTemplate{
 		AuthSucceededMetadataKey: kgateway.InjaTemplate("true"),
 	}))
+}
+
+// AddBlankTransformationIfNeeded sets a blank (no-op) per-route transformation on the named filter when
+// enableAuthSucceededMetadata is true. This prevents auth-succeeded metadata from being set on routes
+// where auth is explicitly disabled or not configured.
+func AddBlankTransformationIfNeeded(perFilterConfig *ir.TypedFilterConfigMap, filterName string, enableAuthSucceededMetadata bool) {
+	if !enableAuthSucceededMetadata {
+		return
+	}
+	perFilterConfig.AddTypedConfig(filterName, GenerateBlankTransformationConfigPerRoute())
 }

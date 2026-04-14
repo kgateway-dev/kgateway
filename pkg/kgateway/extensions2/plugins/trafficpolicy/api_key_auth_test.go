@@ -370,6 +370,7 @@ func TestHandleAPIKeyAuth(t *testing.T) {
 func TestHttpFiltersAPIKeyAuth(t *testing.T) {
 	t.Run("adds api key auth filter and auth-enabled filter to chain", func(t *testing.T) {
 		plugin := &trafficPolicyPluginGwPass{
+			enableAuthSucceededMetadata: true,
 			apiKeyAuthInChain: map[string]*envoyapikeyauthv3.ApiKeyAuth{
 				"test-filter-chain": {},
 			},
@@ -392,7 +393,7 @@ func TestHttpFiltersAPIKeyAuth(t *testing.T) {
 func TestAPIKeyAuthPolicyPlugin(t *testing.T) {
 	t.Run("applies api key auth configuration to route", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{enableAuthSucceededMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				apiKeyAuth: &apiKeyAuthIR{
@@ -425,7 +426,7 @@ func TestAPIKeyAuthPolicyPlugin(t *testing.T) {
 
 	t.Run("handles disabled api key auth configuration", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{enableAuthSucceededMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				apiKeyAuth: &apiKeyAuthIR{disable: true},

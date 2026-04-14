@@ -55,6 +55,7 @@ func TestRedirectPath(t *testing.T) {
 func TestHttpFiltersOAuth2(t *testing.T) {
 	t.Run("adds oauth2 filter and auth-enabled filter to chain", func(t *testing.T) {
 		plugin := &trafficPolicyPluginGwPass{
+			enableAuthSucceededMetadata: true,
 			oauth2PerProvider: ProviderNeededMap{
 				Providers: map[string][]Provider{
 					"test-filter-chain": {
@@ -89,7 +90,7 @@ func TestHttpFiltersOAuth2(t *testing.T) {
 func TestOAuth2PolicyPlugin(t *testing.T) {
 	t.Run("applies oauth2 configuration to route", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{enableAuthSucceededMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				oauth2: &oauthIR{
