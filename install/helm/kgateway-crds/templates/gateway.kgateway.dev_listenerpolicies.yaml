@@ -361,6 +361,51 @@ spec:
                                         required:
                                         - flags
                                         type: object
+                                      runtimeFilter:
+                                        description: |-
+                                          Filters for random sampling of access logs.
+                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                        properties:
+                                          percentSampled:
+                                            description: |-
+                                              By default, the runtime filter will log on every request when the runtime key is set.
+                                              If this field is set, it additionally applies a fractional percent check so that only a
+                                              fraction of requests are logged.
+                                            properties:
+                                              denominator:
+                                                description: |-
+                                                  Specifies the denominator. If the denominator specified is less than the numerator,
+                                                  the final fractional percentage is capped at 1 (100%).
+                                                  Defaults to HUNDRED.
+                                                enum:
+                                                - HUNDRED
+                                                - TEN_THOUSAND
+                                                - MILLION
+                                                type: string
+                                              numerator:
+                                                description: Specifies the numerator.
+                                                  Defaults to 0.
+                                                format: int32
+                                                minimum: 0
+                                                type: integer
+                                            required:
+                                            - numerator
+                                            type: object
+                                          runtimeKey:
+                                            description: |-
+                                              The runtime key to look up in the runtime implementation. This key determines whether
+                                              the access log is enabled. When the runtime key value is set, the filter checks this key
+                                              at runtime to decide whether to log each request.
+                                            minLength: 1
+                                            type: string
+                                          useIndependentRandomness:
+                                            description: |-
+                                              If set to true, the filter uses Envoy's independent randomness source.
+                                              When false (the default), the filter uses the runtime key lookup.
+                                            type: boolean
+                                        required:
+                                        - runtimeKey
+                                        type: object
                                       statusCodeFilter:
                                         description: |-
                                           StatusCodeFilter filters based on HTTP status code.
@@ -693,6 +738,51 @@ spec:
                                         required:
                                         - flags
                                         type: object
+                                      runtimeFilter:
+                                        description: |-
+                                          Filters for random sampling of access logs.
+                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                        properties:
+                                          percentSampled:
+                                            description: |-
+                                              By default, the runtime filter will log on every request when the runtime key is set.
+                                              If this field is set, it additionally applies a fractional percent check so that only a
+                                              fraction of requests are logged.
+                                            properties:
+                                              denominator:
+                                                description: |-
+                                                  Specifies the denominator. If the denominator specified is less than the numerator,
+                                                  the final fractional percentage is capped at 1 (100%).
+                                                  Defaults to HUNDRED.
+                                                enum:
+                                                - HUNDRED
+                                                - TEN_THOUSAND
+                                                - MILLION
+                                                type: string
+                                              numerator:
+                                                description: Specifies the numerator.
+                                                  Defaults to 0.
+                                                format: int32
+                                                minimum: 0
+                                                type: integer
+                                            required:
+                                            - numerator
+                                            type: object
+                                          runtimeKey:
+                                            description: |-
+                                              The runtime key to look up in the runtime implementation. This key determines whether
+                                              the access log is enabled. When the runtime key value is set, the filter checks this key
+                                              at runtime to decide whether to log each request.
+                                            minLength: 1
+                                            type: string
+                                          useIndependentRandomness:
+                                            description: |-
+                                              If set to true, the filter uses Envoy's independent randomness source.
+                                              When false (the default), the filter uses the runtime key lookup.
+                                            type: boolean
+                                        required:
+                                        - runtimeKey
+                                        type: object
                                       statusCodeFilter:
                                         description: |-
                                           StatusCodeFilter filters based on HTTP status code.
@@ -736,6 +826,51 @@ spec:
                                       type: array
                                   required:
                                   - flags
+                                  type: object
+                                runtimeFilter:
+                                  description: |-
+                                    Filters for random sampling of access logs.
+                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                  properties:
+                                    percentSampled:
+                                      description: |-
+                                        By default, the runtime filter will log on every request when the runtime key is set.
+                                        If this field is set, it additionally applies a fractional percent check so that only a
+                                        fraction of requests are logged.
+                                      properties:
+                                        denominator:
+                                          description: |-
+                                            Specifies the denominator. If the denominator specified is less than the numerator,
+                                            the final fractional percentage is capped at 1 (100%).
+                                            Defaults to HUNDRED.
+                                          enum:
+                                          - HUNDRED
+                                          - TEN_THOUSAND
+                                          - MILLION
+                                          type: string
+                                        numerator:
+                                          description: Specifies the numerator. Defaults
+                                            to 0.
+                                          format: int32
+                                          minimum: 0
+                                          type: integer
+                                      required:
+                                      - numerator
+                                      type: object
+                                    runtimeKey:
+                                      description: |-
+                                        The runtime key to look up in the runtime implementation. This key determines whether
+                                        the access log is enabled. When the runtime key value is set, the filter checks this key
+                                        at runtime to decide whether to log each request.
+                                      minLength: 1
+                                      type: string
+                                    useIndependentRandomness:
+                                      description: |-
+                                        If set to true, the filter uses Envoy's independent randomness source.
+                                        When false (the default), the filter uses the runtime key lookup.
+                                      type: boolean
+                                  required:
+                                  - runtimeKey
                                   type: object
                                 statusCodeFilter:
                                   description: |-
@@ -2254,6 +2389,51 @@ spec:
                                               required:
                                               - flags
                                               type: object
+                                            runtimeFilter:
+                                              description: |-
+                                                Filters for random sampling of access logs.
+                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                              properties:
+                                                percentSampled:
+                                                  description: |-
+                                                    By default, the runtime filter will log on every request when the runtime key is set.
+                                                    If this field is set, it additionally applies a fractional percent check so that only a
+                                                    fraction of requests are logged.
+                                                  properties:
+                                                    denominator:
+                                                      description: |-
+                                                        Specifies the denominator. If the denominator specified is less than the numerator,
+                                                        the final fractional percentage is capped at 1 (100%).
+                                                        Defaults to HUNDRED.
+                                                      enum:
+                                                      - HUNDRED
+                                                      - TEN_THOUSAND
+                                                      - MILLION
+                                                      type: string
+                                                    numerator:
+                                                      description: Specifies the numerator.
+                                                        Defaults to 0.
+                                                      format: int32
+                                                      minimum: 0
+                                                      type: integer
+                                                  required:
+                                                  - numerator
+                                                  type: object
+                                                runtimeKey:
+                                                  description: |-
+                                                    The runtime key to look up in the runtime implementation. This key determines whether
+                                                    the access log is enabled. When the runtime key value is set, the filter checks this key
+                                                    at runtime to decide whether to log each request.
+                                                  minLength: 1
+                                                  type: string
+                                                useIndependentRandomness:
+                                                  description: |-
+                                                    If set to true, the filter uses Envoy's independent randomness source.
+                                                    When false (the default), the filter uses the runtime key lookup.
+                                                  type: boolean
+                                              required:
+                                              - runtimeKey
+                                              type: object
                                             statusCodeFilter:
                                               description: |-
                                                 StatusCodeFilter filters based on HTTP status code.
@@ -2588,6 +2768,51 @@ spec:
                                               required:
                                               - flags
                                               type: object
+                                            runtimeFilter:
+                                              description: |-
+                                                Filters for random sampling of access logs.
+                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                              properties:
+                                                percentSampled:
+                                                  description: |-
+                                                    By default, the runtime filter will log on every request when the runtime key is set.
+                                                    If this field is set, it additionally applies a fractional percent check so that only a
+                                                    fraction of requests are logged.
+                                                  properties:
+                                                    denominator:
+                                                      description: |-
+                                                        Specifies the denominator. If the denominator specified is less than the numerator,
+                                                        the final fractional percentage is capped at 1 (100%).
+                                                        Defaults to HUNDRED.
+                                                      enum:
+                                                      - HUNDRED
+                                                      - TEN_THOUSAND
+                                                      - MILLION
+                                                      type: string
+                                                    numerator:
+                                                      description: Specifies the numerator.
+                                                        Defaults to 0.
+                                                      format: int32
+                                                      minimum: 0
+                                                      type: integer
+                                                  required:
+                                                  - numerator
+                                                  type: object
+                                                runtimeKey:
+                                                  description: |-
+                                                    The runtime key to look up in the runtime implementation. This key determines whether
+                                                    the access log is enabled. When the runtime key value is set, the filter checks this key
+                                                    at runtime to decide whether to log each request.
+                                                  minLength: 1
+                                                  type: string
+                                                useIndependentRandomness:
+                                                  description: |-
+                                                    If set to true, the filter uses Envoy's independent randomness source.
+                                                    When false (the default), the filter uses the runtime key lookup.
+                                                  type: boolean
+                                              required:
+                                              - runtimeKey
+                                              type: object
                                             statusCodeFilter:
                                               description: |-
                                                 StatusCodeFilter filters based on HTTP status code.
@@ -2631,6 +2856,51 @@ spec:
                                             type: array
                                         required:
                                         - flags
+                                        type: object
+                                      runtimeFilter:
+                                        description: |-
+                                          Filters for random sampling of access logs.
+                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                        properties:
+                                          percentSampled:
+                                            description: |-
+                                              By default, the runtime filter will log on every request when the runtime key is set.
+                                              If this field is set, it additionally applies a fractional percent check so that only a
+                                              fraction of requests are logged.
+                                            properties:
+                                              denominator:
+                                                description: |-
+                                                  Specifies the denominator. If the denominator specified is less than the numerator,
+                                                  the final fractional percentage is capped at 1 (100%).
+                                                  Defaults to HUNDRED.
+                                                enum:
+                                                - HUNDRED
+                                                - TEN_THOUSAND
+                                                - MILLION
+                                                type: string
+                                              numerator:
+                                                description: Specifies the numerator.
+                                                  Defaults to 0.
+                                                format: int32
+                                                minimum: 0
+                                                type: integer
+                                            required:
+                                            - numerator
+                                            type: object
+                                          runtimeKey:
+                                            description: |-
+                                              The runtime key to look up in the runtime implementation. This key determines whether
+                                              the access log is enabled. When the runtime key value is set, the filter checks this key
+                                              at runtime to decide whether to log each request.
+                                            minLength: 1
+                                            type: string
+                                          useIndependentRandomness:
+                                            description: |-
+                                              If set to true, the filter uses Envoy's independent randomness source.
+                                              When false (the default), the filter uses the runtime key lookup.
+                                            type: boolean
+                                        required:
+                                        - runtimeKey
                                         type: object
                                       statusCodeFilter:
                                         description: |-

@@ -55,7 +55,7 @@ jobs:
         # December 4, 2025: ~21 minutes
         - cluster-name: 'cluster-five'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$'
+          go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$|^TestKgateway$$/^WebSocket$$'
           localstack: 'false'
         # December 4, 2025: ~22 minutes
         - cluster-name: 'cluster-six'

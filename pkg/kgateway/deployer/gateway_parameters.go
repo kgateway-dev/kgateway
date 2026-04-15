@@ -235,54 +235,60 @@ func (k *kgatewayParameters) getGatewayParametersForGateway(gw *gwv1.Gateway) (*
 		return nil, deployer.GetGatewayParametersForGatewayError(ErrNotFound, gwpNamespace, gwpName, gw.GetNamespace(), gw.GetName(), "Gateway")
 	}
 
-	defaultGwp, err := k.getDefaultGatewayParameters(gw)
+	// Propagate the Gateway-level omitDefaultSecurityContext flag so that
+	// in-memory defaults are generated without security context from the
+	// start. Do not discard envoy securityContext fields set by the
+	// GatewayClass params.
+	omitDefaultSecurityContext := ptr.Deref(gwp.Spec.Kube.GetOmitDefaultSecurityContext(), false)
+
+	defaultGwp, err := k.getDefaultGatewayParametersWithFlag(gw, omitDefaultSecurityContext)
 	if err != nil {
 		return nil, err
 	}
 
 	mergedGwp := defaultGwp
-	if ptr.Deref(gwp.Spec.Kube.GetOmitDefaultSecurityContext(), false) {
-		// Clear the security context from the defaults to match the behavior of
-		// GetInMemoryGatewayParameters with OmitDefaultSecurityContext=true.
-		// This preserves GatewayClass params (like replicas) while still honoring
-		// the Gateway's omitDefaultSecurityContext setting.
-		if mergedGwp.Spec.Kube != nil && mergedGwp.Spec.Kube.EnvoyContainer != nil {
-			mergedGwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
-		}
-	}
 	deployer.DeepMergeGatewayParameters(mergedGwp, gwp)
 	return mergedGwp, nil
 }
 
 // gets the default GatewayParameters associated with the GatewayClass of the provided Gateway
 func (k *kgatewayParameters) getDefaultGatewayParameters(gw *gwv1.Gateway) (*kgateway.GatewayParameters, error) {
-	gwc, err := getGatewayClassFromGateway(k.gwClassClient, gw)
-	if err != nil {
-		return nil, err
-	}
-	return k.getGatewayParametersForGatewayClass(gwc)
+	return k.getDefaultGatewayParametersWithFlag(gw, false)
 }
 
-// Gets the GatewayParameters object associated with a given GatewayClass.
-func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.GatewayClass) (*kgateway.GatewayParameters, error) {
-	// Our defaults depend on OmitDefaultSecurityContext, but these are the defaults
-	// when not OmitDefaultSecurityContext:
-	defaultGwp, err := deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
-		ControllerName:             string(gwc.Spec.ControllerName),
-		ClassName:                  gwc.GetName(),
-		ImageInfo:                  k.inputs.ImageInfo,
-		WaypointClassName:          k.inputs.WaypointGatewayClassName,
-		OmitDefaultSecurityContext: false,
-	})
+// getDefaultGatewayParametersWithFlag gets the GatewayClass-level effective
+// parameters, honoring the given omitDefaultSecurityContext flag.
+func (k *kgatewayParameters) getDefaultGatewayParametersWithFlag(gw *gwv1.Gateway, omitDefaultSecurityContext bool) (*kgateway.GatewayParameters, error) {
+	gwc, err := getGatewayClassFromGateway(k.gwClassClient, gw)
 	if err != nil {
 		return nil, err
 	}
 
 	paramRef := gwc.Spec.ParametersRef
 	if paramRef == nil {
-		// when there is no parametersRef, just return the defaults
-		return defaultGwp, nil
+		return deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
+			ControllerName:             string(gwc.Spec.ControllerName),
+			ClassName:                  gwc.GetName(),
+			ImageInfo:                  k.inputs.ImageInfo,
+			WaypointClassName:          k.inputs.WaypointGatewayClassName,
+			OmitDefaultSecurityContext: omitDefaultSecurityContext,
+		})
 	}
+
+	gwcParams, err := k.resolveGatewayClassParameters(gwc)
+	if err != nil {
+		return nil, err
+	}
+
+	omit := omitDefaultSecurityContext || ptr.Deref(gwcParams.Spec.Kube.GetOmitDefaultSecurityContext(), false)
+
+	return k.mergeWithDefaults(gwc, gwcParams, omit)
+}
+
+// resolveGatewayClassParameters fetches the raw GatewayParameters for a
+// GatewayClass without merging with defaults.
+func (k *kgatewayParameters) resolveGatewayClassParameters(gwc *gwv1.GatewayClass) (*kgateway.GatewayParameters, error) {
+	paramRef := gwc.Spec.ParametersRef
 
 	gwpName := paramRef.Name
 	if gwpName == "" {
@@ -309,24 +315,26 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 		)
 	}
 
-	// merge the explicit GatewayParameters with the defaults. this is
-	// primarily done to ensure that the image registry and tag are
-	// correctly set when they aren't overridden by the GatewayParameters.
-	mergedGwp := defaultGwp
-	if ptr.Deref(gwp.Spec.Kube.GetOmitDefaultSecurityContext(), false) {
-		mergedGwp, err = deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
-			ControllerName:             string(gwc.Spec.ControllerName),
-			ClassName:                  gwc.GetName(),
-			ImageInfo:                  k.inputs.ImageInfo,
-			WaypointClassName:          k.inputs.WaypointGatewayClassName,
-			OmitDefaultSecurityContext: true,
-		})
-		if err != nil {
-			return nil, err
-		}
+	return gwp, nil
+}
+
+// mergeWithDefaults generates in-memory defaults with the given
+// omitDefaultSecurityContext flag, then merges the explicit GatewayParameters on
+// top. This ensures image registry/tag defaults are present when not overridden.
+func (k *kgatewayParameters) mergeWithDefaults(gwc *gwv1.GatewayClass, gwp *kgateway.GatewayParameters, omitDefaultSecurityContext bool) (*kgateway.GatewayParameters, error) {
+	defaultGwp, err := deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
+		ControllerName:             string(gwc.Spec.ControllerName),
+		ClassName:                  gwc.GetName(),
+		ImageInfo:                  k.inputs.ImageInfo,
+		WaypointClassName:          k.inputs.WaypointGatewayClassName,
+		OmitDefaultSecurityContext: omitDefaultSecurityContext,
+	})
+	if err != nil {
+		return nil, err
 	}
-	deployer.DeepMergeGatewayParameters(mergedGwp, gwp)
-	return mergedGwp, nil
+
+	deployer.DeepMergeGatewayParameters(defaultGwp, gwp)
+	return defaultGwp, nil
 }
 
 func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.GatewayParameters) (*deployer.HelmConfig, error) {

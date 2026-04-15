@@ -240,6 +240,43 @@ type Transform struct {
 	// If empty, body will not be buffered.
 	// +optional
 	Body *BodyTransformation `json:"body,omitempty"`
+
+	// DynamicMetadata is a list of dynamic metadata entries to set.
+	// The values are stored in Envoy dynamic metadata and can be used in access log
+	// templates or consumed by other filters down the chain.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=16
+	DynamicMetadata []DynamicMetadataTransformation `json:"dynamicMetadata,omitempty"`
+}
+
+// DynamicMetadataTransformation defines a single dynamic metadata entry to set.
+type DynamicMetadataTransformation struct {
+	// Namespace is the dynamic metadata namespace.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Namespace string `json:"namespace"`
+
+	// Key is the metadata key within the namespace.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Key string `json:"key"`
+
+	// Value is the value to set in dynamic metadata.
+	// +required
+	Value DynamicMetadataValue `json:"value"`
+}
+
+// DynamicMetadataValue defines the value to set in dynamic metadata.
+// Exactly one field must be set.
+// +kubebuilder:validation:ExactlyOneOf=stringValue
+type DynamicMetadataValue struct {
+	// StringValue is an Inja template whose rendered output is stored as the metadata string value.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	StringValue *InjaTemplate `json:"stringValue,omitempty"`
 }
 
 type InjaTemplate string
@@ -265,7 +302,7 @@ type (
 
 // BodyparseBehavior defines how the body should be parsed
 // If set to json and the body is not json then the filter will not perform the transformation.
-// +kubebuilder:validation:Enum=AsString;AsJson
+// +kubebuilder:validation:Enum=AsString;AsJson;None
 type BodyParseBehavior string
 
 const (
@@ -273,18 +310,24 @@ const (
 	BodyParseBehaviorAsString BodyParseBehavior = "AsString"
 	// BodyParseBehaviorAsJSON will parse the body as a json object.
 	BodyParseBehaviorAsJSON BodyParseBehavior = "AsJson"
+	// BodyParseBehaviorNone will skip any body buffering and processing.
+	BodyParseBehaviorNone BodyParseBehavior = "None"
 )
 
 // BodyTransformation controls how the body should be parsed and transformed.
 type BodyTransformation struct {
 	// ParseAs defines what auto formatting should be applied to the body.
 	// This can make interacting with keys within a json body much easier if AsJson is selected.
+	// When set to None, it will not buffer the body and will skip all body processing. In
+	// addition, attempt to extract json variables from the body using inja template in the header
+	// will result in 400 response.
 	// +kubebuilder:default=AsString
 	// +optional
 	ParseAs BodyParseBehavior `json:"parseAs,omitempty"`
 
 	// Value is the template to apply to generate the output value for the body.
-	// Only Inja templates are supported.
+	// Only Inja templates are supported. If ParseAs field is set to None,
+	// this Value field is ignored and no body transformation will be done.
 	// +optional
 	Value *InjaTemplate `json:"value,omitempty"`
 }

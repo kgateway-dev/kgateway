@@ -29,6 +29,8 @@ pub struct LocalTransform {
     pub remove: Vec<String>,
     #[serde(default)]
     pub body: Option<BodyTransform>,
+    #[serde(default, rename = "dynamicMetadata")]
+    pub dynamic_metadata: Vec<MetadataValuePair>,
 }
 
 impl LocalTransform {
@@ -37,6 +39,14 @@ impl LocalTransform {
             && self.set.is_empty()
             && self.remove.is_empty()
             && self.body.as_ref().map(|c| c.is_empty()).unwrap_or(true)
+            && self.dynamic_metadata.is_empty()
+    }
+
+    pub fn skip_buffering(&self) -> bool {
+        self.body
+            .as_ref()
+            .map(|c| c.skip_parsing())
+            .unwrap_or(false)
     }
 }
 
@@ -61,6 +71,13 @@ impl BodyTransform {
         }
         false
     }
+
+    pub fn skip_parsing(&self) -> bool {
+        if matches!(self.parse_as, BodyParseBehavior::None) {
+            return true;
+        }
+        false
+    }
 }
 #[derive(Default, Clone, Deserialize)]
 pub struct NameValuePair {
@@ -70,10 +87,38 @@ pub struct NameValuePair {
 }
 
 #[derive(Default, Clone, Deserialize)]
+pub struct MetadataValuePair {
+    pub namespace: String,
+    pub key: String,
+    pub value: MetadataValue,
+}
+
+/// Defines the value to set in dynamic metadata.
+/// Exactly one field should be set.
+#[derive(Default, Clone, Deserialize)]
+pub struct MetadataValue {
+    /// An Inja template whose rendered output is stored as the metadata string value.
+    #[serde(rename = "stringValue")]
+    pub string_value: Option<String>,
+}
+
+impl MetadataValue {
+    /// Returns the string template if set and non-empty.
+    pub fn as_str_template(&self) -> Option<&str> {
+        self.string_value.as_deref().filter(|s| !s.is_empty())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.as_str_template().is_none()
+    }
+}
+
+#[derive(Default, Clone, Deserialize)]
 pub enum BodyParseBehavior {
     #[default]
     AsString,
     AsJson,
+    None,
 }
 
 pub trait TransformationOps {
@@ -84,13 +129,16 @@ pub trait TransformationOps {
     fn set_response_header(&mut self, key: &str, value: &[u8]) -> bool;
     fn remove_response_header(&mut self, key: &str) -> bool;
     fn parse_request_json_body(&mut self) -> Result<JsonValue>;
+    fn get_request_body_reader(&mut self) -> Box<dyn std::io::Read + '_>;
     fn get_request_body(&mut self) -> Vec<u8>;
     fn drain_request_body(&mut self, number_of_bytes: usize) -> bool;
     fn append_request_body(&mut self, data: &[u8]) -> bool;
     fn parse_response_json_body(&mut self) -> Result<JsonValue>;
+    fn get_response_body_reader(&mut self) -> Box<dyn std::io::Read + '_>;
     fn get_response_body(&mut self) -> Vec<u8>;
     fn drain_response_body(&mut self, number_of_bytes: usize) -> bool;
     fn append_response_body(&mut self, data: &[u8]) -> bool;
+    fn set_dynamic_metadata_string(&mut self, namespace: &str, key: &str, value: &str);
 }
 
 #[derive(thiserror::Error, Debug)]

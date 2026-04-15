@@ -186,6 +186,52 @@ func TestOIDCConfigDiscoveryCache(t *testing.T) {
 	r.Equal(config1.AuthorizationEndpoint, config2.AuthorizationEndpoint)
 }
 
+func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
+	r := require.New(t)
+
+	// Track the number of HTTP requests reaching the server.
+	var requestCount int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		atomic.AddInt64(&requestCount, 1)
+		// Simulate a slow upstream so concurrent callers overlap.
+		time.Sleep(50 * time.Millisecond)
+		config := oidcProviderConfig{
+			TokenEndpoint:         "https://example.com/token",
+			AuthorizationEndpoint: "https://example.com/auth",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(config)
+	}))
+	defer server.Close()
+
+	o := newOIDCProviderConfigDiscoverer()
+	issuer := server.URL
+
+	// Launch many concurrent get() calls for the same issuer.
+	const goroutines = 10
+	errs := make(chan error, goroutines)
+	configs := make(chan *oidcProviderConfig, goroutines)
+	for range goroutines {
+		go func() {
+			cfg, err := o.get(issuer)
+			errs <- err
+			configs <- cfg
+		}()
+	}
+
+	// All goroutines should succeed.
+	for range goroutines {
+		r.NoError(<-errs)
+		cfg := <-configs
+		r.NotNil(cfg)
+		r.Equal("https://example.com/token", cfg.TokenEndpoint)
+	}
+
+	// Singleflight should have deduplicated all concurrent calls into exactly one HTTP request.
+	r.Equal(int64(1), atomic.LoadInt64(&requestCount),
+		"expected exactly 1 HTTP request, but singleflight did not deduplicate concurrent calls")
+}
+
 func TestOIDCConfigDiscoveryInvalidIssuerURL(t *testing.T) {
 	r := require.New(t)
 
