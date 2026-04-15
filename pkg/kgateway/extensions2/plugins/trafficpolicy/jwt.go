@@ -96,7 +96,6 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 		p.jwtPerProvider.Add(fcn, providerName, cfg.provider)
 	}
 
-	// TODO: Is this condition necessary ? Would it introduce a bug ?
 	if len(jwtIr.perProviderConfig) > 0 {
 		// Set the AuthSucceeded metadata field indicates that the request has successfully been authed
 		AddAuthSucceededMetadataIfNeeded(pCtxTypedFilterConfig, JwtEnabledFilterName, p.enableAuthSucceededMetadata)

@@ -206,7 +206,6 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 		}
 	}
 
-	// TODO: Is this condition necessary ? Would it introduce a bug ?
 	if len(in.perProviderConfig) > 0 {
 		// Set the AuthSucceeded metadata field indicates that the request has successfully been authed
 		AddAuthSucceededMetadataIfNeeded(pCtxTypedFilterConfig, ExtAuthEnabledFilterName, p.enableAuthSucceededMetadata)
