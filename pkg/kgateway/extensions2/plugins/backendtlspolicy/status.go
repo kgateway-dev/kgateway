@@ -120,9 +120,15 @@ func buildPolicyStatusFn() pluginsdk.BuildPolicyStatusFn {
 		})
 
 		if len(status.Ancestors) > reports.MaxPolicyStatusAncestors {
-			// Gateway API caps PolicyStatus.ancestors at 16 real entries. Overflow needs
-			// to be signaled on related resources instead of inventing a synthetic
-			// ancestor entry in the policy status itself.
+			// Gateway API caps PolicyStatus.ancestors at 16 real entries. We can't
+			// invent a synthetic ancestor entry here, so log the truncation explicitly.
+			logger.Warn(
+				"truncating BackendTLSPolicy status ancestors to Gateway API limit",
+				"policy", key.DisplayString(),
+				"controller", controller,
+				"total_ancestors", len(status.Ancestors),
+				"dropped_ancestors", len(status.Ancestors)-reports.MaxPolicyStatusAncestors,
+			)
 			status.Ancestors = status.Ancestors[:reports.MaxPolicyStatusAncestors]
 		}
 
