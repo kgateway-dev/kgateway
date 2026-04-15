@@ -244,20 +244,26 @@ func (d *delayedInformer[T]) ListUnfiltered(namespace string, selector klabels.S
 }
 
 func (d *delayedInformer[T]) AddEventHandler(h cache.ResourceEventHandler) cache.ResourceEventHandlerRegistration {
-	d.mu.Lock()
-	if inf := d.inf.Load(); inf != nil {
-		d.mu.Unlock()
+	inf, reg := func() (*kclient.Informer[T], cache.ResourceEventHandlerRegistration) {
+		d.mu.Lock()
+		defer d.mu.Unlock()
+
+		if inf := d.inf.Load(); inf != nil {
+			return inf, nil
+		}
+
+		reg := delayedHandlerRegistration{hasSynced: new(atomic.Pointer[func() bool])}
+		hasSynced := d.HasSynced
+		reg.hasSynced.Store(&hasSynced)
+		d.handlers = append(d.handlers, delayedHandler[T]{
+			ResourceEventHandler: h,
+			hasSynced:            reg,
+		})
+		return nil, reg
+	}()
+	if inf != nil {
 		return (*inf).AddEventHandler(h)
 	}
-
-	reg := delayedHandlerRegistration{hasSynced: new(atomic.Pointer[func() bool])}
-	hasSynced := d.HasSynced
-	reg.hasSynced.Store(&hasSynced)
-	d.handlers = append(d.handlers, delayedHandler[T]{
-		ResourceEventHandler: h,
-		hasSynced:            reg,
-	})
-	d.mu.Unlock()
 	return reg
 }
 
@@ -276,32 +282,42 @@ func (d *delayedInformer[T]) HasSyncedIgnoringHandlers() bool {
 }
 
 func (d *delayedInformer[T]) ShutdownHandlers() {
-	d.mu.Lock()
-	if inf := d.inf.Load(); inf != nil {
-		d.mu.Unlock()
+	inf := func() *kclient.Informer[T] {
+		d.mu.Lock()
+		defer d.mu.Unlock()
+
+		if inf := d.inf.Load(); inf != nil {
+			return inf
+		}
+		d.handlers = nil
+		return nil
+	}()
+	if inf != nil {
 		(*inf).ShutdownHandlers()
-		return
 	}
-	d.handlers = nil
-	d.mu.Unlock()
 }
 
 func (d *delayedInformer[T]) ShutdownHandler(registration cache.ResourceEventHandlerRegistration) {
-	d.mu.Lock()
-	if inf := d.inf.Load(); inf != nil {
-		d.mu.Unlock()
-		(*inf).ShutdownHandler(registration)
-		return
-	}
+	inf := func() *kclient.Informer[T] {
+		d.mu.Lock()
+		defer d.mu.Unlock()
 
-	filtered := d.handlers[:0]
-	for _, handler := range d.handlers {
-		if handler.hasSynced != registration {
-			filtered = append(filtered, handler)
+		if inf := d.inf.Load(); inf != nil {
+			return inf
 		}
+
+		filtered := d.handlers[:0]
+		for _, handler := range d.handlers {
+			if handler.hasSynced != registration {
+				filtered = append(filtered, handler)
+			}
+		}
+		d.handlers = filtered
+		return nil
+	}()
+	if inf != nil {
+		(*inf).ShutdownHandler(registration)
 	}
-	d.handlers = filtered
-	d.mu.Unlock()
 }
 
 func (d *delayedInformer[T]) Start(stop <-chan struct{}) {
@@ -326,19 +342,25 @@ func (d *delayedInformer[T]) recordStart(stop <-chan struct{}) *kclient.Informer
 }
 
 func (d *delayedInformer[T]) Index(name string, extract func(o T) []string) kclient.RawIndexer {
-	d.mu.Lock()
-	if inf := d.inf.Load(); inf != nil {
-		d.mu.Unlock()
+	inf, index := func() (*kclient.Informer[T], kclient.RawIndexer) {
+		d.mu.Lock()
+		defer d.mu.Unlock()
+
+		if inf := d.inf.Load(); inf != nil {
+			return inf, nil
+		}
+
+		index := delayedIndex[T]{
+			name:    name,
+			indexer: new(atomic.Pointer[kclient.RawIndexer]),
+			extract: extract,
+		}
+		d.indexers = append(d.indexers, index)
+		return nil, index
+	}()
+	if inf != nil {
 		return (*inf).Index(name, extract)
 	}
-
-	index := delayedIndex[T]{
-		name:    name,
-		indexer: new(atomic.Pointer[kclient.RawIndexer]),
-		extract: extract,
-	}
-	d.indexers = append(d.indexers, index)
-	d.mu.Unlock()
 	return index
 }
 
