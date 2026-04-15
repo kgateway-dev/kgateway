@@ -1745,6 +1745,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with runtime filter", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/runtime-filter.yaml",
+			outputFile: "listener-policy-http/runtime-filter.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Service with appProtocol=kubernetes.io/ws", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend-protocol/svc-ws.yaml",

@@ -12,6 +12,7 @@ import (
 	envoy_open_telemetry "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
 	envoy_metadata_formatter "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/metadata/v3"
 	envoy_req_without_query "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
+	envoytypev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	otelv1 "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
@@ -361,6 +362,31 @@ func translateFilter(filter *kgateway.FilterType) (*envoyaccesslogv3.AccessLogFi
 			},
 		}
 
+	case filter.RuntimeFilter != nil:
+		rf := &envoyaccesslogv3.RuntimeFilter{
+			RuntimeKey: filter.RuntimeFilter.RuntimeKey,
+		}
+		if filter.RuntimeFilter.PercentSampled != nil {
+			rf.PercentSampled = &envoytypev3.FractionalPercent{
+				Numerator: uint32(filter.RuntimeFilter.PercentSampled.Numerator), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+			}
+			if filter.RuntimeFilter.PercentSampled.Denominator != nil {
+				denominator, err := toEnvoyDenominatorType(*filter.RuntimeFilter.PercentSampled.Denominator)
+				if err != nil {
+					return nil, err
+				}
+				rf.PercentSampled.Denominator = denominator
+			}
+		}
+		if filter.RuntimeFilter.UseIndependentRandomness != nil {
+			rf.UseIndependentRandomness = *filter.RuntimeFilter.UseIndependentRandomness
+		}
+		alCfg = &envoyaccesslogv3.AccessLogFilter{
+			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_RuntimeFilter{
+				RuntimeFilter: rf,
+			},
+		}
+
 	default:
 		return nil, fmt.Errorf("no valid filter type specified")
 	}
@@ -533,6 +559,19 @@ func toEnvoyComparisonOpType(op kgateway.Op) (envoyaccesslogv3.ComparisonFilter_
 		return envoyaccesslogv3.ComparisonFilter_LE, nil
 	default:
 		return 0, fmt.Errorf("unknown OP (%s)", op)
+	}
+}
+
+func toEnvoyDenominatorType(denominator kgateway.DenominatorType) (envoytypev3.FractionalPercent_DenominatorType, error) {
+	switch denominator {
+	case kgateway.HUNDRED:
+		return envoytypev3.FractionalPercent_HUNDRED, nil
+	case kgateway.TEN_THOUSAND:
+		return envoytypev3.FractionalPercent_TEN_THOUSAND, nil
+	case kgateway.MILLION:
+		return envoytypev3.FractionalPercent_MILLION, nil
+	default:
+		return 0, fmt.Errorf("unknown DenominatorType (%s)", denominator)
 	}
 }
 
