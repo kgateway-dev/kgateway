@@ -78,7 +78,7 @@ func (p *trafficPolicyPluginGwPass) handleBasicAuth(
 	// Add per-route config using BasicAuthPerRoute
 	pCtxTypedFilterConfig.AddTypedConfig(basicAuthFilterName, basicAuth.policy)
 
-	// Set the AuthSucceeded metadata field indicates that the request has successfully been authed
+	// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
 	AddAuthSucceededMetadataIfNeeded(pCtxTypedFilterConfig, BasicAuthEnabledFilterName, p.enableAuthSucceededMetadata)
 
 	// Register the disabled global filter in the chain

@@ -237,7 +237,7 @@ func (p *trafficPolicyPluginGwPass) handleAPIKeyAuth(
 	// Also requires API key auth http_filter to be added to the filter chain.
 	pCtxTypedFilterConfig.AddTypedConfig(apiKeyAuthFilterNamePrefix, apiKeyAuthIr.config)
 
-	// Set the AuthSucceeded metadata field indicates that the request has successfully been authed
+	// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
 	AddAuthSucceededMetadataIfNeeded(pCtxTypedFilterConfig, APIKeyAuthEnabledFilterName, p.enableAuthSucceededMetadata)
 
 	// Add a filter to the chain. When having an api key auth policy for a route we need to also have a

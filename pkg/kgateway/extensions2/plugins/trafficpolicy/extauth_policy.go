@@ -207,7 +207,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 	}
 
 	if len(in.perProviderConfig) > 0 {
-		// Set the AuthSucceeded metadata field indicates that the request has successfully been authed
+		// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
 		AddAuthSucceededMetadataIfNeeded(pCtxTypedFilterConfig, ExtAuthEnabledFilterName, p.enableAuthSucceededMetadata)
 	}
 }

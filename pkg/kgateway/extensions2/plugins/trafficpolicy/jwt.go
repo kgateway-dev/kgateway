@@ -97,7 +97,7 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 	}
 
 	if len(jwtIr.perProviderConfig) > 0 {
-		// Set the AuthSucceeded metadata field indicates that the request has successfully been authed
+		// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
 		AddAuthSucceededMetadataIfNeeded(pCtxTypedFilterConfig, JwtEnabledFilterName, p.enableAuthSucceededMetadata)
 	}
 }

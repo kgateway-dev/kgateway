@@ -486,7 +486,7 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 		p.secrets[secret.Name] = secret
 	}
 
-	// Set the AuthSucceeded metadata field indicates that the request has successfully been authed
+	// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
 	AddAuthSucceededMetadataIfNeeded(perFilterConfig, OauthEnabledFilterName, p.enableAuthSucceededMetadata)
 }
 
