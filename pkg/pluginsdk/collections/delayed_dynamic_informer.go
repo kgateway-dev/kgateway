@@ -81,7 +81,13 @@ func newDelayedTypedInformer[T controllers.ComparableObject](
 	}
 
 	served, err := crdServesVersion(c.Ext(), gvr)
-	if err == nil && served {
+	if err != nil {
+		// Discovery failed but the route API itself may still be readable. Do not
+		// suppress route watching solely because CRD discovery is unavailable or
+		// non-authoritative (for example due to RBAC).
+		return newInformer()
+	}
+	if served {
 		return newInformer()
 	}
 
@@ -93,10 +99,9 @@ func newDelayedTypedInformer[T controllers.ComparableObject](
 			return newInformer()
 		},
 	}
-	// Always unblock HasSynced when constructing a delayed informer. If
-	// discovery errored (RBAC, timeout, etc.) we are non-authoritative and
-	// must not block startup; if err==nil && !served, the CRD genuinely
-	// doesn't exist yet. Either way, verifiedNotReady = true is correct.
+	// The delayed path is only used for authoritative "not served yet" results.
+	// Keep HasSynced unblocked so startup does not wait on an optional CRD that
+	// is absent and may be installed later.
 	delayed.verifiedNotReady.Store(true)
 
 	return delayed

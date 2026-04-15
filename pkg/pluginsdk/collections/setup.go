@@ -133,29 +133,29 @@ func (c *CommonCollections) InitCollections(
 				return nil
 			}, c.KrtOpts.ToOptions("TLSRouteV1ToV1Alpha2")...))
 		}
-		for _, legacyTLSRouteGVR := range legacyTLSRouteWatchGVRs(servedTLSRouteVersions) {
-			switch legacyTLSRouteGVR.Version {
+		for _, preV1TLSRouteGVR := range preV1TLSRouteWatchGVRs(servedTLSRouteVersions) {
+			switch preV1TLSRouteGVR.Version {
 			case gwv1a2.GroupVersion.Version:
-				legacyTLSRoutes := krt.WrapClient(
-					newDelayedTypedInformer(c.Client, legacyTLSRouteGVR, func() kclient.Informer[*gwv1a2.TLSRoute] {
+				preV1TLSRoutes := krt.WrapClient(
+					newDelayedTypedInformer(c.Client, preV1TLSRouteGVR, func() kclient.Informer[*gwv1a2.TLSRoute] {
 						return kclient.NewFiltered[*gwv1a2.TLSRoute](c.Client, filter)
 					}),
-					c.KrtOpts.ToOptions("TLSRouteLegacyV1Alpha2")...,
+					c.KrtOpts.ToOptions("TLSRoutePreV1Alpha2")...,
 				)
-				tlsRouteCollections = append(tlsRouteCollections, legacyTLSRoutes)
+				tlsRouteCollections = append(tlsRouteCollections, preV1TLSRoutes)
 			case wellknown.TLSRouteV1Alpha3Version:
-				legacyTLSRoutes := krt.WrapClient(
-					newDelayedTypedInformer(c.Client, legacyTLSRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+				preV1TLSRoutes := krt.WrapClient(
+					newDelayedTypedInformer(c.Client, preV1TLSRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
 						return kclient.NewFiltered[*gwv1a3.TLSRoute](c.Client, filter)
 					}),
-					c.KrtOpts.ToOptions("TLSRouteLegacyV1Alpha3")...,
+					c.KrtOpts.ToOptions("TLSRoutePreV1Alpha3")...,
 				)
-				tlsRouteCollections = append(tlsRouteCollections, krt.NewManyCollection(legacyTLSRoutes, func(kctx krt.HandlerContext, i *gwv1a3.TLSRoute) []*gwv1a2.TLSRoute {
+				tlsRouteCollections = append(tlsRouteCollections, krt.NewManyCollection(preV1TLSRoutes, func(kctx krt.HandlerContext, i *gwv1a3.TLSRoute) []*gwv1a2.TLSRoute {
 					if converted := convertTLSRouteV1Alpha3ToV1Alpha2(i); converted != nil {
 						return []*gwv1a2.TLSRoute{converted}
 					}
 					return nil
-				}, c.KrtOpts.ToOptions("TLSRouteLegacyV1Alpha3ToV1Alpha2")...))
+				}, c.KrtOpts.ToOptions("TLSRoutePreV1Alpha3ToV1Alpha2")...))
 			}
 		}
 

@@ -30,14 +30,14 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 		})
 
 		require.Equal(t, servedTLSRouteVersions{
-			Promoted:      true,
-			Legacy:        true,
-			LegacyGVR:     wellknown.TLSRouteV1Alpha3GVR,
-			Authoritative: true,
+			Promoted:          true,
+			PreV1:             true,
+			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
+			Authoritative:     true,
 		}, getServedTLSRouteVersions(client))
 	})
 
-	t.Run("returns only legacy when promoted v1 is not served", func(t *testing.T) {
+	t.Run("returns only pre-v1 when promoted v1 is not served", func(t *testing.T) {
 		client := apiextensionsfake.NewClientset(&apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: "tlsroutes.gateway.networking.k8s.io"},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -48,29 +48,47 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 		})
 
 		require.Equal(t, servedTLSRouteVersions{
-			Legacy:        true,
-			LegacyGVR:     wellknown.TLSRouteV1Alpha3GVR,
-			Authoritative: true,
+			PreV1:             true,
+			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
+			Authoritative:     true,
+		}, getServedTLSRouteVersions(client))
+	})
+
+	t.Run("prefers v1alpha3 when gateway api v1.4.1 serves both pre-v1 versions", func(t *testing.T) {
+		client := apiextensionsfake.NewClientset(&apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{Name: "tlsroutes.gateway.networking.k8s.io"},
+			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+					{Name: gwv1a2.GroupVersion.Version, Served: true, Storage: false},
+					{Name: wellknown.TLSRouteV1Alpha3Version, Served: true, Storage: true},
+				},
+			},
+		})
+
+		require.Equal(t, servedTLSRouteVersions{
+			PreV1:             true,
+			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
+			Authoritative:     true,
 		}, getServedTLSRouteVersions(client))
 	})
 
 	t.Run("defaults to startup fallback when the CRD is absent", func(t *testing.T) {
 		require.Equal(t, servedTLSRouteVersions{
-			Promoted:  true,
-			Legacy:    true,
-			LegacyGVR: wellknown.TLSRouteV1Alpha3GVR,
+			Promoted:          true,
+			PreV1:             true,
+			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
 		}, getServedTLSRouteVersions(apiextensionsfake.NewClientset()))
 	})
 
-	t.Run("defaults to legacy when discovery is unavailable", func(t *testing.T) {
+	t.Run("defaults to pre-v1 when discovery is unavailable", func(t *testing.T) {
 		require.Equal(t, servedTLSRouteVersions{
-			Promoted:  true,
-			Legacy:    true,
-			LegacyGVR: wellknown.TLSRouteV1Alpha3GVR,
+			Promoted:          true,
+			PreV1:             true,
+			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
 		}, getServedTLSRouteVersions(nil))
 	})
 
-	t.Run("falls back to v1alpha2 when that is the only served legacy version", func(t *testing.T) {
+	t.Run("falls back to v1alpha2 when that is the only served pre-v1 version", func(t *testing.T) {
 		client := apiextensionsfake.NewClientset(&apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: "tlsroutes.gateway.networking.k8s.io"},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
@@ -81,36 +99,44 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 		})
 
 		require.Equal(t, servedTLSRouteVersions{
-			Legacy:        true,
-			LegacyGVR:     schema.GroupVersionResource{Group: wellknown.GatewayGroup, Version: gwv1a2.GroupVersion.Version, Resource: "tlsroutes"},
-			Authoritative: true,
+			PreV1:             true,
+			PreferredPreV1GVR: schema.GroupVersionResource{Group: wellknown.GatewayGroup, Version: gwv1a2.GroupVersion.Version, Resource: "tlsroutes"},
+			Authoritative:     true,
 		}, getServedTLSRouteVersions(client))
 	})
 }
 
-func TestLegacyTLSRouteWatchGVRs(t *testing.T) {
-	t.Run("returns no legacy watches when promoted discovery is authoritative", func(t *testing.T) {
-		require.Empty(t, legacyTLSRouteWatchGVRs(servedTLSRouteVersions{
-			Promoted:      true,
-			Legacy:        true,
-			LegacyGVR:     wellknown.TLSRouteV1Alpha3GVR,
-			Authoritative: true,
+func TestPreV1TLSRouteWatchGVRs(t *testing.T) {
+	t.Run("returns no pre-v1 watches when promoted discovery is authoritative", func(t *testing.T) {
+		require.Empty(t, preV1TLSRouteWatchGVRs(servedTLSRouteVersions{
+			Promoted:          true,
+			PreV1:             true,
+			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
+			Authoritative:     true,
 		}))
 	})
 
-	t.Run("returns the discovered legacy watch when promoted v1 is not served", func(t *testing.T) {
-		require.Equal(t, []schema.GroupVersionResource{legacyTLSRouteV1Alpha2GVR}, legacyTLSRouteWatchGVRs(servedTLSRouteVersions{
-			Legacy:        true,
-			LegacyGVR:     legacyTLSRouteV1Alpha2GVR,
-			Authoritative: true,
+	t.Run("returns the discovered pre-v1 watch when promoted v1 is not served", func(t *testing.T) {
+		require.Equal(t, []schema.GroupVersionResource{tlsRouteV1Alpha2GVR}, preV1TLSRouteWatchGVRs(servedTLSRouteVersions{
+			PreV1:             true,
+			PreferredPreV1GVR: tlsRouteV1Alpha2GVR,
+			Authoritative:     true,
 		}))
 	})
 
-	t.Run("returns both legacy fallbacks when discovery is non-authoritative", func(t *testing.T) {
-		require.Equal(t, []schema.GroupVersionResource{wellknown.TLSRouteV1Alpha3GVR, legacyTLSRouteV1Alpha2GVR}, legacyTLSRouteWatchGVRs(servedTLSRouteVersions{
-			Promoted:  true,
-			Legacy:    true,
-			LegacyGVR: wellknown.TLSRouteV1Alpha3GVR,
+	t.Run("returns only v1alpha3 when both pre-v1 versions are served authoritatively", func(t *testing.T) {
+		require.Equal(t, []schema.GroupVersionResource{wellknown.TLSRouteV1Alpha3GVR}, preV1TLSRouteWatchGVRs(servedTLSRouteVersions{
+			PreV1:             true,
+			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
+			Authoritative:     true,
+		}))
+	})
+
+	t.Run("returns both pre-v1 fallbacks when discovery is non-authoritative", func(t *testing.T) {
+		require.Equal(t, []schema.GroupVersionResource{wellknown.TLSRouteV1Alpha3GVR, tlsRouteV1Alpha2GVR}, preV1TLSRouteWatchGVRs(servedTLSRouteVersions{
+			Promoted:          true,
+			PreV1:             true,
+			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
 		}))
 	})
 }

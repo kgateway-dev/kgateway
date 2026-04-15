@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	"sigs.k8s.io/gateway-api/pkg/consts"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -239,6 +240,35 @@ func TestDelayedDynamicUnstructuredInformerMutationsUseInstalledInformer(t *test
 }
 
 func makeServedCRD(t *testing.T, client kube.Client, resource schema.GroupVersionResource, bundleVersion string) {
+	makeCRDWithVersions(t, client, resource, bundleVersion, []apiextensionsv1.CustomResourceDefinitionVersion{{
+		Name:    resource.Version,
+		Served:  true,
+		Storage: true,
+	}})
+}
+
+func makeGatewayAPIV141TLSRouteCRD(t *testing.T, client kube.Client) {
+	makeCRDWithVersions(t, client, wellknown.TLSRouteV1Alpha3GVR, "v1.4.1", []apiextensionsv1.CustomResourceDefinitionVersion{
+		{
+			Name:    gwv1a2.GroupVersion.Version,
+			Served:  true,
+			Storage: false,
+		},
+		{
+			Name:    wellknown.TLSRouteV1Alpha3Version,
+			Served:  true,
+			Storage: true,
+		},
+	})
+}
+
+func makeCRDWithVersions(
+	t *testing.T,
+	client kube.Client,
+	resource schema.GroupVersionResource,
+	bundleVersion string,
+	versions []apiextensionsv1.CustomResourceDefinitionVersion,
+) {
 	t.Helper()
 
 	clienttest.MakeCRDWithAnnotations(t, client, resource, map[string]string{
@@ -261,12 +291,8 @@ func makeServedCRD(t *testing.T, client kube.Client, resource schema.GroupVersio
 				Plural: resource.Resource,
 				Kind:   wellknown.TLSRouteKind,
 			},
-			Scope: apiextensionsv1.NamespaceScoped,
-			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{{
-				Name:    resource.Version,
-				Served:  true,
-				Storage: true,
-			}},
+			Scope:    apiextensionsv1.NamespaceScoped,
+			Versions: versions,
 		},
 	})
 	if apierrors.IsAlreadyExists(err) {
@@ -283,12 +309,8 @@ func makeServedCRD(t *testing.T, client kube.Client, resource schema.GroupVersio
 					Plural: resource.Resource,
 					Kind:   wellknown.TLSRouteKind,
 				},
-				Scope: apiextensionsv1.NamespaceScoped,
-				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{{
-					Name:    resource.Version,
-					Served:  true,
-					Storage: true,
-				}},
+				Scope:    apiextensionsv1.NamespaceScoped,
+				Versions: versions,
 			},
 		}, "")
 	}

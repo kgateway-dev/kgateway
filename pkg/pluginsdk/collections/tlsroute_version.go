@@ -29,45 +29,45 @@ var tlsRouteV1Alpha3GVR = schema.GroupVersionResource{
 	Resource: "tlsroutes",
 }
 
-var legacyTLSRouteV1Alpha2GVR = schema.GroupVersionResource{
+var tlsRouteV1Alpha2GVR = schema.GroupVersionResource{
 	Group:    wellknown.GatewayGroup,
 	Version:  gwv1a2.GroupVersion.Version,
 	Resource: "tlsroutes",
 }
 
 type servedTLSRouteVersions struct {
-	Promoted      bool
-	Legacy        bool
-	LegacyGVR     schema.GroupVersionResource
-	Authoritative bool
+	Promoted          bool
+	PreV1             bool
+	PreferredPreV1GVR schema.GroupVersionResource
+	Authoritative     bool
 }
 
 func fallbackTLSRouteVersions() servedTLSRouteVersions {
 	return servedTLSRouteVersions{
-		Promoted:  true,
-		Legacy:    true,
-		LegacyGVR: tlsRouteV1Alpha3GVR,
+		Promoted:          true,
+		PreV1:             true,
+		PreferredPreV1GVR: tlsRouteV1Alpha3GVR,
 	}
 }
 
-// legacyTLSRouteWatchGVRs returns the legacy TLSRoute API versions that should
+// preV1TLSRouteWatchGVRs returns the pre-v1 TLSRoute API versions that should
 // be watched for the current discovery result. When discovery is authoritative,
 // prefer a single served version to avoid duplicate logical TLSRoutes. When
-// discovery is non-authoritative, keep both legacy versions active so clusters
+// discovery is non-authoritative, keep both pre-v1 versions active so clusters
 // that only serve v1alpha2 remain discoverable.
-func legacyTLSRouteWatchGVRs(versions servedTLSRouteVersions) []schema.GroupVersionResource {
-	if !versions.Legacy || (versions.Authoritative && versions.Promoted) {
+func preV1TLSRouteWatchGVRs(versions servedTLSRouteVersions) []schema.GroupVersionResource {
+	if !versions.PreV1 || (versions.Authoritative && versions.Promoted) {
 		return nil
 	}
 	if versions.Authoritative {
-		return []schema.GroupVersionResource{versions.LegacyGVR}
+		return []schema.GroupVersionResource{versions.PreferredPreV1GVR}
 	}
-	return []schema.GroupVersionResource{tlsRouteV1Alpha3GVR, legacyTLSRouteV1Alpha2GVR}
+	return []schema.GroupVersionResource{tlsRouteV1Alpha3GVR, tlsRouteV1Alpha2GVR}
 }
 
 // getServedTLSRouteVersions resolves which TLSRoute API versions are currently
 // served by the cluster. When discovery is unavailable, or the CRD is not yet
-// installed, we conservatively allow both promoted and legacy watches so
+// installed, we conservatively allow both promoted and pre-v1 watches so
 // startup does not incorrectly disable TLSRoute support before delayed
 // informers can recover.
 func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTLSRouteVersions {
@@ -89,7 +89,7 @@ func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTL
 	}
 
 	versions := servedTLSRouteVersions{Authoritative: true}
-	servedLegacyVersions := map[string]bool{}
+	servedPreV1Versions := map[string]bool{}
 	for _, version := range crd.Spec.Versions {
 		if !version.Served {
 			continue
@@ -99,19 +99,19 @@ func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTL
 		case gwv1.GroupVersion.Version:
 			versions.Promoted = true
 		case wellknown.TLSRouteV1Alpha3Version, gwv1a2.GroupVersion.Version:
-			servedLegacyVersions[version.Name] = true
+			servedPreV1Versions[version.Name] = true
 		}
 	}
 
-	// Prefer v1alpha3 over v1alpha2 when both legacy versions are served so we
+	// Prefer v1alpha3 over v1alpha2 when both pre-v1 versions are served so we
 	// consistently watch the most recent pre-promotion API and avoid duplicate
-	// logical TLSRoutes from multiple legacy watches.
-	for _, legacyVersion := range []string{wellknown.TLSRouteV1Alpha3Version, gwv1a2.GroupVersion.Version} {
-		if servedLegacyVersions[legacyVersion] {
-			versions.Legacy = true
-			versions.LegacyGVR = schema.GroupVersionResource{
+	// logical TLSRoutes from multiple pre-v1 watches.
+	for _, preV1Version := range []string{wellknown.TLSRouteV1Alpha3Version, gwv1a2.GroupVersion.Version} {
+		if servedPreV1Versions[preV1Version] {
+			versions.PreV1 = true
+			versions.PreferredPreV1GVR = schema.GroupVersionResource{
 				Group:    wellknown.GatewayGroup,
-				Version:  legacyVersion,
+				Version:  preV1Version,
 				Resource: "tlsroutes",
 			}
 			break
