@@ -251,33 +251,14 @@ func (c BackendObjectIR) backendTLSPolicyClusterKey() string {
 		return ""
 	}
 
-	winner := policies[0]
-	for i := 1; i < len(policies); i++ {
-		if compareBackendTLSPolicies(policies[i], winner) < 0 {
-			winner = policies[i]
-		}
-	}
+	winner := policies[WinnerPolicyIndexByCreationTimeAndRef(policies)]
 
 	return "btls" + strconv.FormatUint(hashBackendTLSPolicy(winner), 36)
 }
 
-func compareBackendTLSPolicies(a, b PolicyAtt) int {
-	if cmp := a.PolicyIr.CreationTime().Compare(b.PolicyIr.CreationTime()); cmp != 0 {
-		return cmp
-	}
-	return strings.Compare(backendTLSPolicyRefString(a.PolicyRef), backendTLSPolicyRefString(b.PolicyRef))
-}
-
-func backendTLSPolicyRefString(ref *AttachedPolicyRef) string {
-	if ref == nil {
-		return ""
-	}
-	return ref.Group + "/" + ref.Kind + "/" + ref.Namespace + "/" + ref.Name + "/" + ref.SectionName
-}
-
 func hashBackendTLSPolicy(policy PolicyAtt) uint64 {
 	var sb strings.Builder
-	sb.WriteString(backendTLSPolicyRefString(policy.PolicyRef))
+	sb.WriteString(PolicyRefString(policy.PolicyRef))
 	sb.WriteRune('|')
 	sb.WriteString(strconv.FormatInt(policy.Generation, 10))
 	for _, err := range policy.Errors {

@@ -235,6 +235,10 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 	}
 }
 
+// BackendTLSPolicy is special-cased here because sectionName targets a specific
+// Service port, and for that port the port-specific BackendTLSPolicy must win over
+// any service-wide BackendTLSPolicy. Other backend policies may merge or use their
+// own precedence rules, so we intentionally do not apply this filtering generically.
 func preferPortSpecificBackendTLSPolicies(basePolicies, portPolicies []ir.PolicyAtt) []ir.PolicyAtt {
 	hasPortSpecificBackendTLSPolicy := false
 	for _, policy := range portPolicies {

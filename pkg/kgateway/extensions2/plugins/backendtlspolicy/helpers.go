@@ -3,7 +3,6 @@ package backendtlspolicy
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -138,27 +137,7 @@ func conditionsForErrors(policy ir.PolicyAtt) []pluginreporter.PolicyCondition {
 }
 
 func winnerIndex(policies []ir.PolicyAtt) int {
-	winnerIdx := 0
-	for i := 1; i < len(policies); i++ {
-		if comparePolicies(policies[i], policies[winnerIdx]) < 0 {
-			winnerIdx = i
-		}
-	}
-	return winnerIdx
-}
-
-func comparePolicies(a, b ir.PolicyAtt) int {
-	if cmp := a.PolicyIr.CreationTime().Compare(b.PolicyIr.CreationTime()); cmp != 0 {
-		return cmp
-	}
-	return strings.Compare(policyNamespaceName(a.PolicyRef), policyNamespaceName(b.PolicyRef))
-}
-
-func policyNamespaceName(ref *ir.AttachedPolicyRef) string {
-	if ref == nil {
-		return ""
-	}
-	return ref.Namespace + "/" + ref.Name
+	return ir.WinnerPolicyIndexByCreationTimeAndRef(policies)
 }
 
 func samePolicy(a, b ir.PolicyAtt) bool {
