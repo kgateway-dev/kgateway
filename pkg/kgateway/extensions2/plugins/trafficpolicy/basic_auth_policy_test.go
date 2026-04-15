@@ -205,7 +205,7 @@ func TestBasicAuthPolicyPlugin(t *testing.T) {
 		assert.NotNil(t, basicAuthConfig)
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[BasicAuthEnabledFilterName])
 		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[BasicAuthEnabledFilterName]),
-			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "basic_key_auth_enabled must set dynamic metadata")
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "basic_auth_enabled must set dynamic metadata")
 	})
 
 	t.Run("handles disabled basic auth configuration", func(t *testing.T) {
@@ -229,6 +229,6 @@ func TestBasicAuthPolicyPlugin(t *testing.T) {
 		assert.NotNil(t, pCtx.TypedFilterConfig, pCtx)
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[basicAuthFilterName])
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[BasicAuthEnabledFilterName])
-		assert.NotContains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[BasicAuthEnabledFilterName]), AuthSucceededMetadataKey, "basic_key_auth_enabled must not set dynamic metadata if the policy is disabled at the route level")
+		assert.NotContains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[BasicAuthEnabledFilterName]), AuthSucceededMetadataKey, "basic_auth_enabled must not set dynamic metadata if the policy is disabled at the route level")
 	})
 }

@@ -24,7 +24,7 @@ const (
 	defaultSecretKey    = ".htpasswd"
 	shaPrefix           = "{SHA}"
 
-	BasicAuthEnabledFilterName = "basic_key_auth_enabled"
+	BasicAuthEnabledFilterName = "basic_auth_enabled"
 )
 
 type basicAuthIR struct {
