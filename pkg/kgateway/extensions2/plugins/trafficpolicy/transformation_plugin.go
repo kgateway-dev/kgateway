@@ -2,6 +2,7 @@ package trafficpolicy
 
 import (
 	"encoding/json"
+	"sort"
 
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
@@ -127,7 +128,15 @@ func GenerateBlankTransformationConfigPerRoute() *dynamicmodulesv3.DynamicModule
 
 func generateDynamicMetadata(ns string, kv map[string]kgateway.InjaTemplate) *dynamicmodulesv3.DynamicModuleFilterPerRoute {
 	var metadata []kgateway.DynamicMetadataTransformation
-	for k, v := range kv {
+
+	keys := make([]string, 0, len(kv))
+	for k := range kv {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		v := kv[k]
 		metadata = append(metadata, kgateway.DynamicMetadataTransformation{
 			Namespace: ns,
 			Key:       k,
