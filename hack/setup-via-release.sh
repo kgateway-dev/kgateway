@@ -174,11 +174,12 @@ create_k3d_cluster() {
         fi
 
         # Disable built-in traefik and servicelb to avoid conflicts.
+        # Unlike the dev setup (setup-k3d.sh), we do NOT bind host ports 80/443
+        # so that multiple k3d clusters can coexist. Access is via the Docker
+        # network IPs assigned by k3d-loadbalancer.sh (or kubectl port-forward).
         k3d_args+=(
             --k3s-arg "--disable=traefik@server:0"
             --k3s-arg "--disable=servicelb@server:0"
-            -p "80:80@loadbalancer"
-            -p "443:443@loadbalancer"
         )
         $k3d_cmd "${k3d_args[@]}"
     fi
