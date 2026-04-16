@@ -221,7 +221,7 @@ Routes:
         name: rust_module
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
-        value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]}}'
+        value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]}}'
       perRouteConfigName: http_simple_mutations
   virtualHosts:
   - domains:
@@ -259,7 +259,7 @@ Routes:
             name: rust_module
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
-            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]}}'
+            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]}}'
           perRouteConfigName: http_simple_mutations
     - match:
         pathSeparatedPrefix: /route-1
@@ -303,7 +303,7 @@ Routes:
           name: rust_module
         filterConfig:
           '@type': type.googleapis.com/google.protobuf.StringValue
-          value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]}}'
+          value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]}}'
         perRouteConfigName: http_simple_mutations
 Statuses:
   gateways:
