@@ -3,11 +3,16 @@ package proxy_syncer
 import (
 	"fmt"
 	"maps"
+	"sort"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -156,6 +161,19 @@ func snapshotPerClient(
 			clusterResources.Version = fmt.Sprintf("%d", clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash)
 			clusterResources.Items = clustersProto
 		}
+		if missingClusters := findMissingReferencedClusters(
+			listenerRouteSnapshot.Routes,
+			listenerRouteSnapshot.Listeners,
+			clusterResources.Items,
+			clustersForUcc.erroredClusters,
+		); len(missingClusters) > 0 {
+			logger.Info(
+				"defer building snapshot until all referenced clusters are ready",
+				"client", ucc.ResourceName(),
+				"missing_clusters", missingClusters,
+			)
+			return nil
+		}
 
 		snap.erroredClusters = clustersForUcc.erroredClusters
 		snap.proxyKey = ucc.ResourceName()
@@ -254,6 +272,128 @@ func snapshotPerClient(
 	})
 
 	return xdsSnapshotsForUcc
+}
+
+func findMissingReferencedClusters(
+	routes envoycache.Resources,
+	listeners envoycache.Resources,
+	clusters map[string]envoycachetypes.ResourceWithTTL,
+	erroredClusters []string,
+) []string {
+	presentClusters := make(map[string]struct{}, len(clusters))
+	for name := range clusters {
+		presentClusters[name] = struct{}{}
+	}
+
+	erroredClusterSet := make(map[string]struct{}, len(erroredClusters))
+	for _, name := range erroredClusters {
+		erroredClusterSet[name] = struct{}{}
+	}
+
+	referencedClusters := make(map[string]struct{})
+	collectRouteClusterReferences(routes, referencedClusters)
+	collectListenerClusterReferences(listeners, referencedClusters)
+
+	missingClusters := make([]string, 0, len(referencedClusters))
+	for name := range referencedClusters {
+		if _, ok := presentClusters[name]; ok {
+			continue
+		}
+		if _, ok := erroredClusterSet[name]; ok {
+			continue
+		}
+		missingClusters = append(missingClusters, name)
+	}
+	sort.Strings(missingClusters)
+
+	return missingClusters
+}
+
+func collectRouteClusterReferences(routes envoycache.Resources, referencedClusters map[string]struct{}) {
+	for _, item := range routes.Items {
+		routeConfig, ok := item.Resource.(*envoyroutev3.RouteConfiguration)
+		if !ok {
+			continue
+		}
+		for _, virtualHost := range routeConfig.GetVirtualHosts() {
+			for _, route := range virtualHost.GetRoutes() {
+				routeAction := route.GetRoute()
+				if routeAction == nil {
+					continue
+				}
+				collectRouteActionClusterReferences(routeAction, referencedClusters)
+			}
+		}
+	}
+}
+
+func collectRouteActionClusterReferences(routeAction *envoyroutev3.RouteAction, referencedClusters map[string]struct{}) {
+	switch clusterSpecifier := routeAction.GetClusterSpecifier().(type) {
+	case *envoyroutev3.RouteAction_Cluster:
+		if clusterSpecifier.Cluster != "" {
+			referencedClusters[clusterSpecifier.Cluster] = struct{}{}
+		}
+	case *envoyroutev3.RouteAction_WeightedClusters:
+		if clusterSpecifier.WeightedClusters == nil {
+			return
+		}
+		for _, cluster := range clusterSpecifier.WeightedClusters.GetClusters() {
+			if cluster.GetName() != "" {
+				referencedClusters[cluster.GetName()] = struct{}{}
+			}
+		}
+	}
+}
+
+func collectListenerClusterReferences(listeners envoycache.Resources, referencedClusters map[string]struct{}) {
+	for _, item := range listeners.Items {
+		listener, ok := item.Resource.(*envoylistenerv3.Listener)
+		if !ok {
+			continue
+		}
+		collectFilterChainClusterReferences(listener.GetDefaultFilterChain(), referencedClusters)
+		for _, filterChain := range listener.GetFilterChains() {
+			collectFilterChainClusterReferences(filterChain, referencedClusters)
+		}
+	}
+}
+
+func collectFilterChainClusterReferences(
+	filterChain *envoylistenerv3.FilterChain,
+	referencedClusters map[string]struct{},
+) {
+	if filterChain == nil {
+		return
+	}
+	for _, filter := range filterChain.GetFilters() {
+		if filter.GetName() != envoywellknown.TCPProxy {
+			continue
+		}
+		typedConfig := filter.GetTypedConfig()
+		if typedConfig == nil {
+			continue
+		}
+
+		var tcpProxy envoytcpv3.TcpProxy
+		if err := typedConfig.UnmarshalTo(&tcpProxy); err != nil {
+			continue
+		}
+		switch clusterSpecifier := tcpProxy.GetClusterSpecifier().(type) {
+		case *envoytcpv3.TcpProxy_Cluster:
+			if clusterSpecifier.Cluster != "" {
+				referencedClusters[clusterSpecifier.Cluster] = struct{}{}
+			}
+		case *envoytcpv3.TcpProxy_WeightedClusters:
+			if clusterSpecifier.WeightedClusters == nil {
+				continue
+			}
+			for _, cluster := range clusterSpecifier.WeightedClusters.GetClusters() {
+				if cluster.GetName() != "" {
+					referencedClusters[cluster.GetName()] = struct{}{}
+				}
+			}
+		}
+	}
 }
 
 // filterEndpointResourcesForStaticClusters returns endpoint resources excluding CLAs for clusters
