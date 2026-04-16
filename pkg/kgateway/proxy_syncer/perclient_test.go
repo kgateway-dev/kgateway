@@ -5,13 +5,22 @@ import (
 	"testing"
 	"time"
 
+	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoygrpcaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
+	envoyjwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
+	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
@@ -316,10 +325,96 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 	g.Expect(snap.snap.Resources[envoycachetypes.Cluster].Items).ToNot(gomega.HaveKey("cluster-b"))
 }
 
+func TestFindMissingReferencedClusters_IncludesNestedHCMClusterRefs(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	hcm := &envoyhttpv3.HttpConnectionManager{
+		AccessLog: []*envoyaccesslogv3.AccessLog{
+			{
+				Name: "envoy.access_loggers.http_grpc",
+				ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
+					TypedConfig: mustMessageToAny(t, &envoygrpcaccesslogv3.HttpGrpcAccessLogConfig{
+						CommonConfig: &envoygrpcaccesslogv3.CommonGrpcAccessLogConfig{
+							TransportApiVersion: envoycorev3.ApiVersion_V3,
+							LogName:             "grpc-log",
+							GrpcService: &envoycorev3.GrpcService{
+								TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+									EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+										ClusterName: "cluster-b",
+									},
+								},
+							},
+						},
+					}),
+				},
+			},
+		},
+		HttpFilters: []*envoyhttpv3.HttpFilter{
+			{
+				Name: "envoy.filters.http.jwt_authn",
+				ConfigType: &envoyhttpv3.HttpFilter_TypedConfig{
+					TypedConfig: mustMessageToAny(t, &envoyjwtauthnv3.JwtAuthentication{
+						Providers: map[string]*envoyjwtauthnv3.JwtProvider{
+							"provider": {
+								JwksSourceSpecifier: &envoyjwtauthnv3.JwtProvider_RemoteJwks{
+									RemoteJwks: &envoyjwtauthnv3.RemoteJwks{
+										HttpUri: &envoycorev3.HttpUri{
+											Uri: "https://example.com/jwks",
+											HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
+												Cluster: "cluster-c",
+											},
+											Timeout: durationpb.New(time.Second),
+										},
+									},
+								},
+							},
+						},
+					}),
+				},
+			},
+		},
+	}
+
+	listeners := sliceToResources([]*envoylistenerv3.Listener{
+		{
+			Name: "listener",
+			FilterChains: []*envoylistenerv3.FilterChain{
+				{
+					Filters: []*envoylistenerv3.Filter{
+						{
+							Name: envoywellknown.HTTPConnectionManager,
+							ConfigType: &envoylistenerv3.Filter_TypedConfig{
+								TypedConfig: mustMessageToAny(t, hcm),
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	clusters := map[string]envoycachetypes.ResourceWithTTL{
+		"cluster-a": {Resource: &envoyclusterv3.Cluster{Name: "cluster-a"}},
+	}
+
+	missingClusters := findMissingReferencedClusters(envoycache.Resources{}, listeners, clusters, nil)
+
+	g.Expect(missingClusters).To(gomega.Equal([]string{"cluster-b", "cluster-c"}))
+}
+
 func mapKeys[M ~map[K]V, K comparable, V any](m M) []K {
 	keys := make([]K, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+func mustMessageToAny(t *testing.T, msg proto.Message) *anypb.Any {
+	t.Helper()
+
+	out, err := anypb.New(msg)
+	if err != nil {
+		t.Fatalf("marshal Any: %v", err)
+	}
+	return out
 }

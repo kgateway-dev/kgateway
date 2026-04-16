@@ -6,13 +6,15 @@ import (
 	"sort"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/anypb"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -291,8 +293,8 @@ func findMissingReferencedClusters(
 	}
 
 	referencedClusters := make(map[string]struct{})
-	collectRouteClusterReferences(routes, referencedClusters)
-	collectListenerClusterReferences(listeners, referencedClusters)
+	collectResourceClusterReferences(routes, referencedClusters)
+	collectResourceClusterReferences(listeners, referencedClusters)
 
 	missingClusters := make([]string, 0, len(referencedClusters))
 	for name := range referencedClusters {
@@ -309,83 +311,30 @@ func findMissingReferencedClusters(
 	return missingClusters
 }
 
-func collectRouteClusterReferences(routes envoycache.Resources, referencedClusters map[string]struct{}) {
-	for _, item := range routes.Items {
-		routeConfig, ok := item.Resource.(*envoyroutev3.RouteConfiguration)
-		if !ok {
+func collectResourceClusterReferences(resources envoycache.Resources, referencedClusters map[string]struct{}) {
+	for _, item := range resources.Items {
+		if item.Resource == nil {
 			continue
 		}
-		for _, virtualHost := range routeConfig.GetVirtualHosts() {
-			for _, route := range virtualHost.GetRoutes() {
-				routeAction := route.GetRoute()
-				if routeAction == nil {
-					continue
-				}
-				collectRouteActionClusterReferences(routeAction, referencedClusters)
-			}
-		}
+		collectProtoClusterReferences(item.Resource, referencedClusters)
 	}
 }
 
-func collectRouteActionClusterReferences(routeAction *envoyroutev3.RouteAction, referencedClusters map[string]struct{}) {
-	switch clusterSpecifier := routeAction.GetClusterSpecifier().(type) {
-	case *envoyroutev3.RouteAction_Cluster:
-		if clusterSpecifier.Cluster != "" {
-			referencedClusters[clusterSpecifier.Cluster] = struct{}{}
-		}
-	case *envoyroutev3.RouteAction_WeightedClusters:
-		if clusterSpecifier.WeightedClusters == nil {
-			return
-		}
-		for _, cluster := range clusterSpecifier.WeightedClusters.GetClusters() {
-			if cluster.GetName() != "" {
-				referencedClusters[cluster.GetName()] = struct{}{}
-			}
-		}
-	}
-}
-
-func collectListenerClusterReferences(listeners envoycache.Resources, referencedClusters map[string]struct{}) {
-	for _, item := range listeners.Items {
-		listener, ok := item.Resource.(*envoylistenerv3.Listener)
-		if !ok {
-			continue
-		}
-		collectFilterChainClusterReferences(listener.GetDefaultFilterChain(), referencedClusters)
-		for _, filterChain := range listener.GetFilterChains() {
-			collectFilterChainClusterReferences(filterChain, referencedClusters)
-		}
-	}
-}
-
-func collectFilterChainClusterReferences(
-	filterChain *envoylistenerv3.FilterChain,
-	referencedClusters map[string]struct{},
-) {
-	if filterChain == nil {
+func collectProtoClusterReferences(msg proto.Message, referencedClusters map[string]struct{}) {
+	if msg == nil {
 		return
 	}
-	for _, filter := range filterChain.GetFilters() {
-		if filter.GetName() != envoywellknown.TCPProxy {
-			continue
-		}
-		typedConfig := filter.GetTypedConfig()
-		if typedConfig == nil {
-			continue
-		}
 
-		var tcpProxy envoytcpv3.TcpProxy
-		if err := typedConfig.UnmarshalTo(&tcpProxy); err != nil {
-			continue
-		}
-		switch clusterSpecifier := tcpProxy.GetClusterSpecifier().(type) {
-		case *envoytcpv3.TcpProxy_Cluster:
+	switch typedMsg := msg.(type) {
+	case *envoyroutev3.RouteAction:
+		switch clusterSpecifier := typedMsg.GetClusterSpecifier().(type) {
+		case *envoyroutev3.RouteAction_Cluster:
 			if clusterSpecifier.Cluster != "" {
 				referencedClusters[clusterSpecifier.Cluster] = struct{}{}
 			}
-		case *envoytcpv3.TcpProxy_WeightedClusters:
+		case *envoyroutev3.RouteAction_WeightedClusters:
 			if clusterSpecifier.WeightedClusters == nil {
-				continue
+				break
 			}
 			for _, cluster := range clusterSpecifier.WeightedClusters.GetClusters() {
 				if cluster.GetName() != "" {
@@ -393,7 +342,79 @@ func collectFilterChainClusterReferences(
 				}
 			}
 		}
+	case *envoytcpv3.TcpProxy:
+		switch clusterSpecifier := typedMsg.GetClusterSpecifier().(type) {
+		case *envoytcpv3.TcpProxy_Cluster:
+			if clusterSpecifier.Cluster != "" {
+				referencedClusters[clusterSpecifier.Cluster] = struct{}{}
+			}
+		case *envoytcpv3.TcpProxy_WeightedClusters:
+			if clusterSpecifier.WeightedClusters == nil {
+				break
+			}
+			for _, cluster := range clusterSpecifier.WeightedClusters.GetClusters() {
+				if cluster.GetName() != "" {
+					referencedClusters[cluster.GetName()] = struct{}{}
+				}
+			}
+		}
+	case *envoycorev3.GrpcService_EnvoyGrpc:
+		if typedMsg.GetClusterName() != "" {
+			referencedClusters[typedMsg.GetClusterName()] = struct{}{}
+		}
+	case *envoycorev3.HttpUri:
+		if typedMsg.GetCluster() != "" {
+			referencedClusters[typedMsg.GetCluster()] = struct{}{}
+		}
 	}
+
+	collectNestedProtoClusterReferences(msg.ProtoReflect(), referencedClusters)
+}
+
+func collectNestedProtoClusterReferences(
+	msg protoreflect.Message,
+	referencedClusters map[string]struct{},
+) {
+	if !msg.IsValid() {
+		return
+	}
+
+	msg.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		switch {
+		case fd.IsList() && fd.Message() != nil:
+			list := v.List()
+			for i := 0; i < list.Len(); i++ {
+				collectProtoClusterReferencesFromValue(list.Get(i), referencedClusters)
+			}
+		case fd.IsMap() && fd.MapValue().Message() != nil:
+			m := v.Map()
+			m.Range(func(_ protoreflect.MapKey, value protoreflect.Value) bool {
+				collectProtoClusterReferencesFromValue(value, referencedClusters)
+				return true
+			})
+		case fd.Message() != nil:
+			collectProtoClusterReferencesFromValue(v, referencedClusters)
+		}
+		return true
+	})
+}
+
+func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClusters map[string]struct{}) {
+	msg := v.Message()
+	if !msg.IsValid() {
+		return
+	}
+
+	if anyMsg, ok := msg.Interface().(*anypb.Any); ok {
+		nestedMsg, err := anyMsg.UnmarshalNew()
+		if err != nil {
+			return
+		}
+		collectProtoClusterReferences(nestedMsg, referencedClusters)
+		return
+	}
+
+	collectProtoClusterReferences(msg.Interface(), referencedClusters)
 }
 
 // filterEndpointResourcesForStaticClusters returns endpoint resources excluding CLAs for clusters
