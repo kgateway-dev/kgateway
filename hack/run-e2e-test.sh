@@ -134,6 +134,10 @@ k3d_cluster_exists() {
         log_error "jq is required when CLUSTER_TYPE=k3d. Please install jq and try again."
         exit 1
     fi
+    if ! command -v jq >/dev/null 2>&1; then
+        log_error "jq is required when CLUSTER_TYPE=k3d. Please install jq and try again."
+        exit 1
+    fi
     ${K3D} cluster list -o json 2>/dev/null | jq -e ".[] | select(.name==\"${CLUSTER_NAME}\")" > /dev/null 2>&1
 }
 
