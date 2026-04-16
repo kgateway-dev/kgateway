@@ -276,6 +276,11 @@ func snapshotPerClient(
 	return xdsSnapshotsForUcc
 }
 
+// blackholeClusterName is the sentinel cluster name referenced by routes whose backend could not be
+// resolved. It is never materialized as a cluster in the xDS snapshot, so we must not treat its
+// absence as a missing-cluster condition that blocks snapshot emission.
+const blackholeClusterName = "blackhole-cluster"
+
 func findMissingReferencedClusters(
 	routes envoycache.Resources,
 	listeners envoycache.Resources,
@@ -302,6 +307,9 @@ func findMissingReferencedClusters(
 			continue
 		}
 		if _, ok := erroredClusterSet[name]; ok {
+			continue
+		}
+		if name == blackholeClusterName {
 			continue
 		}
 		missingClusters = append(missingClusters, name)

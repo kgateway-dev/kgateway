@@ -25,6 +25,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -412,7 +413,7 @@ func mapKeys[M ~map[K]V, K comparable, V any](m M) []K {
 func mustMessageToAny(t *testing.T, msg proto.Message) *anypb.Any {
 	t.Helper()
 
-	out, err := anypb.New(msg)
+	out, err := utils.MessageToAny(msg)
 	if err != nil {
 		t.Fatalf("marshal Any: %v", err)
 	}
