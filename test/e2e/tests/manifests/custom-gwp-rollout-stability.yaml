@@ -1,0 +1,7 @@
+# Test-only workaround for single-node Kind CI: transient NoSchedule taints can
+# block the replacement kgateway controller pod during the Helm upgrade in
+# TestCustomGWP, leaving the old gatewayClassParametersRefs env active.
+controller:
+  tolerations:
+    - operator: Exists
+      effect: NoSchedule

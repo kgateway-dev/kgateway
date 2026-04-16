@@ -2,10 +2,3 @@ gatewayClassParametersRefs:
   kgateway:
     name: custom-gwp
     namespace: kgateway-test
-controller:
-  tolerations:
-    # TestCustomGWP upgrades the controller to pick up a new parametersRef.
-    # In single-node KinD CI, transient node-pressure taints can otherwise leave
-    # the replacement controller pod Pending and keep the old env-configured ref active.
-    - operator: Exists
-      effect: NoSchedule
