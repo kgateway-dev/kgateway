@@ -21,6 +21,7 @@ var (
 	headerModifiersRouteListenerSetTrafficPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "header-modifiers-route-ls.yaml")
 	headerModifiersGwTrafficPolicyManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "header-modifiers-gw.yaml")
 	headerModifiersLsTrafficPolicyManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "header-modifiers-ls.yaml")
+	headerModifiersFromSecretManifest                    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "header-modifiers-from-secret.yaml")
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -72,6 +73,9 @@ var (
 				headerModifiersLsTrafficPolicyManifest: base.TransformListenerSetManifest,
 			},
 			MinGwApiVersion: base.GwApiRequireListenerSets,
+		},
+		"TestHeaderModifiersFromSecret": {
+			Manifests: []string{headerModifiersFromSecretManifest},
 		},
 	}
 )

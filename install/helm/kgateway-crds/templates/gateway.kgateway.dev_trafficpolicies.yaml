@@ -1259,6 +1259,54 @@ spec:
                         - name
                         x-kubernetes-list-type: map
                     type: object
+                  requestHeadersFromSecret:
+                    description: |-
+                      RequestHeadersFromSecret injects request headers whose values are sourced from a Kubernetes Secret.
+                      Each entry specifies a secret, a key within that secret, and the header name to inject.
+                      Secret keys must be valid HTTP header names.
+                      Cross-namespace references require a ReferenceGrant in the target namespace.
+                    items:
+                      description: SecretHeaderMapping maps a specific key from a
+                        Kubernetes Secret to a request or response header.
+                      properties:
+                        header:
+                          description: Header is the name of the header to inject.
+                          maxLength: 256
+                          minLength: 1
+                          pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                          type: string
+                        key:
+                          description: Key is the key within the Secret whose value
+                            will be used as the header value.
+                          minLength: 1
+                          type: string
+                        secretRef:
+                          description: SecretRef references the Kubernetes Secret
+                            containing the header value.
+                          properties:
+                            name:
+                              description: Name is the name of the Kubernetes Secret.
+                              maxLength: 253
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: |-
+                                Namespace is the namespace of the Kubernetes Secret.
+                                Defaults to the namespace of the policy if not specified.
+                                Cross-namespace references require a ReferenceGrant in the target namespace.
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                              type: string
+                          required:
+                          - name
+                          type: object
+                      required:
+                      - header
+                      - key
+                      - secretRef
+                      type: object
+                    type: array
                   response:
                     description: Response modifies response headers.
                     properties:
@@ -1400,11 +1448,59 @@ spec:
                         - name
                         x-kubernetes-list-type: map
                     type: object
+                  responseHeadersFromSecret:
+                    description: |-
+                      ResponseHeadersFromSecret injects response headers whose values are sourced from a Kubernetes Secret.
+                      Each entry specifies a secret, a key within that secret, and the header name to inject.
+                      Secret keys must be valid HTTP header names.
+                      Cross-namespace references require a ReferenceGrant in the target namespace.
+                    items:
+                      description: SecretHeaderMapping maps a specific key from a
+                        Kubernetes Secret to a request or response header.
+                      properties:
+                        header:
+                          description: Header is the name of the header to inject.
+                          maxLength: 256
+                          minLength: 1
+                          pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                          type: string
+                        key:
+                          description: Key is the key within the Secret whose value
+                            will be used as the header value.
+                          minLength: 1
+                          type: string
+                        secretRef:
+                          description: SecretRef references the Kubernetes Secret
+                            containing the header value.
+                          properties:
+                            name:
+                              description: Name is the name of the Kubernetes Secret.
+                              maxLength: 253
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: |-
+                                Namespace is the namespace of the Kubernetes Secret.
+                                Defaults to the namespace of the policy if not specified.
+                                Cross-namespace references require a ReferenceGrant in the target namespace.
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                              type: string
+                          required:
+                          - name
+                          type: object
+                      required:
+                      - header
+                      - key
+                      - secretRef
+                      type: object
+                    type: array
                 type: object
                 x-kubernetes-validations:
-                - message: at least one of the fields in [request response] must be
-                    set
-                  rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
+                - message: at least one of the fields in [request response requestHeadersFromSecret
+                    responseHeadersFromSecret] must be set
+                  rule: '[has(self.request),has(self.response),has(self.requestHeadersFromSecret),has(self.responseHeadersFromSecret)].filter(x,x==true).size()
                     >= 1'
               jwtAuth:
                 description: |-

@@ -171,7 +171,7 @@ type StringMatcher struct {
 }
 
 // HeaderModifiers can be used to define the policy to modify request and response headers.
-// +kubebuilder:validation:AtLeastOneOf=request;response
+// +kubebuilder:validation:AtLeastOneOf=request;response;requestHeadersFromSecret;responseHeadersFromSecret
 type HeaderModifiers struct {
 	// Request modifies request headers.
 	// +optional
@@ -180,6 +180,49 @@ type HeaderModifiers struct {
 	// Response modifies response headers.
 	// +optional
 	Response *gwv1.HTTPHeaderFilter `json:"response,omitempty"`
+
+	// RequestHeadersFromSecret injects request headers whose values are sourced from a Kubernetes Secret.
+	// Each entry specifies a secret, a key within that secret, and the header name to inject.
+	// Secret keys must be valid HTTP header names.
+	// Cross-namespace references require a ReferenceGrant in the target namespace.
+	// +optional
+	RequestHeadersFromSecret []SecretHeaderMapping `json:"requestHeadersFromSecret,omitempty"`
+
+	// ResponseHeadersFromSecret injects response headers whose values are sourced from a Kubernetes Secret.
+	// Each entry specifies a secret, a key within that secret, and the header name to inject.
+	// Secret keys must be valid HTTP header names.
+	// Cross-namespace references require a ReferenceGrant in the target namespace.
+	// +optional
+	ResponseHeadersFromSecret []SecretHeaderMapping `json:"responseHeadersFromSecret,omitempty"`
+}
+
+// SecretHeaderMapping maps a specific key from a Kubernetes Secret to a request or response header.
+type SecretHeaderMapping struct {
+	// SecretRef references the Kubernetes Secret containing the header value.
+	// +required
+	SecretRef SecretObjectRef `json:"secretRef"`
+
+	// Header is the name of the header to inject.
+	// +required
+	Header gwv1.HTTPHeaderName `json:"header"`
+
+	// Key is the key within the Secret whose value will be used as the header value.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	Key string `json:"key"`
+}
+
+// SecretObjectRef references a Kubernetes Secret by name and optional namespace.
+type SecretObjectRef struct {
+	// Name is the name of the Kubernetes Secret.
+	// +required
+	Name gwv1.ObjectName `json:"name"`
+
+	// Namespace is the namespace of the Kubernetes Secret.
+	// Defaults to the namespace of the policy if not specified.
+	// Cross-namespace references require a ReferenceGrant in the target namespace.
+	// +optional
+	Namespace *gwv1.Namespace `json:"namespace,omitempty"`
 }
 
 // CIDR can be used wherever an address range in CIDR notation is expected.

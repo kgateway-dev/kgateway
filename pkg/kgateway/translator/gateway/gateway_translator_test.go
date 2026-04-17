@@ -822,6 +822,28 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+	t.Run("TrafficPolicy with header modifiers from secret (same namespace)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (cross namespace with ReferenceGrant)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-cross-namespace.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with compression Policy", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/compression-route.yaml",

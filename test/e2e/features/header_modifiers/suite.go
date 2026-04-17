@@ -71,6 +71,15 @@ func (s *testingSuite) TestListenerSetLevelHeaderModifiers() {
 	s.assertHeaders(8081, expectedRequestHeaders("ls"), expectedResponseHeaders("ls"))
 }
 
+func (s *testingSuite) TestHeaderModifiersFromSecret() {
+	s.checkPodsRunning()
+	// The TrafficPolicy injects X-Api-Key and X-Tenant-Id from the backend-creds Secret.
+	s.assertHeaders(8080, map[string][]any{
+		"X-Api-Key":   {"my-secret-api-key"},
+		"X-Tenant-Id": {"tenant-abc"},
+	}, nil)
+}
+
 func (s *testingSuite) TestMultiLevelHeaderModifiers() {
 	s.checkPodsRunning()
 	s.assertHeaders(8080, expectedRequestHeaders("route", "gw"), nil)
