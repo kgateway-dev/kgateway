@@ -363,8 +363,7 @@ func (s *setup) Start(ctx context.Context) error {
 		slog.Warn("skipping Gateway API version check because KGW_SKIP_GATEWAY_API_VERSION_CHECK is set")
 	} else {
 		if err := gatewayapiversion.Check(ctx, s.restConfig); err != nil {
-			slog.Error("unsupported Gateway API version", "error", err)
-			return err
+			return fmt.Errorf("unsupported Gateway API version: %w", err)
 		}
 	}
 

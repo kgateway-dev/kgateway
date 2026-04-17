@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,7 +57,7 @@ var minorVersionRE = regexp.MustCompile(`^v?(\d+)\.(\d+)`)
 func Check(ctx context.Context, restConfig *rest.Config) error {
 	clientset, err := apiextensionsclient.NewForConfig(restConfig)
 	if err != nil {
-		return fmt.Errorf("creating apiextensions client to check Gateway API version: %w", err)
+		return fmt.Errorf("creating apiextensions client to check Gateway API version: %w. %s", err, bypassHint())
 	}
 
 	crd, err := clientset.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, probeCRD, metav1.GetOptions{})
@@ -65,11 +66,17 @@ func Check(ctx context.Context, restConfig *rest.Config) error {
 			// Gateway API CRDs are not installed. Nothing to check here.
 			return nil
 		}
-		return fmt.Errorf("fetching %s to check Gateway API version: %w", probeCRD, err)
+		return fmt.Errorf("fetching %s to check Gateway API version: %w. %s", probeCRD, err, bypassHint())
 	}
 
 	bundleVersion := crd.Annotations[BundleVersionAnnotation]
 	return checkBundleVersion(bundleVersion)
+}
+
+// bypassHint is the common suffix appended to version-check errors so every
+// failure mode points operators at the docs and the escape hatch.
+func bypassHint() string {
+	return fmt.Sprintf("See %s for supported versions, or set KGW_SKIP_GATEWAY_API_VERSION_CHECK=true to bypass this check", DocsURL)
 }
 
 // checkBundleVersion validates a bundle-version annotation value (e.g. "v1.5.1")
@@ -83,18 +90,16 @@ func checkBundleVersion(bundleVersion string) error {
 	bundleVersion = strings.TrimSpace(bundleVersion)
 	if bundleVersion == "" {
 		return fmt.Errorf(
-			"Gateway API CRD %s is missing the %s annotation; unable to verify compatibility with kgateway. "+
-				"See %s for supported versions, or set KGW_SKIP_GATEWAY_API_VERSION_CHECK=true to bypass this check",
-			probeCRD, BundleVersionAnnotation, DocsURL,
+			"Gateway API CRD %s is missing the %s annotation; unable to verify compatibility with kgateway. %s",
+			probeCRD, BundleVersionAnnotation, bypassHint(),
 		)
 	}
 
 	minor, ok := parseMinorVersion(bundleVersion)
 	if !ok {
 		return fmt.Errorf(
-			"Gateway API CRD %s has an unparseable %s annotation %q; expected form vMAJOR.MINOR.PATCH (e.g. v1.3.0). "+
-				"See %s, or set KGW_SKIP_GATEWAY_API_VERSION_CHECK=true to bypass this check",
-			probeCRD, BundleVersionAnnotation, bundleVersion, DocsURL,
+			"Gateway API CRD %s has an unparseable %s annotation %q; expected form vMAJOR.MINOR[.PATCH][-suffix] (e.g. v1.3, v1.3.0, or v1.3.0-rc.1). %s",
+			probeCRD, BundleVersionAnnotation, bundleVersion, bypassHint(),
 		)
 	}
 
@@ -105,9 +110,8 @@ func checkBundleVersion(bundleVersion string) error {
 	}
 
 	return fmt.Errorf(
-		"installed Gateway API version %s (minor %s) is not supported by this release of kgateway; supported versions: %s. "+
-			"See %s, or set KGW_SKIP_GATEWAY_API_VERSION_CHECK=true to bypass this check",
-		bundleVersion, minor, strings.Join(supported, ", "), DocsURL,
+		"installed Gateway API version %s (minor %s) is not supported by this release of kgateway; supported versions: %s. %s",
+		bundleVersion, minor, strings.Join(supported, ", "), bypassHint(),
 	)
 }
 
@@ -122,15 +126,31 @@ func parseMinorVersion(v string) (string, bool) {
 	return m[1] + "." + m[2], true
 }
 
+var (
+	supportedVersionsOnce  sync.Once
+	supportedVersionsCache []string
+	supportedVersionsErr   error
+)
+
 func loadSupportedVersions() ([]string, error) {
-	var f supportedVersionsFile
-	if err := yaml.Unmarshal(supportedVersionsYAML, &f); err != nil {
-		return nil, fmt.Errorf("parsing embedded supported_versions.yaml: %w", err)
+	supportedVersionsOnce.Do(func() {
+		var f supportedVersionsFile
+		if err := yaml.Unmarshal(supportedVersionsYAML, &f); err != nil {
+			supportedVersionsErr = fmt.Errorf("parsing embedded supported_versions.yaml: %w", err)
+			return
+		}
+		if len(f.SupportedVersions) == 0 {
+			supportedVersionsErr = fmt.Errorf("embedded supported_versions.yaml lists no supported versions")
+			return
+		}
+		supportedVersionsCache = f.SupportedVersions
+	})
+	if supportedVersionsErr != nil {
+		return nil, supportedVersionsErr
 	}
-	if len(f.SupportedVersions) == 0 {
-		return nil, fmt.Errorf("embedded supported_versions.yaml lists no supported versions")
-	}
-	return f.SupportedVersions, nil
+	out := make([]string, len(supportedVersionsCache))
+	copy(out, supportedVersionsCache)
+	return out, nil
 }
 
 // SupportedVersions returns the list of supported Gateway API minor versions
