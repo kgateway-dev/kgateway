@@ -28,11 +28,12 @@ HELM="${HELM:-go tool helm}"
 LOCALSTACK="${LOCALSTACK:-false}"
 # If true, use cloud-provider-kind instead of MetalLB for LoadBalancer support.
 CLOUD_PROVIDER_KIND="${CLOUD_PROVIDER_KIND:-false}"
-# Registry cache reference for envoyinit Docker build (optional)
+# Registry cache references for Docker builds (optional)
 ENVOYINIT_CACHE_REF="${ENVOYINIT_CACHE_REF:-}"
+CONTROLLER_CACHE_REF="${CONTROLLER_CACHE_REF:-}"
+SDS_CACHE_REF="${SDS_CACHE_REF:-}"
 
-# Export the variables so they are available in the environment
-export VERSION CLUSTER_NAME ENVOYINIT_CACHE_REF
+export VERSION CLUSTER_NAME ENVOYINIT_CACHE_REF CONTROLLER_CACHE_REF SDS_CACHE_REF
 
 function create_kind_cluster_or_skip() {
   activeClusters=$($KIND get clusters)
