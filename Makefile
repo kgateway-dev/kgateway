@@ -486,9 +486,12 @@ generate-all: $(STAMP_DIR)/generated-code  ## Generate all code with optimized d
 .PHONY: generate
 generate: generate-all  ## Alias for generate
 
+ENVOYINIT_DOCKERFILE = cmd/envoyinit/Dockerfile
+ENVOYINIT_DOCKERFILE_TEMPLATE = $(ENVOYINIT_DOCKERFILE).tmpl
+
 # Force full regeneration by cleaning stamps and generated files
 .PHONY: generated-code
-generated-code: clean-gen clean-stamps  ## Force regenerate all code (always runs, ignoring stamps)
+generated-code: clean-gen clean-stamps $(ENVOYINIT_DOCKERFILE)  ## Force regenerate all code (always runs, ignoring stamps)
 	@$(MAKE) --no-print-directory generate-all
 
 # Convenience PHONY targets that trigger stamp-based generation
@@ -604,13 +607,10 @@ $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
 
-ENVOYINIT_DOCKERFILE = cmd/envoyinit/Dockerfile
-ENVOYINIT_DOCKERFILE_TEMPLATE = $(ENVOYINIT_DOCKERFILE).tmpl
+$(ENVOYINIT_DOCKERFILE): $(ENVOYINIT_DOCKERFILE_TEMPLATE) cmd/envoyinit/generate-dockerfile.sh $(ENVOY_MODULES_DIR)/Cargo.toml
+	cmd/envoyinit/generate-dockerfile.sh $(ENVOY_MODULES_DIR) $< $@
 
-$(ENVOYINIT_DOCKERFILE): $(ENVOYINIT_DOCKERFILE_TEMPLATE) cmd/envoyinit/generate-dockerfile.sh
-	cmd/envoyinit/generate-dockerfile.sh $(ENVOY_MODULES_DIR) $< $@; \
-
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE) $(ENVOY_MODULES_SRC_FILES) cmd/envoyinit/generate-dockerfile.sh
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE) $(ENVOY_MODULES_SRC_FILES)
 	echo "syncing envoy modules..."
 	rsync -av --delete --exclude 'target/' --exclude 'pkg/' ${ENVOY_MODULES_DIR} $(ENVOYINIT_OUTPUT_DIR)/envoy_modules
 	cp $< $@
