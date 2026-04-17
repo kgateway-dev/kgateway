@@ -62,6 +62,8 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 		assert.Contains(c, logs, `"protocol":"HTTP/1.1"`)
 		assert.Contains(c, logs, `"response_code":200`)
 		assert.Contains(c, logs, `"backendCluster":"kube_kgateway-base_httpbin_8000"`)
+		assert.Contains(c, logs, `"transformation_request_metadata":"access.logs.request.metadata.value"`)
+		assert.Contains(c, logs, `"transformation_response_metadata":"access.logs.response.metadata.value"`)
 	}, 5*time.Second, 100*time.Millisecond)
 }
 

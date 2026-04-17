@@ -2002,6 +2002,48 @@ spec:
                               this Value field is ignored and no body transformation will be done.
                             type: string
                         type: object
+                      dynamicMetadata:
+                        description: |-
+                          DynamicMetadata is a list of dynamic metadata entries to set.
+                          The values are stored in Envoy dynamic metadata and can be used in access log
+                          templates or consumed by other filters down the chain.
+                        items:
+                          description: DynamicMetadataTransformation defines a single
+                            dynamic metadata entry to set.
+                          properties:
+                            key:
+                              description: Key is the metadata key within the namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: Namespace is the dynamic metadata namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            value:
+                              description: Value is the value to set in dynamic metadata.
+                              properties:
+                                stringValue:
+                                  description: StringValue is an Inja template whose
+                                    rendered output is stored as the metadata string
+                                    value.
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [stringValue]
+                                  must be set
+                                rule: '[has(self.stringValue)].filter(x,x==true).size()
+                                  == 1'
+                          required:
+                          - key
+                          - namespace
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: atomic
                       remove:
                         description: Remove is a list of header names to remove from
                           the request/response.
@@ -2083,6 +2125,48 @@ spec:
                               this Value field is ignored and no body transformation will be done.
                             type: string
                         type: object
+                      dynamicMetadata:
+                        description: |-
+                          DynamicMetadata is a list of dynamic metadata entries to set.
+                          The values are stored in Envoy dynamic metadata and can be used in access log
+                          templates or consumed by other filters down the chain.
+                        items:
+                          description: DynamicMetadataTransformation defines a single
+                            dynamic metadata entry to set.
+                          properties:
+                            key:
+                              description: Key is the metadata key within the namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: Namespace is the dynamic metadata namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            value:
+                              description: Value is the value to set in dynamic metadata.
+                              properties:
+                                stringValue:
+                                  description: StringValue is an Inja template whose
+                                    rendered output is stored as the metadata string
+                                    value.
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [stringValue]
+                                  must be set
+                                rule: '[has(self.stringValue)].filter(x,x==true).size()
+                                  == 1'
+                          required:
+                          - key
+                          - namespace
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: atomic
                       remove:
                         description: Remove is a list of header names to remove from
                           the request/response.

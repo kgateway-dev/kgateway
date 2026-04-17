@@ -1,0 +1,34 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  generation: 3
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: runtime-filter-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  default:
+    httpSettings:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          stringFormat: "%START_TIME% %REQ(:METHOD)% %RESPONSE_CODE%\n"
+        filter:
+          runtimeFilter:
+            runtimeKey: "access_log.enabled"
+            percentSampled:
+              numerator: 50
+              denominator: HUNDRED
+            useIndependentRandomness: true
