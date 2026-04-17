@@ -12,6 +12,7 @@ import (
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoygrpcaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
+	envoyextauthzv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoyjwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -400,6 +401,58 @@ func TestFindMissingReferencedClusters_IncludesNestedHCMClusterRefs(t *testing.T
 	missingClusters := findMissingReferencedClusters(envoycache.Resources{}, listeners, clusters, nil)
 
 	g.Expect(missingClusters).To(gomega.Equal([]string{"cluster-b", "cluster-c"}))
+}
+
+// TestFindMissingReferencedClusters_HandlesScalarValueMaps verifies that the
+// protoreflect walker does not panic when it encounters a proto field of type
+// map<string, scalar> (e.g. map<string, string>). Without the IsMap/IsList
+// guard on the fall-through branch, such fields fall through to a code path
+// that calls v.Message() on a Map-kind Value and panics with
+// "type mismatch: cannot convert map to message".
+func TestFindMissingReferencedClusters_HandlesScalarValueMaps(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	hcm := &envoyhttpv3.HttpConnectionManager{
+		HttpFilters: []*envoyhttpv3.HttpFilter{
+			{
+				Name: "envoy.filters.http.ext_authz",
+				ConfigType: &envoyhttpv3.HttpFilter_TypedConfig{
+					TypedConfig: mustMessageToAny(t, &envoyextauthzv3.ExtAuthzPerRoute{
+						Override: &envoyextauthzv3.ExtAuthzPerRoute_CheckSettings{
+							CheckSettings: &envoyextauthzv3.CheckSettings{
+								ContextExtensions: map[string]string{
+									"key1": "value1",
+									"key2": "value2",
+								},
+							},
+						},
+					}),
+				},
+			},
+		},
+	}
+
+	listeners := sliceToResources([]*envoylistenerv3.Listener{
+		{
+			Name: "listener",
+			FilterChains: []*envoylistenerv3.FilterChain{
+				{
+					Filters: []*envoylistenerv3.Filter{
+						{
+							Name: envoywellknown.HTTPConnectionManager,
+							ConfigType: &envoylistenerv3.Filter_TypedConfig{
+								TypedConfig: mustMessageToAny(t, hcm),
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	g.Expect(func() {
+		findMissingReferencedClusters(envoycache.Resources{}, listeners, nil, nil)
+	}).ToNot(gomega.Panic())
 }
 
 func mapKeys[M ~map[K]V, K comparable, V any](m M) []K {

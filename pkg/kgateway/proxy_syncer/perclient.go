@@ -400,7 +400,7 @@ func collectNestedProtoClusterReferences(
 				collectProtoClusterReferencesFromValue(value, referencedClusters)
 				return true
 			})
-		case fd.Message() != nil:
+		case !fd.IsList() && !fd.IsMap() && fd.Message() != nil:
 			collectProtoClusterReferencesFromValue(v, referencedClusters)
 		}
 		return true
