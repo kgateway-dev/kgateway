@@ -98,5 +98,5 @@ fi
 # 7. Setup localstack
 if [[ $LOCALSTACK == "true" ]]; then
   echo "Setting up localstack"
-  . $SCRIPT_DIR/setup-localstack.sh
+  . $SCRIPT_DIR/../setup-localstack.sh
 fi
