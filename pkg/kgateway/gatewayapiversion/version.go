@@ -6,17 +6,18 @@ package gatewayapiversion
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"regexp"
 	"strings"
 	"sync"
 
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
+
+	_ "embed"
 )
 
 // BundleVersionAnnotation is the annotation key Gateway API CRDs use to record

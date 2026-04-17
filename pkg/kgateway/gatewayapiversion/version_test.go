@@ -7,8 +7,8 @@ import (
 
 func TestParseMinorVersion(t *testing.T) {
 	cases := []struct {
-		in    string
-		want  string
+		in     string
+		want   string
 		wantOK bool
 	}{
 		{"v1.2.0", "1.2", true},
