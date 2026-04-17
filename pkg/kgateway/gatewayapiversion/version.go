@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -104,10 +105,8 @@ func checkBundleVersion(bundleVersion string) error {
 		)
 	}
 
-	for _, s := range supported {
-		if s == minor {
-			return nil
-		}
+	if slices.Contains(supported, minor) {
+		return nil
 	}
 
 	return fmt.Errorf(
