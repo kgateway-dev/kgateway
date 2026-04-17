@@ -11,9 +11,9 @@ This module is organized as [Rust Workspaces](https://doc.rust-lang.org/cargo/re
 - `module-init`: The cdylib entry point. Registers Envoy init hooks via `declare_init_functions!`
   and dispatches incoming filter names to the appropriate module crate. The `[lib] name = "rust_module"`
   setting controls the output `.so` filename.
-- `filters`: each filter is it's own crate under this directory. Currently, we have:
+- `filters`: each filter is its own crate under this directory. Currently, we have:
   - `rustformation`: filter that handles the TransformationPolicy in TrafficPolicy.
-  - `kgateway-example-filter`: skeleton showing the minimum code required to implement a new filter. This is not registered in `module-init`, so does not affect the build.
+  - `kgateway-example-filter`: skeleton showing the minimum code required to implement a new filter. This is not included in the rust workspace and not registered in `module-init`, so does not affect the build.
 - `lib`: libraries with abstraction and helpers shared among filters.
 
 To add a new filter, see [adding-a-filter.md](../../docs/guides/adding-a-filter.md).

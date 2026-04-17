@@ -79,7 +79,7 @@ make lint
 make test
 ```
 
-### 7. Build 
+### 6. Build 
 
 This will rebuild the envoy-wrapper image that will include the envoy binary, envoyinit and the dynamic module:
 (run at repo-root)
