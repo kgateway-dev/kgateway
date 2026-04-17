@@ -245,6 +245,14 @@ type Settings struct {
 	// "namespace" (required), "group" (optional), and "kind" (optional) fields.
 	// E.g., {"gateway-class-name":{"name":"params-name","namespace":"params-namespace","group":"gateway.networking.k8s.io","kind":"GatewayParameters"}}
 	GatewayClassParametersRefs GatewayClassParametersRefs `split_words:"true" default:"{}"`
+
+	// SkipGatewayAPIVersionCheck disables the startup check that verifies the
+	// installed Gateway API bundle version (read from the
+	// gateway.networking.k8s.io/bundle-version annotation on the Gateway CRD)
+	// is one this release of kgateway supports. When false (the default),
+	// kgateway refuses to start against an unsupported Gateway API version
+	// and points the operator to the docs.
+	SkipGatewayAPIVersionCheck bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

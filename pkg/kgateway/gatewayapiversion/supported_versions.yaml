@@ -1,0 +1,14 @@
+# Supported Gateway API versions for this release of kgateway.
+#
+# This file is embedded into the kgateway binary. At startup, kgateway reads the
+# gateway.networking.k8s.io/bundle-version annotation from a Gateway API CRD
+# installed in the cluster, extracts its MAJOR.MINOR version, and refuses to
+# start if that minor version is not listed here. Set the environment variable
+# KGW_SKIP_GATEWAY_API_VERSION_CHECK=true to bypass this check. See
+# https://kgateway.dev/ for supported versions.
+#
+# Versions are specified as MAJOR.MINOR. Patch versions are ignored.
+supportedVersions:
+  - "1.2"
+  - "1.3"
+  - "1.4"

@@ -51,6 +51,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_XDS_AUTH":                                 "false",
 		"KGW_XDS_TLS":                                  "true",
 		"KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES": "false",
+		"KGW_SKIP_GATEWAY_API_VERSION_CHECK":           "true",
 	}
 }
 
@@ -105,6 +106,7 @@ func TestSettings(t *testing.T) {
 				XdsTLS:                               false,
 				EnableExperimentalGatewayAPIFeatures: true,
 				GatewayClassParametersRefs:           GatewayClassParametersRefs{},
+				SkipGatewayAPIVersionCheck:           false,
 			},
 		},
 		{
@@ -153,6 +155,7 @@ func TestSettings(t *testing.T) {
 						Namespace: ptr.To(gwv1.Namespace("infra")),
 					},
 				},
+				SkipGatewayAPIVersionCheck: true,
 			},
 		},
 		{
@@ -236,6 +239,7 @@ func TestSettings(t *testing.T) {
 				XdsTLS:                               false,
 				EnableExperimentalGatewayAPIFeatures: true,
 				GatewayClassParametersRefs:           GatewayClassParametersRefs{},
+				SkipGatewayAPIVersionCheck:           false,
 			},
 		},
 	}
