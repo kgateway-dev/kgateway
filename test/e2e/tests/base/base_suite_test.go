@@ -10,26 +10,28 @@ import (
 
 func TestImagePullerPodName(t *testing.T) {
 	testCases := []struct {
-		name  string
-		image string
+		name         string
+		image        string
+		expectedName string
 	}{
 		{
-			name:  "digest image is sanitized and truncated",
-			image: "ricoli/hey@sha256:306dcd944a4398264f8a6bb43501afb3bb2285be4be248859bac971c57e3c270",
+			name:         "digest image is sanitized and truncated",
+			image:        "ricoli/hey@sha256:306dcd944a4398264f8a6bb43501afb3bb2285be4be248859bac971c57e3c270",
+			expectedName: "image-puller-ricoli-hey-sha256-306dcd944a4398264f8-4e3783f8507c",
 		},
 		{
-			name:  "mixed case and underscores are sanitized",
-			image: "Ghcr.io/Example/My_Image:V1.2.3",
-		},
-		{
-			name:  "invalid-only image falls back to safe name",
-			image: "@@@",
+			name:         "mixed case and underscores are sanitized",
+			image:        "Ghcr.io/Example/My_Image:V1.2.3",
+			expectedName: "image-puller-ghcr-io-example-my-image-v1-2-3-1bb520d36c51",
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			podName := imagePullerPodName(tt.image)
+			if podName != tt.expectedName {
+				t.Fatalf("pod name %q does not match expected %q", podName, tt.expectedName)
+			}
 			if len(podName) > imagePullerPodNameMaxLength {
 				t.Fatalf("pod name %q exceeds %d characters", podName, imagePullerPodNameMaxLength)
 			}

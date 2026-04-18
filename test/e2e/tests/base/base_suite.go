@@ -500,9 +500,6 @@ spec:
 
 func imagePullerPodName(image string) string {
 	safeName := sanitizeDNSName(image)
-	if safeName == "" {
-		safeName = "image"
-	}
 
 	hash := sha256.Sum256([]byte(image))
 	hashStr := hex.EncodeToString(hash[:])[:imagePullerPodHashLength]
@@ -512,9 +509,6 @@ func imagePullerPodName(image string) string {
 	maxSafeNameLength := imagePullerPodNameMaxLength - len(imagePullerPodPrefix) - len(hashStr) - 1
 	if len(safeName) > maxSafeNameLength {
 		safeName = strings.Trim(safeName[:maxSafeNameLength], "-")
-	}
-	if safeName == "" {
-		safeName = "image"
 	}
 
 	return fmt.Sprintf("%s%s-%s", imagePullerPodPrefix, safeName, hashStr)
