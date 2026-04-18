@@ -245,6 +245,10 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
             self.envoy_filter.append_buffered_response_body(data)
         }
     }
+    fn set_dynamic_metadata_string(&mut self, namespace: &str, key: &str, value: &str) {
+        self.envoy_filter
+            .set_dynamic_metadata_string(namespace, key, value);
+    }
 }
 
 impl FilterConfig {
@@ -955,6 +959,61 @@ mod tests {
         assert_eq!(
             filter.on_response_headers(&mut envoy_filter, true),
             abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue
+        );
+    }
+
+    #[test]
+    fn test_metadata_transformation() {
+        let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
+
+        let json_str = r#"
+        {
+          "request": {
+            "set": [
+              { "name": "X-User", "value": "{{ header(\"x-user-id\") }}" }
+            ],
+            "dynamicMetadata": [
+              { "namespace": "com.example.auth", "key": "user-id", "value": { "stringValue": "{{ header(\"x-user-id\") }}" } }
+            ]
+          }
+        }
+        "#;
+        let filter_conf = FilterConfig::new(json_str)
+            .unwrap_or_else(|| panic!("Failed to parse filter config json: {}", json_str));
+        let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+
+        envoy_filter
+            .expect_get_most_specific_route_config()
+            .returning(|| None);
+
+        envoy_filter.expect_get_request_headers().returning(|| {
+            vec![
+                (EnvoyBuffer::new("host"), EnvoyBuffer::new("example.com")),
+                (EnvoyBuffer::new("x-user-id"), EnvoyBuffer::new("alice")),
+            ]
+        });
+
+        envoy_filter
+            .expect_set_request_header()
+            .times(1)
+            .returning(|key, value: &[u8]| {
+                assert_eq!(key, "X-User");
+                assert_eq!(std::str::from_utf8(value).unwrap(), "alice");
+                true
+            });
+
+        envoy_filter
+            .expect_set_dynamic_metadata_string()
+            .times(1)
+            .returning(|namespace, key, value| {
+                assert_eq!(namespace, "com.example.auth");
+                assert_eq!(key, "user-id");
+                assert_eq!(value, "alice");
+            });
+
+        assert_eq!(
+            filter.on_request_headers(&mut envoy_filter, true),
+            abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue
         );
     }
 

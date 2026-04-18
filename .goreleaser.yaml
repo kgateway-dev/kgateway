@@ -58,10 +58,13 @@ dockers:
     goos: linux
     goarch: arm64
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:arm64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:arm64,mode=max,ignore-error=true"
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
       - &controller_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
@@ -69,10 +72,13 @@ dockers:
     goos: linux
     goarch: amd64
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:amd64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:amd64,mode=max,ignore-error=true"
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
       - &sds_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
@@ -80,10 +86,13 @@ dockers:
     goos: linux
     goarch: arm64
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=BASE_IMAGE={{ .Env.ALPINE_BASE_IMAGE }}"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:arm64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:arm64,mode=max,ignore-error=true"
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
       - &sds_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
@@ -91,10 +100,13 @@ dockers:
     goos: linux
     goarch: amd64
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=BASE_IMAGE={{ .Env.ALPINE_BASE_IMAGE }}"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:amd64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:amd64,mode=max,ignore-error=true"
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
       - &envoyinit_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
@@ -102,7 +114,6 @@ dockers:
     goos: linux
     goarch: arm64
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
@@ -111,6 +122,8 @@ dockers:
       - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64,mode=max,ignore-error=true"
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
       - internal/envoyinit
@@ -121,7 +134,6 @@ dockers:
     goos: linux
     goarch: amd64
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
@@ -129,6 +141,8 @@ dockers:
       - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64,mode=max,ignore-error=true"
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
       - internal/envoyinit

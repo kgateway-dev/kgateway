@@ -33,7 +33,7 @@ export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
-BUILDX_BUILD ?= docker buildx build -q
+BUILDX_BUILD ?= docker buildx build
 
 #----------------------------------------------------------------------------------
 # Devcontainer build-tools image
@@ -512,6 +512,11 @@ K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway pkg/ api/)
 CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/pkg/kgateway
 export CONTROLLER_IMAGE_REPO ?= kgateway
 
+# Registry cache repo for controller Docker build (set to enable, e.g., ghcr.io/kgateway-dev/kgateway-cache).
+# The arch tag is appended automatically as :$(GOARCH) to match what goreleaser publishes.
+CONTROLLER_CACHE_REF ?=
+CONTROLLER_CACHE_FROM := $(if $(CONTROLLER_CACHE_REF),--cache-from type=registry$(comma)ref=$(CONTROLLER_CACHE_REF):$(GOARCH),)
+
 # We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
@@ -528,6 +533,7 @@ $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT
 	$(BUILDX_BUILD) --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
+		$(CONTROLLER_CACHE_FROM) \
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 	@touch $@
 
@@ -543,6 +549,11 @@ SDS_SOURCES=$(call get_sources,$(SDS_DIR))
 SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
 export SDS_IMAGE_REPO ?= sds
 
+# Registry cache repo for sds Docker build (set to enable, e.g., ghcr.io/kgateway-dev/sds-cache).
+# The arch tag is appended automatically as :$(GOARCH) to match what goreleaser publishes.
+SDS_CACHE_REF ?=
+SDS_CACHE_FROM := $(if $(SDS_CACHE_REF),--cache-from type=registry$(comma)ref=$(SDS_CACHE_REF):$(GOARCH),)
+
 $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/sds/...
 
@@ -556,6 +567,7 @@ $(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(SDS_OUTPUT_DIR)/sds-linu
 	$(BUILDX_BUILD) --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
+		$(SDS_CACHE_FROM) \
 		-t $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)
 	@touch $@
 
@@ -578,8 +590,9 @@ export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 # registry with --push would probably be better) which requires the docker
 # driver. Cache is populated by goreleaser when a PR lands on main or a release
 # is cut.
+# The arch tag is appended automatically as :$(GOARCH) to match what goreleaser publishes.
 ENVOYINIT_CACHE_REF ?=
-ENVOYINIT_CACHE_FROM := $(if $(ENVOYINIT_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF),)
+ENVOYINIT_CACHE_FROM := $(if $(ENVOYINIT_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF):$(GOARCH),)
 
 RUSTFORMATIONS_DIR := internal/envoyinit/
 # find all the files under the rustformation directory but exclude the target and pkg directory

@@ -4,7 +4,7 @@ update_settings(k8s_upsert_timeout_secs = 600)
 load('ext://helm_resource', 'helm_resource')
 load("ext://uibutton", "cmd_button", "location")
 
-image_tag = "v1.0.0-ci1"
+image_tag = "2.0.0-local"
 
 kubectl_cmd = "kubectl"
 helm_cmd = "helm"
@@ -90,9 +90,9 @@ for key, value in settings["helm_flags"].items():
     helm_args = helm_args + " --set {0}='{1}'".format(key, escaped_value)
 
 get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/kgateway/ {3}".format(
-    helm_cmd, 
-    settings.get("helm_installation_namespace"), 
-    settings.get("helm_installation_name"), 
+    helm_cmd,
+    settings.get("helm_installation_namespace"),
+    settings.get("helm_installation_name"),
     helm_args
 )
 
@@ -139,7 +139,7 @@ def build_docker_image(provider):
             tilt_helper_dockerfile,
             tilt_dockerfile,
         ])
-    
+
     # Append the appropriate entrypoint based on whether debug_port is set
     if provider.get("debug_port") :
         dockerfile_contents = dockerfile_contents + debug_entrypoint
@@ -236,16 +236,16 @@ def enable_provider(provider):
 def enable_providers():
     for provider in settings["enabled_providers"] :
         enable_provider(settings["providers"][provider])
- 
+
 def install_kgateway():
     if not kgateway_installed :
         install_helm_cmd = """
             kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || {{ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml; }} ;
             {0} upgrade --install -n {1} --create-namespace kgateway-crds install/helm/kgateway-crds ;
             {0} upgrade --install -n {1} --create-namespace {2} install/helm/kgateway/ {3}""".format(
-                helm_cmd, 
-                settings.get("helm_installation_namespace"), 
-                settings.get("helm_installation_name"), 
+                helm_cmd,
+                settings.get("helm_installation_namespace"),
+                settings.get("helm_installation_name"),
                 helm_args
             )
         local_resource(
