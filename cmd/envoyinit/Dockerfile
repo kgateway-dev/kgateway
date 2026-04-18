@@ -3,7 +3,10 @@ ARG CARGO_ZBUILD_IMAGE=ghcr.io/rust-cross/cargo-zigbuild:0.19.8
 # Stage 1: pull in all rust build dependency and cache it in docker build layer cache
 FROM --platform=$TARGETPLATFORM ${CARGO_ZBUILD_IMAGE} AS rust_build_deps
 WORKDIR /build
-RUN apt update && apt install -y clang
+RUN sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list 2>/dev/null || true \
+    && sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true \
+    && apt-get -o Acquire::Retries=5 update \
+    && apt-get -o Acquire::Retries=5 install --no-install-recommends -y clang
 ARG RUSTFORMATIONS_DIR=./rustformations
 # Unfortunately, there is no easy way to find all the Cargo.toml files and iterate
 # through the directories in Dockerfile. If we add more local crate, will need to add
@@ -26,7 +29,10 @@ RUN cargo fetch \
 # Stage 2: build envoy dynamic module
 FROM --platform=$TARGETPLATFORM ${CARGO_ZBUILD_IMAGE} AS rust_builder
 WORKDIR /build
-RUN apt update && apt install -y clang
+RUN sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list 2>/dev/null || true \
+    && sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true \
+    && apt-get -o Acquire::Retries=5 update \
+    && apt-get -o Acquire::Retries=5 install --no-install-recommends -y clang
 
 # Copy cached target and cargo dirs from rust_build_deps from step 1
 COPY --from=rust_build_deps /usr/local/cargo /usr/local/cargo
@@ -46,9 +52,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Update our deps to make cve toil lower
 # install wget for our default probes
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install wget ca-certificates -y \
+RUN (sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list 2>/dev/null || true) \
+    && (sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true) \
+    && apt-get -o Acquire::Retries=5 update \
+    && apt-get -o Acquire::Retries=5 upgrade -y \
+    && apt-get -o Acquire::Retries=5 install --no-install-recommends -y ca-certificates wget \
     && rm -rf  /var/log/*log /var/lib/apt/lists/* /var/log/apt/* /var/lib/dpkg/*-old /var/cache/debconf/*-old
 
 ARG GOARCH=amd64

@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
+    gateway.networking.k8s.io/gateway-class-name: kgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -188,6 +188,11 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
+    typed_dns_resolver_config:
+      name: envoy.network.dns_resolver.cares
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
+        udp_max_queries: 100
     dynamic_resources:
       ads_config:
         transport_api_version: V3
@@ -218,7 +223,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
+    gateway.networking.k8s.io/gateway-class-name: kgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -232,7 +237,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
+    gateway.networking.k8s.io/gateway-class-name: kgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -259,11 +264,12 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
+    gateway.networking.k8s.io/gateway-class-name: kgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/instance: gw
@@ -281,7 +287,7 @@ spec:
         app.kubernetes.io/component: proxy
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
-        gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
+        gateway.networking.k8s.io/gateway-class-name: kgateway
         gateway.networking.k8s.io/gateway-name: gw
         kgateway: kube-gateway
     spec:
@@ -338,11 +344,13 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
+            add:
+            - NET_BIND_SERVICE
             drop:
             - ALL
           readOnlyRootFilesystem: true
+          runAsGroup: 5555
           runAsNonRoot: true
-          runAsUser: 10101
         startupProbe:
           failureThreshold: 60
           httpGet:
@@ -357,6 +365,10 @@ spec:
         - mountPath: /var/run/secrets/tokens
           name: xds-token
           readOnly: true
+      securityContext:
+        sysctls:
+        - name: net.ipv4.ip_unprivileged_port_start
+          value: "0"
       serviceAccountName: gw
       terminationGracePeriodSeconds: 60
       volumes:

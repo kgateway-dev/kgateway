@@ -511,6 +511,42 @@ pub fn transform_request<T: TransformationOps>(
             },
         )?;
     }
+
+    for (i, meta) in transform.dynamic_metadata.iter().enumerate() {
+        if meta.namespace.is_empty() || meta.key.is_empty() || meta.value.is_empty() {
+            let mut missing_fields = Vec::new();
+            if meta.namespace.is_empty() {
+                missing_fields.push("namespace");
+            }
+            if meta.key.is_empty() {
+                missing_fields.push("key");
+            }
+            if meta.value.is_empty() {
+                missing_fields.push("value");
+            }
+            errors.push(Error::msg(format!(
+                "request.dynamicMetadata[{}] is invalid: empty {}",
+                i,
+                missing_fields.join(", ")
+            )));
+            continue;
+        }
+        let template_key = format!("request.dynamicMetadata[{}.{}]", meta.namespace, meta.key);
+        let rendered = render_or_abort(
+            env,
+            &ctx,
+            &template_key,
+            meta.value.as_str_template().unwrap_or_default(),
+            parsed_body_as_json,
+            &mut errors,
+        )?;
+        if let Some(v) = rendered.as_deref() {
+            if !v.is_empty() {
+                ops.set_dynamic_metadata_string(&meta.namespace, &meta.key, v);
+            }
+        }
+    }
+
     combine_errors("transform_request()", errors)
 }
 
@@ -600,6 +636,41 @@ pub fn transform_response<T: TransformationOps>(
         )?;
     }
 
+    for (i, meta) in transform.dynamic_metadata.iter().enumerate() {
+        if meta.namespace.is_empty() || meta.key.is_empty() || meta.value.is_empty() {
+            let mut missing_fields = Vec::new();
+            if meta.namespace.is_empty() {
+                missing_fields.push("namespace");
+            }
+            if meta.key.is_empty() {
+                missing_fields.push("key");
+            }
+            if meta.value.is_empty() {
+                missing_fields.push("value");
+            }
+            errors.push(Error::msg(format!(
+                "response.dynamicMetadata[{}] is invalid: empty {}",
+                i,
+                missing_fields.join(", ")
+            )));
+            continue;
+        }
+        let template_key = format!("response.dynamicMetadata[{}.{}]", meta.namespace, meta.key);
+        let rendered = render_or_abort(
+            env,
+            &ctx,
+            &template_key,
+            meta.value.as_str_template().unwrap_or_default(),
+            parsed_body_as_json,
+            &mut errors,
+        )?;
+        if let Some(v) = rendered.as_deref() {
+            if !v.is_empty() {
+                ops.set_dynamic_metadata_string(&meta.namespace, &meta.key, v);
+            }
+        }
+    }
+
     combine_errors("transform_response()", errors)
 }
 
@@ -625,6 +696,15 @@ pub fn create_env_with_templates(
                 env.add_template_owned(REQUEST_BODY_TEMPLATE_LOOKUP_KEY, body.value.clone())?;
             }
         }
+        for meta in request.dynamic_metadata.iter() {
+            if meta.namespace.is_empty() || meta.key.is_empty() || meta.value.is_empty() {
+                continue;
+            }
+            env.add_template_owned(
+                format!("request.dynamicMetadata[{}.{}]", meta.namespace, meta.key),
+                meta.value.string_value.clone().unwrap_or_default(),
+            )?;
+        }
     }
     if let Some(response) = &config.response {
         for pair in &response.add {
@@ -643,6 +723,15 @@ pub fn create_env_with_templates(
             if !matches!(body.parse_as, BodyParseBehavior::None) && !body.value.is_empty() {
                 env.add_template_owned(RESPONSE_BODY_TEMPLATE_LOOKUP_KEY, body.value.clone())?;
             }
+        }
+        for meta in response.dynamic_metadata.iter() {
+            if meta.namespace.is_empty() || meta.key.is_empty() || meta.value.is_empty() {
+                continue;
+            }
+            env.add_template_owned(
+                format!("response.dynamicMetadata[{}.{}]", meta.namespace, meta.key),
+                meta.value.string_value.clone().unwrap_or_default(),
+            )?;
         }
     }
     Ok(env)
