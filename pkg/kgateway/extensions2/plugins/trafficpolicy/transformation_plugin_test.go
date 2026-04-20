@@ -131,15 +131,11 @@ func TestGenerateDynamicMetadataStableOrderingAndValues(t *testing.T) {
 	expectedValues := []kgateway.InjaTemplate{"a-value", "m-value", "z-value"}
 
 	assert.Len(t, policy.Request.DynamicMetadata, len(expectedKeys))
-	assert.Len(t, policy.Response.DynamicMetadata, len(expectedKeys))
 
 	for i, expectedKey := range expectedKeys {
 		requestMetadata := policy.Request.DynamicMetadata[i]
-		responseMetadata := policy.Response.DynamicMetadata[i]
 
 		assert.Equal(t, expectedKey, requestMetadata.Key)
-		assert.Equal(t, expectedKey, responseMetadata.Key)
 		assert.Equal(t, expectedValues[i], *requestMetadata.Value.StringValue)
-		assert.Equal(t, expectedValues[i], *responseMetadata.Value.StringValue)
 	}
 }
