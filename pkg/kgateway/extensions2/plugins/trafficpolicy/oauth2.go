@@ -487,7 +487,7 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 	}
 
 	// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
-	AddAuthSucceededMetadataIfNeeded(perFilterConfig, OauthEnabledFilterName, p.enableAuthSucceededMetadata)
+	AddAuthMetadataIfNeeded(perFilterConfig, OauthEnabledFilterName, p.enableAuthMetadata)
 }
 
 // getCookieSuffix generates a unique suffix for cookie names based on the given object

@@ -158,7 +158,7 @@ user:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=`,
 func TestHttpFiltersBasicAuth(t *testing.T) {
 	t.Run("adds basic auth filter and auth-enabled filter to chain", func(t *testing.T) {
 		plugin := &trafficPolicyPluginGwPass{
-			enableAuthSucceededMetadata: true,
+			enableAuthMetadata: true,
 			basicAuthInChain: map[string]*envoy_basic_auth_v3.BasicAuth{
 				"test-filter-chain": {},
 			},
@@ -181,7 +181,7 @@ func TestHttpFiltersBasicAuth(t *testing.T) {
 func TestBasicAuthPolicyPlugin(t *testing.T) {
 	t.Run("applies basic auth configuration to route", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{enableAuthSucceededMetadata: true}
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				basicAuth: &basicAuthIR{
@@ -210,7 +210,7 @@ func TestBasicAuthPolicyPlugin(t *testing.T) {
 
 	t.Run("handles disabled basic auth configuration", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{enableAuthSucceededMetadata: true}
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				basicAuth: &basicAuthIR{disable: true},

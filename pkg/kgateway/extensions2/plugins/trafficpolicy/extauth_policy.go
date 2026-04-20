@@ -189,7 +189,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 
 		// Explicitly set the ExtAuthEnabledFilter to a blank transformation.
 		// This ensures that the metadata is not set if auth is not configured on the route
-		AddBlankTransformationIfNeeded(pCtxTypedFilterConfig, ExtAuthEnabledFilterName, p.enableAuthSucceededMetadata)
+		AddBlankTransformationIfNeeded(pCtxTypedFilterConfig, ExtAuthEnabledFilterName, p.enableAuthMetadata)
 		return
 	}
 
@@ -208,6 +208,6 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 
 	if len(in.perProviderConfig) > 0 {
 		// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
-		AddAuthSucceededMetadataIfNeeded(pCtxTypedFilterConfig, ExtAuthEnabledFilterName, p.enableAuthSucceededMetadata)
+		AddAuthMetadataIfNeeded(pCtxTypedFilterConfig, ExtAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 }

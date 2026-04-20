@@ -66,9 +66,9 @@ func newSetMetadataConfig(metadataNamespace string) *set_metadata.Config {
 func AddAuthEnabledFilterIfNeeded(
 	stagedFilters []filters.StagedHttpFilter,
 	filterName string,
-	enableAuthSucceededMetadata bool,
+	enableAuthMetadata bool,
 ) []filters.StagedHttpFilter {
-	if !enableAuthSucceededMetadata {
+	if !enableAuthMetadata {
 		return stagedFilters
 	}
 	for _, f := range stagedFilters {
@@ -86,10 +86,10 @@ func AddAuthEnabledFilterIfNeeded(
 	return stagedFilters
 }
 
-// AddAuthSucceededMetadataIfNeeded sets the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata
-// via the transformation filter when enableAuthSucceededMetadata is true
-func AddAuthSucceededMetadataIfNeeded(perFilterConfig *ir.TypedFilterConfigMap, filterName string, enableAuthSucceededMetadata bool) {
-	if !enableAuthSucceededMetadata {
+// AddAuthMetadataIfNeeded sets the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata
+// via the transformation filter when enableAuthMetadata is true
+func AddAuthMetadataIfNeeded(perFilterConfig *ir.TypedFilterConfigMap, filterName string, enableAuthMetadata bool) {
+	if !enableAuthMetadata {
 		return
 	}
 	perFilterConfig.AddTypedConfig(filterName, generateDynamicMetadata(AuthPolicyMetadataNamespace, map[string]kgateway.InjaTemplate{
@@ -98,10 +98,10 @@ func AddAuthSucceededMetadataIfNeeded(perFilterConfig *ir.TypedFilterConfigMap, 
 }
 
 // AddBlankTransformationIfNeeded sets a blank (no-op) per-route transformation on the named filter when
-// enableAuthSucceededMetadata is true. This prevents auth-succeeded metadata from being set on routes
+// enableAuthMetadata is true. This prevents auth metadata from being set on routes
 // where auth is explicitly disabled or not configured.
-func AddBlankTransformationIfNeeded(perFilterConfig *ir.TypedFilterConfigMap, filterName string, enableAuthSucceededMetadata bool) {
-	if !enableAuthSucceededMetadata {
+func AddBlankTransformationIfNeeded(perFilterConfig *ir.TypedFilterConfigMap, filterName string, enableAuthMetadata bool) {
+	if !enableAuthMetadata {
 		return
 	}
 	perFilterConfig.AddTypedConfig(filterName, GenerateBlankTransformationConfigPerRoute())

@@ -692,7 +692,7 @@ func TestTranslateJwksRemote(t *testing.T) {
 func TestHttpFiltersJwt(t *testing.T) {
 	t.Run("adds jwt filter and auth-enabled filter to chain", func(t *testing.T) {
 		plugin := &trafficPolicyPluginGwPass{
-			enableAuthSucceededMetadata: true,
+			enableAuthMetadata: true,
 			jwtPerProvider: ProviderNeededMap{
 				Providers: map[string][]Provider{
 					"test-filter-chain": {
@@ -727,7 +727,7 @@ func TestHttpFiltersJwt(t *testing.T) {
 func TestJwtPolicyPlugin(t *testing.T) {
 	t.Run("applies jwt configuration to route", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{enableAuthSucceededMetadata: true}
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				jwt: &jwtIr{
@@ -769,7 +769,7 @@ func TestJwtPolicyPlugin(t *testing.T) {
 
 	t.Run("handles disabled jwt configuration", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{enableAuthSucceededMetadata: true}
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				jwt: &jwtIr{

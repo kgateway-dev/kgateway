@@ -71,7 +71,7 @@ func (p *trafficPolicyPluginGwPass) handleBasicAuth(
 
 		// Explicitly set the BasicAuthEnabledFilterName to a blank transformation.
 		// This ensures that the metadata is not set if auth is not configured on the route
-		AddBlankTransformationIfNeeded(pCtxTypedFilterConfig, BasicAuthEnabledFilterName, p.enableAuthSucceededMetadata)
+		AddBlankTransformationIfNeeded(pCtxTypedFilterConfig, BasicAuthEnabledFilterName, p.enableAuthMetadata)
 		return
 	}
 
@@ -79,7 +79,7 @@ func (p *trafficPolicyPluginGwPass) handleBasicAuth(
 	pCtxTypedFilterConfig.AddTypedConfig(basicAuthFilterName, basicAuth.policy)
 
 	// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
-	AddAuthSucceededMetadataIfNeeded(pCtxTypedFilterConfig, BasicAuthEnabledFilterName, p.enableAuthSucceededMetadata)
+	AddAuthMetadataIfNeeded(pCtxTypedFilterConfig, BasicAuthEnabledFilterName, p.enableAuthMetadata)
 
 	// Register the disabled global filter in the chain
 	if p.basicAuthInChain == nil {
