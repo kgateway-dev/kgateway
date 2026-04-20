@@ -183,14 +183,14 @@ type HeaderModifiers struct {
 
 	// RequestHeadersFromSecret injects request headers whose values are sourced from a Kubernetes Secret.
 	// Each entry specifies a secret, a key within that secret, and the header name to inject.
-	// Secret keys must be valid HTTP header names.
+	// The header field must be a valid HTTP header name; key is the key within the Secret data.
 	// Cross-namespace references require a ReferenceGrant in the target namespace.
 	// +optional
 	RequestHeadersFromSecret []SecretHeaderMapping `json:"requestHeadersFromSecret,omitempty"`
 
 	// ResponseHeadersFromSecret injects response headers whose values are sourced from a Kubernetes Secret.
 	// Each entry specifies a secret, a key within that secret, and the header name to inject.
-	// Secret keys must be valid HTTP header names.
+	// The header field must be a valid HTTP header name; key is the key within the Secret data.
 	// Cross-namespace references require a ReferenceGrant in the target namespace.
 	// +optional
 	ResponseHeadersFromSecret []SecretHeaderMapping `json:"responseHeadersFromSecret,omitempty"`

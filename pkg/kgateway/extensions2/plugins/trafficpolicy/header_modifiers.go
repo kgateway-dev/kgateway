@@ -119,12 +119,20 @@ func buildHeaderMutationsFromSecretMappings(
 
 		secret, err := secrets.GetSecret(krtctx, from, secretRef)
 		if err != nil {
-			return nil, fmt.Errorf("secret %s: %w", m.SecretRef.Name, err)
+			ns := from.Namespace
+			if m.SecretRef.Namespace != nil {
+				ns = string(*m.SecretRef.Namespace)
+			}
+			return nil, fmt.Errorf("secret %s/%s: %w", ns, m.SecretRef.Name, err)
 		}
 
 		value, ok := secret.Data[m.Key]
 		if !ok {
-			return nil, fmt.Errorf("secret %s does not contain key %q", m.SecretRef.Name, m.Key)
+			ns := from.Namespace
+			if m.SecretRef.Namespace != nil {
+				ns = string(*m.SecretRef.Namespace)
+			}
+			return nil, fmt.Errorf("secret %s/%s does not contain key %q", ns, m.SecretRef.Name, m.Key)
 		}
 
 		mutations = append(mutations, &mutation_rulesv3.HeaderMutation{
