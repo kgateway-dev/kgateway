@@ -8,11 +8,9 @@ Clusters:
   metadata: {}
   name: kube_gwtest_example-svc_80
   type: EDS
-- loadAssignment:
-    clusterName: test-backend-plugin_default_example-svc_80
+- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-  type: STATIC
 Listeners:
 - address:
     socketAddress:
