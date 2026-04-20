@@ -82,11 +82,11 @@ jobs:
             label: min_versions
         gateway-api-channel: ['experimental', 'standard']
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ matrix.ref.checkout_ref }}
       - name: Dotenv Action
-        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        uses: falti/dotenv-action@fff81fa3263fb96221c521b5e526e57c0c56d760 # v1.2.1
         id: dotenv
         with:
           path: ${{ matrix.env-versions.file }}
@@ -117,7 +117,7 @@ jobs:
             kubectl: v1.35.0
             kind: v0.31.0
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ matrix.ref.checkout_ref }}
       - uses: ./.github/actions/kube-gateway-api-load-tests
@@ -153,7 +153,7 @@ jobs:
         controllers:
           - regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$"
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ matrix.ref.checkout_ref }}
       # v2.2.x is built against Gateway API 1.4 and refuses to start on 1.5 (#13872), so the
@@ -194,7 +194,7 @@ jobs:
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
       - name: Dotenv Action
-        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        uses: falti/dotenv-action@fff81fa3263fb96221c521b5e526e57c0c56d760 # v1.2.1
         id: dotenv
         with:
           path: ${{ matrix.env-versions.file }}
