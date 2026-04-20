@@ -233,7 +233,7 @@ type Settings struct {
 	GatewayClassParametersRefs GatewayClassParametersRefs `split_words:"true" default:"{}"`
 
 	// Enables setting the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
-	EnableAuthSucceededMetadata bool `split_words:"true" default:"false"`
+	EnableAuthMetadata bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

@@ -16,7 +16,7 @@ func TestStatuses(t *testing.T) {
 		dir := fsutils.MustGetThisDir()
 		settingOpt := func(s *apisettings.Settings) {
 			s.EnableExperimentalGatewayAPIFeatures = true
-			s.EnableAuthSucceededMetadata = true
+			s.EnableAuthMetadata = true
 		}
 		translatortest.TestTranslation(
 			t,

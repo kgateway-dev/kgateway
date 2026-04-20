@@ -321,7 +321,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
 				NewGatewayTranslationPass: func(tctx ir.GwTranslationCtx, rep reporter.Reporter) ir.ProxyTranslationPass {
-					return NewGatewayTranslationPass(tctx, rep, commoncol.Settings.EnableAuthSucceededMetadata)
+					return NewGatewayTranslationPass(tctx, rep, commoncol.Settings.EnableAuthMetadata)
 				},
 				Policies:                        policyCol,
 				ProcessPolicyStaleStatusMarkers: processMarkers,

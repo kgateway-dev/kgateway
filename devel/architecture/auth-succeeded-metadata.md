@@ -7,7 +7,7 @@ filters and policies to make routing or transformation decisions based on whethe
 successfully authenticated. When enabled, a successfully-authenticated route has the key
 `auth_succeeded=true` written to the `dev.kgateway.auth_policy` metadata namespace.
 
-This feature is disabled by default and must be opted in via the `KGW_ENABLE_AUTH_SUCCEEDED_METADATA`
+This feature is disabled by default and must be opted in via the `KGW_ENABLE_AUTH_METADATA`
 environment variable.
 
 ## Motivation
@@ -84,7 +84,7 @@ The feature applies uniformly to all five auth mechanisms in the trafficpolicy p
 Set the environment variable on the kgateway controller:
 
 ```bash
-KGW_ENABLE_AUTH_SUCCEEDED_METADATA=true
+KGW_ENABLE_AUTH_METADATA=true
 ```
 
 Or configure it in the Helm chart values under `settings.enableAuthSucceededMetadata`.
