@@ -152,6 +152,11 @@ func generateDynamicMetadata(ns string, kv map[string]kgateway.InjaTemplate) *dy
 				ParseAs: kgateway.BodyParseBehaviorNone,
 			},
 		},
+		Response: &kgateway.Transform{
+			Body: &kgateway.BodyTransformation{
+				ParseAs: kgateway.BodyParseBehaviorNone,
+			},
+		},
 	})
 	return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
