@@ -86,6 +86,14 @@ spec:
                     format: int32
                     minimum: 0
                     type: integer
+                  trackRemaining:
+                    description: |-
+                      TrackRemaining controls whether Envoy tracks the remaining resource
+                      gauges for this circuit breaker threshold group. When enabled, the
+                      remaining_cx, remaining_pending, remaining_rq, and remaining_retries
+                      statistics are populated. Enabling this has a performance cost.
+                      If not specified, defaults to false.
+                    type: boolean
                 type: object
                 x-kubernetes-validations:
                 - message: at least one of the fields in [maxConnections maxPendingRequests
