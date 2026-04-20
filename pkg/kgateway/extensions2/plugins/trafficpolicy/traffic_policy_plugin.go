@@ -223,7 +223,7 @@ type trafficPolicyPluginGwPass struct {
 
 	// This is used to determine if the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata
 	// should be set on routes that have been successfully authenticated
-	enableAuthSucceededMetadata bool
+	enableAuthMetadata bool
 
 	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
 	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
@@ -269,7 +269,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 		}
 
 		policyIR, errors := constructor.ConstructIR(krtctx, policyCR)
-		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
+		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode, commoncol.Settings.EnableAuthMetadata); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)
 		}
@@ -336,12 +336,12 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	}
 }
 
-func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter, enableAuthSucceededMetadata bool) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter, enableAuthMetadata bool) ir.ProxyTranslationPass {
 	return &trafficPolicyPluginGwPass{
-		reporter:                    reporter,
-		enableAuthSucceededMetadata: enableAuthSucceededMetadata,
-		setTransformationInChain:    map[string]bool{},
-		secrets:                     map[string]*envoytlsv3.Secret{},
+		reporter:                 reporter,
+		enableAuthMetadata:       enableAuthMetadata,
+		setTransformationInChain: map[string]bool{},
+		secrets:                  map[string]*envoytlsv3.Secret{},
 	}
 }
 
@@ -453,7 +453,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	if len(p.extAuthPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
 		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, ExtAuthGlobalDisableFilterName, ExtAuthGlobalDisableFilterMetadataNamespace)
-		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, ExtAuthEnabledFilterName, p.enableAuthSucceededMetadata)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, ExtAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 	// Add Ext_authz filter for listener
 	for _, provider := range p.extAuthPerProvider.Providers[fcc.FilterChainName] {
@@ -479,7 +479,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 	// Add OIDC filters for providers
 	if len(p.oauth2PerProvider.Providers[fcc.FilterChainName]) > 0 {
-		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, OauthEnabledFilterName, p.enableAuthSucceededMetadata)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, OauthEnabledFilterName, p.enableAuthMetadata)
 	}
 	for _, provider := range p.oauth2PerProvider.Providers[fcc.FilterChainName] {
 		oidcFilter := provider.Extension.OAuth2.cfg
@@ -517,7 +517,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 	if len(p.jwtPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, jwtGlobalDisableFilterName, jwtGlobalDisableFilterMetadataNamespace)
-		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, JwtEnabledFilterName, p.enableAuthSucceededMetadata)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, JwtEnabledFilterName, p.enableAuthMetadata)
 	}
 	for _, provider := range p.jwtPerProvider.Providers[fcc.FilterChainName] {
 		jwtFilter := provider.Extension.Jwt
@@ -602,7 +602,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		filter := filters.MustNewStagedFilter(basicAuthFilterName, f, filters.DuringStage(filters.AuthNStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
-		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, BasicAuthEnabledFilterName, p.enableAuthSucceededMetadata)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, BasicAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 
 	// Add API key auth filter to the chain
@@ -610,7 +610,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		filter := filters.MustNewStagedFilter(apiKeyAuthFilterNamePrefix, f, filters.DuringStage(filters.AuthNStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
-		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, APIKeyAuthEnabledFilterName, p.enableAuthSucceededMetadata)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, APIKeyAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 
 	if len(stagedFilters) == 0 {
