@@ -113,3 +113,92 @@ func TestFilterChains(t *testing.T) {
 		}
 	}
 }
+
+func TestFilterChainsIPv6(t *testing.T) {
+	ctx := context.Background()
+
+	translator := irtranslator.Translator{}
+
+	gateway := ir.GatewayIR{SourceObject: &ir.Gateway{Obj: &gwv1.Gateway{}}}
+	listener := ir.ListenerIR{
+		BindAddress: "2001:db8::1",
+		BindPort:    8080,
+		HttpFilterChain: []ir.HttpFilterChainIR{{
+			FilterChainCommon: ir.FilterChainCommon{
+				FilterChainName: "httpchain",
+			},
+		}},
+	}
+
+	reportMap := reports.NewReportMap()
+	reporter := reports.NewReporter(&reportMap)
+
+	envoyListener, _ := translator.ComputeListener(
+		ctx,
+		irtranslator.TranslationPassPlugins{},
+		gateway,
+		listener,
+		reporter,
+	)
+	require.NotNil(t, envoyListener, "expected non-nil listener for IPv6 bind address")
+	assert.Equal(t, "2001:db8::1", envoyListener.Address.GetSocketAddress().Address, "IPv6 address should be set correctly")
+}
+
+func TestFilterChainsIPv4MappedIPv6(t *testing.T) {
+	ctx := context.Background()
+
+	translator := irtranslator.Translator{}
+
+	gateway := ir.GatewayIR{SourceObject: &ir.Gateway{Obj: &gwv1.Gateway{}}}
+	listener := ir.ListenerIR{
+		BindAddress: "::ffff:192.168.1.1",
+		BindPort:    8080,
+		HttpFilterChain: []ir.HttpFilterChainIR{{
+			FilterChainCommon: ir.FilterChainCommon{
+				FilterChainName: "httpchain",
+			},
+		}},
+	}
+
+	reportMap := reports.NewReportMap()
+	reporter := reports.NewReporter(&reportMap)
+
+	envoyListener, _ := translator.ComputeListener(
+		ctx,
+		irtranslator.TranslationPassPlugins{},
+		gateway,
+		listener,
+		reporter,
+	)
+	require.NotNil(t, envoyListener, "expected non-nil listener for IPv4-mapped IPv6 bind address")
+	assert.Equal(t, "::ffff:192.168.1.1", envoyListener.Address.GetSocketAddress().Address, "IPv4-mapped IPv6 address should be set correctly")
+}
+
+func TestFilterChainsInvalidIP(t *testing.T) {
+	ctx := context.Background()
+
+	translator := irtranslator.Translator{}
+
+	gateway := ir.GatewayIR{SourceObject: &ir.Gateway{Obj: &gwv1.Gateway{}}}
+	listener := ir.ListenerIR{
+		BindAddress: "not-an-ip",
+		BindPort:    8080,
+		HttpFilterChain: []ir.HttpFilterChainIR{{
+			FilterChainCommon: ir.FilterChainCommon{
+				FilterChainName: "httpchain",
+			},
+		}},
+	}
+
+	reportMap := reports.NewReportMap()
+	reporter := reports.NewReporter(&reportMap)
+
+	envoyListener, _ := translator.ComputeListener(
+		ctx,
+		irtranslator.TranslationPassPlugins{},
+		gateway,
+		listener,
+		reporter,
+	)
+	assert.Nil(t, envoyListener, "expected nil listener for invalid IP bind address")
+}
