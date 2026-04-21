@@ -211,8 +211,18 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # truthy. As it stands, a developer who runs `make unit` or `go test ./...`
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
+# CLUSTER_TYPE controls whether images are loaded via kind or k3d (default: kind)
+CLUSTER_TYPE ?= kind
+
+.PHONY: cluster-load-extproc-server
+ifeq ($(CLUSTER_TYPE),k3d)
+cluster-load-extproc-server: k3d-load-extproc-server
+else
+cluster-load-extproc-server: kind-load-extproc-server
+endif
+
 .PHONY: e2e-test
-e2e-test: extproc-server-docker kind-load-extproc-server
+e2e-test: extproc-server-docker cluster-load-extproc-server
 e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
@@ -813,7 +823,7 @@ deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgatew
 setup-base: kind-create gw-api-crds ## Setup the base infrastructure (kind cluster, CRDs, and load balancer)
 ifeq ($(CLOUD_PROVIDER_KIND),true)
 	$(MAKE) cloud-provider-kind
-else
+else ifneq ($(METAL_LB),false)
 	$(MAKE) metallb
 endif
 
@@ -882,6 +892,61 @@ kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
 kind-load: kind-load-dummy-idp
+
+#----------------------------------------------------------------------------------
+# k3d Development
+#----------------------------------------------------------------------------------
+
+K3D ?= k3d
+ifeq ($(CLUSTER_TYPE),k3d)
+K3D_CLUSTER_NAME ?= $(CLUSTER_NAME)
+else
+K3D_CLUSTER_NAME ?= k3d
+endif
+K3D_NODE_IMAGE ?= rancher/k3s:v1.31.4-k3s1
+
+.PHONY: k3d-create
+k3d-create: ## Create a single-node k3d cluster with lightweight LoadBalancer IP assigner
+	$(K3D) cluster list -o json | jq -e '.[] | select(.name=="$(K3D_CLUSTER_NAME)")' > /dev/null 2>&1 || \
+		$(K3D) cluster create $(K3D_CLUSTER_NAME) --image $(K3D_NODE_IMAGE) \
+			--k3s-arg "--disable=traefik@server:0" \
+			--k3s-arg "--disable=servicelb@server:0" \
+			-p "80:80@loadbalancer" \
+			-p "443:443@loadbalancer"
+	@# Start background LB IP assigner (lightweight alternative to MetalLB).
+	@# Only launch if one is not already running for this cluster.
+	@if pgrep -f 'k3d-loadbalancer.sh $(K3D_CLUSTER_NAME)$$' > /dev/null 2>&1; then \
+		echo "k3d load balancer assigner already running for cluster $(K3D_CLUSTER_NAME)"; \
+	else \
+		nohup $(ROOTDIR)/hack/k3d/k3d-loadbalancer.sh $(K3D_CLUSTER_NAME) > /tmp/k3d-lb-$(K3D_CLUSTER_NAME).log 2>&1 & disown; \
+	fi
+
+k3d-load-%:
+	$(K3D) image import $(IMAGE_REGISTRY)/$*:$(VERSION) -c $(K3D_CLUSTER_NAME)
+
+k3d-build-and-load-%: %-docker k3d-load-% ; ## Use to build specified image and load it into k3d
+
+.PHONY: k3d-build-and-load ## Use to build all images and load them into k3d
+k3d-build-and-load: k3d-build-and-load-kgateway
+k3d-build-and-load: k3d-build-and-load-envoy-wrapper
+k3d-build-and-load: k3d-build-and-load-sds
+k3d-build-and-load: k3d-build-and-load-dummy-idp
+
+.PHONY: k3d-load-dummy-idp
+k3d-load-dummy-idp:
+	$(K3D) image import $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) -c $(K3D_CLUSTER_NAME)
+
+.PHONY: k3d-load-extproc-server
+k3d-load-extproc-server:
+	$(K3D) image import $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION) -c $(K3D_CLUSTER_NAME)
+
+.PHONY: setup-base-k3d
+setup-base-k3d: k3d-create gw-api-crds ## Setup k3d base infrastructure (cluster, CRDs, custom instant-setup loadbalancer).
+
+.PHONY: setup-k3d
+setup-k3d: setup-base-k3d k3d-build-and-load package-kgateway-charts dummy-idp-docker k3d-load-dummy-idp ## Setup complete k3d infrastructure
+
+k3d-reload-%: k3d-build-and-load-% kind-set-image-% ; ## Use to build specified image, load it into k3d, and restart its deployment
 
 #----------------------------------------------------------------------------------
 # Load Testing

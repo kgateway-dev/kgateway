@@ -2360,6 +2360,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with proxy protocol allowing requests without header", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/http-proxy-protocol-allow-no-header.yaml",
+			outputFile: "listener-policy/http-proxy-protocol-allow-no-header.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with per connection buffer limit", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy/per-connection-buffer-limit.yaml",

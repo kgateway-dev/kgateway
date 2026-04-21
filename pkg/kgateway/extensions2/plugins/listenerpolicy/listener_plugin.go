@@ -562,6 +562,9 @@ func convertProxyProtocolConfig(objSrc ir.ObjectSource, config *kgateway.ProxyPr
 	proxyProtocolConfig := &proxy_protocol.ProxyProtocol{
 		StatPrefix: fmt.Sprintf("%s_%s", objSrc.Namespace, objSrc.Name),
 	}
+	if config.AllowRequestsWithoutProxyProtocol != nil {
+		proxyProtocolConfig.AllowRequestsWithoutProxyProtocol = *config.AllowRequestsWithoutProxyProtocol
+	}
 
 	// Marshal to Any
 	proxyProtocolAny, err := utils.MessageToAny(proxyProtocolConfig)

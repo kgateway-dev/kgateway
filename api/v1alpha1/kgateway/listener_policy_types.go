@@ -91,7 +91,10 @@ type ListenerPortConfig struct {
 
 type ListenerConfig struct {
 	// ProxyProtocol configures the PROXY protocol listener filter.
-	// When set, Envoy will expect connections to include the PROXY protocol header.
+	// By default, when set, Envoy will require connections to include the PROXY
+	// protocol header. This behavior can be relaxed by setting
+	// allowRequestsWithoutProxyProtocol to true, which allows the listener to
+	// also accept connections without the PROXY protocol header.
 	// This is commonly used when kgateway is behind a load balancer that preserves client IP information.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/listener/proxy_protocol/v3/proxy_protocol.proto
 	// +optional
@@ -159,7 +162,22 @@ type ListenerDefaultConfig struct {
 // ProxyProtocolConfig configures the PROXY protocol listener filter.
 // The presence of this configuration enables PROXY protocol support.
 type ProxyProtocolConfig struct {
-	// The presence or absence of this configuration is what matters.
+	// AllowRequestsWithoutProxyProtocol, when true, configures the PROXY protocol
+	// listener filter to accept connections that do not include a PROXY protocol
+	// header in addition to those that do. This allows a single listener to serve
+	// mixed traffic, e.g. PROXY-preserving load balancer traffic plus direct
+	// in-cluster traffic on the same port.
+	//
+	// Security: accepting connections without a PROXY header is non-conformant
+	// with the PROXY protocol spec and allows clients to spoof the perceived
+	// source address. Only enable this when every source that can reach the
+	// listener is trusted. See
+	// https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt.
+	//
+	// Defaults to false.
+	//
+	// +optional
+	AllowRequestsWithoutProxyProtocol *bool `json:"allowRequestsWithoutProxyProtocol,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:message="useRemoteAddress must be set to false if xffTrustedCIDRs is set",rule="!has(self.xffTrustedCIDRs) || (has(self.useRemoteAddress) && !self.useRemoteAddress)"

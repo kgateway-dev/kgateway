@@ -64,3 +64,5 @@ dist/
 internal/envoyinit/rustformations/target/*
 internal/envoyinit/rustformations/vendor/*
 internal/envoyinit/target/*
+
+nohup.out
