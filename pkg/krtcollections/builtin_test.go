@@ -666,14 +666,14 @@ func TestRequestMirror(t *testing.T) {
 
 func TestRequestRedirect(t *testing.T) {
 	tests := []struct {
-		name             string
-		filter           *gwv1.HTTPRequestRedirectFilter
-		listenerPort     uint32
-		listenerHasTLS   bool
-		expectedRedirect *envoyroutev3.RedirectAction
+		name                  string
+		filter                *gwv1.HTTPRequestRedirectFilter
+		listenerPort          uint32
+		expectedRedirect      *envoyroutev3.RedirectAction
+		expectedNeedsListener bool
 	}{
 		{
-			name: "scheme and port both nil, non-default http listener port",
+			name: "scheme and port both nil uses listener port",
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Scheme: nil,
 				Port:   nil,
@@ -683,32 +683,10 @@ func TestRequestRedirect(t *testing.T) {
 				PortRedirect: 8080,
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
+			expectedNeedsListener: true,
 		},
 		{
-			name: "scheme and port both nil, http listener on default port 80 omits port",
-			filter: &gwv1.HTTPRequestRedirectFilter{
-				Scheme: nil,
-				Port:   nil,
-			},
-			listenerPort: 80,
-			expectedRedirect: &envoyroutev3.RedirectAction{
-				ResponseCode: envoyroutev3.RedirectAction_FOUND,
-			},
-		},
-		{
-			name: "scheme and port both nil, https listener on default port 443 omits port",
-			filter: &gwv1.HTTPRequestRedirectFilter{
-				Scheme: nil,
-				Port:   nil,
-			},
-			listenerPort:   443,
-			listenerHasTLS: true,
-			expectedRedirect: &envoyroutev3.RedirectAction{
-				ResponseCode: envoyroutev3.RedirectAction_FOUND,
-			},
-		},
-		{
-			name: "scheme http with port nil omits port 80 per spec",
+			name: "scheme http with port nil uses default 80",
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Scheme: new("http"),
 				Port:   nil,
@@ -718,11 +696,12 @@ func TestRequestRedirect(t *testing.T) {
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_SchemeRedirect{
 					SchemeRedirect: "http",
 				},
+				PortRedirect: 80,
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
 		},
 		{
-			name: "scheme https with port nil omits port 443 per spec",
+			name: "scheme https with port nil uses default 443",
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Scheme: new("https"),
 				Port:   nil,
@@ -732,6 +711,7 @@ func TestRequestRedirect(t *testing.T) {
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_HttpsRedirect{
 					HttpsRedirect: true,
 				},
+				PortRedirect: 443,
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
 		},
@@ -744,20 +724,6 @@ func TestRequestRedirect(t *testing.T) {
 			listenerPort: 8080,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				PortRedirect: 9090,
-				ResponseCode: envoyroutev3.RedirectAction_FOUND,
-			},
-		},
-		{
-			name: "explicit port 80 with scheme http omitted per spec",
-			filter: &gwv1.HTTPRequestRedirectFilter{
-				Scheme: new("http"),
-				Port:   ptr.To(gwv1.PortNumber(80)),
-			},
-			listenerPort: 8080,
-			expectedRedirect: &envoyroutev3.RedirectAction{
-				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_SchemeRedirect{
-					SchemeRedirect: "http",
-				},
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
 		},
@@ -792,7 +758,7 @@ func TestRequestRedirect(t *testing.T) {
 			},
 		},
 		{
-			name: "hostname redirect on non-default listener port",
+			name: "hostname redirect",
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Hostname: ptr.To(gwv1.PreciseHostname("example.com")),
 			},
@@ -802,6 +768,7 @@ func TestRequestRedirect(t *testing.T) {
 				PortRedirect: 8080,
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
+			expectedNeedsListener: true,
 		},
 		{
 			name: "status code 302 found",
@@ -813,6 +780,7 @@ func TestRequestRedirect(t *testing.T) {
 				PortRedirect: 8080,
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
+			expectedNeedsListener: true,
 		},
 		{
 			name: "complete redirect with all fields",
@@ -855,6 +823,7 @@ func TestRequestRedirect(t *testing.T) {
 				PortRedirect: 8080,
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
+			expectedNeedsListener: true,
 		},
 	}
 
@@ -863,6 +832,7 @@ func TestRequestRedirect(t *testing.T) {
 			redirectIR, err := convertRequestRedirectIR(nil, tt.filter, nil, nil)
 			require.NoError(t, err)
 			require.NotNil(t, redirectIR)
+			assert.Equal(t, tt.expectedNeedsListener, redirectIR.NeedsListenerPort, "NeedsListenerPort flag mismatch")
 
 			builtinPol := &builtinPlugin{
 				filter: &filterIR{
@@ -871,9 +841,8 @@ func TestRequestRedirect(t *testing.T) {
 				},
 			}
 			pCtx := &ir.RouteContext{
-				ListenerPort:   tt.listenerPort,
-				ListenerHasTLS: tt.listenerHasTLS,
-				Policy:         builtinPol,
+				ListenerPort: tt.listenerPort,
+				Policy:       builtinPol,
 			}
 
 			outputRoute := &envoyroutev3.Route{}
@@ -889,24 +858,19 @@ func TestRequestRedirect(t *testing.T) {
 	}
 }
 
-// TestRequestRedirectMultiListener is a regression test for
-// https://github.com/kgateway-dev/kgateway/issues/13889. When a single
-// HTTPRoute with a requestRedirect filter (scheme and port both unset) is
-// attached to multiple Gateway listeners on different ports, each listener's
-// route must emit its own listener port in the Location header — not whichever
-// port happened to be translated first.
-func TestRequestRedirectMultiListener(t *testing.T) {
-	// scheme and port both nil -> redirect port is the listener's port.
-	filter := &gwv1.HTTPRequestRedirectFilter{
+// Regression for https://github.com/kgateway-dev/kgateway/issues/13889: one HTTPRoute attached to
+// multiple listeners must not share a single RedirectAction; listener-specific port post-processing
+// must not overwrite other listeners' routes.
+func TestRequestRedirectSamePolicyMultipleListeners(t *testing.T) {
+	redirectIR, err := convertRequestRedirectIR(nil, &gwv1.HTTPRequestRedirectFilter{
 		Path: &gwv1.HTTPPathModifier{
 			Type:            gwv1.FullPathHTTPPathModifier,
-			ReplaceFullPath: new("/somewhere/"),
+			ReplaceFullPath: ptr.To("/somewhere/"),
 		},
-		StatusCode: new(301),
-	}
-	redirectIR, err := convertRequestRedirectIR(nil, filter, nil, nil)
+		StatusCode: ptr.To(301),
+	}, nil, nil)
 	require.NoError(t, err)
-	require.NotNil(t, redirectIR)
+	require.True(t, redirectIR.NeedsListenerPort)
 
 	builtinPol := &builtinPlugin{
 		filter: &filterIR{
@@ -916,40 +880,15 @@ func TestRequestRedirectMultiListener(t *testing.T) {
 	}
 	pass := &builtinPluginGwPass{}
 
-	// Apply the same PolicyIR to three independent listener contexts, as would
-	// happen when a single HTTPRoute attaches to three listeners on ports 80,
-	// 666, and 8080.
-	type listener struct {
-		port         uint32
-		hasTLS       bool
-		expectedPort uint32 // 0 means no port in Location header
-	}
-	listeners := []listener{
-		{port: 80, hasTLS: false, expectedPort: 0},      // http+80 -> spec says omit port
-		{port: 666, hasTLS: false, expectedPort: 666},   // non-default -> emit 666
-		{port: 8080, hasTLS: false, expectedPort: 8080}, // non-default -> emit 8080
-	}
+	route80 := &envoyroutev3.Route{}
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{ListenerPort: 80, Policy: builtinPol}, route80))
+	route666 := &envoyroutev3.Route{}
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{ListenerPort: 666, Policy: builtinPol}, route666))
+	route8080 := &envoyroutev3.Route{}
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{ListenerPort: 8080, Policy: builtinPol}, route8080))
 
-	routes := make([]*envoyroutev3.Route, len(listeners))
-	for i, l := range listeners {
-		pCtx := &ir.RouteContext{
-			ListenerPort:   l.port,
-			ListenerHasTLS: l.hasTLS,
-			Policy:         builtinPol,
-		}
-		outputRoute := &envoyroutev3.Route{}
-		require.NoError(t, pass.ApplyForRoute(pCtx, outputRoute))
-		routes[i] = outputRoute
-	}
-
-	// Each route must carry its own listener's port. Checking after all
-	// translations completes — if the IR's RedirectAction proto were shared
-	// across listeners, earlier routes would now reflect the last listener's
-	// port.
-	for i, l := range listeners {
-		redirect := routes[i].GetRedirect()
-		require.NotNil(t, redirect, "listener %d (port %d) should have redirect", i, l.port)
-		assert.Equal(t, l.expectedPort, redirect.GetPortRedirect(),
-			"listener %d (port %d) emitted wrong PortRedirect", i, l.port)
-	}
+	assert.Equal(t, uint32(80), route80.GetRedirect().GetPortRedirect())
+	assert.Equal(t, uint32(666), route666.GetRedirect().GetPortRedirect())
+	assert.Equal(t, uint32(8080), route8080.GetRedirect().GetPortRedirect())
+	assert.Equal(t, uint32(0), redirectIR.Redir.GetPortRedirect(), "IR redirect template must keep sentinel port")
 }
