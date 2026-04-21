@@ -92,7 +92,7 @@ jobs:
         } >> "$GITHUB_OUTPUT"
 
     - name: Run scanner
-      uses: google/osv-scanner-action/osv-scanner-action@7222d1c7ee4f96d71d883e0d3c603f1e1705eca9 # v2.3.5
+      uses: google/osv-scanner-action/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
       with:
         scan-args: |-
           --output=results.json
@@ -104,7 +104,7 @@ jobs:
       continue-on-error: true
 
     - name: Convert results to SARIF
-      uses: google/osv-scanner-action/osv-reporter-action@7222d1c7ee4f96d71d883e0d3c603f1e1705eca9 # v2.3.5
+      uses: google/osv-scanner-action/osv-reporter-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
       with:
         scan-args: |-
           --output=results.sarif
