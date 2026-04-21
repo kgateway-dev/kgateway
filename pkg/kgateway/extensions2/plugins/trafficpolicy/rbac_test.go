@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins"
 )
 
 // createExpectedMatcher creates an expected matcher structure for testing
@@ -139,7 +138,7 @@ func TestTranslateRBAC(t *testing.T) {
 
 					// Validate each CEL expression can be parsed
 					for _, celExpr := range expectedCELs {
-						parsedExpr, err := plugins.ParseCELExpression(env, celExpr)
+						parsedExpr, err := parseCELExpression(env, celExpr)
 						assert.NoError(t, err, "CEL expression should be valid: %s", celExpr)
 						assert.NotNil(t, parsedExpr, "Parsed CEL expression should not be nil: %s", celExpr)
 					}
