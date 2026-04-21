@@ -490,18 +490,18 @@ $(STAMP_DIR)/generated-code: $(STAMP_DIR)/go-generate-all $(STAMP_DIR)/mod-tidy 
 verify: generated-code  ## Verify that generated code is up to date (always regenerates for CI safety)
 	git diff -U3 --exit-code
 
+ENVOYINIT_DOCKERFILE = cmd/envoyinit/Dockerfile
+ENVOYINIT_DOCKERFILE_TEMPLATE = $(ENVOYINIT_DOCKERFILE).tmpl
+
 .PHONY: generate-all
-generate-all: $(STAMP_DIR)/generated-code  ## Generate all code with optimized dependencies (uses stamp files for speed)
+generate-all: $(STAMP_DIR)/generated-code $(ENVOYINIT_DOCKERFILE) ## Generate all code with optimized dependencies (uses stamp files for speed)
 
 .PHONY: generate
 generate: generate-all  ## Alias for generate
 
-ENVOYINIT_DOCKERFILE = cmd/envoyinit/Dockerfile
-ENVOYINIT_DOCKERFILE_TEMPLATE = $(ENVOYINIT_DOCKERFILE).tmpl
-
 # Force full regeneration by cleaning stamps and generated files
 .PHONY: generated-code
-generated-code: clean-gen clean-stamps $(ENVOYINIT_DOCKERFILE)  ## Force regenerate all code (always runs, ignoring stamps)
+generated-code: clean-gen clean-stamps ## Force regenerate all code (always runs, ignoring stamps)
 	@$(MAKE) --no-print-directory generate-all
 
 # Convenience PHONY targets that trigger stamp-based generation
