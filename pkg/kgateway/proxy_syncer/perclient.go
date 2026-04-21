@@ -19,6 +19,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -276,22 +277,12 @@ func snapshotPerClient(
 	return xdsSnapshotsForUcc
 }
 
-// blackholeClusterName is the sentinel cluster name referenced by routes whose backend could not be
-// resolved. It is never materialized as a cluster in the xDS snapshot, so we must not treat its
-// absence as a missing-cluster condition that blocks snapshot emission.
-const blackholeClusterName = "blackhole-cluster"
-
 func findMissingReferencedClusters(
 	routes envoycache.Resources,
 	listeners envoycache.Resources,
 	clusters map[string]envoycachetypes.ResourceWithTTL,
 	erroredClusters []string,
 ) []string {
-	presentClusters := make(map[string]struct{}, len(clusters))
-	for name := range clusters {
-		presentClusters[name] = struct{}{}
-	}
-
 	erroredClusterSet := make(map[string]struct{}, len(erroredClusters))
 	for _, name := range erroredClusters {
 		erroredClusterSet[name] = struct{}{}
@@ -303,13 +294,13 @@ func findMissingReferencedClusters(
 
 	missingClusters := make([]string, 0, len(referencedClusters))
 	for name := range referencedClusters {
-		if _, ok := presentClusters[name]; ok {
+		if _, ok := clusters[name]; ok {
 			continue
 		}
 		if _, ok := erroredClusterSet[name]; ok {
 			continue
 		}
-		if name == blackholeClusterName {
+		if name == wellknown.BlackholeClusterName {
 			continue
 		}
 		missingClusters = append(missingClusters, name)
@@ -416,6 +407,9 @@ func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClus
 	if anyMsg, ok := msg.Interface().(*anypb.Any); ok {
 		nestedMsg, err := anyMsg.UnmarshalNew()
 		if err != nil {
+			// Typed extensions whose Go types aren't linked into this binary will fail here;
+			// that's expected, but log at debug so genuinely malformed configs are diagnosable.
+			logger.Debug("skipping typed_config during cluster reference scan", "type_url", anyMsg.GetTypeUrl(), "error", err)
 			return
 		}
 		collectProtoClusterReferences(nestedMsg, referencedClusters)

@@ -1487,7 +1487,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 		// still use its cluster name in case it comes up later?
 		// if so we need to think about the way create cluster names,
 		// so it only depends on the backend-ref
-		clusterName := "blackhole-cluster"
+		clusterName := wellknown.BlackholeClusterName
 		if backend != nil {
 			clusterName = backend.ClusterName()
 		} else if err == nil {
@@ -1510,7 +1510,7 @@ func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSourc
 	backends := make([]ir.BackendRefIR, 0, len(i))
 	for _, ref := range i {
 		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
-		clusterName := "blackhole-cluster"
+		clusterName := wellknown.BlackholeClusterName
 		if backend != nil {
 			clusterName = backend.ClusterName()
 		} else if err == nil {
