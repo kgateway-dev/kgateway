@@ -125,6 +125,7 @@ jobs:
         path: ${{ matrix.env-versions.file }}
         log-variables: true
     - name: Setup KinD Cluster
+      if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
       uses: ./.github/actions/setup-kind-cluster
       with:
         gateway-api-version: ${{ matrix.gateway-api-version.version }}
@@ -134,6 +135,18 @@ jobs:
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
         localstack: "true"
+    - name: Setup k3d Cluster
+      if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
+      uses: ./.github/actions/setup-k3d-cluster
+      with:
+        gateway-api-version: ${{ matrix.gateway-api-version.version }}
+        gateway-api-channel: ${{ matrix.gateway-api-version.channel }}
+        cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+        istio-version: ${{ steps.dotenv.outputs.istio_version }}
+        node-version: ${{ steps.dotenv.outputs.node_version }}
+        localstack: "true"
+        github-token: ${{ github.token }}
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
       env:
@@ -144,6 +157,7 @@ jobs:
         GOTESTSUM_ARGS: '--format=standard-verbose --rerun-fails-max-failures 25'
       with:
         cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+        cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
         test-args: '-timeout=120m'
         run-regex: ${{ matrix.controllers.regex }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}

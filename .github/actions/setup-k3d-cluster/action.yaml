@@ -1,0 +1,56 @@
+name: Setup k3d Cluster
+
+description: The action that will seed a k3d cluster.
+
+inputs:
+  cluster-name:
+    required: true
+    description: The name of the k3d cluster
+  node-version:
+    required: true
+    description: The k8s node version with optional '@.*' suffix that we ignore as we extract the semver to build the k3d image tag
+  kubectl-version:
+    required: true
+    description: The version of Kubectl
+  istio-version:
+    required: true
+    description: The version of Istio
+  gateway-api-version:
+    required: false
+    default: "" # If this is undefined the setup-k3d script has its own default value
+    description: The version of the gateway-api to use
+  gateway-api-channel:
+    required: false
+    default: "" # If this is undefined the setup-k3d script has its own default value
+    description: The channel of the gateway-api to use
+  localstack:
+    required: false
+    default: "false"
+    description: Whether to install localstack
+  github-token:
+    required: false
+    default: ""
+    description: GitHub token to avoid API rate limiting when installing k3d
+runs:
+  using: "composite"
+  steps:
+    - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4.0.1
+      id: kubectl
+      with:
+        version: ${{ inputs.kubectl-version }}
+    - name: Install k3d
+      uses: nolar/setup-k3d-k3s@62c9d1bd2bc843275c85d2e7dcd696edc1160eee # v1.1.0
+      with:
+        skip-creation: true
+        github-token: ${{ inputs.github-token }}
+    - name: Setup test env
+      shell: bash
+      env:
+        CLUSTER_NAME: ${{ inputs.cluster-name }}
+        NODE_VERSION: ${{ inputs.node-version }}
+        ISTIO_VERSION: ${{ inputs.istio-version }}
+        CONFORMANCE_VERSION: ${{ inputs.gateway-api-version }}
+        CONFORMANCE_CHANNEL: ${{ inputs.gateway-api-channel }}
+        LOCALSTACK: ${{ inputs.localstack }}
+      run: |
+        ./hack/k3d/setup-k3d.sh

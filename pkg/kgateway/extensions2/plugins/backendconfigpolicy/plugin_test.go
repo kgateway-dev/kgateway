@@ -286,6 +286,28 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "circuit breakers with track remaining",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					CircuitBreakers: &kgateway.CircuitBreakers{
+						MaxConnections: new(int32(100)),
+						TrackRemaining: func() *bool { v := true; return &v }(),
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				CircuitBreakers: &envoyclusterv3.CircuitBreakers{
+					Thresholds: []*envoyclusterv3.CircuitBreakers_Thresholds{
+						{
+							MaxConnections: &wrapperspb.UInt32Value{Value: 100},
+							TrackRemaining: true,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "upstream proxy protocol V1 without TLS",
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
