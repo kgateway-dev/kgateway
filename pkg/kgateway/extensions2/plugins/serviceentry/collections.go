@@ -138,6 +138,7 @@ func initServiceEntryCollections(
 		WorkloadEntries,
 		commonCols.LocalityPods,
 		opts.Aliaser,
+		opts.WEExclusionLabelKeys,
 	)
 
 	// init the outputs
@@ -180,6 +181,7 @@ func selectedWorkloads(
 	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry],
 	Pods krt.Collection[krtcollections.LocalityPod],
 	aliaser Aliaser,
+	weExclusionLabelKeys sets.Set[string],
 ) (
 	krt.Collection[selectedWorkload],
 	krt.Index[string, selectedWorkload],
@@ -198,6 +200,11 @@ func selectedWorkloads(
 
 	// WorkloadEntries: selection logic and convert to Pod
 	selectedWorkloadEntries := krt.NewCollection(WorkloadEntries, func(ctx krt.HandlerContext, we *networkingclient.WorkloadEntry) *selectedWorkload {
+		// exclude WEs whose labels contain any of the configured exclusion keys
+		if workloadEntryIsExcluded(we.GetLabels(), weExclusionLabelKeys) {
+			return nil
+		}
+
 		// find all the SEs that select this we
 		// if there are none, we can stop early
 		selectedByServiceEntries := krt.Fetch(
@@ -336,6 +343,16 @@ func parseWorkloadEntryLocality(locality string) ir.PodLocality {
 		out.Subzone = parts[2]
 	}
 	return out
+}
+
+// workloadEntryIsExcluded returns true if the WorkloadEntry's labels contain any key from the exclusion set.
+func workloadEntryIsExcluded(weLabels map[string]string, exclusionKeys sets.Set[string]) bool {
+	for key := range exclusionKeys {
+		if _, ok := weLabels[key]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func isDNSServiceEntry(se *networkingclient.ServiceEntry) bool {
