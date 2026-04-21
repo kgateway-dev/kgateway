@@ -83,7 +83,7 @@ func IsDelegatedRouteMatch(
 		return false
 	}
 	childPath := routeutils.NormalizePathMatch(*child.Path.Type, *child.Path.Value)
-	if !strings.HasPrefix(childPath, parentPath) {
+	if !pathPrefixMatchesPath(parentPath, childPath) {
 		return false
 	}
 
@@ -121,4 +121,10 @@ func IsDelegatedRouteMatch(
 	}
 
 	return true
+}
+
+func pathPrefixMatchesPath(parentPath, childPath string) bool {
+	return parentPath == "/" ||
+		childPath == parentPath ||
+		strings.HasPrefix(childPath, parentPath+"/")
 }
