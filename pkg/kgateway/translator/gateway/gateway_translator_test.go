@@ -2338,6 +2338,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HTTP RequestRedirect filter multiple listeners listener-scoped port", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-routing/request-redirect-multi-listener.yaml",
+			outputFile: "http-routing/request-redirect-multi-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with proxy protocol on HTTP listener", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy/http-proxy-protocol.yaml",
