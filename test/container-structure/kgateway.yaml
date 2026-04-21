@@ -1,0 +1,37 @@
+schemaVersion: 2.0.0
+
+# Container structure tests for the kgateway image
+# Tests verify the image meets security and correctness requirements
+
+# UID 10101 must match the helm chart's securityContext.runAsUser
+# (see pkg/deployer/gateway_parameters.go)
+metadataTest:
+  user: "10101"
+  entrypoint: ["/usr/local/bin/kgateway"]
+
+fileExistenceTests:
+  - name: "kgateway binary exists"
+    path: "/usr/local/bin/kgateway"
+    shouldExist: true
+    permissions: "-rwxr-xr-x"
+    isExecutableBy: "owner"
+
+  - name: "ca-certificates installed"
+    path: "/etc/ssl/certs/ca-certificates.crt"
+    shouldExist: true
+
+  - name: "wget installed"
+    path: "/usr/bin/wget"
+    shouldExist: true
+    isExecutableBy: "any"
+
+commandTests:
+  - name: "kgateway binary is executable"
+    command: "/usr/local/bin/kgateway"
+    args: ["--help"]
+    exitCode: 0
+
+  - name: "running as non-root user"
+    command: "id"
+    args: ["-u"]
+    expectedOutput: ["10101"]
