@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 #
-# Setup script for kgateway on a kind cluster using released artifacts.
+# Setup script for kgateway on a kind or k3d cluster using released artifacts.
 #
 # This is useful for quickly reproducing bugs or testing released versions
 # the same way a user would, without building from source.
 #
-# Usage: ./hack/setup-kind-via-release.sh [options]
+# Usage: ./hack/setup-via-release.sh [options]
 #
 # This script:
-#   1. Creates a kind cluster
-#   2. Optionally installs MetalLB for LoadBalancer support
+#   1. Creates a kind (default) or k3d cluster
+#   2. Optionally installs MetalLB (kind) or a lightweight IP assigner (k3d)
 #   3. Installs Gateway API CRDs (standard or experimental)
 #   4. Installs kgateway via helm from released OCI charts
 #   5. Optionally creates a GatewayClass, Gateway, and DirectResponse smoke test
@@ -19,6 +19,7 @@ set -euo pipefail
 
 # --- Defaults ---
 
+cluster_type="kind"
 cluster_name=""
 kgw_version="v2.3.0-main"
 helm_registry="oci://cr.kgateway.dev/kgateway-dev/charts"
@@ -33,6 +34,7 @@ enable_gateway=true
 gateway_name="kgw"
 gateway_class_name="kgateway"
 kind_cmd="go tool kind"
+k3d_cmd="k3d"
 helm_cmd="go tool helm"
 
 # --- Usage ---
@@ -41,39 +43,46 @@ usage() {
     cat <<EOF
 Usage: $(basename "$0") [options]
 
-Sets up kgateway on a kind cluster using released artifacts.
+Sets up kgateway on a kind or k3d cluster using released artifacts.
 
 Options:
   -h, --help                     Show this help message
-  -c, --cluster-name NAME        Kind cluster name             (default: kind-kgw-<version>-gw-<gw-version>-<channel>)
+  --k3d                          Use k3d instead of kind
+  -c, --cluster-name NAME        Cluster name                   (default: <type>-kgw-<version>-gw-<gw-version>-<channel>)
   -v, --version VERSION          kgateway helm chart version    (default: v2.3.0-main)
   -r, --registry URL             Helm OCI registry              (default: oci://cr.kgateway.dev/kgateway-dev/charts)
   -n, --namespace NS             Install namespace              (default: kgateway-system)
-  -k, --k8s-version VER          kindest/node image tag (see https://hub.docker.com/r/kindest/node/tags)
+  -k, --k8s-version VER          Node image version             (kind: kindest/node tag, k3d: k3s semver)
   --gateway-api-version VER      Gateway API CRD version        (default: v1.2.1)
   --gateway-api-channel CHAN     standard or experimental       (default: standard)
-  --metallb                      Install MetalLB (off by default)
+  --metallb                      Install MetalLB (kind only, off by default)
   --metallb-version VER          MetalLB version                (default: v0.13.7)
-  --cloud-provider-kind          Run cloud-provider-kind for LoadBalancer support (off by default)
+  --cloud-provider-kind          Run cloud-provider-kind for LoadBalancer support (kind only, off by default)
   --no-gateway                   Skip GatewayClass/Gateway/HTTPRoute creation
   --gateway-name NAME            Name for the Gateway           (default: kgw)
   --gateway-class-name NAME      Name for the GatewayClass      (default: kgateway)
 
 Examples:
-  # Default: latest rolling main build
-  ./hack/setup-kind-via-release.sh
+  # Default: kind cluster with latest rolling main build
+  ./hack/setup-via-release.sh
+
+  # k3d cluster
+  ./hack/setup-via-release.sh --k3d
 
   # Specific release with experimental channel
-  ./hack/setup-kind-via-release.sh -v v2.1.0 --gateway-api-channel experimental
+  ./hack/setup-via-release.sh -v v2.1.0 --gateway-api-channel experimental
 
-  # Specific k8s version with MetalLB
-  ./hack/setup-kind-via-release.sh -k v1.31.12 --metallb
+  # Specific k8s version with MetalLB (kind)
+  ./hack/setup-via-release.sh -k v1.31.12 --metallb
+
+  # k3d with specific k8s version
+  ./hack/setup-via-release.sh --k3d -k v1.35.0
 
   # With cloud-provider-kind for LoadBalancer IP assignment
-  ./hack/setup-kind-via-release.sh --cloud-provider-kind
+  ./hack/setup-via-release.sh --cloud-provider-kind
 
   # Install kgateway only, no Gateway resources
-  ./hack/setup-kind-via-release.sh --no-gateway
+  ./hack/setup-via-release.sh --no-gateway
 EOF
     exit 0
 }
@@ -84,6 +93,8 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help)
             usage ;;
+        --k3d)
+            cluster_type="k3d"; shift ;;
         -c|--cluster-name)
             cluster_name="$2"; shift 2 ;;
         -v|--version)
@@ -124,8 +135,10 @@ gateway_api_version="${gateway_api_version#v}"
 # Compute default cluster name from versions if not explicitly set.
 # e.g. kind-kgw-2.3.0-main-gw-1.2.1-standard
 if [[ -z "${cluster_name}" ]]; then
-    cluster_name="kind-kgw-${kgw_version}-gw-${gateway_api_version}-${gateway_api_channel}"
+    cluster_name="${cluster_type}-kgw-${kgw_version}-gw-${gateway_api_version}-${gateway_api_channel}"
 fi
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # --- Functions ---
 
@@ -146,29 +159,79 @@ create_kind_cluster() {
     kubectl wait --for=condition=Ready nodes --all --timeout=120s
 }
 
-maybe_install_metallb() {
-    if [[ "${enable_metallb}" != "true" ]]; then
-        echo "Skipping MetalLB (use --metallb to install)"
-        return
+create_k3d_cluster() {
+    if $k3d_cmd cluster list -o json 2>/dev/null | jq -e ".[] | select(.name==\"${cluster_name}\")" > /dev/null 2>&1; then
+        echo "k3d cluster '${cluster_name}' already exists, using existing cluster"
+    else
+        echo "Creating k3d cluster '${cluster_name}'..."
+        local k3d_args=(cluster create "${cluster_name}")
+
+        # Build the k3s node image tag from the k8s version.
+        # Strip any @sha256 suffix to get the semver, then append -k3s1.
+        if [[ -n "${k8s_version}" ]]; then
+            local k3s_semver="${k8s_version%%@*}"
+            k3d_args+=(--image "rancher/k3s:${k3s_semver}-k3s1")
+        fi
+
+        # Disable built-in traefik and servicelb to avoid conflicts.
+        # Unlike the dev setup (setup-k3d.sh), we do NOT bind host ports 80/443
+        # so that multiple k3d clusters can coexist. Access is via the Docker
+        # network IPs assigned by k3d-loadbalancer.sh (or kubectl port-forward).
+        k3d_args+=(
+            --k3s-arg "--disable=traefik@server:0"
+            --k3s-arg "--disable=servicelb@server:0"
+        )
+        $k3d_cmd "${k3d_args[@]}"
     fi
 
-    echo "Installing MetalLB ${metallb_version}..."
-    local script_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    METALLB_VERSION="${metallb_version}" . "${script_dir}/kind/setup-metalllb-on-kind.sh"
-    echo "MetalLB configured"
+    kubectl config use-context "k3d-${cluster_name}"
+    echo "Waiting for cluster nodes to be ready..."
+    kubectl wait --for=condition=Ready nodes --all --timeout=120s
 }
 
-maybe_start_cloud_provider_kind() {
-    if [[ "${enable_cloud_provider_kind}" != "true" ]]; then
-        echo "Skipping cloud-provider-kind (use --cloud-provider-kind to enable)"
+create_cluster() {
+    if [[ "${cluster_type}" == "k3d" ]]; then
+        create_k3d_cluster
+    else
+        create_kind_cluster
+    fi
+}
+
+maybe_setup_loadbalancer() {
+    if [[ "${cluster_type}" == "k3d" ]]; then
+        # k3d uses a lightweight background IP assigner instead of MetalLB.
+        if [[ "${enable_metallb}" == "true" ]]; then
+            echo "Note: --metallb is ignored for k3d; using lightweight IP assigner instead"
+        fi
+        if [[ "${enable_cloud_provider_kind}" == "true" ]]; then
+            echo "Note: --cloud-provider-kind is ignored for k3d; using lightweight IP assigner instead"
+        fi
+        if pgrep -f "k3d-loadbalancer.sh ${cluster_name}$" > /dev/null 2>&1; then
+            echo "k3d LoadBalancer IP assigner already running for cluster ${cluster_name}"
+        else
+            echo "Starting k3d LoadBalancer IP assigner..."
+            nohup "${script_dir}/k3d/k3d-loadbalancer.sh" "${cluster_name}" > "/tmp/k3d-lb-${cluster_name}.log" 2>&1 &
+            disown
+            echo "k3d LoadBalancer IP assigner running (log: /tmp/k3d-lb-${cluster_name}.log)"
+        fi
         return
     fi
 
-    echo "Starting cloud-provider-kind..."
-    local script_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    . "${script_dir}/kind/setup-cloud-provider-kind.sh"
+    # kind: MetalLB and/or cloud-provider-kind
+    if [[ "${enable_metallb}" == "true" ]]; then
+        echo "Installing MetalLB ${metallb_version}..."
+        METALLB_VERSION="${metallb_version}" . "${script_dir}/kind/setup-metalllb-on-kind.sh"
+        echo "MetalLB configured"
+    else
+        echo "Skipping MetalLB (use --metallb to install)"
+    fi
+
+    if [[ "${enable_cloud_provider_kind}" == "true" ]]; then
+        echo "Starting cloud-provider-kind..."
+        . "${script_dir}/kind/setup-cloud-provider-kind.sh"
+    else
+        echo "Skipping cloud-provider-kind (use --cloud-provider-kind to enable)"
+    fi
 }
 
 install_gateway_api_crds() {
@@ -266,14 +329,13 @@ EOF
 
 # --- Main ---
 
-echo "=== Setting up kgateway v${kgw_version} on kind cluster '${cluster_name}' ==="
+echo "=== Setting up kgateway v${kgw_version} on ${cluster_type} cluster '${cluster_name}' ==="
 echo "  Gateway API: v${gateway_api_version} (${gateway_api_channel})"
 echo "  Namespace:   ${namespace}"
 echo ""
 
-create_kind_cluster
-maybe_install_metallb
-maybe_start_cloud_provider_kind
+create_cluster
+maybe_setup_loadbalancer
 install_gateway_api_crds
 install_kgateway
 maybe_create_gateway
@@ -308,4 +370,8 @@ echo "  kubectl get pods -n ${namespace}"
 echo "  kubectl get deployment -n default"
 echo ""
 echo "To tear down:"
-echo "  ${kind_cmd} delete cluster --name ${cluster_name}"
+if [[ "${cluster_type}" == "k3d" ]]; then
+    echo "  ${k3d_cmd} cluster delete ${cluster_name}"
+else
+    echo "  ${kind_cmd} delete cluster --name ${cluster_name}"
+fi

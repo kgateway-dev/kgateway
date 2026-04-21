@@ -1964,6 +1964,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with Circuit Breakers track remaining", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendconfigpolicy/circuitbreakers-track-remaining.yaml",
+			outputFile: "backendconfigpolicy/circuitbreakers-track-remaining.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy with upstream proxy protocol V1", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backendconfigpolicy/upstream-proxy-protocol-v1.yaml",
@@ -2356,6 +2367,17 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-tcp-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with proxy protocol allowing requests without header", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/http-proxy-protocol-allow-no-header.yaml",
+			outputFile: "listener-policy/http-proxy-protocol-allow-no-header.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
 			},
 		})
 	})
