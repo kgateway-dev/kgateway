@@ -2404,17 +2404,6 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("ListenerPolicy with RBAC per port settings", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFile:  "listener-policy/rbac-network-per-port.yaml",
-			outputFile: "listener-policy/rbac-network-per-port.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-		})
-	})
-
 	t.Run("ListenerPolicy with per-listener mTLS override", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy/per-listener-mtls.yaml",

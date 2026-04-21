@@ -3187,11 +3187,6 @@ func (in *ListenerConfig) DeepCopyInto(out *ListenerConfig) {
 		*out = new(int32)
 		**out = **in
 	}
-	if in.RBAC != nil {
-		in, out := &in.RBAC, &out.RBAC
-		*out = new(shared.Authorization)
-		(*in).DeepCopyInto(*out)
-	}
 	if in.HTTPSettings != nil {
 		in, out := &in.HTTPSettings, &out.HTTPSettings
 		*out = new(HTTPSettings)
