@@ -38,7 +38,9 @@ func HostnameAliaser(se *networkingclient.ServiceEntry) []ir.ObjectSource {
 type Options struct {
 	Aliaser
 	// WEExclusionLabelKeys is the set of label keys that, if present on a WorkloadEntry,
-	// cause it to be excluded from endpoint discovery. When nil, no WorkloadEntries are excluded.
+	// cause it to be excluded from endpoint discovery. When nil, the default from
+	// Settings.WEExclusionLabels is used. Use an empty set to explicitly disable
+	// exclusions.
 	WEExclusionLabelKeys sets.Set[string]
 }
 

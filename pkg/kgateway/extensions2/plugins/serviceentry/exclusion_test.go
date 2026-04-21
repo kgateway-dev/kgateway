@@ -55,44 +55,58 @@ func TestParseExclusionLabels(t *testing.T) {
 
 func TestWorkloadEntryIsExcluded(t *testing.T) {
 	tests := []struct {
-		name          string
-		weLabels      map[string]string
-		exclusionKeys sets.Set[string]
-		want          bool
+		name           string
+		metadataLabels map[string]string
+		specLabels     map[string]string
+		exclusionKeys  sets.Set[string]
+		want           bool
 	}{
 		{
-			name:          "nil exclusion set never excludes",
-			weLabels:      map[string]string{"example.io/managed-by": "some-controller"},
-			exclusionKeys: nil,
-			want:          false,
+			name:           "nil exclusion set never excludes",
+			metadataLabels: map[string]string{"example.io/managed-by": "some-controller"},
+			exclusionKeys:  nil,
+			want:           false,
 		},
 		{
-			name:          "WE without any exclusion key is not excluded",
-			weLabels:      map[string]string{"app": "foo"},
-			exclusionKeys: sets.New("example.io/managed-by"),
-			want:          false,
+			name:           "WE without any exclusion key is not excluded",
+			metadataLabels: map[string]string{"app": "foo"},
+			exclusionKeys:  sets.New("example.io/managed-by"),
+			want:           false,
 		},
 		{
-			name:          "WE with matching exclusion key is excluded regardless of value",
-			weLabels:      map[string]string{"example.io/managed-by": "some-controller"},
+			name:           "exclusion key in metadata labels is excluded",
+			metadataLabels: map[string]string{"example.io/managed-by": "some-controller"},
+			exclusionKeys:  sets.New("example.io/managed-by"),
+			want:           true,
+		},
+		{
+			name:           "exclusion key in spec labels is excluded",
+			metadataLabels: map[string]string{"app": "foo"},
+			specLabels:     map[string]string{"example.io/managed-by": "some-controller"},
+			exclusionKeys:  sets.New("example.io/managed-by"),
+			want:           true,
+		},
+		{
+			name:          "exclusion key only in spec labels is excluded regardless of value",
+			specLabels:    map[string]string{"example.io/managed-by": ""},
 			exclusionKeys: sets.New("example.io/managed-by"),
 			want:          true,
 		},
 		{
-			name:          "WE matching the second key in the exclusion set is excluded",
-			weLabels:      map[string]string{"example.io/other-key": "some-value"},
-			exclusionKeys: sets.New("example.io/managed-by", "example.io/other-key"),
-			want:          true,
+			name:           "WE matching the second key in the exclusion set is excluded",
+			metadataLabels: map[string]string{"example.io/other-key": "some-value"},
+			exclusionKeys:  sets.New("example.io/managed-by", "example.io/other-key"),
+			want:           true,
 		},
 		{
-			name:          "WE with empty labels is not excluded",
-			weLabels:      map[string]string{},
-			exclusionKeys: sets.New("example.io/managed-by"),
-			want:          false,
+			name:           "WE with empty labels is not excluded",
+			metadataLabels: map[string]string{},
+			specLabels:     map[string]string{},
+			exclusionKeys:  sets.New("example.io/managed-by"),
+			want:           false,
 		},
 		{
-			name:          "nil WE labels is not excluded",
-			weLabels:      nil,
+			name:          "nil metadata and spec labels are not excluded",
 			exclusionKeys: sets.New("example.io/managed-by"),
 			want:          false,
 		},
@@ -100,7 +114,7 @@ func TestWorkloadEntryIsExcluded(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := workloadEntryIsExcluded(tt.weLabels, tt.exclusionKeys)
+			got := workloadEntryIsExcluded(tt.metadataLabels, tt.specLabels, tt.exclusionKeys)
 			assert.Equal(t, tt.want, got)
 		})
 	}
