@@ -585,6 +585,22 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name: "child route matches parent when parent prefix has trailing slash",
+			parent: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Value: new("/foo/"),
+				},
+			},
+			child: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Value: new("/foo/bar"),
+				},
+			},
+			expected: true,
+		},
 	}
 
 	for _, tc := range testCases {

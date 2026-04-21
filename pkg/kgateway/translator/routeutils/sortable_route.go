@@ -1,6 +1,8 @@
 package routeutils
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -63,7 +65,22 @@ func ParsePath(path *gwv1.HTTPPathMatch) (gwv1.PathMatchType, string) {
 	if path != nil && path.Value != nil {
 		pathValue = *path.Value
 	}
-	return pathType, pathValue
+	return pathType, NormalizePathMatch(pathType, pathValue)
+}
+
+// NormalizePathMatch applies Gateway API PathPrefix semantics before downstream comparisons
+// and xDS translation. Per spec, a trailing slash on a PathPrefix value is ignored.
+func NormalizePathMatch(pathType gwv1.PathMatchType, pathValue string) string {
+	if pathType != gwv1.PathMatchPathPrefix || pathValue == "/" {
+		return pathValue
+	}
+
+	normalized := strings.TrimRight(pathValue, "/")
+	if normalized == "" {
+		return "/"
+	}
+
+	return normalized
 }
 
 func lessPath(a, b *gwv1.HTTPPathMatch) *bool {

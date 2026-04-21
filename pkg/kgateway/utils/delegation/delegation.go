@@ -8,6 +8,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
@@ -74,14 +75,14 @@ func IsDelegatedRouteMatch(
 	child gwv1.HTTPRouteMatch,
 ) bool {
 	// Validate path
-	if parent.Path == nil || parent.Path.Type == nil || *parent.Path.Type != gwv1.PathMatchPathPrefix {
+	if parent.Path == nil || parent.Path.Type == nil || parent.Path.Value == nil || *parent.Path.Type != gwv1.PathMatchPathPrefix {
 		return false
 	}
-	parentPath := *parent.Path.Value
-	if child.Path == nil || child.Path.Type == nil {
+	parentPath := routeutils.NormalizePathMatch(*parent.Path.Type, *parent.Path.Value)
+	if child.Path == nil || child.Path.Type == nil || child.Path.Value == nil {
 		return false
 	}
-	childPath := *child.Path.Value
+	childPath := routeutils.NormalizePathMatch(*child.Path.Type, *child.Path.Value)
 	if !strings.HasPrefix(childPath, parentPath) {
 		return false
 	}
