@@ -181,3 +181,6 @@ fn deny<EHF: EnvoyHttpFilter>(
     );
     abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration
 }
+
+#[cfg(test)]
+mod test;

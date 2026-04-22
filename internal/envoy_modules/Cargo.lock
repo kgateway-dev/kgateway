@@ -244,6 +244,7 @@ version = "0.1.0"
 dependencies = [
  "acl",
  "envoy-proxy-dynamic-modules-rust-sdk",
+ "mockall",
 ]
 
 [[package]]
