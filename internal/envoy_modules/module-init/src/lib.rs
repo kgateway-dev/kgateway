@@ -38,7 +38,7 @@ fn init() -> bool {
 /// To add a new filter: add a match arm below and a corresponding dependency in Cargo.toml.
 /// See ../../docs/guides/adding-a-filter.md for the full process.
 fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
-    _envoy_filter_config: &mut EC,
+    envoy_filter_config: &mut EC,
     filter_name: &str,
     filter_config: &[u8],
 ) -> Option<Box<dyn HttpFilterConfig<EHF>>> {
@@ -54,8 +54,10 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
         // Add a new arm here for each new filter. See ../../docs/guides/adding-a-filter.md.
         "rustformation" => rustformation_filter::FilterConfig::new(filter_config)
             .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EHF>>),
+        "http-acl" => http_acl_filter::FilterConfig::new(envoy_filter_config, filter_config)
+            .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EHF>>),
         _ => panic!(
-            "Unknown filter name: {}, known filters are: rustformation",
+            "Unknown filter name: {}, known filters are: rustformation, http-acl",
             filter_name
         ),
     }
@@ -76,8 +78,10 @@ fn new_http_filter_per_route_config_fn(name: &str, config: &[u8]) -> Option<Box<
         // Add a new arm here for each new filter. See docs/adding-a-filter.md.
         "rustformation" => rustformation_filter::PerRouteConfig::new(per_route_config)
             .map(|config| Box::new(config) as Box<dyn Any>),
+        "http-acl" => http_acl_filter::PerRouteConfig::new(per_route_config)
+            .map(|config| Box::new(config) as Box<dyn Any>),
         _ => panic!(
-            "Unknown filter name: {}, known filters are: rustformation",
+            "Unknown filter name: {}, known filters are: rustformation, http-acl",
             name
         ),
     }

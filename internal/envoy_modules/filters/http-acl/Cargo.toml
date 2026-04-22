@@ -1,0 +1,8 @@
+[package]
+name = "http-acl-filter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+envoy-proxy-dynamic-modules-rust-sdk = { workspace = true }
+acl = { path = "../../lib/acl" }
