@@ -1,11 +1,24 @@
-# How to use this?
+# How to use this
 
-Run like so
+`hack/utils/applier/go.mod` and `hack/utils/applier/go.sum` are intentionally no longer tracked.
+If you need to run this utility, create them locally once:
 
+```bash
+cd hack/utils/applier
+go mod init github.com/kgateway-dev/kgateway/v2/hack/utils/applier
+go mod tidy
 ```
-go run main.go apply -f yamls.yaml --iterations 3000
+
+Those files are gitignored and should not be committed.
+
+Then run the tool from `hack/utils/applier`:
+
+```bash
+cd hack/utils/applier
+go run . apply -f yamls.yaml --iterations 3000
 ```
-This will apply the template in yamls.yaml 3000 times.
+
+This applies the template in `yamls.yaml` 3000 times.
 The template has an `.Index` variable you can use.
 
 For example, for a pod, you would have:
@@ -30,12 +43,12 @@ spec:
       - containerPort: 8080
 ```
 
-this will create pods name `app-0`, `app-1`,...
+This creates pods named `app-0`, `app-1`, and so on.
 
 You can also:
 - use `--dry-run` to just print yamls.
 - adjust `--qps` and `--burst` as well.
-- If your broke the cluster, you can use `--start` to continue from where you left off.
+- If you broke the cluster, you can use `--start` to continue from where you left off.
 
 By default, objects will not be overridden. This is because
 that a common failure mode here is that the cluster stops responding. When the cluster recovers you don't need to re-create the same object, so a simple create is enough. To change this behavior use `--force` to first delete objects and then re-create them.
@@ -49,4 +62,4 @@ If you are still not hitting the QPS set, try adding the `--async` flag to have 
 The template is parsed on the field level. This means that the input files must be valid yaml files. This is because the yaml is parsed **before** the template is evaluated.
 Only after the yaml is parsed, we go over all the fields and evaluate the templates on each field.
 
-This is a technical limitation is due to trying to give a similar experience to `kubectl apply`.
+This technical limitation comes from trying to provide an experience similar to `kubectl apply`.

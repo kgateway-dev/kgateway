@@ -9,7 +9,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/cheggaaa/pb/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -60,9 +59,7 @@ func (a *Applier) Apply(dynamicClient dynamic.Interface, factory cmdutil.Factory
 		fmt.Println("objects start: ", time.Now().Format(time.RFC3339))
 		defer func() { fmt.Println("objects done: ", time.Now().Format(time.RFC3339)) }()
 
-		bar := pb.StartNew(expectedNumObjs)
-		bar.SetTemplate(pb.Full)
-		defer bar.Finish()
+		progress := newProgressTracker(expectedNumObjs)
 
 		if !a.Async {
 			firstError := false
@@ -76,7 +73,7 @@ func (a *Applier) Apply(dynamicClient dynamic.Interface, factory cmdutil.Factory
 						}
 						errs = append(errs, err)
 					}
-					bar.Increment()
+					progress.Increment()
 				}
 			}
 		} else {
@@ -91,7 +88,7 @@ func (a *Applier) Apply(dynamicClient dynamic.Interface, factory cmdutil.Factory
 					}
 					errs = append(errs, result.err)
 				}
-				bar.Increment()
+				progress.Increment()
 			}
 			if firstError != nil {
 				fmt.Printf("First error encountered at index: %d %v\n", errIndex, firstError)
@@ -203,6 +200,32 @@ func (a *Applier) runner(ctx context.Context, templateObjects []*TemplateInfo, d
 type TemplateContext struct {
 	Index int
 }
+
+type progressTracker struct {
+	count int
+	step  int
+	total int
+}
+
+func newProgressTracker(total int) *progressTracker {
+	step := total / 20
+	if step < 1 {
+		step = 1
+	}
+
+	return &progressTracker{
+		step:  step,
+		total: total,
+	}
+}
+
+func (p *progressTracker) Increment() {
+	p.count++
+	if p.count == p.total || p.count%p.step == 0 {
+		fmt.Printf("Progress: %d/%d\n", p.count, p.total)
+	}
+}
+
 type TemplateInfo struct {
 	*resource.Info
 	Modifiers         []func(TemplateContext)
