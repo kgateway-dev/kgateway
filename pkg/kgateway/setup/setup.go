@@ -28,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/gatewayapiversion"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
@@ -282,6 +283,18 @@ func New(opts ...func(*setup)) (*setup, error) {
 
 func (s *setup) Start(ctx context.Context) error {
 	slog.Info("starting kgateway")
+
+	// Refuse to start against an unsupported Gateway API bundle version unless
+	// KGW_SKIP_GATEWAY_API_VERSION_CHECK is set. The check is skipped silently
+	// when the Gateway CRD is absent — the controller will surface that
+	// separately via its informers.
+	if s.globalSettings.SkipGatewayAPIVersionCheck {
+		slog.Warn("skipping Gateway API version check because KGW_SKIP_GATEWAY_API_VERSION_CHECK is set")
+	} else {
+		if err := gatewayapiversion.Check(ctx, s.restConfig); err != nil {
+			return fmt.Errorf("unsupported Gateway API version: %w", err)
+		}
+	}
 
 	mgrOpts := s.ctrlMgrOptionsInitFunc(ctx)
 

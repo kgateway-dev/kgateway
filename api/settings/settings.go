@@ -238,6 +238,14 @@ type Settings struct {
 
 	// Enables setting the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
 	EnableAuthMetadata bool `split_words:"true" default:"false"`
+
+	// SkipGatewayAPIVersionCheck disables the startup check that verifies the
+	// installed Gateway API bundle version (read from the
+	// gateway.networking.k8s.io/bundle-version annotation on the Gateway CRD)
+	// is one this release of kgateway supports. When false (the default),
+	// kgateway refuses to start against an unsupported Gateway API version
+	// and points the operator to the docs.
+	SkipGatewayAPIVersionCheck bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
