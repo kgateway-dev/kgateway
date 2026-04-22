@@ -292,6 +292,16 @@ type EnvoyContainer struct {
 
 	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
 
+	// Additional arguments to pass to the Envoy binary.
+	//
+	// Similar to Kubernetes container args, variable references $(VAR_NAME) are
+	// expanded using the container's environment. If a variable cannot be
+	// resolved, the reference is left unchanged. Double $$ are reduced to a
+	// single $, which allows escaping the $(VAR_NAME) syntax.
+	//
+	// +optional
+	ExtraArgs []string `json:"extraArgs,omitempty"`
+
 	// The container environment variables.
 	//
 	// +optional
@@ -331,6 +341,13 @@ func (in *EnvoyContainer) GetResources() *corev1.ResourceRequirements {
 		return nil
 	}
 	return in.Resources
+}
+
+func (in *EnvoyContainer) GetExtraArgs() []string {
+	if in == nil {
+		return nil
+	}
+	return in.ExtraArgs
 }
 
 func (in *EnvoyContainer) GetEnv() []corev1.EnvVar {

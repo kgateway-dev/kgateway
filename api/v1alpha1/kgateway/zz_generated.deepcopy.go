@@ -1448,6 +1448,11 @@ func (in *EnvoyContainer) DeepCopyInto(out *EnvoyContainer) {
 		*out = new(corev1.ResourceRequirements)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ExtraArgs != nil {
+		in, out := &in.ExtraArgs, &out.ExtraArgs
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.Env != nil {
 		in, out := &in.Env, &out.Env
 		*out = make([]corev1.EnvVar, len(*in))

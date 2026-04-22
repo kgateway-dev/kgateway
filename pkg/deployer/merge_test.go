@@ -252,6 +252,36 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 			},
 		},
 		{
+			name: "merges envoy extra args",
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						EnvoyContainer: &kgateway.EnvoyContainer{
+							ExtraArgs: []string{"--base-id", "1"},
+						},
+					},
+				},
+			},
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						EnvoyContainer: &kgateway.EnvoyContainer{
+							ExtraArgs: []string{"--disable-extensions", "envoy.filters.http.lua"},
+						},
+					},
+				},
+			},
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						EnvoyContainer: &kgateway.EnvoyContainer{
+							ExtraArgs: []string{"--base-id", "1", "--disable-extensions", "envoy.filters.http.lua"},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "should have only one probeHandler action",
 			dst: &kgateway.GatewayParameters{
 				Spec: kgateway.GatewayParametersSpec{

@@ -448,6 +448,17 @@ spec:
                           - name
                           type: object
                         type: array
+                      extraArgs:
+                        description: |-
+                          Additional arguments to pass to the Envoy binary.
+
+                          Similar to Kubernetes container args, variable references $(VAR_NAME) are
+                          expanded using the container's environment. If a variable cannot be
+                          resolved, the reference is left unchanged. Double $$ are reduced to a
+                          single $, which allows escaping the $(VAR_NAME) syntax.
+                        items:
+                          type: string
+                        type: array
                       extraVolumeMounts:
                         description: |-
                           Additional volume mounts to add to the container. See
