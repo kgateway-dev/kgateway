@@ -46,7 +46,8 @@ impl FilterConfig {
 impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
     fn new_http_filter(&self, _envoy: &mut EHF) -> Box<dyn HttpFilter<EHF>> {
         Box::new(Filter {
-            acl: Arc::clone(&self.acl),
+            default_acl: Arc::clone(&self.acl),
+            per_route_acl: None,
             blocked_counter: self.blocked_counter,
         })
     }
@@ -69,8 +70,31 @@ impl PerRouteConfig {
 }
 
 struct Filter {
-    acl: Arc<Acl>,
+    default_acl: Arc<Acl>,
+    per_route_acl: Option<Arc<Acl>>,
     blocked_counter: EnvoyCounterId,
+}
+
+impl Filter {
+    fn effective_acl(&self) -> &Acl {
+        match self.per_route_acl.as_deref() {
+            Some(a) => a,
+            None => self.default_acl.as_ref(),
+        }
+    }
+
+    fn set_per_route_config<EHF: EnvoyHttpFilter>(&mut self, envoy_filter: &mut EHF) {
+        if self.per_route_acl.is_some() {
+            return;
+        }
+        let Some(cfg) = envoy_filter.get_most_specific_route_config() else {
+            return;
+        };
+        match cfg.downcast_ref::<PerRouteConfig>() {
+            Some(prc) => self.per_route_acl = Some(Arc::clone(&prc.acl)),
+            None => envoy_log_error!("http-acl: per-route config has unexpected type"),
+        }
+    }
 }
 
 impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
@@ -79,19 +103,21 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         envoy_filter: &mut EHF,
         _end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_headers_status {
+        self.set_per_route_config(envoy_filter);
+        let acl = self.effective_acl();
         let ip = match extract_source_ip(envoy_filter) {
             Some(ip) => ip,
             None => {
                 envoy_log_warn!("http-acl: could not determine downstream source address; denying");
                 return deny(
                     envoy_filter,
-                    self.acl.deny_response(),
+                    acl.deny_response(),
                     Some(BLOCKED_BY_UNKNOWN_IP),
                     self.blocked_counter,
                 );
             }
         };
-        let decision = self.acl.evaluate(ip);
+        let decision = acl.evaluate(ip);
         match decision.action {
             Action::Allow => {
                 abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue
@@ -106,7 +132,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
                 };
                 deny(
                     envoy_filter,
-                    self.acl.deny_response(),
+                    acl.deny_response(),
                     Some(blocked_by),
                     self.blocked_counter,
                 )

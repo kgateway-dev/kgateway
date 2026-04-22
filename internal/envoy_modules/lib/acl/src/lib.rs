@@ -37,7 +37,8 @@ pub struct DenyResponse {
     /// When set, the filter adds a response header with this name carrying
     /// the same value as the `blocked-by` dynamic metadata: the matched rule's
     /// `name`, or `"rule"` for an unnamed rule, or `"default"` for a
-    /// default-action deny.
+    /// default-action deny, or `"unknown-ip"` when the downstream source
+    /// address cannot be determined.
     #[serde(default)]
     pub add_blocked_by_header: Option<String>,
 }

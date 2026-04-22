@@ -13,8 +13,10 @@ Behavior:
 - On deny, the filter writes Envoy dynamic metadata under namespace `dev.kgateway.http.acl`, key `blocked-by`:
     - the matched rule's `name` if the rule had one,
     - the literal string `"rule"` if the matched rule was unnamed,
-    - the literal string `"default"` if no rule matched and the deny came from `defaultAction`.
+    - the literal string `"default"` if no rule matched and the deny came from `defaultAction`,
+    - the literal string `"unknown-ip"` if the downstream `SourceAddress` is missing or unparseable.
 - On every deny, the filter increments the Envoy counter `dev.kgateway.http.acl.blocked` so operators can monitor block volume.
+- If the downstream client IP cannot be determined from Envoy's source address, the filter denies the request (failed closed).
 - IPv4-mapped IPv6 addresses (`::ffff:a.b.c.d`) are unwrapped and evaluated against the IPv4 trie.
 - If no rule matches the client IP, the configured `defaultAction` is used.
 - Bare IPs in rules (no `/` prefix) are treated as `/32` for IPv4 and `/128` for IPv6.
