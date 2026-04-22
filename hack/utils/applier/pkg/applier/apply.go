@@ -36,7 +36,7 @@ type Applier struct {
 
 func (a *Applier) Apply(dynamicClient dynamic.Interface, factory cmdutil.Factory, fo resource.FilenameOptions, validator validation.Schema) error {
 	ctx := context.Background()
-	templateObjects, err := a.getobjects(ctx, factory, fo, validator)
+	templateObjects, err := a.getobjects(factory, fo, validator)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,6 @@ func (a *Applier) Apply(dynamicClient dynamic.Interface, factory cmdutil.Factory
 			}
 		}
 	} else {
-
 		errs := []error{}
 		iterations := (a.End - a.Start)
 		expectedNumObjs := iterations * len(templateObjects)
@@ -105,7 +104,7 @@ func (a *Applier) Apply(dynamicClient dynamic.Interface, factory cmdutil.Factory
 	return nil
 }
 
-func (a *Applier) getobjects(ctx context.Context, factory cmdutil.Factory, fo resource.FilenameOptions, validator validation.Schema) ([]*TemplateInfo, error) {
+func (a *Applier) getobjects(factory cmdutil.Factory, fo resource.FilenameOptions, validator validation.Schema) ([]*TemplateInfo, error) {
 	builder := factory.NewBuilder()
 
 	if a.Workers == 0 {
@@ -167,7 +166,6 @@ func (a *Applier) runner(ctx context.Context, templateObjects []*TemplateInfo, d
 		// put all objects in the queue
 		defer close(queue)
 		for i := a.Start; i < a.End; i++ {
-			i := i
 			queue <- queueItem{
 				index: i,
 			}
@@ -176,9 +174,7 @@ func (a *Applier) runner(ctx context.Context, templateObjects []*TemplateInfo, d
 
 	// spawn workers to process the queue
 	for i := 0; i < a.Workers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for item := range queue {
 				// create objects in order in case there are dependencies
 				for _, obj := range templateObjects {
@@ -186,7 +182,7 @@ func (a *Applier) runner(ctx context.Context, templateObjects []*TemplateInfo, d
 					resultc <- result{index: item.index, err: err}
 				}
 			}
-		}()
+		})
 	}
 
 	go func() {
@@ -208,10 +204,7 @@ type progressTracker struct {
 }
 
 func newProgressTracker(total int) *progressTracker {
-	step := total / 20
-	if step < 1 {
-		step = 1
-	}
+	step := max(total/20, 1)
 
 	return &progressTracker{
 		step:  step,
@@ -242,14 +235,11 @@ func NewTemplateInfo(info *resource.Info) *TemplateInfo {
 	return ti
 }
 
-func (ti *TemplateInfo) addModifiers(obj map[string]interface{}) {
+func (ti *TemplateInfo) addModifiers(obj map[string]any) {
 	// Object is a JSON compatible map with string, float, int, bool, []interface{}, or
 	// map[string]interface{}
 	// children.
 	for k, v := range obj {
-		k := k
-		v := v
-
 		switch v := v.(type) {
 		case string:
 			ti.maybeTemplatify(v, func(n string) {
@@ -257,17 +247,16 @@ func (ti *TemplateInfo) addModifiers(obj map[string]interface{}) {
 			})
 			// test if we need a template
 
-		case map[string]interface{}:
+		case map[string]any:
 			ti.addModifiers(v)
-		case []interface{}:
+		case []any:
 			for i, elem := range v {
-				i := i
 				switch elem := elem.(type) {
 				case string:
 					ti.maybeTemplatify(elem, func(n string) {
 						v[i] = n
 					})
-				case map[string]interface{}:
+				case map[string]any:
 					ti.addModifiers(elem)
 				}
 			}

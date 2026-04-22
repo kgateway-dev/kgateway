@@ -21,7 +21,7 @@ var (
 	numIterations int
 	force         bool
 
-	delete bool
+	deleteResources bool
 
 	async   bool
 	workers int
@@ -84,7 +84,7 @@ var applyCmd = &cobra.Command{
 			End:    endIndex,
 			DryRun: dryRun,
 			Force:  force,
-			Delete: delete,
+			Delete: deleteResources,
 
 			Async:   async,
 			Workers: workers,
@@ -116,5 +116,5 @@ func init() {
 	applyCmd.Flags().BoolVar(&async, "async", false, "Run in async mode. Use this if not hitting your QPS.")
 	applyCmd.Flags().IntVar(&workers, "workers", 10, "Number of workers to use when using async mode. each worker submits requests in parallel.")
 
-	applyCmd.Flags().BoolVar(&delete, "delete", false, "Delete resources instead of applying them (useful for cleanup)")
+	applyCmd.Flags().BoolVar(&deleteResources, "delete", false, "Delete resources instead of applying them (useful for cleanup)")
 }
