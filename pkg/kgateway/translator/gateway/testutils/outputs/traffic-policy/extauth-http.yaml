@@ -93,7 +93,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -164,7 +164,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -284,7 +284,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -323,7 +323,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-      perRouteConfigName: http_simple_mutations
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - example.com
@@ -356,7 +356,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-2-0
       metadata:
@@ -381,7 +381,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-2-1
       metadata:
@@ -401,7 +401,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
         global_disable/ext_auth:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
@@ -416,7 +416,7 @@ Routes:
         filterConfig:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-        perRouteConfigName: http_simple_mutations
+        perRouteConfigName: rustformation
   - domains:
     - no-auth.example.com
     name: listener~80~no-auth_example_com
@@ -445,7 +445,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-      perRouteConfigName: http_simple_mutations
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - tls.example.com
@@ -474,7 +474,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /example-route-tls-section-name
       metadata:
@@ -497,7 +497,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /example-tls-sibling-route
       name: tls1~tls_example_com-route-2-httproute-example-tls-sibling-route-infra-0-0-matcher-0
@@ -526,7 +526,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
 - ignorePortInHostMatching: true
   metadata:
     filterMetadata:
@@ -545,7 +545,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-      perRouteConfigName: http_simple_mutations
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - no-auth-tls.example.com
