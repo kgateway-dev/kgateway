@@ -14,7 +14,6 @@ This directory contains a POC for migrating kgateway's end-to-end tests to use t
 The tests validate basic HTTP routing through a kgateway gateway instance:
 
 1. **TestGatewayWithRoute** - Tests that HTTP requests to a gateway are correctly routed to backend services on both high (8080) and low (80) port listeners with individual assessment steps
-2. **TestGatewayWithRouteUsingAssertionHelper** - Same validation but using a centralized assertion helper from the assertions package
 
 ---
 
@@ -27,14 +26,6 @@ Run `make run` from the repository root to set up everything needed:
 ```bash
 make run
 ```
-
-**What this does:**
-- Creates a kind Kubernetes cluster
-- Installs Kubernetes Gateway API CRDs
-- Builds and loads kgateway controller images
-- Deploys kgateway controller to the cluster
-- Sets up MetalLB for load balancing
-
 This single command handles all infrastructure setup. It may take several minutes the first time.
 
 ### 2. Apply test resources
@@ -74,14 +65,14 @@ Change to the test directory and run:
 
 ```bash
 cd test/e2e_sigs/basicrouting
-go test -timeout 60s ./... -tags=e2e -kubeconfig=$HOME/.kube/config
+go test -v -timeout 60s ./... -tags=e2e -kubeconfig=$HOME/.kube/config
 ```
 
 Run a specific test:
 
 ```bash
 cd test/e2e_sigs/basicrouting
-go test -timeout 30s -run TestGatewayWithRoute ./... -tags=e2e -kubeconfig=$HOME/.kube/config
+go test -v -timeout 30s -run TestGatewayWithRoute ./... -tags=e2e -kubeconfig=$HOME/.kube/config
 ```
 
 ---
@@ -147,14 +138,6 @@ kubectl logs basicrouting-echo -n kgateway-test
 kubectl get gateway,httproute,service,pod -n kgateway-test
 ```
 
----
 
-## Future Work
 
-This POC demonstrates how to:
-- Migrate existing tests to sigs/e2e-framework
-- Organize assertions into reusable packages
-- Document test resources separately
-- Provide clear setup/run instructions
 
-Other tests in the suite can follow the same pattern for consistency.
