@@ -6,8 +6,8 @@ This directory contains a POC for migrating kgateway's end-to-end tests to use t
 
 - **main_test.go** - Initializes the test environment via TestMain
 - **routing_test.go** - Contains the actual test cases
-- **assertions/assertions.go** - Centralized assertion helpers
-- **testdata/** - Kubernetes manifests used in tests (for reference and documentation)
+- **testdata/** - Test-specific Kubernetes manifests (HTTPRoute)
+- **../common/testdata/** - Shared gateway, namespace, and backend used by all e2e_sigs tests
 
 ## What These Tests Validate
 
@@ -26,27 +26,38 @@ Run `make run` from the repository root to set up everything needed:
 ```bash
 make run
 ```
+
+**Note for ARM Mac users:** Add `CLOUD_PROVIDER_KIND=true` if running on ARM architecture:
+
+```bash
+CLOUD_PROVIDER_KIND=true make run
+```
+
 This single command handles all infrastructure setup. It may take several minutes the first time.
 
 ### 2. Apply test resources
 
-Deploy the test Gateway, HTTPRoute, and backend Service to the cluster:
+Deploy the shared gateway/backend and test-specific routes to the cluster:
 
 ```bash
-kubectl apply -f test/e2e_sigs/basicrouting/testdata/gateway-with-route.yaml
-kubectl apply -f test/e2e_sigs/basicrouting/testdata/service.yaml
+# Apply common shared infrastructure (one-time, used by all tests)
+kubectl apply -f test/e2e_sigs/features/common/testdata/gateway.yaml
+kubectl apply -f test/e2e_sigs/features/common/testdata/backend.yaml
+
+# Apply test-specific route
+kubectl apply -f test/e2e_sigs/features/basicrouting/testdata/gateway-with-route.yaml
 ```
 
 **What this does:**
-- Creates a Gateway with two listeners (ports 80 and 8080)
-- Creates an HTTPRoute that routes example.com to the backend
-- Deploys an echo Service and Pod to handle backend requests
+- Creates a shared Gateway with two listeners (ports 80 and 8080)
+- Creates a shared echo backend Service and Pod for all tests to use
+- Creates this test's HTTPRoute that routes example.com to the backend
 
 Wait for resources to be ready:
 
 ```bash
-kubectl wait --for=condition=ready pod/basicrouting-echo -n kgateway-test --timeout=60s
-kubectl wait --for=condition=accepted gateway/basicrouting-gateway -n kgateway-test --timeout=60s
+kubectl wait --for=condition=ready pod/echo-server -n kgateway-test --timeout=60s
+kubectl wait --for=condition=accepted gateway/test-gateway -n kgateway-test --timeout=60s
 ```
 
 ### 3. Run the tests
@@ -56,7 +67,7 @@ kubectl wait --for=condition=accepted gateway/basicrouting-gateway -n kgateway-t
 From the repository root:
 
 ```bash
-make e2e-test TEST_PKG=./test/e2e_sigs/basicrouting
+make e2e-test TEST_PKG=./test/e2e_sigs/features/basicrouting
 ```
 
 #### Option 2: Using go test directly
@@ -64,14 +75,14 @@ make e2e-test TEST_PKG=./test/e2e_sigs/basicrouting
 Change to the test directory and run:
 
 ```bash
-cd test/e2e_sigs/basicrouting
+cd test/e2e_sigs/features/basicrouting
 go test -v -timeout 60s ./... -tags=e2e -kubeconfig=$HOME/.kube/config
 ```
 
 Run a specific test:
 
 ```bash
-cd test/e2e_sigs/basicrouting
+cd test/e2e_sigs/features/basicrouting
 go test -v -timeout 30s -run TestGatewayWithRoute ./... -tags=e2e -kubeconfig=$HOME/.kube/config
 ```
 
@@ -79,19 +90,22 @@ go test -v -timeout 30s -run TestGatewayWithRoute ./... -tags=e2e -kubeconfig=$H
 
 ## Test Resources
 
-The `testdata/` folder contains the Kubernetes manifests:
+### Shared Resources (test/e2e_sigs/features/common/testdata/)
+
+- **gateway.yaml** - Defines:
+  - `kgateway-test` Namespace
+  - A Gateway (`test-gateway`) with two listeners (ports 80 and 8080)
+
+- **backend.yaml** - Defines:
+  - A Service (`echo-backend`) that proxies to the echo server
+  - A Pod (`echo-server`) running `registry.k8s.io/gateway-api/echo-basic`
+
+### Test-Specific Resources (testdata/)
 
 - **gateway-with-route.yaml** - Defines:
-  - A Gateway (`basicrouting-gateway`) with two listeners (ports 80 and 8080)
-  - An HTTPRoute (`basicrouting-route`) that routes example.com to the backend service
-  - Resources are created in the `kgateway-test` namespace
+  - An HTTPRoute (`basicrouting-route`) that routes example.com to the shared backend service
 
-- **service.yaml** - Defines:
-  - `kgateway-test` Namespace
-  - A Service (`basicrouting-backend`) that proxies to the echo server
-  - A Pod running `registry.k8s.io/gateway-api/echo-basic` for simple request/response testing
-
-These resources must be applied to the cluster before running tests. The tests assume they are already installed and do not create/destroy them.
+All resources must be applied to the cluster before running tests. The tests assume they are already installed and do not create/destroy them.
 
 ---
 
@@ -104,15 +118,23 @@ These resources must be applied to the cluster before running tests. The tests a
 3. **.Setup()** - Runs once before assessments to initialize state (e.g., get gateway address)
 4. **.Assess()** - Individual test step that validates behavior
 5. **assertions package** - Reusable assertion helpers to avoid duplication
+6. **Shared Gateway Pattern** - Common gateway/backend resources used by multiple tests
 
 ### Test Flow
 
 1. TestMain initializes the sigs/e2e-framework environment from kubeconfig
 2. Each test feature:
-   - Runs Setup to fetch the gateway address from the cluster
+   - Runs Setup to fetch the shared gateway address from the cluster
    - Stores the gateway in context for use by assessments
    - Runs multiple Assess steps (each testing specific ports/scenarios)
    - Implicitly cleans up context when done
+
+### Shared vs Test-Specific Resources
+
+This test reuses a shared Gateway and backend pod defined in `../common/testdata/`:
+- **Gateway** (`test-gateway`) - Shared by all e2e_sigs tests
+- **Backend** (`echo-server`) - Shared by all e2e_sigs tests
+- **HTTPRoute** (`basicrouting-route`) - Test-specific, defines routing rules for this test
 
 
 ## Debugging
@@ -120,7 +142,7 @@ These resources must be applied to the cluster before running tests. The tests a
 To debug a specific test with verbose output:
 
 ```bash
-cd test/e2e_sigs/basicrouting
+cd test/e2e_sigs/features/basicrouting
 go test -timeout 60s -run TestGatewayWithRoute -v ./... -tags=e2e -kubeconfig=$HOME/.kube/config
 ```
 
@@ -128,11 +150,11 @@ Useful commands for troubleshooting:
 
 ```bash
 # Check gateway has been assigned an address
-kubectl get gateway basicrouting-gateway -n kgateway-test -o jsonpath='{.status.addresses[0].value}'
+kubectl get gateway test-gateway -n kgateway-test -o jsonpath='{.status.addresses[0].value}'
 
 # Verify echo backend is running
-kubectl get pod basicrouting-echo -n kgateway-test
-kubectl logs basicrouting-echo -n kgateway-test
+kubectl get pod echo-server -n kgateway-test
+kubectl logs echo-server -n kgateway-test
 
 # Check all test resources
 kubectl get gateway,httproute,service,pod -n kgateway-test

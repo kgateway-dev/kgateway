@@ -8,6 +8,8 @@ import (
 
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
 var testenv env.Environment
@@ -21,5 +23,10 @@ func TestMain(m *testing.M) {
 	}
 
 	testenv = env.NewWithConfig(cfg)
+
+	if err := schemes.AddToScheme(cfg.Client().Resources().GetScheme()); err != nil {
+		panic(err)
+	}
+
 	os.Exit(testenv.Run(m))
 }

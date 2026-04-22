@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kgateway-test
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test-gateway
+  namespace: kgateway-test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http-8080
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - protocol: HTTP
+      port: 80
+      name: http-80
+      allowedRoutes:
+        namespaces:
+          from: Same

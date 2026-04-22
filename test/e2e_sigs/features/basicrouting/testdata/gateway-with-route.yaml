@@ -1,0 +1,15 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: basicrouting-route
+  namespace: kgateway-test
+spec:
+  parentRefs:
+    - name: test-gateway
+      namespace: kgateway-test
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - name: echo-backend
+          port: 8080

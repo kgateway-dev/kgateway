@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: basicrouting-backend
+  name: echo-backend
   namespace: kgateway-test
 spec:
   selector:
-    app.kubernetes.io/name: basicrouting-echo
+    app.kubernetes.io/name: echo-server
   ports:
     - protocol: TCP
       port: 8080
@@ -14,10 +14,10 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: basicrouting-echo
+  name: echo-server
   namespace: kgateway-test
   labels:
-    app.kubernetes.io/name: basicrouting-echo
+    app.kubernetes.io/name: echo-server
 spec:
   containers:
     - name: echo
