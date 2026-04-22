@@ -63,10 +63,6 @@ func constructHeaderModifiers(
 	spec := policy.Spec.HeaderModifiers
 	p := buildHeaderModifiersPolicy(spec)
 
-	if p.Mutations == nil {
-		p.Mutations = &header_mutationv3.Mutations{}
-	}
-
 	from := krtcollections.From{
 		GroupKind: wellknown.TrafficPolicyGVK.GroupKind(),
 		Namespace: policy.Namespace,
@@ -110,28 +106,22 @@ func buildHeaderMutationsFromSecretMappings(
 
 	var mutations []*mutation_rulesv3.HeaderMutation
 	for _, m := range mappings {
-		secretRef := gwv1.SecretObjectReference{
-			Name: m.SecretRef.Name,
-		}
+		ns := gwv1.Namespace(from.Namespace)
 		if m.SecretRef.Namespace != nil {
-			secretRef.Namespace = m.SecretRef.Namespace
+			ns = *m.SecretRef.Namespace
+		}
+		secretRef := gwv1.SecretObjectReference{
+			Name:      m.SecretRef.Name,
+			Namespace: &ns,
 		}
 
 		secret, err := secrets.GetSecret(krtctx, from, secretRef)
 		if err != nil {
-			ns := from.Namespace
-			if m.SecretRef.Namespace != nil {
-				ns = string(*m.SecretRef.Namespace)
-			}
 			return nil, fmt.Errorf("secret %s/%s: %w", ns, m.SecretRef.Name, err)
 		}
 
 		value, ok := secret.Data[m.Key]
 		if !ok {
-			ns := from.Namespace
-			if m.SecretRef.Namespace != nil {
-				ns = string(*m.SecretRef.Namespace)
-			}
 			return nil, fmt.Errorf("secret %s/%s does not contain key %q", ns, m.SecretRef.Name, m.Key)
 		}
 
@@ -179,9 +169,6 @@ func buildHeaderModifiersPolicy(
 
 	policy.Mutations.RequestMutations = append(policy.Mutations.RequestMutations, pluginutils.ConvertMutations(spec.Request)...)
 	policy.Mutations.ResponseMutations = append(policy.Mutations.ResponseMutations, pluginutils.ConvertMutations(spec.Response)...)
-
-	// Secret-based mutations are appended by constructHeaderModifiers after this call; do not nil
-	// Mutations here — that is handled by the caller once all sources have been processed.
 
 	return policy
 }
