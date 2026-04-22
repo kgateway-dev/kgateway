@@ -1987,16 +1987,63 @@ spec:
                             description: |-
                               ParseAs defines what auto formatting should be applied to the body.
                               This can make interacting with keys within a json body much easier if AsJson is selected.
+                              When set to None, it will not buffer the body and will skip all body processing. In
+                              addition, attempt to extract json variables from the body using inja template in the header
+                              will result in 400 response.
                             enum:
                             - AsString
                             - AsJson
+                            - None
                             type: string
                           value:
                             description: |-
                               Value is the template to apply to generate the output value for the body.
-                              Only Inja templates are supported.
+                              Only Inja templates are supported. If ParseAs field is set to None,
+                              this Value field is ignored and no body transformation will be done.
                             type: string
                         type: object
+                      dynamicMetadata:
+                        description: |-
+                          DynamicMetadata is a list of dynamic metadata entries to set.
+                          The values are stored in Envoy dynamic metadata and can be used in access log
+                          templates or consumed by other filters down the chain.
+                        items:
+                          description: DynamicMetadataTransformation defines a single
+                            dynamic metadata entry to set.
+                          properties:
+                            key:
+                              description: Key is the metadata key within the namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: Namespace is the dynamic metadata namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            value:
+                              description: Value is the value to set in dynamic metadata.
+                              properties:
+                                stringValue:
+                                  description: StringValue is an Inja template whose
+                                    rendered output is stored as the metadata string
+                                    value.
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [stringValue]
+                                  must be set
+                                rule: '[has(self.stringValue)].filter(x,x==true).size()
+                                  == 1'
+                          required:
+                          - key
+                          - namespace
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: atomic
                       remove:
                         description: Remove is a list of header names to remove from
                           the request/response.
@@ -2063,16 +2110,63 @@ spec:
                             description: |-
                               ParseAs defines what auto formatting should be applied to the body.
                               This can make interacting with keys within a json body much easier if AsJson is selected.
+                              When set to None, it will not buffer the body and will skip all body processing. In
+                              addition, attempt to extract json variables from the body using inja template in the header
+                              will result in 400 response.
                             enum:
                             - AsString
                             - AsJson
+                            - None
                             type: string
                           value:
                             description: |-
                               Value is the template to apply to generate the output value for the body.
-                              Only Inja templates are supported.
+                              Only Inja templates are supported. If ParseAs field is set to None,
+                              this Value field is ignored and no body transformation will be done.
                             type: string
                         type: object
+                      dynamicMetadata:
+                        description: |-
+                          DynamicMetadata is a list of dynamic metadata entries to set.
+                          The values are stored in Envoy dynamic metadata and can be used in access log
+                          templates or consumed by other filters down the chain.
+                        items:
+                          description: DynamicMetadataTransformation defines a single
+                            dynamic metadata entry to set.
+                          properties:
+                            key:
+                              description: Key is the metadata key within the namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: Namespace is the dynamic metadata namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            value:
+                              description: Value is the value to set in dynamic metadata.
+                              properties:
+                                stringValue:
+                                  description: StringValue is an Inja template whose
+                                    rendered output is stored as the metadata string
+                                    value.
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [stringValue]
+                                  must be set
+                                rule: '[has(self.stringValue)].filter(x,x==true).size()
+                                  == 1'
+                          required:
+                          - key
+                          - namespace
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: atomic
                       remove:
                         description: Remove is a list of header names to remove from
                           the request/response.

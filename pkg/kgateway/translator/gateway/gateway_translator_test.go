@@ -690,6 +690,28 @@ func TestBasic(t *testing.T) {
 			})
 	})
 
+	t.Run("TrafficPolicy Transformation skip body buffering", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/transformation-skip-body-buffering.yaml",
+			outputFile: "traffic-policy/transformation-skip-body-buffering.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy transformation set metadata", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/transformation-set-metadata.yaml",
+			outputFile: "traffic-policy/transformation-set-metadata.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
 	t.Run("Load balancer with hash policies", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "loadbalancer/hash-policies.yaml",
@@ -1722,6 +1744,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with runtime filter", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/runtime-filter.yaml",
+			outputFile: "listener-policy-http/runtime-filter.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Service with appProtocol=kubernetes.io/ws", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend-protocol/svc-ws.yaml",
@@ -1924,6 +1957,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backendconfigpolicy/circuitbreakers-full.yaml",
 			outputFile: "backendconfigpolicy/circuitbreakers-full.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend Config Policy with Circuit Breakers track remaining", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendconfigpolicy/circuitbreakers-track-remaining.yaml",
+			outputFile: "backendconfigpolicy/circuitbreakers-track-remaining.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2323,6 +2367,17 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-tcp-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with proxy protocol allowing requests without header", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/http-proxy-protocol-allow-no-header.yaml",
+			outputFile: "listener-policy/http-proxy-protocol-allow-no-header.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
 			},
 		})
 	})

@@ -8,7 +8,7 @@ published to GitHub Container Registry (GHCR) so GitHub Codespaces can pull it q
 ### What’s included (high level)
 
 - Go (version matches `go.mod`)
-- Rust toolchain (for `internal/envoyinit/`)
+- Rust toolchain (for `internal/envoy_modules/`)
 - Common build tooling: `git`, `make`, `gcc`, `jq`, `yq`, `kubectl`, `kind`, `helm`, `protoc`, `buf`
 - Docker CLI (for `docker-outside-of-docker` feature)
 - `vim` (for editing) 

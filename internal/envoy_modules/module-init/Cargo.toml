@@ -1,0 +1,15 @@
+[package]
+name = "module-init"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+envoy-proxy-dynamic-modules-rust-sdk = { workspace = true }
+rustformation-filter = { path = "../filters/rustformation" }
+# To add a new filter: add it as a dependency here.
+# See /docs/guides/adding-a-filter.md for the full process.
+
+[lib]
+name = "rust_module"
+path = "src/lib.rs"
+crate-type = ["cdylib"]

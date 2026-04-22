@@ -189,6 +189,51 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "both-gwc-and-gw-have-params-reversed",
 		},
 		{
+			// GWC params set replicas:2 AND runAsGroup:5555 on envoy container.
+			// GW params set omitDefaultSecurityContext:true with a custom envoy
+			// securityContext (NET_BIND_SERVICE + drop ALL).
+			//
+			// The old SecurityContext=nil hack would wipe the GWC's runAsGroup
+			// along with the defaults. The proper fix regenerates defaults
+			// without security context, so the GWC's runAsGroup survives the
+			// merge with the GW's custom securityContext.
+			Name:      "openshift two params securityContext",
+			InputFile: "openshift-two-params-security-context",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				// GWC replicas should be preserved
+				assert.Contains(t, outputYaml, "replicas: 2",
+					"replicas from GatewayClass params should be preserved")
+
+				// GWC's runAsGroup:5555 must survive
+				assert.Contains(t, outputYaml, "runAsGroup: 5555",
+					"runAsGroup from GatewayClass params should be preserved through the merge")
+
+				// GW's custom securityContext fields must be present
+				assert.Contains(t, outputYaml, "allowPrivilegeEscalation: false",
+					"envoy securityContext should contain allowPrivilegeEscalation: false")
+				assert.Contains(t, outputYaml, "readOnlyRootFilesystem: true",
+					"envoy securityContext should contain readOnlyRootFilesystem: true")
+				assert.Contains(t, outputYaml, "runAsNonRoot: true",
+					"envoy securityContext should contain runAsNonRoot: true")
+				assert.Contains(t, outputYaml, "NET_BIND_SERVICE",
+					"envoy securityContext should contain NET_BIND_SERVICE capability")
+
+				// "ALL" should appear exactly once (not duplicated from default merge)
+				allCount := strings.Count(outputYaml, "- ALL")
+				assert.Equal(t, 1, allCount,
+					"capabilities.drop should contain 'ALL' exactly once, got %d", allCount)
+
+				// Must NOT contain default runAsUser:10101
+				assert.NotContains(t, outputYaml, "runAsUser",
+					"securityContext should NOT contain runAsUser when omitDefaultSecurityContext is true")
+
+				// Pod-level securityContext should have user-supplied sysctls
+				assert.Contains(t, outputYaml, "net.ipv4.ip_unprivileged_port_start",
+					"pod securityContext should contain the user-supplied sysctl")
+			},
+		},
+		{
 			Name:      "gateway with static IP address",
 			InputFile: "loadbalancer-static-ip",
 		},

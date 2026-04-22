@@ -1,0 +1,130 @@
+name: OSV Security Vulnerability Scan
+
+on:
+  schedule:
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+    inputs:
+      branches:
+        description: "Allowlisted branch or branches to scan"
+        type: choice
+        default: all
+        options:
+          - all
+          - main
+          - v2.1.x
+          - v2.2.x
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  determine_branches:
+    name: Determine Branches
+    runs-on: ubuntu-22.04
+    outputs:
+      branches: ${{ steps.determine.outputs.branches }}
+    steps:
+    - name: Determine branch matrix
+      id: determine
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        branches='["main","v2.1.x","v2.2.x"]'
+
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          case "${{ inputs.branches }}" in
+            all)
+              ;;
+            main)
+              branches='["main"]'
+              ;;
+            v2.1.x)
+              branches='["v2.1.x"]'
+              ;;
+            v2.2.x)
+              branches='["v2.2.x"]'
+              ;;
+            *)
+              echo "::error::Unsupported branch selection: ${{ inputs.branches }}"
+              exit 1
+              ;;
+          esac
+        fi
+
+        {
+          echo "branches=${branches}"
+        } >> "$GITHUB_OUTPUT"
+
+  scan:
+    needs: determine_branches
+    name: Scan (${{ matrix.branch }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJson(needs.determine_branches.outputs.branches) }}
+    steps:
+    - name: Checkout branch
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      with:
+        persist-credentials: false
+        ref: ${{ matrix.branch }}
+
+    - name: Collect upload metadata
+      id: metadata
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        {
+          echo "ref=refs/heads/${{ matrix.branch }}"
+          echo "sha=$(git rev-parse HEAD)"
+          echo "category=osv-scanner-$(echo '${{ matrix.branch }}' | tr '/.' '--')"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Run scanner
+      uses: google/osv-scanner-action/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
+      with:
+        scan-args: |-
+          --output=results.json
+          --format=json
+          --no-call-analysis=go
+          --no-call-analysis=rust
+          -r
+          ./
+      continue-on-error: true
+
+    - name: Convert results to SARIF
+      uses: google/osv-scanner-action/osv-reporter-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
+      with:
+        scan-args: |-
+          --output=results.sarif
+          --new=results.json
+          --gh-annotations=false
+          --fail-on-vuln=false
+
+    - name: Upload SARIF
+      if: ${{ !cancelled() && hashFiles('results.sarif') != '' }}
+      uses: github/codeql-action/upload-sarif@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4.31.10
+      with:
+        sarif_file: results.sarif
+        ref: ${{ steps.metadata.outputs.ref }}
+        sha: ${{ steps.metadata.outputs.sha }}
+        category: ${{ steps.metadata.outputs.category }}
+
+    - name: Print Code Scanning URL
+      if: ${{ !cancelled() && hashFiles('results.sarif') != '' }}
+      shell: bash
+      run: |
+        echo "View the branch-specific OSV-Scanner results in Security -> Code scanning:"
+        echo "GitHub defaults that page to the repository default branch, so use the branch filter in this link:"
+        echo "${{ github.server_url }}/${{ github.repository }}/security/code-scanning?query=is%3Aopen+branch%3A${{ matrix.branch }}+tool%3Aosv-scanner"

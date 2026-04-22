@@ -39,7 +39,7 @@ Routes:
     - directResponse:
         bodyFormat:
           textFormatSource:
-            inlineString: "requested path: %REQ(:path)%"
+            inlineString: 'requested path: %REQ(:path)%'
         status: 200
       match:
         prefix: /

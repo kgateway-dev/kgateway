@@ -91,7 +91,10 @@ type ListenerPortConfig struct {
 
 type ListenerConfig struct {
 	// ProxyProtocol configures the PROXY protocol listener filter.
-	// When set, Envoy will expect connections to include the PROXY protocol header.
+	// By default, when set, Envoy will require connections to include the PROXY
+	// protocol header. This behavior can be relaxed by setting
+	// allowRequestsWithoutProxyProtocol to true, which allows the listener to
+	// also accept connections without the PROXY protocol header.
 	// This is commonly used when kgateway is behind a load balancer that preserves client IP information.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/listener/proxy_protocol/v3/proxy_protocol.proto
 	// +optional
@@ -159,7 +162,22 @@ type ListenerDefaultConfig struct {
 // ProxyProtocolConfig configures the PROXY protocol listener filter.
 // The presence of this configuration enables PROXY protocol support.
 type ProxyProtocolConfig struct {
-	// The presence or absence of this configuration is what matters.
+	// AllowRequestsWithoutProxyProtocol, when true, configures the PROXY protocol
+	// listener filter to accept connections that do not include a PROXY protocol
+	// header in addition to those that do. This allows a single listener to serve
+	// mixed traffic, e.g. PROXY-preserving load balancer traffic plus direct
+	// in-cluster traffic on the same port.
+	//
+	// Security: accepting connections without a PROXY header is non-conformant
+	// with the PROXY protocol spec and allows clients to spoof the perceived
+	// source address. Only enable this when every source that can reach the
+	// listener is trusted. See
+	// https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt.
+	//
+	// Defaults to false.
+	//
+	// +optional
+	AllowRequestsWithoutProxyProtocol *bool `json:"allowRequestsWithoutProxyProtocol,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:message="useRemoteAddress must be set to false if xffTrustedCIDRs is set",rule="!has(self.xffTrustedCIDRs) || (has(self.useRemoteAddress) && !self.useRemoteAddress)"
@@ -528,6 +546,10 @@ type FilterType struct {
 	GrpcStatusFilter *GrpcStatusFilter `json:"grpcStatusFilter,omitempty"`
 	// +optional
 	CELFilter *CELFilter `json:"celFilter,omitempty"`
+	// Filters for random sampling of access logs.
+	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+	// +optional
+	RuntimeFilter *RuntimeFilter `json:"runtimeFilter,omitempty"`
 }
 
 // ComparisonFilter represents a filter based on a comparison.
@@ -601,6 +623,45 @@ type CELFilter struct {
 	// see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
 	// +required
 	Match string `json:"match"`
+}
+
+// RuntimeFilter filters for random sampling of access logs.
+// A request will be logged if the runtime key is set and the request's random value is less than the percent_sampled value.
+// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+type RuntimeFilter struct {
+	// The runtime key to look up in the runtime implementation. This key determines whether
+	// the access log is enabled. When the runtime key value is set, the filter checks this key
+	// at runtime to decide whether to log each request.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	RuntimeKey string `json:"runtimeKey"`
+
+	// By default, the runtime filter will log on every request when the runtime key is set.
+	// If this field is set, it additionally applies a fractional percent check so that only a
+	// fraction of requests are logged.
+	// +optional
+	PercentSampled *FractionalPercent `json:"percentSampled,omitempty"`
+
+	// If set to true, the filter uses Envoy's independent randomness source.
+	// When false (the default), the filter uses the runtime key lookup.
+	// +optional
+	UseIndependentRandomness *bool `json:"useIndependentRandomness,omitempty"`
+}
+
+// FractionalPercent represents a fraction as a numerator and denominator.
+// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/type/v3/percent.proto#envoy-v3-api-msg-type-v3-fractionalpercent
+type FractionalPercent struct {
+	// Specifies the numerator. Defaults to 0.
+	// +required
+	// +kubebuilder:validation:Minimum=0
+	Numerator int32 `json:"numerator"`
+
+	// Specifies the denominator. If the denominator specified is less than the numerator,
+	// the final fractional percentage is capped at 1 (100%).
+	// Defaults to HUNDRED.
+	// +optional
+	// +kubebuilder:validation:Enum=HUNDRED;TEN_THOUSAND;MILLION
+	Denominator *DenominatorType `json:"denominator,omitempty"`
 }
 
 // GrpcStatusFilter filters gRPC requests based on their response status.

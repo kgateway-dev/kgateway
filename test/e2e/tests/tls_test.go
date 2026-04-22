@@ -6,10 +6,15 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/tls"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
@@ -73,6 +78,16 @@ func TestControlPlaneTLS(t *testing.T) {
 		testInstallation.UninstallKgateway(cleanupCtx, t)
 	})
 	testInstallation.InstallKgatewayFromLocalChart(t.Context(), t)
+
+	gatewayManifest := filepath.Join(fsutils.MustGetThisDir(), "../features/tls/testdata", "gateway.yaml")
+	common.SetupBaseConfig(t.Context(), t, testInstallation, gatewayManifest)
+	testutils.Cleanup(t, func() {
+		_ = testInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", gatewayManifest)
+	})
+	common.SetupBaseGateway(t.Context(), testInstallation, types.NamespacedName{
+		Namespace: "default",
+		Name:      "gw",
+	})
 
 	TLSSuiteRunner().Run(t.Context(), t, testInstallation)
 }
