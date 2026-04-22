@@ -419,10 +419,14 @@ func buildOAuth2JWTConfig(
 	}
 
 	var combinedRequirement *envoyjwtauthnv3.JwtRequirement
+	switch {
+	// should never happen due to earlier guard clauses, but helps catch issues faster if the behavior ever changes
+	case len(requirements) == 0:
+		return nil, fmt.Errorf("did not create any JWT requirements for GatewayExtension %s, but JWT parsing was configured", ext.NamespacedName())
 	// requires_all needs at least two requirements, so only use that if we have more than one
-	if len(requirements) == 1 {
+	case len(requirements) == 1:
 		combinedRequirement = requirements[0]
-	} else {
+	default:
 		combinedRequirement = &envoyjwtauthnv3.JwtRequirement{
 			RequiresType: &envoyjwtauthnv3.JwtRequirement_RequiresAll{
 				RequiresAll: &envoyjwtauthnv3.JwtRequirementAndList{Requirements: requirements},
