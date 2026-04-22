@@ -24,22 +24,22 @@ func TestGatewayWithRoute(t *testing.T) {
 				t.Fatalf("failed to get gateway: %v", err)
 			}
 
-			var gw map[string]interface{}
+			var gw map[string]any
 			if err := json.Unmarshal(output, &gw); err != nil {
 				t.Fatalf("failed to parse gateway: %v", err)
 			}
 
-			status, ok := gw["status"].(map[string]interface{})
+			status, ok := gw["status"].(map[string]any)
 			if !ok {
 				t.Fatal("gateway has no status")
 			}
 
-			addresses, ok := status["addresses"].([]interface{})
+			addresses, ok := status["addresses"].([]any)
 			if !ok || len(addresses) == 0 {
 				t.Fatal("gateway has no addresses in status")
 			}
 
-			addr, ok := addresses[0].(map[string]interface{})
+			addr, ok := addresses[0].(map[string]any)
 			if !ok {
 				t.Fatal("invalid address format")
 			}
