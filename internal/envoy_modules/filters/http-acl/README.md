@@ -30,7 +30,7 @@ Top-level fields:
 | Field           | Type                      | Required | Description                                                                          |
 | --------------- | ------------------------- | -------- | ------------------------------------------------------------------------------------ |
 | `defaultAction` | `"allow"` \| `"deny"`     | yes      | Action when no rule matches the client IP.                                           |
-| `rules`         | array of rule objects     | no       | IP/CIDR rules. Longest-prefix match wins; order doesn't.                             |
+| `rules`         | array of rule objects     | no       | IP/CIDR rules. Longest-prefix match wins; order doesn't matter. For duplicated IP/CIDR, the action and name of the last one inserted will be used |
 | `denyResponse`  | deny response object      | no       | Customizes the response sent on deny. Defaults to `{ "statusCode": 403 }`.           |
 
 Rule object:
