@@ -104,6 +104,7 @@ type trafficPolicySpecIr struct {
 	oauth2          *oauthIR
 	tracing         *routeTracingIR
 	faultInjection  *faultInjectionIR
+	httpACL         *httpACLIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -185,6 +186,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.faultInjection.Equals(d2.spec.faultInjection) {
 		return false
 	}
+	if !d.spec.httpACL.Equals(d2.spec.httpACL) {
+		return false
+	}
 	return true
 }
 
@@ -213,6 +217,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.oauth2.Validate)
 	validators = append(validators, p.spec.tracing.Validate)
 	validators = append(validators, p.spec.faultInjection.Validate)
+	validators = append(validators, p.spec.httpACL.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -242,6 +247,7 @@ type trafficPolicyPluginGwPass struct {
 	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
 	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
 	faultInChain             map[string]*faulthttpv3.HTTPFault
+	httpACLInChain           map[string]bool
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
@@ -407,6 +413,23 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	// Add Fault injection filter (FaultStage is the first stage in the filter chain).
 	if f := p.faultInChain[fcc.FilterChainName]; f != nil {
 		filter := filters.MustNewStagedFilter(faultFilterName, f, filters.DuringStage(filters.FaultStage))
+		filter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, filter)
+	}
+
+	// Add HTTP ACL filter immediately after FaultStage, before all other filters.
+	if p.httpACLInChain[fcc.FilterChainName] {
+		cfg := utils.MustMessageToAny(&wrapperspb.StringValue{
+			Value: httpACLDefaultListenerJSON,
+		})
+		aclListenerCfg := &dynamicmodulesv3.DynamicModuleFilter{
+			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+				Name: httpACLModuleName,
+			},
+			FilterName:   httpACLFilterName,
+			FilterConfig: cfg,
+		}
+		filter := filters.MustNewStagedFilter(httpACLFilterNamePrefix, aclListenerCfg, filters.AfterStage(filters.FaultStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
 	}
@@ -657,6 +680,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleAPIKeyAuth(fcn, typedFilterConfig, spec.apiKeyAuth)
 	p.handleOauth2(fcn, typedFilterConfig, spec.oauth2)
 	p.handleFaultInjection(fcn, typedFilterConfig, spec.faultInjection)
+	p.handleHttpACL(fcn, typedFilterConfig, spec.httpACL)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level

@@ -17,7 +17,7 @@ pub enum Action {
 pub struct Rule {
     #[serde(default)]
     pub name: Option<String>,
-    pub cidr: String,
+    pub cidrs: Vec<String>,
     pub action: Action,
 }
 
@@ -114,12 +114,14 @@ impl Acl {
                 action: rule.action,
                 name: rule.name,
             };
-            match parse_network(&rule.cidr)? {
-                IpNetwork::V4(n) => {
-                    v4.insert(n.network_address(), u32::from(n.netmask()), entry);
-                }
-                IpNetwork::V6(n) => {
-                    v6.insert(n.network_address(), u32::from(n.netmask()), entry);
+            for cidr in &rule.cidrs {
+                match parse_network(cidr)? {
+                    IpNetwork::V4(n) => {
+                        v4.insert(n.network_address(), u32::from(n.netmask()), entry.clone());
+                    }
+                    IpNetwork::V6(n) => {
+                        v6.insert(n.network_address(), u32::from(n.netmask()), entry.clone());
+                    }
                 }
             }
         }

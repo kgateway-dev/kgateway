@@ -81,7 +81,7 @@ fn allow_decision_returns_continue_with_no_side_effects() {
 #[test]
 fn allow_via_rule_does_not_increment_counter() {
     let cfg = make_filter_config(
-        r#"{"defaultAction":"deny","rules":[{"cidr":"10.0.0.0/8","action":"allow"}]}"#,
+        r#"{"defaultAction":"deny","rules":[{"cidrs":["10.0.0.0/8"],"action":"allow"}]}"#,
     );
     let mut mock = mock_with_source(Some("10.5.5.5"));
     assert_eq!(run(cfg, &mut mock), continue_status());
@@ -94,7 +94,7 @@ fn deny_by_named_rule_emits_rule_name_metadata() {
     let cfg = make_filter_config(
         r#"{
             "defaultAction":"allow",
-            "rules":[{"name":"block-internal","cidr":"10.0.0.0/8","action":"deny"}]
+            "rules":[{"name":"block-internal","cidrs":["10.0.0.0/8"],"action":"deny"}]
         }"#,
     );
     let mut mock = mock_with_source(Some("10.5.5.5"));
@@ -115,7 +115,7 @@ fn deny_by_named_rule_emits_rule_name_metadata() {
 #[test]
 fn deny_by_unnamed_rule_emits_rule_literal_metadata() {
     let cfg = make_filter_config(
-        r#"{"defaultAction":"allow","rules":[{"cidr":"10.0.0.0/8","action":"deny"}]}"#,
+        r#"{"defaultAction":"allow","rules":[{"cidrs":["10.0.0.0/8"],"action":"deny"}]}"#,
     );
     let mut mock = mock_with_source(Some("10.5.5.5"));
     expect_metadata(&mut mock, "rule");
@@ -196,7 +196,7 @@ fn add_blocked_by_header_appended_with_rule_name() {
         r#"{
             "defaultAction":"allow",
             "denyResponse":{"addBlockedByHeader":"X-Blocked-By"},
-            "rules":[{"name":"block-internal","cidr":"10.0.0.0/8","action":"deny"}]
+            "rules":[{"name":"block-internal","cidrs":["10.0.0.0/8"],"action":"deny"}]
         }"#,
     );
     let mut mock = mock_with_source(Some("10.5.5.5"));
@@ -219,7 +219,7 @@ fn add_blocked_by_header_carries_rule_literal_for_unnamed_rule() {
         r#"{
             "defaultAction":"allow",
             "denyResponse":{"addBlockedByHeader":"X-Blocked-By"},
-            "rules":[{"cidr":"10.0.0.0/8","action":"deny"}]
+            "rules":[{"cidrs":["10.0.0.0/8"],"action":"deny"}]
         }"#,
     );
     let mut mock = mock_with_source(Some("10.5.5.5"));
