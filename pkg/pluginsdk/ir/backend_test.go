@@ -2,7 +2,6 @@ package ir
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -151,22 +150,6 @@ func TestBackendObjectIREquals(t *testing.T) {
 	}
 }
 
-type testBackendPolicyIR struct {
-	created time.Time
-}
-
-func (t *testBackendPolicyIR) CreationTime() time.Time {
-	return t.created
-}
-
-func (t *testBackendPolicyIR) Equals(other any) bool {
-	o, ok := other.(*testBackendPolicyIR)
-	if !ok {
-		return false
-	}
-	return t.created.Equal(o.created)
-}
-
 func TestBackendObjectIRClusterName(t *testing.T) {
 	base := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
 	base.Kind = "Service"
@@ -176,67 +159,22 @@ func TestBackendObjectIRClusterName(t *testing.T) {
 		assert.Equal(t, "service_default_test-service_8080", base.ClusterName())
 	})
 
-	t.Run("rotates when BackendTLSPolicy is attached", func(t *testing.T) {
+	t.Run("keeps the same name when BackendTLSPolicy is attached", func(t *testing.T) {
 		withPolicy := base
 		withPolicy.AttachedPolicies = AttachedPolicies{
 			Policies: map[schema.GroupKind][]PolicyAtt{
-				wellknown.BackendTLSPolicyGVK.GroupKind(): {
-					{
-						Generation: 1,
-						GroupKind:  wellknown.BackendTLSPolicyGVK.GroupKind(),
-						PolicyIr:   &testBackendPolicyIR{created: time.Unix(10, 0)},
-						PolicyRef: &AttachedPolicyRef{
-							Group:     wellknown.BackendTLSPolicyGVK.Group,
-							Kind:      wellknown.BackendTLSPolicyGVK.Kind,
-							Namespace: "default",
-							Name:      "backend-tls",
-						},
+				wellknown.BackendTLSPolicyGVK.GroupKind(): {{
+					GroupKind: wellknown.BackendTLSPolicyGVK.GroupKind(),
+					PolicyRef: &AttachedPolicyRef{
+						Group:     wellknown.BackendTLSPolicyGVK.Group,
+						Kind:      wellknown.BackendTLSPolicyGVK.Kind,
+						Namespace: "default",
+						Name:      "backend-tls",
 					},
-				},
+				}},
 			},
 		}
 
-		assert.NotEqual(t, base.ClusterName(), withPolicy.ClusterName())
-		assert.Contains(t, withPolicy.ClusterName(), "btls")
-	})
-
-	t.Run("keeps the same cluster name when only a conflicting loser changes", func(t *testing.T) {
-		older := PolicyAtt{
-			Generation: 1,
-			GroupKind:  wellknown.BackendTLSPolicyGVK.GroupKind(),
-			PolicyIr:   &testBackendPolicyIR{created: time.Unix(10, 0)},
-			PolicyRef: &AttachedPolicyRef{
-				Group:     wellknown.BackendTLSPolicyGVK.Group,
-				Kind:      wellknown.BackendTLSPolicyGVK.Kind,
-				Namespace: "default",
-				Name:      "older",
-			},
-		}
-		newer := PolicyAtt{
-			Generation: 1,
-			GroupKind:  wellknown.BackendTLSPolicyGVK.GroupKind(),
-			PolicyIr:   &testBackendPolicyIR{created: time.Unix(20, 0)},
-			PolicyRef: &AttachedPolicyRef{
-				Group:     wellknown.BackendTLSPolicyGVK.Group,
-				Kind:      wellknown.BackendTLSPolicyGVK.Kind,
-				Namespace: "default",
-				Name:      "newer",
-			},
-		}
-
-		onlyWinner := base
-		onlyWinner.AttachedPolicies = AttachedPolicies{
-			Policies: map[schema.GroupKind][]PolicyAtt{
-				wellknown.BackendTLSPolicyGVK.GroupKind(): {older},
-			},
-		}
-		withConflictingLoser := base
-		withConflictingLoser.AttachedPolicies = AttachedPolicies{
-			Policies: map[schema.GroupKind][]PolicyAtt{
-				wellknown.BackendTLSPolicyGVK.GroupKind(): {older, newer},
-			},
-		}
-
-		assert.Equal(t, onlyWinner.ClusterName(), withConflictingLoser.ClusterName())
+		assert.Equal(t, base.ClusterName(), withPolicy.ClusterName())
 	})
 }

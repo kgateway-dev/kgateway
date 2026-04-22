@@ -19,7 +19,6 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -225,49 +224,11 @@ func (c BackendObjectIR) ClusterName() string {
 	if c.GvPrefix == "" {
 		gvPrefix = strings.ToLower(c.Kind)
 	}
-	clusterExtraKey := c.clusterNameExtraKey()
-	if clusterExtraKey != "" {
-		return fmt.Sprintf("%s_%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, clusterExtraKey, c.Port)
+	if c.ExtraKey != "" {
+		return fmt.Sprintf("%s_%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.ExtraKey, c.Port)
 	}
 	return fmt.Sprintf("%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.Port)
 	// return fmt.Sprintf("%s~%s:%d", c.GvPrefix, c.ObjectSource.ResourceName(), c.Port)
-}
-
-func (c BackendObjectIR) clusterNameExtraKey() string {
-	backendTLSKey := c.backendTLSPolicyClusterKey()
-	switch {
-	case c.ExtraKey == "":
-		return backendTLSKey
-	case backendTLSKey == "":
-		return c.ExtraKey
-	default:
-		return c.ExtraKey + "_" + backendTLSKey
-	}
-}
-
-func (c BackendObjectIR) backendTLSPolicyClusterKey() string {
-	policies := c.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]
-	if len(policies) == 0 {
-		return ""
-	}
-
-	winner := policies[WinnerPolicyIndexByCreationTimeAndRef(policies)]
-
-	return "btls" + strconv.FormatUint(hashBackendTLSPolicy(winner), 36)
-}
-
-func hashBackendTLSPolicy(policy PolicyAtt) uint64 {
-	var sb strings.Builder
-	sb.WriteString(PolicyRefString(policy.PolicyRef))
-	sb.WriteRune('|')
-	sb.WriteString(strconv.FormatInt(policy.Generation, 10))
-	for _, err := range policy.Errors {
-		sb.WriteRune('|')
-		if err != nil {
-			sb.WriteString(err.Error())
-		}
-	}
-	return utils.HashString(sb.String())
 }
 
 func (c BackendObjectIR) GetObjectSource() ObjectSource {

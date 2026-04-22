@@ -1,7 +1,6 @@
 package proxy_syncer
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -148,7 +147,6 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		commoncol.BackendIndex.BackendsWithPolicy(),
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...,
 	)
-	finalEndpoints := newFinalBackendEndpoints(krtopts, finalBackends, commoncol.Endpoints)
 
 	mostXdsSnapshots := krt.NewCollection(commoncol.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		xdsSnap, reportsMap := translator.TranslateGateway(kctx, ctx, gw)
@@ -161,7 +159,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 	epPerClient := NewPerClientEnvoyEndpoints(
 		krtopts,
 		uccs,
-		finalEndpoints,
+		commoncol.Endpoints,
 		translator.TranslateEndpoints,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
@@ -204,13 +202,8 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
-		clusterName, cluster := fetchNonBaseClusterFromSnapshotWithPrefix(
-			krt.TestingDummyContext{},
-			snapshots,
-			ucc.ResourceName(),
-			"kube_default_backend-service_",
-			"kube_default_backend-service_443",
-		)
+		clusterName := "kube_default_backend-service_443"
+		cluster := fetchClusterFromSnapshot(krt.TestingDummyContext{}, snapshots, ucc.ResourceName(), clusterName)
 		if cluster == nil {
 			return false
 		}
@@ -259,28 +252,6 @@ func fetchEndpointFromSnapshot(
 		return nil
 	}
 	return endpoint
-}
-
-func fetchNonBaseClusterFromSnapshotWithPrefix(
-	kctx krt.HandlerContext,
-	snapshots krt.Collection[XdsSnapWrapper],
-	snapshotKey, clusterNamePrefix, baseClusterName string,
-) (string, *envoyclusterv3.Cluster) {
-	snap := krt.FetchOne(kctx, snapshots, krt.FilterKey(snapshotKey))
-	if snap == nil {
-		return "", nil
-	}
-	for name, res := range snap.snap.Resources[envoycachetypes.Cluster].Items {
-		if !strings.HasPrefix(name, clusterNamePrefix) || name == baseClusterName {
-			continue
-		}
-		cluster, ok := res.Resource.(*envoyclusterv3.Cluster)
-		if !ok {
-			continue
-		}
-		return name, cluster
-	}
-	return "", nil
 }
 
 //go:fix inline

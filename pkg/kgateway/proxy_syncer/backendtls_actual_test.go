@@ -191,7 +191,7 @@ func TestPerClientClustersUpdateWhenActualBackendTLSPolicyAddedLater(t *testing.
 		if len(fetched) != 1 || fetched[0].Cluster == nil {
 			return false
 		}
-		if fetched[0].Name == "kube_default_backend-service_443" {
+		if fetched[0].Name != "kube_default_backend-service_443" {
 			return false
 		}
 
@@ -271,7 +271,7 @@ func TestPerClientClustersUseActualBackendTLSPolicyWhenConflictsExistAtStartup(t
 		if len(fetched) != 1 || fetched[0].Cluster == nil {
 			return false
 		}
-		if fetched[0].Name == "kube_default_backend-service_443" {
+		if fetched[0].Name != "kube_default_backend-service_443" {
 			return false
 		}
 
