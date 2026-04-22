@@ -304,7 +304,6 @@ type EnvoyContainer struct {
 	// `--component-log-level`.
 	//
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="self.all(arg, !['--disable-hot-restart', '--service-node', '--log-level','--component-log-level'].exists(p, arg == p || arg.startsWith(p + '='))) ",message="extraArgs must not include flags already managed by kgateway: --disable-hot-restart, --service-node, --log-level, --component-log-level"
 	// +kubebuilder:validation:MaxItems=32
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:items:MaxLength=256

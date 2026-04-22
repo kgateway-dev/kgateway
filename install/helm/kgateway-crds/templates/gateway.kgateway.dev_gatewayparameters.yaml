@@ -467,13 +467,6 @@ spec:
                         maxItems: 32
                         minItems: 1
                         type: array
-                        x-kubernetes-validations:
-                        - message: 'extraArgs must not include flags already managed
-                            by kgateway: --disable-hot-restart, --service-node, --log-level,
-                            --component-log-level'
-                          rule: 'self.all(arg, ![''--disable-hot-restart'', ''--service-node'',
-                            ''--log-level'',''--component-log-level''].exists(p, arg
-                            == p || arg.startsWith(p + ''=''))) '
                       extraVolumeMounts:
                         description: |-
                           Additional volume mounts to add to the container. See
