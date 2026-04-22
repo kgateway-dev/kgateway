@@ -37,11 +37,11 @@ func HostnameAliaser(se *networkingclient.ServiceEntry) []ir.ObjectSource {
 
 type Options struct {
 	Aliaser
-	// WEExclusionLabelKeys is the set of label keys that, if present on a WorkloadEntry,
+	// WorkloadEntriesExclusionLabelKeys is the set of label keys that, if present on a WorkloadEntry,
 	// cause it to be excluded from endpoint discovery. When nil, the default from
-	// Settings.WEExclusionLabels is used. Use an empty set to explicitly disable
+	// Settings.WorkloadEntriesExclusionLabels is used. Use an empty set to explicitly disable
 	// exclusions.
-	WEExclusionLabelKeys sets.Set[string]
+	WorkloadEntriesExclusionLabelKeys sets.Set[string]
 }
 
 func NewPlugin(
@@ -80,9 +80,9 @@ func NewPluginWithOpts(
 	opts Options,
 ) sdk.Plugin {
 	// If the caller didn't supply an explicit exclusion set, fall back to the value
-	// from settings (KGW_WE_EXCLUSION_LABELS env var).
-	if opts.WEExclusionLabelKeys == nil {
-		opts.WEExclusionLabelKeys = ParseExclusionLabels(commonCols.Settings.WEExclusionLabels)
+	// from settings (KGW_WORKLOAD_ENTRIES_EXCLUSION_LABELS env var).
+	if opts.WorkloadEntriesExclusionLabelKeys == nil {
+		opts.WorkloadEntriesExclusionLabelKeys = ParseExclusionLabels(commonCols.Settings.WorkloadEntriesExclusionLabels)
 	}
 	seCollections := initServiceEntryCollections(commonCols, opts)
 	return sdk.Plugin{

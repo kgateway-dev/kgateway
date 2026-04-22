@@ -138,7 +138,7 @@ func initServiceEntryCollections(
 		WorkloadEntries,
 		commonCols.LocalityPods,
 		opts.Aliaser,
-		opts.WEExclusionLabelKeys,
+		opts.WorkloadEntriesExclusionLabelKeys,
 	)
 
 	// init the outputs
