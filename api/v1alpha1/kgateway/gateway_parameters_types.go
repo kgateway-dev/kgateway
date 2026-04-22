@@ -304,8 +304,10 @@ type EnvoyContainer struct {
 	// `--component-log-level`.
 	//
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="self.all(arg, !(arg == '--disable-hot-restart' || arg.startsWith('--disable-hot-restart=') || arg == '--service-node' || arg.startsWith('--service-node=') || arg == '--log-level' || arg.startsWith('--log-level=') || arg == '--component-log-level' || arg.startsWith('--component-log-level=')))",message="extraArgs must not include flags already managed by kgateway: --disable-hot-restart, --service-node, --log-level, --component-log-level"
+	// +kubebuilder:validation:XValidation:rule="self.all(arg, !['--disable-hot-restart', '--service-node', '--log-level','--component-log-level'].exists(p, arg == p || arg.startsWith(p + '='))) ",message="extraArgs must not include flags already managed by kgateway: --disable-hot-restart, --service-node, --log-level, --component-log-level"
+	// +kubebuilder:validation:MaxItems=32
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:MaxLength=256
 	// +kubebuilder:validation:items:MinLength=1
 	ExtraArgs []string `json:"extraArgs,omitempty"`
 

@@ -461,19 +461,19 @@ spec:
                           set here: `--disable-hot-restart`, `--service-node`, `--log-level`, and
                           `--component-log-level`.
                         items:
+                          maxLength: 256
                           minLength: 1
                           type: string
+                        maxItems: 32
                         minItems: 1
                         type: array
                         x-kubernetes-validations:
                         - message: 'extraArgs must not include flags already managed
                             by kgateway: --disable-hot-restart, --service-node, --log-level,
                             --component-log-level'
-                          rule: self.all(arg, !(arg == '--disable-hot-restart' ||
-                            arg.startsWith('--disable-hot-restart=') || arg == '--service-node'
-                            || arg.startsWith('--service-node=') || arg == '--log-level'
-                            || arg.startsWith('--log-level=') || arg == '--component-log-level'
-                            || arg.startsWith('--component-log-level=')))
+                          rule: 'self.all(arg, ![''--disable-hot-restart'', ''--service-node'',
+                            ''--log-level'',''--component-log-level''].exists(p, arg
+                            == p || arg.startsWith(p + ''=''))) '
                       extraVolumeMounts:
                         description: |-
                           Additional volume mounts to add to the container. See
