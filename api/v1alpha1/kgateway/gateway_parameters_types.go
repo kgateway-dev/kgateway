@@ -301,7 +301,7 @@ type EnvoyContainer struct {
 	//
 	// The following Envoy flags are already managed by kgateway and must not be
 	// set here: `--disable-hot-restart`, `--service-node`, `--log-level`, and
-	// `--component-log-level`.
+	// `--component-log-level`. Consider using a DeploymentOverlay to override these values if desired.
 	//
 	// +optional
 	// +kubebuilder:validation:MaxItems=32
