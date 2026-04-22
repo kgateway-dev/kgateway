@@ -299,7 +299,14 @@ type EnvoyContainer struct {
 	// resolved, the reference is left unchanged. Double $$ are reduced to a
 	// single $, which allows escaping the $(VAR_NAME) syntax.
 	//
+	// The following Envoy flags are already managed by kgateway and must not be
+	// set here: `--disable-hot-restart`, `--service-node`, `--log-level`, and
+	// `--component-log-level`.
+	//
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self.all(arg, !(arg == '--disable-hot-restart' || arg.startsWith('--disable-hot-restart=') || arg == '--service-node' || arg.startsWith('--service-node=') || arg == '--log-level' || arg.startsWith('--log-level=') || arg == '--component-log-level' || arg.startsWith('--component-log-level=')))",message="extraArgs must not include flags already managed by kgateway: --disable-hot-restart, --service-node, --log-level, --component-log-level"
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:MinLength=1
 	ExtraArgs []string `json:"extraArgs,omitempty"`
 
 	// The container environment variables.

@@ -692,6 +692,40 @@ spec:
 `,
 		},
 		{
+			name: "GatewayParameters: Envoy extraArgs allow non-reserved flags",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-envoy-extra-args-allowed
+spec:
+  kube:
+    envoyContainer:
+      extraArgs:
+      - --base-id
+      - "7"
+      - --cpuset-threads
+`,
+		},
+		{
+			name: "GatewayParameters: Envoy extraArgs reject reserved flags",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-envoy-extra-args-reserved
+spec:
+  kube:
+    envoyContainer:
+      extraArgs:
+      - --disable-hot-restart
+      - --service-node=$(POD_NAME).$(POD_NAMESPACE)
+      - --log-level=debug
+      - --component-log-level
+`,
+			wantErrors: []string{"extraArgs must not include flags already managed by kgateway: --disable-hot-restart, --service-node, --log-level, --component-log-level"},
+		},
+		{
 			name: "ProxyDeployment: Strategy Recreate",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
