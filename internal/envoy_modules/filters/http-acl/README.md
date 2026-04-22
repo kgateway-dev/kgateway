@@ -4,7 +4,7 @@ An Envoy HTTP filter that enforces IP-based allow/deny rules in `on_request_head
 
 ## Overview
 
-`http-acl` inspects the downstream client IP (Envoy's `source.address` attribute) on every request and compares it against a configured rule set. The filter uses longest-prefix matching over two separate tries (one for IPv4, one for IPv6), so a small `allow` CIDR can "punch a hole" inside a larger `deny` CIDR (or vice versa) regardless of rule order.
+`http-acl` inspects the downstream client IP (Envoy's `source.address` attribute) on every request and compares it against a configured rule set. The filter uses longest-prefix matching over two separate tries (one for IPv4, one for IPv6), so a small `allow` CIDR can "punch a hole" inside a larger `deny` CIDR (or vice versa) regardless of rule order. If there are duplicated CIDR, the action and name for the last rule will win.
 
 Behavior:
 

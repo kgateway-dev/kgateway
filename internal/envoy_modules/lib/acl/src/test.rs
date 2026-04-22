@@ -150,6 +150,24 @@ fn rule_order_does_not_matter() {
 }
 
 #[test]
+fn last_rule_win_for_duplicated_cidr() {
+    let deny_first = build(
+        r#"{"defaultAction":"allow","rules":[
+            {"cidr":"10.0.0.0/8","action":"deny"},
+            {"cidr":"10.0.0.0/8","action":"allow"}
+        ]}"#,
+    );
+    let allow_first = build(
+        r#"{"defaultAction":"allow","rules":[
+            {"cidr":"10.0.0.0/8","action":"allow"},
+            {"cidr":"10.0.0.0/8","action":"deny"}
+        ]}"#,
+    );
+    assert_eq!(act(&deny_first, "10.0.0.1"), Action::Allow);
+    assert_eq!(act(&allow_first, "10.0.0.1"), Action::Deny);
+}
+
+#[test]
 fn zero_prefix_overrides_default() {
     let acl = build(
         r#"{"defaultAction":"allow","rules":[
