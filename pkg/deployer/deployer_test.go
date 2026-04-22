@@ -1805,7 +1805,9 @@ var _ = Describe("Deployer", func() {
 			fullyDefinedValidationWithoutRunAsUser(objs, inp)
 
 			envoyContainer := objs.findDeployment(defaultDeploymentName).Spec.Template.Spec.Containers[0]
-			Expect(envoyContainer.Args).To(ContainElements("--base-id", "7", "--cpuset-threads"))
+			extraArgs := []string{"--base-id", "7", "--cpuset-threads"}
+			Expect(envoyContainer.Args).To(ContainElements(extraArgs[0], extraArgs[1], extraArgs[2]))
+			Expect(envoyContainer.Args[len(envoyContainer.Args)-len(extraArgs):]).To(Equal(extraArgs))
 		}
 
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {

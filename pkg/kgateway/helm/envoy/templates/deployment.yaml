@@ -72,7 +72,9 @@ spec:
         - "{{ . }}"
         {{- end }}{{/* with $gateway.componentLogLevel */}}
         {{- with $gateway.extraArgs }}
-        {{- toYaml . | nindent 8 }}
+        {{- range . }}
+        - {{ . | quote }}
+        {{- end }}
         {{- end }}{{/* with $gateway.extraArgs */}}
         image: "{{ template "kgateway.gateway.image" $gateway.image }}"
         {{- if $gateway.image.pullPolicy }}
