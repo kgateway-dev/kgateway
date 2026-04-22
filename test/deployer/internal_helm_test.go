@@ -189,6 +189,25 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "both-gwc-and-gw-have-params-reversed",
 		},
 		{
+			// GatewayClass extraArgs should be rendered before Gateway extraArgs,
+			// so a last-wins flag semantic would favor the Gateway-level value.
+			Name:      "both GWC and GW have envoy extraArgs",
+			InputFile: "both-gwc-and-gw-have-envoy-extra-args",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+
+				gwcIdx := strings.Index(outputYaml, "- --disable-test-feature")
+				gwIdx := strings.Index(outputYaml, "- --enable-test-feature")
+
+				assert.NotEqual(t, -1, gwcIdx,
+					"GatewayClass envoy extra arg should be present in the rendered Deployment")
+				assert.NotEqual(t, -1, gwIdx,
+					"Gateway envoy extra arg should be present in the rendered Deployment")
+				assert.Less(t, gwcIdx, gwIdx,
+					"GatewayClass extraArgs should be rendered before Gateway extraArgs so Gateway can win with last-arg semantics")
+			},
+		},
+		{
 			// GWC params set replicas:2 AND runAsGroup:5555 on envoy container.
 			// GW params set omitDefaultSecurityContext:true with a custom envoy
 			// securityContext (NET_BIND_SERVICE + drop ALL).
