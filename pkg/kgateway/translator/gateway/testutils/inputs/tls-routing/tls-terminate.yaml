@@ -15,7 +15,7 @@ spec:
         - name: https
           kind: Secret
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1
 kind: TLSRoute
 metadata:
   name: example-tls-route

@@ -1,0 +1,84 @@
+/*
+TODO: look into enabling this to avoid accidental use of unwrap() and
+crash the process. However, there are many tests using unwrap() that
+will make the linter unhappy.
+#![deny(clippy::unwrap_used, clippy::expect_used)]
+ */
+
+use envoy_proxy_dynamic_modules_rust_sdk::*;
+use std::any::Any;
+
+declare_init_functions!(
+    init,
+    new_http_filter_config_fn,
+    new_http_filter_per_route_config_fn
+);
+
+/// This implements the [`envoy_proxy_dynamic_modules_rust_sdk::ProgramInitFunction`].
+///
+/// This is called exactly once when the module is loaded. It can be used to
+/// initialize global state as well as check the runtime environment to ensure that
+/// the module is running in a supported environment.
+///
+/// Returning `false` will cause Envoy to reject the config hence the
+/// filter will not be loaded.
+fn init() -> bool {
+    true
+}
+
+/// This implements the [`envoy_proxy_dynamic_modules_rust_sdk::NewHttpFilterConfigFunction`].
+///
+/// This is the entrypoint every time a new HTTP filter is created via the DynamicModuleFilter config.
+///
+/// Each argument matches the corresponding argument in the Envoy config here:
+/// https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/dynamic_modules/v3/dynamic_modules.proto#envoy-v3-api-msg-extensions-dynamic-modules-v3-dynamicmoduleconfig
+///
+/// Returns None if the filter name or config is determined to be invalid by each filter's `new` function.
+///
+/// To add a new filter: add a match arm below and a corresponding dependency in Cargo.toml.
+/// See ../../docs/guides/adding-a-filter.md for the full process.
+fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
+    _envoy_filter_config: &mut EC,
+    filter_name: &str,
+    filter_config: &[u8],
+) -> Option<Box<dyn HttpFilterConfig<EHF>>> {
+    let filter_config = match std::str::from_utf8(filter_config) {
+        Ok(config) => config,
+        Err(_) => {
+            envoy_log_error!("invalid UTF-8 in filter configuration");
+            return None;
+        }
+    };
+    envoy_log_trace!("new_http_filter_config_fn: filter_config: {filter_config}");
+    match filter_name {
+        // Add a new arm here for each new filter. See ../../docs/guides/adding-a-filter.md.
+        "rustformation" => rustformation_filter::FilterConfig::new(filter_config)
+            .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EHF>>),
+        _ => panic!(
+            "Unknown filter name: {}, known filters are: rustformation",
+            filter_name
+        ),
+    }
+}
+
+/// To add a new filter: add a match arm below and a corresponding dependency in Cargo.toml.
+/// See ../../docs/guides/adding-a-filter.md for the full process.
+fn new_http_filter_per_route_config_fn(name: &str, config: &[u8]) -> Option<Box<dyn Any>> {
+    let per_route_config = match std::str::from_utf8(config) {
+        Ok(config) => config,
+        Err(_) => {
+            envoy_log_error!("invalid UTF-8 in per route filter configuration");
+            return None;
+        }
+    };
+    envoy_log_trace!("new_http_filter_per_route_config_fn: per_route_config: {per_route_config}");
+    match name {
+        // Add a new arm here for each new filter. See docs/adding-a-filter.md.
+        "rustformation" => rustformation_filter::PerRouteConfig::new(per_route_config)
+            .map(|config| Box::new(config) as Box<dyn Any>),
+        _ => panic!(
+            "Unknown filter name: {}, known filters are: rustformation",
+            name
+        ),
+    }
+}

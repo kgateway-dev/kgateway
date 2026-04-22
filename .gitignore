@@ -60,7 +60,4 @@ dist/
 *.d
 *-build
 
-# Rust target directory created by cargo
-internal/envoyinit/rustformations/target/*
-internal/envoyinit/rustformations/vendor/*
-internal/envoyinit/target/*
+nohup.out

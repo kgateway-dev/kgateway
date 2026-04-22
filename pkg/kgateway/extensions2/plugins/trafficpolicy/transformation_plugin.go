@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	TransformationRustModule          = "rust_module"
-	TransformationHTTPSimpleMutations = "http_simple_mutations"
+	RustformationModuleName = "rust_module"
+	RustformationFilterName = "rustformation"
 )
 
 type rustformationIR struct {
@@ -83,9 +83,9 @@ func toRustFormationPerRouteConfig(t *kgateway.TransformationPolicy) (*dynamicmo
 	}
 	rustCfg := &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-			Name: TransformationRustModule,
+			Name: RustformationModuleName,
 		},
-		PerRouteConfigName: TransformationHTTPSimpleMutations,
+		PerRouteConfigName: RustformationFilterName,
 		FilterConfig:       filterCfg,
 	}
 
@@ -105,9 +105,9 @@ func (p *trafficPolicyPluginGwPass) handleRustFormation(fcn string, typedFilterC
 func GenerateBlankTransformationConfig() *dynamicmodulesv3.DynamicModuleFilter {
 	return &dynamicmodulesv3.DynamicModuleFilter{
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-			Name: TransformationRustModule,
+			Name: RustformationModuleName,
 		},
-		FilterName: TransformationHTTPSimpleMutations,
+		FilterName: RustformationFilterName,
 		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
 			Value: "{}",
 		}),
@@ -117,9 +117,9 @@ func GenerateBlankTransformationConfig() *dynamicmodulesv3.DynamicModuleFilter {
 func GenerateBlankTransformationConfigPerRoute() *dynamicmodulesv3.DynamicModuleFilterPerRoute {
 	return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-			Name: TransformationRustModule,
+			Name: RustformationModuleName,
 		},
-		PerRouteConfigName: TransformationHTTPSimpleMutations,
+		PerRouteConfigName: RustformationFilterName,
 		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
 			Value: "{}",
 		}),
@@ -160,9 +160,9 @@ func generateDynamicMetadata(ns string, kv map[string]kgateway.InjaTemplate) *dy
 	})
 	return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-			Name: TransformationRustModule,
+			Name: RustformationModuleName,
 		},
-		PerRouteConfigName: TransformationHTTPSimpleMutations,
+		PerRouteConfigName: RustformationFilterName,
 		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
 			Value: string(b),
 		}),

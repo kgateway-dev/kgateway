@@ -446,18 +446,23 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		return nil
 	}
 
-	if len(parent.routesWithHosts) > 1 {
-		// Only one route per listener is supported
-		// TODO: report error on the listener
-		//	reporter.Gateway(gw).SetCondition(reports.RouteCondition{
-		//		Type:   gwv1.RouteConditionPartiallyInvalid,
-		//		Status: metav1.ConditionTrue,
-		//		Reason: gwv1.RouteReasonUnsupportedValue,
-		//	})
-	}
+	// A TCP listener cannot distinguish between multiple attached routes (there
+	// is no SNI to match on), so only one route can be honored. The oldest route
+	// by CreationTimestamp wins; any others are rejected with Accepted=False.
+	//
+	// Note: after #13694, AppendTlsListener creates one filter chain per
+	// TLSRoute, so this path is only reached with len > 1 for TCPRoutes.
 	r := slices.MinFunc(parent.routesWithHosts, func(a, b *query.RouteInfo) int {
 		return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
 	})
+	if len(parent.routesWithHosts) > 1 {
+		for _, other := range parent.routesWithHosts {
+			if other == r {
+				continue
+			}
+			rejectConflictingRoute(other, reporter)
+		}
+	}
 
 	switch r.Object.(type) {
 	case *ir.TcpRouteIR:
@@ -632,6 +637,22 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		}
 	default:
 		return nil
+	}
+}
+
+// rejectConflictingRoute sets Accepted=False on the specific listener
+// attachment of a route that lost the oldest-wins selection.
+func rejectConflictingRoute(ri *query.RouteInfo, reporter reports.Reporter) {
+	condition := reports.RouteCondition{
+		Type:   gwv1.RouteConditionAccepted,
+		Status: metav1.ConditionFalse,
+		Reason: gwv1.RouteConditionReason("Conflicted"),
+	}
+	switch o := ri.Object.(type) {
+	case *ir.TcpRouteIR:
+		reporter.Route(o.SourceObject).ParentRef(&ri.ParentRef).SetCondition(condition)
+	case *ir.TlsRouteIR:
+		reporter.Route(o.SourceObject).ParentRef(&ri.ParentRef).SetCondition(condition)
 	}
 }
 

@@ -20,6 +20,9 @@ func AllNamespace() func(kctx krt.HandlerContext, namespace string) bool {
 func NamespaceSelector(namespaces krt.Collection[NamespaceMetadata], sel labels.Selector) func(kctx krt.HandlerContext, namespace string) bool {
 	return func(kctx krt.HandlerContext, namespace string) bool {
 		ns := krt.FetchOne(kctx, namespaces, krt.FilterKey(namespace))
+		if ns == nil {
+			return sel.Empty()
+		}
 		return sel.Matches(labels.Set(ns.Labels))
 	}
 }

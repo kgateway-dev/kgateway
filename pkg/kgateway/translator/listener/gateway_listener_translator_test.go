@@ -3,6 +3,7 @@ package listener_test
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"istio.io/istio/pkg/kube/krt"
@@ -641,6 +642,93 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			Expect(programmedCondition.Status).To(Equal(metav1.ConditionFalse))
 			Expect(programmedCondition.Reason).To(Equal(string(gwv1.ListenerReasonInvalid)))
 			Expect(programmedCondition.Message).To(ContainSubstring("TCP/TLS listener has no valid backends or routes"))
+		})
+
+		It("should accept the oldest TCPRoute and reject conflicting TCPRoutes on the same listener", func() {
+			By("Creating two TCPRoutes with different CreationTimestamps, both attached to the same listener")
+			parentRefs := []gwv1.ParentReference{
+				{
+					Name:      gwv1.ObjectName("test-gateway"),
+					Namespace: ptr.To(gwv1.Namespace("default")),
+					Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+				},
+			}
+			backendRefs := []gwv1.BackendRef{
+				{
+					BackendObjectReference: gwv1.BackendObjectReference{
+						Name:      "backend-svc",
+						Namespace: ptr.To(gwv1.Namespace("default")),
+						Port:      ptr.To(gwv1.PortNumber(8080)),
+					},
+				},
+			}
+
+			olderRoute := tcpRoute("older-tcp-route")
+			olderRoute.CreationTimestamp = metav1.NewTime(time.Now().Add(-time.Hour))
+			olderRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: parentRefs},
+				Rules:           []gwv1a2.TCPRouteRule{{BackendRefs: backendRefs}},
+			}
+
+			newerRoute := tcpRoute("newer-tcp-route")
+			newerRoute.CreationTimestamp = metav1.Now()
+			newerRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: parentRefs},
+				Rules:           []gwv1a2.TCPRouteRule{{BackendRefs: backendRefs}},
+			}
+
+			By("Creating the RouteInfo slice with both routes")
+			// newer first, to prove ordering is by timestamp not slice order.
+			// ParentRef mirrors the specific listener attachment as set by the query layer.
+			routes := []*query.RouteInfo{
+				{Object: tcpToIr(newerRoute), ParentRef: parentRefs[0]},
+				{Object: tcpToIr(olderRoute), ParentRef: parentRefs[0]},
+			}
+
+			By("Setting up a fresh reporter and translating the listener")
+			rm := reports.NewReportMap()
+			testStatusReporter := reports.NewReporter(&rm)
+			testListenerReporter := testStatusReporter.Gateway(gateway).Listener(&gwListener)
+
+			testMl := &listener.MergedListeners{
+				Listeners: []*listener.MergedListener{},
+				Queries:   queries,
+			}
+			testMl.AppendTcpListener(lisToIr(gwListener), routes, testListenerReporter)
+			translatedListener := testMl.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, testStatusReporter)
+
+			By("Validating that the oldest TCPRoute wins the filter chain")
+			Expect(translatedListener).NotTo(BeNil())
+			Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
+			Expect(translatedListener.TcpFilterChain[0].FilterChainName).To(ContainSubstring(olderRoute.Name))
+			Expect(translatedListener.TcpFilterChain[0].FilterChainName).NotTo(ContainSubstring(newerRoute.Name))
+
+			findAccepted := func(conds []metav1.Condition) *metav1.Condition {
+				for i := range conds {
+					if conds[i].Type == string(gwv1.RouteConditionAccepted) {
+						return &conds[i]
+					}
+				}
+				return nil
+			}
+
+			By("Validating that the older TCPRoute is Accepted")
+			olderStatus := rm.BuildRouteStatus(ctx, olderRoute, wellknown.DefaultGatewayControllerName)
+			Expect(olderStatus).NotTo(BeNil())
+			Expect(olderStatus.Parents).To(HaveLen(1))
+			olderAccepted := findAccepted(olderStatus.Parents[0].Conditions)
+			Expect(olderAccepted).NotTo(BeNil(), "Expected Accepted condition on older route")
+			Expect(olderAccepted.Status).To(Equal(metav1.ConditionTrue))
+			Expect(olderAccepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
+
+			By("Validating that the newer conflicting TCPRoute is rejected")
+			newerStatus := rm.BuildRouteStatus(ctx, newerRoute, wellknown.DefaultGatewayControllerName)
+			Expect(newerStatus).NotTo(BeNil())
+			Expect(newerStatus.Parents).To(HaveLen(1))
+			newerAccepted := findAccepted(newerStatus.Parents[0].Conditions)
+			Expect(newerAccepted).NotTo(BeNil(), "Expected Accepted condition on newer route")
+			Expect(newerAccepted.Status).To(Equal(metav1.ConditionFalse))
+			Expect(newerAccepted.Reason).To(Equal("Conflicted"))
 		})
 	})
 	Context("TLS", func() {

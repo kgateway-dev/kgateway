@@ -21,9 +21,9 @@ func TestRustformationIREquals(t *testing.T) {
 	createSimpleTransformation := func() *dynamicmodulesv3.DynamicModuleFilterPerRoute {
 		return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-				Name: TransformationRustModule,
+				Name: RustformationModuleName,
 			},
-			PerRouteConfigName: TransformationHTTPSimpleMutations,
+			PerRouteConfigName: RustformationFilterName,
 			FilterConfig:       filterCfg,
 		}
 	}
@@ -88,9 +88,9 @@ func TestRustformationIREquals(t *testing.T) {
 		transformation := &rustformationIR{
 			config: &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-					Name: TransformationRustModule,
+					Name: RustformationModuleName,
 				},
-				PerRouteConfigName: TransformationHTTPSimpleMutations,
+				PerRouteConfigName: RustformationFilterName,
 			},
 		}
 		assert.True(t, transformation.Equals(transformation), "transformation should equal itself")
