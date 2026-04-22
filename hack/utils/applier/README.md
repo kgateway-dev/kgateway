@@ -1,21 +1,10 @@
 # How to use this
 
-`hack/utils/applier/go.mod` and `hack/utils/applier/go.sum` are intentionally no longer tracked.
-If you need to run this utility, create them locally once:
+Within this repo, you do not need a local `hack/utils/applier/go.mod`.
+Go will use the repo root `go.mod`, even if you run from `hack/utils/applier`.
 
 ```bash
-cd hack/utils/applier
-go mod init github.com/kgateway-dev/kgateway/v2/hack/utils/applier
-go mod tidy
-```
-
-Those files are gitignored and should not be committed.
-
-Then run the tool from `hack/utils/applier`:
-
-```bash
-cd hack/utils/applier
-go run . apply -f yamls.yaml --iterations 3000
+go run ./hack/utils/applier apply -f yamls.yaml --iterations 3000
 ```
 
 This applies the template in `yamls.yaml` 3000 times.
