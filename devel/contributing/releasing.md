@@ -44,6 +44,9 @@ If the release branch **does not** exist, create one:
     git push ${REMOTE} v2.${MINOR}.x
     ```
 
+- Update the OSV security scan workflow branch allowlist in [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml) to include the new release branch.
+  This workflow only scans an explicit set of branches, so each newly cut release branch must be added to both the scheduled scan matrix and the `workflow_dispatch` branch options.
+
 ### Patch Release
 
 A patch release is generated from an existing release branch, i.e. [v2.0.x](https://github.com/kgateway-dev/kgateway/commits/v2.0.x/).

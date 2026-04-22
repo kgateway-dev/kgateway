@@ -79,7 +79,7 @@ func toRustFormationPerRouteConfig(t *kgateway.TransformationPolicy) (*dynamicmo
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 			Name: "rust_module",
 		},
-		PerRouteConfigName: "http_simple_mutations",
+		PerRouteConfigName: "rustformation",
 		FilterConfig:       filterCfg,
 	}
 

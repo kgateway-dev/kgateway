@@ -5,7 +5,11 @@ description: Kubernetes End-to-End tests
 inputs:
   cluster-name:
     required: true
-    description: The name of the KinD cluster
+    description: The name of the cluster
+  cluster-type:
+    required: false
+    default: "kind"
+    description: The type of cluster (kind or k3d)
   test-args:
     required: true
     description: The list of arguments passed to the test invocation
@@ -28,6 +32,7 @@ runs:
     env:
       GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
       CLUSTER_NAME: ${{ inputs.cluster-name }}
+      CLUSTER_TYPE: ${{ inputs.cluster-type }}
       ISTIO_VERSION: ${{ inputs.istio-version }}
       TEST_PKG: ./test/e2e/tests
       # Doesn't really matter, but using the same as `go build` means we can re-use the same Go cache.

@@ -145,6 +145,14 @@ type CircuitBreakers struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	MaxRetries *int32 `json:"maxRetries,omitempty"`
+
+	// TrackRemaining controls whether Envoy tracks the remaining resource
+	// gauges for this circuit breaker threshold group. When enabled, the
+	// remaining_cx, remaining_pending, remaining_rq, and remaining_retries
+	// statistics are populated. Enabling this has a performance cost.
+	// If not specified, defaults to false.
+	// +optional
+	TrackRemaining *bool `json:"trackRemaining,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="!(has(self.jitter) && has(self.refreshRate)) || duration(self.jitter) <= duration(self.refreshRate)",message="jitter must be less than or equal to refreshRate"

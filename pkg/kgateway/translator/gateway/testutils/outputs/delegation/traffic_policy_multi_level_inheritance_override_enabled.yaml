@@ -171,7 +171,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -217,7 +217,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"a1","value":"a1"}]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
         ext_proc/a/extproc-ext:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
           overrides: {}
@@ -259,7 +259,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"mid","value":"mid"}]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
         ext_proc/b/extproc-ext:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
           overrides: {}
@@ -299,7 +299,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"example","value":"example"}]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
         ratelimit/local:
           '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
           filterEnabled:

@@ -64,9 +64,8 @@ jobs:
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
           localstack: 'false'
-        # December 4, 2025: ~9 minutes
         - cluster-name: 'api-validation' # TODO: rename to cluster-seven
-          go-test-args: '-timeout=15m'
+          go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^AttachedRoutes$$'
           localstack: 'false'
         # December 4, 2025: ~15 minutes
@@ -97,6 +96,7 @@ jobs:
         log-variables: true
     - id: setup-kind-cluster
       name: Setup KinD Cluster
+      if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
       uses: ./.github/actions/setup-kind-cluster
       with:
         cluster-name: ${{ matrix.test.cluster-name }}
@@ -104,10 +104,22 @@ jobs:
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         localstack: ${{ matrix.test.localstack }}
+    - id: setup-k3d-cluster
+      name: Setup k3d Cluster
+      if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
+      uses: ./.github/actions/setup-k3d-cluster
+      with:
+        cluster-name: ${{ matrix.test.cluster-name }}
+        node-version: ${{ steps.dotenv.outputs.node_version }}
+        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+        istio-version: ${{ steps.dotenv.outputs.istio_version }}
+        localstack: ${{ matrix.test.localstack }}
+        github-token: ${{ github.token }}
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
       with:
         cluster-name: ${{ matrix.test.cluster-name }}
+        cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}

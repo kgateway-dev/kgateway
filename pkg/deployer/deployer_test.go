@@ -1960,7 +1960,7 @@ var _ = Describe("Deployer", func() {
 					Expect(port.NodePort).To(Equal(int32(0)))
 				},
 			}),
-			Entry("static NodePort", &input{
+			Entry("static NodePort on NodePort service", &input{
 				dInputs:    defaultDeployerInputs(),
 				gw:         defaultGatewayWithGatewayParams(gwpOverrideName),
 				defaultGwp: defaultGatewayParams(),
@@ -1973,6 +1973,40 @@ var _ = Describe("Deployer", func() {
 						Kube: &kgateway.KubernetesProxyConfig{
 							Service: &kgateway.Service{
 								Type: ptr.To(corev1.ServiceTypeNodePort),
+								Ports: []kgateway.Port{
+									{
+										Port:     80,
+										NodePort: ptr.To[int32](30000),
+									},
+								},
+							},
+						},
+					},
+				},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) {
+					svc := objs.findService(defaultServiceName)
+					Expect(svc).NotTo(BeNil())
+
+					port := svc.Spec.Ports[0]
+					Expect(port.Port).To(Equal(int32(80)))
+					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
+					Expect(port.NodePort).To(Equal(int32(30000)))
+				},
+			}),
+			Entry("static NodePort on LoadBalancer service", &input{
+				dInputs:    defaultDeployerInputs(),
+				gw:         defaultGatewayWithGatewayParams(gwpOverrideName),
+				defaultGwp: defaultGatewayParams(),
+				overrideGwp: &kgateway.GatewayParameters{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      gwpOverrideName,
+						Namespace: defaultNamespace,
+					},
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
+							Service: &kgateway.Service{
+								Type: ptr.To(corev1.ServiceTypeLoadBalancer),
 								Ports: []kgateway.Port{
 									{
 										Port:     80,

@@ -93,14 +93,17 @@ func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *kgateway.
 	portName := SanitizePortName(name)
 	protocol := "TCP"
 
-	// Search for static NodePort set from the GatewayParameters spec
-	// If not found the default value of `nil` will not render anything.
+	// Search for static NodePort set from the GatewayParameters spec.
+	// NodePort and LoadBalancer both support explicit node ports; if not set, nil renders nothing.
 	var nodePort *int32 = nil
-	if gwp != nil && gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
-		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p kgateway.Port) bool {
-			return p.GetPort() == port
-		}); idx != -1 {
-			nodePort = gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()
+	if gwp != nil && gwp.Spec.GetKube().GetService().GetType() != nil {
+		serviceType := *(gwp.Spec.GetKube().GetService().GetType())
+		if serviceType == corev1.ServiceTypeNodePort || serviceType == corev1.ServiceTypeLoadBalancer {
+			if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p kgateway.Port) bool {
+				return p.GetPort() == port
+			}); idx != -1 {
+				nodePort = gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()
+			}
 		}
 	}
 	return append(gwPorts, HelmPort{

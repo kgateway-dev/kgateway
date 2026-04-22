@@ -53,7 +53,7 @@ listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -97,7 +97,7 @@ routes:
             value: '{"request":{"add":[{"name":"x-greatness","value":"{{ length(headers(\":path\"))
               }}"}],"body":{"parseAs":"AsString","value":"request-response"}},"response":{"add":[{"name":"original-greatness","value":"{{request_headers(\"x-greatness\")}}"}],"body":{"parseAs":"AsJson","value":"{{
               body }}"}}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
   - domains:
     - www.example-request.com
     name: listener~8080~www_example-request_com
@@ -122,7 +122,7 @@ routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"x-greatness","value":"{{length(headers(\":path\"))
               }}"}],"body":{"parseAs":"AsJson","value":"requested"}}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
   - domains:
     - www.example-response.com
     name: listener~8080~www_example-response_com
@@ -146,4 +146,4 @@ routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"original-greatness","value":"{{request_headers(\"x-greatness\")}}"}]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
