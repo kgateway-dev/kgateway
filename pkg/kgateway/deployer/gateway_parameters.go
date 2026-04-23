@@ -464,6 +464,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	gateway.Resources = envoyContainerConfig.GetResources()
 	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
 	gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())
+	gateway.ExtraArgs = envoyContainerConfig.GetExtraArgs()
 	gateway.Env = envoyContainerConfig.GetEnv()
 	gateway.ExtraVolumeMounts = envoyContainerConfig.ExtraVolumeMounts
 

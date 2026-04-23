@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 envoy-proxy-dynamic-modules-rust-sdk = { workspace = true }
 rustformation-filter = { path = "../filters/rustformation" }
+http-acl-filter = { path = "../filters/http-acl" }
 # To add a new filter: add it as a dependency here.
 # See /docs/guides/adding-a-filter.md for the full process.
 

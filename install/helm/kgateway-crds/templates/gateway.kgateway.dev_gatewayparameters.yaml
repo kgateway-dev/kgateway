@@ -448,6 +448,25 @@ spec:
                           - name
                           type: object
                         type: array
+                      extraArgs:
+                        description: |-
+                          Additional arguments to pass to the Envoy binary.
+
+                          Similar to Kubernetes container args, variable references $(VAR_NAME) are
+                          expanded using the container's environment. If a variable cannot be
+                          resolved, the reference is left unchanged. Double $$ are reduced to a
+                          single $, which allows escaping the $(VAR_NAME) syntax.
+
+                          The following Envoy flags are already managed by kgateway and must not be
+                          set here: `--disable-hot-restart`, `--service-node`, `--log-level`, and
+                          `--component-log-level`. Consider using a DeploymentOverlay to override these values if desired.
+                        items:
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                        maxItems: 32
+                        minItems: 1
+                        type: array
                       extraVolumeMounts:
                         description: |-
                           Additional volume mounts to add to the container. See

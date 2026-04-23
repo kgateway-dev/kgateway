@@ -3,6 +3,17 @@
 version = 4
 
 [[package]]
+name = "acl"
+version = "0.1.0"
+dependencies = [
+ "ip_network",
+ "ip_network_table-deps-treebitmap",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -228,10 +239,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
+name = "http-acl-filter"
+version = "0.1.0"
+dependencies = [
+ "acl",
+ "envoy-proxy-dynamic-modules-rust-sdk",
+ "mockall",
+]
+
+[[package]]
 name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
+
+[[package]]
+name = "ip_network"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa2f047c0a98b2f299aa5d6d7088443570faae494e9ae1305e48be000c9e0eb1"
+
+[[package]]
+name = "ip_network_table-deps-treebitmap"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e537132deb99c0eb4b752f0346b6a836200eaaa3516dd7e5514b63930a09e5d"
 
 [[package]]
 name = "itertools"
@@ -345,6 +377,7 @@ name = "module-init"
 version = "0.1.0"
 dependencies = [
  "envoy-proxy-dynamic-modules-rust-sdk",
+ "http-acl-filter",
  "rustformation-filter",
 ]
 

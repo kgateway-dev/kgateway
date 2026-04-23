@@ -3,8 +3,10 @@ resolver = "2"
 members = [
     "module-init",
     "filters/rustformation",
+    "filters/http-acl",
     "lib/transformation",
     "lib/envoy-helpers",
+    "lib/acl",
 ]
 default-members = ["module-init"]
 
