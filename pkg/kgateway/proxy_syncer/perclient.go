@@ -134,18 +134,20 @@ func snapshotPerClient(
 		clustersForUcc := krt.FetchOne(kctx, clusterSnapshot, krt.FilterKey(ucc.ResourceName()))
 		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
 
-		// HACK
-		// https://github.com/solo-io/gloo/pull/10611/files#diff-060acb7cdd3a287a3aef1dd864aae3e0193da17b6230c382b649ce9dc0eca80b
-		// Without this, we will send a "blip" where the DestinationRule
-		// or other per-client config is not applied to the clusters
-		// by sending the genericSnap clusters on the first pass, then
-		// the correct ones.
-		// This happens because the event for the new connected client
-		// triggers the per-client cluster transformation in parallel
-		// with this snapshotPerClient transformation. This Fetch is racing
-		// with that computation and will almost always lose.
-		// While we're looking for a way to make this ordering predictable
-		// to avoid hacks like this, it will do for now.
+		// Defer publishing until per-client inputs are coherent.
+		//
+		// This handler can fire before the per-client cluster and endpoint
+		// collections — driven by the same upstream events — have re-derived
+		// their outputs, so FetchOne may return nil even though results are
+		// imminent. Publishing anyway would emit a snapshot whose routes and
+		// listeners reference clusters not yet in CDS, causing Envoy to return
+		// 500/NC transiently.
+		//
+		// A second guard below (findMissingReferencedClusters) further delays
+		// publishing until every cluster referenced by routes or listeners is
+		// either present or explicitly errored.
+		//
+		// Historical context: https://github.com/solo-io/gloo/pull/10611.
 		if clustersForUcc == nil || clientEndpointResources == nil {
 			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
 			return nil
