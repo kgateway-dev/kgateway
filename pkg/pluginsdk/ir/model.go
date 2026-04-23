@@ -96,7 +96,7 @@ type EndpointsForBackend struct {
 	BackendLabels map[string]string
 
 	// +krtEqualsTodo compare load-balanced endpoint map
-	LbEps LocalityLbMap
+	LbEps                LocalityLbMap
 	ClusterName          string
 	UpstreamResourceName string
 	Port                 uint32
