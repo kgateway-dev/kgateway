@@ -237,7 +237,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	epPerClient := NewPerClientEnvoyEndpoints(
 		krtopts,
 		s.uniqueClients,
-		s.commonCols.Endpoints,
+		newFinalBackendEndpoints(krtopts, finalBackends, s.commonCols.Endpoints),
 		s.translator.TranslateEndpoints,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
