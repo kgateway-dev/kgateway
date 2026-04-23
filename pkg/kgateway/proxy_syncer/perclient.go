@@ -165,8 +165,7 @@ func snapshotPerClient(
 			clusterResources.Items = clustersProto
 		}
 		if missingClusters := findMissingReferencedClusters(
-			listenerRouteSnapshot.Routes,
-			listenerRouteSnapshot.Listeners,
+			listenerRouteSnapshot.ReferencedClusters,
 			clusterResources.Items,
 			clustersForUcc.erroredClusters,
 		); len(missingClusters) > 0 {
@@ -277,9 +276,22 @@ func snapshotPerClient(
 	return xdsSnapshotsForUcc
 }
 
+// collectReferencedClusters returns the set of cluster names referenced by the
+// given routes and listeners. It walks typed_config extensions via protoreflect
+// so it stays correct as Envoy adds new filter types that embed cluster names.
+//
+// This is computed once per GatewayXdsResources (shared across all connected
+// clients for that role) rather than per client — the proto walk and Any
+// unmarshalling are non-trivial on large LDS/RDS.
+func collectReferencedClusters(routes, listeners envoycache.Resources) map[string]struct{} {
+	referenced := make(map[string]struct{})
+	collectResourceClusterReferences(routes, referenced)
+	collectResourceClusterReferences(listeners, referenced)
+	return referenced
+}
+
 func findMissingReferencedClusters(
-	routes envoycache.Resources,
-	listeners envoycache.Resources,
+	referencedClusters map[string]struct{},
 	clusters map[string]envoycachetypes.ResourceWithTTL,
 	erroredClusters []string,
 ) []string {
@@ -287,10 +299,6 @@ func findMissingReferencedClusters(
 	for _, name := range erroredClusters {
 		erroredClusterSet[name] = struct{}{}
 	}
-
-	referencedClusters := make(map[string]struct{})
-	collectResourceClusterReferences(routes, referencedClusters)
-	collectResourceClusterReferences(listeners, referencedClusters)
 
 	missingClusters := make([]string, 0, len(referencedClusters))
 	for name := range referencedClusters {

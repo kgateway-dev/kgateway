@@ -83,6 +83,13 @@ type GatewayXdsResources struct {
 
 	// Secrets are items in the SDS response payload.
 	Secrets envoycache.Resources
+
+	// ReferencedClusters is the set of cluster names referenced by Routes and
+	// Listeners. It is derived from the proto contents, so it is a pure function
+	// of Routes.Version and Listeners.Version (already covered by Equals). Used
+	// by per-client snapshotting to avoid redundantly walking protos for every
+	// connected client on each update.
+	ReferencedClusters map[string]struct{}
 }
 
 func (r GatewayXdsResources) ResourceName() string {
@@ -118,17 +125,20 @@ func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 
 func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *GatewayXdsResources {
 	c, ch := sliceToResourcesHash(xdsSnap.ExtraClusters)
+	routes := sliceToResources(xdsSnap.Routes)
+	listeners := sliceToResources(xdsSnap.Listeners)
 	return &GatewayXdsResources{
 		NamespacedName: types.NamespacedName{
 			Namespace: gw.Obj.GetNamespace(),
 			Name:      gw.Obj.GetName(),
 		},
-		reports:      r,
-		ClustersHash: ch,
-		Clusters:     c,
-		Routes:       sliceToResources(xdsSnap.Routes),
-		Listeners:    sliceToResources(xdsSnap.Listeners),
-		Secrets:      sliceToResources(xdsSnap.Secrets),
+		reports:            r,
+		ClustersHash:       ch,
+		Clusters:           c,
+		Routes:             routes,
+		Listeners:          listeners,
+		Secrets:            sliceToResources(xdsSnap.Secrets),
+		ReferencedClusters: collectReferencedClusters(routes, listeners),
 	}
 }
 

@@ -163,26 +163,23 @@ func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T)
 	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
 
 	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes: sliceToResources([]*envoyroutev3.RouteConfiguration{
-			{
-				Name: "route-config",
-				VirtualHosts: []*envoyroutev3.VirtualHost{
-					{
-						Name:    "vhost",
-						Domains: []string{"*"},
-						Routes: []*envoyroutev3.Route{
-							{
-								Name: "weighted-route",
-								Action: &envoyroutev3.Route_Route{
-									Route: &envoyroutev3.RouteAction{
-										ClusterSpecifier: &envoyroutev3.RouteAction_WeightedClusters{
-											WeightedClusters: &envoyroutev3.WeightedCluster{
-												Clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{
-													{Name: "cluster-a", Weight: wrapperspb.UInt32(1)},
-													{Name: "cluster-b", Weight: wrapperspb.UInt32(1)},
-												},
+	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{
+				{
+					Name:    "vhost",
+					Domains: []string{"*"},
+					Routes: []*envoyroutev3.Route{
+						{
+							Name: "weighted-route",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_WeightedClusters{
+										WeightedClusters: &envoyroutev3.WeightedCluster{
+											Clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{
+												{Name: "cluster-a", Weight: wrapperspb.UInt32(1)},
+												{Name: "cluster-b", Weight: wrapperspb.UInt32(1)},
 											},
 										},
 									},
@@ -192,8 +189,14 @@ func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T)
 					},
 				},
 			},
-		}),
-		Listeners: sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}}),
+		},
+	})
+	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
+	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
+		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:             routes,
+		Listeners:          listeners,
+		ReferencedClusters: collectReferencedClusters(routes, listeners),
 	}})
 	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
 		{
@@ -250,38 +253,41 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
 
 	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes: sliceToResources([]*envoyroutev3.RouteConfiguration{
-			{
-				Name: "route-config",
-				VirtualHosts: []*envoyroutev3.VirtualHost{
-					{
-						Name:    "vhost",
-						Domains: []string{"*"},
-						Routes: []*envoyroutev3.Route{
-							{
-								Name: "single-route",
-								Action: &envoyroutev3.Route_Route{
-									Route: &envoyroutev3.RouteAction{
-										ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-a"},
-									},
+	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{
+				{
+					Name:    "vhost",
+					Domains: []string{"*"},
+					Routes: []*envoyroutev3.Route{
+						{
+							Name: "single-route",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-a"},
 								},
 							},
-							{
-								Name: "errored-route",
-								Action: &envoyroutev3.Route_Route{
-									Route: &envoyroutev3.RouteAction{
-										ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-b"},
-									},
+						},
+						{
+							Name: "errored-route",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-b"},
 								},
 							},
 						},
 					},
 				},
 			},
-		}),
-		Listeners: sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}}),
+		},
+	})
+	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
+	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
+		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:             routes,
+		Listeners:          listeners,
+		ReferencedClusters: collectReferencedClusters(routes, listeners),
 	}})
 	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
 		{
@@ -398,7 +404,8 @@ func TestFindMissingReferencedClusters_IncludesNestedHCMClusterRefs(t *testing.T
 		"cluster-a": {Resource: &envoyclusterv3.Cluster{Name: "cluster-a"}},
 	}
 
-	missingClusters := findMissingReferencedClusters(envoycache.Resources{}, listeners, clusters, nil)
+	referenced := collectReferencedClusters(envoycache.Resources{}, listeners)
+	missingClusters := findMissingReferencedClusters(referenced, clusters, nil)
 
 	g.Expect(missingClusters).To(gomega.Equal([]string{"cluster-b", "cluster-c"}))
 }
@@ -451,7 +458,8 @@ func TestFindMissingReferencedClusters_HandlesScalarValueMaps(t *testing.T) {
 	})
 
 	g.Expect(func() {
-		findMissingReferencedClusters(envoycache.Resources{}, listeners, nil, nil)
+		referenced := collectReferencedClusters(envoycache.Resources{}, listeners)
+		findMissingReferencedClusters(referenced, nil, nil)
 	}).ToNot(gomega.Panic())
 }
 
