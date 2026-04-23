@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -116,6 +117,13 @@ func TestCustomGWP(t *testing.T) {
 	// install CRDs for kgateway
 	testInstallation.InstallKgatewayCRDsFromLocalChart(ctx, t)
 
+	// Delete any kgateway-managed GatewayClass left over from a prior test run.
+	// The controller creates GatewayClasses via server-side apply, so `helm
+	// uninstall` from a prior test doesn't remove them; if a stale one exists
+	// with the wrong (e.g. nil) parametersRef, the assertions below race the
+	// reconciler and fail.
+	deleteStaleKgatewayGatewayClasses(ctx, t, testInstallation)
+
 	// create GatewayParameters for kgateway
 	err := testInstallation.Actions.Kubectl().Apply(ctx, []byte(kgatewayGWP))
 	if err != nil {
@@ -136,33 +144,27 @@ func TestCustomGWP(t *testing.T) {
 		t.Fatalf("failed to create Gateway: %v", err)
 	}
 
-	// Verify kgateway GatewayClass has correct parametersRef
-	gc := &gwv1.GatewayClass{}
-	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: wellknown.DefaultGatewayClassName}, gc)
-	if err != nil {
-		t.Fatalf("failed to get kgateway GatewayClass: %v", err)
-	}
-
-	if gc.Spec.ParametersRef == nil {
-		t.Fatal("kgateway GatewayClass spec.parametersRef is nil")
-	}
-
-	if gc.Spec.ParametersRef.Name != "custom-gwp" {
-		t.Fatalf("expected kgateway GatewayClass parametersRef.name to be 'custom-gwp', got '%s'", gc.Spec.ParametersRef.Name)
-	}
-
+	// Wait for the controller to reconcile the GatewayClass with the expected parametersRef.
+	// A stale GatewayClass may exist from a prior test run in the same cluster (it's created
+	// by the controller via SSA and is not removed by helm uninstall), so EventuallyObjectsExist
+	// above returns immediately without guaranteeing the controller has reconciled.
+	r := require.New(t)
 	expectedNamespace := gwv1.Namespace("kgateway-test")
-	if gc.Spec.ParametersRef.Namespace == nil || *gc.Spec.ParametersRef.Namespace != expectedNamespace {
-		t.Fatalf("expected kgateway GatewayClass parametersRef.namespace to be '%s', got '%v'", expectedNamespace, gc.Spec.ParametersRef.Namespace)
-	}
-
-	// Verify kgateway GatewayClass uses GatewayParameters GVK (gateway.kgateway.dev)
-	if gc.Spec.ParametersRef.Group != "gateway.kgateway.dev" {
-		t.Fatalf("expected kgateway GatewayClass parametersRef.group to be 'gateway.kgateway.dev', got '%s'", gc.Spec.ParametersRef.Group)
-	}
-	if gc.Spec.ParametersRef.Kind != "GatewayParameters" {
-		t.Fatalf("expected kgateway GatewayClass parametersRef.kind to be 'GatewayParameters', got '%s'", gc.Spec.ParametersRef.Kind)
-	}
+	r.EventuallyWithT(func(c *assert.CollectT) {
+		gc := &gwv1.GatewayClass{}
+		err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: wellknown.DefaultGatewayClassName}, gc)
+		assert.NoError(c, err, "failed to get kgateway GatewayClass")
+		if !assert.NotNil(c, gc.Spec.ParametersRef, "kgateway GatewayClass spec.parametersRef is nil") {
+			return
+		}
+		assert.Equal(c, "custom-gwp", gc.Spec.ParametersRef.Name, "expected kgateway GatewayClass parametersRef.name to be 'custom-gwp'")
+		if assert.NotNil(c, gc.Spec.ParametersRef.Namespace, "kgateway GatewayClass spec.parametersRef.namespace is nil") {
+			assert.Equal(c, expectedNamespace, *gc.Spec.ParametersRef.Namespace, "expected kgateway GatewayClass parametersRef.namespace to be '%s'", expectedNamespace)
+		}
+		// Verify kgateway GatewayClass uses GatewayParameters GVK (gateway.kgateway.dev)
+		assert.Equal(c, gwv1.Group("gateway.kgateway.dev"), gc.Spec.ParametersRef.Group, "expected kgateway GatewayClass parametersRef.group to be 'gateway.kgateway.dev'")
+		assert.Equal(c, gwv1.Kind("GatewayParameters"), gc.Spec.ParametersRef.Kind, "expected kgateway GatewayClass parametersRef.kind to be 'GatewayParameters'")
+	}, 60*time.Second, 200*time.Millisecond)
 
 	// Wait for Gateway to be accepted and deployment created
 	testInstallation.AssertionsT(t).EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
@@ -190,7 +192,6 @@ func TestCustomGWP(t *testing.T) {
 	testInstallation.AssertionsT(t).EventuallyKgatewayInstallSucceeded(ctx)
 
 	// Verify kgateway GatewayClass is updated with new ref
-	r := require.New(t)
 	r.EventuallyWithT(func(c *assert.CollectT) {
 		gcUpdated := &gwv1.GatewayClass{}
 		err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: wellknown.DefaultGatewayClassName}, gcUpdated)
@@ -230,6 +231,26 @@ func TestCustomGWP(t *testing.T) {
 		assert.Contains(c, pod.Labels, "another", "pod should have the 'another' label after upgrade")
 		assert.Equal(c, "label", pod.Labels["another"], "pod should have the new label 'another: label' after upgrade")
 	}, 15*time.Second, 200*time.Millisecond)
+}
+
+// deleteStaleKgatewayGatewayClasses removes any GatewayClass managed by the
+// kgateway controller. Helm doesn't track these (the controller creates them
+// via server-side apply), so they survive `helm uninstall` and leak state
+// across tests.
+func deleteStaleKgatewayGatewayClasses(ctx context.Context, t *testing.T, testInstallation *e2e.TestInstallation) {
+	list := &gwv1.GatewayClassList{}
+	if err := testInstallation.ClusterContext.Client.List(ctx, list); err != nil {
+		t.Fatalf("failed to list GatewayClasses: %v", err)
+	}
+	for idx := range list.Items {
+		gc := &list.Items[idx]
+		if string(gc.Spec.ControllerName) != wellknown.DefaultGatewayControllerName {
+			continue
+		}
+		if err := testInstallation.ClusterContext.Client.Delete(ctx, gc); err != nil && !apierrors.IsNotFound(err) {
+			t.Fatalf("failed to delete stale GatewayClass %q: %v", gc.Name, err)
+		}
+	}
 }
 
 // verifyPodLabel checks that a pod for the given deployment has the specified label with the expected value.
