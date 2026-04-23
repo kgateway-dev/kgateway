@@ -89,6 +89,7 @@ type GatewayXdsResources struct {
 	// of Routes.Version and Listeners.Version (already covered by Equals). Used
 	// by per-client snapshotting to avoid redundantly walking protos for every
 	// connected client on each update.
+	// +noKrtEquals
 	ReferencedClusters map[string]struct{}
 }
 
