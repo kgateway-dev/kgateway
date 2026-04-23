@@ -1,0 +1,5 @@
+controller:
+  service:
+    # Make controller restarts expose the new pod through the xDS service
+    # before controller readiness passes, which widens the startup race.
+    publishNotReadyAddresses: true
