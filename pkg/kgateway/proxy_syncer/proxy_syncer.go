@@ -439,6 +439,16 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				// new coherent snapshot overwrites it — the "retain last good"
 				// behavior that prevents unresolvable cluster references from
 				// stranding live traffic.
+				//
+				// Known leak: this branch also fires when a UCC truly goes
+				// away (Envoy pod replaced on rollout, scaled down, etc.),
+				// and we cannot distinguish that from the "defer" case here.
+				// The SnapshotCache entry for that UCC is therefore never
+				// cleared and accumulates over the controller's lifetime.
+				// Pre-existing behavior (the prior ClearSnapshot call was
+				// already commented out); reclaiming these entries requires
+				// a separate signal — e.g. cross-referencing uccCol
+				// membership — and is left to a follow-up.
 			}
 
 			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{
