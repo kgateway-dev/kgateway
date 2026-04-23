@@ -170,7 +170,7 @@ func snapshotPerClient(
 		//
 		// Historical context: https://github.com/solo-io/gloo/pull/10611.
 		if clustersForUcc == nil || clientEndpointResources == nil {
-			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
+			logger.Info("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
 			return nil
 		}
 
