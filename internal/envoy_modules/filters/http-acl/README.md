@@ -47,7 +47,7 @@ Deny response object:
 | --------------------- | --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `statusCode`          | integer (HTTP status) | no       | HTTP status code returned on deny. Defaults to `403`.                                                                                                                                |
 | `headers`             | array of header pairs | no       | Extra response headers to attach on every deny. Each entry is `{"name","value"}`.                                                                                                    |
-| `addBlockedByHeader`  | string                | no       | When set, the filter adds a response header with this value as the header **name** on every deny. The header **value** mirrors the `blocked-by` dynamic metadata: the matched rule's `name`, `"rule"` for an unnamed rule, or `"default"` for a default-action deny. |
+| `blockedByHeaderName`  | string                | no       | When set, the filter adds a response header with this value as the header **name** on every deny. The header **value** mirrors the `blocked-by` dynamic metadata: the matched rule's `name`, `"rule"` for an unnamed rule, or `"default"` for a default-action deny. |
 
 ### Default allow, deny one CIDR
 
@@ -112,7 +112,7 @@ Denied requests get HTTP 451 and the two extra response headers.
 {
   "defaultAction": "deny",
   "denyResponse": {
-    "addBlockedByHeader": "X-Blocked-By"
+    "blockedByHeaderName": "X-Blocked-By"
   },
   "rules": [
     { "name": "block-internal-range", "cidrs": ["10.0.0.0/8"],     "action": "deny"  },

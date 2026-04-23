@@ -1,5 +1,5 @@
 ---
-# Surface the block reason in a response header via addBlockedByHeader.
+# Surface the block reason in a response header via blockedByHeaderName.
 # Corresponds to the internal/envoy_modules/filters/http-acl/README.md
 # "Surface the block reason in a response header" example.
 apiVersion: gateway.networking.k8s.io/v1
@@ -37,10 +37,10 @@ spec:
     - name: httpbin-route
       kind: HTTPRoute
       group: gateway.networking.k8s.io
-  httpAcl:
+  acl:
     defaultAction: deny
     denyResponse:
-      addBlockedByHeader: X-Blocked-By
+      blockedByHeaderName: X-Blocked-By
     rules:
       - name: block-internal-range
         cidrs:

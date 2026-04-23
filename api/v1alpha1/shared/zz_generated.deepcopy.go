@@ -23,8 +23,8 @@ func (in *ACLDenyResponse) DeepCopyInto(out *ACLDenyResponse) {
 		*out = make([]ACLResponseHeader, len(*in))
 		copy(*out, *in)
 	}
-	if in.AddBlockedByHeader != nil {
-		in, out := &in.AddBlockedByHeader, &out.AddBlockedByHeader
+	if in.BlockedByHeaderName != nil {
+		in, out := &in.BlockedByHeaderName, &out.BlockedByHeaderName
 		*out = new(string)
 		**out = **in
 	}

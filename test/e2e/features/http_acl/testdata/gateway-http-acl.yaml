@@ -36,7 +36,7 @@ spec:
     - kind: Gateway
       group: gateway.networking.k8s.io
       name: gateway
-  httpAcl:
+  acl:
     defaultAction: allow
     rules:
       - name: block-internal-range
@@ -49,4 +49,4 @@ spec:
         action: allow
     denyResponse:
       statusCode: 403
-      addBlockedByHeader: X-Blocked-By
+      blockedByHeaderName: X-Blocked-By

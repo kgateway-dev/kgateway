@@ -40,7 +40,7 @@ pub struct DenyResponse {
     /// default-action deny, or `"unknown-ip"` when the downstream source
     /// address cannot be determined.
     #[serde(default)]
-    pub add_blocked_by_header: Option<String>,
+    pub blocked_by_header_name: Option<String>,
 }
 
 fn default_deny_status() -> u16 {
@@ -52,7 +52,7 @@ impl Default for DenyResponse {
         Self {
             status_code: default_deny_status(),
             headers: Vec::new(),
-            add_blocked_by_header: None,
+            blocked_by_header_name: None,
         }
     }
 }

@@ -181,7 +181,7 @@ fn deny<EHF: EnvoyHttpFilter>(
         .iter()
         .map(|h| (h.name.as_str(), h.value.as_bytes()))
         .collect();
-    if let (Some(header_name), Some(tag)) = (resp.add_blocked_by_header.as_deref(), blocked_by) {
+    if let (Some(header_name), Some(tag)) = (resp.blocked_by_header_name.as_deref(), blocked_by) {
         headers.push((header_name, tag.as_bytes()));
     }
     envoy_filter.send_response(

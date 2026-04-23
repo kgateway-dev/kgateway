@@ -170,7 +170,7 @@ func (s *testingSuite) TestHttpACLCustomDenyResponse() {
 	)
 }
 
-// TestHttpACLBlockedByHeader tests that addBlockedByHeader surfaces the block reason in a response header.
+// TestHttpACLBlockedByHeader tests that blockedByHeaderName surfaces the block reason in a response header.
 // Rules: deny 10.0.0.0/8 (named), deny 192.168.0.0/16 (unnamed), allow 203.0.113.0/24; defaultAction=deny.
 func (s *testingSuite) TestHttpACLBlockedByHeader() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(

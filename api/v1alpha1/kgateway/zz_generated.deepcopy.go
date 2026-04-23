@@ -5415,8 +5415,8 @@ func (in *TrafficPolicySpec) DeepCopyInto(out *TrafficPolicySpec) {
 		*out = new(FaultInjectionPolicy)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.HttpACL != nil {
-		in, out := &in.HttpACL, &out.HttpACL
+	if in.ACL != nil {
+		in, out := &in.ACL, &out.ACL
 		*out = new(shared.ACLPolicy)
 		(*in).DeepCopyInto(*out)
 	}

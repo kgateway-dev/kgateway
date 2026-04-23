@@ -105,7 +105,7 @@ fn deny_by_named_rule_emits_rule_name_metadata() {
         .returning(|status, headers, body, _| {
             assert_eq!(status, 403);
             assert!(body.is_none());
-            // No addBlockedByHeader configured → no extra headers.
+            // No blockedByHeaderName configured → no extra headers.
             assert!(headers.is_empty());
         });
 
@@ -195,7 +195,7 @@ fn add_blocked_by_header_appended_with_rule_name() {
     let cfg = make_filter_config(
         r#"{
             "defaultAction":"allow",
-            "denyResponse":{"addBlockedByHeader":"X-Blocked-By"},
+            "denyResponse":{"blockedByHeaderName":"X-Blocked-By"},
             "rules":[{"name":"block-internal","cidrs":["10.0.0.0/8"],"action":"deny"}]
         }"#,
     );
@@ -218,7 +218,7 @@ fn add_blocked_by_header_carries_rule_literal_for_unnamed_rule() {
     let cfg = make_filter_config(
         r#"{
             "defaultAction":"allow",
-            "denyResponse":{"addBlockedByHeader":"X-Blocked-By"},
+            "denyResponse":{"blockedByHeaderName":"X-Blocked-By"},
             "rules":[{"cidrs":["10.0.0.0/8"],"action":"deny"}]
         }"#,
     );
@@ -240,7 +240,7 @@ fn add_blocked_by_header_carries_default_for_default_deny() {
     let cfg = make_filter_config(
         r#"{
             "defaultAction":"deny",
-            "denyResponse":{"addBlockedByHeader":"X-Blocked-By"}
+            "denyResponse":{"blockedByHeaderName":"X-Blocked-By"}
         }"#,
     );
     let mut mock = mock_with_source(Some("8.8.8.8"));

@@ -168,12 +168,12 @@ type TrafficPolicySpec struct {
 	// +optional
 	FaultInjection *FaultInjectionPolicy `json:"faultInjection,omitempty"`
 
-	// HttpACL configures IP-based access control for HTTP requests.
+	// ACL configures IP-based access control for HTTP requests.
 	// Rules are evaluated using longest-prefix matching on the effictive client IP
 	// from envoy base on settings. See the UseRemoteAddress, XffTrustedCIDRs,
 	// XffNumTrustedHops settings under ListenerPolicy -> HttpSettings for details.
 	// +optional
-	HttpACL *shared.ACLPolicy `json:"httpAcl,omitempty"`
+	ACL *shared.ACLPolicy `json:"acl,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.

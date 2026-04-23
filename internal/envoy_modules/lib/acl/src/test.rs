@@ -306,18 +306,18 @@ fn deny_response_headers_only_defaults_status() {
 #[test]
 fn deny_response_add_blocked_by_header_defaults_to_none() {
     let acl = build(r#"{"defaultAction":"deny"}"#);
-    assert!(acl.deny_response().add_blocked_by_header.is_none());
+    assert!(acl.deny_response().blocked_by_header_name.is_none());
 }
 
 #[test]
 fn deny_response_add_blocked_by_header_parses() {
     let acl = build(
         r#"{"defaultAction":"deny","denyResponse":{
-            "addBlockedByHeader":"X-Blocked-By"
+            "blockedByHeaderName":"X-Blocked-By"
         },"rules":[]}"#,
     );
     assert_eq!(
-        acl.deny_response().add_blocked_by_header.as_deref(),
+        acl.deny_response().blocked_by_header_name.as_deref(),
         Some("X-Blocked-By")
     );
 }

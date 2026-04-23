@@ -49,7 +49,7 @@ metadata:
   name: route-acl
   namespace: kgateway-base
 spec:
-  httpAcl:
+  acl:
     defaultAction: allow
     rules:
       - cidrs:

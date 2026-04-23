@@ -46,7 +46,7 @@ spec:
     - kind: HTTPRoute
       group: gateway.networking.k8s.io
       name: httpbin-route
-  httpAcl:
+  acl:
     defaultAction: deny
     rules:
       - cidrs:

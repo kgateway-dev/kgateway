@@ -49,10 +49,10 @@ func (h *httpACLIR) Validate() error {
 
 // constructHttpACL constructs the HTTP ACL policy IR from the traffic policy spec.
 func constructHttpACL(in *kgateway.TrafficPolicy, out *trafficPolicySpecIr) error {
-	if in.Spec.HttpACL == nil {
+	if in.Spec.ACL == nil {
 		return nil
 	}
-	aclJSON, err := json.Marshal(in.Spec.HttpACL)
+	aclJSON, err := json.Marshal(in.Spec.ACL)
 	if err != nil {
 		return err
 	}

@@ -44,7 +44,7 @@ type ACLResponseHeader struct {
 }
 
 // ACLDenyResponse customizes the response sent when a request is denied.
-// +kubebuilder:validation:AtLeastOneOf=statusCode;headers;addBlockedByHeader
+// +kubebuilder:validation:AtLeastOneOf=statusCode;headers;blockedByHeaderName
 type ACLDenyResponse struct {
 	// StatusCode is the HTTP status code returned on deny. Defaults to 403.
 	// +optional
@@ -57,13 +57,13 @@ type ACLDenyResponse struct {
 	// +kubebuilder:validation:MaxItems=16
 	Headers []ACLResponseHeader `json:"headers,omitempty"`
 
-	// AddBlockedByHeader, when set, adds a response header with this name on every deny.
+	// BlockedByHeaderName, when set, adds a response header with this name on every deny.
 	// The header value mirrors the blocked-by dynamic metadata: the matched rule's name,
 	// "rule" for an unnamed rule, or "default" for a default-action deny.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=256
-	AddBlockedByHeader *string `json:"addBlockedByHeader,omitempty"`
+	BlockedByHeaderName *string `json:"blockedByHeaderName,omitempty"`
 }
 
 // ACLPolicy defines IP-based access control rules evaluated on every HTTP request.
