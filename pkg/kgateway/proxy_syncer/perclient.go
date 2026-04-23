@@ -134,7 +134,7 @@ func snapshotPerClient(
 		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
 
 		// Defer publishing a per-client snapshot until its per-client inputs
-		// are coherent. Two guards:
+		// are coherent. Three guards:
 		//
 		//  1. If per-client clusters or endpoints haven't been derived yet
 		//     for this UCC, return nil. This handler can fire before the
@@ -148,6 +148,11 @@ func snapshotPerClient(
 		//     Publishing before then would emit a partial CDS referenced by
 		//     listeners/routes and cause Envoy to return 500/NC on routes
 		//     whose clusters just happen to be in the same CDS response.
+		//
+		//  3. If any referenced EDS cluster has no matching ClusterLoadAssignment
+		//     in the EDS resources that would be sent, return nil. Publishing
+		//     CDS/RDS/LDS before EDS catches up can make Envoy drop all hosts for
+		//     a route that was healthy before a controller restart.
 		//
 		// Returning nil removes this UCC's entry from the output collection,
 		// which surfaces as a Delete event in proxy_syncer.go's xDS
@@ -194,13 +199,26 @@ func snapshotPerClient(
 			)
 			return nil
 		}
+		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
+		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
+		if missingEndpointClusters := findMissingReferencedEndpointResources(
+			listenerRouteSnapshot.ReferencedClusters,
+			clusterResources.Items,
+			endpointRes.Items,
+			clustersForUcc.erroredClusters,
+		); len(missingEndpointClusters) > 0 {
+			logger.Info(
+				"defer building snapshot until all referenced EDS resources are ready",
+				"client", ucc.ResourceName(),
+				"missing_endpoint_clusters", missingEndpointClusters,
+			)
+			return nil
+		}
 
 		snap.erroredClusters = clustersForUcc.erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources
-		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
-		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
 		snapshot.Resources[envoycachetypes.Endpoint] = endpointRes
 		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
 		snapshot.Resources[envoycachetypes.Listener] = listenerRouteSnapshot.Listeners
@@ -329,10 +347,7 @@ func findMissingReferencedClusters(
 	clusters map[string]envoycachetypes.ResourceWithTTL,
 	erroredClusters []string,
 ) []string {
-	erroredClusterSet := make(map[string]struct{}, len(erroredClusters))
-	for _, name := range erroredClusters {
-		erroredClusterSet[name] = struct{}{}
-	}
+	erroredClusterSet := stringSet(erroredClusters)
 
 	missingClusters := make([]string, 0, len(referencedClusters))
 	for name := range referencedClusters {
@@ -350,6 +365,64 @@ func findMissingReferencedClusters(
 	sort.Strings(missingClusters)
 
 	return missingClusters
+}
+
+func findMissingReferencedEndpointResources(
+	referencedClusters map[string]struct{},
+	clusters map[string]envoycachetypes.ResourceWithTTL,
+	endpoints map[string]envoycachetypes.ResourceWithTTL,
+	erroredClusters []string,
+) []string {
+	erroredClusterSet := stringSet(erroredClusters)
+
+	missingEndpointClusters := make([]string, 0, len(referencedClusters))
+	for name := range referencedClusters {
+		if _, ok := erroredClusterSet[name]; ok {
+			continue
+		}
+		if name == wellknown.BlackholeClusterName {
+			continue
+		}
+
+		clusterResource, ok := clusters[name]
+		if !ok {
+			continue
+		}
+		endpointResourceName, requiresEndpointResource := endpointResourceNameForCluster(clusterResource)
+		if !requiresEndpointResource {
+			continue
+		}
+		if _, ok := endpoints[endpointResourceName]; ok {
+			continue
+		}
+		missingEndpointClusters = append(missingEndpointClusters, name)
+	}
+	sort.Strings(missingEndpointClusters)
+
+	return missingEndpointClusters
+}
+
+func endpointResourceNameForCluster(resource envoycachetypes.ResourceWithTTL) (string, bool) {
+	cluster, ok := resource.Resource.(*envoyclusterv3.Cluster)
+	if !ok {
+		return "", false
+	}
+	clusterType, ok := cluster.GetClusterDiscoveryType().(*envoyclusterv3.Cluster_Type)
+	if !ok || clusterType.Type != envoyclusterv3.Cluster_EDS {
+		return "", false
+	}
+	if edsServiceName := cluster.GetEdsClusterConfig().GetServiceName(); edsServiceName != "" {
+		return edsServiceName, true
+	}
+	return cluster.GetName(), true
+}
+
+func stringSet(values []string) map[string]struct{} {
+	out := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		out[value] = struct{}{}
+	}
+	return out
 }
 
 func collectResourceClusterReferences(resources envoycache.Resources, referencedClusters map[string]struct{}) {
