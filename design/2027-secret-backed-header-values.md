@@ -52,8 +52,12 @@ type KgatewayHTTPHeaderFilter struct {
     Remove []string             `json:"remove,omitempty"`
 }
 
+// +kubebuilder:validation:XValidation:rule="has(self.value.literal) ? has(self.name) : true",message="name is required when using a literal value"
 type KgatewayHTTPHeader struct {
-    Name  gwv1.HTTPHeaderName     `json:"name"`
+    // Name is the header field name. Required when value is a literal string.
+    // When secretRef is used and name is omitted, the secret key is used as the header name.
+    // +optional
+    Name  *gwv1.HTTPHeaderName    `json:"name,omitempty"`
     Value KgatewayHTTPHeaderValue `json:"value"`
 }
 
@@ -100,13 +104,18 @@ spec:
   headerModifiers:
     request:
       set:
+        # Inline literal — name required
+        - name: X-Static-Header
+          value:
+            literal: "static-value"
+        # Secret-backed with explicit header name override
         - name: X-Api-Key
           value:
             secretRef:
               name: backend-creds
               key: api-key
-        - name: X-Tenant-Id
-          value:
+        # Secret-backed with name omitted — "tenant-id" becomes the header name
+        - value:
             secretRef:
               name: backend-creds
               key: tenant-id
@@ -146,15 +155,27 @@ secret or key.
 
 ## Design Decisions
 
-### Header name and secret key are separate fields
+### Header name is optional when using `secretRef`; defaults to the secret key
 
-The header name (`KgatewayHTTPHeader.Name`) and the secret key (`SecretKeyRef.Key`) are intentionally
-distinct fields rather than implicitly coupled (e.g., "use the secret key as the header name"). The
-secret owner and the policy author are often different people on different teams: a platform team
-manages the Secret and controls its key names; an application team authors the TrafficPolicy and
-decides which header to inject. Keeping the two fields separate means either side can rename their
-field without requiring the other to change. It also allows a single Secret to back multiple
-differently-named headers.
+When `secretRef` is specified without a `name`, the secret key is used as the header name. This
+allows a policy author to specify just the secret reference without having to restate the key as
+both a lookup value and a header name. When a different header name is desired (e.g., the secret
+key is `api-key` but the header should be `X-Api-Key`), `name` can be set explicitly to override
+it.
+
+When `value` (literal) is used, `name` is always required — there is no key to derive it from.
+
+Note: because `name` is optional, `Set`/`Add` cannot use `listMapKey=name` for strategic merge
+patch. These lists use `listType=atomic`, meaning the whole list is replaced on update rather than
+merged element by element.
+
+### Header name and secret key are separate fields when name is specified
+
+When `name` is provided alongside `secretRef`, the header name and the secret key are intentionally
+distinct. The secret owner and the policy author are often different people on different teams: a
+platform team manages the Secret and controls its key names; an application team authors the
+TrafficPolicy and decides which header to inject. Keeping them separate means either side can rename
+their field without requiring the other to change.
 
 ### `key` is always required; it does not default to the header name
 
