@@ -144,6 +144,26 @@ secret or key.
   ReferenceGrant (rejected), policy+secret in different namespace from Gateway (allowed)
 - E2E test injecting an API key from a Secret and verifying it arrives at the upstream
 
+## Design Decisions
+
+### Header name and secret key are separate fields
+
+The header name (`KgatewayHTTPHeader.Name`) and the secret key (`SecretKeyRef.Key`) are intentionally
+distinct fields rather than implicitly coupled (e.g., "use the secret key as the header name"). The
+secret owner and the policy author are often different people on different teams: a platform team
+manages the Secret and controls its key names; an application team authors the TrafficPolicy and
+decides which header to inject. Keeping the two fields separate means either side can rename their
+field without requiring the other to change. It also allows a single Secret to back multiple
+differently-named headers.
+
+### Duplicate entries for the same header name are a user error
+
+Because inline and secret-backed values share the same `Set`/`Add` lists, it is possible to write a
+policy with two entries for the same header name — one inline, one secret-backed, or two
+secret-backed entries pointing to different keys. This is a user error and must be rejected at
+admission time with a clear validation message. Allowing it would produce non-deterministic header
+values and undermine the predictability that `Set` semantics are meant to provide.
+
 ## Alternatives
 
 ### Option A: Parallel `requestHeadersFromSecret` fields (current PR #13880)
