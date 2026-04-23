@@ -13,6 +13,10 @@ RUN sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|htt
     && apt-get -o Acquire::Retries=5 update \
     && apt-get -o Acquire::Retries=5 install --no-install-recommends -y clang
 ARG ENVOY_MODULES_DIR=./envoy_modules
+# Copy rust-toolchain.toml first so rustup auto-installs the pinned toolchain
+# (single source of truth for Rust version; see tools/build-tools/Dockerfile and
+# .github/workflows/lint.yaml which also read this file).
+COPY ${ENVOY_MODULES_DIR}/rust-toolchain.toml ./
 COPY ${ENVOY_MODULES_DIR}/Cargo.toml ${ENVOY_MODULES_DIR}/Cargo.lock ./
 # Workspace crate members are auto-discovered from ${ENVOY_MODULES_DIR}/Cargo.toml.
 # To add a crate, add it to the workspace members list in internal/envoy_modules/Cargo.toml.
@@ -20,16 +24,22 @@ COPY ${ENVOY_MODULES_DIR}/Cargo.toml ${ENVOY_MODULES_DIR}/Cargo.lock ./
 # target is run. Do not edit by hand.
 RUN mkdir -p module-init/src \
               filters/rustformation/src \
+              filters/http-acl/src \
               lib/transformation/src \
               lib/envoy-helpers/src \
+              lib/acl/src \
     && echo "pub fn dummy() {}" > module-init/src/lib.rs \
     && echo "pub fn dummy() {}" > filters/rustformation/src/lib.rs \
+    && echo "pub fn dummy() {}" > filters/http-acl/src/lib.rs \
     && echo "pub fn dummy() {}" > lib/transformation/src/lib.rs \
-    && echo "pub fn dummy() {}" > lib/envoy-helpers/src/lib.rs
+    && echo "pub fn dummy() {}" > lib/envoy-helpers/src/lib.rs \
+    && echo "pub fn dummy() {}" > lib/acl/src/lib.rs
 COPY ${ENVOY_MODULES_DIR}/module-init/Cargo.toml ./module-init
 COPY ${ENVOY_MODULES_DIR}/filters/rustformation/Cargo.toml ./filters/rustformation
+COPY ${ENVOY_MODULES_DIR}/filters/http-acl/Cargo.toml ./filters/http-acl
 COPY ${ENVOY_MODULES_DIR}/lib/transformation/Cargo.toml ./lib/transformation
 COPY ${ENVOY_MODULES_DIR}/lib/envoy-helpers/Cargo.toml ./lib/envoy-helpers
+COPY ${ENVOY_MODULES_DIR}/lib/acl/Cargo.toml ./lib/acl
 ARG RUST_BUILD_ARCH=x86_64 # options are x86_64 or aarch64
 # Because we built the dummy lib in this Stage to cache all the dependencies in docker build layer cache,
 # the dummy libs are also cached. In Stage 2 when we COPY, it preserves the timestamps of the
@@ -40,8 +50,10 @@ RUN cargo fetch \
     && cargo zigbuild --target ${RUST_BUILD_ARCH}-unknown-linux-gnu \
     && find /build/target \( -name librust_module.so \
         -o -name 'librustformation_filter-*.rlib' \
+        -o -name 'libhttp_acl_filter-*.rlib' \
         -o -name 'libtransformation-*.rlib' \
         -o -name 'libenvoy_helpers-*.rlib' \
+        -o -name 'libacl-*.rlib' \
     \) -type f -delete
 
 # Stage 2: build envoy dynamic module

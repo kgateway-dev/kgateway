@@ -145,6 +145,10 @@ type Settings struct {
 	// Defaults to "istio-system".
 	IstioNamespace string `split_words:"true" default:"istio-system"`
 
+	// WorkloadEntriesExclusionLabels is a comma-separated list of label keys. WorkloadEntries carrying
+	// any of these label keys will be excluded from kgateway's endpoint discovery.
+	WorkloadEntriesExclusionLabels string `split_words:"true"`
+
 	// XdsServiceHost is the host that serves xDS config.
 	// It overrides xdsServiceName if set.
 	XdsServiceHost string `split_words:"true"`

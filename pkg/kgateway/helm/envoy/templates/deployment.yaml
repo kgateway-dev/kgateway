@@ -71,6 +71,11 @@ spec:
         - "--component-log-level"
         - "{{ . }}"
         {{- end }}{{/* with $gateway.componentLogLevel */}}
+        {{- with $gateway.extraArgs }}
+        {{- range . }}
+        - {{ . | quote }}
+        {{- end }}
+        {{- end }}{{/* with $gateway.extraArgs */}}
         image: "{{ template "kgateway.gateway.image" $gateway.image }}"
         {{- if $gateway.image.pullPolicy }}
         imagePullPolicy: {{ $gateway.image.pullPolicy }}

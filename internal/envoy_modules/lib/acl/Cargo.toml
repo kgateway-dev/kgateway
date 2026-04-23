@@ -1,0 +1,11 @@
+[package]
+name = "acl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0.17"
+ip_network = "0.4"
+ip_network_table-deps-treebitmap = "0.5"

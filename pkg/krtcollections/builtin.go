@@ -823,8 +823,6 @@ func (h *RoutesIndex) convertfilterIR(
 	}, nil
 }
 
-// REQUEST REDIRECT IR
-// ===================
 type requestRedirectIr struct {
 	// Redir is the redirect action to apply to the route.
 	Redir *envoyroutev3.RedirectAction
@@ -841,8 +839,12 @@ func (r *requestRedirectIr) apply(
 	if outputRoute == nil || !policy.IsSettable(outputRoute.GetRedirect(), mergeOpts) {
 		return
 	}
+	// Clone so each Envoy route owns its RedirectAction. The same HttpRouteIR (and thus the
+	// same requestRedirectIr) is applied across multiple listeners; applyRedirectPortPostProcessing
+	// mutates PortRedirect per listener and must not update shared IR state.
+	redir := proto.Clone(r.Redir).(*envoyroutev3.RedirectAction)
 	outputRoute.Action = &envoyroutev3.Route_Redirect{
-		Redirect: r.Redir,
+		Redirect: redir,
 	}
 }
 

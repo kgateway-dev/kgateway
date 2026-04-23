@@ -598,6 +598,7 @@ func deepMergeEnvoyContainer(dst, src *kgateway.EnvoyContainer) *kgateway.EnvoyC
 	dst.Image = DeepMergeImage(dst.GetImage(), src.GetImage())
 	dst.SecurityContext = DeepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
 	dst.Resources = DeepMergeResourceRequirements(dst.GetResources(), src.GetResources())
+	dst.ExtraArgs = DeepMergeSlices(dst.GetExtraArgs(), src.GetExtraArgs())
 	dst.Env = DeepMergeSlices(dst.GetEnv(), src.GetEnv())
 	dst.ExtraVolumeMounts = DeepMergeSlices(dst.ExtraVolumeMounts, src.ExtraVolumeMounts)
 
