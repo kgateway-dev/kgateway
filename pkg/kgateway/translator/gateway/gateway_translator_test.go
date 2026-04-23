@@ -2019,6 +2019,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("RBAC Policy at route level with Deny action", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "rbac/route-cel-rbac-deny.yaml",
+			outputFile: "rbac/route-cel-rbac-deny.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("RBAC Policy at httproute level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "rbac/httproute-cel-rbac.yaml",
