@@ -152,16 +152,17 @@ from an inline string or a secret reference.
 
 ### Reporting
 
-If a referenced secret does not exist or does not contain the specified key, the `TrafficPolicy`
-status should reflect `Accepted=False` with `Reason=Invalid` and a message identifying the missing
-secret or key.
+If a referenced secret does not exist, does not contain the specified key, or a cross-namespace
+reference is made without a valid ReferenceGrant, the `TrafficPolicy` status should reflect
+`Accepted=False` with `Reason=Invalid` and a message identifying the cause.
 
 ### Test Plan
 
 - Unit tests for the translation layer covering: inline values, secret-backed values, missing
   secret, missing key, name omitted with secretRef
 - Translator golden-file tests covering: same-namespace secret, name omitted (key becomes header),
-  policy+secret in different namespace from Gateway (allowed)
+  cross-namespace secret with ReferenceGrant (allowed), cross-namespace secret without ReferenceGrant
+  (Accepted=False), policy+secret in different namespace from Gateway (allowed)
 - E2E test injecting an API key from a Secret and verifying it arrives at the upstream
 
 ## Design Decisions
@@ -213,9 +214,10 @@ namespace must exist for cross-namespace access to succeed.
 
 ### Duplicate entries for the same header name are a user error
 
-When `name` is specified, a policy with two entries for the same header name is a user error and
-must be rejected at admission time. Allowing it would produce non-deterministic header values and
-undermine the predictability that `Set` semantics are meant to provide.
+A policy with two entries that resolve to the same header name — whether from an explicit `name`
+field or from two `secretRef` entries whose keys are identical — is a user error and must be
+rejected at admission time. Allowing it would produce non-deterministic header values and undermine
+the predictability that `Set` semantics are meant to provide.
 
 ## Migration
 
