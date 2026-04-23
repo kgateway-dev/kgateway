@@ -156,6 +156,15 @@ decides which header to inject. Keeping the two fields separate means either sid
 field without requiring the other to change. It also allows a single Secret to back multiple
 differently-named headers.
 
+### `key` is always required; it does not default to the header name
+
+An alternative considered was making `key` optional: if omitted, it would default to the header
+name, reducing verbosity in the common case where the secret key and header name happen to match.
+We rejected this because it re-introduces the coupling the separate-field design is meant to avoid.
+If the platform team renames a secret key, or the application team renames a header, an implicit
+default silently breaks without a validation error. Requiring `key` keeps both sides explicit and
+independently changeable.
+
 ### Duplicate entries for the same header name are a user error
 
 Because inline and secret-backed values share the same `Set`/`Add` lists, it is possible to write a
