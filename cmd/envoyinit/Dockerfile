@@ -13,6 +13,10 @@ RUN sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|htt
     && apt-get -o Acquire::Retries=5 update \
     && apt-get -o Acquire::Retries=5 install --no-install-recommends -y clang
 ARG ENVOY_MODULES_DIR=./envoy_modules
+# Copy rust-toolchain.toml first so rustup auto-installs the pinned toolchain
+# (single source of truth for Rust version; see tools/build-tools/Dockerfile and
+# .github/workflows/lint.yaml which also read this file).
+COPY ${ENVOY_MODULES_DIR}/rust-toolchain.toml ./
 COPY ${ENVOY_MODULES_DIR}/Cargo.toml ${ENVOY_MODULES_DIR}/Cargo.lock ./
 # Workspace crate members are auto-discovered from ${ENVOY_MODULES_DIR}/Cargo.toml.
 # To add a crate, add it to the workspace members list in internal/envoy_modules/Cargo.toml.
@@ -38,7 +42,7 @@ ARG RUST_BUILD_ARCH=x86_64 # options are x86_64 or aarch64
 # target is run. Do not edit by hand.
 RUN cargo fetch \
     && cargo zigbuild --target ${RUST_BUILD_ARCH}-unknown-linux-gnu \
-    && find /build/target \( -name librust_module.so \
+    && find /build/target \( -name 'librust_module-*.rlib' \
         -o -name 'librustformation_filter-*.rlib' \
         -o -name 'libtransformation-*.rlib' \
         -o -name 'libenvoy_helpers-*.rlib' \
