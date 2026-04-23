@@ -408,11 +408,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.6.1 // indirect
 	k8s.io/apiserver v0.35.1 // indirect
-	k8s.io/cli-runtime v0.35.1 // indirect
+	k8s.io/cli-runtime v0.35.1
 	k8s.io/code-generator v0.35.1 // indirect
 	k8s.io/component-base v0.35.1 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b // indirect
-	k8s.io/kubectl v0.35.1 // indirect
+	k8s.io/kubectl v0.35.1
 	mvdan.cc/gofumpt v0.9.2 // indirect
 	mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15 // indirect
 	sigs.k8s.io/controller-tools v0.19.1-0.20251023132335-bf7d6b742e6a // indirect
