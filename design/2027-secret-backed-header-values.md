@@ -74,18 +74,20 @@ type KgatewayHTTPHeader struct {
     // +optional
     Value     *string              `json:"value,omitempty"`
 
-    // SecretRef sources the header value from a key in a Kubernetes Secret in the same namespace
-    // as the policy. Mutually exclusive with value.
+    // SecretRef sources the header value from a key in a Kubernetes Secret.
+    // The namespace must be specified explicitly. Mutually exclusive with value.
     // +optional
     SecretRef *SecretKeyRef        `json:"secretRef,omitempty"`
 }
 
 type SecretKeyRef struct {
     // +required
-    Name gwv1.ObjectName `json:"name"`
+    Name      gwv1.ObjectName `json:"name"`
     // +required
     // +kubebuilder:validation:MinLength=1
-    Key  string          `json:"key"`
+    Key       string          `json:"key"`
+    // +required
+    Namespace gwv1.Namespace  `json:"namespace"`
 }
 ```
 
@@ -121,11 +123,13 @@ spec:
           secretRef:
             name: backend-creds
             key: api-key
+            namespace: default
 
         # Secret-backed with name omitted — "tenant-id" becomes the header name
         - secretRef:
             name: backend-creds
             key: tenant-id
+            namespace: default
       remove:
         - X-Request-Id
 ```
@@ -137,8 +141,8 @@ request time). The resolved plaintext value is embedded in the Envoy `header_mut
 config, consistent with how Gloo Edge v1 worked. This keeps the data plane simple and avoids any
 runtime secret-lookup latency.
 
-Secret access uses the existing `SecretIndex.GetSecret` path, which enforces same-namespace
-constraints and can be extended to support ReferenceGrant later without API changes.
+Secret access uses the existing `SecretIndex.GetSecret` path, which enforces ReferenceGrant rules
+for cross-namespace references automatically.
 
 ### Translator and Proxy Syncer
 
@@ -196,13 +200,16 @@ their field without requiring the other to change.
 `key` is always required in `SecretKeyRef`. Making it optional to mean "inject all secret key-value
 pairs as headers" is out of scope for the initial implementation and listed as a Non-Goal.
 
-### `SecretKeyRef.namespace` defaults to the policy namespace; cross-namespace via ReferenceGrant
+### `SecretKeyRef.namespace` is required; cross-namespace supported via ReferenceGrant
 
-`SecretKeyRef` omits a `namespace` field entirely. The secret is always resolved in the same
-namespace as the policy. Cross-namespace secret references follow the standard Gateway API pattern:
-a `ReferenceGrant` in the target namespace grants permission, and the existing `SecretIndex.GetSecret`
-path already enforces ReferenceGrant rules. When cross-namespace support is needed, a ReferenceGrant
-is required — there is no implicit cross-namespace access.
+`namespace` is a required field on `SecretKeyRef` — there is no defaulting to the policy namespace.
+Requiring the user to state the namespace explicitly forces them to think about where the Secret
+lives, and ensures that moving the control plane to a different namespace never silently changes
+which Secret is resolved.
+
+Cross-namespace references are supported: the existing `SecretIndex.GetSecret` path already enforces
+ReferenceGrant rules, so no additional rejection logic is needed. A ReferenceGrant in the target
+namespace must exist for cross-namespace access to succeed.
 
 ### Duplicate entries for the same header name are a user error
 
