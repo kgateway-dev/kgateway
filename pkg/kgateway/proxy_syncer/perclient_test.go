@@ -463,6 +463,200 @@ func TestFindMissingReferencedClusters_HandlesScalarValueMaps(t *testing.T) {
 	}).ToNot(gomega.Panic())
 }
 
+// TestSnapshotPerClientPublishesEvenWithUnresolvableClusterReference verifies
+// that the readiness gate does not block forever when a route references a
+// cluster that never materializes (e.g. user typo, plugin emitting an
+// unresolved cluster name). Blocking would strand Envoy: routes, listeners,
+// and good clusters would never reach it on startup or after reconnect.
+func TestSnapshotPerClientPublishesEvenWithUnresolvableClusterReference(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
+	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
+
+	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{
+				{
+					Name:    "vhost",
+					Domains: []string{"*"},
+					Routes: []*envoyroutev3.Route{
+						{
+							Name: "good-route",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-a"},
+								},
+							},
+						},
+						{
+							Name: "typo-route",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-typo"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
+	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
+		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:             routes,
+		Listeners:          listeners,
+		ReferencedClusters: collectReferencedClusters(routes, listeners),
+	}})
+
+	// cluster-a exists, cluster-typo never will.
+	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+		{
+			Client:         ucc,
+			Name:           "cluster-a",
+			Cluster:        &envoyclusterv3.Cluster{Name: "cluster-a"},
+			ClusterVersion: 1,
+		},
+	})
+	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
+
+	snapshots := snapshotPerClient(
+		krtutil.KrtOptions{},
+		uccs,
+		mostXdsSnapshots,
+		PerClientEnvoyEndpoints{
+			endpoints: endpointCol,
+			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+				return []string{ep.Client.ResourceName()}
+			}),
+		},
+		PerClientEnvoyClusters{
+			clusters: clusterCol,
+			index: krtpkg.UnnamedIndex(clusterCol, func(cluster uccWithCluster) []string {
+				return []string{cluster.Client.ResourceName()}
+			}),
+		},
+	)
+
+	g.Eventually(func() int {
+		return len(snapshots.List())
+	}, 2*time.Second, 20*time.Millisecond).Should(gomega.Equal(1),
+		"a snapshot must publish so Envoy can serve the good route even when another references an unresolvable cluster")
+}
+
+// TestSnapshotPerClientKeepsPublishingWhenMisconfiguredRouteArrivesAtRuntime
+// verifies that a misconfigured route arriving after the control plane is
+// already serving does not cause the per-client snapshot to be withdrawn.
+// If it did, a control-plane restart (or reconnect) with the same bad config
+// persisted would fail to come back up.
+func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredRouteArrivesAtRuntime(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
+	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
+
+	goodRoutes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{{
+				Name:    "vhost",
+				Domains: []string{"*"},
+				Routes: []*envoyroutev3.Route{{
+					Name: "good-route",
+					Action: &envoyroutev3.Route_Route{
+						Route: &envoyroutev3.RouteAction{
+							ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-a"},
+						},
+					},
+				}},
+			}},
+		},
+	})
+	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
+	initial := GatewayXdsResources{
+		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:             goodRoutes,
+		Listeners:          listeners,
+		ReferencedClusters: collectReferencedClusters(goodRoutes, listeners),
+	}
+	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+
+	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+		{
+			Client:         ucc,
+			Name:           "cluster-a",
+			Cluster:        &envoyclusterv3.Cluster{Name: "cluster-a"},
+			ClusterVersion: 1,
+		},
+	})
+	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
+
+	snapshots := snapshotPerClient(
+		krtutil.KrtOptions{},
+		uccs,
+		mostXdsSnapshots,
+		PerClientEnvoyEndpoints{
+			endpoints: endpointCol,
+			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+				return []string{ep.Client.ResourceName()}
+			}),
+		},
+		PerClientEnvoyClusters{
+			clusters: clusterCol,
+			index: krtpkg.UnnamedIndex(clusterCol, func(cluster uccWithCluster) []string {
+				return []string{cluster.Client.ResourceName()}
+			}),
+		},
+	)
+
+	g.Eventually(func() int {
+		return len(snapshots.List())
+	}, time.Second, 20*time.Millisecond).Should(gomega.Equal(1))
+
+	// A misconfigured route arrives referencing cluster-typo, which nothing
+	// will ever produce.
+	badRoutes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{{
+				Name:    "vhost",
+				Domains: []string{"*"},
+				Routes: []*envoyroutev3.Route{
+					{
+						Name: "good-route",
+						Action: &envoyroutev3.Route_Route{
+							Route: &envoyroutev3.RouteAction{
+								ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-a"},
+							},
+						},
+					},
+					{
+						Name: "typo-route",
+						Action: &envoyroutev3.Route_Route{
+							Route: &envoyroutev3.RouteAction{
+								ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-typo"},
+							},
+						},
+					},
+				},
+			}},
+		},
+	})
+	updated := initial
+	updated.Routes = badRoutes
+	updated.ReferencedClusters = collectReferencedClusters(badRoutes, listeners)
+	mostXdsSnapshots.UpdateObject(updated)
+
+	g.Consistently(func() int {
+		return len(snapshots.List())
+	}, 500*time.Millisecond, 20*time.Millisecond).Should(gomega.Equal(1),
+		"snapshot must stay published after a bad route arrives; withdrawing it strands Envoy on restart")
+}
+
 func mapKeys[M ~map[K]V, K comparable, V any](m M) []K {
 	keys := make([]K, 0, len(m))
 	for k := range m {
