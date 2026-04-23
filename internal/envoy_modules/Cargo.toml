@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = [
+    "module-init",
+    "filters/rustformation",
+    "lib/transformation",
+    "lib/envoy-helpers",
+]
+default-members = ["module-init"]
+
+[workspace.dependencies]
+# The SDK version must match the Envoy version due to the strict compatibility requirements.
+# Update this single entry when upgrading Envoy.
+envoy-proxy-dynamic-modules-rust-sdk = { git = "https://github.com/envoyproxy/envoy", tag = "v1.37.1" }

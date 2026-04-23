@@ -212,6 +212,48 @@ Listeners:
                 timeout: 15s
                 uri: https://provider-2.com/token
         - disabled: true
+          name: envoy.filters.http.oauth2/default/oauth-route-2
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.oauth2.v3.OAuth2
+            config:
+              authScopes:
+              - email
+              - groups
+              authorizationEndpoint: https://provider-2.com/auth
+              credentials:
+                clientId: client-id
+                cookieNames:
+                  bearerToken: AccessToken-6279f09211fccd49
+                  codeVerifier: OauthCodeVerifier-6279f09211fccd49
+                  idToken: IdToken-6279f09211fccd49
+                  oauthExpires: OauthExpires-6279f09211fccd49
+                  oauthHmac: OauthHMAC-6279f09211fccd49
+                  oauthNonce: OauthNonce-6279f09211fccd49
+                  refreshToken: RefreshToken-6279f09211fccd49
+                hmacSecret:
+                  name: oauth2/hmac_secret/kgateway-system/oauth2-hmac-secret
+                  sdsConfig:
+                    ads: {}
+                    resourceApiVersion: V3
+                tokenSecret:
+                  name: oauth2/client_secret/default/oauth-client-secret
+                  sdsConfig:
+                    ads: {}
+                    resourceApiVersion: V3
+              endSessionEndpoint: https://provider-2.com/logout
+              forwardBearerToken: true
+              redirectPathMatcher:
+                path:
+                  exact: /callback
+              redirectUri: https://test.com/callback
+              signoutPath:
+                path:
+                  exact: /log-out
+              tokenEndpoint:
+                cluster: backend_default_oauth-provider-2_0
+                timeout: 15s
+                uri: https://provider-2.com/token
+        - disabled: true
           name: envoy.filters.http.oauth2/jwt/default/oauth-listener-1
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
@@ -246,6 +288,25 @@ Listeners:
                   requirements:
                   - providerName: oauth2/accessToken
                   - providerName: oauth2/idToken
+        - disabled: true
+          name: envoy.filters.http.oauth2/jwt/default/oauth-route-2
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+            providers:
+              oauth2/accessToken:
+                audiences:
+                - test.com
+                fromCookies:
+                - AccessToken-6279f09211fccd49
+                payloadInMetadata: accessToken
+                remoteJwks:
+                  httpUri:
+                    cluster: backend_default_oauth-provider-2_0
+                    timeout: 5s
+                    uri: https://provider-2.com/jwks.json
+            requirementMap:
+              oauth2:
+                providerName: oauth2/accessToken
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -304,10 +365,22 @@ Routes:
           config: {}
     - match:
         pathSeparatedPrefix: /route-1
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            oidc:
+            - gateway.kgateway.dev/TrafficPolicy/default/route-attachment-2
       name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0
       route:
         cluster: kube_default_test_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        envoy.filters.http.oauth2/default/oauth-route-2:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
+        envoy.filters.http.oauth2/jwt/default/oauth-route-2:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
+          requirementName: oauth2
     - match:
         pathSeparatedPrefix: /route-2
       name: listener~8080~test_com-route-2-httproute-test-default-2-0-rule2-matcher-0
@@ -432,6 +505,25 @@ Statuses:
           type: Attached
         controllerName: kgateway.dev/kgateway
     TrafficPolicy/default/route-attachment-1:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: test
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/default/route-attachment-2:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

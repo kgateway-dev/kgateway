@@ -32,7 +32,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -70,7 +70,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"set":[{"name":"source","value":"gateway-attachment-1"},{"name":"source","value":"gateway-attachment-2"}]},"response":{"set":[{"name":"source","value":"gateway-attachment-1"},{"name":"source","value":"gateway-attachment-2"}]}}'
-      perRouteConfigName: http_simple_mutations
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - test.com
@@ -102,7 +102,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"source","value":"route-attachment-2"},{"name":"source","value":"route-attachment-1"}]},"response":{"set":[{"name":"source","value":"route-attachment-2"},{"name":"source","value":"route-attachment-1"}]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-1
       name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0
@@ -123,7 +123,7 @@ Routes:
         filterConfig:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"set":[{"name":"source","value":"listener-attachment-1"},{"name":"source","value":"listener-attachment-2"}]},"response":{"set":[{"name":"source","value":"listener-attachment-1"},{"name":"source","value":"listener-attachment-2"}]}}'
-        perRouteConfigName: http_simple_mutations
+        perRouteConfigName: rustformation
 Statuses:
   gateways:
     default/test:

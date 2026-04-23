@@ -119,14 +119,14 @@ dockers:
       - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
       - "--build-arg=RUST_BUILD_ARCH=aarch64"
-      - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
+      - "--build-arg=ENVOY_MODULES_DIR=/internal/envoy_modules"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64,mode=max,ignore-error=true"
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
-      - internal/envoyinit
+      - internal/envoy_modules
   - image_templates:
       - &envoyinit_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
@@ -138,14 +138,14 @@ dockers:
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
-      - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
+      - "--build-arg=ENVOY_MODULES_DIR=/internal/envoy_modules"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64,mode=max,ignore-error=true"
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
-      - internal/envoyinit
+      - internal/envoy_modules
 docker_manifests:
   - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}"
     image_templates:

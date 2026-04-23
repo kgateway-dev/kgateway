@@ -53,7 +53,7 @@ listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -90,7 +90,7 @@ routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"response":{"add":[{"name":"original-greatness","value":"{{request_headers(\"x-greatness\")}}"}],"body":{"parseAs":"AsJson","value":"{{
           body }}"}}}'
-      perRouteConfigName: http_simple_mutations
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - www.example-gateway-only.com
@@ -126,4 +126,4 @@ routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"add":[{"name":"x-greatness","value":"{{ length(headers(\":path\"))
               }}"}]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation

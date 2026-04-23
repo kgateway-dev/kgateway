@@ -1,0 +1,72 @@
+ARG ENVOY_IMAGE
+ARG CARGO_ZBUILD_IMAGE=ghcr.io/rust-cross/cargo-zigbuild:0.19.8
+# Stage 1: pull in all rust build dependency and cache it in docker build layer cache
+FROM --platform=$TARGETPLATFORM ${CARGO_ZBUILD_IMAGE} AS rust_build_deps
+WORKDIR /build
+RUN sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list 2>/dev/null || true \
+    && sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true \
+    && apt-get -o Acquire::Retries=5 update \
+    && apt-get -o Acquire::Retries=5 install --no-install-recommends -y clang
+ARG ENVOY_MODULES_DIR=./envoy_modules
+COPY ${ENVOY_MODULES_DIR}/Cargo.toml ${ENVOY_MODULES_DIR}/Cargo.lock ./
+# Workspace crate members are auto-discovered from ${ENVOY_MODULES_DIR}/Cargo.toml.
+# To add a crate, add it to the workspace members list in internal/envoy_modules/Cargo.toml.
+# The following section is generated cmd/envoyinit/generate-dockerfile.sh when the make
+# target is run. Do not edit by hand.
+# __CRATE_DUMMY_SETUP__
+# __CRATE_CARGO_COPY__
+ARG RUST_BUILD_ARCH=x86_64 # options are x86_64 or aarch64
+# Because we built the dummy lib in this Stage to cache all the dependencies in docker build layer cache,
+# the dummy libs are also cached. In Stage 2 when we COPY, it preserves the timestamps of the
+# source code, so it never re-compiles the real lib.
+# The following section is generated cmd/envoyinit/generate-dockerfile.sh when the make
+# target is run. Do not edit by hand.
+# __CRATE_CACHE_BUST_RUN__
+
+# Stage 2: build envoy dynamic module
+FROM --platform=$TARGETPLATFORM ${CARGO_ZBUILD_IMAGE} AS rust_builder
+WORKDIR /build
+RUN sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list 2>/dev/null || true \
+    && sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true \
+    && apt-get -o Acquire::Retries=5 update \
+    && apt-get -o Acquire::Retries=5 install --no-install-recommends -y clang
+
+# Copy cached target and cargo dirs from rust_build_deps from step 1
+COPY --from=rust_build_deps /usr/local/cargo /usr/local/cargo
+COPY --from=rust_build_deps /build/target /build/target
+
+# Copy the source code and build the module.
+ARG ENVOY_MODULES_DIR=./envoy_modules
+COPY ${ENVOY_MODULES_DIR} .
+ARG RUST_BUILD_ARCH=x86_64 # set this to "aarch64" for local arm build
+RUN cargo zigbuild --target ${RUST_BUILD_ARCH}-unknown-linux-gnu
+
+RUN cp /build/target/${RUST_BUILD_ARCH}-unknown-linux-gnu/debug/librust_module.so /build/librust_module.so
+
+# Stage 3: build the final envoy wrapper image
+FROM --platform=$TARGETPLATFORM ${ENVOY_IMAGE} AS envoy
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update our deps to make cve toil lower
+# install wget for our default probes
+RUN (sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list 2>/dev/null || true) \
+    && (sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true) \
+    && apt-get -o Acquire::Retries=5 update \
+    && apt-get -o Acquire::Retries=5 upgrade -y \
+    && apt-get -o Acquire::Retries=5 install --no-install-recommends -y ca-certificates wget \
+    && rm -rf  /var/log/*log /var/lib/apt/lists/* /var/log/apt/* /var/lib/dpkg/*-old /var/cache/debconf/*-old
+
+ARG GOARCH=amd64
+COPY envoyinit-linux-$GOARCH /usr/local/bin/envoyinit
+
+ENV ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib
+COPY --from=rust_builder /build/librust_module.so /usr/local/lib/librust_module.so
+
+# SDS-specific setup, only used if ENVOY_SIDECAR=true
+ARG ENTRYPOINT_SCRIPT=/docker-entrypoint.sh
+COPY $ENTRYPOINT_SCRIPT /
+
+USER 10101
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD []

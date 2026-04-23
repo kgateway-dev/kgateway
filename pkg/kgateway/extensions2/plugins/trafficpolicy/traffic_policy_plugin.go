@@ -445,7 +445,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 				Name: "rust_module",
 			},
-			FilterName:   "http_simple_mutations",
+			FilterName:   "rustformation",
 			FilterConfig: cfg,
 		}
 

@@ -91,7 +91,10 @@ type ListenerPortConfig struct {
 
 type ListenerConfig struct {
 	// ProxyProtocol configures the PROXY protocol listener filter.
-	// When set, Envoy will expect connections to include the PROXY protocol header.
+	// By default, when set, Envoy will require connections to include the PROXY
+	// protocol header. This behavior can be relaxed by setting
+	// allowRequestsWithoutProxyProtocol to true, which allows the listener to
+	// also accept connections without the PROXY protocol header.
 	// This is commonly used when kgateway is behind a load balancer that preserves client IP information.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/listener/proxy_protocol/v3/proxy_protocol.proto
 	// +optional
@@ -106,30 +109,6 @@ type ListenerConfig struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	PerConnectionBufferLimitBytes *int32 `json:"perConnectionBufferLimitBytes,omitempty"`
-
-	// RBAC specifies network-level role-based access control for this listener.
-	// Network RBAC is evaluated at the TCP connection level, before any HTTP processing begins.
-	// This allows filtering based on connection attributes such as source IP address, destination port,
-	// and TLS client certificate information.
-	//
-	// Available CEL attributes for network RBAC include:
-	//   - source.address: Source IP address (e.g., "192.168.1.100")
-	//   - source.port: Source port number
-	//   - destination.address: Destination IP address
-	//   - destination.port: Destination port (e.g., 443, 8080)
-	//   - connection.tls.subject: TLS client certificate subject
-	//   - connection.tls.uri_san: TLS URI Subject Alternative Name
-	//
-	// Example: Allow only corporate network IPs
-	//   rbac:
-	//     policy:
-	//       matchExpressions:
-	//         - 'source.address.startsWith("10.0.0.")'
-	//         - 'source.address.startsWith("192.168.0.")'
-	//     action: Allow
-	//
-	// +optional
-	RBAC *shared.Authorization `json:"rbac,omitempty"`
 
 	// HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
 	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
@@ -159,7 +138,22 @@ type ListenerDefaultConfig struct {
 // ProxyProtocolConfig configures the PROXY protocol listener filter.
 // The presence of this configuration enables PROXY protocol support.
 type ProxyProtocolConfig struct {
-	// The presence or absence of this configuration is what matters.
+	// AllowRequestsWithoutProxyProtocol, when true, configures the PROXY protocol
+	// listener filter to accept connections that do not include a PROXY protocol
+	// header in addition to those that do. This allows a single listener to serve
+	// mixed traffic, e.g. PROXY-preserving load balancer traffic plus direct
+	// in-cluster traffic on the same port.
+	//
+	// Security: accepting connections without a PROXY header is non-conformant
+	// with the PROXY protocol spec and allows clients to spoof the perceived
+	// source address. Only enable this when every source that can reach the
+	// listener is trusted. See
+	// https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt.
+	//
+	// Defaults to false.
+	//
+	// +optional
+	AllowRequestsWithoutProxyProtocol *bool `json:"allowRequestsWithoutProxyProtocol,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:message="useRemoteAddress must be set to false if xffTrustedCIDRs is set",rule="!has(self.xffTrustedCIDRs) || (has(self.useRemoteAddress) && !self.useRemoteAddress)"

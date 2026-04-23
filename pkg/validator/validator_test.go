@@ -99,6 +99,42 @@ exit 2
 	}
 }
 
+func TestNewDocker_Defaults(t *testing.T) {
+	t.Setenv(validatorEnvoyImageEnvVar, "")
+	t.Setenv(validatorDockerPullPolicyEnvVar, "")
+
+	validator := NewDocker().(*dockerValidator)
+
+	assert.Equal(t, defaultEnvoyImage, validator.img)
+	assert.Equal(t, defaultDockerPull, validator.pull)
+	assert.Equal(t, []string{"run", "--rm", "-i", "--pull", "always"}, validator.args()[:5])
+}
+
+func TestNewDocker_UsesEnvOverrides(t *testing.T) {
+	t.Setenv(validatorEnvoyImageEnvVar, "ghcr.io/kgateway-dev/envoy-wrapper:pr-local")
+	t.Setenv(validatorDockerPullPolicyEnvVar, "never")
+
+	validator := NewDocker().(*dockerValidator)
+
+	assert.Equal(t, "ghcr.io/kgateway-dev/envoy-wrapper:pr-local", validator.img)
+	assert.Equal(t, "never", validator.pull)
+	assert.Equal(t, []string{"run", "--rm", "-i", "--pull", "never"}, validator.args()[:5])
+}
+
+func TestNewDocker_OptionsOverrideEnv(t *testing.T) {
+	t.Setenv(validatorEnvoyImageEnvVar, "ghcr.io/kgateway-dev/envoy-wrapper:pr-local")
+	t.Setenv(validatorDockerPullPolicyEnvVar, "never")
+
+	validator := NewDocker(
+		Image("ghcr.io/kgateway-dev/envoy-wrapper:explicit"),
+		PullPolicy("always"),
+	).(*dockerValidator)
+
+	assert.Equal(t, "ghcr.io/kgateway-dev/envoy-wrapper:explicit", validator.img)
+	assert.Equal(t, "always", validator.pull)
+	assert.Equal(t, []string{"run", "--rm", "-i", "--pull", "always"}, validator.args()[:5])
+}
+
 func TestDockerValidator_Validate(t *testing.T) {
 	tests := []struct {
 		name        string
