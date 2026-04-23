@@ -126,6 +126,8 @@ func reportBackendObjectPolicyStatus(
 	pluginPass TranslationPassPlugins,
 	backend *ir.BackendObjectIR,
 ) {
+	// TODO(#13908): Wire this helper into the shared TCP/TLS filter-chain path so
+	// terminated TLSRoute backends report BackendTLSPolicy Gateway ancestors too.
 	if backend == nil {
 		return
 	}
