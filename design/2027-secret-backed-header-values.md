@@ -165,6 +165,17 @@ If the platform team renames a secret key, or the application team renames a hea
 default silently breaks without a validation error. Requiring `key` keeps both sides explicit and
 independently changeable.
 
+### `SecretKeyRef` includes an optional `namespace` field, validated to match the policy namespace
+
+`SecretKeyRef` includes an optional `namespace` field that defaults to the policy's own namespace
+if omitted. If a user specifies a namespace that differs from the policy namespace, the controller
+rejects the config with a clear error rather than silently resolving it in an unexpected namespace.
+
+This has two practical benefits: it forces the policy author to state explicitly where the Secret
+lives (catching copy-paste bugs or stale configs), and it ensures that moving the control plane to a
+different namespace does not silently change which Secret is resolved. When cross-namespace support
+is added later, relaxing this validation becomes a non-breaking change rather than a new field.
+
 ### Duplicate entries for the same header name are a user error
 
 Because inline and secret-backed values share the same `Set`/`Add` lists, it is possible to write a
@@ -172,6 +183,44 @@ policy with two entries for the same header name — one inline, one secret-back
 secret-backed entries pointing to different keys. This is a user error and must be rejected at
 admission time with a clear validation message. Allowing it would produce non-deterministic header
 values and undermine the predictability that `Set` semantics are meant to provide.
+
+## Breaking Changes and Migration
+
+### `headerModifiers.request` and `headerModifiers.response` — breaking value type change
+
+The `Request` and `Response` fields on `HeaderModifiers` currently wrap `gwv1.HTTPHeaderFilter`,
+where each header's `value` is a plain string. This EP replaces that type with
+`KgatewayHTTPHeaderFilter`, where `value` is a union struct. This is a **breaking change** for any
+user currently using `headerModifiers.request` or `headerModifiers.response` with inline values.
+
+Before:
+
+```yaml
+headerModifiers:
+  request:
+    set:
+    - name: X-My-Header
+      value: "my-value"
+```
+
+After:
+
+```yaml
+headerModifiers:
+  request:
+    set:
+    - name: X-My-Header
+      value:
+        literal: "my-value"
+```
+
+All existing configs using inline header values must update the `value` field to the `literal` form.
+This should be called out in the release notes for the version that ships this change.
+
+### `requestHeadersFromSecret` / `responseHeadersFromSecret` — no existing users
+
+These fields were introduced in PR #13880, which has not yet shipped. There are no users to
+migrate; the old parallel-field shape is simply replaced by this EP's unified type.
 
 ## Alternatives
 
@@ -193,6 +242,3 @@ union. This is the approach proposed here.
 
 - Should `SecretKeyRef` be a shared type reusable by other policies, or defined locally in
   `TrafficPolicy`?
-- Should initial scope include a `namespace` field on `SecretKeyRef` (defaulting to
-  TrafficPolicy namespace, rejected at admission if set to a different namespace) to make
-  future cross-namespace support a non-breaking addition?
