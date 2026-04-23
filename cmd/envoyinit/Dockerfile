@@ -42,7 +42,7 @@ ARG RUST_BUILD_ARCH=x86_64 # options are x86_64 or aarch64
 # target is run. Do not edit by hand.
 RUN cargo fetch \
     && cargo zigbuild --target ${RUST_BUILD_ARCH}-unknown-linux-gnu \
-    && find /build/target \( -name 'librust_module-*.rlib' \
+    && find /build/target \( -name librust_module.so \
         -o -name 'librustformation_filter-*.rlib' \
         -o -name 'libtransformation-*.rlib' \
         -o -name 'libenvoy_helpers-*.rlib' \
