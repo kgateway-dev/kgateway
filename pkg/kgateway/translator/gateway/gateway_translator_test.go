@@ -2008,6 +2008,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HttpACL Policy at route level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/route-http-acl.yaml",
+			outputFile: "http-acl/route-http-acl.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HttpACL Policy at httproute level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/httproute-http-acl.yaml",
+			outputFile: "http-acl/httproute-http-acl.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HttpACL Policy at gateway level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/gateway-http-acl.yaml",
+			outputFile: "http-acl/gateway-http-acl.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("RBAC Policy at route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "rbac/route-cel-rbac.yaml",

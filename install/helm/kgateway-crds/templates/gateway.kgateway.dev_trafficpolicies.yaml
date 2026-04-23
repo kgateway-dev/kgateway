@@ -54,6 +54,109 @@ spec:
             description: TrafficPolicySpec defines the desired state of a traffic
               policy.
             properties:
+              acl:
+                description: |-
+                  ACL configures IP-based access control for HTTP requests.
+                  Rules are evaluated using longest-prefix matching on the effictive client IP
+                  from envoy base on settings. See the UseRemoteAddress, XffTrustedCIDRs,
+                  XffNumTrustedHops settings under ListenerPolicy -> HttpSettings for details.
+                properties:
+                  defaultAction:
+                    description: DefaultAction is the action to take when no rule
+                      matches the client IP.
+                    enum:
+                    - allow
+                    - deny
+                    type: string
+                  denyResponse:
+                    description: DenyResponse customizes the HTTP response sent when
+                      a request is denied.
+                    properties:
+                      blockedByHeaderName:
+                        description: |-
+                          BlockedByHeaderName, when set, adds a response header with this name on every deny.
+                          The header value mirrors the blocked-by dynamic metadata: the matched rule's name,
+                          "rule" for an unnamed rule, or "default" for a default-action deny.
+                        maxLength: 256
+                        minLength: 1
+                        type: string
+                      headers:
+                        description: Headers are additional response headers to attach
+                          on every deny.
+                        items:
+                          description: ACLResponseHeader defines a response header
+                            to include in deny responses.
+                          properties:
+                            name:
+                              description: Name is the header name.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            value:
+                              description: Value is the header value.
+                              maxLength: 4096
+                              type: string
+                          required:
+                          - name
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                      statusCode:
+                        description: StatusCode is the HTTP status code returned on
+                          deny. Defaults to 403.
+                        format: int32
+                        maximum: 599
+                        minimum: 100
+                        type: integer
+                    type: object
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [statusCode headers blockedByHeaderName]
+                        must be set
+                      rule: '[has(self.statusCode),has(self.headers),has(self.blockedByHeaderName)].filter(x,x==true).size()
+                        >= 1'
+                  rules:
+                    description: Rules is a list of IP/CIDR-based rules. Longest-prefix
+                      match wins regardless of rule order.
+                    items:
+                      description: ACLRule defines an IP/CIDR-based ACL rule.
+                      properties:
+                        action:
+                          description: Action determines what to do when a client
+                            IP matches this rule.
+                          enum:
+                          - allow
+                          - deny
+                          type: string
+                        cidrs:
+                          description: |-
+                            CIDRs is a list of IP addresses or CIDR ranges (e.g. "10.0.0.0/8", "2001:db8::/32", "192.168.1.1", "::1").
+                            Bare IPs without a prefix are treated as /32 for IPv4 and /128 for IPv6.
+                            All entries share the same name and action.
+                          items:
+                            description: |-
+                              IPOrCIDR accepts either a bare IP address or an address range in CIDR notation.
+                              A bare IP without a prefix length is treated as /32 for IPv4 and /128 for IPv6.
+                              Note: The regex for the IP validation patterns was taken from https://www.ditig.com/validating-ipv4-and-ipv6-addresses-with-regexp
+                            pattern: ^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}(\/([0-9]|[1-2][0-9]|3[0-2]))?$|^((?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,7}:|:(?::[0-9A-Fa-f]{1,4}){1,7}|(?:[0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,5}(?::[0-9A-Fa-f]{1,4}){1,2}|(?:[0-9A-Fa-f]{1,4}:){1,4}(?::[0-9A-Fa-f]{1,4}){1,3}|(?:[0-9A-Fa-f]{1,4}:){1,3}(?::[0-9A-Fa-f]{1,4}){1,4}|(?:[0-9A-Fa-f]{1,4}:){1,2}(?::[0-9A-Fa-f]{1,4}){1,5}|[0-9A-Fa-f]{1,4}:(?:(?::[0-9A-Fa-f]{1,4}){1,6})|:(?:(?::[0-9A-Fa-f]{1,4}){1,6}))(\/(12[0-8]|1[0-1][0-9]|[1-9][0-9]|[0-9]))?$
+                            type: string
+                          maxItems: 256
+                          minItems: 1
+                          type: array
+                        name:
+                          description: Name is an optional rule identifier emitted
+                            as blocked-by dynamic metadata on deny.
+                          maxLength: 256
+                          type: string
+                      required:
+                      - action
+                      - cidrs
+                      type: object
+                    maxItems: 256
+                    type: array
+                required:
+                - defaultAction
+                type: object
               apiKeyAuth:
                 description: APIKeyAuth authenticates users based on a configured
                   API Key.

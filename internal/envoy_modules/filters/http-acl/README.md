@@ -35,11 +35,11 @@ Top-level fields:
 
 Rule object:
 
-| Field    | Type                       | Required | Description                                                                |
-| -------- | -------------------------- | -------- | -------------------------------------------------------------------------- |
-| `name`   | string                     | no       | Optional rule name. Emitted as `blocked-by` dynamic metadata on deny.      |
-| `cidr`   | string                     | yes      | CIDR (`10.0.0.0/8`, `2001:db8::/32`) or bare IP (treated as a single host).|
-| `action` | `"allow"` \| `"deny"`      | yes      | Action to apply when a client IP falls in this prefix.                     |
+| Field    | Type                       | Required | Description                                                                                             |
+| -------- | -------------------------- | -------- | ------------------------------------------------------------------------------------------------------- |
+| `name`   | string                     | no       | Optional rule name. Emitted as `blocked-by` dynamic metadata on deny.                                  |
+| `cidrs`  | array of strings           | yes      | One or more CIDRs (`10.0.0.0/8`, `2001:db8::/32`) or bare IPs (treated as a single host). All entries in the array share the same `name` and `action`. |
+| `action` | `"allow"` \| `"deny"`      | yes      | Action to apply when a client IP falls in any of the listed prefixes.                                   |
 
 Deny response object:
 
@@ -47,7 +47,7 @@ Deny response object:
 | --------------------- | --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `statusCode`          | integer (HTTP status) | no       | HTTP status code returned on deny. Defaults to `403`.                                                                                                                                |
 | `headers`             | array of header pairs | no       | Extra response headers to attach on every deny. Each entry is `{"name","value"}`.                                                                                                    |
-| `addBlockedByHeader`  | string                | no       | When set, the filter adds a response header with this value as the header **name** on every deny. The header **value** mirrors the `blocked-by` dynamic metadata: the matched rule's `name`, `"rule"` for an unnamed rule, or `"default"` for a default-action deny. |
+| `blockedByHeaderName`  | string                | no       | When set, the filter adds a response header with this value as the header **name** on every deny. The header **value** mirrors the `blocked-by` dynamic metadata: the matched rule's `name`, `"rule"` for an unnamed rule, or `"default"` for a default-action deny. |
 
 ### Default allow, deny one CIDR
 
@@ -55,7 +55,7 @@ Deny response object:
 {
   "defaultAction": "allow",
   "rules": [
-    { "cidr": "192.168.0.0/16", "action": "deny" }
+    { "cidrs": ["192.168.0.0/16"], "action": "deny" }
   ]
 }
 ```
@@ -66,7 +66,7 @@ Deny response object:
 {
   "defaultAction": "deny",
   "rules": [
-    { "cidr": "10.0.0.0/8", "action": "allow" }
+    { "cidrs": ["10.0.0.0/8"], "action": "allow" }
   ]
 }
 ```
@@ -79,9 +79,9 @@ Here any client outside `10.0.0.0/8` is denied by `defaultAction`, which emits `
 {
   "defaultAction": "allow",
   "rules": [
-    { "name": "block-internal-range",  "cidr": "10.0.0.0/8",  "action": "deny"  },
-    { "name": "allow-trusted-subnet",  "cidr": "10.1.0.0/16", "action": "allow" },
-    { "name": "block-rogue-host",      "cidr": "10.1.2.3",    "action": "deny"  }
+    { "name": "block-internal-range",  "cidrs": ["10.0.0.0/8"],  "action": "deny"  },
+    { "name": "allow-trusted-subnet",  "cidrs": ["10.1.0.0/16"], "action": "allow" },
+    { "name": "block-rogue-host",      "cidrs": ["10.1.2.3"],    "action": "deny"  }
   ]
 }
 ```
@@ -112,12 +112,12 @@ Denied requests get HTTP 451 and the two extra response headers.
 {
   "defaultAction": "deny",
   "denyResponse": {
-    "addBlockedByHeader": "X-Blocked-By"
+    "blockedByHeaderName": "X-Blocked-By"
   },
   "rules": [
-    { "name": "block-internal-range", "cidr": "10.0.0.0/8",     "action": "deny"  },
-    {                                 "cidr": "192.168.0.0/16", "action": "deny"  },
-    {                                 "cidr": "203.0.113.0/24", "action": "allow" }
+    { "name": "block-internal-range", "cidrs": ["10.0.0.0/8"],     "action": "deny"  },
+    {                                 "cidrs": ["192.168.0.0/16"], "action": "deny"  },
+    {                                 "cidrs": ["203.0.113.0/24"], "action": "allow" }
   ]
 }
 ```
@@ -135,10 +135,25 @@ With this config every deny carries `X-Blocked-By`, mirroring the `blocked-by` d
 {
   "defaultAction": "deny",
   "rules": [
-    { "cidr": "2001:db8::/32", "action": "allow" }
+    { "cidrs": ["2001:db8::/32"], "action": "allow" }
   ]
 }
 ```
+
+### Multiple CIDRs in one rule
+
+Group prefixes that share the same name and action into a single rule entry:
+
+```json
+{
+  "defaultAction": "allow",
+  "rules": [
+    { "name": "block-rfc1918", "cidrs": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"], "action": "deny" }
+  ]
+}
+```
+
+All three RFC 1918 ranges are denied, and every deny carries `blocked-by = "block-rfc1918"` in dynamic metadata.
 
 ## Dynamic metadata
 
@@ -161,3 +176,14 @@ The filter defines a single Envoy counter:
 | `dev.kgateway.http.acl.blocked`    | counter | the filter denies a request (for any `blocked-by` reason) |
 
 The counter is defined once per filter config (via the SDK's `define_counter`) and incremented by 1 on each deny. It is exported through Envoy's normal stats pipeline (admin `/stats` endpoint, Prometheus, stats sinks, etc.); the exact surface name may be prefixed by Envoy's dynamic-modules stats scope.
+
+## Scalability
+
+Here is some comparison in parsing the json config:
+| Json (bytes) | Time Taken | Note |
+| ------------ | ---------- | ---- |
+| 76           | 10 - 30 us | |
+| 249          | ~ 50 us    | |
+| 76232        | ~ 6.27 ms  | about 4000 CIDR blocks |
+
+The lookup time varies between 1 - 10 us regardless of the number of CIDR blocks
