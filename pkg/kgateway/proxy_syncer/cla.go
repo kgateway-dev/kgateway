@@ -18,7 +18,6 @@ type UccWithEndpoints struct {
 	Endpoints     *envoyendpointv3.ClusterLoadAssignment
 	EndpointsHash uint64
 	endpointsName string
-	clusterName   string
 }
 
 func (c UccWithEndpoints) ResourceName() string {
@@ -28,8 +27,7 @@ func (c UccWithEndpoints) ResourceName() string {
 func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
 	return c.Client.Equals(in.Client) &&
 		c.EndpointsHash == in.EndpointsHash &&
-		c.endpointsName == in.endpointsName &&
-		c.clusterName == in.clusterName
+		c.endpointsName == in.endpointsName
 }
 
 type PerClientEnvoyEndpoints struct {
@@ -61,7 +59,6 @@ func NewPerClientEnvoyEndpoints(
 				Endpoints:     cla,
 				EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash ^ utils.HashString(clusterName),
 				endpointsName: ep.ResourceName(),
-				clusterName:   clusterName,
 			}
 			uccWithEndpointsRet = append(uccWithEndpointsRet, u)
 		}

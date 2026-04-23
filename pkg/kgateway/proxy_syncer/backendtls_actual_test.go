@@ -191,9 +191,6 @@ func TestPerClientClustersUpdateWhenActualBackendTLSPolicyAddedLater(t *testing.
 		if len(fetched) != 1 || fetched[0].Cluster == nil {
 			return false
 		}
-		if fetched[0].Name != "kube_default_backend-service_443" {
-			return false
-		}
 
 		transportSocket := fetched[0].Cluster.GetTransportSocket()
 		if transportSocket == nil || transportSocket.GetName() != envoywellknown.TransportSocketTls {

@@ -15,9 +15,7 @@ import (
 )
 
 // newFinalBackendEndpoints rebuilds endpoint IR from the policy-attached backend
-// view so EDS follows the same backend lifecycle as CDS and routes. Cluster names
-// stay stable; this keeps endpoint resources aligned with the final backend graph
-// without reintroducing BackendTLSPolicy-specific cluster-name rotation.
+// view so EDS follows the same backend lifecycle as CDS and routes.
 func newFinalBackendEndpoints(
 	krtopts krtutil.KrtOptions,
 	finalBackends krt.Collection[*ir.BackendObjectIR],

@@ -71,18 +71,12 @@ type StatusMarker struct{}
 // MARK: BackendIndex
 
 type BackendIndex struct {
-	// availableBackends are the backends as supplied by backend-contributed plugins.
-	// Any policies here are attached directly at Backend generation and not attached via
-	// policy index. Use availableBackendsWithPolicy when you need policy.
-	availableBackends map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]
 	// availableBackendsWithPolicyByGK stores the policy-attached backend view keyed by backend GroupKind.
 	availableBackendsWithPolicyByGK map[schema.GroupKind]krt.Collection[*ir.BackendObjectIR]
-	// aliasIndex indexes the availableBackends for a given GK by the BackendObjectIR's Alias
-	aliasIndex map[schema.GroupKind]krt.Index[backendKey, ir.BackendObjectIR]
 	// aliasIndexWithPolicy indexes the policy-attached backends for a given GK by alias.
 	aliasIndexWithPolicy map[schema.GroupKind]krt.Index[backendKey, *ir.BackendObjectIR]
 
-	// availableBackendsWithPolicy is built from availableBackends, attaching policy to the given backends.
+	// availableBackendsWithPolicy stores the policy-attached backend collections.
 	// BackendsWithPolicy is the public interface to access this.
 	availableBackendsWithPolicy []krt.Collection[*ir.BackendObjectIR]
 	// backendsRequiringPolicyStatus is a collection of backends that have policies that may require status to be written to them.
@@ -109,9 +103,7 @@ func NewBackendIndex(
 	return &BackendIndex{
 		policies:                        policies,
 		refgrants:                       refgrants,
-		availableBackends:               map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]{},
 		availableBackendsWithPolicyByGK: map[schema.GroupKind]krt.Collection[*ir.BackendObjectIR]{},
-		aliasIndex:                      map[schema.GroupKind]krt.Index[backendKey, ir.BackendObjectIR]{},
 		aliasIndexWithPolicy:            map[schema.GroupKind]krt.Index[backendKey, *ir.BackendObjectIR]{},
 		gkAliases:                       map[schema.GroupKind][]schema.GroupKind{},
 		krtopts:                         krtopts,
@@ -124,11 +116,6 @@ func (i *BackendIndex) HasSynced() bool {
 	}
 	if !i.refgrants.HasSynced() {
 		return false
-	}
-	for _, col := range i.availableBackends {
-		if !col.HasSynced() {
-			return false
-		}
 	}
 	for _, col := range i.availableBackendsWithPolicy {
 		if !col.HasSynced() {
@@ -207,12 +194,6 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 		}
 		return nil
 	}, i.krtopts.ToOptions("")...)
-	idx := krtpkg.UnnamedIndex(col, func(backendObj ir.BackendObjectIR) (aliasKeys []backendKey) {
-		for _, alias := range backendObj.Aliases {
-			aliasKeys = append(aliasKeys, backendKey{ObjectSource: alias, port: backendObj.Port})
-		}
-		return aliasKeys
-	})
 	idxWithPolicy := krtpkg.UnnamedIndex(backendsWithPoliciesCol, func(backendObj *ir.BackendObjectIR) (aliasKeys []backendKey) {
 		if backendObj == nil {
 			return nil
@@ -222,9 +203,7 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 		}
 		return aliasKeys
 	})
-	i.availableBackends[gk] = col
 	i.availableBackendsWithPolicyByGK[gk] = backendsWithPoliciesCol
-	i.aliasIndex[gk] = idx
 	i.aliasIndexWithPolicy[gk] = idxWithPolicy
 	i.availableBackendsWithPolicy = append(i.availableBackendsWithPolicy, backendsWithPoliciesCol)
 	i.backendsRequiringPolicyStatus = append(i.backendsRequiringPolicyStatus, backendsRequiringPolicyStatus)

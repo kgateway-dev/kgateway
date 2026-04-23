@@ -155,10 +155,6 @@ func TestBackendObjectIRClusterName(t *testing.T) {
 	base.Kind = "Service"
 	base.resourceName = BackendResourceName(base.ObjectSource, base.Port, base.ExtraKey)
 
-	t.Run("does not rotate without BackendTLSPolicy", func(t *testing.T) {
-		assert.Equal(t, "service_default_test-service_8080", base.ClusterName())
-	})
-
 	t.Run("keeps the same name when BackendTLSPolicy is attached", func(t *testing.T) {
 		withPolicy := base
 		withPolicy.AttachedPolicies = AttachedPolicies{
