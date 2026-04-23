@@ -333,7 +333,16 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 	g.Expect(snap.snap.Resources[envoycachetypes.Cluster].Items).ToNot(gomega.HaveKey("cluster-b"))
 }
 
-func TestFindMissingReferencedClusters_IncludesNestedHCMClusterRefs(t *testing.T) {
+// TestCollectReferencedClusters_ExcludesAncillaryReferences verifies that
+// cluster names reachable only through ancillary / control-plane
+// typed_config (access-log GrpcService, JWT jwks HttpUri, etc.) are
+// deliberately NOT treated as gated dataplane targets. The plugin that
+// emits these filters is responsible for also emitting the referenced
+// cluster in the same per-gateway snapshot's ExtraClusters, so there is
+// no reconnect race between them. Gating on ancillary references would
+// starve the gateway forever on a plugin bug — which is not what this
+// readiness guard is for.
+func TestCollectReferencedClusters_ExcludesAncillaryReferences(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	hcm := &envoyhttpv3.HttpConnectionManager{
@@ -348,7 +357,7 @@ func TestFindMissingReferencedClusters_IncludesNestedHCMClusterRefs(t *testing.T
 							GrpcService: &envoycorev3.GrpcService{
 								TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
 									EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
-										ClusterName: "cluster-b",
+										ClusterName: "access-log-cluster",
 									},
 								},
 							},
@@ -369,7 +378,7 @@ func TestFindMissingReferencedClusters_IncludesNestedHCMClusterRefs(t *testing.T
 										HttpUri: &envoycorev3.HttpUri{
 											Uri: "https://example.com/jwks",
 											HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
-												Cluster: "cluster-c",
+												Cluster: "jwks-cluster",
 											},
 											Timeout: durationpb.New(time.Second),
 										},
@@ -400,14 +409,13 @@ func TestFindMissingReferencedClusters_IncludesNestedHCMClusterRefs(t *testing.T
 			},
 		},
 	})
-	clusters := map[string]envoycachetypes.ResourceWithTTL{
-		"cluster-a": {Resource: &envoyclusterv3.Cluster{Name: "cluster-a"}},
-	}
 
 	referenced := collectReferencedClusters(envoycache.Resources{}, listeners)
-	missingClusters := findMissingReferencedClusters(referenced, clusters, nil)
 
-	g.Expect(missingClusters).To(gomega.Equal([]string{"cluster-b", "cluster-c"}))
+	g.Expect(referenced).ToNot(gomega.HaveKey("access-log-cluster"),
+		"ancillary access-log cluster must not be treated as a gated dataplane target")
+	g.Expect(referenced).ToNot(gomega.HaveKey("jwks-cluster"),
+		"ancillary JWT jwks cluster must not be treated as a gated dataplane target")
 }
 
 // TestFindMissingReferencedClusters_HandlesScalarValueMaps verifies that the
@@ -463,12 +471,13 @@ func TestFindMissingReferencedClusters_HandlesScalarValueMaps(t *testing.T) {
 	}).ToNot(gomega.Panic())
 }
 
-// TestSnapshotPerClientPublishesEvenWithUnresolvableClusterReference verifies
-// that the readiness gate does not block forever when a route references a
-// cluster that never materializes (e.g. user typo, plugin emitting an
-// unresolved cluster name). Blocking would strand Envoy: routes, listeners,
-// and good clusters would never reach it on startup or after reconnect.
-func TestSnapshotPerClientPublishesEvenWithUnresolvableClusterReference(t *testing.T) {
+// TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef verifies that
+// a user BackendRef typo — e.g. an HTTPRoute pointing at a Service that does
+// not exist — does not starve the readiness gate on startup. IR-time
+// resolution substitutes wellknown.BlackholeClusterName for the unresolved
+// target, and the gate explicitly skips blackhole so valid routes still
+// reach Envoy.
+func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
@@ -492,10 +501,12 @@ func TestSnapshotPerClientPublishesEvenWithUnresolvableClusterReference(t *testi
 							},
 						},
 						{
-							Name: "typo-route",
+							// Simulates a BackendRef whose target Service does
+							// not exist: IR translation substitutes blackhole.
+							Name: "typo-backendref-route",
 							Action: &envoyroutev3.Route_Route{
 								Route: &envoyroutev3.RouteAction{
-									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-typo"},
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: wellknown.BlackholeClusterName},
 								},
 							},
 						},
@@ -512,7 +523,6 @@ func TestSnapshotPerClientPublishesEvenWithUnresolvableClusterReference(t *testi
 		ReferencedClusters: collectReferencedClusters(routes, listeners),
 	}})
 
-	// cluster-a exists, cluster-typo never will.
 	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
 		{
 			Client:         ucc,
@@ -544,15 +554,18 @@ func TestSnapshotPerClientPublishesEvenWithUnresolvableClusterReference(t *testi
 	g.Eventually(func() int {
 		return len(snapshots.List())
 	}, 2*time.Second, 20*time.Millisecond).Should(gomega.Equal(1),
-		"a snapshot must publish so Envoy can serve the good route even when another references an unresolvable cluster")
+		"a snapshot must publish so Envoy can serve the good route even when another route's BackendRef is unresolvable")
 }
 
-// TestSnapshotPerClientKeepsPublishingWhenMisconfiguredRouteArrivesAtRuntime
-// verifies that a misconfigured route arriving after the control plane is
-// already serving does not cause the per-client snapshot to be withdrawn.
-// If it did, a control-plane restart (or reconnect) with the same bad config
-// persisted would fail to come back up.
-func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredRouteArrivesAtRuntime(t *testing.T) {
+// TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRuntime
+// verifies that a BackendRef pointing at a nonexistent Service arriving after
+// the control plane is already serving does not cause the per-client snapshot
+// to be withdrawn. IR translation substitutes blackhole for the unresolved
+// target, which the gate skips, so the snapshot re-publishes with the new
+// route set rather than being withdrawn. The existing good route keeps
+// flowing; the typo'd route blackholes in Envoy — no 500/NC for valid
+// traffic.
+func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRuntime(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
@@ -617,8 +630,8 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredRouteArrivesAtRuntime(
 		return len(snapshots.List())
 	}, time.Second, 20*time.Millisecond).Should(gomega.Equal(1))
 
-	// A misconfigured route arrives referencing cluster-typo, which nothing
-	// will ever produce.
+	// A misconfigured route arrives whose BackendRef cannot be resolved;
+	// IR translation substitutes blackhole.
 	badRoutes := sliceToResources([]*envoyroutev3.RouteConfiguration{
 		{
 			Name: "route-config",
@@ -635,10 +648,10 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredRouteArrivesAtRuntime(
 						},
 					},
 					{
-						Name: "typo-route",
+						Name: "typo-backendref-route",
 						Action: &envoyroutev3.Route_Route{
 							Route: &envoyroutev3.RouteAction{
-								ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-typo"},
+								ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: wellknown.BlackholeClusterName},
 							},
 						},
 					},
@@ -654,7 +667,7 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredRouteArrivesAtRuntime(
 	g.Consistently(func() int {
 		return len(snapshots.List())
 	}, 500*time.Millisecond, 20*time.Millisecond).Should(gomega.Equal(1),
-		"snapshot must stay published after a bad route arrives; withdrawing it strands Envoy on restart")
+		"snapshot must stay published after an unresolvable BackendRef arrives; withdrawing it strands Envoy on restart")
 }
 
 func mapKeys[M ~map[K]V, K comparable, V any](m M) []K {

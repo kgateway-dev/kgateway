@@ -90,7 +90,7 @@ func (s *testingSuiteKgateway) startTrafficAndAssertNoErrors(duration time.Durat
 	s.NotContains(output, "Error distribution")
 
 	seenStatusLine := false
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if !strings.HasPrefix(trimmed, "[") {
 			continue

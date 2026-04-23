@@ -430,10 +430,15 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				snapWrap := e.Latest()
 				s.proxyTranslator.syncXds(ctx, snapWrap)
 			} else {
-				// key := e.Latest().proxyKey
-				// if _, err := s.proxyTranslator.xdsCache.GetSnapshot(key); err == nil {
-				// 	s.proxyTranslator.xdsCache.ClearSnapshot(e.Latest().proxyKey)
-				// }
+				// Intentional no-op. When snapshotPerClient returns nil (its
+				// readiness guards deferred publishing), KRT surfaces a Delete
+				// for this UCC. Clearing the xDS cache here would withdraw
+				// Envoy's last coherent Snapshot for the duration of the defer,
+				// causing 500/NC on valid routes. Leaving the cache alone means
+				// Envoy keeps serving its previously-published config until a
+				// new coherent snapshot overwrites it — the "retain last good"
+				// behavior that prevents unresolvable cluster references from
+				// stranding live traffic.
 			}
 
 			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{

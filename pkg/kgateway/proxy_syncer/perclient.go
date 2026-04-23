@@ -6,7 +6,6 @@ import (
 	"sort"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
@@ -134,18 +133,35 @@ func snapshotPerClient(
 		clustersForUcc := krt.FetchOne(kctx, clusterSnapshot, krt.FilterKey(ucc.ResourceName()))
 		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
 
-		// Defer publishing until per-client inputs are coherent.
+		// Defer publishing a per-client snapshot until its per-client inputs
+		// are coherent. Two guards:
 		//
-		// This handler can fire before the per-client cluster and endpoint
-		// collections — driven by the same upstream events — have re-derived
-		// their outputs, so FetchOne may return nil even though results are
-		// imminent. Publishing anyway would emit a snapshot whose routes and
-		// listeners reference clusters not yet in CDS, causing Envoy to return
-		// 500/NC transiently.
+		//  1. If per-client clusters or endpoints haven't been derived yet
+		//     for this UCC, return nil. This handler can fire before the
+		//     per-client collections — driven by the same upstream events —
+		//     have re-run, so FetchOne may briefly return nil even though
+		//     results are imminent.
 		//
-		// A second guard below (findMissingReferencedClusters) further delays
-		// publishing until every cluster referenced by routes or listeners is
-		// either present or explicitly errored.
+		//  2. If any cluster referenced as a dataplane routing target
+		//     (RouteAction / TcpProxy) is not yet present or explicitly
+		//     errored, return nil (see findMissingReferencedClusters below).
+		//     Publishing before then would emit a partial CDS referenced by
+		//     listeners/routes and cause Envoy to return 500/NC on routes
+		//     whose clusters just happen to be in the same CDS response.
+		//
+		// Returning nil removes this UCC's entry from the output collection,
+		// which surfaces as a Delete event in proxy_syncer.go's xDS
+		// subscriber. That Delete branch is intentionally a no-op so the
+		// xDS snapshot cache retains the last-published Snapshot for this
+		// client. Envoy therefore keeps serving its previous, coherent
+		// config until a new coherent snapshot overwrites it. This is what
+		// prevents an unresolvable reference — a user BackendRef typo, a
+		// plugin bug — from stranding Envoy: there is no error response on
+		// valid traffic during the defer window, only continuity.
+		//
+		// BackendRef typos never reach this gate as real cluster names:
+		// IR-time resolution substitutes wellknown.BlackholeClusterName,
+		// which findMissingReferencedClusters explicitly skips.
 		//
 		// Historical context: https://github.com/solo-io/gloo/pull/10611.
 		if clustersForUcc == nil || clientEndpointResources == nil {
@@ -278,9 +294,25 @@ func snapshotPerClient(
 	return xdsSnapshotsForUcc
 }
 
-// collectReferencedClusters returns the set of cluster names referenced by the
-// given routes and listeners. It walks typed_config extensions via protoreflect
-// so it stays correct as Envoy adds new filter types that embed cluster names.
+// collectReferencedClusters returns the set of cluster names referenced as
+// dataplane routing targets (RouteAction and TcpProxy cluster / weighted-
+// cluster specifiers) by the given routes and listeners. It walks typed_config
+// extensions via protoreflect so it stays correct as Envoy adds new filter
+// types that embed dataplane-target clusters.
+//
+// Scope is intentionally narrowed to dataplane targets. Ancillary cluster
+// references (access-log GrpcService, JWT jwks HttpUri, ext_authz cluster,
+// ratelimit cluster, etc.) are deliberately ignored because:
+//
+//  1. The plugin that emits the filter is responsible for also emitting the
+//     ancillary cluster in the same per-gateway snapshot's ExtraClusters,
+//     so there is no reconnect race between listener and cluster — they
+//     arrive coherent or not at all.
+//  2. If a plugin emits an ancillary reference without declaring the
+//     cluster, that is a plugin bug. Gating on it would starve the entire
+//     gateway forever; publishing and letting the filter fail (or degrade
+//     per its failure_mode_allow) surfaces the bug without blocking valid
+//     traffic.
 //
 // This is computed once per GatewayXdsResources (shared across all connected
 // clients for that role) rather than per client — the proto walk and Any
@@ -366,14 +398,6 @@ func collectProtoClusterReferences(msg proto.Message, referencedClusters map[str
 					referencedClusters[cluster.GetName()] = struct{}{}
 				}
 			}
-		}
-	case *envoycorev3.GrpcService_EnvoyGrpc:
-		if typedMsg.GetClusterName() != "" {
-			referencedClusters[typedMsg.GetClusterName()] = struct{}{}
-		}
-	case *envoycorev3.HttpUri:
-		if typedMsg.GetCluster() != "" {
-			referencedClusters[typedMsg.GetCluster()] = struct{}{}
 		}
 	}
 
