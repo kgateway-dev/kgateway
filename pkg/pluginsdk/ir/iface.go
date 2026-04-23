@@ -248,6 +248,12 @@ type PolicyIR interface {
 	Equals(in any) bool
 }
 
+// PolicyHashIR can be implemented by PolicyIRs that need downstream resources
+// to observe policy content changes without understanding the concrete IR type.
+type PolicyHashIR interface {
+	PolicyHash() uint64
+}
+
 type PolicyWrapper struct {
 	// A reference to the original policy object
 	ObjectSource `json:",inline"`

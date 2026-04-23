@@ -78,6 +78,13 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 	return proto.Equal(d.transportSocket, d2.transportSocket)
 }
 
+func (d *backendTlsPolicy) PolicyHash() uint64 {
+	if d == nil || d.transportSocket == nil {
+		return 0
+	}
+	return utils.HashProto(d.transportSocket)
+}
+
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	cli := kclient.NewFilteredDelayed[*gwv1.BackendTLSPolicy](
 		commoncol.Client,

@@ -187,6 +187,8 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		cluster := fetchClusterFromSnapshot(snapshots, ucc.ResourceName(), "kube_default_backend-service_443")
 		return cluster != nil && cluster.GetTransportSocket() == nil
 	}, 5*time.Second, 50*time.Millisecond)
+	initialEndpointVersion := snapshotEndpointVersion(snapshots, ucc.ResourceName())
+	require.NotEmpty(t, initialEndpointVersion)
 
 	older := time.Now()
 	_, err = fakeClient.GatewayAPI().GatewayV1().BackendTLSPolicies("default").Create(
@@ -219,7 +221,8 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		if tlsContext.GetSni() != "other.example.com" {
 			return false
 		}
-		return fetchEndpointFromSnapshot(snapshots, ucc.ResourceName(), clusterName) != nil
+		return fetchEndpointFromSnapshot(snapshots, ucc.ResourceName(), clusterName) != nil &&
+			snapshotEndpointVersion(snapshots, ucc.ResourceName()) != initialEndpointVersion
 	}, 5*time.Second, 50*time.Millisecond)
 }
 
@@ -479,6 +482,14 @@ func fetchEndpointFromSnapshot(
 		return nil
 	}
 	return endpoint
+}
+
+func snapshotEndpointVersion(snapshots krt.Collection[XdsSnapWrapper], snapshotKey string) string {
+	snap := krt.FetchOne(krt.TestingDummyContext{}, snapshots, krt.FilterKey(snapshotKey))
+	if snap == nil {
+		return ""
+	}
+	return snap.snap.Resources[envoycachetypes.Endpoint].Version
 }
 
 //go:fix inline
