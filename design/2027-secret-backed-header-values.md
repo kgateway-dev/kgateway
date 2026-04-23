@@ -62,7 +62,7 @@ type KgatewayHTTPHeaderFilter struct {
     Remove []string             `json:"remove,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=value,secretRef
+// +kubebuilder:validation:ExactlyOneOf=value;secretRef
 // +kubebuilder:validation:XValidation:rule="has(self.value) ? has(self.name) : true",message="name is required when using an inline value"
 type KgatewayHTTPHeader struct {
     // Name is the header field name. Required when value is set.
@@ -94,6 +94,7 @@ type SecretKeyRef struct {
 `HeaderModifiers` becomes:
 
 ```go
+// +kubebuilder:validation:AtLeastOneOf=request;response
 type HeaderModifiers struct {
     Request  *KgatewayHTTPHeaderFilter `json:"request,omitempty"`
     Response *KgatewayHTTPHeaderFilter `json:"response,omitempty"`
