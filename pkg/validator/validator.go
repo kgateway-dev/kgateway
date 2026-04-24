@@ -22,7 +22,7 @@ var (
 	//       This can be a chicken and an egg problem if we need a fix in the rustformation module to
 	//       fix the validation test. We will need to merge the fix PR first and wait for the image to
 	//       be updated and then maybe update the golden files
-	defaultEnvoyImage = "ghcr.io/kgateway-dev/envoy-wrapper:v2.2.2"
+	defaultEnvoyImage = "ghcr.io/kgateway-dev/envoy-wrapper:v2.2.4"
 )
 
 // ErrInvalidXDS is returned when Envoy rejects the supplied JSON.

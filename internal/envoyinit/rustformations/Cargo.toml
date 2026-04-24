@@ -10,14 +10,14 @@ envoy-sdk-local = { package = "envoy-proxy-dynamic-modules-rust-sdk", path = "..
 
 [target.'cfg(not(target_arch = "x86_64"))'.dependencies]
 # The SDK version must match the Envoy version due to the strict compatibility requirements.
-envoy-sdk-remote = { package = "envoy-proxy-dynamic-modules-rust-sdk", git = "https://github.com/envoyproxy/envoy", rev = "41749943780b54b70b510b1b1a4805ae529e174a" } # envoy v1.36.5
+envoy-sdk-remote = { package = "envoy-proxy-dynamic-modules-rust-sdk", git = "https://github.com/envoyproxy/envoy", rev = "ab5b508735aac42f2855099285de9c79258e5166" } # envoy v1.36.7
 
 # END REMOVE
 
 [dependencies]
 # The SDK version must match the Envoy version due to the strict compatibility requirements.
 # REMOVE-ENVOY-1.37 : re-enable this after upgrading to envoy 1.37
-# envoy-proxy-dynamic-modules-rust-sdk = { git = "https://github.com/envoyproxy/envoy", rev = "41749943780b54b70b510b1b1a4805ae529e174a" } # envoy v1.36.5
+# envoy-proxy-dynamic-modules-rust-sdk = { git = "https://github.com/envoyproxy/envoy", rev = "ab5b508735aac42f2855099285de9c79258e5166" } # envoy v1.36.7
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rand = "0.9.0"
@@ -33,5 +33,3 @@ once_cell = "1.21.3"
 name = "rust_module"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
-
-
