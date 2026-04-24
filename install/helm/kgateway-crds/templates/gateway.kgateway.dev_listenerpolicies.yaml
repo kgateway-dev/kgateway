@@ -2086,6 +2086,16 @@ spec:
                     - message: only one of xffNumTrustedHops and xffTrustedCIDRs may
                         be set
                       rule: '!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)'
+                  internalListener:
+                    description: |-
+                      InternalListener configures this listener as an Envoy internal listener.
+                      When set, the listener will not bind to a network address. Instead, it accepts
+                      connections forwarded from other listeners or clusters via envoy_internal:// addresses.
+                      The envoy.bootstrap.internal_listener bootstrap extension must be enabled in GatewayParameters
+                      for internal listeners to function.
+                      See https://www.envoyproxy.io/docs/envoy/latest/configuration/other_features/internal_listener
+                      for more information.
+                    type: object
                   perConnectionBufferLimitBytes:
                     description: |-
                       PerConnectionBufferLimitBytes sets the per-connection buffer limit for all listeners on the gateway.
@@ -4145,6 +4155,16 @@ spec:
                           - message: only one of xffNumTrustedHops and xffTrustedCIDRs
                               may be set
                             rule: '!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)'
+                        internalListener:
+                          description: |-
+                            InternalListener configures this listener as an Envoy internal listener.
+                            When set, the listener will not bind to a network address. Instead, it accepts
+                            connections forwarded from other listeners or clusters via envoy_internal:// addresses.
+                            The envoy.bootstrap.internal_listener bootstrap extension must be enabled in GatewayParameters
+                            for internal listeners to function.
+                            See https://www.envoyproxy.io/docs/envoy/latest/configuration/other_features/internal_listener
+                            for more information.
+                          type: object
                         perConnectionBufferLimitBytes:
                           description: |-
                             PerConnectionBufferLimitBytes sets the per-connection buffer limit for all listeners on the gateway.

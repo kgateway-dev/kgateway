@@ -133,6 +133,18 @@ type KubernetesProxyConfig struct {
 	// +optional
 	Stats *StatsConfig `json:"stats,omitempty"`
 
+	// InternalListener configures the Envoy bootstrap extension for internal listeners.
+	// When set, the envoy.bootstrap.internal_listener bootstrap extension will be added
+	// to the Envoy proxy configuration, enabling internal listener functionality.
+	// Internal listeners accept connections forwarded from other listeners or clusters
+	// via envoy_internal:// addresses, and are useful for listener chaining patterns
+	// such as HTTP CONNECT tunneling.
+	// See https://www.envoyproxy.io/docs/envoy/latest/configuration/other_features/internal_listener
+	// for more information.
+	//
+	// +optional
+	InternalListener *BootstrapInternalListenerConfig `json:"internalListener,omitempty"`
+
 	// OmitDefaultSecurityContext is used to control whether or not
 	// `securityContext` fields should be rendered for the various generated
 	// Deployments/Containers that are dynamically provisioned by the deployer.
@@ -148,6 +160,19 @@ type KubernetesProxyConfig struct {
 	OmitDefaultSecurityContext *bool `json:"omitDefaultSecurityContext,omitempty"`
 
 	GatewayParametersOverlays `json:",inline"`
+}
+
+// BootstrapInternalListenerConfig configures the envoy.bootstrap.internal_listener
+// bootstrap extension. When present, the bootstrap extension is enabled and the
+// Envoy proxy can accept internal listeners created via xDS.
+type BootstrapInternalListenerConfig struct {
+	// BufferSizeKb sets the internal listener client connection buffer size in KiB.
+	// If unspecified, the Envoy default of 1024 KiB is used.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/bootstrap/internal_listener/v3/internal_listener.proto
+	//
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	BufferSizeKb *int32 `json:"bufferSizeKb,omitempty"`
 }
 
 func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
@@ -211,6 +236,20 @@ func (in *KubernetesProxyConfig) GetOmitDefaultSecurityContext() *bool {
 		return nil
 	}
 	return in.OmitDefaultSecurityContext
+}
+
+func (in *KubernetesProxyConfig) GetInternalListener() *BootstrapInternalListenerConfig {
+	if in == nil {
+		return nil
+	}
+	return in.InternalListener
+}
+
+func (in *BootstrapInternalListenerConfig) GetBufferSizeKb() *int32 {
+	if in == nil {
+		return nil
+	}
+	return in.BufferSizeKb
 }
 
 // ProxyDeployment configures the Proxy deployment in Kubernetes.

@@ -40,6 +40,8 @@ const (
 	BackendTypeDynamicForwardProxy BackendType = "DynamicForwardProxy"
 	// BackendTypeGCP is the type for GCP backends.
 	BackendTypeGCP BackendType = "GCP"
+	// BackendTypeInternalListener is the type for internal listener backends.
+	BackendTypeInternalListener BackendType = "InternalListener"
 )
 
 // BackendSpec defines the desired state of Backend.
@@ -47,10 +49,11 @@ const (
 // +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'Static'",rule="self.type == 'Static' ? has(self.static) : true"
 // +kubebuilder:validation:XValidation:message="dynamicForwardProxy backend must be specified when type is 'DynamicForwardProxy'",rule="self.type == 'DynamicForwardProxy' ? has(self.dynamicForwardProxy) : true"
 // +kubebuilder:validation:XValidation:message="gcp backend must be specified when type is 'GCP'",rule="self.type == 'GCP' ? has(self.gcp) : true"
-// +kubebuilder:validation:ExactlyOneOf=aws;static;dynamicForwardProxy;gcp
+// +kubebuilder:validation:XValidation:message="internalListener backend must be specified when type is 'InternalListener'",rule="self.type == 'InternalListener' ? has(self.internalListener) : true"
+// +kubebuilder:validation:ExactlyOneOf=aws;static;dynamicForwardProxy;gcp;internalListener
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
-	// +kubebuilder:validation:Enum=AWS;Static;DynamicForwardProxy;GCP
+	// +kubebuilder:validation:Enum=AWS;Static;DynamicForwardProxy;GCP;InternalListener
 	// Deprecated: The Type field is deprecated and will be removed in a future release.
 	// The backend type is inferred from the configuration.
 	// +optional
@@ -67,6 +70,25 @@ type BackendSpec struct {
 	// Gcp is the GCP backend configuration.
 	// +optional
 	Gcp *GcpBackend `json:"gcp,omitempty"`
+	// InternalListener routes traffic to an Envoy internal listener.
+	// The target listener must be configured as internal via a ListenerPolicy, and the
+	// envoy.bootstrap.internal_listener bootstrap extension must be enabled in GatewayParameters.
+	// See https://www.envoyproxy.io/docs/envoy/latest/configuration/other_features/internal_listener
+	// for more information.
+	// +optional
+	InternalListener *InternalListenerBackend `json:"internalListener,omitempty"`
+}
+
+// InternalListenerBackend routes traffic to an Envoy internal listener on the same proxy.
+type InternalListenerBackend struct {
+	// ListenerPort is the port of the Gateway listener configured as an internal listener
+	// via a ListenerPolicy. The internal listener is addressed as envoy_internal://listener~<port>.
+	// This port must match the port defined on the Gateway listener that has InternalListener
+	// set in its ListenerPolicy.
+	// +required
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	ListenerPort int32 `json:"listenerPort"`
 }
 
 // AppProtocol defines the application protocol to use when communicating with the backend.

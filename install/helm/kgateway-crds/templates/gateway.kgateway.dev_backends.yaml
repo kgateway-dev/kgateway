@@ -194,6 +194,27 @@ spec:
                 required:
                 - host
                 type: object
+              internalListener:
+                description: |-
+                  InternalListener routes traffic to an Envoy internal listener.
+                  The target listener must be configured as internal via a ListenerPolicy, and the
+                  envoy.bootstrap.internal_listener bootstrap extension must be enabled in GatewayParameters.
+                  See https://www.envoyproxy.io/docs/envoy/latest/configuration/other_features/internal_listener
+                  for more information.
+                properties:
+                  listenerPort:
+                    description: |-
+                      ListenerPort is the port of the Gateway listener configured as an internal listener
+                      via a ListenerPolicy. The internal listener is addressed as envoy_internal://listener~<port>.
+                      This port must match the port defined on the Gateway listener that has InternalListener
+                      set in its ListenerPolicy.
+                    format: int32
+                    maximum: 65535
+                    minimum: 1
+                    type: integer
+                required:
+                - listenerPort
+                type: object
               static:
                 description: Static is the static backend configuration.
                 properties:
@@ -239,6 +260,7 @@ spec:
                 - Static
                 - DynamicForwardProxy
                 - GCP
+                - InternalListener
                 type: string
             type: object
             x-kubernetes-validations:
@@ -252,9 +274,12 @@ spec:
                 : true'
             - message: gcp backend must be specified when type is 'GCP'
               rule: 'self.type == ''GCP'' ? has(self.gcp) : true'
+            - message: internalListener backend must be specified when type is 'InternalListener'
+              rule: 'self.type == ''InternalListener'' ? has(self.internalListener)
+                : true'
             - message: exactly one of the fields in [aws static dynamicForwardProxy
-                gcp] must be set
-              rule: '[has(self.aws),has(self.static),has(self.dynamicForwardProxy),has(self.gcp)].filter(x,x==true).size()
+                gcp internalListener] must be set
+              rule: '[has(self.aws),has(self.static),has(self.dynamicForwardProxy),has(self.gcp),has(self.internalListener)].filter(x,x==true).size()
                 == 1'
           status:
             description: BackendStatus defines the observed state of Backend.
