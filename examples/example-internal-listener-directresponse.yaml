@@ -1,0 +1,92 @@
+# Envoy DirectResponse Internal Listener Example
+# This demonstrates how to create a DirectResponse that still gets all the standard upstream metrics
+# by bouncing through an internal listener
+
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: internal-listener-directresponse
+spec:
+  kube:
+    internalListener: {}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: internal-listener-directresponse
+spec:
+  gatewayClassName: kgateway-internal
+  listeners:
+    - name: external
+      protocol: HTTP
+      port: 8080
+    - name: internal
+      protocol: HTTP
+      port: 8081
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: internal-listener-directresponse
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: internal-listener-directresponse
+  perPort:
+    - port: 8081
+      listener:
+        internalListener: {}
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: internal-listener-directresponse
+spec:
+  type: InternalListener
+  internalListener:
+    listenerPort: 8081
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: internal-listener-directresponse.localhost
+spec:
+  parentRefs:
+    - name: internal-listener-directresponse
+      sectionName: external
+  hostnames:
+    - internal-listener-directresponse.localhost
+  rules:
+    - backendRefs:
+        - group: gateway.kgateway.dev
+          kind: Backend
+          name: internal-listener-directresponse
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: internal-listener-directresponse.internal
+spec:
+  parentRefs:
+    - name: internal-listener-directresponse
+      sectionName: internal
+  hostnames:
+    # Note: This is the same hostname as the external HTTPRoute to omit autoHostRewrite for simplicity
+    - internal-listener-directresponse.localhost
+  rules:
+    - filters:
+        - type: ExtensionRef
+          extensionRef:
+            name: internal-listener-direct-response
+            group: gateway.kgateway.dev
+            kind: DirectResponse
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: DirectResponse
+metadata:
+  name: internal-listener-direct-response
+spec:
+  status: 200
+  body: "Hello internal-listener-directresponse"
