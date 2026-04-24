@@ -34,10 +34,11 @@ const (
 
 // backendIr is the internal representation of a backend.
 type backendIr struct {
-	awsIr    *AwsIr
-	staticIr *StaticIr
-	dfpIr    *DfpIr
-	gcpIr    *GcpIr
+	awsIr              *AwsIr
+	staticIr           *StaticIr
+	dfpIr              *DfpIr
+	gcpIr              *GcpIr
+	internalListenerIr *InternalListenerIr
 	// +noKrtEquals
 	errors []error
 }
@@ -61,6 +62,10 @@ func (u *backendIr) Equals(other any) bool {
 	}
 	// GCP
 	if !u.gcpIr.Equals(otherBackend.gcpIr) {
+		return false
+	}
+	// InternalListener
+	if !u.internalListenerIr.Equals(otherBackend.internalListenerIr) {
 		return false
 	}
 	return true
@@ -199,6 +204,12 @@ func buildTranslateFunc(
 				beIr.errors = append(beIr.errors, err)
 			}
 			beIr.gcpIr = gcpIr
+		case i.Spec.InternalListener != nil:
+			ilIr, err := buildInternalListenerIr(i.Spec.InternalListener)
+			if err != nil {
+				beIr.errors = append(beIr.errors, err)
+			}
+			beIr.internalListenerIr = ilIr
 		}
 		return &beIr
 	}
@@ -233,6 +244,8 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 			logger.Error("failed to process gcp backend", "error", err)
 			beIr.errors = append(beIr.errors, err)
 		}
+	case spec.InternalListener != nil:
+		processInternalListener(beIr.internalListenerIr, out)
 	}
 	return nil
 }
