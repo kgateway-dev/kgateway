@@ -57,6 +57,8 @@ type listenerPolicy struct {
 	// only for default policy
 	clientCertificateValidation *ir.ClientCertificateValidationIR
 	rbacNetworkFilter           *anypb.Any
+	// internal marks this listener as an Envoy internal listener (no network address binding).
+	internal bool
 	// +noKrtEquals
 	http *HttpListenerPolicyIr
 }
@@ -92,6 +94,7 @@ func newListenerPolicy(
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 		rbacNetworkFilter:             rbacNetworkFilter,
+		internal:                      i.InternalListener != nil,
 		http:                          http,
 	}, errs
 }
@@ -154,6 +157,9 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	}
 
 	if !proto.Equal(d.rbacNetworkFilter, d2.rbacNetworkFilter) {
+		return false
+	}
+	if d.internal != d2.internal {
 		return false
 	}
 	if (d.clientCertificateValidation == nil) != (d2.clientCertificateValidation == nil) {
@@ -366,6 +372,16 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 
 	if cfg.rbacNetworkFilter != nil {
 		p.rbacNetworkFilters[pCtx.Port] = cfg.rbacNetworkFilter
+	}
+
+	// When the listener is marked as internal, remove the network address and replace it with
+	// the InternalListener specifier. This tells Envoy that the listener accepts connections
+	// forwarded from other listeners or clusters via envoy_internal:// addresses.
+	if cfg.internal {
+		out.Address = nil
+		out.ListenerSpecifier = &envoylistenerv3.Listener_InternalListener{
+			InternalListener: &envoylistenerv3.Listener_InternalListenerConfig{},
+		}
 	}
 
 	// Track the current port being translated
