@@ -59,8 +59,16 @@ pub struct PerRouteConfig {
 
 impl PerRouteConfig {
     pub fn new(cfg: &str) -> Option<Self> {
+        let start = std::time::Instant::now();
         match Acl::from_json(cfg) {
-            Ok(a) => Some(Self { acl: Arc::new(a) }),
+            Ok(a) => {
+                envoy_log_trace!(
+                    "http-acl: per-route config (size: {:?}) parsed in {:?}",
+                    cfg.len(),
+                    start.elapsed()
+                );
+                Some(Self { acl: Arc::new(a) })
+            }
             Err(e) => {
                 envoy_log_error!("http-acl: bad per-route config: {e}");
                 None
@@ -117,7 +125,10 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
                 );
             }
         };
+        envoy_log_trace!("http-acl: ip: {ip}");
+        let start = std::time::Instant::now();
         let decision = acl.evaluate(ip);
+        envoy_log_trace!("http-acl: acl.evaluate() took {:?}", start.elapsed());
         match decision.action {
             Action::Allow => {
                 abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue
@@ -170,7 +181,7 @@ fn deny<EHF: EnvoyHttpFilter>(
         .iter()
         .map(|h| (h.name.as_str(), h.value.as_bytes()))
         .collect();
-    if let (Some(header_name), Some(tag)) = (resp.add_blocked_by_header.as_deref(), blocked_by) {
+    if let (Some(header_name), Some(tag)) = (resp.blocked_by_header_name.as_deref(), blocked_by) {
         headers.push((header_name, tag.as_bytes()));
     }
     envoy_filter.send_response(

@@ -86,6 +86,10 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructBuffer(policyCR.Spec, &outSpec)
 	// Construct fault injection specific IR
 	constructFaultInjection(policyCR.Spec, &outSpec)
+	// Construct HTTP ACL specific IR
+	if err := constructHttpACL(policyCR, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
 	// Construct timeout and retry specific IR
 	constructTimeoutRetry(policyCR.Spec, &outSpec)
 

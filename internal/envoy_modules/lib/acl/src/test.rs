@@ -30,15 +30,17 @@ fn default_deny_no_rules_denies_any() {
 
 #[test]
 fn default_deny_allow_subnet() {
-    let acl = build(r#"{"defaultAction":"deny","rules":[{"cidr":"10.0.0.0/8","action":"allow"}]}"#);
+    let acl =
+        build(r#"{"defaultAction":"deny","rules":[{"cidrs":["10.0.0.0/8"],"action":"allow"}]}"#);
     assert_eq!(act(&acl, "10.5.5.5"), Action::Allow);
     assert_eq!(act(&acl, "11.0.0.1"), Action::Deny);
 }
 
 #[test]
 fn default_allow_deny_subnet() {
-    let acl =
-        build(r#"{"defaultAction":"allow","rules":[{"cidr":"192.168.0.0/16","action":"deny"}]}"#);
+    let acl = build(
+        r#"{"defaultAction":"allow","rules":[{"cidrs":["192.168.0.0/16"],"action":"deny"}]}"#,
+    );
     assert_eq!(act(&acl, "192.168.1.1"), Action::Deny);
     assert_eq!(act(&acl, "8.8.8.8"), Action::Allow);
 }
@@ -47,8 +49,8 @@ fn default_allow_deny_subnet() {
 fn hole_punch_allow_inside_deny() {
     let acl = build(
         r#"{"defaultAction":"allow","rules":[
-            {"cidr":"10.0.0.0/8","action":"deny"},
-            {"cidr":"10.1.0.0/16","action":"allow"}
+            {"cidrs":["10.0.0.0/8"],"action":"deny"},
+            {"cidrs":["10.1.0.0/16"],"action":"allow"}
         ]}"#,
     );
     assert_eq!(act(&acl, "10.1.2.3"), Action::Allow);
@@ -60,9 +62,9 @@ fn hole_punch_allow_inside_deny() {
 fn deep_hole_punch() {
     let acl = build(
         r#"{"defaultAction":"allow","rules":[
-            {"cidr":"10.0.0.0/8","action":"deny"},
-            {"cidr":"10.1.0.0/16","action":"allow"},
-            {"cidr":"10.1.2.3/32","action":"deny"}
+            {"cidrs":["10.0.0.0/8"],"action":"deny"},
+            {"cidrs":["10.1.0.0/16"],"action":"allow"},
+            {"cidrs":["10.1.2.3/32"],"action":"deny"}
         ]}"#,
     );
     assert_eq!(act(&acl, "10.1.2.3"), Action::Deny);
@@ -73,7 +75,7 @@ fn deep_hole_punch() {
 
 #[test]
 fn bare_ip_rule_treated_as_single_host() {
-    let acl = build(r#"{"defaultAction":"allow","rules":[{"cidr":"1.2.3.4","action":"deny"}]}"#);
+    let acl = build(r#"{"defaultAction":"allow","rules":[{"cidrs":["1.2.3.4"],"action":"deny"}]}"#);
     assert_eq!(act(&acl, "1.2.3.4"), Action::Deny);
     assert_eq!(act(&acl, "1.2.3.5"), Action::Allow);
 }
@@ -81,7 +83,7 @@ fn bare_ip_rule_treated_as_single_host() {
 #[test]
 fn ipv6_allow_over_default_deny() {
     let acl =
-        build(r#"{"defaultAction":"deny","rules":[{"cidr":"2001:db8::/32","action":"allow"}]}"#);
+        build(r#"{"defaultAction":"deny","rules":[{"cidrs":["2001:db8::/32"],"action":"allow"}]}"#);
     assert_eq!(act(&acl, "2001:db8::1"), Action::Allow);
     assert_eq!(act(&acl, "2001:db8:1234:5678::1"), Action::Allow);
     assert_eq!(act(&acl, "2002::1"), Action::Deny);
@@ -89,7 +91,8 @@ fn ipv6_allow_over_default_deny() {
 
 #[test]
 fn ipv4_mapped_ipv6_routes_to_v4_trie() {
-    let acl = build(r#"{"defaultAction":"allow","rules":[{"cidr":"10.0.0.0/8","action":"deny"}]}"#);
+    let acl =
+        build(r#"{"defaultAction":"allow","rules":[{"cidrs":["10.0.0.0/8"],"action":"deny"}]}"#);
     assert_eq!(act(&acl, "::ffff:10.1.1.1"), Action::Deny);
     assert_eq!(act(&acl, "::ffff:11.1.1.1"), Action::Allow);
 }
@@ -98,8 +101,8 @@ fn ipv4_mapped_ipv6_routes_to_v4_trie() {
 fn v4_rule_does_not_leak_to_v6_and_vice_versa() {
     let acl = build(
         r#"{"defaultAction":"allow","rules":[
-            {"cidr":"10.0.0.0/8","action":"deny"},
-            {"cidr":"2001:db8::/32","action":"deny"}
+            {"cidrs":["10.0.0.0/8"],"action":"deny"},
+            {"cidrs":["2001:db8::/32"],"action":"deny"}
         ]}"#,
     );
     assert_eq!(act(&acl, "10.0.0.1"), Action::Deny);
@@ -111,7 +114,7 @@ fn v4_rule_does_not_leak_to_v6_and_vice_versa() {
 #[test]
 fn malformed_cidr_rejected() {
     let res = Acl::from_json(
-        r#"{"defaultAction":"allow","rules":[{"cidr":"not-a-cidr","action":"deny"}]}"#,
+        r#"{"defaultAction":"allow","rules":[{"cidrs":["not-a-cidr"],"action":"deny"}]}"#,
     );
     match res {
         Err(AclError::InvalidCidr(s)) => assert_eq!(s, "not-a-cidr"),
@@ -134,14 +137,14 @@ fn malformed_json_rejected() {
 fn rule_order_does_not_matter() {
     let wide_first = build(
         r#"{"defaultAction":"allow","rules":[
-            {"cidr":"10.0.0.0/8","action":"deny"},
-            {"cidr":"10.1.0.0/16","action":"allow"}
+            {"cidrs":["10.0.0.0/8"],"action":"deny"},
+            {"cidrs":["10.1.0.0/16"],"action":"allow"}
         ]}"#,
     );
     let narrow_first = build(
         r#"{"defaultAction":"allow","rules":[
-            {"cidr":"10.1.0.0/16","action":"allow"},
-            {"cidr":"10.0.0.0/8","action":"deny"}
+            {"cidrs":["10.1.0.0/16"],"action":"allow"},
+            {"cidrs":["10.0.0.0/8"],"action":"deny"}
         ]}"#,
     );
     for addr in ["10.1.2.3", "10.2.0.1", "11.0.0.1"] {
@@ -153,14 +156,14 @@ fn rule_order_does_not_matter() {
 fn last_rule_win_for_duplicated_cidr() {
     let deny_first = build(
         r#"{"defaultAction":"allow","rules":[
-            {"cidr":"10.0.0.0/8","action":"deny"},
-            {"cidr":"10.0.0.0/8","action":"allow"}
+            {"cidrs":["10.0.0.0/8"],"action":"deny"},
+            {"cidrs":["10.0.0.0/8"],"action":"allow"}
         ]}"#,
     );
     let allow_first = build(
         r#"{"defaultAction":"allow","rules":[
-            {"cidr":"10.0.0.0/8","action":"allow"},
-            {"cidr":"10.0.0.0/8","action":"deny"}
+            {"cidrs":["10.0.0.0/8"],"action":"allow"},
+            {"cidrs":["10.0.0.0/8"],"action":"deny"}
         ]}"#,
     );
     assert_eq!(act(&deny_first, "10.0.0.1"), Action::Allow);
@@ -171,8 +174,8 @@ fn last_rule_win_for_duplicated_cidr() {
 fn zero_prefix_overrides_default() {
     let acl = build(
         r#"{"defaultAction":"allow","rules":[
-            {"cidr":"0.0.0.0/0","action":"deny"},
-            {"cidr":"1.1.1.1/32","action":"allow"}
+            {"cidrs":["0.0.0.0/0"],"action":"deny"},
+            {"cidrs":["1.1.1.1/32"],"action":"allow"}
         ]}"#,
     );
     assert_eq!(act(&acl, "1.1.1.1"), Action::Allow);
@@ -184,7 +187,7 @@ fn zero_prefix_overrides_default() {
 fn matched_rule_name_returned_when_rule_named() {
     let acl = build(
         r#"{"defaultAction":"allow","rules":[
-            {"name":"block-internal","cidr":"10.0.0.0/8","action":"deny"}
+            {"name":"block-internal","cidrs":["10.0.0.0/8"],"action":"deny"}
         ]}"#,
     );
     let d = acl.evaluate(ip("10.1.2.3"));
@@ -195,7 +198,8 @@ fn matched_rule_name_returned_when_rule_named() {
 
 #[test]
 fn matched_rule_name_none_when_rule_unnamed() {
-    let acl = build(r#"{"defaultAction":"allow","rules":[{"cidr":"10.0.0.0/8","action":"deny"}]}"#);
+    let acl =
+        build(r#"{"defaultAction":"allow","rules":[{"cidrs":["10.0.0.0/8"],"action":"deny"}]}"#);
     let d = acl.evaluate(ip("10.1.2.3"));
     assert_eq!(d.action, Action::Deny);
     assert_eq!(d.matched_rule_name, None);
@@ -206,7 +210,7 @@ fn matched_rule_name_none_when_rule_unnamed() {
 fn default_applied_flag_set_when_no_rule_matches() {
     let acl = build(
         r#"{"defaultAction":"deny","rules":[
-            {"name":"allow-lan","cidr":"10.0.0.0/8","action":"allow"}
+            {"name":"allow-lan","cidrs":["10.0.0.0/8"],"action":"allow"}
         ]}"#,
     );
     let d = acl.evaluate(ip("8.8.8.8"));
@@ -228,9 +232,9 @@ fn default_applied_flag_also_set_for_default_allow() {
 fn matched_rule_name_reports_most_specific_rule() {
     let acl = build(
         r#"{"defaultAction":"allow","rules":[
-            {"name":"wide-deny","cidr":"10.0.0.0/8","action":"deny"},
-            {"name":"narrow-allow","cidr":"10.1.0.0/16","action":"allow"},
-            {"name":"single-host-deny","cidr":"10.1.2.3/32","action":"deny"}
+            {"name":"wide-deny","cidrs":["10.0.0.0/8"],"action":"deny"},
+            {"name":"narrow-allow","cidrs":["10.1.0.0/16"],"action":"allow"},
+            {"name":"single-host-deny","cidrs":["10.1.2.3/32"],"action":"deny"}
         ]}"#,
     );
     for (addr, expected) in [
@@ -302,18 +306,53 @@ fn deny_response_headers_only_defaults_status() {
 #[test]
 fn deny_response_add_blocked_by_header_defaults_to_none() {
     let acl = build(r#"{"defaultAction":"deny"}"#);
-    assert!(acl.deny_response().add_blocked_by_header.is_none());
+    assert!(acl.deny_response().blocked_by_header_name.is_none());
 }
 
 #[test]
 fn deny_response_add_blocked_by_header_parses() {
     let acl = build(
         r#"{"defaultAction":"deny","denyResponse":{
-            "addBlockedByHeader":"X-Blocked-By"
+            "blockedByHeaderName":"X-Blocked-By"
         },"rules":[]}"#,
     );
     assert_eq!(
-        acl.deny_response().add_blocked_by_header.as_deref(),
+        acl.deny_response().blocked_by_header_name.as_deref(),
         Some("X-Blocked-By")
     );
+}
+
+#[test]
+fn overlapping_allow_and_deny_longest_prefix_wins() {
+    // allow 10.0.0.0/8, deny 10.128.0.0/9 — the deny covers the upper half of the allow range.
+    // For IPs only in /8 (lower half) the allow rule wins; for IPs in both, the more specific /9 deny wins.
+    let acl = build(
+        r#"{"defaultAction":"deny","rules":[
+            {"cidrs":["10.0.0.0/8"],"action":"allow"},
+            {"cidrs":["10.128.0.0/9"],"action":"deny"}
+        ]}"#,
+    );
+    // In the allow /8 only (lower half) → allowed.
+    assert_eq!(act(&acl, "10.1.0.0"), Action::Allow);
+    assert_eq!(act(&acl, "10.127.255.255"), Action::Allow);
+    // In both /8 and /9 (upper half) → deny wins (more specific prefix).
+    assert_eq!(act(&acl, "10.128.0.0"), Action::Deny);
+    assert_eq!(act(&acl, "10.200.0.1"), Action::Deny);
+    assert_eq!(act(&acl, "10.255.255.255"), Action::Deny);
+    // Outside both rules → default deny.
+    assert_eq!(act(&acl, "11.0.0.1"), Action::Deny);
+}
+
+#[test]
+fn multiple_cidrs_in_one_rule_share_name_and_action() {
+    let acl = build(
+        r#"{"defaultAction":"allow","rules":[
+            {"name":"block-ranges","cidrs":["10.0.0.0/8","192.168.0.0/16"],"action":"deny"}
+        ]}"#,
+    );
+    assert_eq!(act(&acl, "10.5.5.5"), Action::Deny);
+    assert_eq!(act(&acl, "192.168.1.1"), Action::Deny);
+    assert_eq!(act(&acl, "8.8.8.8"), Action::Allow);
+    let d = acl.evaluate(ip("10.5.5.5"));
+    assert_eq!(d.matched_rule_name, Some("block-ranges"));
 }
