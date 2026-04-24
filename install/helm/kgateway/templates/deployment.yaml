@@ -18,7 +18,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if not (kindIs "invalid" .Values.controller.replicaCount) }}
+  {{- if and (empty .Values.controller.horizontalPodAutoscaler) (not (kindIs "invalid" .Values.controller.replicaCount)) }}
   replicas: {{ .Values.controller.replicaCount }}
   {{- end }}
   selector:
