@@ -436,6 +436,11 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	if policy.streamIdleTimeout != nil {
 		out.StreamIdleTimeout = durationpb.New(*policy.streamIdleTimeout)
 	}
+
+	// translate delayedCloseTimeout
+	if policy.delayedCloseTimeout != nil {
+		out.DelayedCloseTimeout = durationpb.New(*policy.delayedCloseTimeout)
+	}
 	// early request header modifier
 	if len(policy.earlyHeaderMutationExtensions) != 0 {
 		out.EarlyHeaderMutationExtensions = append(out.EarlyHeaderMutationExtensions, policy.earlyHeaderMutationExtensions...)

@@ -39,6 +39,7 @@ func MergeHttpPolicies(
 		mergeDefaultHostForHttp10,
 		mergeEarlyHeaderMutation,
 		mergeMaxRequestHeadersKb,
+		mergeDelayedCloseTimeout,
 		mergeUuidRequestIdConfig,
 	}
 	for _, mergeFunc := range mergeFuncs {
@@ -341,6 +342,22 @@ func mergeMaxRequestHeadersKb(
 
 	p1.maxRequestHeadersKb = p2.maxRequestHeadersKb
 	mergeOrigins.SetOne(origin+"maxRequestHeadersKb", p2Ref, p2MergeOrigins)
+}
+
+func mergeDelayedCloseTimeout(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.delayedCloseTimeout, p2.delayedCloseTimeout, opts) {
+		return
+	}
+
+	p1.delayedCloseTimeout = p2.delayedCloseTimeout
+	mergeOrigins.SetOne(origin+"delayedCloseTimeout", p2Ref, p2MergeOrigins)
 }
 
 func mergeUuidRequestIdConfig(

@@ -269,6 +269,17 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:Maximum=8192
 	MaxRequestHeadersKb *int32 `json:"maxRequestHeadersKb,omitempty"`
 
+	// DelayedCloseTimeout is the time that Envoy will wait between sending a
+	// close notify (FIN) to downstream and forcefully closing the connection.
+	// Setting this to 0s disables the delayed close and immediately closes after
+	// flushing, which is useful for WebSocket connections proxied through Envoy
+	// where the default 1s delay adds unnecessary latency.
+	// If unset, Envoy's default of 1s applies.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-delayed-close-timeout
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	DelayedCloseTimeout *metav1.Duration `json:"delayedCloseTimeout,omitempty"`
+
 	// UuidRequestIdConfig configures the behavior of the UUID request ID extension.
 	// This extension sets the x-request-id header to a UUID value.
 	// +optional

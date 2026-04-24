@@ -58,6 +58,7 @@ type HttpListenerPolicyIr struct {
 	defaultHostForHttp10          *string
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 	maxRequestHeadersKb           *uint32
+	delayedCloseTimeout           *time.Duration
 	uuidRequestIdConfig           *envoyuuidv3.UuidRequestIdConfig
 }
 
@@ -175,6 +176,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 
+	if !cmputils.PointerValsEqual(d.delayedCloseTimeout, d2.delayedCloseTimeout) {
+		return false
+	}
+
 	if !proto.Equal(d.uuidRequestIdConfig, d2.uuidRequestIdConfig) {
 		return false
 	}
@@ -258,6 +263,12 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		xffConfig.SkipXffAppend = &wrapperspb.BoolValue{Value: *h.SkipXffAppend}
 	}
 
+	var delayedCloseTimeout *time.Duration
+	if h.DelayedCloseTimeout != nil {
+		duration := h.DelayedCloseTimeout.Duration
+		delayedCloseTimeout = &duration
+	}
+
 	var maxRequestHeadersKb *uint32
 	if h.MaxRequestHeadersKb != nil {
 		maxRequestHeadersKb = new(uint32(*h.MaxRequestHeadersKb)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
@@ -292,6 +303,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		defaultHostForHttp10:          h.DefaultHostForHttp10,
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
 		maxRequestHeadersKb:           maxRequestHeadersKb,
+		delayedCloseTimeout:           delayedCloseTimeout,
 		uuidRequestIdConfig:           uuidRequestIdConfig,
 	}, errs
 }
