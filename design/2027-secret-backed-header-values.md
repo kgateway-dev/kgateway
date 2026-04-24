@@ -168,6 +168,24 @@ reference is made without a valid ReferenceGrant, the `TrafficPolicy` status sho
 
 ## Design Decisions
 
+### Replacing `gwv1.HTTPHeaderFilter` rather than extending it
+
+`HeaderModifiers` previously used `gwv1.HTTPHeaderFilter` directly, imported from the upstream
+Gateway API. This EP replaces it with `KgatewayHTTPHeaderFilter` rather than running the two types
+in parallel.
+
+The replacement is necessary because we need to change the per-header value type — from a plain
+`string` to a union of `string` or `secretRef`. Go does not allow modifying field types from
+external packages by embedding or extension, so a custom type is the only option.
+
+The risk of diverging from the upstream type is low: `gwv1.HTTPHeaderFilter` is one of the
+simplest and most stable types in Gateway API (set/add/remove string headers), and Gateway API is
+unlikely to add secret-backed values since those are an implementation concern rather than a
+portability one. If Gateway API does add new fields to `HTTPHeaderFilter`, we add them to
+`KgatewayHTTPHeaderFilter` manually — a known maintenance cost, not a structural problem.
+
+Existing user configs that use inline `value` strings continue to work without any changes.
+
 ### Flat `value`/`secretRef` siblings — no nested wrapper type
 
 The header entry has `value` (plain string) and `secretRef` as sibling fields with a `oneOf`
