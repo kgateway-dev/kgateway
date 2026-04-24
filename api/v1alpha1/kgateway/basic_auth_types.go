@@ -9,6 +9,8 @@ import (
 // BasicAuthPolicy configures HTTP basic authentication using the Authorization header.
 // Basic authentication validates requests against username/password pairs provided either inline or via a Kubernetes secret.
 // The credentials must be in htpasswd SHA-1 format.
+// A header named "x-envoy-basic-auth-user" will be added to upstream requests after successful authentication.
+// Its value is the username provided in the Authorization header. It may be used in subsequent filters, access logs, etc.
 //
 // +kubebuilder:validation:ExactlyOneOf=users;secretRef;disable
 type BasicAuthPolicy struct {

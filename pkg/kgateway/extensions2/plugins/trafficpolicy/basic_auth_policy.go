@@ -23,6 +23,7 @@ const (
 	basicAuthFilterName = "envoy.filters.http.basic_auth"
 	defaultSecretKey    = ".htpasswd"
 	shaPrefix           = "{SHA}"
+	usernameHeader      = "x-envoy-basic-auth-user"
 )
 
 type basicAuthIR struct {
@@ -79,6 +80,8 @@ func (p *trafficPolicyPluginGwPass) handleBasicAuth(
 	if _, ok := p.basicAuthInChain[fcn]; !ok {
 		// Create a disabled filter with empty users - it will be enabled per-route
 		p.basicAuthInChain[fcn] = &envoy_basic_auth_v3.BasicAuth{
+			// Set a statically named header for all instances of the filter, can be used by later filters, logs, etc.
+			ForwardUsernameHeader: usernameHeader,
 			Users: &envoycorev3.DataSource{
 				Specifier: &envoycorev3.DataSource_InlineString{
 					// If the data source is empty, envoy will NACK. so instead we use a comment.
