@@ -86,6 +86,9 @@ type HelmGateway struct {
 
 	// stats values
 	Stats *HelmStatsConfig `json:"stats,omitempty"`
+
+	// internal listener bootstrap extension values
+	InternalListener *HelmInternalListenerConfig `json:"internalListener,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -136,6 +139,16 @@ type HelmXdsTls struct {
 
 type HelmDnsResolver struct {
 	UdpMaxQueries *int32 `json:"udpMaxQueries,omitempty"`
+}
+
+// HelmInternalListenerConfig holds the helm values for the Envoy bootstrap internal listener extension.
+type HelmInternalListenerConfig struct {
+	// Enabled signals that the internal listener bootstrap extension should be added.
+	// It is always set to true when this struct is non-nil.
+	Enabled bool `json:"enabled"`
+	// BufferSizeKb is the internal listener client connection buffer size in KiB.
+	// If nil, the Envoy default (1024 KiB) is used.
+	BufferSizeKb *int32 `json:"bufferSizeKb,omitempty"`
 }
 
 type HelmIstio struct {

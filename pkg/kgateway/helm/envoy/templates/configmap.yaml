@@ -79,6 +79,15 @@ data:
           {{- end -}}
     {{- end -}}
     {{ end }}
+    {{- if $gateway.internalListener.enabled }}
+    bootstrap_extensions:
+      - name: envoy.bootstrap.internal_listener
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.bootstrap.internal_listener.v3.InternalListener
+          {{- if $gateway.internalListener.bufferSizeKb }}
+          buffer_size_kb: {{ $gateway.internalListener.bufferSizeKb }}
+          {{- end }}
+    {{- end }}
     static_resources:
       {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
       secrets:

@@ -473,6 +473,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	gateway.IstioContainer = deployer.GetIstioContainerValues(istioContainerConfig)
 
 	gateway.Stats = deployer.GetStatsValues(statsConfig)
+	gateway.InternalListener = deployer.GetInternalListenerValues(kubeProxyConfig.GetInternalListener())
 
 	return vals, nil
 }

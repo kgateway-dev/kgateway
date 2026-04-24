@@ -39,6 +39,7 @@ func DeepMergeGatewayParameters(dst, src *kgateway.GatewayParameters) {
 	dstKube.ServiceAccount = deepMergeServiceAccount(dstKube.GetServiceAccount(), srcKube.GetServiceAccount())
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
 	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
+	dstKube.InternalListener = MergePointers(dstKube.GetInternalListener(), srcKube.GetInternalListener())
 	dstKube.OmitDefaultSecurityContext = MergePointers(dstKube.GetOmitDefaultSecurityContext(), srcKube.GetOmitDefaultSecurityContext())
 }
 
