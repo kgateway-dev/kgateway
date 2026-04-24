@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+if ((BASH_VERSINFO[0] < 4)); then
+    echo "Error: This script requires bash 4.0+ (for associative arrays)." >&2
+    echo "You have bash ${BASH_VERSION}. On macOS, install a newer bash with: brew install bash" >&2
+    exit 1
+fi
+
 # Get merge queue e2e failures from the past `DAYS` days, sorted by frequency.
 
 show_help() {

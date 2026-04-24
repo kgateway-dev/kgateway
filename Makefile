@@ -3,6 +3,7 @@
 # https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
 .DEFAULT_GOAL := help
 SHELL := bash
+.SHELLFLAGS := -eu -o pipefail -c
 
 #----------------------------------------------------------------------------------
 # Help
@@ -150,7 +151,7 @@ fmt:  ## Format the code with golangci-lint
 
 .PHONY: fmt-changed
 fmt-changed: ## Format only the changed code with golangci-lint (skip deleted files)
-	git status -s -uno | awk '{print $$2}' | grep '.*.go$$' | xargs -r -I{} bash -lc '[ -f "{}" ] && $(CUSTOM_GOLANGCI_LINT_FMT) "{}" || true'
+	git status -s -uno | awk '{print $$2}' | { grep '.*.go$$' || true; } | xargs -r -I{} bash -lc '[ -f "{}" ] && $(CUSTOM_GOLANGCI_LINT_FMT) "{}" || true'
 
 .PHONY: mod-download
 mod-download:  ## Download transitive dependencies
@@ -789,15 +790,15 @@ package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart ## Pa
 
 .PHONY: package-kgateway-chart
 package-kgateway-chart: ## Package the kgateway charts
-	mkdir -p $(TEST_ASSET_DIR); \
-	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR); \
-	$(HELM) repo index $(TEST_ASSET_DIR);
+	mkdir -p $(TEST_ASSET_DIR) && \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR) && \
+	$(HELM) repo index $(TEST_ASSET_DIR)
 
 .PHONY: package-kgateway-crd-chart
 package-kgateway-crd-chart: ## Package the kgateway crd chart
-	mkdir -p $(TEST_ASSET_DIR); \
-	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
-	$(HELM) repo index $(TEST_ASSET_DIR);
+	mkdir -p $(TEST_ASSET_DIR) && \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD) && \
+	$(HELM) repo index $(TEST_ASSET_DIR)
 
 # VERSION_NO_V strips the leading 'v' from VERSION (e.g., v2.0.0 -> 2.0.0)
 VERSION_NO_V := $(patsubst v%,%,$(VERSION))

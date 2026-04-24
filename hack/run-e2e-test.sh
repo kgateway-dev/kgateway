@@ -120,7 +120,8 @@ log_error() {
 # Check if an environment variable is truthy (1, true, yes, y)
 is_truthy() {
     local val="${!1:-}"
-    [[ "${val,,}" =~ ^(1|true|yes|y)$ ]]
+    val=$(echo "$val" | tr '[:upper:]' '[:lower:]')
+    [[ "$val" =~ ^(1|true|yes|y)$ ]]
 }
 
 # Check if kind cluster exists
@@ -389,12 +390,10 @@ build_test_pattern() {
                             # Pattern format: ^ParentTest$/^Suite$/^Method$
                             local parts
                             IFS='/' read -ra parts <<< "$pattern"
-                            parent_tests+=("${parts[0]#^}")
-                            parent_tests[-1]="${parent_tests[-1]%\$}"
-                            suite_names+=("${parts[1]#^}")
-                            suite_names[-1]="${suite_names[-1]%\$}"
-                            method_names+=("${parts[2]#^}")
-                            method_names[-1]="${method_names[-1]%\$}"
+                            local tmp
+                            tmp="${parts[0]#^}"; parent_tests+=("${tmp%\$}")
+                            tmp="${parts[1]#^}"; suite_names+=("${tmp%\$}")
+                            tmp="${parts[2]#^}"; method_names+=("${tmp%\$}")
                         done
 
                         # Check if suite and method are the same across all patterns
