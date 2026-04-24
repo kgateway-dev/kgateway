@@ -30,26 +30,34 @@ func TransformListenerSetManifest(content string) string {
 		return content
 	}
 
+	// normalize strips whitespace and a leading YAML list marker ("- ") so that
+	// "kind: ListenerSet" and "- kind: ListenerSet" compare equal — list-item
+	// entries inside parentRefs/targetRefs carry the marker inline with the
+	// first key.
+	normalize := func(s string) string {
+		return strings.TrimPrefix(strings.TrimSpace(s), "- ")
+	}
+
 	lines := strings.Split(content, "\n")
 	for i, line := range lines {
-		if strings.TrimSpace(line) == "kind: ListenerSet" {
+		if normalize(line) == "kind: ListenerSet" {
 			lines[i] = strings.Replace(line, "ListenerSet", "XListenerSet", 1)
 		}
 	}
 	for i, line := range lines {
 		if strings.TrimSpace(line) == "apiVersion: gateway.networking.k8s.io/v1" &&
 			i+1 < len(lines) &&
-			strings.TrimSpace(lines[i+1]) == "kind: XListenerSet" {
+			normalize(lines[i+1]) == "kind: XListenerSet" {
 			lines[i] = strings.Replace(line, "gateway.networking.k8s.io/v1", "gateway.networking.x-k8s.io/v1alpha1", 1)
 		}
 	}
 	for i, line := range lines {
-		if strings.TrimSpace(line) != "group: gateway.networking.k8s.io" {
+		if normalize(line) != "group: gateway.networking.k8s.io" {
 			continue
 		}
 
-		hasXListenerSetNeighbor := i > 0 && strings.TrimSpace(lines[i-1]) == "kind: XListenerSet" ||
-			i+1 < len(lines) && strings.TrimSpace(lines[i+1]) == "kind: XListenerSet"
+		hasXListenerSetNeighbor := i > 0 && normalize(lines[i-1]) == "kind: XListenerSet" ||
+			i+1 < len(lines) && normalize(lines[i+1]) == "kind: XListenerSet"
 		if hasXListenerSetNeighbor {
 			lines[i] = strings.Replace(line, "gateway.networking.k8s.io", "gateway.networking.x-k8s.io", 1)
 		}
