@@ -313,7 +313,6 @@ func GetInternalListenerValues(cfg *kgateway.BootstrapInternalListenerConfig) *H
 		return nil
 	}
 	return &HelmInternalListenerConfig{
-		Enabled:      true,
 		BufferSizeKb: cfg.GetBufferSizeKb(),
 	}
 }

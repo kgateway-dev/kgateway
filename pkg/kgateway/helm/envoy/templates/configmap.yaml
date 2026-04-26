@@ -79,7 +79,7 @@ data:
           {{- end -}}
     {{- end -}}
     {{ end }}
-    {{- if $gateway.internalListener.enabled }}
+    {{- if $gateway.internalListener }}
     bootstrap_extensions:
       - name: envoy.bootstrap.internal_listener
         typed_config:
