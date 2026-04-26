@@ -6,7 +6,7 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
-  name: internal-listener-directresponse
+  name: gwp-internal-listener-directresponse
 spec:
   kube:
     internalListener: {}
@@ -16,7 +16,12 @@ kind: Gateway
 metadata:
   name: internal-listener-directresponse
 spec:
-  gatewayClassName: kgateway-internal
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gwp-internal-listener-directresponse
   listeners:
     - name: external
       protocol: HTTP

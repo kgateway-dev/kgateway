@@ -18,29 +18,22 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
-  name: internal-listener-gwparams
+  name: gwp-internal-listener
 spec:
   kube:
     internalListener: {}
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: GatewayClass
-metadata:
-  name: kgateway-internal
-spec:
-  controllerName: kgateway.dev/kgateway
-  parametersRef:
-    group: gateway.kgateway.dev
-    kind: GatewayParameters
-    name: internal-listener-gwparams
-    namespace: default
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: internal-listener-gateway
 spec:
-  gatewayClassName: kgateway-internal
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gwp-internal-listener
   listeners:
     - name: external
       protocol: HTTP
