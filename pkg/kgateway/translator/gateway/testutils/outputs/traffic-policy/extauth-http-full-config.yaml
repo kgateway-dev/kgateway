@@ -108,6 +108,16 @@ Listeners:
               allowPartialMessage: true
               maxRequestBytes: 420000
               packAsBytes: true
+        - disabled: true
+          name: ext_auth_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -145,6 +155,14 @@ Routes:
         ext_auth/infra/default-extauth:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
+        ext_auth_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /example-route
       metadata:
@@ -164,6 +182,14 @@ Routes:
               my-key: my-val
             withRequestBody:
               maxRequestBytes: 100000
+        ext_auth_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          perRouteConfigName: rustformation
 Statuses:
   gateways:
     infra/example-gateway:

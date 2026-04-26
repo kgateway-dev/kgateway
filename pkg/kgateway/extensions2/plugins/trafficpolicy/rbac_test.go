@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins"
 )
 
 // createExpectedMatcher creates an expected matcher structure for testing
@@ -139,12 +138,59 @@ func TestTranslateRBAC(t *testing.T) {
 
 					// Validate each CEL expression can be parsed
 					for _, celExpr := range expectedCELs {
-						parsedExpr, err := plugins.ParseCELExpression(env, celExpr)
+						parsedExpr, err := parseCELExpression(env, celExpr)
 						assert.NoError(t, err, "CEL expression should be valid: %s", celExpr)
 						assert.NotNil(t, parsedExpr, "Parsed CEL expression should not be nil: %s", celExpr)
 					}
 				}
 			}
+		})
+	}
+}
+
+// extractOnNoMatchAction unpacks the RBAC Action from the OnNoMatch field of a Matcher.
+func extractOnNoMatchAction(t *testing.T, m *cncfmatcherv3.Matcher) envoyrbacv3.RBAC_Action {
+	t.Helper()
+	require.NotNil(t, m.GetOnNoMatch(), "OnNoMatch must not be nil")
+	actionConfig := m.GetOnNoMatch().GetAction()
+	require.NotNil(t, actionConfig, "OnNoMatch action must not be nil")
+
+	rbacAction := &envoyrbacv3.Action{}
+	require.NoError(t, actionConfig.GetTypedConfig().UnmarshalTo(rbacAction), "failed to unmarshal OnNoMatch action")
+	return rbacAction.Action
+}
+
+func TestTranslateRBACOnNoMatchAction(t *testing.T) {
+	tests := []struct {
+		name          string
+		action        shared.AuthorizationPolicyAction
+		wantOnNoMatch envoyrbacv3.RBAC_Action
+	}{
+		{
+			name:          "deny action sets onNoMatch to ALLOW",
+			action:        shared.AuthorizationPolicyActionDeny,
+			wantOnNoMatch: envoyrbacv3.RBAC_ALLOW,
+		},
+		{
+			name:          "allow action sets onNoMatch to DENY",
+			action:        shared.AuthorizationPolicyActionAllow,
+			wantOnNoMatch: envoyrbacv3.RBAC_DENY,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rbac := &shared.Authorization{
+				Action: tt.action,
+				Policy: shared.AuthorizationPolicy{
+					MatchExpressions: []shared.CELExpression{"source.address.startsWith('10.')"},
+				},
+			}
+			got, err := translateRBAC(rbac)
+			require.NoError(t, err)
+			require.NotNil(t, got.Rbac.Matcher, "expected Matcher field to be set when CEL expressions are present")
+			assert.Equal(t, tt.wantOnNoMatch, extractOnNoMatchAction(t, got.Rbac.Matcher),
+				"OnNoMatch action should be the inverse of the policy action")
 		})
 	}
 }

@@ -1,0 +1,49 @@
+# Same HTTPRoute attached to multiple HTTP listeners with RequestRedirect and no scheme/port.
+# Each listener's redirect must use that listener's port (issue #13889).
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 80
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - protocol: HTTP
+      port: 666
+      name: http666
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - protocol: HTTP
+      port: 8080
+      name: http8080
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: multi-listener-redirect
+spec:
+  parentRefs:
+    - name: test
+  hostnames:
+    - "redirect-multi.example.com"
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            statusCode: 301
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /somewhere/

@@ -12,12 +12,12 @@ When a new envoy version is released, the following files should be updated:
 | File | Update |
 |---|---|
 | Makefile | Update ENVOY_IMAGE with the new version |
-| internal/envoyinit/rustformations/Cargo.toml | Update the commit hash or version tag to match the [envoy](https://github.com/envoyproxy/envoy/releases) release commit hash |
+| internal/envoy_modules/Cargo.toml | Update the commit hash or version tag to match the [envoy](https://github.com/envoyproxy/envoy/releases) release commit hash |
 
 then:
 
 ``` bash
-(cd internal/envoyinit && cargo update -p envoy-proxy-dynamic-modules-rust-sdk)
+(cd internal/envoy_modules && cargo update -p envoy-proxy-dynamic-modules-rust-sdk)
 ```
 
 ### go-control-plane

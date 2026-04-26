@@ -236,7 +236,7 @@ maybe_setup_loadbalancer() {
 
 install_gateway_api_crds() {
     echo "Installing Gateway API CRDs v${gateway_api_version} (${gateway_api_channel} channel)..."
-    kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/v${gateway_api_version}/${gateway_api_channel}-install.yaml"
+    kubectl apply --server-side -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/v${gateway_api_version}/${gateway_api_channel}-install.yaml"
 }
 
 install_kgateway() {

@@ -49,7 +49,7 @@ listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -91,7 +91,7 @@ routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"x-foo-req","value":"abc"}]},"response":{"set":[{"name":"x-foo-resp","value":"xyz"}]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
   - domains:
     - www.example.com
     name: listener~8080~www_example_com
@@ -115,4 +115,4 @@ routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"x-foo-req","value":"abc"}]},"response":{"set":[{"name":"x-foo-resp","value":"xyz"}]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation

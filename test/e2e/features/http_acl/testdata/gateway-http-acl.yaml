@@ -1,0 +1,52 @@
+---
+# ACL attached via targetRef to the Gateway — applies to all routes on the gateway.
+# defaultAction=allow, named block/allow rules, custom denyResponse with X-Blocked-By header.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route
+  namespace: kgateway-base
+spec:
+  hostnames:
+    - httpbin
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: kgateway-base
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-acl
+  namespace: kgateway-base
+spec:
+  targetRefs:
+    - kind: Gateway
+      group: gateway.networking.k8s.io
+      name: gateway
+  acl:
+    defaultAction: allow
+    rules:
+      - name: block-internal-range
+        cidrs:
+          - "10.0.0.0/8"
+        action: deny
+      - name: allow-trusted-subnet
+        cidrs:
+          - "10.1.0.0/16"
+        action: allow
+    denyResponse:
+      statusCode: 403
+      blockedByHeaderName: X-Blocked-By

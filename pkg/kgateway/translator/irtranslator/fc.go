@@ -41,16 +41,16 @@ type filterChainTranslator struct {
 	pluginPass TranslationPassPlugins
 }
 
-func computeListenerAddress(bindAddress string, port uint32, reporter sdkreporter.GatewayReporter) *envoycorev3.Address {
+func computeListenerAddress(bindAddress string, port uint32, reporter sdkreporter.GatewayReporter) (*envoycorev3.Address, error) {
 	_, isIpv4Address, err := utils.IsIpv4Address(bindAddress)
 	if err != nil {
-		// TODO: return error ????
 		reporter.SetCondition(sdkreporter.GatewayCondition{
 			Type:    gwv1.GatewayConditionProgrammed,
 			Reason:  gwv1.GatewayReasonInvalid,
 			Status:  metav1.ConditionFalse,
 			Message: "Error processing listener: " + err.Error(),
 		})
+		return nil, err
 	}
 
 	return &envoycorev3.Address{
@@ -67,7 +67,7 @@ func computeListenerAddress(bindAddress string, port uint32, reporter sdkreporte
 				Ipv4Compat: !isIpv4Address,
 			},
 		},
-	}
+	}, nil
 }
 
 func tlsInspectorFilter() *envoylistenerv3.ListenerFilter {

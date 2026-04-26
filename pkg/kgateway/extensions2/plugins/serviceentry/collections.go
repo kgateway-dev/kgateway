@@ -138,6 +138,7 @@ func initServiceEntryCollections(
 		WorkloadEntries,
 		commonCols.LocalityPods,
 		opts.Aliaser,
+		opts.WorkloadEntriesExclusionLabelKeys,
 	)
 
 	// init the outputs
@@ -180,6 +181,7 @@ func selectedWorkloads(
 	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry],
 	Pods krt.Collection[krtcollections.LocalityPod],
 	aliaser Aliaser,
+	weExclusionLabelKeys sets.Set[string],
 ) (
 	krt.Collection[selectedWorkload],
 	krt.Index[string, selectedWorkload],
@@ -198,6 +200,13 @@ func selectedWorkloads(
 
 	// WorkloadEntries: selection logic and convert to Pod
 	selectedWorkloadEntries := krt.NewCollection(WorkloadEntries, func(ctx krt.HandlerContext, we *networkingclient.WorkloadEntry) *selectedWorkload {
+		// exclude WEs whose merged label set (metadata + spec) contains any exclusion key.
+		// spec.labels takes precedence (matching selectedWorkloadFromEntry), but both
+		// sources are checked so an exclusion key in either location is honored.
+		if workloadEntryIsExcluded(we.GetLabels(), we.Spec.GetLabels(), weExclusionLabelKeys) {
+			return nil
+		}
+
 		// find all the SEs that select this we
 		// if there are none, we can stop early
 		selectedByServiceEntries := krt.Fetch(
@@ -336,6 +345,20 @@ func parseWorkloadEntryLocality(locality string) ir.PodLocality {
 		out.Subzone = parts[2]
 	}
 	return out
+}
+
+// workloadEntryIsExcluded returns true if the merged label set (metadata + spec labels) contains
+// any key from the exclusion set. Both sources are checked independently so neither is overlooked.
+func workloadEntryIsExcluded(metadataLabels, specLabels map[string]string, exclusionKeys sets.Set[string]) bool {
+	for key := range exclusionKeys {
+		if _, ok := metadataLabels[key]; ok {
+			return true
+		}
+		if _, ok := specLabels[key]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func isDNSServiceEntry(se *networkingclient.ServiceEntry) bool {

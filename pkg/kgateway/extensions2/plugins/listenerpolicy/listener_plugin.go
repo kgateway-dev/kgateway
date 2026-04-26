@@ -56,7 +56,6 @@ type listenerPolicy struct {
 	perConnectionBufferLimitBytes *uint32
 	// only for default policy
 	clientCertificateValidation *ir.ClientCertificateValidationIR
-	rbacNetworkFilter           *anypb.Any
 	// internal marks this listener as an Envoy internal listener (no network address binding).
 	internal bool
 	// +noKrtEquals
@@ -70,30 +69,15 @@ func newListenerPolicy(
 	if i == nil {
 		return listenerPolicy{}, nil
 	}
-	var errs []error
-
 	var perConnectionBufferLimitBytes *uint32
 	if i.PerConnectionBufferLimitBytes != nil {
 		perConnectionBufferLimitBytes = new(uint32(*i.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
 	}
-
-	// Translate network RBAC if configured
-	var rbacNetworkFilter *anypb.Any
-	if i.RBAC != nil {
-		filter, err := translateNetworkRbac(i.RBAC, objSrc)
-		if err != nil {
-			errs = append(errs, err)
-		}
-		rbacNetworkFilter = filter
-	}
-
-	http, httpErrs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
-	errs = append(errs, httpErrs...)
+	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
-		rbacNetworkFilter:             rbacNetworkFilter,
 		internal:                      i.InternalListener != nil,
 		http:                          http,
 	}, errs
@@ -156,9 +140,6 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 		return false
 	}
 
-	if !proto.Equal(d.rbacNetworkFilter, d2.rbacNetworkFilter) {
-		return false
-	}
 	if d.internal != d2.internal {
 		return false
 	}
@@ -218,8 +199,7 @@ type listenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 	reporter reporter.Reporter
 
-	healthCheckPolicy  map[uint32]*healthcheckv3.HealthCheck
-	rbacNetworkFilters map[uint32]*anypb.Any // Track RBAC filters per port
+	healthCheckPolicy map[uint32]*healthcheckv3.HealthCheck
 	currentPort        uint32                // Current listener port being translated
 }
 
@@ -329,9 +309,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &listenerPolicyPluginGwPass{
-		reporter:           reporter,
-		healthCheckPolicy:  map[uint32]*healthcheckv3.HealthCheck{},
-		rbacNetworkFilters: map[uint32]*anypb.Any{},
+		reporter:          reporter,
+		healthCheckPolicy: map[uint32]*healthcheckv3.HealthCheck{},
 	}
 }
 
@@ -368,11 +347,6 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	if cfg.perConnectionBufferLimitBytes != nil {
 		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *cfg.perConnectionBufferLimitBytes}
 	}
-	// Store RBAC network filter for this port; apply it during filter chain construction via NetworkFilters()
-
-	if cfg.rbacNetworkFilter != nil {
-		p.rbacNetworkFilters[pCtx.Port] = cfg.rbacNetworkFilter
-	}
 
 	// When the listener is marked as internal, remove the network address and replace it with
 	// the InternalListener specifier. This tells Envoy that the listener accepts connections
@@ -389,28 +363,6 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	if http := cfg.http; http != nil {
 		p.healthCheckPolicy[pCtx.Port] = http.healthCheckPolicy
 	}
-}
-
-// NetworkFilters returns the RBAC network filter for the current listener port.
-func (p *listenerPolicyPluginGwPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
-	rbacFilter := p.rbacNetworkFilters[p.currentPort]
-	if rbacFilter == nil {
-		return nil, nil
-	}
-
-	envoyFilter := &envoylistenerv3.Filter{
-		Name: "envoy.filters.network.rbac",
-		ConfigType: &envoylistenerv3.Filter_TypedConfig{
-			TypedConfig: rbacFilter,
-		},
-	}
-
-	return []filters.StagedNetworkFilter{
-		{
-			Filter: envoyFilter,
-			Stage:  filters.BeforeStage(filters.AuthZStage),
-		},
-	}, nil
 }
 
 func (p *listenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
@@ -577,6 +529,9 @@ func convertProxyProtocolConfig(objSrc ir.ObjectSource, config *kgateway.ProxyPr
 	// Create the proxy protocol configuration
 	proxyProtocolConfig := &proxy_protocol.ProxyProtocol{
 		StatPrefix: fmt.Sprintf("%s_%s", objSrc.Namespace, objSrc.Name),
+	}
+	if config.AllowRequestsWithoutProxyProtocol != nil {
+		proxyProtocolConfig.AllowRequestsWithoutProxyProtocol = *config.AllowRequestsWithoutProxyProtocol
 	}
 
 	// Marshal to Any
