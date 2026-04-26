@@ -1,5 +1,4 @@
 # Example: Configure Envoy stats inclusion via GatewayParameters
----
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
