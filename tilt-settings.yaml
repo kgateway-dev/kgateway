@@ -38,7 +38,7 @@ providers:
     # NOTE: Do NOT include ENTRYPOINT here - the Tiltfile will append the correct
     # entrypoint (standard or debug) based on whether debug_port is set.
     dockerfile_contents: |
-      FROM envoyproxy/envoy:v1.37.1 as envoy-bin
+      FROM envoyproxy/envoy:v1.37.2 as envoy-bin
 
       FROM golang:latest as tilt
       WORKDIR /app

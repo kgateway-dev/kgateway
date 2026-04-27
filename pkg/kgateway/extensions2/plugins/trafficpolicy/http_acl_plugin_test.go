@@ -1,0 +1,126 @@
+package trafficpolicy
+
+import (
+	"testing"
+
+	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+)
+
+func TestHttpACLIREquals(t *testing.T) {
+	makeFilterCfg := func(json string) *dynamicmodulesv3.DynamicModuleFilterPerRoute {
+		filterCfg := utils.MustMessageToAny(&wrapperspb.StringValue{Value: json})
+		return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
+			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+				Name: httpACLModuleName,
+			},
+			PerRouteConfigName: httpACLFilterName,
+			FilterConfig:       filterCfg,
+		}
+	}
+
+	allowAllCfg := makeFilterCfg(`{"defaultAction":"allow"}`)
+	denyAllCfg := makeFilterCfg(`{"defaultAction":"deny"}`)
+	withRulesCfg := makeFilterCfg(`{"defaultAction":"allow","rules":[{"cidrs":["10.0.0.0/8"],"action":"deny"}]}`)
+
+	tests := []struct {
+		name     string
+		acl1     *httpACLIR
+		acl2     *httpACLIR
+		expected bool
+	}{
+		{
+			name:     "both nil are equal",
+			acl1:     nil,
+			acl2:     nil,
+			expected: true,
+		},
+		{
+			name:     "nil vs non-nil are not equal",
+			acl1:     nil,
+			acl2:     &httpACLIR{config: allowAllCfg},
+			expected: false,
+		},
+		{
+			name:     "non-nil vs nil are not equal",
+			acl1:     &httpACLIR{config: allowAllCfg},
+			acl2:     nil,
+			expected: false,
+		},
+		{
+			name:     "identical configs are equal",
+			acl1:     &httpACLIR{config: makeFilterCfg(`{"defaultAction":"allow"}`)},
+			acl2:     &httpACLIR{config: makeFilterCfg(`{"defaultAction":"allow"}`)},
+			expected: true,
+		},
+		{
+			name:     "nil config fields are equal",
+			acl1:     &httpACLIR{config: nil},
+			acl2:     &httpACLIR{config: nil},
+			expected: true,
+		},
+		{
+			name:     "nil vs non-nil config fields are not equal",
+			acl1:     &httpACLIR{config: nil},
+			acl2:     &httpACLIR{config: allowAllCfg},
+			expected: false,
+		},
+		{
+			name:     "allow vs deny default action are not equal",
+			acl1:     &httpACLIR{config: allowAllCfg},
+			acl2:     &httpACLIR{config: denyAllCfg},
+			expected: false,
+		},
+		{
+			name:     "config with rules vs config without rules are not equal",
+			acl1:     &httpACLIR{config: allowAllCfg},
+			acl2:     &httpACLIR{config: withRulesCfg},
+			expected: false,
+		},
+		{
+			name:     "wrong type returns false",
+			acl1:     &httpACLIR{config: allowAllCfg},
+			acl2:     nil,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.acl1.Equals(tt.acl2)
+			assert.Equal(t, tt.expected, result)
+
+			// Test symmetry: a.Equals(b) should equal b.Equals(a)
+			reverseResult := tt.acl2.Equals(tt.acl1)
+			assert.Equal(t, result, reverseResult, "Equals should be symmetric")
+		})
+	}
+
+	// Test reflexivity: x.Equals(x) should always be true for non-nil values
+	t.Run("reflexivity", func(t *testing.T) {
+		acl := &httpACLIR{config: allowAllCfg}
+		assert.True(t, acl.Equals(acl), "httpACLIR should equal itself")
+	})
+
+	// Test transitivity: if a.Equals(b) && b.Equals(c), then a.Equals(c)
+	t.Run("transitivity", func(t *testing.T) {
+		a := &httpACLIR{config: makeFilterCfg(`{"defaultAction":"allow"}`)}
+		b := &httpACLIR{config: makeFilterCfg(`{"defaultAction":"allow"}`)}
+		c := &httpACLIR{config: makeFilterCfg(`{"defaultAction":"allow"}`)}
+
+		assert.True(t, a.Equals(b), "a should equal b")
+		assert.True(t, b.Equals(c), "b should equal c")
+		assert.True(t, a.Equals(c), "a should equal c (transitivity)")
+	})
+
+	// Test that Equals returns false when compared against a different PolicySubIR type
+	t.Run("wrong PolicySubIR type", func(t *testing.T) {
+		acl := &httpACLIR{config: allowAllCfg}
+		other := &rustformationIR{config: nil}
+		assert.False(t, acl.Equals(other), "httpACLIR should not equal a different PolicySubIR type")
+	})
+}

@@ -63,6 +63,7 @@ func MergeTrafficPolicies(
 		mergeOAuth,
 		mergeRouteTracing,
 		mergeFaultInjection,
+		mergeHttpACL,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -243,9 +244,9 @@ func mergeRustformation(
 			})
 			p1.spec.rustformation = &rustformationIR{config: &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-					Name: "rust_module",
+					Name: RustformationModuleName,
 				},
-				PerRouteConfigName: "rustformation",
+				PerRouteConfigName: RustformationFilterName,
 				FilterConfig:       filterCfg,
 			}}
 		}
@@ -651,6 +652,21 @@ func mergeFaultInjection(
 		Set: func(spec *trafficPolicySpecIr, val *faultInjectionIR) { spec.faultInjection = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "faultInjection")
+}
+
+func mergeHttpACL(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[httpACLIR]{
+		Get: func(spec *trafficPolicySpecIr) *httpACLIR { return spec.httpACL },
+		Set: func(spec *trafficPolicySpecIr, val *httpACLIR) { spec.httpACL = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "httpACL")
 }
 
 // fieldAccessor defines how to access and set a field on trafficPolicySpecIr

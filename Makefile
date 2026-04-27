@@ -90,7 +90,7 @@ else
 endif
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.37.1
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.37.2
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -155,13 +155,11 @@ fmt-changed: ## Format only the changed code with golangci-lint (skip deleted fi
 .PHONY: mod-download
 mod-download:  ## Download transitive dependencies
 	go mod download
-	cd hack/utils/applier && go mod download
 	cd tools && go mod download
 	cd test/e2e/defaults/extproc && go mod download
 
 .PHONY: mod-tidy
 mod-tidy: ## Tidy the go mod file
-	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
 	@echo "Tidying tools..." && cd tools && go mod tidy
 	@echo "Tidying test/e2e/defaults/extproc..." && cd test/e2e/defaults/extproc && go mod tidy
 	@echo "Tidying top level" && go mod tidy
@@ -502,7 +500,6 @@ MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go
 
 # Files that track dependency changes
 MOD_FILES := go.mod go.sum \
-	hack/utils/applier/go.mod hack/utils/applier/go.sum \
 	tools/go.mod tools/go.sum \
 	test/e2e/defaults/extproc/go.mod test/e2e/defaults/extproc/go.sum
 

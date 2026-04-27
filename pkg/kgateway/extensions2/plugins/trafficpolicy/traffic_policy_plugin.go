@@ -104,6 +104,7 @@ type trafficPolicySpecIr struct {
 	oauth2          *oauthIR
 	tracing         *routeTracingIR
 	faultInjection  *faultInjectionIR
+	httpACL         *httpACLIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -185,6 +186,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.faultInjection.Equals(d2.spec.faultInjection) {
 		return false
 	}
+	if !d.spec.httpACL.Equals(d2.spec.httpACL) {
+		return false
+	}
 	return true
 }
 
@@ -213,6 +217,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.oauth2.Validate)
 	validators = append(validators, p.spec.tracing.Validate)
 	validators = append(validators, p.spec.faultInjection.Validate)
+	validators = append(validators, p.spec.httpACL.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -224,6 +229,10 @@ func (p *TrafficPolicy) Validate() error {
 type trafficPolicyPluginGwPass struct {
 	reporter reporter.Reporter
 	ir.UnimplementedProxyTranslationPass
+
+	// This is used to determine if the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata
+	// should be set on routes that have been successfully authenticated
+	enableAuthMetadata bool
 
 	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
 	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
@@ -242,6 +251,7 @@ type trafficPolicyPluginGwPass struct {
 	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
 	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
 	faultInChain             map[string]*faulthttpv3.HTTPFault
+	httpACLInChain           map[string]bool
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
@@ -269,7 +279,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 		}
 
 		policyIR, errors := constructor.ConstructIR(krtctx, policyCR)
-		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
+		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode, commoncol.Settings.EnableAuthMetadata); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)
 		}
@@ -320,7 +330,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
-				NewGatewayTranslationPass:       NewGatewayTranslationPass,
+				NewGatewayTranslationPass: func(tctx ir.GwTranslationCtx, rep reporter.Reporter) ir.ProxyTranslationPass {
+					return NewGatewayTranslationPass(tctx, rep, commoncol.Settings.EnableAuthMetadata)
+				},
 				Policies:                        policyCol,
 				ProcessPolicyStaleStatusMarkers: processMarkers,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
@@ -334,9 +346,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	}
 }
 
-func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter, enableAuthMetadata bool) ir.ProxyTranslationPass {
 	return &trafficPolicyPluginGwPass{
 		reporter:                 reporter,
+		enableAuthMetadata:       enableAuthMetadata,
 		setTransformationInChain: map[string]bool{},
 		secrets:                  map[string]*envoytlsv3.Secret{},
 	}
@@ -411,6 +424,23 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
+	// Add HTTP ACL filter immediately after FaultStage, before all other filters.
+	if p.httpACLInChain[fcc.FilterChainName] {
+		cfg := utils.MustMessageToAny(&wrapperspb.StringValue{
+			Value: httpACLDefaultListenerJSON,
+		})
+		aclListenerCfg := &dynamicmodulesv3.DynamicModuleFilter{
+			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+				Name: httpACLModuleName,
+			},
+			FilterName:   httpACLFilterName,
+			FilterConfig: cfg,
+		}
+		filter := filters.MustNewStagedFilter(httpACLFilterNamePrefix, aclListenerCfg, filters.AfterStage(filters.FaultStage))
+		filter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, filter)
+	}
+
 	// Add global ExtProc disable filter when there are providers
 	if len(p.extProcPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
@@ -438,19 +468,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 
 	if p.setTransformationInChain[fcc.FilterChainName] {
-		cfg := utils.MustMessageToAny(&wrapperspb.StringValue{
-			Value: "{}",
-		})
-		rustCfg := dynamicmodulesv3.DynamicModuleFilter{
-			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-				Name: "rust_module",
-			},
-			FilterName:   "rustformation",
-			FilterConfig: cfg,
-		}
-
 		rustFilter := filters.MustNewStagedFilter(rustformationFilterNamePrefix,
-			&rustCfg,
+			GenerateBlankTransformationConfig(),
 			filters.BeforeStage(filters.AcceptedStage),
 		)
 		rustFilter.Filter.Disabled = true
@@ -461,6 +480,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	if len(p.extAuthPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
 		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, ExtAuthGlobalDisableFilterName, ExtAuthGlobalDisableFilterMetadataNamespace)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, ExtAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 	// Add Ext_authz filter for listener
 	for _, provider := range p.extAuthPerProvider.Providers[fcc.FilterChainName] {
@@ -485,6 +505,9 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 
 	// Add OIDC filters for providers
+	if len(p.oauth2PerProvider.Providers[fcc.FilterChainName]) > 0 {
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, OauthEnabledFilterName, p.enableAuthMetadata)
+	}
 	for _, provider := range p.oauth2PerProvider.Providers[fcc.FilterChainName] {
 		oidcFilter := provider.Extension.OAuth2.cfg
 		if oidcFilter == nil {
@@ -521,6 +544,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 	if len(p.jwtPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, jwtGlobalDisableFilterName, jwtGlobalDisableFilterMetadataNamespace)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, JwtEnabledFilterName, p.enableAuthMetadata)
 	}
 	for _, provider := range p.jwtPerProvider.Providers[fcc.FilterChainName] {
 		jwtFilter := provider.Extension.Jwt
@@ -605,6 +629,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		filter := filters.MustNewStagedFilter(basicAuthFilterName, f, filters.DuringStage(filters.AuthNStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, BasicAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 
 	// Add API key auth filter to the chain
@@ -612,6 +637,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		filter := filters.MustNewStagedFilter(apiKeyAuthFilterNamePrefix, f, filters.DuringStage(filters.AuthNStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, APIKeyAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 
 	if len(stagedFilters) == 0 {
@@ -657,6 +683,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleAPIKeyAuth(fcn, typedFilterConfig, spec.apiKeyAuth)
 	p.handleOauth2(fcn, typedFilterConfig, spec.oauth2)
 	p.handleFaultInjection(fcn, typedFilterConfig, spec.faultInjection)
+	p.handleHttpACL(fcn, typedFilterConfig, spec.httpACL)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level

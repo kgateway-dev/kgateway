@@ -80,6 +80,16 @@ Listeners:
                           filter: dev.kgateway.disable_jwt
                           path:
                           - key: disable
+        - disabled: true
+          name: jwt_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -111,6 +121,14 @@ Routes:
     jwt/default/jwt-ext-3:
       '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
       requirementName: jwt-ext-3_default_requirements
+    jwt_enabled:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - example.com
@@ -131,6 +149,14 @@ Routes:
         global_disable/jwt:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
+        jwt_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{}'
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /bar
       metadata:
@@ -146,6 +172,14 @@ Routes:
         global_disable/jwt:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
+        jwt_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{}'
+          perRouteConfigName: rustformation
 Statuses:
   gateways:
     default/example-gateway:

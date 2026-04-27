@@ -20,6 +20,7 @@ controller:
   logLevel: debug
   extraEnv:
     KGW_WEIGHTED_ROUTE_PRECEDENCE: "true" # enable weighted route precedence by default in tests
+    KGW_ENABLE_AUTH_METADATA: "true" # enable the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
 # TODO enable other values
   # deployment:
   #   livenessProbeEnabled: true

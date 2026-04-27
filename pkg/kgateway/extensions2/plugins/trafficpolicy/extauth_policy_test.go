@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"fmt"
 	"testing"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -158,7 +159,7 @@ func TestExtAuthForSpec(t *testing.T) {
 func TestApplyForRoute(t *testing.T) {
 	t.Run("applies ext auth configuration to route", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
@@ -217,6 +218,7 @@ func TestHttpFilters(t *testing.T) {
 	t.Run("adds ext auth filter to filter chain", func(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{
+			enableAuthMetadata: true,
 			extAuthPerProvider: ProviderNeededMap{
 				Providers: map[string][]Provider{
 					"test-filter-chain": {
@@ -242,15 +244,21 @@ func TestHttpFilters(t *testing.T) {
 		// Verify
 		require.NoError(t, err)
 		require.NotNil(t, httpFilters)
-		assert.Equal(t, 2, len(httpFilters)) // extauth and metadata filter
-		assert.Equal(t, filters.DuringStage(filters.AuthNStage), httpFilters[1].Stage)
+		// global disable filter, auth-enabled metadata filter, then the extauth filter
+		assert.Equal(t, 3, len(httpFilters))
+		assert.Equal(t, ExtAuthGlobalDisableFilterName, httpFilters[0].Filter.GetName())
+		assert.Equal(t, filters.BeforeStage(filters.FaultStage), httpFilters[0].Stage)
+		assert.Equal(t, ExtAuthEnabledFilterName, httpFilters[1].Filter.GetName())
+		assert.Equal(t, filters.AfterStage(filters.AuthNStage), httpFilters[1].Stage)
+		assert.Equal(t, extAuthFilterName("test-extension"), httpFilters[2].Filter.GetName())
+		assert.Equal(t, filters.DuringStage(filters.AuthNStage), httpFilters[2].Stage)
 	})
 }
 
 func TestExtAuthPolicyPlugin(t *testing.T) {
 	t.Run("applies ext auth configuration to route", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
@@ -285,11 +293,14 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		assert.True(t, ok)
 		assert.NotNil(t, extAuthConfig)
 		assert.Empty(t, pCtx.TypedFilterConfig[ExtAuthGlobalDisableFilterName])
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[ExtAuthEnabledFilterName])
+		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[ExtAuthEnabledFilterName]),
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "ext_auth_enabled must set dynamic metadata")
 	})
 
 	t.Run("handles disabled ext auth configuration", func(t *testing.T) {
 		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
@@ -310,5 +321,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		// assert.NotNil(t, )
 		assert.NotNil(t, pCtx.TypedFilterConfig, pCtx)
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[ExtAuthGlobalDisableFilterName])
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[ExtAuthEnabledFilterName])
+		assert.NotContains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[ExtAuthEnabledFilterName]), AuthSucceededMetadataKey, "ext_auth_enabled must not set dynamic metadata if the policy is disabled at the route level")
 	})
 }

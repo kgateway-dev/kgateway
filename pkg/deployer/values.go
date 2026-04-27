@@ -75,6 +75,7 @@ type HelmGateway struct {
 	Image             *HelmImage                   `json:"image,omitempty"`
 	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext   *corev1.SecurityContext      `json:"securityContext,omitempty"`
+	ExtraArgs         []string                     `json:"extraArgs,omitempty"`
 	Env               []corev1.EnvVar              `json:"env,omitempty"`
 	ExtraVolumeMounts []corev1.VolumeMount         `json:"extraVolumeMounts,omitempty"`
 

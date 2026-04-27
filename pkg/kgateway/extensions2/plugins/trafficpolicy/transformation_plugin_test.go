@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"encoding/json"
 	"testing"
 
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
@@ -8,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
@@ -19,9 +21,9 @@ func TestRustformationIREquals(t *testing.T) {
 	createSimpleTransformation := func() *dynamicmodulesv3.DynamicModuleFilterPerRoute {
 		return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-				Name: "rust_module",
+				Name: RustformationModuleName,
 			},
-			PerRouteConfigName: "rustformation",
+			PerRouteConfigName: RustformationFilterName,
 			FilterConfig:       filterCfg,
 		}
 	}
@@ -86,9 +88,9 @@ func TestRustformationIREquals(t *testing.T) {
 		transformation := &rustformationIR{
 			config: &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-					Name: "rust_module",
+					Name: RustformationModuleName,
 				},
-				PerRouteConfigName: "rustformation",
+				PerRouteConfigName: RustformationFilterName,
 			},
 		}
 		assert.True(t, transformation.Equals(transformation), "transformation should equal itself")
@@ -110,4 +112,30 @@ func TestRustformationIREquals(t *testing.T) {
 		assert.True(t, b.Equals(c), "b should equal c")
 		assert.True(t, a.Equals(c), "a should equal c (transitivity)")
 	})
+}
+
+func TestGenerateDynamicMetadataStableOrderingAndValues(t *testing.T) {
+	config := generateDynamicMetadata("test-ns", map[string]kgateway.InjaTemplate{
+		"z-key": "z-value",
+		"a-key": "a-value",
+		"m-key": "m-value",
+	})
+
+	var filterConfig wrapperspb.StringValue
+	assert.NoError(t, config.FilterConfig.UnmarshalTo(&filterConfig))
+
+	var policy kgateway.TransformationPolicy
+	assert.NoError(t, json.Unmarshal([]byte(filterConfig.Value), &policy))
+
+	expectedKeys := []string{"a-key", "m-key", "z-key"}
+	expectedValues := []kgateway.InjaTemplate{"a-value", "m-value", "z-value"}
+
+	assert.Len(t, policy.Request.DynamicMetadata, len(expectedKeys))
+
+	for i, expectedKey := range expectedKeys {
+		requestMetadata := policy.Request.DynamicMetadata[i]
+
+		assert.Equal(t, expectedKey, requestMetadata.Key)
+		assert.Equal(t, expectedValues[i], *requestMetadata.Value.StringValue)
+	}
 }
