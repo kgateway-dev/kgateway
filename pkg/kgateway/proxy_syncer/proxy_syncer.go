@@ -256,14 +256,15 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		clustersPerClient,
 	)
 
+	excludedPolicyKinds := make(map[schema.GroupKind]struct{})
+	for gk, plugin := range s.plugins.ContributesPolicies {
+		if plugin.PolicyStatusFromGatewayReports {
+			excludedPolicyKinds[gk] = struct{}{}
+		}
+	}
+
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		backends := krt.Fetch(kctx, finalBackendsWithPolicyStatus)
-		excludedPolicyKinds := make(map[schema.GroupKind]struct{})
-		for gk, plugin := range s.plugins.ContributesPolicies {
-			if plugin.PolicyStatusFromGatewayReports {
-				excludedPolicyKinds[gk] = struct{}{}
-			}
-		}
 		merged := GenerateBackendPolicyReport(backends, excludedPolicyKinds)
 
 		for _, plugin := range s.plugins.ContributesPolicies {

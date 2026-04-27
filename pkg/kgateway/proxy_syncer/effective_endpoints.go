@@ -1,7 +1,6 @@
 package proxy_syncer
 
 import (
-	"hash"
 	"hash/fnv"
 	"sort"
 	"strconv"
@@ -62,14 +61,14 @@ func backendEndpointVersionHash(backend *ir.BackendObjectIR) uint64 {
 	})
 
 	for _, groupKind := range groupKinds {
-		writeHashString(hasher, groupKind.Group)
-		writeHashString(hasher, groupKind.Kind)
+		utils.HashStringField(hasher, groupKind.Group)
+		utils.HashStringField(hasher, groupKind.Kind)
 		for _, policy := range backend.AttachedPolicies.Policies[groupKind] {
-			writeHashString(hasher, ir.PolicyRefString(policy.PolicyRef))
-			writeHashInt64(hasher, policy.Generation)
+			utils.HashStringField(hasher, ir.PolicyRefString(policy.PolicyRef))
+			utils.HashStringField(hasher, strconv.FormatInt(policy.Generation, 10))
 			for _, err := range policy.Errors {
 				if err != nil {
-					writeHashString(hasher, err.Error())
+					utils.HashStringField(hasher, err.Error())
 				}
 			}
 			if policy.PolicyIr == nil {
@@ -79,7 +78,7 @@ func backendEndpointVersionHash(backend *ir.BackendObjectIR) uint64 {
 				utils.HashUint64(hasher, hashable.PolicyHash())
 				continue
 			}
-			writeHashInt64(hasher, policy.PolicyIr.CreationTime().UnixNano())
+			utils.HashStringField(hasher, strconv.FormatInt(policy.PolicyIr.CreationTime().UnixNano(), 10))
 		}
 	}
 
@@ -91,13 +90,4 @@ func combineEndpointHashes(endpointHash, policyHash uint64) uint64 {
 	utils.HashUint64(hasher, endpointHash)
 	utils.HashUint64(hasher, policyHash)
 	return hasher.Sum64()
-}
-
-func writeHashString(hasher hash.Hash, value string) {
-	hasher.Write([]byte(value))
-	hasher.Write([]byte{0})
-}
-
-func writeHashInt64(hasher hash.Hash, value int64) {
-	writeHashString(hasher, strconv.FormatInt(value, 10))
 }
