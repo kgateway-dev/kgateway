@@ -36,10 +36,11 @@ func TestBasic(t *testing.T) {
 			version.Version = prevVersion
 		}()
 
-		// Prepend setting EnableExperimentalGatewayAPIFeatures to true so it can be overwritten by settingOpts
+		// Prepend settings to true so they can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
 			func(s *apisettings.Settings) {
 				s.EnableExperimentalGatewayAPIFeatures = true
+				s.EnableAuthMetadata = true
 			},
 		}, settingOpts...)
 		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
@@ -2008,10 +2009,54 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HttpACL Policy at route level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/route-http-acl.yaml",
+			outputFile: "http-acl/route-http-acl.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HttpACL Policy at httproute level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/httproute-http-acl.yaml",
+			outputFile: "http-acl/httproute-http-acl.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HttpACL Policy at gateway level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/gateway-http-acl.yaml",
+			outputFile: "http-acl/gateway-http-acl.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("RBAC Policy at route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "rbac/route-cel-rbac.yaml",
 			outputFile: "rbac/route-cel-rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("RBAC Policy at route level with Deny action", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "rbac/route-cel-rbac-deny.yaml",
+			outputFile: "rbac/route-cel-rbac-deny.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2331,6 +2376,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "http-routing/request-redirect.yaml",
 			outputFile: "http-routing/request-redirect.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("HTTP RequestRedirect filter multiple listeners listener-scoped port", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-routing/request-redirect-multi-listener.yaml",
+			outputFile: "http-routing/request-redirect-multi-listener.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "test",
@@ -2805,6 +2861,7 @@ func TestValidation(t *testing.T) {
 		settingOpts := func(s *apisettings.Settings) {
 			s.ValidationMode = mode
 			s.EnableExperimentalGatewayAPIFeatures = true
+			s.EnableAuthMetadata = true
 		}
 		translatortest.TestTranslation(t, ctx, []string{inputFile}, outputFile, gwNN, settingOpts)
 	}
@@ -2841,6 +2898,7 @@ func TestRouteDelegation(t *testing.T) {
 		}
 		settingOpt := func(s *apisettings.Settings) {
 			s.EnableExperimentalGatewayAPIFeatures = true
+			s.EnableAuthMetadata = true
 		}
 		translatortest.TestTranslation(t, ctx, inputFiles, outputFile, gwNN, settingOpt)
 	}
@@ -2979,6 +3037,7 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
 			func(s *apisettings.Settings) {
 				s.DiscoveryNamespaceSelectors = cfgJSON
 				s.EnableExperimentalGatewayAPIFeatures = true
+				s.EnableAuthMetadata = true
 			},
 		}
 

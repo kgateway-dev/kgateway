@@ -307,6 +307,16 @@ Listeners:
             requirementMap:
               oauth2:
                 providerName: oauth2/accessToken
+        - disabled: true
+          name: oauth2_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -338,6 +348,14 @@ Routes:
     envoy.filters.http.oauth2/default/oauth-gateway-1:
       '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
       config: {}
+    oauth2_enabled:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - test.com
@@ -363,6 +381,14 @@ Routes:
         envoy.filters.http.oauth2/default/oauth-route-1:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
+        oauth2_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-1
       metadata:
@@ -381,6 +407,14 @@ Routes:
         envoy.filters.http.oauth2/jwt/default/oauth-route-2:
           '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
           requirementName: oauth2
+        oauth2_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-2
       name: listener~8080~test_com-route-2-httproute-test-default-2-0-rule2-matcher-0
@@ -394,6 +428,14 @@ Routes:
       envoy.filters.http.oauth2/jwt/default/oauth-listener-1:
         '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
         requirementName: oauth2
+      oauth2_enabled:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+        dynamicModuleConfig:
+          name: rust_module
+        filterConfig:
+          '@type': type.googleapis.com/google.protobuf.StringValue
+          value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+        perRouteConfigName: rustformation
 Secrets:
 - genericSecret:
     secret:

@@ -1448,6 +1448,11 @@ func (in *EnvoyContainer) DeepCopyInto(out *EnvoyContainer) {
 		*out = new(corev1.ResourceRequirements)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ExtraArgs != nil {
+		in, out := &in.ExtraArgs, &out.ExtraArgs
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.Env != nil {
 		in, out := &in.Env, &out.Env
 		*out = make([]corev1.EnvVar, len(*in))
@@ -5408,6 +5413,11 @@ func (in *TrafficPolicySpec) DeepCopyInto(out *TrafficPolicySpec) {
 	if in.FaultInjection != nil {
 		in, out := &in.FaultInjection, &out.FaultInjection
 		*out = new(FaultInjectionPolicy)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.ACL != nil {
+		in, out := &in.ACL, &out.ACL
+		*out = new(shared.ACLPolicy)
 		(*in).DeepCopyInto(*out)
 	}
 }

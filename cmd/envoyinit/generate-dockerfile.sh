@@ -45,8 +45,9 @@ get_lib_name() {
 }
 
 # is_cdylib <cargo_toml> — returns 0 (true) if crate produces a .so
+# Use -E (ERE) so '|' alternation works under both GNU and BSD grep (macOS).
 is_cdylib() {
-    grep -q 'crate-type.*cdylib\|cdylib.*crate-type' "$1"
+    grep -Eq 'crate-type.*cdylib|cdylib.*crate-type' "$1"
 }
 
 TMPDIR_GENERATED=$(mktemp -d)

@@ -99,9 +99,14 @@ func (t *Translator) ComputeListener(
 	reporter sdkreporter.Reporter,
 ) (*envoylistenerv3.Listener, []*envoyroutev3.RouteConfiguration) {
 	gwreporter := reporter.Gateway(gw.SourceObject.Obj)
+	listenerAddress, err := computeListenerAddress(lis.BindAddress, lis.BindPort, gwreporter)
+	if err != nil {
+		// Error already reported via SetCondition; skip listener creation.
+		return nil, nil
+	}
 	ret := &envoylistenerv3.Listener{
 		Name:    lis.Name,
-		Address: computeListenerAddress(lis.BindAddress, lis.BindPort, gwreporter),
+		Address: listenerAddress,
 	}
 	if gw.PerConnectionBufferLimitBytes != nil {
 		ret.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *gw.PerConnectionBufferLimitBytes}

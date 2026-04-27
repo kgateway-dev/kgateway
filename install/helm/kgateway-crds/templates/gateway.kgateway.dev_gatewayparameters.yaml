@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.1-0.20251023132335-bf7d6b742e6a
+    controller-gen.kubebuilder.io/version: v0.20.1
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -447,6 +447,25 @@ spec:
                           required:
                           - name
                           type: object
+                        type: array
+                      extraArgs:
+                        description: |-
+                          Additional arguments to pass to the Envoy binary.
+
+                          Similar to Kubernetes container args, variable references $(VAR_NAME) are
+                          expanded using the container's environment. If a variable cannot be
+                          resolved, the reference is left unchanged. Double $$ are reduced to a
+                          single $, which allows escaping the $(VAR_NAME) syntax.
+
+                          The following Envoy flags are already managed by kgateway and must not be
+                          set here: `--disable-hot-restart`, `--service-node`, `--log-level`, and
+                          `--component-log-level`. Consider using a DeploymentOverlay to override these values if desired.
+                        items:
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                        maxItems: 32
+                        minItems: 1
                         type: array
                       extraVolumeMounts:
                         description: |-

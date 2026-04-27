@@ -47,6 +47,8 @@ func allEnvVarsSet() map[string]string {
 		"KGW_XDS_AUTH":                                 "false",
 		"KGW_XDS_TLS":                                  "true",
 		"KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES": "false",
+		"KGW_ENABLE_AUTH_METADATA":                     "true",
+		"KGW_WORKLOAD_ENTRIES_EXCLUSION_LABELS":        "example.io/managed-by,example.io/other-key",
 	}
 }
 
@@ -97,6 +99,7 @@ func TestSettings(t *testing.T) {
 				XdsTLS:                               false,
 				EnableExperimentalGatewayAPIFeatures: true,
 				GatewayClassParametersRefs:           GatewayClassParametersRefs{},
+				EnableAuthMetadata:                   false,
 			},
 		},
 		{
@@ -131,12 +134,14 @@ func TestSettings(t *testing.T) {
 				XdsAuth:                              false,
 				XdsTLS:                               true,
 				EnableExperimentalGatewayAPIFeatures: false,
+				WorkloadEntriesExclusionLabels:       "example.io/managed-by,example.io/other-key",
 				GatewayClassParametersRefs: GatewayClassParametersRefs{
 					"kgateway": {
 						Name:      "custom-gwp",
 						Namespace: ptr.To(gwv1.Namespace("infra")),
 					},
 				},
+				EnableAuthMetadata: true,
 			},
 		},
 		{

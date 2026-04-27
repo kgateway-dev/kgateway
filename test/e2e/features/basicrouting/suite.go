@@ -73,7 +73,7 @@ func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 
 	// Initialize local gateway for this test
-	address := s.TestInstallation.Assertions.EventuallyGatewayAddress(
+	address := s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(
 		s.Ctx,
 		"gateway",
 		"default",
@@ -118,11 +118,11 @@ func (s *testingSuite) TestSamePrefixLongGatewayNameRouting() {
 	// Get addresses for both Gateways
 	firstGateway := common.Gateway{
 		NamespacedName: types.NamespacedName{Name: gwNameOne, Namespace: "default"},
-		Address:        s.TestInstallation.Assertions.EventuallyGatewayAddress(s.Ctx, gwNameOne, "default"),
+		Address:        s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, gwNameOne, "default"),
 	}
 	secondGateway := common.Gateway{
 		NamespacedName: types.NamespacedName{Name: gwNameTwo, Namespace: "default"},
-		Address:        s.TestInstallation.Assertions.EventuallyGatewayAddress(s.Ctx, gwNameTwo, "default"),
+		Address:        s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, gwNameTwo, "default"),
 	}
 
 	// Verify routing works for both Gateways independently

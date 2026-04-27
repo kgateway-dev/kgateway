@@ -5,12 +5,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
-	"github.com/kgateway-dev/kgateway/hack/utils/applier/pkg/applier"
+	"github.com/kgateway-dev/kgateway/v2/hack/utils/applier/pkg/applier"
 )
 
 var (
@@ -22,7 +21,7 @@ var (
 	numIterations int
 	force         bool
 
-	delete bool
+	deleteResources bool
 
 	async   bool
 	workers int
@@ -70,9 +69,7 @@ var applyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fieldValidationVerifier := resource.NewQueryParamVerifier(dynamicClient, factory.OpenAPIGetter(), resource.QueryParamFieldValidation)
-
-		validator, err := factory.Validator(validationDirective, fieldValidationVerifier)
+		validator, err := factory.Validator(validationDirective)
 		if err != nil {
 			return err
 		}
@@ -87,7 +84,7 @@ var applyCmd = &cobra.Command{
 			End:    endIndex,
 			DryRun: dryRun,
 			Force:  force,
-			Delete: delete,
+			Delete: deleteResources,
 
 			Async:   async,
 			Workers: workers,
@@ -119,5 +116,5 @@ func init() {
 	applyCmd.Flags().BoolVar(&async, "async", false, "Run in async mode. Use this if not hitting your QPS.")
 	applyCmd.Flags().IntVar(&workers, "workers", 10, "Number of workers to use when using async mode. each worker submits requests in parallel.")
 
-	applyCmd.Flags().BoolVar(&delete, "delete", false, "Delete resources instead of applying them (useful for cleanup)")
+	applyCmd.Flags().BoolVar(&deleteResources, "delete", false, "Delete resources instead of applying them (useful for cleanup)")
 }

@@ -1487,6 +1487,12 @@ var _ = Describe("Deployer", func() {
 				return params
 			}
 
+			fullyDefinedGatewayParamsWithExtraArgs = func() *kgateway.GatewayParameters {
+				params := fullyDefinedGatewayParameters()
+				params.Spec.Kube.EnvoyContainer.ExtraArgs = []string{"--base-id", "7", "--cpuset-threads"}
+				return params
+			}
+
 			withGatewayParams = func(gw *gwv1.Gateway, gwpName string) *gwv1.Gateway {
 				gw.Spec.Infrastructure = &gwv1.GatewayInfrastructure{
 					ParametersRef: &gwv1.LocalParametersReference{
@@ -1795,6 +1801,15 @@ var _ = Describe("Deployer", func() {
 			}))
 		}
 
+		fullyDefinedValidationExtraArgs := func(objs clientObjects, inp *input) {
+			fullyDefinedValidationWithoutRunAsUser(objs, inp)
+
+			envoyContainer := objs.findDeployment(defaultDeploymentName).Spec.Template.Spec.Containers[0]
+			extraArgs := []string{"--base-id", "7", "--cpuset-threads"}
+			Expect(envoyContainer.Args).To(ContainElements(extraArgs[0], extraArgs[1], extraArgs[2]))
+			Expect(envoyContainer.Args[len(envoyContainer.Args)-len(extraArgs):]).To(Equal(extraArgs))
+		}
+
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
 			checkErr := func(err, expectedErr error) (shouldReturn bool) {
 				GinkgoHelper()
@@ -1931,6 +1946,15 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) {
 					fullyDefinedValidationCustomEnv(objs, inp)
+				},
+			}),
+			Entry("Fully defined GatewayParameters with extra args", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: fullyDefinedGatewayParamsWithExtraArgs(),
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) {
+					fullyDefinedValidationExtraArgs(objs, inp)
 				},
 			}),
 			Entry("no listeners on gateway", &input{

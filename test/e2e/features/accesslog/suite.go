@@ -37,7 +37,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
