@@ -144,6 +144,12 @@ type HelmDnsResolver struct {
 
 // HelmInternalListenerConfig holds the helm values for the Envoy bootstrap internal listener extension.
 type HelmInternalListenerConfig struct {
+	// Enabled is always true when this struct is set. It is present so that
+	// the Helm template condition {{- if $gateway.internalListener.enabled }}
+	// evaluates correctly: an empty map {} is falsy in Go templates, so a
+	// plain struct-presence check would silently suppress the extension when
+	// BufferSizeKb is unset.
+	Enabled bool `json:"enabled"`
 	// BufferSizeKb is the internal listener client connection buffer size in KiB.
 	// If nil, the Envoy default (1024 KiB) is used.
 	BufferSizeKb *int32 `json:"bufferSizeKb,omitempty"`
