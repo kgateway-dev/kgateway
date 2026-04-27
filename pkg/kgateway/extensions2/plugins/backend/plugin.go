@@ -245,7 +245,10 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 			beIr.errors = append(beIr.errors, err)
 		}
 	case spec.InternalListener != nil:
-		processInternalListener(beIr.internalListenerIr, out)
+		if err := processInternalListener(beIr.internalListenerIr, out); err != nil {
+			logger.Error("failed to process aws backend", "error", err)
+			beIr.errors = append(beIr.errors, err)
+		}
 	}
 	return nil
 }

@@ -37,7 +37,11 @@ func buildInternalListenerIr(in *kgateway.InternalListenerBackend) (*InternalLis
 // processInternalListener applies the internal listener IR to the Envoy cluster.
 // It creates a STATIC cluster whose single endpoint address is an EnvoyInternalAddress
 // pointing at the named internal listener (e.g. "listener~8081").
-func processInternalListener(ir *InternalListenerIr, out *envoyclusterv3.Cluster) {
+func processInternalListener(ir *InternalListenerIr, out *envoyclusterv3.Cluster) error {
+	if ir == nil {
+		return errors.New("ir is nil")
+	}
+
 	// The server_listener_name must match the xDS listener name produced by
 	// GenerateListenerNameFromPort (pkg/kgateway/translator/listener/gateway_listener_translator.go).
 	serverListenerName := fmt.Sprintf("listener~%d", ir.listenerPort)
@@ -69,4 +73,6 @@ func processInternalListener(ir *InternalListenerIr, out *envoyclusterv3.Cluster
 			},
 		},
 	}
+
+	return nil
 }
