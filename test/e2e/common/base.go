@@ -27,8 +27,8 @@ func SetupBaseConfig(ctx context.Context, t *testing.T, installation *e2e.TestIn
 	assert.NoError(t, err)
 }
 
-func SetupBaseGateway(ctx context.Context, installation *e2e.TestInstallation, name types.NamespacedName) {
-	address := installation.Assertions.EventuallyGatewayAddress(
+func SetupBaseGateway(ctx context.Context, t *testing.T, installation *e2e.TestInstallation, name types.NamespacedName) {
+	address := installation.AssertionsT(t).EventuallyGatewayAddress(
 		ctx,
 		name.Name,
 		name.Namespace,

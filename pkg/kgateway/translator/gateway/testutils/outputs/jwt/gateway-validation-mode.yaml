@@ -83,6 +83,16 @@ Listeners:
                           filter: dev.kgateway.disable_jwt
                           path:
                           - key: disable
+        - disabled: true
+          name: jwt_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -114,6 +124,14 @@ Routes:
     jwt/default/jwt-ext-allow-missing:
       '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
       requirementName: jwt-ext-allow-missing_default_requirements
+    jwt_enabled:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - example.com

@@ -3,6 +3,7 @@ package ir
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"time"
 
@@ -247,6 +248,12 @@ type PolicyIR interface {
 	Equals(in any) bool
 }
 
+// PolicyHashIR can be implemented by PolicyIRs that need downstream resources
+// to observe policy content changes without understanding the concrete IR type.
+type PolicyHashIR interface {
+	PolicyHash() uint64
+}
+
 type PolicyWrapper struct {
 	// A reference to the original policy object
 	ObjectSource `json:",inline"`
@@ -281,6 +288,12 @@ func versionEquals(a, b metav1.Object) bool {
 	var versionEquals bool
 	if a.GetGeneration() != 0 && b.GetGeneration() != 0 {
 		versionEquals = a.GetGeneration() == b.GetGeneration()
+		// Generation alone is insufficient because Kubernetes only increments generation on spec changes,
+		// not metadata changes like labels.
+		// ResourceVersion: is too broad as it is bumped on status changes as well.
+		if versionEquals {
+			versionEquals = maps.Equal(a.GetLabels(), b.GetLabels()) && maps.Equal(a.GetAnnotations(), b.GetAnnotations())
+		}
 	} else {
 		versionEquals = a.GetResourceVersion() == b.GetResourceVersion()
 	}

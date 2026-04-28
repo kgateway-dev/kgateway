@@ -1,11 +1,13 @@
 package reports
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -451,5 +453,37 @@ func TestPolicyStatusReport(t *testing.T) {
 			diff := cmp.Diff(tc.wantStatus, gotStatus, cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"))
 			a.Empty(diff)
 		})
+	}
+}
+
+func TestBuildPolicyStatusCapsAncestorsAtAPILimit(t *testing.T) {
+	rm := NewReportMap()
+	statusReporter := NewReporter(&rm)
+	key := reporter.PolicyKey{
+		Group:     "example.com",
+		Kind:      "Policy",
+		Namespace: "default",
+		Name:      "example",
+	}
+
+	policyReporter := statusReporter.Policy(key, 1)
+	for i := range MaxPolicyStatusAncestors + 1 {
+		policyReporter.AncestorRef(gwv1.ParentReference{
+			Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
+			Kind:      ptr.To(gwv1.Kind("Gateway")),
+			Namespace: ptr.To(gwv1.Namespace("default")),
+			Name:      gwv1.ObjectName(fmt.Sprintf("gw-%02d", i)),
+		}).SetCondition(reporter.PolicyCondition{
+			Type:   string(shared.PolicyConditionAccepted),
+			Status: metav1.ConditionTrue,
+			Reason: string(shared.PolicyReasonValid),
+		})
+	}
+
+	gotStatus := rm.BuildPolicyStatus(t.Context(), key, "example-controller", gwv1.PolicyStatus{})
+	require.NotNil(t, gotStatus)
+	require.Len(t, gotStatus.Ancestors, MaxPolicyStatusAncestors)
+	for _, ancestor := range gotStatus.Ancestors {
+		require.NotEqual(t, gwv1.ObjectName("StatusSummary"), ancestor.AncestorRef.Name)
 	}
 }

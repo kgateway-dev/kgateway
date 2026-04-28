@@ -61,6 +61,16 @@ Listeners:
                 clusterName: kube_remote_remote-extauth_9000
             statusOnError:
               code: Forbidden
+        - disabled: true
+          name: ext_auth_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -115,6 +125,16 @@ Listeners:
                 clusterName: kube_remote_remote-extauth_9000
             statusOnError:
               code: Forbidden
+        - disabled: true
+          name: ext_auth_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -146,6 +166,14 @@ Routes:
     ext_auth/default/allowed-extauth-ext:
       '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
       config: {}
+    ext_auth_enabled:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - allowed.example.com
@@ -166,6 +194,14 @@ Routes:
         ext_auth/default/allowed-extauth-ext:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
+        ext_auth_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          perRouteConfigName: rustformation
   - domains:
     - denied.example.com
     name: listener~80~denied_example_com
@@ -199,6 +235,14 @@ Routes:
     ext_auth/default/allowed-extauth-ext:
       '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
       config: {}
+    ext_auth_enabled:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - listener.example.com
@@ -219,6 +263,14 @@ Routes:
       ext_auth/default/allowed-extauth-ext:
         '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
         config: {}
+      ext_auth_enabled:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+        dynamicModuleConfig:
+          name: rust_module
+        filterConfig:
+          '@type': type.googleapis.com/google.protobuf.StringValue
+          value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+        perRouteConfigName: rustformation
 Statuses:
   gateways:
     default/example-gateway:

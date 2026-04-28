@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -719,7 +718,7 @@ func TestRequestRedirect(t *testing.T) {
 			name: "explicit port overrides listener port",
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Scheme: nil,
-				Port:   ptr.To(gwv1.PortNumber(9090)),
+				Port:   new(gwv1.PortNumber(9090)),
 			},
 			listenerPort: 8080,
 			expectedRedirect: &envoyroutev3.RedirectAction{
@@ -731,7 +730,7 @@ func TestRequestRedirect(t *testing.T) {
 			name: "explicit port takes precedence over scheme default",
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Scheme: new("http"),
-				Port:   ptr.To(gwv1.PortNumber(9090)),
+				Port:   new(gwv1.PortNumber(9090)),
 			},
 			listenerPort: 8080,
 			expectedRedirect: &envoyroutev3.RedirectAction{
@@ -746,7 +745,7 @@ func TestRequestRedirect(t *testing.T) {
 			name: "scheme https with explicit port 8443",
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Scheme: new("https"),
-				Port:   ptr.To(gwv1.PortNumber(8443)),
+				Port:   new(gwv1.PortNumber(8443)),
 			},
 			listenerPort: 8080,
 			expectedRedirect: &envoyroutev3.RedirectAction{
@@ -760,7 +759,7 @@ func TestRequestRedirect(t *testing.T) {
 		{
 			name: "hostname redirect",
 			filter: &gwv1.HTTPRequestRedirectFilter{
-				Hostname: ptr.To(gwv1.PreciseHostname("example.com")),
+				Hostname: new(gwv1.PreciseHostname("example.com")),
 			},
 			listenerPort: 8080,
 			expectedRedirect: &envoyroutev3.RedirectAction{
@@ -786,8 +785,8 @@ func TestRequestRedirect(t *testing.T) {
 			name: "complete redirect with all fields",
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Scheme:     new("https"),
-				Hostname:   ptr.To(gwv1.PreciseHostname("secure.example.com")),
-				Port:       ptr.To(gwv1.PortNumber(8443)),
+				Hostname:   new(gwv1.PreciseHostname("secure.example.com")),
+				Port:       new(gwv1.PortNumber(8443)),
 				StatusCode: new(308),
 				Path: &gwv1.HTTPPathModifier{
 					Type:            gwv1.FullPathHTTPPathModifier,
@@ -856,4 +855,39 @@ func TestRequestRedirect(t *testing.T) {
 			assert.True(t, proto.Equal(tt.expectedRedirect, redirect), "redirect action mismatch\nexpected: %+v\nactual: %+v", tt.expectedRedirect, redirect)
 		})
 	}
+}
+
+// Regression for https://github.com/kgateway-dev/kgateway/issues/13889: one HTTPRoute attached to
+// multiple listeners must not share a single RedirectAction; listener-specific port post-processing
+// must not overwrite other listeners' routes.
+func TestRequestRedirectSamePolicyMultipleListeners(t *testing.T) {
+	redirectIR, err := convertRequestRedirectIR(nil, &gwv1.HTTPRequestRedirectFilter{
+		Path: &gwv1.HTTPPathModifier{
+			Type:            gwv1.FullPathHTTPPathModifier,
+			ReplaceFullPath: new("/somewhere/"),
+		},
+		StatusCode: new(301),
+	}, nil, nil)
+	require.NoError(t, err)
+	require.True(t, redirectIR.NeedsListenerPort)
+
+	builtinPol := &builtinPlugin{
+		filter: &filterIR{
+			filterType: gwv1.HTTPRouteFilterRequestRedirect,
+			policy:     redirectIR,
+		},
+	}
+	pass := &builtinPluginGwPass{}
+
+	route80 := &envoyroutev3.Route{}
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{ListenerPort: 80, Policy: builtinPol}, route80))
+	route666 := &envoyroutev3.Route{}
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{ListenerPort: 666, Policy: builtinPol}, route666))
+	route8080 := &envoyroutev3.Route{}
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{ListenerPort: 8080, Policy: builtinPol}, route8080))
+
+	assert.Equal(t, uint32(80), route80.GetRedirect().GetPortRedirect())
+	assert.Equal(t, uint32(666), route666.GetRedirect().GetPortRedirect())
+	assert.Equal(t, uint32(8080), route8080.GetRedirect().GetPortRedirect())
+	assert.Equal(t, uint32(0), redirectIR.Redir.GetPortRedirect(), "IR redirect template must keep sentinel port")
 }

@@ -21,6 +21,10 @@ const (
 	ExtAuthGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_ext_auth"
 	globalFilterDisableMetadataKey              = "disable"
 	extauthFilterNamePrefix                     = "ext_auth"
+
+	AuthPolicyMetadataNamespace = "dev.kgateway.auth_policy"
+	AuthSucceededMetadataKey    = "auth_succeeded"
+	ExtAuthEnabledFilterName    = "ext_auth_enabled"
 )
 
 var ExtAuthzEnabledMetadataMatcher = &envoy_matcher_v3.MetadataMatcher{
@@ -182,6 +186,10 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 	// Add the global disable all filter if all providers are disabled
 	if in.disableAllProviders {
 		pCtxTypedFilterConfig.AddTypedConfig(ExtAuthGlobalDisableFilterName, EnableFilterPerRoute())
+
+		// Explicitly set the ExtAuthEnabledFilter to a blank transformation.
+		// This ensures that the metadata is not set if auth is not configured on the route
+		AddBlankTransformationIfNeeded(pCtxTypedFilterConfig, ExtAuthEnabledFilterName, p.enableAuthMetadata)
 		return
 	}
 
@@ -196,5 +204,10 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
 			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName), EnableFilterPerRoute())
 		}
+	}
+
+	if len(in.perProviderConfig) > 0 {
+		// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
+		AddAuthMetadataIfNeeded(pCtxTypedFilterConfig, ExtAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 }

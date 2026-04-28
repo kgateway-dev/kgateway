@@ -84,7 +84,7 @@ func TestControlPlaneTLS(t *testing.T) {
 	testutils.Cleanup(t, func() {
 		_ = testInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", gatewayManifest)
 	})
-	common.SetupBaseGateway(t.Context(), testInstallation, types.NamespacedName{
+	common.SetupBaseGateway(t.Context(), t, testInstallation, types.NamespacedName{
 		Namespace: "default",
 		Name:      "gw",
 	})

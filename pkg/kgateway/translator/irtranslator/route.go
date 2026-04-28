@@ -519,6 +519,8 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			TypedFilterConfig: backendConfigCtx.typedPerFilterConfigRoute,
 		}
 
+		reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, h.pluginPass, backend.Backend.BackendObject)
+
 		// non attached policy translation
 		err := h.runBackend(
 			backend,

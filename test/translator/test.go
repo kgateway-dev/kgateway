@@ -304,7 +304,7 @@ func TestTranslationWithExtraPlugins(
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
 		Secrets:       result.Proxy.Secrets,
-		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
+		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets, result.PolicyPlugins),
 	}
 	outputYaml, err := testutils.MarshalAnyYaml(output)
 	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
@@ -337,11 +337,12 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	Proxy        *irtranslator.TranslationResult
-	ReportsMap   reports.ReportMap
-	Gateways     map[types.NamespacedName]*gwv1.Gateway
-	ListenerSets map[types.NamespacedName]*gwv1.ListenerSet
-	Clusters     []*envoyclusterv3.Cluster
+	Proxy         *irtranslator.TranslationResult
+	ReportsMap    reports.ReportMap
+	Gateways      map[types.NamespacedName]*gwv1.Gateway
+	ListenerSets  map[types.NamespacedName]*gwv1.ListenerSet
+	PolicyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin
+	Clusters      []*envoyclusterv3.Cluster
 }
 
 func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
@@ -512,13 +513,14 @@ func GetHTTPRouteStatusError(
 
 func GetPolicyStatusError(
 	reportsMap reports.ReportMap,
+	policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin,
 	policy *reporter.PolicyKey,
 ) error {
 	for key := range reportsMap.Policies {
 		if policy != nil && *policy != key {
 			continue
 		}
-		status := reportsMap.BuildPolicyStatus(context.Background(), key, wellknown.DefaultGatewayControllerName, gwv1.PolicyStatus{})
+		status := buildPolicyStatus(reportsMap, policyPlugins, key, gwv1.PolicyStatus{})
 		for ancestor, report := range status.Ancestors {
 			for _, c := range report.Conditions {
 				if c.Status != metav1.ConditionTrue {
@@ -530,7 +532,7 @@ func GetPolicyStatusError(
 	return nil
 }
 
-func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
+func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin) error {
 	err := GetHTTPRouteStatusError(reportsMap, nil)
 	if err != nil {
 		return err
@@ -636,7 +638,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
-	err = GetPolicyStatusError(reportsMap, nil)
+	err = GetPolicyStatusError(reportsMap, policyPlugins, nil)
 	if err != nil {
 		return err
 	}
@@ -818,7 +820,9 @@ func (tc TestCase) Run(
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicyRequiringStatus() {
 			backendIRs = append(backendIRs, col.List()...)
 		}
-		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)
+		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs, map[schema.GroupKind]struct{}{
+			wellknown.BackendTLSPolicyGVK.GroupKind(): {},
+		})
 
 		// Merge gateway reports with backend policy reports
 		mergedReports := reportsMap
@@ -829,10 +833,11 @@ func (tc TestCase) Run(
 			Name:      gw.Name,
 		}
 		actual := ActualTestResult{
-			Proxy:        xdsSnap,
-			ReportsMap:   mergedReports,
-			Gateways:     gatewayMap,
-			ListenerSets: listenerSetMap,
+			Proxy:         xdsSnap,
+			ReportsMap:    mergedReports,
+			Gateways:      gatewayMap,
+			ListenerSets:  listenerSetMap,
+			PolicyPlugins: extensions.ContributesPolicies,
 		}
 		results[gwNN] = actual
 

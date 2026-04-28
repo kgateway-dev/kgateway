@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -19,7 +20,7 @@ var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
 // GenerateBackendPolicyReport generates a report map for all policies attached to the given backends.
 // Exported for testing.
-func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
+func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds map[schema.GroupKind]struct{}) reports.ReportMap {
 	merged := reports.NewReportMap()
 	reporter := reports.NewReporter(&merged)
 
@@ -29,6 +30,9 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	for _, obj := range in {
 		for _, polAtts := range obj.GetAttachedPolicies().Policies {
 			for _, polAtt := range polAtts {
+				if _, excluded := excludedPolicyKinds[polAtt.GroupKind]; excluded {
+					continue
+				}
 				if polAtt.PolicyRef == nil {
 					// the policyRef may be nil in the case of virtual plugins (e.g. istio settings)
 					// since there's no real policy object, we don't need to generate status for it

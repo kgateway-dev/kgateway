@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
@@ -147,4 +148,29 @@ func TestBackendObjectIREquals(t *testing.T) {
 			a.True(backend2.Equals(backend2), "reflexivity check failed for backend2")
 		})
 	}
+}
+
+func TestBackendObjectIRClusterName(t *testing.T) {
+	base := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+	base.Kind = "Service"
+	base.resourceName = BackendResourceName(base.ObjectSource, base.Port, base.ExtraKey)
+
+	t.Run("keeps the same name when BackendTLSPolicy is attached", func(t *testing.T) {
+		withPolicy := base
+		withPolicy.AttachedPolicies = AttachedPolicies{
+			Policies: map[schema.GroupKind][]PolicyAtt{
+				wellknown.BackendTLSPolicyGVK.GroupKind(): {{
+					GroupKind: wellknown.BackendTLSPolicyGVK.GroupKind(),
+					PolicyRef: &AttachedPolicyRef{
+						Group:     wellknown.BackendTLSPolicyGVK.Group,
+						Kind:      wellknown.BackendTLSPolicyGVK.Kind,
+						Namespace: "default",
+						Name:      "backend-tls",
+					},
+				}},
+			},
+		}
+
+		assert.Equal(t, base.ClusterName(), withPolicy.ClusterName())
+	})
 }

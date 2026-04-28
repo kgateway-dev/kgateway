@@ -292,6 +292,24 @@ type EnvoyContainer struct {
 
 	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
 
+	// Additional arguments to pass to the Envoy binary.
+	//
+	// Similar to Kubernetes container args, variable references $(VAR_NAME) are
+	// expanded using the container's environment. If a variable cannot be
+	// resolved, the reference is left unchanged. Double $$ are reduced to a
+	// single $, which allows escaping the $(VAR_NAME) syntax.
+	//
+	// The following Envoy flags are already managed by kgateway and must not be
+	// set here: `--disable-hot-restart`, `--service-node`, `--log-level`, and
+	// `--component-log-level`. Consider using a DeploymentOverlay to override these values if desired.
+	//
+	// +optional
+	// +kubebuilder:validation:MaxItems=32
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:MaxLength=256
+	// +kubebuilder:validation:items:MinLength=1
+	ExtraArgs []string `json:"extraArgs,omitempty"`
+
 	// The container environment variables.
 	//
 	// +optional
@@ -331,6 +349,13 @@ func (in *EnvoyContainer) GetResources() *corev1.ResourceRequirements {
 		return nil
 	}
 	return in.Resources
+}
+
+func (in *EnvoyContainer) GetExtraArgs() []string {
+	if in == nil {
+		return nil
+	}
+	return in.ExtraArgs
 }
 
 func (in *EnvoyContainer) GetEnv() []corev1.EnvVar {
