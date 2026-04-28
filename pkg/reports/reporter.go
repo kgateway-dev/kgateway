@@ -90,7 +90,11 @@ func key(obj metav1.Object) types.NamespacedName {
 // NOTE: Exported for unit testing, validation_test.go should be refactored to reduce this visibility
 func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
 	key := key(gateway)
-	return r.Gateways[key]
+	report := r.Gateways[key]
+	if report != nil {
+		report.observedGeneration = gateway.Generation
+	}
+	return report
 }
 
 func (r *ReportMap) GatewayNamespaceName(key types.NamespacedName) *GatewayReport {
@@ -130,7 +134,11 @@ func (r *ReportMap) ListenerSet(listenerSet client.Object) *ListenerSetReport {
 		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)
 	}
 	key := key(listenerSet)
-	return r.ListenerSets[gvk][key]
+	report := r.ListenerSets[gvk][key]
+	if report != nil {
+		report.observedGeneration = listenerSet.GetGeneration()
+	}
+	return report
 }
 
 func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSetReport {
@@ -163,15 +171,35 @@ func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 
 	switch obj.(type) {
 	case *gwv1.HTTPRoute:
-		return r.HTTPRoutes[key]
+		report := r.HTTPRoutes[key]
+		if report != nil {
+			report.observedGeneration = obj.GetGeneration()
+		}
+		return report
 	case *gwv1a2.TCPRoute:
-		return r.TCPRoutes[key]
+		report := r.TCPRoutes[key]
+		if report != nil {
+			report.observedGeneration = obj.GetGeneration()
+		}
+		return report
 	case *gwv1.TLSRoute:
-		return r.TLSRoutes[key]
+		report := r.TLSRoutes[key]
+		if report != nil {
+			report.observedGeneration = obj.GetGeneration()
+		}
+		return report
 	case *gwv1a2.TLSRoute:
-		return r.TLSRoutes[key]
+		report := r.TLSRoutes[key]
+		if report != nil {
+			report.observedGeneration = obj.GetGeneration()
+		}
+		return report
 	case *gwv1.GRPCRoute:
-		return r.GRPCRoutes[key]
+		report := r.GRPCRoutes[key]
+		if report != nil {
+			report.observedGeneration = obj.GetGeneration()
+		}
+		return report
 	default:
 		slog.Warn("unsupported route type", "route_type", fmt.Sprintf("%T", obj))
 		return nil

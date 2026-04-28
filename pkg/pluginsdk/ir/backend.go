@@ -228,7 +228,6 @@ func (c BackendObjectIR) ClusterName() string {
 		return fmt.Sprintf("%s_%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.ExtraKey, c.Port)
 	}
 	return fmt.Sprintf("%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.Port)
-	// return fmt.Sprintf("%s~%s:%d", c.GvPrefix, c.ObjectSource.ResourceName(), c.Port)
 }
 
 func (c BackendObjectIR) GetObjectSource() ObjectSource {

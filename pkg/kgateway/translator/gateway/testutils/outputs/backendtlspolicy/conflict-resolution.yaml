@@ -1,24 +1,12 @@
 Clusters:
-- clusterType:
-    name: envoy.clusters.dns
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
-      dnsLookupFamily: V4_PREFERRED
-  connectTimeout: 5s
-  loadAssignment:
-    clusterName: backend_default_backend1_0
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: example.com
-              portValue: 8080
-          healthCheckConfig:
-            hostname: example.com
-          hostname: example.com
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: backend_default_backend1_0
+  name: kube_default_backendtlspolicy-conflicted-without-section-name-test_443
   transportSocket:
     name: envoy.transport_sockets.tls
     typedConfig:
@@ -28,7 +16,7 @@ Clusters:
         validationContext:
           matchTypedSubjectAltNames:
           - matcher:
-              exact: example.com
+              exact: other.example.com
             sanType: DNS
           trustedCa:
             inlineString: |
@@ -50,82 +38,7 @@ Clusters:
               n9KpuK4SEloIycZUaKVXAaX7T42SFYw7msmB+Uu7z5oLOijsjX6TjeofdFBZ/Byl
               SxODgqhtaPnOxQ==
               -----END CERTIFICATE-----
-      sni: example.com
-- clusterType:
-    name: envoy.clusters.dns
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
-      dnsLookupFamily: V4_PREFERRED
-  connectTimeout: 5s
-  loadAssignment:
-    clusterName: backend_default_backend2_0
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: example2.com
-              portValue: 8080
-          healthCheckConfig:
-            hostname: example2.com
-          hostname: example2.com
-  metadata: {}
-  name: backend_default_backend2_0
-  transportSocket:
-    name: envoy.transport_sockets.tls
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-      commonTlsContext:
-        combinedValidationContext:
-          defaultValidationContext:
-            matchTypedSubjectAltNames:
-            - matcher:
-                exact: example2.com
-              sanType: DNS
-          validationContextSdsSecretConfig:
-            name: SYSTEM_CA_CERT
-      sni: example2.com
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_default_backend-service_443
-  transportSocket:
-    name: envoy.transport_sockets.tls
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-      commonTlsContext:
-        tlsParams: {}
-        validationContext:
-          matchTypedSubjectAltNames:
-          - matcher:
-              exact: example.com
-            sanType: DNS
-          trustedCa:
-            inlineString: |
-              -----BEGIN CERTIFICATE-----
-              MIIDFzCCAf+gAwIBAgIUUP+jhPkrikdqW87lHMDpW3wY13wwDQYJKoZIhvcNAQEL
-              BQAwGzEZMBcGA1UEAwwQdGVzdC5leGFtcGxlLmNvbTAeFw0yNTA3MDIxMjM0MjRa
-              Fw0yNjA3MDIxMjM0MjRaMBsxGTAXBgNVBAMMEHRlc3QuZXhhbXBsZS5jb20wggEi
-              MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC2xPi+xL+5M9e6uJb4B9f9Ds2z
-              1Mqeq2OmEaPAwg1BOaRpg9pZ5X9jaj/LGkJ8X7BR6DfMOEvxEBu2ugvO/zlNVd23
-              uWcxdSMjRB52mGZDNycsSCKSJ71EeaWjhI7+IGdJJ2rzaw2NZwiCfcjVgkH7Gfxf
-              OYc7mm18wif9YxVJi87IF8aBJE6u7aKhnQT+SgD2w91+OZNFVBdFEIcqjRH1WMOF
-              KkCY8ejr0aiBWimQVk41iLj1/F/bSqhdadMlBRc3ToLFXOY39HlU7Dq7cf2QfVwf
-              zkUViFwpzvPETX/WVO9IiVExD3cpC3zUjDukjSAd26QS4xP4mvnjo3pymNTnAgMB
-              AAGjUzBRMB0GA1UdDgQWBBSk3FlWiH9236y5hhj7ItT/efSsVjAfBgNVHSMEGDAW
-              gBSk3FlWiH9236y5hhj7ItT/efSsVjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3
-              DQEBCwUAA4IBAQB/j8eD4TfUuCPPCp37Pd/YiWUFa0pZWD1rJcwZtmZFW2E7/86T
-              l0yBEcgbKIsZmUT2rnJG4zcCumAxpzP5LuoO9Wu5RUgqFbM+nGnQ39w53mVC3CV4
-              hcZxSNizMicSwmA01M4HTdv9P7tj/7m9tTb8VQ/TywI3kdMajOPDI+GtrE76m+pP
-              sozQotvRMRmona9+496LBFsStBaP8NiAqZfuleNj0hD1oAdL3ekQ+HZ1b1ABfa6D
-              BxIrQCVvyC4Jl0zLmnEDPIBvsroCVivq4C/MKXbXsn/bDrhMHd5yqDv1/mmvGRSn
-              2b5vNa1aVtIqWJGKpuI2rKzd7LSIQv+kuFF3
-              -----END CERTIFICATE-----
-      sni: example.com
+      sni: other.example.com
   type: EDS
 - connectTimeout: 5s
   metadata: {}
@@ -161,14 +74,14 @@ Routes:
   name: listener~80
   virtualHosts:
   - domains:
-    - '*'
-    name: listener~80~*
+    - abc.example.com
+    name: listener~80~abc_example_com
     routes:
     - match:
-        prefix: /
-      name: listener~80~*-route-0-httproute-example-route-default-0-0-matcher-0
+        path: /backendtlspolicy-conflicted-without-section-name
+      name: listener~80~abc_example_com-route-0-httproute-example-route-default-0-0-matcher-0
       route:
-        cluster: backend_default_backend1_0
+        cluster: kube_default_backendtlspolicy-conflicted-without-section-name-test_443
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:
@@ -233,7 +146,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    BackendTLSPolicy/default/tls-policy:
+    BackendTLSPolicy/default/conflicted-without-section-name-1:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
@@ -250,5 +163,24 @@ Statuses:
           message: Policy accepted
           reason: Accepted
           status: "True"
+          type: Accepted
+        controllerName: kgateway.dev/kgateway
+    BackendTLSPolicy/default/conflicted-without-section-name-2:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Policy conflicts with higher priority policy
+          reason: Conflicted
+          status: "False"
           type: Accepted
         controllerName: kgateway.dev/kgateway

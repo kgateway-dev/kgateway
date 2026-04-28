@@ -585,6 +585,70 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name: "child route matches parent when parent prefix has trailing slash",
+			parent: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Value: new("/foo/"),
+				},
+			},
+			child: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Value: new("/foo/bar"),
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "child route does not match parent across path element boundary when parent prefix has trailing slash",
+			parent: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Value: new("/foo/"),
+				},
+			},
+			child: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Value: new("/foobar"),
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "child exact route does not match sibling path after trailing slash normalization",
+			parent: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Value: new("/foo/"),
+				},
+			},
+			child: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  ptr.To(gwv1.PathMatchExact),
+					Value: new("/foobar"),
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "child regex route does not match sibling path after trailing slash normalization",
+			parent: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Value: new("/foo/"),
+				},
+			},
+			child: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  ptr.To(gwv1.PathMatchRegularExpression),
+					Value: new("/foobar.*"),
+				},
+			},
+			expected: false,
+		},
 	}
 
 	for _, tc := range testCases {

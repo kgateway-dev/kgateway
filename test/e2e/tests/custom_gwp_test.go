@@ -86,12 +86,14 @@ var proxyObjectMeta = metav1.ObjectMeta{
 func TestCustomGWP(t *testing.T) {
 	ctx := t.Context()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
+	rolloutStabilityValuesFile := e2e.ManifestPath("custom-gwp-rollout-stability.yaml")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&install.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.ManifestPath("custom-gwp.yaml"),
+			ExtraHelmArgs:             []string{"--values", rolloutStabilityValuesFile},
 		},
 	)
 
@@ -182,9 +184,14 @@ func TestCustomGWP(t *testing.T) {
 		helmutils.InstallOpts{
 			Namespace:       installNs,
 			CreateNamespace: true,
-			ValuesFiles:     []string{e2e.CommonRecommendationManifest, e2e.ManifestPath("custom-gwp-2.yaml")},
-			ReleaseName:     helmutils.ChartName,
-			ChartUri:        chartUri,
+			ValuesFiles: []string{
+				e2e.CommonRecommendationManifest,
+				e2e.ManifestPath("custom-gwp-2.yaml"),
+				rolloutStabilityValuesFile,
+			},
+			ReleaseName: helmutils.ChartName,
+			ChartUri:    chartUri,
+			ExtraArgs:   []string{"--wait", "--timeout", "2m"},
 		})
 	if err != nil {
 		t.Fatalf("failed to upgrade Helm: %v", err)

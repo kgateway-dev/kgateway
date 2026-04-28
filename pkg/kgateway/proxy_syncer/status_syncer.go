@@ -31,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -673,29 +674,31 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			logger.Error("error getting policy status", "error", err, "resource_ref", nsName)
 			continue
 		}
-		status := rm.BuildPolicyStatus(ctx, key, s.controllerName, currentStatus)
+		status := buildPolicyStatus(ctx, rm, plugin, key, s.controllerName, currentStatus)
 		if status == nil {
 			continue
 		}
 
 		var statusErr error
 
-		for _, ancestor := range status.Ancestors {
-			for _, cond := range ancestor.Conditions {
-				if cond.Type != string(shared.PolicyConditionAccepted) {
-					continue
+		if plugin.BuildPolicyStatus == nil {
+			for _, ancestor := range status.Ancestors {
+				for _, cond := range ancestor.Conditions {
+					if cond.Type != string(shared.PolicyConditionAccepted) {
+						continue
+					}
+
+					if cond.Reason != string(shared.PolicyReasonValid) &&
+						cond.Reason != string(shared.PolicyReasonPending) {
+						statusErr = fmt.Errorf("invalid policy condition")
+
+						break
+					}
 				}
 
-				if cond.Reason != string(shared.PolicyReasonValid) &&
-					cond.Reason != string(shared.PolicyReasonPending) {
-					statusErr = fmt.Errorf("invalid policy condition")
-
+				if statusErr != nil {
 					break
 				}
-			}
-
-			if statusErr != nil {
-				break
 			}
 		}
 
@@ -728,6 +731,21 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 
 		finishMetrics(statusErr)
 	}
+}
+
+func buildPolicyStatus(
+	ctx context.Context,
+	rm reports.ReportMap,
+	plugin plug.PolicyPlugin,
+	key reportssdk.PolicyKey,
+	controllerName string,
+	currentStatus gwv1.PolicyStatus,
+) *gwv1.PolicyStatus {
+	if plugin.BuildPolicyStatus != nil {
+		return plugin.BuildPolicyStatus(ctx, rm, key, controllerName, currentStatus)
+	}
+
+	return rm.BuildPolicyStatus(ctx, key, controllerName, currentStatus)
 }
 
 // NeedLeaderElection returns true to ensure that the StatusSyncer runs only on the leader

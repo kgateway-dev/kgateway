@@ -96,9 +96,7 @@ type EndpointsForBackend struct {
 	BackendLabels map[string]string
 
 	// +krtEqualsTodo compare load-balanced endpoint map
-	LbEps LocalityLbMap
-	// Note - in theory, cluster name should be a function of the UpstreamResourceName.
-	// But due to an upstream envoy bug, the cluster name also includes the upstream hash.
+	LbEps                LocalityLbMap
 	ClusterName          string
 	UpstreamResourceName string
 	Port                 uint32

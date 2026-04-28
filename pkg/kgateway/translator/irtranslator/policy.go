@@ -8,6 +8,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	backendtlspolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -117,6 +118,54 @@ func addMergeOriginsToFilterMetadata(
 	}
 	metadata.FilterMetadata[mergeMetadataKeyPrefix+gk.String()] = pb
 	return metadata
+}
+
+func reportBackendObjectPolicyStatus(
+	rp reporter.Reporter,
+	ancestorRef gwv1.ParentReference,
+	pluginPass TranslationPassPlugins,
+	backend *ir.BackendObjectIR,
+) {
+	// TODO(#13908): Wire this helper into the shared TCP/TLS filter-chain path so
+	// terminated TLSRoute backends report BackendTLSPolicy Gateway ancestors too.
+	if backend == nil {
+		return
+	}
+
+	gk := wellknown.BackendTLSPolicyGVK.GroupKind()
+	policies := backend.AttachedPolicies.Policies[gk]
+	if len(policies) == 0 {
+		return
+	}
+
+	var effectivePolicy *ir.PolicyAtt
+	if pass := pluginPass[gk]; pass != nil {
+		effectivePolicies, _ := mergePolicies(pass, policies)
+		if len(effectivePolicies) > 0 {
+			effectivePolicy = &effectivePolicies[0]
+		}
+	}
+	if effectivePolicy == nil {
+		effectivePolicy = &policies[0]
+	}
+
+	for _, policy := range policies {
+		if policy.PolicyRef == nil {
+			continue
+		}
+
+		key := reporter.PolicyKey{
+			Group:     policy.PolicyRef.Group,
+			Kind:      policy.PolicyRef.Kind,
+			Namespace: policy.PolicyRef.Namespace,
+			Name:      policy.PolicyRef.Name,
+		}
+
+		ancestorReporter := rp.Policy(key, policy.Generation).AncestorRef(ancestorRef)
+		for _, condition := range backendtlspolicyplugin.BuildPolicyConditions(policy, effectivePolicy) {
+			ancestorReporter.SetCondition(condition)
+		}
+	}
 }
 
 // reportRouteConfigPolicyErrors reports policy errors to the appropriate reporter based on attachment level.

@@ -1,6 +1,8 @@
 package routeutils
 
 import (
+	"testing"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -10,6 +12,50 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
+
+func TestParsePathNormalizesTrailingSlashForPathPrefix(t *testing.T) {
+	t.Run("path prefix drops trailing slash", func(t *testing.T) {
+		g := NewWithT(t)
+		pathType := gwv1.PathMatchPathPrefix
+		pathValue := "/foo/"
+
+		gotType, gotValue := ParsePath(&gwv1.HTTPPathMatch{
+			Type:  &pathType,
+			Value: &pathValue,
+		})
+
+		g.Expect(gotType).To(Equal(gwv1.PathMatchPathPrefix))
+		g.Expect(gotValue).To(Equal("/foo"))
+	})
+
+	t.Run("exact path keeps trailing slash", func(t *testing.T) {
+		g := NewWithT(t)
+		pathType := gwv1.PathMatchExact
+		pathValue := "/foo/"
+
+		gotType, gotValue := ParsePath(&gwv1.HTTPPathMatch{
+			Type:  &pathType,
+			Value: &pathValue,
+		})
+
+		g.Expect(gotType).To(Equal(gwv1.PathMatchExact))
+		g.Expect(gotValue).To(Equal("/foo/"))
+	})
+
+	t.Run("root prefix remains root", func(t *testing.T) {
+		g := NewWithT(t)
+		pathType := gwv1.PathMatchPathPrefix
+		pathValue := "/"
+
+		gotType, gotValue := ParsePath(&gwv1.HTTPPathMatch{
+			Type:  &pathType,
+			Value: &pathValue,
+		})
+
+		g.Expect(gotType).To(Equal(gwv1.PathMatchPathPrefix))
+		g.Expect(gotValue).To(Equal("/"))
+	})
+}
 
 func defaultMatcher() gwv1.HTTPRouteMatch {
 	t := gwv1.PathMatchPathPrefix

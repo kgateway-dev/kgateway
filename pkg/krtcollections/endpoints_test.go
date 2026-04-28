@@ -398,6 +398,47 @@ func TestEndpointsForUpstreamWithDifferentTrafficDistributionButSameEndpoints(t 
 	}
 }
 
+func TestFindPortInEndpointSliceMatchesNumericTargetPortForMultiPortService(t *testing.T) {
+	g := NewWithT(t)
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		Ports: []discoveryv1.EndpointPort{
+			{
+				Port: new(int32(8443)),
+			},
+		},
+	}
+	servicePort := &corev1.ServicePort{
+		Name:       "https-1",
+		Port:       443,
+		TargetPort: intstr.FromInt(8443),
+	}
+
+	port := findPortInEndpointSlice(endpointSlice, false, servicePort)
+	g.Expect(port).To(Equal(uint32(8443)))
+}
+
+func TestFindPortInEndpointSliceMatchesNamedTargetPortWhenEndpointPortNameDiffersFromServicePortName(t *testing.T) {
+	g := NewWithT(t)
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		Ports: []discoveryv1.EndpointPort{
+			{
+				Name: new("tls-backend"),
+				Port: new(int32(8443)),
+			},
+		},
+	}
+	servicePort := &corev1.ServicePort{
+		Name:       "https-1",
+		Port:       443,
+		TargetPort: intstr.FromString("tls-backend"),
+	}
+
+	port := findPortInEndpointSlice(endpointSlice, false, servicePort)
+	g.Expect(port).To(Equal(uint32(8443)))
+}
+
 func TestEndpoints(t *testing.T) {
 	testCases := []struct {
 		name     string

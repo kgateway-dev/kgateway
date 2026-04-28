@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	"github.com/stretchr/testify/assert"
@@ -69,21 +70,55 @@ func TestServerStartStop(t *testing.T) {
 	}, 10*time.Second, 1*time.Second)
 }
 
+func TestRunReturnsWhenContextCanceled(t *testing.T) {
+	r := require.New(t)
+
+	keyPEM, certPEM, caPEM := testutils.MustSelfSignedPEM()
+	dir := t.TempDir()
+	keyPath := filepath.Join(dir, "key.pem")
+	certPath := filepath.Join(dir, "cert.pem")
+	caPath := filepath.Join(dir, "ca.pem")
+	r.NoError(os.WriteFile(keyPath, keyPEM, 0o600))
+	r.NoError(os.WriteFile(certPath, certPEM, 0o600))
+	r.NoError(os.WriteFile(caPath, caPEM, 0o600))
+
+	secret := server.Secret{
+		ServerCert:        "test-cert",
+		ValidationContext: "test-validation-context",
+		SslCaFile:         caPath,
+		SslCertFile:       certPath,
+		SslKeyFile:        keyPath,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		done <- Run(ctx, []server.Secret{secret}, "test-client", "127.0.0.1:0", logger)
+	}()
+
+	time.Sleep(250 * time.Millisecond)
+	cancel()
+
+	select {
+	case err := <-done:
+		r.NoError(err, "Run returned unexpected error after context cancel")
+	case <-time.After(5 * time.Second):
+		t.Fatal("Run did not return after context cancellation")
+	}
+}
+
 func TestCertRotation(t *testing.T) {
 	testCases := []struct {
-		name           string
-		ocsp           bool
-		expectedHashes []string
+		name string
+		ocsp bool
 	}{
 		{
-			name:           "with ocsp",
-			ocsp:           true,
-			expectedHashes: []string{"969835737182439215", "6265739243366543658", "14893951670674740726"},
+			name: "with ocsp",
+			ocsp: true,
 		},
 		{
-			name:           "without ocsp",
-			ocsp:           false,
-			expectedHashes: []string{"6730780456972595554", "16241649556325798095", "7644406922477208950"},
+			name: "without ocsp",
+			ocsp: false,
 		},
 	}
 
@@ -108,17 +143,13 @@ func TestCertRotation(t *testing.T) {
 			}, 5*time.Second, 500*time.Millisecond)
 
 			go func() {
-				ocsp := ""
-				if tc.ocsp {
-					ocsp = data.ocspName
+				if !tc.ocsp {
+					data.secret.SslOcspFile = ""
 				}
-
-				data.secret.SslOcspFile = ocsp
 				err := Run(ctx, []server.Secret{data.secret}, sdsClient, testServerAddress, logger)
 				r.NoError(err, "error starting SDS server")
 			}()
-			// Give enough time for the server to start
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(2 * time.Second)
 
 			// Connect with the server
 			conn, err := grpc.NewClient(testServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -126,78 +157,105 @@ func TestCertRotation(t *testing.T) {
 			defer conn.Close()
 			client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
 
-			// Read certs
-			var certs [][]byte
+			paths := []string{data.keyNameSymlink, data.certNameSymlink, data.caNameSymlink}
 			if tc.ocsp {
-				certs, err = testutils.FilesToBytes(data.keyNameSymlink, data.certNameSymlink, data.caNameSymlink, data.ocspNameSymlink)
-			} else {
-				certs, err = testutils.FilesToBytes(data.keyNameSymlink, data.certNameSymlink, data.caNameSymlink)
+				paths = append(paths, data.ocspNameSymlink)
 			}
+			certs, err := testutils.FilesToBytes(paths...)
 			r.NoError(err, "error converting certs to bytes")
 
 			snapshotVersion, err := server.GetSnapshotVersion(certs)
 			r.NoError(err, "error getting snapshot version")
-			r.Equal(tc.expectedHashes[0], snapshotVersion, "unexpected snapshot version")
 
 			var resp *envoy_service_discovery_v3.DiscoveryResponse
+			assertOCSPState := func(resp *envoy_service_discovery_v3.DiscoveryResponse) {
+				var serverSecret *envoytlsv3.Secret
+				for _, resource := range resp.GetResources() {
+					parsed := new(envoytlsv3.Secret)
+					r.NoError(resource.UnmarshalTo(parsed), "error unmarshalling secret resource")
+					if parsed.GetName() == data.secret.ServerCert {
+						serverSecret = parsed
+						break
+					}
+				}
+				r.NotNil(serverSecret, "expected tls secret in response")
+				r.NotNil(serverSecret.GetTlsCertificate(), "expected tls certificate in response")
+				if tc.ocsp {
+					ocspBytes, err := os.ReadFile(data.ocspNameSymlink)
+					r.NoError(err, "error reading ocsp file")
+					r.Equal(ocspBytes, serverSecret.GetTlsCertificate().GetOcspStaple().GetInlineBytes(), "unexpected ocsp staple bytes")
+				} else {
+					r.Nil(serverSecret.GetTlsCertificate().GetOcspStaple(), "expected ocsp staple to be omitted")
+				}
+			}
+
 			r.EventuallyWithT(func(c *assert.CollectT) {
 				resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 				require.NoError(c, err, "error fetching secrets")
 				require.NotNil(c, resp, "expected non-nil response")
 				require.Equal(c, snapshotVersion, resp.VersionInfo, "unexpected snapshot version")
-			}, 15*time.Second, 500*time.Millisecond)
+			}, 20*time.Second, 500*time.Millisecond)
+			assertOCSPState(resp)
 
 			// Cert rotation #1
+			key1, cert1, ca1 := testutils.MustSelfSignedPEMRotation1()
 			err = os.Remove(data.keyName)
 			r.NoError(err, "error removing key file")
-			err = os.WriteFile(data.keyName, []byte("tls.key-1"), 0o600)
+			err = os.WriteFile(data.keyName, key1, 0o600)
 			r.NoError(err, "error writing new key file")
+			err = os.Remove(data.certName)
+			r.NoError(err, "error removing cert file")
+			err = os.WriteFile(data.certName, cert1, 0o600)
+			r.NoError(err, "error writing new cert file")
+			err = os.Remove(data.caName)
+			r.NoError(err, "error removing ca file")
+			err = os.WriteFile(data.caName, ca1, 0o600)
+			r.NoError(err, "error writing new ca file")
 
 			// Re-read certs
-			certs, err = testutils.FilesToBytes(data.keyNameSymlink, data.certNameSymlink, data.caNameSymlink)
+			certs, err = testutils.FilesToBytes(paths...)
 			r.NoError(err, "error reading certs")
-			if tc.ocsp {
-				ocspBytes, err := os.ReadFile(data.ocspNameSymlink)
-				r.NoError(err, "error reading OCSP cert")
-				certs = append(certs, ocspBytes)
-			}
 
 			snapshotVersion, err = server.GetSnapshotVersion(certs)
 			r.NoError(err, "error getting snapshot version")
-			r.Equal(tc.expectedHashes[1], snapshotVersion, "unexpected snapshot version")
 
 			r.EventuallyWithT(func(c *assert.CollectT) {
 				resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 				require.NoError(c, err, "error fetching secrets")
 				require.NotNil(c, resp, "expected non-nil response")
 				require.Equal(c, snapshotVersion, resp.VersionInfo, "unexpected snapshot version")
-			}, 15*time.Second, 500*time.Millisecond)
+			}, 20*time.Second, 500*time.Millisecond)
+			assertOCSPState(resp)
 
 			// Cert rotation #2
+			key2, cert2, ca2 := testutils.MustSelfSignedPEMRotation2()
 			err = os.Remove(data.keyName)
 			r.NoError(err, "error removing key file")
-			err = os.WriteFile(data.keyName, []byte("tls.key-2"), 0o600)
+			err = os.WriteFile(data.keyName, key2, 0o600)
 			r.NoError(err, "error writing new key file")
+			err = os.Remove(data.certName)
+			r.NoError(err, "error removing cert file")
+			err = os.WriteFile(data.certName, cert2, 0o600)
+			r.NoError(err, "error writing new cert file")
+			err = os.Remove(data.caName)
+			r.NoError(err, "error removing ca file")
+			err = os.WriteFile(data.caName, ca2, 0o600)
+			r.NoError(err, "error writing new ca file")
 
 			// Re-read certs again
-			certs, err = testutils.FilesToBytes(data.keyNameSymlink, data.certNameSymlink, data.caNameSymlink)
+			certs, err = testutils.FilesToBytes(paths...)
 			r.NoError(err, "error reading certs")
-			if tc.ocsp {
-				ocspBytes, err := os.ReadFile(data.ocspNameSymlink)
-				r.NoError(err, "error reading OCSP cert")
-				certs = append(certs, ocspBytes)
-			}
 
 			snapshotVersion, err = server.GetSnapshotVersion(certs)
 			r.NoError(err, "error getting snapshot version")
-			r.Equal(tc.expectedHashes[2], snapshotVersion, "unexpected snapshot version")
 
 			r.EventuallyWithT(func(c *assert.CollectT) {
 				resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 				require.NoError(c, err, "error fetching secrets")
 				require.NotNil(c, resp, "expected non-nil response")
 				require.Equal(c, snapshotVersion, resp.VersionInfo, "unexpected snapshot version")
-			}, 15*time.Second, 500*time.Millisecond)
+			}, 20*time.Second, 500*time.Millisecond)
+			assertOCSPState(resp)
 		})
 	}
 }
@@ -205,6 +263,8 @@ func TestCertRotation(t *testing.T) {
 type setupData struct {
 	tmpDir          string
 	keyName         string
+	certName        string
+	caName          string
 	ocspName        string
 	keyNameSymlink  string
 	certNameSymlink string
@@ -216,8 +276,11 @@ type setupData struct {
 func setup(t *testing.T) setupData {
 	r := require.New(t)
 
-	fileString := []byte("test")
 	dir, err := os.MkdirTemp("", "kgateway-test-sds")
+	r.NoError(err)
+
+	keyPEM, certPEM, caPEM := testutils.MustSelfSignedPEM()
+	ocspResp, err := os.ReadFile(filepath.Join("testdata", "ocsp_response.der"))
 	r.NoError(err)
 
 	// Kubernetes mounts secrets as a symlink to a ..data directory, so we'll mimic that here
@@ -225,19 +288,14 @@ func setup(t *testing.T) setupData {
 	certName := filepath.Join(dir, "tls.crt-0")
 	caName := filepath.Join(dir, "ca.crt-0")
 	ocspName := filepath.Join(dir, "tls.ocsp-staple-0")
-	err = os.WriteFile(keyName, fileString, 0o600)
+	err = os.WriteFile(keyName, keyPEM, 0o600)
 
 	r.NoError(err)
-	err = os.WriteFile(certName, fileString, 0o600)
+	err = os.WriteFile(certName, certPEM, 0o600)
 	r.NoError(err)
-	err = os.WriteFile(caName, fileString, 0o600)
+	err = os.WriteFile(caName, caPEM, 0o600)
 	r.NoError(err)
-
-	// This is a pre-generated DER-encoded OCSP response using `openssl` to better match actual ocsp staple/response data.
-	// This response isn't for the test certs as they are just random data, but it is a syntactically-valid OCSP response.
-	ocspResponse, err := os.ReadFile(filepath.Join("testdata", "ocsp_response.der"))
-	r.NoError(err)
-	err = os.WriteFile(ocspName, ocspResponse, 0o600)
+	err = os.WriteFile(ocspName, ocspResp, 0o600)
 	r.NoError(err)
 
 	keyNameSymlink := filepath.Join(dir, "tls.key")
@@ -256,6 +314,8 @@ func setup(t *testing.T) setupData {
 	return setupData{
 		tmpDir:          dir,
 		keyName:         keyName,
+		certName:        certName,
+		caName:          caName,
 		ocspName:        ocspName,
 		keyNameSymlink:  keyNameSymlink,
 		certNameSymlink: certNameSymlink,

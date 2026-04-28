@@ -16,77 +16,68 @@ metadata:
 spec:
   parentRefs:
   - name: example-gateway
+  hostnames:
+  - abc.example.com
   rules:
   - backendRefs:
-    - name: backend1
-      kind: Backend
-      group: gateway.kgateway.dev
-    - name: backend2
-      kind: Backend
-      group: gateway.kgateway.dev
+    - group: ""
+      kind: Service
+      name: backendtlspolicy-conflicted-without-section-name-test
+      port: 443
+    matches:
+    - path:
+        type: Exact
+        value: /backendtlspolicy-conflicted-without-section-name
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: v1
+kind: Service
 metadata:
-  name: backend1
+  name: backendtlspolicy-conflicted-without-section-name-test
 spec:
-  type: Static
-  static:
-    hosts:
-    - host: example.com
-      port: 8080
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
-metadata:
-  name: backend2
-spec:
-  type: Static
-  static:
-    hosts:
-    - host: example2.com
-      port: 8080
+  selector:
+    app: tls-backend
+  ports:
+  - name: https
+    protocol: TCP
+    port: 443
+    targetPort: 8443
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
-  name: tls-policy
+  name: conflicted-without-section-name-1
 spec:
   targetRefs:
-  - group: gateway.kgateway.dev
-    kind: Backend
-    name: backend1
+  - group: ""
+    kind: Service
+    name: backendtlspolicy-conflicted-without-section-name-test
   validation:
-    hostname: "example.com"
-    subjectAltNames:
-    - type: Hostname
-      hostname: example-san.com
-    - type: URI
-      uri: spifee://example-san.com
     caCertificateRefs:
     - group: ""
       kind: ConfigMap
       name: public-ca
+    hostname: other.example.com
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
-  name: tls-policy2
+  name: conflicted-without-section-name-2
 spec:
   targetRefs:
-  - group: gateway.kgateway.dev
-    kind: Backend
-    name: backend2
+  - group: ""
+    kind: Service
+    name: backendtlspolicy-conflicted-without-section-name-test
   validation:
-    hostname: "example2.com"
-    subjectAltNames:
-    - type: Hostname
-      hostname: example2-san.com
-    - type: URI
-      uri: spifee://example2-san.com
-    wellKnownCACertificates: System
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: public-ca
+    hostname: abc.example.com
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: public-ca
 data:
   ca.crt: |
     -----BEGIN CERTIFICATE-----
@@ -107,6 +98,3 @@ data:
     n9KpuK4SEloIycZUaKVXAaX7T42SFYw7msmB+Uu7z5oLOijsjX6TjeofdFBZ/Byl
     SxODgqhtaPnOxQ==
     -----END CERTIFICATE-----
-kind: ConfigMap
-metadata:
-  name: public-ca

@@ -51,10 +51,7 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 		)
 	}
 
-	// we don't support the BackendTLSPolicy feature at all.
-	for _, feature := range features.BackendTLSPolicyCoreFeatures.UnsortedList() {
-		exemptFeatures.Insert(feature)
-	}
+	// Support only the core BackendTLSPolicy feature set for now.
 	for _, feature := range features.BackendTLSPolicyExtendedFeatures.UnsortedList() {
 		exemptFeatures.Insert(feature)
 	}
