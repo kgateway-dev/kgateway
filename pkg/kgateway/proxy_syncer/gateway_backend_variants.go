@@ -6,12 +6,9 @@ import (
 	"slices"
 
 	"istio.io/istio/pkg/kube/krt"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/gatewaytls"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
@@ -41,7 +38,6 @@ func (v gatewayScopedBackend) Equals(other gatewayScopedBackend) bool {
 func newGatewayBackendVariants(
 	ctx context.Context,
 	krtopts krtutil.KrtOptions,
-	commonCols *collections.CommonCollections,
 	queries query.GatewayQueries,
 	gateways krt.Collection[ir.Gateway],
 ) krt.Collection[gatewayScopedBackend] {
@@ -50,16 +46,8 @@ func newGatewayBackendVariants(
 		// Gateway status. Keep the collection quiet here because it may recompute
 		// frequently and would otherwise emit duplicate log noise for the same
 		// user-facing error.
-		clientCertificate, err := gatewaytls.ResolveBackendClientCertificate(&gateway, func(secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
-			return commonCols.Secrets.GetSecret(kctx, krtcollections.From{
-				GroupKind: gateway.GetGroupKind(),
-				Namespace: gateway.GetNamespace(),
-			}, secretRef)
-		})
-		if err != nil {
-			return nil
-		}
-		if clientCertificate == nil {
+		clientCertificate, err := gatewaytls.ResolveForGateway(kctx, ctx, queries, &gateway)
+		if err != nil || clientCertificate == nil {
 			return nil
 		}
 

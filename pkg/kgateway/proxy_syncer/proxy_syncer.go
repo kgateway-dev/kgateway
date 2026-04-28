@@ -214,7 +214,6 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	gatewayBackendVariants := newGatewayBackendVariants(
 		ctx,
 		krtopts,
-		s.commonCols,
 		queries,
 		s.commonCols.GatewayIndex.Gateways,
 	)

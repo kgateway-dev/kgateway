@@ -1,12 +1,15 @@
 package gatewaytls
 
 import (
+	"context"
 	"fmt"
 
+	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -33,6 +36,19 @@ func ResolveBackendClientCertificate(
 	}
 
 	return buildBackendClientCertificate(secret)
+}
+
+// ResolveForGateway resolves the Gateway's backend client certificate via the queries-backed
+// secret index.
+func ResolveForGateway(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	queries query.GatewayQueries,
+	gateway *ir.Gateway,
+) (*ir.GatewayBackendClientCertificateIR, error) {
+	return ResolveBackendClientCertificate(gateway, func(secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
+		return queries.GetSecretForRef(kctx, ctx, gateway.GetGroupKind(), gateway.GetNamespace(), secretRef)
+	})
 }
 
 func validateClientCertificateRef(defaultNamespace string, ref *gwv1.SecretObjectReference) error {

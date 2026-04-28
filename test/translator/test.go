@@ -871,7 +871,7 @@ func (tc TestCase) Run(
 				}
 			}
 		}
-		if clientCertificate, err := resolveGatewayBackendClientCertificate(krt.TestingDummyContext{}, ctx, queries, &gw); err == nil && clientCertificate != nil {
+		if clientCertificate, err := gatewaytls.ResolveForGateway(krt.TestingDummyContext{}, ctx, queries, &gw); err == nil && clientCertificate != nil {
 			for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 				for _, backend := range col.List() {
 					clone := backend.CloneForGatewayBackendClientCertificate(gw.ObjectSource, clientCertificate)
@@ -908,17 +908,6 @@ func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error)
 		return nil, fmt.Errorf("parsing proxy from file: %w", err)
 	}
 	return &proxy, nil
-}
-
-func resolveGatewayBackendClientCertificate(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	queries query.GatewayQueries,
-	gateway *ir.Gateway,
-) (*ir.GatewayBackendClientCertificateIR, error) {
-	return gatewaytls.ResolveBackendClientCertificate(gateway, func(secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
-		return queries.GetSecretForRef(kctx, ctx, gateway.GetGroupKind(), gateway.GetNamespace(), secretRef)
-	})
 }
 
 func extractRouteConfigurationClusterNames(routeConfigs []*envoyroutev3.RouteConfiguration) map[string]struct{} {

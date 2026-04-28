@@ -69,7 +69,7 @@ func (t *translator) Translate(
 	// and so route rewriting can point at Gateway-scoped backend clones.
 	// proxy_syncer resolves again inside its KRT collection so those clones also
 	// depend directly on Secret updates.
-	clientCertificate, err := resolveGatewayBackendClientCertificate(kctx, ctx, t.queries, gateway)
+	clientCertificate, err := gatewaytls.ResolveForGateway(kctx, ctx, t.queries, gateway)
 	if err != nil {
 		reportGatewayBackendClientCertificateError(err, reporter.Gateway(gateway.Obj))
 	} else if clientCertificate != nil {
@@ -118,17 +118,6 @@ func setAttachedRoutes(gateway *ir.Gateway, routesForGw *query.RoutesForGwResult
 		}
 		parentReporter.Listener(&listener.Listener).SetAttachedRoutes(uint(availRoutes)) //nolint:gosec // G115: availRoutes is a count of routes, always non-negative
 	}
-}
-
-func resolveGatewayBackendClientCertificate(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	queries query.GatewayQueries,
-	gateway *ir.Gateway,
-) (*ir.GatewayBackendClientCertificateIR, error) {
-	return gatewaytls.ResolveBackendClientCertificate(gateway, func(secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
-		return queries.GetSecretForRef(kctx, ctx, gateway.GetGroupKind(), gateway.GetNamespace(), secretRef)
-	})
 }
 
 func reportGatewayBackendClientCertificateError(err error, gatewayReporter reports.GatewayReporter) {

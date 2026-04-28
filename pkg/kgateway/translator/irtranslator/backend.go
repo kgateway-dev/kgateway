@@ -341,43 +341,37 @@ func applyGatewayBackendClientCertificate(out *envoyclusterv3.Cluster, backend *
 	}
 
 	certificate := backend.GatewayBackendClientCertificate.Certificate
-
-	transportSocket, err := applyGatewayBackendClientCertificateToTransportSocket(out.GetTransportSocket(), certificate)
-	if err != nil {
+	if ts, err := injectGatewayBackendClientCertificate(out.GetTransportSocket(), certificate); err != nil {
 		return err
+	} else if ts != nil {
+		out.TransportSocket = ts
 	}
-	if transportSocket != nil {
-		out.TransportSocket = transportSocket
-	}
-
-	if len(out.GetTransportSocketMatches()) == 0 {
-		return nil
-	}
-
-	updatedMatches := make([]*envoyclusterv3.Cluster_TransportSocketMatch, 0, len(out.GetTransportSocketMatches()))
 	for _, match := range out.GetTransportSocketMatches() {
-		updatedMatch, err := applyGatewayBackendClientCertificateToTransportSocketMatch(match, certificate)
+		ts, err := injectGatewayBackendClientCertificate(match.GetTransportSocket(), certificate)
 		if err != nil {
 			return err
 		}
-		updatedMatches = append(updatedMatches, updatedMatch)
+		if ts != nil {
+			match.TransportSocket = ts
+		}
 	}
-	out.TransportSocketMatches = updatedMatches
-
 	return nil
 }
 
-func applyGatewayBackendClientCertificateToTransportSocket(
+// injectGatewayBackendClientCertificate returns a clone of transportSocket with the
+// Gateway-scoped client cert/key set on its UpstreamTlsContext. Returns (nil, nil) when
+// transportSocket is not a TLS socket so the caller can leave it untouched. The clone
+// avoids aliasing transport-socket protos shared with other clusters by upstream plugins.
+func injectGatewayBackendClientCertificate(
 	transportSocket *envoycorev3.TransportSocket,
 	certificate ir.TLSCertificate,
 ) (*envoycorev3.TransportSocket, error) {
 	if transportSocket == nil || transportSocket.GetName() != envoywellknown.TransportSocketTls {
-		return transportSocket, nil
+		return nil, nil
 	}
-
 	typedConfig := transportSocket.GetTypedConfig()
 	if typedConfig == nil {
-		return transportSocket, nil
+		return nil, nil
 	}
 
 	tlsContext := &envoytlsv3.UpstreamTlsContext{}
@@ -387,47 +381,20 @@ func applyGatewayBackendClientCertificateToTransportSocket(
 	if tlsContext.CommonTlsContext == nil {
 		tlsContext.CommonTlsContext = &envoytlsv3.CommonTlsContext{}
 	}
-
-	tlsContext.CommonTlsContext.TlsCertificates = []*envoytlsv3.TlsCertificate{
-		{
-			CertificateChain: pluginutils.InlineStringDataSource(string(certificate.CertChain)),
-			PrivateKey:       pluginutils.InlineStringDataSource(string(certificate.PrivateKey)),
-		},
-	}
+	tlsContext.CommonTlsContext.TlsCertificates = []*envoytlsv3.TlsCertificate{{
+		CertificateChain: pluginutils.InlineStringDataSource(string(certificate.CertChain)),
+		PrivateKey:       pluginutils.InlineStringDataSource(string(certificate.PrivateKey)),
+	}}
 	tlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = nil
 
 	updatedTypedConfig, err := utils.MessageToAny(tlsContext)
 	if err != nil {
 		return nil, err
 	}
-
 	clone, ok := proto.Clone(transportSocket).(*envoycorev3.TransportSocket)
 	if !ok {
 		return nil, errors.New("failed to clone transport socket")
 	}
-	clone.ConfigType = &envoycorev3.TransportSocket_TypedConfig{
-		TypedConfig: updatedTypedConfig,
-	}
-	return clone, nil
-}
-
-func applyGatewayBackendClientCertificateToTransportSocketMatch(
-	match *envoyclusterv3.Cluster_TransportSocketMatch,
-	certificate ir.TLSCertificate,
-) (*envoyclusterv3.Cluster_TransportSocketMatch, error) {
-	if match == nil {
-		return nil, nil
-	}
-
-	transportSocket, err := applyGatewayBackendClientCertificateToTransportSocket(match.GetTransportSocket(), certificate)
-	if err != nil {
-		return nil, err
-	}
-
-	clone, ok := proto.Clone(match).(*envoyclusterv3.Cluster_TransportSocketMatch)
-	if !ok {
-		return nil, errors.New("failed to clone transport socket match")
-	}
-	clone.TransportSocket = transportSocket
+	clone.ConfigType = &envoycorev3.TransportSocket_TypedConfig{TypedConfig: updatedTypedConfig}
 	return clone, nil
 }
