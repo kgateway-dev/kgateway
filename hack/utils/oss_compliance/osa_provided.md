@@ -38,6 +38,7 @@ Name|Version|License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.10.0|Apache License 2.0
 [go.uber.org/atomic](https://go.uber.org/atomic)|v1.11.0|MIT License
+[go.uber.org/mock](https://go.uber.org/mock)|v0.6.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.1|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20251209150349-8475f28825e9|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.14.0|BSD 3-clause "New" or "Revised" License
