@@ -2,8 +2,6 @@
 
 - Issue: [#2027](https://github.com/solo-io/gloo-gateway/issues/2027)
 
-<!-- toc -->
-<!-- /toc -->
 
 ## Background
 
@@ -45,17 +43,18 @@ entry carries either an inline `value` string or a `secretRef` as sibling fields
 constraint. This keeps `value` as a plain string, preserving backward compatibility.
 
 ```go
-// KgatewayHTTPHeaderFilter replaces gwv1.HTTPHeaderFilter to support secret-backed header values.
+// HTTPHeaderFilter defines header mutation rules for a TrafficPolicy, supporting both
+// inline string values and Kubernetes Secret-backed values.
 // +kubebuilder:validation:AtLeastOneOf=set;add;remove
-type KgatewayHTTPHeaderFilter struct {
+type HTTPHeaderFilter struct {
     // +optional
     // +listType=atomic
     // +kubebuilder:validation:MaxItems=16
-    Set    []KgatewayHTTPHeader `json:"set,omitempty"`
+    Set    []HTTPHeader `json:"set,omitempty"`
     // +optional
     // +listType=atomic
     // +kubebuilder:validation:MaxItems=16
-    Add    []KgatewayHTTPHeader `json:"add,omitempty"`
+    Add    []HTTPHeader `json:"add,omitempty"`
     // +optional
     // +listType=set
     // +kubebuilder:validation:MaxItems=16
@@ -64,7 +63,7 @@ type KgatewayHTTPHeaderFilter struct {
 
 // +kubebuilder:validation:ExactlyOneOf=value;secretRef
 // +kubebuilder:validation:XValidation:rule="has(self.value) ? has(self.name) : true",message="name is required when using an inline value"
-type KgatewayHTTPHeader struct {
+type HTTPHeader struct {
     // Name is the header field name. Required when value is set.
     // When secretRef is used and name is omitted, the secret key is used as the header name.
     // +optional
@@ -81,11 +80,16 @@ type KgatewayHTTPHeader struct {
 }
 
 type SecretKeyRef struct {
+    // Name is the name of the Kubernetes Secret.
     // +required
     Name      gwv1.ObjectName `json:"name"`
+    // Key is the key within the Secret's data map whose value will be used as the header value.
     // +required
     // +kubebuilder:validation:MinLength=1
+    // +kubebuilder:validation:MaxLength=253
     Key       string          `json:"key"`
+    // Namespace is the namespace of the Secret. Cross-namespace references require a ReferenceGrant
+    // in the target namespace permitting access from the policy's namespace.
     // +required
     Namespace gwv1.Namespace  `json:"namespace"`
 }
@@ -96,8 +100,8 @@ type SecretKeyRef struct {
 ```go
 // +kubebuilder:validation:AtLeastOneOf=request;response
 type HeaderModifiers struct {
-    Request  *KgatewayHTTPHeaderFilter `json:"request,omitempty"`
-    Response *KgatewayHTTPHeaderFilter `json:"response,omitempty"`
+    Request  *HTTPHeaderFilter `json:"request,omitempty"`
+    Response *HTTPHeaderFilter `json:"response,omitempty"`
 }
 ```
 
@@ -145,6 +149,20 @@ runtime secret-lookup latency.
 Secret access uses the existing `SecretIndex.GetSecret` path, which enforces ReferenceGrant rules
 for cross-namespace references automatically.
 
+**Security implications:** once a secret value is resolved at translation time, it is embedded as
+plaintext in the Envoy `header_mutation` filter config and distributed via xDS. It is no longer
+protected solely by Kubernetes Secret RBAC. Potential exposure paths include:
+
+- xDS snapshots and any control-plane caching or persistence
+- Envoy admin and `/config_dump` endpoints
+- Control-plane logs, debug output, and support bundles that capture effective configuration
+
+Deployments using this feature should restrict RBAC access to the control plane and xDS
+distribution path, disable or tightly scope Envoy admin access where not required, and ensure logs
+and support bundles redact embedded header values. This feature improves GitOps ergonomics by
+keeping secrets out of policy manifests; it does not provide end-to-end confidentiality once the
+value has been translated into proxy configuration.
+
 ### Translator and Proxy Syncer
 
 `Set` entries translate to `OVERWRITE_IF_EXISTS_OR_ADD` mutations; `Add` entries translate to
@@ -154,8 +172,10 @@ from an inline string or a secret reference.
 ### Reporting
 
 If a referenced secret does not exist, does not contain the specified key, or a cross-namespace
-reference is made without a valid ReferenceGrant, the `TrafficPolicy` status should reflect
-`Accepted=False` with `Reason=Invalid` and a message identifying the cause.
+reference is made without a valid ReferenceGrant, the `TrafficPolicy` status should reflect a
+`ResolvedRefs=False` condition with `Reason=InvalidCertificateRef` and a message identifying the
+cause. `Accepted=False` with `Reason=Invalid` should be used only when the policy itself is
+structurally invalid (e.g., duplicate header names).
 
 ### Test Plan
 
@@ -171,7 +191,7 @@ reference is made without a valid ReferenceGrant, the `TrafficPolicy` status sho
 ### Replacing `gwv1.HTTPHeaderFilter` rather than extending it
 
 `HeaderModifiers` previously used `gwv1.HTTPHeaderFilter` directly, imported from the upstream
-Gateway API. This EP replaces it with `KgatewayHTTPHeaderFilter` rather than running the two types
+Gateway API. This EP replaces it with `HTTPHeaderFilter` rather than running the two types
 in parallel.
 
 The replacement is necessary because we need to change the per-header value type — from a plain
@@ -182,9 +202,15 @@ The risk of diverging from the upstream type is low: `gwv1.HTTPHeaderFilter` is 
 simplest and most stable types in Gateway API (set/add/remove string headers), and Gateway API is
 unlikely to add secret-backed values since those are an implementation concern rather than a
 portability one. If Gateway API does add new fields to `HTTPHeaderFilter`, we add them to
-`KgatewayHTTPHeaderFilter` manually — a known maintenance cost, not a structural problem.
+`HTTPHeaderFilter` manually — a known maintenance cost, not a structural problem.
 
 Existing user configs that use inline `value` strings continue to work without any changes.
+
+**Note:** Gateway API issue [#4689](https://github.com/kubernetes-sigs/gateway-api/issues/4689)
+proposes extending `HTTPHeaderFilter` upstream with a `valueFrom` field supporting `secretKeyRef`
+and `configMapKeyRef`. This is open with no milestone. If it progresses to a GEP and merges,
+aligning with the upstream shape at that point would mean revisiting the flat-siblings approach in
+favor of `valueFrom` — a potential future breaking change worth monitoring.
 
 ### Flat `value`/`secretRef` siblings — no nested wrapper type
 
@@ -234,15 +260,17 @@ namespace must exist for cross-namespace access to succeed.
 ### Duplicate entries for the same header name are a user error
 
 A policy with two entries that resolve to the same header name — whether from an explicit `name`
-field or from two `secretRef` entries whose keys are identical — is a user error and must be
-rejected at admission time. Allowing it would produce non-deterministic header values and undermine
-the predictability that `Set` semantics are meant to provide.
+field or from two `secretRef` entries whose keys are identical — is a user error. Duplicate explicit
+`name` entries can be caught via CEL validation at admission time. Duplicates where the header name
+is derived from a secret key can only be detected at translation time and are surfaced via
+`Accepted=False` with `Reason=Invalid`. Allowing duplicates would produce non-deterministic header
+values and undermine the predictability that `Set` semantics are meant to provide.
 
 ## Migration
 
 ### No breaking change for existing `headerModifiers.request`/`response` users
 
-The `value` field remains a plain string on the new `KgatewayHTTPHeader` type, exactly as it was on
+The `value` field remains a plain string on the new `HTTPHeader` type, exactly as it was on
 `gwv1.HTTPHeader`. Existing configs continue to work without any changes:
 
 ```yaml
@@ -270,7 +298,7 @@ Add `requestHeadersFromSecret []SecretHeaderMapping` and `responseHeadersFromSec
 ambiguity when both target the same header name, and duplicates the add/set/remove decision across
 two parallel APIs.
 
-### Option B: Nested union wrapper (`KgatewayHTTPHeaderValue`)
+### Option B: Nested union wrapper (`HTTPHeaderValue`)
 
 Wrap the value in a union struct with `literal` and `secretRef` fields, requiring existing inline
 configs to migrate from `value: "string"` to `value: {literal: "string"}`.
@@ -285,7 +313,7 @@ constraint. Existing configs work unchanged. This is the approach proposed here.
 
 ### Option D: `valueFrom` wrapper
 
-Add a `valueFrom *KgatewayHTTPHeaderValue` field alongside `value`, where `KgatewayHTTPHeaderValue`
+Add a `valueFrom *HTTPHeaderValue` field alongside `value`, where `HTTPHeaderValue`
 holds a `secretRef` (and potentially other source types later).
 
 **Rejected because:** `value` already names the header value, so `valueFrom` reads as a second way
@@ -296,5 +324,5 @@ adds no structural benefit.
 
 ## Open Questions
 
-- Should `SecretKeyRef` be a shared type reusable by other policies, or defined locally in
-  `TrafficPolicy`?
+`SecretKeyRef` is defined locally in `TrafficPolicy` for now. If a concrete need to reuse it across
+other policy types arises, it can be promoted to a shared type at that point.
