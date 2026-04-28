@@ -27,7 +27,7 @@ func TestZeroDowntimeRollout(t *testing.T) {
 		&install.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.ManifestPath("zero-downtime-controller-race-values.yaml"),
+			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 		},
 	)
 
