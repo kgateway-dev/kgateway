@@ -5,7 +5,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	kgutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -64,7 +63,7 @@ func ParsePath(path *gwv1.HTTPPathMatch) (gwv1.PathMatchType, string) {
 	if path != nil && path.Value != nil {
 		pathValue = *path.Value
 	}
-	return pathType, kgutils.NormalizePathMatch(pathType, pathValue)
+	return pathType, pathValue
 }
 
 func lessPath(a, b *gwv1.HTTPPathMatch) *bool {

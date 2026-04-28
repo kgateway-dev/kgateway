@@ -6,7 +6,6 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func TestValidateWeightedClusters(t *testing.T) {
@@ -89,18 +88,4 @@ func TestValidateWeightedClusters(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestTranslateMatcherNormalizesTrailingSlashOnPathPrefix(t *testing.T) {
-	match := gwv1.HTTPRouteMatch{
-		Path: &gwv1.HTTPPathMatch{
-			Type:  new(gwv1.PathMatchPathPrefix),
-			Value: new("/foo/"),
-		},
-	}
-
-	got := translateMatcher(match)
-
-	assert.Equal(t, "/foo", got.GetPathSeparatedPrefix())
-	assert.Empty(t, got.GetPrefix())
 }
