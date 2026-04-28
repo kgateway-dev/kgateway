@@ -37,9 +37,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 		// We do not yet implement the 421 misdirected-request behavior across HTTPS listeners
 		// sharing the same port.
 		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,
-		// Gateway backend client certificate conformance also requires BackendTLSPolicy,
-		// which the standard GatewayClass does not advertise yet.
-		features.GatewayBackendClientCertificateFeature,
 	)
 	if !enableExperimentalGatewayAPIFeatures {
 		// TLSRoute processing is behind the experimental Gateway API feature flag.

@@ -124,7 +124,7 @@ func TestGatewayBackendVariantBackendsRetainBackendPolicies(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, rawBackend)
-	assert.Empty(t, rawBackend.AttachedPolicies.Policies)
+	require.Len(t, rawBackend.AttachedPolicies.Policies[policyGK], 1)
 
 	clone := rawBackend.CloneForGatewayBackendClientCertificate(
 		ir.ObjectSource{

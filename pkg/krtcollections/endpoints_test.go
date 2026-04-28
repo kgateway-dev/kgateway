@@ -399,7 +399,6 @@ func TestEndpointsForUpstreamWithDifferentTrafficDistributionButSameEndpoints(t 
 	}
 }
 
-<<<<<<< HEAD
 func TestFindPortInEndpointSliceMatchesNumericTargetPortForMultiPortService(t *testing.T) {
 	g := NewWithT(t)
 
