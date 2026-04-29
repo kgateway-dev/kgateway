@@ -1,12 +1,12 @@
 //go:build e2e
 
-package basicrouting_sigs
+package basicrouting
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
-	"github.com/onsi/gomega"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -20,28 +20,15 @@ const (
 )
 
 func TestGatewayWithRoute(t *testing.T) {
-	gomega.RegisterTestingT(t)
-
 	var gatewayAddress string
 
 	feat := features.New("Gateway with Route").
 		Setup(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			gw := &gwv1.Gateway{}
-			err := cfg.Client().Resources().Get(ctx, "test-gateway", "kgateway-test", gw)
+			addr, err := getGatewayAddress(ctx, cfg)
 			if err != nil {
-				t.Fatalf("failed to get gateway: %v", err)
+				t.Fatalf("failed to get gateway address: %v", err)
 			}
-
-			if len(gw.Status.Addresses) == 0 {
-				t.Fatal("gateway has no addresses in status")
-			}
-
-			address := gw.Status.Addresses[0].Value
-			if address == "" {
-				t.Fatal("gateway address is empty")
-			}
-
-			gatewayAddress = address
+			gatewayAddress = addr
 			return ctx
 		}).
 		Assess("successful response on all listeners", func(ctx context.Context, t *testing.T, _ *envconf.Config) context.Context {
@@ -53,4 +40,22 @@ func TestGatewayWithRoute(t *testing.T) {
 		Feature()
 
 	testenv.Test(t, feat)
+}
+
+func getGatewayAddress(ctx context.Context, cfg *envconf.Config) (string, error) {
+	gw := &gwv1.Gateway{}
+	if err := cfg.Client().Resources().Get(ctx, "test-gateway", "kgateway-test", gw); err != nil {
+		return "", err
+	}
+
+	if len(gw.Status.Addresses) == 0 {
+		return "", fmt.Errorf("gateway has no addresses in status")
+	}
+
+	address := gw.Status.Addresses[0].Value
+	if address == "" {
+		return "", fmt.Errorf("gateway address is empty")
+	}
+
+	return address, nil
 }

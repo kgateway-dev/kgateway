@@ -1,6 +1,6 @@
 //go:build e2e
 
-package basicrouting_sigs
+package basicrouting
 
 import (
 	"os"
