@@ -110,7 +110,7 @@ func (s *testingSuite) TestHttpACLHolePunchNamedRules() {
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 
-	s.T().Log("10.1.2.3 matches block-rogue-host (/32 beats /8 and /16) → denied")
+	s.T().Log("10.1.2.3 matches block-rogue-host (/32 beats /8 and /16): denied")
 	common.BaseGateway.Send(
 		s.T(),
 		expectDenied,
@@ -120,7 +120,7 @@ func (s *testingSuite) TestHttpACLHolePunchNamedRules() {
 		curl.WithHeader("X-Forwarded-For", "10.1.2.3"),
 	)
 
-	s.T().Log("10.1.2.4 matches allow-trusted-subnet (/16 beats /8) → allowed")
+	s.T().Log("10.1.2.4 matches allow-trusted-subnet (/16 beats /8): allowed")
 	common.BaseGateway.Send(
 		s.T(),
 		expectAllowed,
@@ -130,7 +130,7 @@ func (s *testingSuite) TestHttpACLHolePunchNamedRules() {
 		curl.WithHeader("X-Forwarded-For", "10.1.2.4"),
 	)
 
-	s.T().Log("10.2.0.1 matches block-internal-range (/8) → denied")
+	s.T().Log("10.2.0.1 matches block-internal-range (/8): denied")
 	common.BaseGateway.Send(
 		s.T(),
 		expectDenied,
@@ -140,7 +140,7 @@ func (s *testingSuite) TestHttpACLHolePunchNamedRules() {
 		curl.WithHeader("X-Forwarded-For", "10.2.0.1"),
 	)
 
-	s.T().Log("8.8.8.8 matches no rule → allowed by defaultAction=allow")
+	s.T().Log("8.8.8.8 matches no rule: allowed by defaultAction=allow")
 	common.BaseGateway.Send(
 		s.T(),
 		expectAllowed,
@@ -181,7 +181,7 @@ func (s *testingSuite) TestHttpACLBlockedByHeader() {
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 
-	s.T().Log("10.5.5.5 matches named rule block-internal-range → X-Blocked-By: block-internal-range")
+	s.T().Log("10.5.5.5 matches named rule block-internal-range: X-Blocked-By: block-internal-range")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -194,7 +194,7 @@ func (s *testingSuite) TestHttpACLBlockedByHeader() {
 		curl.WithHeader("X-Forwarded-For", "10.5.5.5"),
 	)
 
-	s.T().Log("192.168.1.1 matches unnamed rule → X-Blocked-By: rule")
+	s.T().Log("192.168.1.1 matches unnamed rule: X-Blocked-By: rule")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -207,7 +207,7 @@ func (s *testingSuite) TestHttpACLBlockedByHeader() {
 		curl.WithHeader("X-Forwarded-For", "192.168.1.1"),
 	)
 
-	s.T().Log("8.8.8.8 matches no rule, defaultAction=deny → X-Blocked-By: default")
+	s.T().Log("8.8.8.8 matches no rule, defaultAction=deny: X-Blocked-By: default")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -220,7 +220,7 @@ func (s *testingSuite) TestHttpACLBlockedByHeader() {
 		curl.WithHeader("X-Forwarded-For", "8.8.8.8"),
 	)
 
-	s.T().Log("203.0.113.5 matches allow rule → 200 OK, no X-Blocked-By header")
+	s.T().Log("203.0.113.5 matches allow rule: 200 OK, no X-Blocked-By header")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -472,7 +472,7 @@ func (s *testingSuite) TestHttpACLLargeRuleset() {
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 
-	s.T().Log("10.0.0.1 matches rule-00000 (allow, 10.0.0.0/24) → allowed")
+	s.T().Log("10.0.0.1 matches rule-00000 (allow, 10.0.0.0/24): allowed")
 	common.BaseGateway.Send(
 		s.T(),
 		expectAllowed,
@@ -482,7 +482,7 @@ func (s *testingSuite) TestHttpACLLargeRuleset() {
 		curl.WithHeader("X-Forwarded-For", "10.0.0.1"),
 	)
 
-	s.T().Log("8.8.8.8 matches no rule → denied by defaultAction=deny")
+	s.T().Log("8.8.8.8 matches no rule: denied by defaultAction=deny")
 	common.BaseGateway.Send(
 		s.T(),
 		expectDenied,
@@ -585,7 +585,7 @@ func (s *testingSuite) TestHttpACLGatewayLevel() {
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 
-	s.T().Log("10.2.0.1 matches block-internal-range (/8) → denied with X-Blocked-By: block-internal-range")
+	s.T().Log("10.2.0.1 matches block-internal-range (/8): denied with X-Blocked-By: block-internal-range")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -598,7 +598,7 @@ func (s *testingSuite) TestHttpACLGatewayLevel() {
 		curl.WithHeader("X-Forwarded-For", "10.2.0.1"),
 	)
 
-	s.T().Log("10.1.0.5 matches allow-trusted-subnet (/16, beats /8) → allowed")
+	s.T().Log("10.1.0.5 matches allow-trusted-subnet (/16, beats /8): allowed")
 	common.BaseGateway.Send(
 		s.T(),
 		expectAllowed,
@@ -608,7 +608,7 @@ func (s *testingSuite) TestHttpACLGatewayLevel() {
 		curl.WithHeader("X-Forwarded-For", "10.1.0.5"),
 	)
 
-	s.T().Log("8.8.8.8 matches no rule → allowed by defaultAction=allow")
+	s.T().Log("8.8.8.8 matches no rule: allowed by defaultAction=allow")
 	common.BaseGateway.Send(
 		s.T(),
 		expectAllowed,
@@ -616,5 +616,47 @@ func (s *testingSuite) TestHttpACLGatewayLevel() {
 		curl.WithPort(80),
 		curl.WithPath("/status/200"),
 		curl.WithHeader("X-Forwarded-For", "8.8.8.8"),
+	)
+}
+
+func (s *testingSuite) TestHttpACLMerge() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
+	)
+
+	s.T().Log("10.2.0.1 matches block-internal-range (/8): denied with X-Blocked-By: block-internal-range")
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusForbidden,
+			Headers:    map[string]any{"X-Blocked-By": "block-internal-range"},
+		},
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "10.0.0.1"),
+	)
+
+	s.T().Log("10.1.0.5 matches allow-trusted-subnet (/16, beats /8): allowed")
+	common.BaseGateway.Send(
+		s.T(),
+		expectAllowed,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "10.1.0.5"),
+	)
+
+	s.T().Log("192.168.0.2 matches block-private-range: denied with X-Blocked-By-2: block-private-range")
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusForbidden,
+			Headers:    map[string]any{"X-Blocked-By": "block-private-range"},
+		},
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "192.168.0.2"),
 	)
 }

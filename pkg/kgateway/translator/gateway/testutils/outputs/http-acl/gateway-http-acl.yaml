@@ -67,7 +67,7 @@ Routes:
         name: rust_module
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
-        value: '{"defaultAction":"allow","rules":[{"name":"block-internal-range","cidrs":["10.0.0.0/8"],"action":"deny"},{"name":"allow-trusted-subnet","cidrs":["10.1.0.0/16"],"action":"allow"},{"name":"block-ipv6-range","cidrs":["2001:db8::/32"],"action":"deny"},{"name":"block-single-ipv4","cidrs":["192.168.1.100"],"action":"deny"},{"name":"block-single-ipv6","cidrs":["2001:db8::1"],"action":"deny"}],"denyResponse":{"statusCode":403,"blockedByHeaderName":"X-Blocked-By"}}'
+        value: '{"defaultAction":"allow","denyResponse":{"blockedByHeaderName":"X-Blocked-By","statusCode":403},"rules":[{"action":"deny","cidrs":["10.0.0.0/8"],"name":"block-internal-range"},{"action":"allow","cidrs":["10.1.0.0/16"],"name":"allow-trusted-subnet"},{"action":"deny","cidrs":["2001:db8::/32"],"name":"block-ipv6-range"},{"action":"deny","cidrs":["192.168.1.100"],"name":"block-single-ipv4"},{"action":"deny","cidrs":["2001:db8::1"],"name":"block-single-ipv6"}]}'
       perRouteConfigName: http-acl
   virtualHosts:
   - domains:
