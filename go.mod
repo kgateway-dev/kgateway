@@ -33,20 +33,6 @@ require (
 	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
 	helm.sh/helm/v3 v3.20.2
-<<<<<<< basicrouting-e2e-sigs
-	istio.io/api v1.29.0-alpha.0.0.20260315093121-ce7e56c13e1d
-	istio.io/client-go v1.29.0-alpha.0.0.20260315093321-a99807642da7
-	istio.io/istio v0.0.0-20260316163420-df8836984470
-	k8s.io/api v0.35.1
-	k8s.io/apiextensions-apiserver v0.35.1
-	k8s.io/apimachinery v0.35.1
-	k8s.io/client-go v0.35.1
-	k8s.io/klog/v2 v2.130.1
-	k8s.io/kube-openapi v0.0.0-20251125145642-4e65d59e963e // indirect
-	k8s.io/utils v0.0.0-20260108192941-914a6e750570
-	sigs.k8s.io/controller-runtime v0.23.1
-	sigs.k8s.io/e2e-framework v0.6.0
-=======
 	istio.io/api v1.30.0-alpha.1.0.20260415171154-7fa57afdea51
 	istio.io/client-go v1.30.0-alpha.1.0.20260415171554-0d069047cd3c
 	istio.io/istio v0.0.0-20260421191718-517aa47d8436
@@ -58,7 +44,6 @@ require (
 	k8s.io/kube-openapi v0.0.0-20260127142750-a19766b6e2d4 // indirect
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
 	sigs.k8s.io/controller-runtime v0.23.3
->>>>>>> POC
 	sigs.k8s.io/gateway-api v1.5.1
 	sigs.k8s.io/yaml v1.6.0
 )
@@ -68,6 +53,7 @@ require sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 require (
 	github.com/PuerkitoBio/goquery v1.10.1
 	github.com/golang/protobuf v1.5.4
+	sigs.k8s.io/e2e-framework v0.7.0
 	sigs.k8s.io/gateway-api/conformance v1.5.1
 )
 
