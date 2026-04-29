@@ -12,7 +12,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -61,22 +60,24 @@ func constructHeaderModifiers(
 	}
 
 	spec := policy.Spec.HeaderModifiers
-	p := buildHeaderModifiersPolicy(spec)
-
 	from := krtcollections.From{
 		GroupKind: wellknown.TrafficPolicyGVK.GroupKind(),
 		Namespace: policy.Namespace,
 	}
 
-	reqMutations, err := buildHeaderMutationsFromSecretMappings(krtctx, from, secrets, spec.RequestHeadersFromSecret)
+	p := &header_mutationv3.HeaderMutationPerRoute{
+		Mutations: &header_mutationv3.Mutations{},
+	}
+
+	reqMutations, err := buildHTTPHeaderFilterMutations(krtctx, from, secrets, spec.Request)
 	if err != nil {
-		return fmt.Errorf("requestHeadersFromSecret: %w", err)
+		return fmt.Errorf("request: %w", err)
 	}
 	p.Mutations.RequestMutations = append(p.Mutations.RequestMutations, reqMutations...)
 
-	respMutations, err := buildHeaderMutationsFromSecretMappings(krtctx, from, secrets, spec.ResponseHeadersFromSecret)
+	respMutations, err := buildHTTPHeaderFilterMutations(krtctx, from, secrets, spec.Response)
 	if err != nil {
-		return fmt.Errorf("responseHeadersFromSecret: %w", err)
+		return fmt.Errorf("response: %w", err)
 	}
 	p.Mutations.ResponseMutations = append(p.Mutations.ResponseMutations, respMutations...)
 
@@ -84,60 +85,98 @@ func constructHeaderModifiers(
 		p.Mutations = nil
 	}
 
-	out.headerModifiers = &headerModifiersIR{
-		policy: p,
-	}
+	out.headerModifiers = &headerModifiersIR{policy: p}
 	return nil
 }
 
-// buildHeaderMutationsFromSecretMappings resolves secret-backed header values and returns the
-// corresponding Envoy header mutations. Each mapping specifies the secret reference, the key
-// within the secret, and the header name to inject. Cross-namespace references are validated
-// via ReferenceGrant.
-func buildHeaderMutationsFromSecretMappings(
+// buildHTTPHeaderFilterMutations converts an HTTPHeaderFilter into Envoy header mutations,
+// resolving any secret-backed values via the secrets index.
+func buildHTTPHeaderFilterMutations(
 	krtctx krt.HandlerContext,
 	from krtcollections.From,
 	secrets *krtcollections.SecretIndex,
-	mappings []sharedv1alpha1.SecretHeaderMapping,
+	filter *sharedv1alpha1.HTTPHeaderFilter,
 ) ([]*mutation_rulesv3.HeaderMutation, error) {
-	if len(mappings) == 0 {
+	if filter == nil {
 		return nil, nil
 	}
 
 	var mutations []*mutation_rulesv3.HeaderMutation
-	for _, m := range mappings {
-		ns := gwv1.Namespace(from.Namespace)
-		if m.SecretRef.Namespace != nil {
-			ns = *m.SecretRef.Namespace
-		}
-		secretRef := gwv1.SecretObjectReference{
-			Name:      m.SecretRef.Name,
-			Namespace: &ns,
-		}
 
-		secret, err := secrets.GetSecret(krtctx, from, secretRef)
+	for _, h := range filter.Set {
+		value, headerName, err := resolveHeader(krtctx, from, secrets, h)
 		if err != nil {
-			return nil, fmt.Errorf("secret %s/%s: %w", ns, m.SecretRef.Name, err)
+			return nil, err
 		}
+		mutations = append(mutations, headerMutation(headerName, value, envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD))
+	}
 
-		value, ok := secret.Data[m.Key]
-		if !ok {
-			return nil, fmt.Errorf("secret %s/%s does not contain key %q", ns, m.SecretRef.Name, m.Key)
+	for _, h := range filter.Add {
+		value, headerName, err := resolveHeader(krtctx, from, secrets, h)
+		if err != nil {
+			return nil, err
 		}
+		mutations = append(mutations, headerMutation(headerName, value, envoycorev3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD))
+	}
 
+	for _, name := range filter.Remove {
 		mutations = append(mutations, &mutation_rulesv3.HeaderMutation{
-			Action: &mutation_rulesv3.HeaderMutation_Append{
-				Append: &envoycorev3.HeaderValueOption{
-					Header: &envoycorev3.HeaderValue{
-						Key:   string(m.Header),
-						Value: string(value),
-					},
-					AppendAction: envoycorev3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
-				},
+			Action: &mutation_rulesv3.HeaderMutation_Remove{
+				Remove: name,
 			},
 		})
 	}
+
 	return mutations, nil
+}
+
+// resolveHeader returns the resolved header value and name for a single HTTPHeader entry.
+func resolveHeader(
+	krtctx krt.HandlerContext,
+	from krtcollections.From,
+	secrets *krtcollections.SecretIndex,
+	h sharedv1alpha1.HTTPHeader,
+) (value string, headerName string, err error) {
+	if h.Value != nil {
+		return *h.Value, string(*h.Name), nil
+	}
+
+	ref := h.SecretRef
+	ns := gwv1.Namespace(ref.Namespace)
+	secretRef := gwv1.SecretObjectReference{
+		Name:      ref.Name,
+		Namespace: &ns,
+	}
+
+	secret, err := secrets.GetSecret(krtctx, from, secretRef)
+	if err != nil {
+		return "", "", fmt.Errorf("secret %s/%s: %w", ns, ref.Name, err)
+	}
+
+	data, ok := secret.Data[ref.Key]
+	if !ok {
+		return "", "", fmt.Errorf("secret %s/%s does not contain key %q", ns, ref.Name, ref.Key)
+	}
+
+	name := ref.Key
+	if h.Name != nil {
+		name = string(*h.Name)
+	}
+	return string(data), name, nil
+}
+
+func headerMutation(name, value string, action envoycorev3.HeaderValueOption_HeaderAppendAction) *mutation_rulesv3.HeaderMutation {
+	return &mutation_rulesv3.HeaderMutation{
+		Action: &mutation_rulesv3.HeaderMutation_Append{
+			Append: &envoycorev3.HeaderValueOption{
+				Header: &envoycorev3.HeaderValue{
+					Key:   name,
+					Value: value,
+				},
+				AppendAction: action,
+			},
+		},
+	}
 }
 
 // handleHeaderModifiers adds header modifier filters.
@@ -158,17 +197,4 @@ func (p *trafficPolicyPluginGwPass) handleHeaderModifiers(fcn string, typedFilte
 	if _, ok := p.headerMutationInChain[fcn]; !ok {
 		p.headerMutationInChain[fcn] = &header_mutationv3.HeaderMutationPerRoute{}
 	}
-}
-
-// buildHeaderModifiersPolicy converts a TrafficPolicy HeaderModifiersPolicy into an Envoy HeaderMutationPerRoute.
-func buildHeaderModifiersPolicy(
-	spec *sharedv1alpha1.HeaderModifiers,
-) *header_mutationv3.HeaderMutationPerRoute {
-	policy := &header_mutationv3.HeaderMutationPerRoute{}
-	policy.Mutations = &header_mutationv3.Mutations{}
-
-	policy.Mutations.RequestMutations = append(policy.Mutations.RequestMutations, pluginutils.ConvertMutations(spec.Request)...)
-	policy.Mutations.ResponseMutations = append(policy.Mutations.ResponseMutations, pluginutils.ConvertMutations(spec.Response)...)
-
-	return policy
 }

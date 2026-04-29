@@ -1122,385 +1122,289 @@ spec:
                     description: Request modifies request headers.
                     properties:
                       add:
-                        description: |-
-                          Add adds the given header(s) (name, value) to the request
-                          before the action. It appends to any existing values associated
-                          with the header name.
-
-                          Input:
-                            GET /foo HTTP/1.1
-                            my-header: foo
-
-                          Config:
-                            add:
-                            - name: "my-header"
-                              value: "bar,baz"
-
-                          Output:
-                            GET /foo HTTP/1.1
-                            my-header: foo,bar,baz
+                        description: Add adds the given header(s) (name, value) to
+                          the request before the action.
                         items:
-                          description: HTTPHeader represents an HTTP Header name and
-                            value as defined by RFC 7230.
+                          description: |-
+                            HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                            be set. When secretRef is used and name is omitted, the secret key is used as the header name.
                           properties:
                             name:
                               description: |-
-                                Name is the name of the HTTP Header to be matched. Name matching MUST be
-                                case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
-
-                                If multiple entries specify equivalent header names, the first entry with
-                                an equivalent name MUST be considered for a match. Subsequent entries
-                                with an equivalent header name MUST be ignored. Due to the
-                                case-insensitivity of header names, "foo" and "Foo" are considered
-                                equivalent.
+                                Name is the header field name. Required when value is set.
+                                When secretRef is used and name is omitted, the secret key is used as the header name.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
-                            value:
+                            secretRef:
                               description: |-
-                                Value is the value of HTTP Header to be matched.
-                                <gateway:experimental:description>
-                                Must consist of printable US-ASCII characters, optionally separated
-                                by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
-                                </gateway:experimental:description>
-
-                                <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
-                              maxLength: 4096
-                              minLength: 1
+                                SecretRef sources the header value from a key in a Kubernetes Secret.
+                                The namespace must be specified explicitly. Mutually exclusive with value.
+                              properties:
+                                key:
+                                  description: Key is the key within the Secret's
+                                    data map whose value will be used as the header
+                                    value.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  description: Name is the name of the Kubernetes
+                                    Secret.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace is the namespace of the Secret. Cross-namespace references require a ReferenceGrant
+                                    in the target namespace permitting access from the policy's namespace.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              - namespace
+                              type: object
+                            value:
+                              description: Value is an inline string value for the
+                                header. Mutually exclusive with secretRef.
                               type: string
-                          required:
-                          - name
-                          - value
                           type: object
+                          x-kubernetes-validations:
+                          - message: name is required when using an inline value
+                            rule: 'has(self.value) ? has(self.name) : true'
+                          - message: exactly one of the fields in [value secretRef]
+                              must be set
+                            rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                              == 1'
                         maxItems: 16
                         type: array
-                        x-kubernetes-list-map-keys:
-                        - name
-                        x-kubernetes-list-type: map
+                        x-kubernetes-list-type: atomic
                       remove:
-                        description: |-
-                          Remove the given header(s) from the HTTP request before the action. The
-                          value of Remove is a list of HTTP header names. Note that the header
-                          names are case-insensitive (see
-                          https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
-
-                          Input:
-                            GET /foo HTTP/1.1
-                            my-header1: foo
-                            my-header2: bar
-                            my-header3: baz
-
-                          Config:
-                            remove: ["my-header1", "my-header3"]
-
-                          Output:
-                            GET /foo HTTP/1.1
-                            my-header2: bar
+                        description: Remove the given header(s) from the HTTP request
+                          before the action.
                         items:
                           type: string
                         maxItems: 16
                         type: array
                         x-kubernetes-list-type: set
                       set:
-                        description: |-
-                          Set overwrites the request with the given header (name, value)
-                          before the action.
-
-                          Input:
-                            GET /foo HTTP/1.1
-                            my-header: foo
-
-                          Config:
-                            set:
-                            - name: "my-header"
-                              value: "bar"
-
-                          Output:
-                            GET /foo HTTP/1.1
-                            my-header: bar
+                        description: Set overwrites the request with the given header
+                          (name, value) before the action.
                         items:
-                          description: HTTPHeader represents an HTTP Header name and
-                            value as defined by RFC 7230.
+                          description: |-
+                            HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                            be set. When secretRef is used and name is omitted, the secret key is used as the header name.
                           properties:
                             name:
                               description: |-
-                                Name is the name of the HTTP Header to be matched. Name matching MUST be
-                                case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
-
-                                If multiple entries specify equivalent header names, the first entry with
-                                an equivalent name MUST be considered for a match. Subsequent entries
-                                with an equivalent header name MUST be ignored. Due to the
-                                case-insensitivity of header names, "foo" and "Foo" are considered
-                                equivalent.
+                                Name is the header field name. Required when value is set.
+                                When secretRef is used and name is omitted, the secret key is used as the header name.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
-                            value:
+                            secretRef:
                               description: |-
-                                Value is the value of HTTP Header to be matched.
-                                <gateway:experimental:description>
-                                Must consist of printable US-ASCII characters, optionally separated
-                                by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
-                                </gateway:experimental:description>
-
-                                <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
-                              maxLength: 4096
-                              minLength: 1
+                                SecretRef sources the header value from a key in a Kubernetes Secret.
+                                The namespace must be specified explicitly. Mutually exclusive with value.
+                              properties:
+                                key:
+                                  description: Key is the key within the Secret's
+                                    data map whose value will be used as the header
+                                    value.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  description: Name is the name of the Kubernetes
+                                    Secret.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace is the namespace of the Secret. Cross-namespace references require a ReferenceGrant
+                                    in the target namespace permitting access from the policy's namespace.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              - namespace
+                              type: object
+                            value:
+                              description: Value is an inline string value for the
+                                header. Mutually exclusive with secretRef.
                               type: string
-                          required:
-                          - name
-                          - value
                           type: object
+                          x-kubernetes-validations:
+                          - message: name is required when using an inline value
+                            rule: 'has(self.value) ? has(self.name) : true'
+                          - message: exactly one of the fields in [value secretRef]
+                              must be set
+                            rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                              == 1'
                         maxItems: 16
                         type: array
-                        x-kubernetes-list-map-keys:
-                        - name
-                        x-kubernetes-list-type: map
+                        x-kubernetes-list-type: atomic
                     type: object
-                  requestHeadersFromSecret:
-                    description: |-
-                      RequestHeadersFromSecret injects request headers whose values are sourced from a Kubernetes Secret.
-                      Each entry specifies a secret, a key within that secret, and the header name to inject.
-                      The header field must be a valid HTTP header name; key is the key within the Secret data.
-                      Cross-namespace references require a ReferenceGrant in the target namespace.
-                    items:
-                      description: SecretHeaderMapping maps a specific key from a
-                        Kubernetes Secret to a request or response header.
-                      properties:
-                        header:
-                          description: Header is the name of the header to inject.
-                          maxLength: 256
-                          minLength: 1
-                          pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
-                          type: string
-                        key:
-                          description: Key is the key within the Secret whose value
-                            will be used as the header value.
-                          minLength: 1
-                          type: string
-                        secretRef:
-                          description: SecretRef references the Kubernetes Secret
-                            containing the header value.
-                          properties:
-                            name:
-                              description: Name is the name of the Kubernetes Secret.
-                              maxLength: 253
-                              minLength: 1
-                              type: string
-                            namespace:
-                              description: |-
-                                Namespace is the namespace of the Kubernetes Secret.
-                                Defaults to the namespace of the policy if not specified.
-                                Cross-namespace references require a ReferenceGrant in the target namespace.
-                              maxLength: 63
-                              minLength: 1
-                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
-                              type: string
-                          required:
-                          - name
-                          type: object
-                      required:
-                      - header
-                      - key
-                      - secretRef
-                      type: object
-                    type: array
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [set add remove] must
+                        be set
+                      rule: '[has(self.set),has(self.add),has(self.remove)].filter(x,x==true).size()
+                        >= 1'
                   response:
                     description: Response modifies response headers.
                     properties:
                       add:
-                        description: |-
-                          Add adds the given header(s) (name, value) to the request
-                          before the action. It appends to any existing values associated
-                          with the header name.
-
-                          Input:
-                            GET /foo HTTP/1.1
-                            my-header: foo
-
-                          Config:
-                            add:
-                            - name: "my-header"
-                              value: "bar,baz"
-
-                          Output:
-                            GET /foo HTTP/1.1
-                            my-header: foo,bar,baz
+                        description: Add adds the given header(s) (name, value) to
+                          the request before the action.
                         items:
-                          description: HTTPHeader represents an HTTP Header name and
-                            value as defined by RFC 7230.
+                          description: |-
+                            HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                            be set. When secretRef is used and name is omitted, the secret key is used as the header name.
                           properties:
                             name:
                               description: |-
-                                Name is the name of the HTTP Header to be matched. Name matching MUST be
-                                case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
-
-                                If multiple entries specify equivalent header names, the first entry with
-                                an equivalent name MUST be considered for a match. Subsequent entries
-                                with an equivalent header name MUST be ignored. Due to the
-                                case-insensitivity of header names, "foo" and "Foo" are considered
-                                equivalent.
+                                Name is the header field name. Required when value is set.
+                                When secretRef is used and name is omitted, the secret key is used as the header name.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
-                            value:
+                            secretRef:
                               description: |-
-                                Value is the value of HTTP Header to be matched.
-                                <gateway:experimental:description>
-                                Must consist of printable US-ASCII characters, optionally separated
-                                by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
-                                </gateway:experimental:description>
-
-                                <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
-                              maxLength: 4096
-                              minLength: 1
+                                SecretRef sources the header value from a key in a Kubernetes Secret.
+                                The namespace must be specified explicitly. Mutually exclusive with value.
+                              properties:
+                                key:
+                                  description: Key is the key within the Secret's
+                                    data map whose value will be used as the header
+                                    value.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  description: Name is the name of the Kubernetes
+                                    Secret.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace is the namespace of the Secret. Cross-namespace references require a ReferenceGrant
+                                    in the target namespace permitting access from the policy's namespace.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              - namespace
+                              type: object
+                            value:
+                              description: Value is an inline string value for the
+                                header. Mutually exclusive with secretRef.
                               type: string
-                          required:
-                          - name
-                          - value
                           type: object
+                          x-kubernetes-validations:
+                          - message: name is required when using an inline value
+                            rule: 'has(self.value) ? has(self.name) : true'
+                          - message: exactly one of the fields in [value secretRef]
+                              must be set
+                            rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                              == 1'
                         maxItems: 16
                         type: array
-                        x-kubernetes-list-map-keys:
-                        - name
-                        x-kubernetes-list-type: map
+                        x-kubernetes-list-type: atomic
                       remove:
-                        description: |-
-                          Remove the given header(s) from the HTTP request before the action. The
-                          value of Remove is a list of HTTP header names. Note that the header
-                          names are case-insensitive (see
-                          https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
-
-                          Input:
-                            GET /foo HTTP/1.1
-                            my-header1: foo
-                            my-header2: bar
-                            my-header3: baz
-
-                          Config:
-                            remove: ["my-header1", "my-header3"]
-
-                          Output:
-                            GET /foo HTTP/1.1
-                            my-header2: bar
+                        description: Remove the given header(s) from the HTTP request
+                          before the action.
                         items:
                           type: string
                         maxItems: 16
                         type: array
                         x-kubernetes-list-type: set
                       set:
-                        description: |-
-                          Set overwrites the request with the given header (name, value)
-                          before the action.
-
-                          Input:
-                            GET /foo HTTP/1.1
-                            my-header: foo
-
-                          Config:
-                            set:
-                            - name: "my-header"
-                              value: "bar"
-
-                          Output:
-                            GET /foo HTTP/1.1
-                            my-header: bar
+                        description: Set overwrites the request with the given header
+                          (name, value) before the action.
                         items:
-                          description: HTTPHeader represents an HTTP Header name and
-                            value as defined by RFC 7230.
+                          description: |-
+                            HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                            be set. When secretRef is used and name is omitted, the secret key is used as the header name.
                           properties:
                             name:
                               description: |-
-                                Name is the name of the HTTP Header to be matched. Name matching MUST be
-                                case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
-
-                                If multiple entries specify equivalent header names, the first entry with
-                                an equivalent name MUST be considered for a match. Subsequent entries
-                                with an equivalent header name MUST be ignored. Due to the
-                                case-insensitivity of header names, "foo" and "Foo" are considered
-                                equivalent.
+                                Name is the header field name. Required when value is set.
+                                When secretRef is used and name is omitted, the secret key is used as the header name.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
-                            value:
+                            secretRef:
                               description: |-
-                                Value is the value of HTTP Header to be matched.
-                                <gateway:experimental:description>
-                                Must consist of printable US-ASCII characters, optionally separated
-                                by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
-                                </gateway:experimental:description>
-
-                                <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
-                              maxLength: 4096
-                              minLength: 1
+                                SecretRef sources the header value from a key in a Kubernetes Secret.
+                                The namespace must be specified explicitly. Mutually exclusive with value.
+                              properties:
+                                key:
+                                  description: Key is the key within the Secret's
+                                    data map whose value will be used as the header
+                                    value.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  description: Name is the name of the Kubernetes
+                                    Secret.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace is the namespace of the Secret. Cross-namespace references require a ReferenceGrant
+                                    in the target namespace permitting access from the policy's namespace.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                              required:
+                              - key
+                              - name
+                              - namespace
+                              type: object
+                            value:
+                              description: Value is an inline string value for the
+                                header. Mutually exclusive with secretRef.
                               type: string
-                          required:
-                          - name
-                          - value
                           type: object
+                          x-kubernetes-validations:
+                          - message: name is required when using an inline value
+                            rule: 'has(self.value) ? has(self.name) : true'
+                          - message: exactly one of the fields in [value secretRef]
+                              must be set
+                            rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                              == 1'
                         maxItems: 16
                         type: array
-                        x-kubernetes-list-map-keys:
-                        - name
-                        x-kubernetes-list-type: map
+                        x-kubernetes-list-type: atomic
                     type: object
-                  responseHeadersFromSecret:
-                    description: |-
-                      ResponseHeadersFromSecret injects response headers whose values are sourced from a Kubernetes Secret.
-                      Each entry specifies a secret, a key within that secret, and the header name to inject.
-                      The header field must be a valid HTTP header name; key is the key within the Secret data.
-                      Cross-namespace references require a ReferenceGrant in the target namespace.
-                    items:
-                      description: SecretHeaderMapping maps a specific key from a
-                        Kubernetes Secret to a request or response header.
-                      properties:
-                        header:
-                          description: Header is the name of the header to inject.
-                          maxLength: 256
-                          minLength: 1
-                          pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
-                          type: string
-                        key:
-                          description: Key is the key within the Secret whose value
-                            will be used as the header value.
-                          minLength: 1
-                          type: string
-                        secretRef:
-                          description: SecretRef references the Kubernetes Secret
-                            containing the header value.
-                          properties:
-                            name:
-                              description: Name is the name of the Kubernetes Secret.
-                              maxLength: 253
-                              minLength: 1
-                              type: string
-                            namespace:
-                              description: |-
-                                Namespace is the namespace of the Kubernetes Secret.
-                                Defaults to the namespace of the policy if not specified.
-                                Cross-namespace references require a ReferenceGrant in the target namespace.
-                              maxLength: 63
-                              minLength: 1
-                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
-                              type: string
-                          required:
-                          - name
-                          type: object
-                      required:
-                      - header
-                      - key
-                      - secretRef
-                      type: object
-                    type: array
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [set add remove] must
+                        be set
+                      rule: '[has(self.set),has(self.add),has(self.remove)].filter(x,x==true).size()
+                        >= 1'
                 type: object
                 x-kubernetes-validations:
-                - message: at least one of the fields in [request response requestHeadersFromSecret
-                    responseHeadersFromSecret] must be set
-                  rule: '[has(self.request),has(self.response),has(self.requestHeadersFromSecret),has(self.responseHeadersFromSecret)].filter(x,x==true).size()
+                - message: at least one of the fields in [request response] must be
+                    set
+                  rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
               jwtAuth:
                 description: |-
