@@ -866,6 +866,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with header modifiers from secret (key/name defaulting)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-key-defaulting.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-key-defaulting.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (all keys)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-all-keys.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-all-keys.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with compression Policy", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/compression-route.yaml",

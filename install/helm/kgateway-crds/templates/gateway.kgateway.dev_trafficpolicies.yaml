@@ -1127,12 +1127,17 @@ spec:
                         items:
                           description: |-
                             HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
-                            be set. When secretRef is used and name is omitted, the secret key is used as the header name.
+                            be set. When using secretRef, name and key interact as follows:
+                              - Both present: name is the header name, key is the Secret data key.
+                              - name absent, key present: the key is also used as the header name.
+                              - name present, key absent: the name is also used as the Secret data key.
+                              - Both absent: every entry in the Secret is injected as a header (data key -> header name).
                           properties:
                             name:
                               description: |-
-                                Name is the header field name. Required when value is set.
-                                When secretRef is used and name is omitted, the secret key is used as the header name.
+                                Name is the header field name. Required when value is set. When secretRef is used,
+                                if omitted the Secret data key is used as the header name; if both name and key are
+                                omitted every Secret entry is injected as a header.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
@@ -1143,9 +1148,10 @@ spec:
                                 The namespace must be specified explicitly. Mutually exclusive with value.
                               properties:
                                 key:
-                                  description: Key is the key within the Secret's
-                                    data map whose value will be used as the header
-                                    value.
+                                  description: |-
+                                    Key is the key within the Secret's data map to use as the header value. When omitted and
+                                    the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                    omitted, all entries in the Secret are injected as headers.
                                   maxLength: 253
                                   minLength: 1
                                   type: string
@@ -1165,7 +1171,6 @@ spec:
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                   type: string
                               required:
-                              - key
                               - name
                               type: object
                             value:
@@ -1199,12 +1204,17 @@ spec:
                         items:
                           description: |-
                             HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
-                            be set. When secretRef is used and name is omitted, the secret key is used as the header name.
+                            be set. When using secretRef, name and key interact as follows:
+                              - Both present: name is the header name, key is the Secret data key.
+                              - name absent, key present: the key is also used as the header name.
+                              - name present, key absent: the name is also used as the Secret data key.
+                              - Both absent: every entry in the Secret is injected as a header (data key -> header name).
                           properties:
                             name:
                               description: |-
-                                Name is the header field name. Required when value is set.
-                                When secretRef is used and name is omitted, the secret key is used as the header name.
+                                Name is the header field name. Required when value is set. When secretRef is used,
+                                if omitted the Secret data key is used as the header name; if both name and key are
+                                omitted every Secret entry is injected as a header.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
@@ -1215,9 +1225,10 @@ spec:
                                 The namespace must be specified explicitly. Mutually exclusive with value.
                               properties:
                                 key:
-                                  description: Key is the key within the Secret's
-                                    data map whose value will be used as the header
-                                    value.
+                                  description: |-
+                                    Key is the key within the Secret's data map to use as the header value. When omitted and
+                                    the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                    omitted, all entries in the Secret are injected as headers.
                                   maxLength: 253
                                   minLength: 1
                                   type: string
@@ -1237,7 +1248,6 @@ spec:
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                   type: string
                               required:
-                              - key
                               - name
                               type: object
                             value:
@@ -1272,12 +1282,17 @@ spec:
                         items:
                           description: |-
                             HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
-                            be set. When secretRef is used and name is omitted, the secret key is used as the header name.
+                            be set. When using secretRef, name and key interact as follows:
+                              - Both present: name is the header name, key is the Secret data key.
+                              - name absent, key present: the key is also used as the header name.
+                              - name present, key absent: the name is also used as the Secret data key.
+                              - Both absent: every entry in the Secret is injected as a header (data key -> header name).
                           properties:
                             name:
                               description: |-
-                                Name is the header field name. Required when value is set.
-                                When secretRef is used and name is omitted, the secret key is used as the header name.
+                                Name is the header field name. Required when value is set. When secretRef is used,
+                                if omitted the Secret data key is used as the header name; if both name and key are
+                                omitted every Secret entry is injected as a header.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
@@ -1288,9 +1303,10 @@ spec:
                                 The namespace must be specified explicitly. Mutually exclusive with value.
                               properties:
                                 key:
-                                  description: Key is the key within the Secret's
-                                    data map whose value will be used as the header
-                                    value.
+                                  description: |-
+                                    Key is the key within the Secret's data map to use as the header value. When omitted and
+                                    the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                    omitted, all entries in the Secret are injected as headers.
                                   maxLength: 253
                                   minLength: 1
                                   type: string
@@ -1310,7 +1326,6 @@ spec:
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                   type: string
                               required:
-                              - key
                               - name
                               type: object
                             value:
@@ -1344,12 +1359,17 @@ spec:
                         items:
                           description: |-
                             HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
-                            be set. When secretRef is used and name is omitted, the secret key is used as the header name.
+                            be set. When using secretRef, name and key interact as follows:
+                              - Both present: name is the header name, key is the Secret data key.
+                              - name absent, key present: the key is also used as the header name.
+                              - name present, key absent: the name is also used as the Secret data key.
+                              - Both absent: every entry in the Secret is injected as a header (data key -> header name).
                           properties:
                             name:
                               description: |-
-                                Name is the header field name. Required when value is set.
-                                When secretRef is used and name is omitted, the secret key is used as the header name.
+                                Name is the header field name. Required when value is set. When secretRef is used,
+                                if omitted the Secret data key is used as the header name; if both name and key are
+                                omitted every Secret entry is injected as a header.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
@@ -1360,9 +1380,10 @@ spec:
                                 The namespace must be specified explicitly. Mutually exclusive with value.
                               properties:
                                 key:
-                                  description: Key is the key within the Secret's
-                                    data map whose value will be used as the header
-                                    value.
+                                  description: |-
+                                    Key is the key within the Secret's data map to use as the header value. When omitted and
+                                    the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                    omitted, all entries in the Secret are injected as headers.
                                   maxLength: 253
                                   minLength: 1
                                   type: string
@@ -1382,7 +1403,6 @@ spec:
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                   type: string
                               required:
-                              - key
                               - name
                               type: object
                             value:

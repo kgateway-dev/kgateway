@@ -211,12 +211,18 @@ type HTTPHeaderFilter struct {
 }
 
 // HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
-// be set. When secretRef is used and name is omitted, the secret key is used as the header name.
+// be set. When using secretRef, name and key interact as follows:
+//   - Both present: name is the header name, key is the Secret data key.
+//   - name absent, key present: the key is also used as the header name.
+//   - name present, key absent: the name is also used as the Secret data key.
+//   - Both absent: every entry in the Secret is injected as a header (data key -> header name).
+//
 // +kubebuilder:validation:ExactlyOneOf=value;secretRef
 // +kubebuilder:validation:XValidation:rule="has(self.value) ? has(self.name) : true",message="name is required when using an inline value"
 type HTTPHeader struct {
-	// Name is the header field name. Required when value is set.
-	// When secretRef is used and name is omitted, the secret key is used as the header name.
+	// Name is the header field name. Required when value is set. When secretRef is used,
+	// if omitted the Secret data key is used as the header name; if both name and key are
+	// omitted every Secret entry is injected as a header.
 	// +optional
 	Name *gwv1.HTTPHeaderName `json:"name,omitempty"`
 
@@ -229,20 +235,22 @@ type HTTPHeader struct {
 	// SecretRef sources the header value from a key in a Kubernetes Secret.
 	// The namespace must be specified explicitly. Mutually exclusive with value.
 	// +optional
-	SecretRef *SecretKeyRef `json:"secretRef,omitempty"`
+	SecretRef *SecretRefWithKey `json:"secretRef,omitempty"`
 }
 
-// SecretKeyRef identifies a specific key within a Kubernetes Secret.
-type SecretKeyRef struct {
+// SecretRefWithKey identifies a Kubernetes Secret and optionally a specific key within it.
+type SecretRefWithKey struct {
 	// Name is the name of the Kubernetes Secret.
 	// +required
 	Name gwv1.ObjectName `json:"name"`
 
-	// Key is the key within the Secret's data map whose value will be used as the header value.
-	// +required
+	// Key is the key within the Secret's data map to use as the header value. When omitted and
+	// the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+	// omitted, all entries in the Secret are injected as headers.
+	// +optional
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=253
-	Key string `json:"key"`
+	Key *string `json:"key,omitempty"`
 
 	// Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
 	// referencing policy. Cross-namespace references require a ReferenceGrant in the target

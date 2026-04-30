@@ -2,6 +2,7 @@ package trafficpolicy
 
 import (
 	"fmt"
+	"sort"
 
 	mutation_rulesv3 "github.com/envoyproxy/go-control-plane/envoy/config/common/mutation_rules/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -105,11 +106,13 @@ func buildHTTPHeaderFilterMutations(
 
 	appendMutations := func(headers []sharedv1alpha1.HTTPHeader, action envoycorev3.HeaderValueOption_HeaderAppendAction) error {
 		for _, h := range headers {
-			value, headerName, err := resolveHeader(krtctx, from, secrets, h)
+			pairs, err := resolveHeader(krtctx, from, secrets, h)
 			if err != nil {
 				return err
 			}
-			mutations = append(mutations, headerMutation(headerName, value, action))
+			for _, p := range pairs {
+				mutations = append(mutations, headerMutation(p.name, p.value, action))
+			}
 		}
 		return nil
 	}
@@ -132,15 +135,21 @@ func buildHTTPHeaderFilterMutations(
 	return mutations, nil
 }
 
-// resolveHeader returns the resolved header value and name for a single HTTPHeader entry.
+type headerPair struct {
+	name  string
+	value string
+}
+
+// resolveHeader resolves an HTTPHeader entry into one or more (headerName, value) pairs.
+// When both name and key are absent on a secretRef entry, all Secret data entries are returned.
 func resolveHeader(
 	krtctx krt.HandlerContext,
 	from krtcollections.From,
 	secrets *krtcollections.SecretIndex,
 	h sharedv1alpha1.HTTPHeader,
-) (value string, headerName string, err error) {
+) ([]headerPair, error) {
 	if h.Value != nil {
-		return *h.Value, string(*h.Name), nil
+		return []headerPair{{name: string(*h.Name), value: *h.Value}}, nil
 	}
 
 	ref := h.SecretRef
@@ -155,19 +164,39 @@ func resolveHeader(
 
 	secret, err := secrets.GetSecret(krtctx, from, secretRef)
 	if err != nil {
-		return "", "", fmt.Errorf("secret %s/%s: %w", ns, ref.Name, err)
+		return nil, fmt.Errorf("secret %s/%s: %w", ns, ref.Name, err)
 	}
 
-	data, ok := secret.Data[ref.Key]
+	// Both name and key absent: inject every entry in the Secret as a header.
+	if ref.Key == nil && h.Name == nil {
+		pairs := make([]headerPair, 0, len(secret.Data))
+		for k, v := range secret.Data {
+			pairs = append(pairs, headerPair{name: k, value: string(v)})
+		}
+		sort.Slice(pairs, func(i, j int) bool { return pairs[i].name < pairs[j].name })
+		return pairs, nil
+	}
+
+	// Determine which key to look up: explicit key, or fall back to header name.
+	// At this point at least one of ref.Key or h.Name is non-nil (both-nil handled above).
+	var key string
+	if ref.Key != nil {
+		key = *ref.Key
+	} else {
+		key = string(*h.Name)
+	}
+
+	data, ok := secret.Data[key]
 	if !ok {
-		return "", "", fmt.Errorf("secret %s/%s does not contain key %q", ns, ref.Name, ref.Key)
+		return nil, fmt.Errorf("secret %s/%s does not contain key %q", ns, ref.Name, key)
 	}
 
-	name := ref.Key
+	// Determine header name: explicit name, or fall back to key.
+	headerName := key
 	if h.Name != nil {
-		name = string(*h.Name)
+		headerName = string(*h.Name)
 	}
-	return string(data), name, nil
+	return []headerPair{{name: headerName, value: string(data)}}, nil
 }
 
 func headerMutation(name, value string, action envoycorev3.HeaderValueOption_HeaderAppendAction) *mutation_rulesv3.HeaderMutation {
