@@ -9,14 +9,18 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 func TestProcessAwsUsesDnsClusterWithSingleEndpointAggregation(t *testing.T) {
 	cluster := &envoyclusterv3.Cluster{Name: "test-cluster"}
 
 	err := processAws(&AwsIr{
-		lambdaFilters:  &lambdaFilters{},
-		lambdaEndpoint: &lambdaEndpointConfig{hostname: "lambda.us-east-1.amazonaws.com", port: 443},
+		lambdaIr: &LambdaIr{
+			lambdaFilters:  &lambdaFilters{},
+			lambdaEndpoint: &lambdaEndpointConfig{hostname: "lambda.us-east-1.amazonaws.com", port: 443},
+		},
 	}, cluster)
 	require.NoError(t, err)
 
@@ -28,4 +32,33 @@ func TestProcessAwsUsesDnsClusterWithSingleEndpointAggregation(t *testing.T) {
 	err = anypb.UnmarshalTo(clusterType.GetTypedConfig(), &dnsCluster, proto.UnmarshalOptions{})
 	require.NoError(t, err)
 	assert.True(t, dnsCluster.GetAllAddressesInSingleEndpoint(), "aws backends should aggregate resolved addresses into a single endpoint")
+}
+
+func TestBuildLambdaARNUsesPreferredNestedAccountID(t *testing.T) {
+	backend := &kgateway.AwsBackend{
+		AccountId: "111111111111",
+		Lambda: &kgateway.AwsLambda{
+			AccountId:    "222222222222",
+			FunctionName: "hello-function",
+			Qualifier:    "live",
+		},
+	}
+
+	arn, err := buildLambdaARN(backend, "us-east-1")
+	require.NoError(t, err)
+	assert.Equal(t, "arn:aws:lambda:us-east-1:222222222222:function:hello-function:live", arn)
+}
+
+func TestBuildLambdaARNFallsBackToDeprecatedBackendAccountID(t *testing.T) {
+	backend := &kgateway.AwsBackend{
+		AccountId: "111111111111",
+		Lambda: &kgateway.AwsLambda{
+			FunctionName: "hello-function",
+			Qualifier:    "live",
+		},
+	}
+
+	arn, err := buildLambdaARN(backend, "us-east-1")
+	require.NoError(t, err)
+	assert.Equal(t, "arn:aws:lambda:us-east-1:111111111111:function:hello-function:live", arn)
 }

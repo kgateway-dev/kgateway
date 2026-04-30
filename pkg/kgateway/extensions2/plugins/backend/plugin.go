@@ -32,6 +32,8 @@ const (
 	ExtensionName = "backend"
 )
 
+var errAwsEc2DiscoveryDisabled = errors.New("aws ec2 discovery is disabled by controller settings")
+
 // backendIr is the internal representation of a backend.
 type backendIr struct {
 	awsIr    *AwsIr
@@ -76,7 +78,7 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("Backends")...)
 
 	gk := wellknown.BackendGVK.GroupKind()
-	translateFn := buildTranslateFunc(commoncol.Secrets)
+	translateFn := buildTranslateFunc(commoncol.Secrets, commoncol.Settings.EnableAwsEc2Discovery)
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.Backend) *ir.BackendObjectIR {
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.errors) > 0 {
@@ -101,13 +103,15 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 
 		return &backend
 	})
+	ec2Endpoints := newEc2EndpointsCollection(commoncol, bcol)
 	return sdk.Plugin{
 		ContributesBackends: map[schema.GroupKind]sdk.BackendPlugin{
 			gk: {
 				BackendInit: ir.BackendInit{
 					InitEnvoyBackend: processBackendForEnvoy,
 				},
-				Backends: bcol,
+				Backends:  bcol,
+				Endpoints: ec2Endpoints.Endpoints,
 			},
 		},
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
@@ -119,6 +123,7 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 		ContributesLeaderAction: map[schema.GroupKind]func(){
 			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(cli, bcol),
 		},
+		ExtraHasSynced: ec2Endpoints.HasSynced,
 	}
 }
 
@@ -126,6 +131,7 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 // the plugin can use to build the envoy config.
 func buildTranslateFunc(
 	secrets *krtcollections.SecretIndex,
+	enableAwsEc2Discovery bool,
 ) func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
 	return func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
 		var beIr backendIr
@@ -143,55 +149,70 @@ func buildTranslateFunc(
 			}
 			beIr.dfpIr = dfpIr
 		case i.Spec.Aws != nil:
-			region := i.Spec.Aws.Region
-			invokeMode := getLambdaInvocationMode(i.Spec.Aws)
+			switch {
+			case i.Spec.Aws.Lambda != nil:
+				region := defaultAwsRegion(i.Spec.Aws.Region)
+				invokeMode := getLambdaInvocationMode(i.Spec.Aws)
 
-			lambdaArn, err := buildLambdaARN(i.Spec.Aws, region)
-			if err != nil {
-				beIr.errors = append(beIr.errors, err)
-			}
-
-			endpointConfig, err := configureLambdaEndpoint(i.Spec.Aws)
-			if err != nil {
-				beIr.errors = append(beIr.errors, err)
-			}
-
-			var lambdaTransportSocket *envoycorev3.TransportSocket
-			if endpointConfig.useTLS {
-				// TODO(yuval-k): Add verification context
-				typedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
-					Sni: endpointConfig.hostname,
-				})
+				lambdaArn, err := buildLambdaARN(i.Spec.Aws, region)
 				if err != nil {
 					beIr.errors = append(beIr.errors, err)
 				}
-				lambdaTransportSocket = &envoycorev3.TransportSocket{
-					Name: envoywellknown.TransportSocketTls,
-					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-						TypedConfig: typedConfig,
+
+				endpointConfig, err := configureLambdaEndpoint(i.Spec.Aws)
+				if err != nil {
+					beIr.errors = append(beIr.errors, err)
+				}
+
+				var lambdaTransportSocket *envoycorev3.TransportSocket
+				if endpointConfig.useTLS {
+					// TODO(yuval-k): Add verification context
+					typedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
+						Sni: endpointConfig.hostname,
+					})
+					if err != nil {
+						beIr.errors = append(beIr.errors, err)
+					}
+					lambdaTransportSocket = &envoycorev3.TransportSocket{
+						Name: envoywellknown.TransportSocketTls,
+						ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+							TypedConfig: typedConfig,
+						},
+					}
+				}
+
+				var secret *ir.Secret
+				if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret {
+					var err error
+					secret, err = secrets.GetSecretWithoutRefGrant(krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
+					if err != nil {
+						beIr.errors = append(beIr.errors, err)
+					}
+				}
+
+				lambdaFilters, err := buildLambdaFilters(
+					lambdaArn, region, secret, invokeMode, i.Spec.Aws.Lambda.PayloadTransformMode)
+				if err != nil {
+					beIr.errors = append(beIr.errors, err)
+				}
+
+				beIr.awsIr = &AwsIr{
+					lambdaIr: &LambdaIr{
+						lambdaEndpoint:        endpointConfig,
+						lambdaTransportSocket: lambdaTransportSocket,
+						lambdaFilters:         lambdaFilters,
 					},
 				}
-			}
-
-			var secret *ir.Secret
-			if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret {
-				var err error
-				secret, err = secrets.GetSecretWithoutRefGrant(krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
+			case i.Spec.Aws.Ec2 != nil:
+				if !enableAwsEc2Discovery {
+					beIr.errors = append(beIr.errors, errAwsEc2DiscoveryDisabled)
+					break
+				}
+				ec2Ir, err := buildEc2Ir(i.Spec.Aws)
 				if err != nil {
 					beIr.errors = append(beIr.errors, err)
 				}
-			}
-
-			lambdaFilters, err := buildLambdaFilters(
-				lambdaArn, region, secret, invokeMode, i.Spec.Aws.Lambda.PayloadTransformMode)
-			if err != nil {
-				beIr.errors = append(beIr.errors, err)
-			}
-
-			beIr.awsIr = &AwsIr{
-				lambdaEndpoint:        endpointConfig,
-				lambdaTransportSocket: lambdaTransportSocket,
-				lambdaFilters:         lambdaFilters,
+				beIr.awsIr = &AwsIr{ec2Ir: ec2Ir}
 			}
 		case i.Spec.Gcp != nil:
 			gcpIr, err := buildGcpIr(i.Spec.Gcp)
@@ -222,6 +243,9 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	case spec.Static != nil:
 		processStatic(beIr.staticIr, out)
 	case spec.Aws != nil:
+		if beIr.awsIr == nil {
+			return nil
+		}
 		if err := processAws(beIr.awsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
 			beIr.errors = append(beIr.errors, err)

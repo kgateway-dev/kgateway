@@ -222,6 +222,10 @@ type Settings struct {
 	// Controls if leader election is disabled. Defaults to false.
 	DisableLeaderElection bool `split_words:"true" default:"false"`
 
+	// EnableAwsEc2Discovery enables dynamic discovery of AWS EC2 instances for Backend resources.
+	// This is disabled by default and must be explicitly enabled by the controller operator.
+	EnableAwsEc2Discovery bool `split_words:"true" default:"false"`
+
 	PolicyMerge string `split_words:"true" default:"{}"`
 
 	// EnableWaypoint enables kgateway to translate istio waypoints

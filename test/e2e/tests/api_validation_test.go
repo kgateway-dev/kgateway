@@ -39,8 +39,8 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     lambda:
+      accountId: "000000000000"
       functionName: hello-function
       invocationMode: Async
   static:
@@ -60,12 +60,82 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     lambda:
+      accountId: "000000000000"
       functionName: hello-function
       qualifier: ""
 `,
 			wantErrors: []string{"spec.aws.lambda.qualifier in body should match "},
+		},
+		{
+			name: "Backend: AWS backend requires exactly one of lambda or ec2",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-aws-oneof
+spec:
+  type: AWS
+  aws:
+    lambda:
+      accountId: "000000000000"
+      functionName: hello-function
+    ec2:
+      port: 8080
+      addressType: PrivateIP
+`,
+			wantErrors: []string{`exactly one of the fields in \[lambda ec2\] must be set`},
+		},
+		{
+			name: "Backend: invalid EC2 address type",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-ec2-address-type
+spec:
+  type: AWS
+  aws:
+    ec2:
+      port: 8080
+      addressType: InternalIP
+`,
+			wantErrors: []string{"spec.aws.ec2.addressType in body should be one of"},
+		},
+		{
+			name: "Backend: invalid EC2 role ARN",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-ec2-role-arn
+spec:
+  type: AWS
+  aws:
+    ec2:
+      port: 8080
+      roleArn: not-an-arn
+`,
+			wantErrors: []string{"spec.aws.ec2.roleArn in body should match"},
+		},
+		{
+			name: "Backend: EC2 tag filter requires exactly one branch",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-ec2-tag-filter-oneof
+spec:
+  type: AWS
+  aws:
+    ec2:
+      filters:
+      - key: owner
+        keyValue:
+          key: app
+          value: payments
+`,
+			wantErrors: []string{`exactly one of the fields in \[key keyValue\] must be set`},
 		},
 		{
 			name: "BackendConfigPolicy: enforce AtMostOneOf for HTTP protocol options",

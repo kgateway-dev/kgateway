@@ -200,9 +200,9 @@ metadata:
 spec:
   type: aws
   aws:
-    accountId: "000000000000"
     region: us-west-2
     lambda:
+      accountId: "000000000000"
       functionName: my-lambda-function
       qualifier: prod
       invocationType: Sync
@@ -219,7 +219,6 @@ metadata:
 spec:
   type: aws
   aws:
-    accountId: "000000000000"
     region: us-west-2
     auth:
       type: secret
@@ -227,6 +226,7 @@ spec:
         name: aws-creds
         namespace: kgateway-system
     lambda:
+      accountId: "000000000000"
       functionName: my-lambda-function
       invocationType: Async
 ```
@@ -242,7 +242,6 @@ metadata:
 spec:
   type: aws
   aws:
-    accountId: "000000000000"
     region: us-east-1
     auth:
       type: secret
@@ -250,6 +249,7 @@ spec:
         name: localstack-creds
         namespace: kgateway-system
     lambda:
+      accountId: "000000000000"
       functionName: my-test-function
       endpointURL: "http://172.18.0.2:31566"
 ```
