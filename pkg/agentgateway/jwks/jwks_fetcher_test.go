@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/go-jose/go-jose/v4"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks/mocks"
 )
