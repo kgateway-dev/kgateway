@@ -34,6 +34,7 @@ Name|Version|License
 [stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.7.1|Apache License 2.0
+[go.uber.org/mock](https://go.uber.org/mock)|v0.6.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20250808145144-a408d31f581a|BSD 3-clause "New" or "Revised" License
 [x/net](https://golang.org/x/net)|v0.51.0|BSD 3-clause "New" or "Revised" License
