@@ -3,6 +3,7 @@ package ir
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"maps"
 	"slices"
 	"strings"
@@ -13,6 +14,8 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 )
+
+const delimiter = "/"
 
 var VirtualBuiltInGK = schema.GroupKind{
 	Group: "builtin",
@@ -47,7 +50,16 @@ type AttachedPolicyRef struct {
 }
 
 func (ref *AttachedPolicyRef) ID() string {
-	return ref.Group + "/" + ref.Kind + "/" + ref.Namespace + "/" + ref.Name
+	return ref.Group + delimiter + ref.Kind + delimiter + ref.Namespace + delimiter + ref.Name
+}
+
+// IDWithSectionName returns ID() with SectionName appended when set.
+func (ref *AttachedPolicyRef) IDWithSectionName() string {
+	id := ref.ID()
+	if ref.SectionName != "" {
+		id += delimiter + ref.SectionName
+	}
+	return id
 }
 
 type PolicyAtt struct {
@@ -97,12 +109,56 @@ func (c PolicyAtt) FormatErrors() string {
 	for i, err := range c.Errors {
 		errs[i] = err.Error()
 	}
+	return strings.Join(errs, "; ")
+}
 
-	errsStr := strings.Join(errs, "; ")
-	if c.MergeOrigins.IsSet() {
-		return "Merged policy: " + errsStr
+// PolicyError wraps a policy IR construction error to its source policy.
+type PolicyError struct {
+	// Ref is the source policy that produced Err. May be nil if the error
+	// originated from a synthesized PolicyAtt with no associated CR.
+	Ref *AttachedPolicyRef
+	Err error
+}
+
+func (p *PolicyError) Error() string {
+	if p == nil || p.Err == nil {
+		return ""
 	}
-	return errsStr
+	if p.Ref == nil {
+		return p.Err.Error()
+	}
+	return p.Ref.IDWithSectionName() + ": " + p.Err.Error()
+}
+
+func (p *PolicyError) Unwrap() error {
+	if p == nil {
+		return nil
+	}
+	return p.Err
+}
+
+// WrapPolicyErrors returns errs with each entry wrapped in *PolicyError keyed
+// to ref. Entries already wrapped (anywhere in their unwrap chain) are returned
+// unchanged so the call is idempotent — safe to invoke at every site that
+// copies a PolicyAtt's Errors into another error bag, even if an earlier site
+// has already wrapped them.
+func WrapPolicyErrors(ref *AttachedPolicyRef, errs []error) []error {
+	if len(errs) == 0 {
+		return nil
+	}
+	out := make([]error, 0, len(errs))
+	for _, e := range errs {
+		if e == nil {
+			continue
+		}
+		var pe *PolicyError
+		if errors.As(e, &pe) {
+			out = append(out, e)
+			continue
+		}
+		out = append(out, &PolicyError{Ref: ref, Err: e})
+	}
+	return out
 }
 
 type PolicyAttachmentOpts func(*PolicyAtt)

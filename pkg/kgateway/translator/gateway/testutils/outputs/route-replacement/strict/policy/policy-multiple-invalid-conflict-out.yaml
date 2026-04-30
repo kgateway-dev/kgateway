@@ -16,7 +16,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8080
+      portValue: 80
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -32,18 +32,18 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~8080
+          routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: true
-    name: listener~8080
-  name: listener~8080
+    name: listener~80
+  name: listener~80
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~8080
+  name: listener~80
   virtualHosts:
   - domains:
-    - www.example.com
-    name: listener~8080~www_example_com
+    - '*'
+    name: listener~80~*
     routes:
     - directResponse:
         body:
@@ -52,7 +52,7 @@ Routes:
         status: 500
       match:
         prefix: /
-      name: listener~8080~www_example_com-route-0-httproute-invalid-traffic-policy-route-gwtest-0-0-matcher-0
+      name: listener~80~*-route-0-httproute-conflict-route-gwtest-0-0-matcher-0
 Statuses:
   gateways:
     gwtest/example-gateway:
@@ -102,14 +102,14 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
-    gwtest/invalid-traffic-policy-route:
+    gwtest/conflict-route:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-traffic-policy:
-            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to create pre-route filter config: Failed to initialize per-route
-            dynamic module'
+          message: |-
+            Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-extauth-policy: extauth: gateway extension gwtest/nonexistent-extauth-extension not found
+            gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-extproc-policy: extproc: gateway extension gwtest/nonexistent-extproc-extension not found
+            gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-ratelimit-policy: ratelimit: gateway extension gwtest/nonexistent-ratelimit-extension not found
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
@@ -124,7 +124,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    TrafficPolicy/gwtest/invalid-traffic-policy:
+    TrafficPolicy/gwtest/invalid-extauth-policy:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
@@ -133,9 +133,48 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to create pre-route filter config: Failed to initialize per-route
-            dynamic module'
+          message: 'extauth: gateway extension gwtest/nonexistent-extauth-extension
+            not found'
+          reason: Invalid
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: ""
+          reason: Pending
+          status: "False"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/gwtest/invalid-extproc-policy:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: gwtest
+        conditions:
+        - lastTransitionTime: null
+          message: 'extproc: gateway extension gwtest/nonexistent-extproc-extension
+            not found'
+          reason: Invalid
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: ""
+          reason: Pending
+          status: "False"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/gwtest/invalid-ratelimit-policy:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: gwtest
+        conditions:
+        - lastTransitionTime: null
+          message: 'ratelimit: gateway extension gwtest/nonexistent-ratelimit-extension
+            not found'
           reason: Invalid
           status: "False"
           type: Accepted

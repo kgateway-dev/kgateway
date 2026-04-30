@@ -2914,13 +2914,12 @@ func TestValidation(t *testing.T) {
 			inputFile: "policy-csrf-regex-invalid.yaml",
 			minMode:   apisettings.ValidationStrict,
 		},
-		// TODO(tim): Uncomment this test once #11995 is fixed.
-		// {
-		// 	name:      "Multiple Invalid Policies Conflict",
-		// 	category:  "policy",
-		// 	inputFile: "policy-multiple-invalid-conflict.yaml",
-		// 	minMode:   apisettings.ValidationStandard,
-		// },
+		{
+			name:      "Multiple Invalid Policies Conflict",
+			category:  "policy",
+			inputFile: "policy-multiple-invalid-conflict.yaml",
+			minMode:   apisettings.ValidationStandard,
+		},
 		{
 			name:      "ExtAuth Extension Ref Invalid",
 			category:  "policy",

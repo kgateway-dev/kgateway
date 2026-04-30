@@ -106,8 +106,8 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): extauth: gateway extension gwtest/non-existent-auth-extension
-            not found'
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-extauth-policy:
+            extauth: gateway extension gwtest/non-existent-auth-extension not found'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

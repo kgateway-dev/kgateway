@@ -393,7 +393,8 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: gateway extension gwtest/missing-extauth not found'
+          message: 'gateway.kgateway.dev/TrafficPolicy/gwtest/xlistenerset-wide-invalid-policy:
+            extauth: gateway extension gwtest/missing-extauth not found'
           reason: ListenerReplaced
           status: "False"
           type: Accepted

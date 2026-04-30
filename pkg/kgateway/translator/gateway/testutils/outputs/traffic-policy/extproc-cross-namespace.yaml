@@ -205,8 +205,8 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): extproc: failed to resolve ExtProc backend:
-            missing reference grant'
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/denied-policy:
+            extproc: failed to resolve ExtProc backend: missing reference grant'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

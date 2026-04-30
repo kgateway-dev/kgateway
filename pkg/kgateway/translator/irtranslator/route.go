@@ -89,7 +89,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.routeConfigName, pols...)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
-				errs = append(errs, pol.Errors...)
+				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
 				continue
 			}
 			pass.ApplyRouteConfigPlugin(&ir.RouteConfigContext{
@@ -291,8 +291,8 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		routeReport.SetCondition(reportssdk.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleDroppedReason),
-			Message: fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
+			Reason:  reportssdk.RouteRuleDroppedReason,
+			Message: fmt.Sprintf("Dropped Rule (%d): %s", in.MatchIndex, formatRuleStatusError(routeAcceptanceErr)),
 		})
 		return nil
 	}
@@ -306,8 +306,8 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			routeReport.SetCondition(reportssdk.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleReplacedReason),
-				Message: fmt.Sprintf("Replaced Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
+				Reason:  reportssdk.RouteRuleReplacedReason,
+				Message: fmt.Sprintf("Replaced Rule (%d): %s", in.MatchIndex, formatRuleStatusError(routeAcceptanceErr)),
 			})
 		}
 
@@ -356,7 +356,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
-				errs = append(errs, pol.Errors...)
+				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
 				continue
 			}
 			pctx := &ir.VirtualHostContext{
@@ -428,7 +428,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			// skip plugin application if we encountered any errors while constructing
 			// the policy IR.
 			if len(pol.Errors) > 0 {
-				errs = append(errs, pol.Errors...)
+				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
 				continue
 			}
 
@@ -756,5 +756,92 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoyroutev3.QueryParam
 		}
 		out = append(out, envoyMatch)
 	}
+	return out
+}
+
+// formatRuleStatusError renders a deterministic, deduped summary of err for a
+// route status condition message. The error value passed in is unchanged so
+// callers can still use errors.Is/As against it for replacement decisions.
+//
+//   - Walks errors.Join trees down to leaves so individual *PolicyError entries
+//     surface with attribution.
+//   - Dedupes on (PolicyRef.ID, message) so duplicates from extensionRefs +
+//     targetRefs of the same policy collapse to one line.
+//   - Sorts by (PolicyRef.ID, message) for deterministic status output, which
+//     reduces unnecessary status patches when KRT events fire in different orders.
+func formatRuleStatusError(err error) string {
+	if err == nil {
+		return ""
+	}
+	flatErrs := flattenJoinedErr(err)
+
+	type key struct{ refID, msg string }
+	seen := make(map[key]struct{}, len(flatErrs))
+	type item struct {
+		refID, msg, rendered string
+	}
+	items := make([]item, 0, len(flatErrs))
+
+	for _, flatErr := range flatErrs {
+		var refID, msg string
+		var pe *ir.PolicyError
+		if errors.As(flatErr, &pe) {
+			if pe.Ref != nil {
+				refID = pe.Ref.IDWithSectionName()
+			}
+			if pe.Err != nil {
+				msg = pe.Err.Error()
+			}
+		} else {
+			msg = flatErr.Error()
+		}
+		k := key{refID, msg}
+		if _, dup := seen[k]; dup {
+			continue
+		}
+		seen[k] = struct{}{}
+		items = append(items, item{
+			refID:    refID,
+			msg:      msg,
+			rendered: flatErr.Error(),
+		})
+	}
+	slices.SortFunc(items, func(a, b item) int {
+		if c := strings.Compare(a.refID, b.refID); c != 0 {
+			return c
+		}
+		return strings.Compare(a.msg, b.msg)
+	})
+
+	var b strings.Builder
+	for i, it := range items {
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString(it.rendered)
+	}
+	return b.String()
+}
+
+// flattenJoinedErr walks nested errors.Join trees down to leaf errors. errors.Join
+// returns a value that implements interface{ Unwrap() []error }; we recurse
+// through any such node.
+func flattenJoinedErr(err error) []error {
+	type unwrapMulti interface{ Unwrap() []error }
+	var out []error
+	var walk func(error)
+	walk = func(e error) {
+		if e == nil {
+			return
+		}
+		if u, ok := e.(unwrapMulti); ok {
+			for _, child := range u.Unwrap() {
+				walk(child)
+			}
+			return
+		}
+		out = append(out, e)
+	}
+	walk(err)
 	return out
 }

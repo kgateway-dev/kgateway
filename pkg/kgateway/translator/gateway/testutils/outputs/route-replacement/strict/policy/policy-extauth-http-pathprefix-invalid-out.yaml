@@ -115,8 +115,9 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): invalid xds configuration: error initializing
-            configuration ''/dev/fd/0'': path_prefix should start with "/".'
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/oauth2-auth-policy:
+            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            path_prefix should start with "/".'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

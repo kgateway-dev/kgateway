@@ -98,8 +98,8 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: |-
-            Replaced Rule (0): no action specified
-            gateway.kgateway.dev/DirectResponse/default/non-existent-ref: policy not found
+            Replaced Rule (0): gateway.kgateway.dev/DirectResponse/default/non-existent-ref: policy not found
+            no action specified
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
