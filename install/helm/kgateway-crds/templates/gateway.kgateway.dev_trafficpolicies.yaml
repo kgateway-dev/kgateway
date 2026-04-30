@@ -1157,8 +1157,9 @@ spec:
                                   type: string
                                 namespace:
                                   description: |-
-                                    Namespace is the namespace of the Secret. Cross-namespace references require a ReferenceGrant
-                                    in the target namespace permitting access from the policy's namespace.
+                                    Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                    referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                    namespace permitting access from the policy's namespace.
                                   maxLength: 63
                                   minLength: 1
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
@@ -1166,11 +1167,12 @@ spec:
                               required:
                               - key
                               - name
-                              - namespace
                               type: object
                             value:
                               description: Value is an inline string value for the
                                 header. Mutually exclusive with secretRef.
+                              maxLength: 4096
+                              minLength: 1
                               type: string
                           type: object
                           x-kubernetes-validations:
@@ -1227,8 +1229,9 @@ spec:
                                   type: string
                                 namespace:
                                   description: |-
-                                    Namespace is the namespace of the Secret. Cross-namespace references require a ReferenceGrant
-                                    in the target namespace permitting access from the policy's namespace.
+                                    Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                    referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                    namespace permitting access from the policy's namespace.
                                   maxLength: 63
                                   minLength: 1
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
@@ -1236,11 +1239,12 @@ spec:
                               required:
                               - key
                               - name
-                              - namespace
                               type: object
                             value:
                               description: Value is an inline string value for the
                                 header. Mutually exclusive with secretRef.
+                              maxLength: 4096
+                              minLength: 1
                               type: string
                           type: object
                           x-kubernetes-validations:
@@ -1298,8 +1302,9 @@ spec:
                                   type: string
                                 namespace:
                                   description: |-
-                                    Namespace is the namespace of the Secret. Cross-namespace references require a ReferenceGrant
-                                    in the target namespace permitting access from the policy's namespace.
+                                    Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                    referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                    namespace permitting access from the policy's namespace.
                                   maxLength: 63
                                   minLength: 1
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
@@ -1307,11 +1312,12 @@ spec:
                               required:
                               - key
                               - name
-                              - namespace
                               type: object
                             value:
                               description: Value is an inline string value for the
                                 header. Mutually exclusive with secretRef.
+                              maxLength: 4096
+                              minLength: 1
                               type: string
                           type: object
                           x-kubernetes-validations:
@@ -1368,8 +1374,9 @@ spec:
                                   type: string
                                 namespace:
                                   description: |-
-                                    Namespace is the namespace of the Secret. Cross-namespace references require a ReferenceGrant
-                                    in the target namespace permitting access from the policy's namespace.
+                                    Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                    referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                    namespace permitting access from the policy's namespace.
                                   maxLength: 63
                                   minLength: 1
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
@@ -1377,11 +1384,12 @@ spec:
                               required:
                               - key
                               - name
-                              - namespace
                               type: object
                             value:
                               description: Value is an inline string value for the
                                 header. Mutually exclusive with secretRef.
+                              maxLength: 4096
+                              minLength: 1
                               type: string
                           type: object
                           x-kubernetes-validations:

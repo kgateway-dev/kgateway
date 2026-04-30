@@ -182,8 +182,13 @@ type HeaderModifiers struct {
 	Response *HTTPHeaderFilter `json:"response,omitempty"`
 }
 
-// HTTPHeaderFilter defines header mutation rules, supporting both inline string values and
-// Kubernetes Secret-backed values.
+// HTTPHeaderFilter defines a filter that modifies the headers of an HTTP request or response.
+// Only one action for a given header name is permitted. Filters specifying multiple actions of
+// the same or different type for any one header name are invalid and will be rejected by CRD
+// validation. Configuration to set or add multiple values for a header must use RFC 7230 header
+// value formatting, separating each value with a comma.
+// Unlike the Gateway API HTTPHeaderFilter, each entry also supports sourcing the value from a
+// Kubernetes Secret via secretRef.
 // +kubebuilder:validation:AtLeastOneOf=set;add;remove
 type HTTPHeaderFilter struct {
 	// Set overwrites the request with the given header (name, value) before the action.
@@ -217,6 +222,8 @@ type HTTPHeader struct {
 
 	// Value is an inline string value for the header. Mutually exclusive with secretRef.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=4096
 	Value *string `json:"value,omitempty"`
 
 	// SecretRef sources the header value from a key in a Kubernetes Secret.
@@ -237,10 +244,11 @@ type SecretKeyRef struct {
 	// +kubebuilder:validation:MaxLength=253
 	Key string `json:"key"`
 
-	// Namespace is the namespace of the Secret. Cross-namespace references require a ReferenceGrant
-	// in the target namespace permitting access from the policy's namespace.
-	// +required
-	Namespace gwv1.Namespace `json:"namespace"`
+	// Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+	// referencing policy. Cross-namespace references require a ReferenceGrant in the target
+	// namespace permitting access from the policy's namespace.
+	// +optional
+	Namespace *gwv1.Namespace `json:"namespace,omitempty"`
 }
 
 // CIDR can be used wherever an address range in CIDR notation is expected.

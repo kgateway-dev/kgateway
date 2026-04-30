@@ -103,20 +103,22 @@ func buildHTTPHeaderFilterMutations(
 
 	var mutations []*mutation_rulesv3.HeaderMutation
 
-	for _, h := range filter.Set {
-		value, headerName, err := resolveHeader(krtctx, from, secrets, h)
-		if err != nil {
-			return nil, err
+	appendMutations := func(headers []sharedv1alpha1.HTTPHeader, action envoycorev3.HeaderValueOption_HeaderAppendAction) error {
+		for _, h := range headers {
+			value, headerName, err := resolveHeader(krtctx, from, secrets, h)
+			if err != nil {
+				return err
+			}
+			mutations = append(mutations, headerMutation(headerName, value, action))
 		}
-		mutations = append(mutations, headerMutation(headerName, value, envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD))
+		return nil
 	}
 
-	for _, h := range filter.Add {
-		value, headerName, err := resolveHeader(krtctx, from, secrets, h)
-		if err != nil {
-			return nil, err
-		}
-		mutations = append(mutations, headerMutation(headerName, value, envoycorev3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD))
+	if err := appendMutations(filter.Set, envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD); err != nil {
+		return nil, err
+	}
+	if err := appendMutations(filter.Add, envoycorev3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD); err != nil {
+		return nil, err
 	}
 
 	for _, name := range filter.Remove {
@@ -142,7 +144,10 @@ func resolveHeader(
 	}
 
 	ref := h.SecretRef
-	ns := gwv1.Namespace(ref.Namespace)
+	ns := gwv1.Namespace(from.Namespace)
+	if ref.Namespace != nil {
+		ns = *ref.Namespace
+	}
 	secretRef := gwv1.SecretObjectReference{
 		Name:      ref.Name,
 		Namespace: &ns,
