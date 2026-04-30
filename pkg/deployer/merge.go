@@ -612,27 +612,38 @@ func DeepMergeImage(dst, src *kgateway.Image) *kgateway.Image {
 	}
 
 	if dst == nil {
-		return src
+		dst = src
+	} else {
+		if src.GetRegistry() != nil {
+			dst.Registry = src.GetRegistry()
+		}
+
+		if src.GetRepository() != nil {
+			dst.Repository = src.GetRepository()
+		}
+
+		if src.GetTag() != nil {
+			dst.Tag = src.GetTag()
+		}
+
+		if src.GetDigest() != nil {
+			dst.Digest = src.GetDigest()
+		}
+
+		if src.GetPullPolicy() != nil {
+			dst.PullPolicy = src.GetPullPolicy()
+		}
 	}
 
-	if src.GetRegistry() != nil {
-		dst.Registry = src.GetRegistry()
-	}
-
-	if src.GetRepository() != nil {
-		dst.Repository = src.GetRepository()
-	}
-
-	if src.GetTag() != nil {
-		dst.Tag = src.GetTag()
-	}
-
-	if src.GetDigest() != nil {
-		dst.Digest = src.GetDigest()
-	}
-
-	if src.GetPullPolicy() != nil {
-		dst.PullPolicy = src.GetPullPolicy()
+	// Pinning by digest in src clears any inherited tag from dst. If the
+	// user pins to a digest without specifying a tag, we treat that as an
+	// explicit choice to drop the default tag — the resulting image
+	// reference is `repo@digest`. We set the tag to an empty (but non-nil)
+	// string so that the value overrides the Helm chart's `values.yaml`
+	// default tag during chart rendering.
+	if src.GetDigest() != nil && src.GetTag() == nil {
+		empty := ""
+		dst.Tag = &empty
 	}
 
 	return dst

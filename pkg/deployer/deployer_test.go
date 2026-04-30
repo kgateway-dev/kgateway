@@ -1556,18 +1556,23 @@ var _ = Describe("Deployer", func() {
 
 				Expect(actualImageString).To(HavePrefix(expectedImageRegAndRepo))
 				expectedTagPtr := apiImage.Tag
+				expectedDigestValue := ptr.Deref(apiImage.Digest, "")
 				expectedTagValue := ptr.Deref(expectedTagPtr, "")
-				if expectedTagPtr == nil {
-					// deepMergeImage indeed does a deep merge
+				if expectedTagPtr == nil && expectedDigestValue == "" {
+					// deepMergeImage indeed does a deep merge: if no tag was
+					// specified and no digest was specified, the default tag
+					// is inherited from the parent.
 					Expect(defaultTagValue).NotTo(BeEmpty())
 					expectedTagValue = defaultTagValue
 				}
+				// When a digest is specified without a tag, the digest erases
+				// the inherited default tag — the rendered image is
+				// `repo@digest` with no `:tag`.
 				if expectedTagValue != "" {
 					Expect(actualImageString).To(ContainSubstring(":" + expectedTagValue))
 				} else {
 					Expect(actualImageString).ToNot(ContainSubstring(":"))
 				}
-				expectedDigestValue := ptr.Deref(apiImage.Digest, "")
 				if expectedDigestValue != "" {
 					Expect(actualImageString).To(HaveSuffix("@" + expectedDigestValue))
 				}
