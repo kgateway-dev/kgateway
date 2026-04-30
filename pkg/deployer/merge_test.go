@@ -487,105 +487,105 @@ func TestDeepMergeImage(t *testing.T) {
 		{
 			name: "non-empty digest with no tag in src clears inherited tag",
 			dst: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Tag:        ptr.To("v1.0.0"),
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
 			},
 			src: &kgateway.Image{
-				Digest: ptr.To("sha256:abc"),
+				Digest: new("sha256:abc"),
 			},
 			want: &kgateway.Image{
-				Repository: ptr.To("repo"),
+				Repository: new("repo"),
 				Tag:        &emptyStr,
-				Digest:     ptr.To("sha256:abc"),
+				Digest:     new("sha256:abc"),
 			},
 		},
 		{
 			name: "non-empty tag with no digest in src clears inherited digest",
 			dst: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Digest:     ptr.To("sha256:def"),
+				Repository: new("repo"),
+				Digest:     new("sha256:def"),
 			},
 			src: &kgateway.Image{
-				Tag: ptr.To("v2.0.0"),
+				Tag: new("v2.0.0"),
 			},
 			want: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Tag:        ptr.To("v2.0.0"),
+				Repository: new("repo"),
+				Tag:        new("v2.0.0"),
 				Digest:     &emptyStr,
 			},
 		},
 		{
 			name: "non-empty tag and digest in src keep both",
 			dst: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Tag:        ptr.To("v1.0.0"),
-				Digest:     ptr.To("sha256:def"),
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     new("sha256:def"),
 			},
 			src: &kgateway.Image{
-				Tag:    ptr.To("v2.0.0"),
-				Digest: ptr.To("sha256:abc"),
+				Tag:    new("v2.0.0"),
+				Digest: new("sha256:abc"),
 			},
 			want: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Tag:        ptr.To("v2.0.0"),
-				Digest:     ptr.To("sha256:abc"),
+				Repository: new("repo"),
+				Tag:        new("v2.0.0"),
+				Digest:     new("sha256:abc"),
 			},
 		},
 		{
 			name: "empty-string digest in src is an explicit clear and does not clobber inherited tag",
 			dst: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Tag:        ptr.To("v1.0.0"),
-				Digest:     ptr.To("sha256:def"),
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     new("sha256:def"),
 			},
 			src: &kgateway.Image{
 				Digest: &emptyStr,
 			},
 			want: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Tag:        ptr.To("v1.0.0"),
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
 				Digest:     &emptyStr,
 			},
 		},
 		{
 			name: "empty-string tag in src is an explicit clear and does not clobber inherited digest",
 			dst: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Tag:        ptr.To("v1.0.0"),
-				Digest:     ptr.To("sha256:def"),
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     new("sha256:def"),
 			},
 			src: &kgateway.Image{
 				Tag: &emptyStr,
 			},
 			want: &kgateway.Image{
-				Repository: ptr.To("repo"),
+				Repository: new("repo"),
 				Tag:        &emptyStr,
-				Digest:     ptr.To("sha256:def"),
+				Digest:     new("sha256:def"),
 			},
 		},
 		{
 			name: "nil src returns dst unchanged",
 			dst: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Tag:        ptr.To("v1.0.0"),
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
 			},
 			src: nil,
 			want: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Tag:        ptr.To("v1.0.0"),
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
 			},
 		},
 		{
 			name: "nil dst with digest-only src yields a tag-cleared result without mutating src",
 			dst:  nil,
 			src: &kgateway.Image{
-				Repository: ptr.To("repo"),
-				Digest:     ptr.To("sha256:abc"),
+				Repository: new("repo"),
+				Digest:     new("sha256:abc"),
 			},
 			want: &kgateway.Image{
-				Repository: ptr.To("repo"),
+				Repository: new("repo"),
 				Tag:        &emptyStr,
-				Digest:     ptr.To("sha256:abc"),
+				Digest:     new("sha256:abc"),
 			},
 		},
 	}
