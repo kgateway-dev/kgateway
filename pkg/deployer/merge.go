@@ -640,8 +640,10 @@ func DeepMergeImage(dst, src *kgateway.Image) *kgateway.Image {
 	// explicit choice to drop the default tag — the resulting image
 	// reference is `repo@digest`. We set the tag to an empty (but non-nil)
 	// string so that the value overrides the Helm chart's `values.yaml`
-	// default tag during chart rendering.
-	if src.GetDigest() != nil && src.GetTag() == nil {
+	// default tag during chart rendering. We require a non-empty digest
+	// so that an explicit empty-string digest (e.g. to clear an inherited
+	// digest) does not also clobber the inherited tag.
+	if d := src.GetDigest(); d != nil && *d != "" && src.GetTag() == nil {
 		empty := ""
 		dst.Tag = &empty
 	}
