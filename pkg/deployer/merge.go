@@ -612,7 +612,8 @@ func DeepMergeImage(dst, src *kgateway.Image) *kgateway.Image {
 	}
 
 	if dst == nil {
-		dst = src
+		cp := *src
+		dst = &cp
 	} else {
 		if src.GetRegistry() != nil {
 			dst.Registry = src.GetRegistry()
