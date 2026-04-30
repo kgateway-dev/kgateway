@@ -100,6 +100,21 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "base-gateway",
 		},
 		{
+			// Pinning the envoy image by digest without specifying a tag must
+			// drop the inherited default tag. The rendered image is
+			// `repo@digest`, not `repo:tag@digest`.
+			Name:      "envoy image pinned by digest erases inherited default tag",
+			InputFile: "envoy-image-digest-erases-tag",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				digest := "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+				assert.Contains(t, outputYaml, "image: ghcr.io/envoy-wrapper@"+digest,
+					"envoy image should render as repo@digest with no tag")
+				assert.NotContains(t, outputYaml, "envoy-wrapper:v2.1.0-dev@",
+					"the inherited default tag must not appear when the user pins by digest only")
+			},
+		},
+		{
 			Name:      "gateway with replicas GWP via GWC",
 			InputFile: "gwc-with-replicas",
 		},
