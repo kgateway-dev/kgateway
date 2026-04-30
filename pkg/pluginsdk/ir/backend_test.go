@@ -1,9 +1,11 @@
 package ir
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -127,6 +129,30 @@ func TestBackendObjectIREquals(t *testing.T) {
 			backend2: func() BackendObjectIR { return createTestBackendObjectIR(wellknown.TrafficDistributionPreferNetwork) },
 			want:     true,
 		},
+		{
+			name: "backends with different gateway backend client certificates should not be equal",
+			backend1: func() BackendObjectIR {
+				backend := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+				backend.GatewayBackendClientCertificate = &GatewayBackendClientCertificateIR{
+					Certificate: TLSCertificate{
+						CertChain:  []byte("cert-a"),
+						PrivateKey: []byte("key-a"),
+					},
+				}
+				return backend
+			},
+			backend2: func() BackendObjectIR {
+				backend := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+				backend.GatewayBackendClientCertificate = &GatewayBackendClientCertificateIR{
+					Certificate: TLSCertificate{
+						CertChain:  []byte("cert-b"),
+						PrivateKey: []byte("key-b"),
+					},
+				}
+				return backend
+			},
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -173,4 +199,20 @@ func TestBackendObjectIRClusterName(t *testing.T) {
 
 		assert.Equal(t, base.ClusterName(), withPolicy.ClusterName())
 	})
+}
+
+func TestGatewayBackendClientCertificateIRMarshalJSONRedactsCertificate(t *testing.T) {
+	clientCertificate := GatewayBackendClientCertificateIR{
+		Certificate: TLSCertificate{
+			CertChain:  []byte("gateway-cert"),
+			PrivateKey: []byte("gateway-key"),
+		},
+	}
+
+	marshaled, err := json.Marshal(clientCertificate)
+	require.NoError(t, err)
+
+	assert.JSONEq(t, `{"certificate":"[REDACTED]"}`, string(marshaled))
+	assert.NotContains(t, string(marshaled), "gateway-cert")
+	assert.NotContains(t, string(marshaled), "gateway-key")
 }

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -652,7 +653,7 @@ func translateMatcher(matcher gwv1.HTTPRouteMatch) *envoyroutev3.RouteMatch {
 
 var separatedPathRegex = regexp.MustCompile("^[^?#]+[^?#/]$")
 
-func isValidPathSparated(path string) bool {
+func isValidPathSeparated(path string) bool {
 	// see envoy docs:
 	//	Expect the value to not contain "?" or "#" and not to end in "/"
 	return separatedPathRegex.MatchString(path)
@@ -662,7 +663,11 @@ func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *envoyroutev3.RouteMatch
 	pathType, pathValue := routeutils.ParsePath(match.Path)
 	switch pathType {
 	case gwv1.PathMatchPathPrefix:
-		if !isValidPathSparated(pathValue) {
+		if len(pathValue) > 1 {
+			// per Gateway API spec, a trailing slash on a PathPrefix value is ignored.
+			pathValue = strings.TrimSuffix(pathValue, "/")
+		}
+		if !isValidPathSeparated(pathValue) {
 			out.PathSpecifier = &envoyroutev3.RouteMatch_Prefix{
 				Prefix: pathValue,
 			}

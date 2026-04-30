@@ -163,7 +163,7 @@ func (h *RoutesIndex) convertGRPCBackendsToHTTP(kctx krt.HandlerContext, src ir.
 	httpBackends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
 	for _, ref := range backendRefs {
 		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
-		clusterName := "blackhole-cluster"
+		clusterName := wellknown.BlackholeClusterName
 		if backend != nil {
 			clusterName = backend.ClusterName()
 		} else if err == nil {

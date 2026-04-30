@@ -26,6 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,7 +41,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/gatewaytls"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
@@ -674,6 +677,14 @@ func (tc TestCase) Run(
 		}
 		// add a creation timestamp to each object to ensure consistent application of policy
 		for _, obj := range objs {
+			if secret, ok := obj.(*corev1.Secret); ok && len(secret.StringData) > 0 {
+				if secret.Data == nil {
+					secret.Data = make(map[string][]byte, len(secret.StringData))
+				}
+				for key, value := range secret.StringData {
+					secret.Data[key] = []byte(value)
+				}
+			}
 			fakeNow = fakeNow.Add(time.Second)
 			obj.SetCreationTimestamp(metav1.NewTime(fakeNow))
 		}
@@ -787,6 +798,7 @@ func (tc TestCase) Run(
 	}
 
 	results := make(map[types.NamespacedName]ActualTestResult)
+	queries := query.NewData(commoncol)
 
 	// Build a map of all gateways by NamespacedName for status building
 	gatewayMap := make(map[types.NamespacedName]*gwv1.Gateway)
@@ -845,6 +857,7 @@ func (tc TestCase) Run(
 		t := translator.GetBackendTranslator()
 		ucc := ir.NewUniqlyConnectedClient("test", "test", nil, ir.PodLocality{})
 		var clusters []*envoyclusterv3.Cluster
+		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
 				cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
@@ -855,6 +868,24 @@ func (tc TestCase) Run(
 				}
 				if cluster != nil {
 					clusters = append(clusters, cluster)
+				}
+			}
+		}
+		if clientCertificate, err := gatewaytls.ResolveForGateway(krt.TestingDummyContext{}, ctx, queries, &gw); err == nil && clientCertificate != nil {
+			for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
+				for _, backend := range col.List() {
+					clone := backend.CloneForGatewayBackendClientCertificate(gw.ObjectSource, clientCertificate)
+					if _, ok := referencedClusters[clone.ClusterName()]; !ok {
+						continue
+					}
+
+					cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, &clone)
+					if err != nil {
+						continue
+					}
+					if cluster != nil {
+						clusters = append(clusters, cluster)
+					}
 				}
 			}
 		}
@@ -877,4 +908,36 @@ func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error)
 		return nil, fmt.Errorf("parsing proxy from file: %w", err)
 	}
 	return &proxy, nil
+}
+
+func extractRouteConfigurationClusterNames(routeConfigs []*envoyroutev3.RouteConfiguration) map[string]struct{} {
+	clusterNames := make(map[string]struct{})
+	for _, routeConfig := range routeConfigs {
+		for _, virtualHost := range routeConfig.GetVirtualHosts() {
+			for _, route := range virtualHost.GetRoutes() {
+				switch action := route.GetAction().(type) {
+				case *envoyroutev3.Route_Route:
+					if action.Route == nil {
+						continue
+					}
+					switch clusterSpecifier := action.Route.GetClusterSpecifier().(type) {
+					case *envoyroutev3.RouteAction_Cluster:
+						if clusterSpecifier.Cluster != "" {
+							clusterNames[clusterSpecifier.Cluster] = struct{}{}
+						}
+					case *envoyroutev3.RouteAction_WeightedClusters:
+						if clusterSpecifier.WeightedClusters == nil {
+							continue
+						}
+						for _, weightedCluster := range clusterSpecifier.WeightedClusters.GetClusters() {
+							if weightedCluster.GetName() != "" {
+								clusterNames[weightedCluster.GetName()] = struct{}{}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return clusterNames
 }

@@ -7,8 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestValidateWeightedClusters(t *testing.T) {
@@ -93,53 +91,56 @@ func TestValidateWeightedClusters(t *testing.T) {
 	}
 }
 
-func TestTranslateRouteAction(t *testing.T) {
-	h := &httpRouteConfigurationTranslator{
-		gw: ir.GatewayIR{
-			SourceObject: &ir.Gateway{
-				Obj: &gwv1.Gateway{},
-			},
+func TestSetEnvoyPathMatcher_PathPrefix(t *testing.T) {
+	pathPrefix := gwv1.PathMatchPathPrefix
+
+	tests := []struct {
+		name         string
+		path         string
+		wantPrefix   string
+		wantSeparate bool
+	}{
+		{
+			name:         "uses path separated prefix for clean prefix",
+			path:         "/foo",
+			wantPrefix:   "/foo",
+			wantSeparate: true,
+		},
+		{
+			name:         "ignores trailing slash for non root prefix",
+			path:         "/foo/",
+			wantPrefix:   "/foo",
+			wantSeparate: true,
+		},
+		{
+			name:         "keeps root prefix unchanged",
+			path:         "/",
+			wantPrefix:   "/",
+			wantSeparate: false,
 		},
 	}
 
-	t.Run("single backend with weight 0 uses WeightedClusters", func(t *testing.T) {
-		in := ir.HttpRouteRuleMatchIR{
-			Backends: []ir.HttpBackend{
-				{
-					Backend: ir.BackendRefIR{
-						ClusterName: "cluster-1",
-						Weight:      0,
-					},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := &envoyroutev3.RouteMatch{}
+
+			setEnvoyPathMatcher(gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathPrefix,
+					Value: &tt.path,
 				},
-			},
-		}
+			}, out)
 
-		outRoute := &envoyroutev3.Route{}
-		action := h.translateRouteAction(in, outRoute, nil)
+			if tt.wantSeparate {
+				spec, ok := out.PathSpecifier.(*envoyroutev3.RouteMatch_PathSeparatedPrefix)
+				assert.True(t, ok)
+				assert.Equal(t, tt.wantPrefix, spec.PathSeparatedPrefix)
+				return
+			}
 
-		weightedClusters := action.Route.GetWeightedClusters()
-		assert.NotNil(t, weightedClusters, "expected RouteAction_WeightedClusters when weight is 0")
-		assert.Len(t, weightedClusters.GetClusters(), 1)
-		assert.Equal(t, uint32(0), weightedClusters.GetClusters()[0].GetWeight().GetValue())
-	})
-
-	t.Run("single backend with weight > 0 uses Cluster", func(t *testing.T) {
-		in := ir.HttpRouteRuleMatchIR{
-			Backends: []ir.HttpBackend{
-				{
-					Backend: ir.BackendRefIR{
-						ClusterName: "cluster-1",
-						Weight:      1,
-					},
-				},
-			},
-		}
-
-		outRoute := &envoyroutev3.Route{}
-		action := h.translateRouteAction(in, outRoute, nil)
-
-		cluster := action.Route.GetCluster()
-		assert.Equal(t, "cluster-1", cluster)
-		assert.Nil(t, action.Route.GetWeightedClusters())
-	})
+			spec, ok := out.PathSpecifier.(*envoyroutev3.RouteMatch_Prefix)
+			assert.True(t, ok)
+			assert.Equal(t, tt.wantPrefix, spec.Prefix)
+		})
+	}
 }

@@ -2,12 +2,23 @@ package gateway_test
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	// Register the UuidRequestIdConfig proto type so that it can be unmarshaled from Any in tests
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/request_id/uuid/v3"
@@ -1144,6 +1155,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backendtlspolicy/conflict-resolution.yaml",
 			outputFile: "backendtlspolicy/conflict-resolution.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend TLS Policy with Gateway backend client certificate", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendtlspolicy/gateway-client-certificate.yaml",
+			outputFile: "backendtlspolicy/gateway-client-certificate.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2657,6 +2679,146 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+}
+
+func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T) {
+	ctx := t.Context()
+
+	dir := fsutils.MustGetThisDir()
+	prevVersion := version.Version
+	version.Version = "v1.0.0-ci1"
+	defer func() {
+		version.Version = prevVersion
+	}()
+
+	tc := translatortest.TestCase{
+		InputFiles: []string{
+			filepath.Join(dir, "testutils/inputs/backendtlspolicy/multi-gateway-client-certificates.yaml"),
+		},
+	}
+	results, err := tc.Run(
+		t,
+		ctx,
+		translatortest.NewScheme(runtime.SchemeBuilder{}),
+		translatortest.ExtraConfig{},
+		func(s *apisettings.Settings) {
+			s.EnableExperimentalGatewayAPIFeatures = true
+		},
+	)
+	require.NoError(t, err)
+	require.Len(t, results, 2)
+
+	gatewayOne := types.NamespacedName{Namespace: "default", Name: "example-gateway-one"}
+	gatewayTwo := types.NamespacedName{Namespace: "default", Name: "example-gateway-two"}
+
+	resultOne, ok := results[gatewayOne]
+	require.True(t, ok, "expected first gateway result")
+	resultTwo, ok := results[gatewayTwo]
+	require.True(t, ok, "expected second gateway result")
+
+	statusOne := resultOne.ReportsMap.BuildGWStatus(ctx, *resultOne.Gateways[gatewayOne], map[string]uint{"http": 1})
+	statusTwo := resultTwo.ReportsMap.BuildGWStatus(ctx, *resultTwo.Gateways[gatewayTwo], map[string]uint{"http": 1})
+	require.NotNil(t, statusOne)
+	require.NotNil(t, statusTwo)
+
+	resolvedRefsOne := meta.FindStatusCondition(statusOne.Conditions, string(gwv1.GatewayConditionResolvedRefs))
+	require.NotNil(t, resolvedRefsOne)
+	assert.Equal(t, metav1.ConditionTrue, resolvedRefsOne.Status)
+
+	resolvedRefsTwo := meta.FindStatusCondition(statusTwo.Conditions, string(gwv1.GatewayConditionResolvedRefs))
+	require.NotNil(t, resolvedRefsTwo)
+	assert.Equal(t, metav1.ConditionTrue, resolvedRefsTwo.Status)
+
+	expectedClusterOne := "kube_default_backend-service_gw_backend_client_cert_default_example-gateway-one_443"
+	expectedClusterTwo := "kube_default_backend-service_gw_backend_client_cert_default_example-gateway-two_443"
+
+	assert.Equal(t, expectedClusterOne, requireSingleRouteClusterName(t, resultOne.Proxy.Routes))
+	assert.Equal(t, expectedClusterTwo, requireSingleRouteClusterName(t, resultTwo.Proxy.Routes))
+
+	clusterOne := requireClusterByName(t, resultOne.Clusters, expectedClusterOne)
+	clusterTwo := requireClusterByName(t, resultTwo.Clusters, expectedClusterTwo)
+
+	assert.Nil(t, findClusterByName(resultOne.Clusters, expectedClusterTwo), "first gateway should not publish second gateway variant")
+	assert.Nil(t, findClusterByName(resultTwo.Clusters, expectedClusterOne), "second gateway should not publish first gateway variant")
+
+	assert.Equal(t, "client.example.com", requireGatewayClientCertificateCommonName(t, clusterOne))
+	assert.Equal(t, "client2.example.com", requireGatewayClientCertificateCommonName(t, clusterTwo))
+}
+
+func requireSingleRouteClusterName(t *testing.T, routes []*envoyroutev3.RouteConfiguration) string {
+	t.Helper()
+
+	clusterNames := make(map[string]struct{})
+	for _, routeConfig := range routes {
+		for _, virtualHost := range routeConfig.GetVirtualHosts() {
+			for _, route := range virtualHost.GetRoutes() {
+				switch action := route.GetAction().(type) {
+				case *envoyroutev3.Route_Route:
+					if action.Route == nil {
+						continue
+					}
+					switch clusterSpecifier := action.Route.GetClusterSpecifier().(type) {
+					case *envoyroutev3.RouteAction_Cluster:
+						if clusterSpecifier.Cluster != "" {
+							clusterNames[clusterSpecifier.Cluster] = struct{}{}
+						}
+					case *envoyroutev3.RouteAction_WeightedClusters:
+						if clusterSpecifier.WeightedClusters == nil {
+							continue
+						}
+						for _, weightedCluster := range clusterSpecifier.WeightedClusters.GetClusters() {
+							if weightedCluster.GetName() != "" {
+								clusterNames[weightedCluster.GetName()] = struct{}{}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	require.Len(t, clusterNames, 1, "expected exactly one upstream cluster reference")
+	for name := range clusterNames {
+		return name
+	}
+	require.FailNow(t, "expected exactly one upstream cluster reference")
+	return ""
+}
+
+func findClusterByName(clusters []*envoyclusterv3.Cluster, name string) *envoyclusterv3.Cluster {
+	for _, cluster := range clusters {
+		if cluster.GetName() == name {
+			return cluster
+		}
+	}
+	return nil
+}
+
+func requireClusterByName(t *testing.T, clusters []*envoyclusterv3.Cluster, name string) *envoyclusterv3.Cluster {
+	t.Helper()
+
+	cluster := findClusterByName(clusters, name)
+	require.NotNil(t, cluster, "expected cluster %q to be present", name)
+	return cluster
+}
+
+func requireGatewayClientCertificateCommonName(t *testing.T, cluster *envoyclusterv3.Cluster) string {
+	t.Helper()
+
+	require.NotNil(t, cluster)
+	require.NotNil(t, cluster.GetTransportSocket(), "expected cluster %q to use upstream TLS", cluster.GetName())
+
+	tlsContext := &envoytlsv3.UpstreamTlsContext{}
+	require.NoError(t, cluster.GetTransportSocket().GetTypedConfig().UnmarshalTo(tlsContext))
+	require.Len(t, tlsContext.GetCommonTlsContext().GetTlsCertificates(), 1)
+
+	inlineCert := tlsContext.GetCommonTlsContext().GetTlsCertificates()[0].GetCertificateChain().GetInlineString()
+	block, _ := pem.Decode([]byte(inlineCert))
+	require.NotNil(t, block, "expected cluster %q to contain a PEM client certificate", cluster.GetName())
+
+	certificate, err := x509.ParseCertificate(block.Bytes)
+	require.NoError(t, err)
+	return certificate.Subject.CommonName
 }
 
 func TestValidation(t *testing.T) {

@@ -251,7 +251,7 @@ func hostnameIntersect(l *gwv1.Listener, routeHostnames []string) (bool, []strin
 
 	var hostnames []string
 	for _, routeHostname := range routeHostnames {
-		intersection, ok := intersectHostnames(listenerHostname, routeHostname)
+		intersection, ok := IntersectHostnames(listenerHostname, routeHostname)
 		if !ok || slices.Contains(hostnames, intersection) {
 			continue
 		}
@@ -261,7 +261,7 @@ func hostnameIntersect(l *gwv1.Listener, routeHostnames []string) (bool, []strin
 	return len(hostnames) > 0, hostnames
 }
 
-func intersectHostnames(listenerHostname, routeHostname string) (string, bool) {
+func IntersectHostnames(listenerHostname, routeHostname string) (string, bool) {
 	if listenerHostname == "" {
 		return routeHostname, true
 	}

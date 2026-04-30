@@ -48,15 +48,15 @@ linters:
         settings:
           linters:
             enable:
-            - "*"
+              - "*"
             disable:
-            - commentstart
-            - integers
-            - maxlength
-            - nobools
-            - nomaps
-            - optionalfields
-            - ssatags
+              - commentstart
+              - integers
+              - maxlength
+              - nobools
+              - nomaps
+              - optionalfields
+              - ssatags
           lintersConfig:
             conditions:
               isFirstField: Ignore
@@ -200,12 +200,12 @@ formatters:
   settings:
     gci:
       sections:
-      - standard
-      - default
-      - prefix(github.com/kgateway-dev)
-      - blank
-      - dot
-      - localmodule
+        - standard
+        - default
+        - prefix(github.com/kgateway-dev)
+        - blank
+        - dot
+        - localmodule
       custom-order: true
   exclusions:
     generated: lax

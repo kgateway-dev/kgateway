@@ -2,14 +2,18 @@ package gateway
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/gatewaytls"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -61,6 +65,18 @@ func (t *translator) Translate(
 		return nil
 	}
 
+	// Resolve once during translation so invalid refs surface on Gateway status
+	// and so route rewriting can point at Gateway-scoped backend clones.
+	// proxy_syncer resolves again inside its KRT collection so those clones also
+	// depend directly on Secret updates.
+	clientCertificate, err := gatewaytls.ResolveForGateway(kctx, ctx, t.queries, gateway)
+	if err != nil {
+		reportGatewayBackendClientCertificateError(err, reporter.Gateway(gateway.Obj))
+	} else if clientCertificate != nil {
+		gatewayScopedBackends := query.BuildGatewayBackendClientCertificateVariants(routesForGw, gateway, clientCertificate)
+		routesForGw = query.RewriteRoutesForBackendVariants(routesForGw, gatewayScopedBackends)
+	}
+
 	for _, rErr := range routesForGw.RouteErrors {
 		reporter.Route(rErr.Route.GetSourceObject()).ParentRef(&rErr.ParentRef).SetCondition(reports.RouteCondition{
 			Type:   gwv1.RouteConditionAccepted,
@@ -102,4 +118,28 @@ func setAttachedRoutes(gateway *ir.Gateway, routesForGw *query.RoutesForGwResult
 		}
 		parentReporter.Listener(&listener.Listener).SetAttachedRoutes(uint(availRoutes)) //nolint:gosec // G115: availRoutes is a count of routes, always non-negative
 	}
+}
+
+func reportGatewayBackendClientCertificateError(err error, gatewayReporter reports.GatewayReporter) {
+	reason := gwv1.GatewayReasonInvalidClientCertificateRef
+	if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
+		reason = gwv1.GatewayReasonRefNotPermitted
+	}
+
+	message := err.Error()
+	var notFoundErr *krtcollections.NotFoundError
+	if errors.As(err, &notFoundErr) {
+		resourceType := notFoundErr.NotFoundObj.Kind
+		if resourceType == "" {
+			resourceType = "Resource"
+		}
+		message = fmt.Sprintf(listener.ResourceNotFoundMessageTemplate, resourceType, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
+	}
+
+	gatewayReporter.SetCondition(reports.GatewayCondition{
+		Type:    gwv1.GatewayConditionResolvedRefs,
+		Status:  metav1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
 }

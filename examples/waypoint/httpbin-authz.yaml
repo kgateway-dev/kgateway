@@ -6,11 +6,11 @@ metadata:
 spec:
   action: DENY
   rules:
-  - to:
-    - operation:
-        methods: ["GET"]
-        ports: ["8000"]
+    - to:
+        - operation:
+            methods: ["GET"]
+            ports: ["8000"]
   targetRefs:
-  - group: ""
-    kind: Service
-    name: httpbin
+    - group: ""
+      kind: Service
+      name: httpbin
