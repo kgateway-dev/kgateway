@@ -16,7 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -39,16 +38,12 @@ var (
 			Namespace: "kgateway-base",
 		},
 	}
-	nginxMeta = metav1.ObjectMeta{
-		Name:      "nginx",
+	gatewayMeta = metav1.ObjectMeta{
+		Name:      "gateway",
 		Namespace: "kgateway-base",
 	}
-	nginx2Meta = metav1.ObjectMeta{
-		Name:      "nginx2",
-		Namespace: "kgateway-base",
-	}
-	svcGroup = ""
-	svcKind  = "Service"
+	gatewayGroup = gwv1.Group(gwv1.GroupVersion.Group)
+	gatewayKind  = gwv1.Kind("Gateway")
 
 	// base setup manifests
 	baseSetupManifests = []string{
@@ -115,17 +110,17 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 	)
 
 	s.assertPolicyStatus(metav1.Condition{
-		Type:               string(shared.PolicyConditionAccepted),
+		Type:               string(gwv1.PolicyConditionAccepted),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(shared.PolicyReasonValid),
+		Reason:             string(gwv1.PolicyReasonAccepted),
 		Message:            reports.PolicyAcceptedMsg,
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 	s.assertPolicyStatus(metav1.Condition{
-		Type:               string(shared.PolicyConditionAttached),
+		Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(shared.PolicyReasonAttached),
-		Message:            reports.PolicyAttachedMsg,
+		Reason:             string(gwv1.BackendTLSPolicyReasonResolvedRefs),
+		Message:            "Resolved all references",
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 
@@ -134,10 +129,17 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 	s.Require().NoError(err)
 
 	s.assertPolicyStatus(metav1.Condition{
+		Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
+		Status:             metav1.ConditionFalse,
+		Reason:             string(gwv1.BackendTLSPolicyReasonInvalidCACertificateRef),
+		Message:            fmt.Sprintf("invalid CA certificate ref ConfigMap/ca: %s: kgateway-base/ca", backendtlspolicy.ErrConfigMapNotFound),
+		ObservedGeneration: backendTlsPolicy.Generation,
+	})
+	s.assertPolicyStatus(metav1.Condition{
 		Type:               string(gwv1.PolicyConditionAccepted),
 		Status:             metav1.ConditionFalse,
-		Reason:             string(gwv1.PolicyReasonInvalid),
-		Message:            fmt.Sprintf("%s: kgateway-base/ca", backendtlspolicy.ErrConfigMapNotFound),
+		Reason:             string(gwv1.BackendTLSPolicyReasonNoValidCACertificate),
+		Message:            fmt.Sprintf("invalid CA certificate ref ConfigMap/ca: %s: kgateway-base/ca", backendtlspolicy.ErrConfigMapNotFound),
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 }
@@ -151,35 +153,24 @@ func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, tlsPol)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get BackendTLSPolicy %s", objKey)
 
-		g.Expect(tlsPol.Status.Ancestors).To(gomega.HaveLen(2), "ancestors didn't have length of 2")
+		g.Expect(tlsPol.Status.Ancestors).To(gomega.HaveLen(1), "ancestors didn't have length of 1")
 
-		expectedAncestorRefs := []gwv1.ParentReference{
-			{
-				Group:     (*gwv1.Group)(&svcGroup),
-				Kind:      (*gwv1.Kind)(&svcKind),
-				Namespace: new(gwv1.Namespace(nginxMeta.Namespace)),
-				Name:      gwv1.ObjectName(nginxMeta.Name),
-			},
-			{
-				Group:     (*gwv1.Group)(&svcGroup),
-				Kind:      (*gwv1.Kind)(&svcKind),
-				Namespace: new(gwv1.Namespace(nginx2Meta.Namespace)),
-				Name:      gwv1.ObjectName(nginx2Meta.Name),
-			},
+		expectedRef := gwv1.ParentReference{
+			Group:     &gatewayGroup,
+			Kind:      &gatewayKind,
+			Namespace: new(gwv1.Namespace(gatewayMeta.Namespace)),
+			Name:      gwv1.ObjectName(gatewayMeta.Name),
 		}
+		ancestor := tlsPol.Status.Ancestors[0]
+		g.Expect(ancestor.AncestorRef).To(gomega.BeEquivalentTo(expectedRef))
 
-		for i, ancestor := range tlsPol.Status.Ancestors {
-			expectedRef := expectedAncestorRefs[i]
-			g.Expect(ancestor.AncestorRef).To(gomega.BeEquivalentTo(expectedRef))
-
-			g.Expect(ancestor.Conditions).To(gomega.HaveLen(2), "ancestors conditions wasn't length of 2")
-			cond := meta.FindStatusCondition(ancestor.Conditions, inCondition.Type)
-			g.Expect(cond).NotTo(gomega.BeNil(), "policy should have accepted condition")
-			g.Expect(cond.Status).To(gomega.Equal(inCondition.Status), "policy accepted condition should be true")
-			g.Expect(cond.Reason).To(gomega.Equal(inCondition.Reason), "policy reason should be accepted")
-			g.Expect(cond.Message).To(gomega.Equal(inCondition.Message))
-			g.Expect(cond.ObservedGeneration).To(gomega.Equal(inCondition.ObservedGeneration))
-		}
+		g.Expect(ancestor.Conditions).To(gomega.HaveLen(2), "ancestor conditions wasn't length of 2")
+		cond := meta.FindStatusCondition(ancestor.Conditions, inCondition.Type)
+		g.Expect(cond).NotTo(gomega.BeNil(), "policy should have expected condition")
+		g.Expect(cond.Status).To(gomega.Equal(inCondition.Status), "policy condition should have expected status")
+		g.Expect(cond.Reason).To(gomega.Equal(inCondition.Reason), "policy reason should match")
+		g.Expect(cond.Message).To(gomega.Equal(inCondition.Message))
+		g.Expect(cond.ObservedGeneration).To(gomega.Equal(inCondition.ObservedGeneration))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -195,7 +186,7 @@ func (s *tsuite) TestBackendTLSPolicyClearStaleStatus() {
 	s.addAncestorStatus("tls-policy", "kgateway-base", otherControllerName)
 
 	// Verify both kgateway and other controller statuses exist
-	s.assertAncestorStatuses("nginx", map[string]bool{
+	s.assertAncestorStatuses("gateway", map[string]bool{
 		kgatewayControllerName: true,
 		otherControllerName:    true,
 	})
@@ -208,7 +199,7 @@ func (s *tsuite) TestBackendTLSPolicyClearStaleStatus() {
 	s.Require().NoError(err)
 
 	// Verify kgateway status cleared, other remains
-	s.assertAncestorStatuses("nginx", map[string]bool{
+	s.assertAncestorStatuses("gateway", map[string]bool{
 		kgatewayControllerName: false,
 		otherControllerName:    true,
 	})
@@ -229,17 +220,17 @@ func (s *tsuite) addAncestorStatus(policyName, policyNamespace, controllerName s
 		// Add fake ancestor status
 		fakeStatus := gwv1.PolicyAncestorStatus{
 			AncestorRef: gwv1.ParentReference{
-				Group:     (*gwv1.Group)(&svcGroup),
-				Kind:      (*gwv1.Kind)(&svcKind),
-				Namespace: new(gwv1.Namespace(nginxMeta.Namespace)),
-				Name:      gwv1.ObjectName(nginxMeta.Name),
+				Group:     &gatewayGroup,
+				Kind:      &gatewayKind,
+				Namespace: new(gwv1.Namespace(gatewayMeta.Namespace)),
+				Name:      gwv1.ObjectName(gatewayMeta.Name),
 			},
 			ControllerName: gwv1.GatewayController(controllerName),
 			Conditions: []metav1.Condition{
 				{
-					Type:               string(shared.PolicyConditionAccepted),
+					Type:               string(gwv1.PolicyConditionAccepted),
 					Status:             metav1.ConditionTrue,
-					Reason:             string(shared.PolicyReasonValid),
+					Reason:             string(gwv1.PolicyReasonAccepted),
 					Message:            "Accepted by fake controller",
 					LastTransitionTime: metav1.Now(),
 				},

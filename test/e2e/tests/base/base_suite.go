@@ -68,8 +68,8 @@ var (
 	GwApiV1_3_0 = GwApiVersionMustParse("1.3.0")
 	// BackendTLSPolicy moved to standard/v1 in 1.4.0 and experimental (alpha1v3 version is not supported), HTTPRoutes.spec.rules[].name was added to standard in 1.4.0
 	GwApiV1_4_0 = GwApiVersionMustParse("1.4.0")
-	// ListenerSet was promoted to gateway.networking.k8s.io/v1 in 1.5.1 and is available in the standard channel.
-	GwApiV1_5_1 = GwApiVersionMustParse("1.5.1")
+	// ListenerSet was promoted to gateway.networking.k8s.io/v1 in 1.5.0 and is available in the standard channel.
+	GwApiV1_5_0 = GwApiVersionMustParse("1.5.0")
 
 	GwApiRequireRouteNames = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_2_0,
@@ -83,7 +83,7 @@ var (
 
 	GwApiRequireListenerSets = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_3_0,
-		GwApiChannelStandard:     &GwApiV1_5_1,
+		GwApiChannelStandard:     &GwApiV1_5_0,
 	}
 
 	GwApiRequireCorsFilters = map[GwApiChannel]*GwApiVersion{

@@ -138,6 +138,16 @@ controller:
     allocateLoadBalancerNodePorts: null
     # -- Traffic distribution.
     trafficDistribution: ""
+  # -- Controller ServiceMonitor configuration. A ServiceMonitor is a Prometheus Operator custom resource
+  # -- that tells Prometheus how to discover and scrape the controller metrics Service.
+  serviceMonitor:
+    # -- Create the controller ServiceMonitor when the Prometheus Operator CRDs
+    # (`monitoring.coreos.com/v1`) are installed in the cluster.
+    enabled: false
+    # -- ServiceMonitor annotations.
+    annotations: {}
+    # -- Extra labels for the ServiceMonitor.
+    extraLabels: {}
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
   # -- Configure TLS settings for the xDS gRPC servers.

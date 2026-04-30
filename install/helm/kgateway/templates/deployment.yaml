@@ -1,4 +1,8 @@
 {{- $controllerPodAnnotations := ternary .Values.controller.podAnnotations .Values.podAnnotations (not (kindIs "invalid" .Values.controller.podAnnotations)) }}
+{{- $serviceMonitorEnabled := and .Values.controller.service.enabled .Values.controller.serviceMonitor.enabled (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") }}
+{{- if $serviceMonitorEnabled }}
+{{- $controllerPodAnnotations = omit $controllerPodAnnotations "prometheus.io/scrape" "prometheus.io/path" "prometheus.io/port" }}
+{{- end }}
 {{- $controllerPodSecurityContext := ternary .Values.controller.podSecurityContext .Values.podSecurityContext (not (kindIs "invalid" .Values.controller.podSecurityContext)) }}
 {{- $controllerSecurityContext := ternary .Values.controller.securityContext .Values.securityContext (not (kindIs "invalid" .Values.controller.securityContext)) }}
 {{- $controllerResources := ternary .Values.controller.resources .Values.resources (not (kindIs "invalid" .Values.controller.resources)) }}
@@ -30,12 +34,16 @@ spec:
   {{- end }}
   template:
     metadata:
+      {{- if or (not $serviceMonitorEnabled) $controllerPodAnnotations }}
       annotations:
+        {{- if not $serviceMonitorEnabled }}
         prometheus.io/path: "/metrics"
         prometheus.io/port: {{ .Values.controller.service.ports.metrics | default 9092 | quote}}
+        {{- end }}
         {{- with $controllerPodAnnotations }}
         {{- toYaml $controllerPodAnnotations | nindent 8 }}
         {{- end }}
+      {{- end }}
       labels:
         {{- include "kgateway.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: controller

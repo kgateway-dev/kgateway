@@ -23,6 +23,8 @@ const (
 	basicAuthFilterName = "envoy.filters.http.basic_auth"
 	defaultSecretKey    = ".htpasswd"
 	shaPrefix           = "{SHA}"
+
+	BasicAuthEnabledFilterName = "basic_auth_enabled"
 )
 
 type basicAuthIR struct {
@@ -66,11 +68,18 @@ func (p *trafficPolicyPluginGwPass) handleBasicAuth(
 	// Handle disable case - enable the filter with empty config to override parent policy
 	if basicAuth.disable {
 		pCtxTypedFilterConfig.AddTypedConfig(basicAuthFilterName, &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true})
+
+		// Explicitly set the BasicAuthEnabledFilterName to a blank transformation.
+		// This ensures that the metadata is not set if auth is not configured on the route
+		AddBlankTransformationIfNeeded(pCtxTypedFilterConfig, BasicAuthEnabledFilterName, p.enableAuthMetadata)
 		return
 	}
 
 	// Add per-route config using BasicAuthPerRoute
 	pCtxTypedFilterConfig.AddTypedConfig(basicAuthFilterName, basicAuth.policy)
+
+	// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
+	AddAuthMetadataIfNeeded(pCtxTypedFilterConfig, BasicAuthEnabledFilterName, p.enableAuthMetadata)
 
 	// Register the disabled global filter in the chain
 	if p.basicAuthInChain == nil {

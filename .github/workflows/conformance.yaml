@@ -25,26 +25,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gateway-api-channel: [ 'experimental', 'standard' ]
-        test-type: [ gateway-api ]
-        arch: [ 'amd64', 'arm64' ]
+        gateway-api-channel: ['experimental', 'standard']
+        test-type: [gateway-api]
+        arch: ['amd64', 'arm64']
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-    - name: Dotenv Action
-      uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
-      id: dotenv
-      with:
-        path: "./.github/workflows/.env/pr-tests/versions.env"
-        log-variables: true
-    - id: run-tests
-      uses: ./.github/actions/kube-conformance-tests
-      with:
-        test-type: ${{ matrix.test-type }}
-        api-channel: ${{ matrix.gateway-api-channel }}
-        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-        # Only summarize one architecture to avoid spamming the summary
-        summarize-report: ${{matrix.arch == 'arm64'}} 
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Dotenv Action
+        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        id: dotenv
+        with:
+          path: "./.github/workflows/.env/pr-tests/versions.env"
+          log-variables: true
+      - id: run-tests
+        uses: ./.github/actions/kube-conformance-tests
+        with:
+          test-type: ${{ matrix.test-type }}
+          api-channel: ${{ matrix.gateway-api-channel }}
+          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+          kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+          # Only summarize one architecture to avoid spamming the summary
+          summarize-report: ${{matrix.arch == 'arm64'}}
 
   conformance:
     if: always()
@@ -52,8 +52,8 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [gw_api_conformance_tests]
     steps:
-    - name: Check e2e matrix status
-      run: |
+      - name: Check e2e matrix status
+        run: |
           if [[ "${{ needs.gw_api_conformance_tests.result }}" == "success" ]]; then
             echo "All conformance matrix jobs passed successfully"
             exit 0

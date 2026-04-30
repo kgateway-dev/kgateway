@@ -34,98 +34,98 @@ jobs:
         # Above each test below, we document the latest date/time for the GitHub action step `Run /./.github/actions/kubernetes-e2e-tests` to run
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time or the GitHub action job time), because it is easier to capture and fairly consistent
         test:
-        # December 4, 2025: ~24 minutes
-        - cluster-name: 'cluster-one'
-          go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^PathMatching$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$|^TestKgateway$$/^SessionPersistence$$'
-          localstack: 'false'
-        # December 4, 2025: ~23 minutes
-        - cluster-name: 'cluster-two'
-          go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgatewayWaypoint$$'
-          localstack: 'false'
-        # December 4, 2025: ~22 minutes
-        - cluster-name: 'cluster-three'
-          go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^ListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$|^TestKgateway$$/^FaultInjection$$'
-          localstack: 'true'
-        # December 4, 2025: ~19 minutes
-        - cluster-name: 'cluster-four'
-          go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestKgateway$$/^GlobalRateLimit$$|^TestCustomGWP$$'
-          localstack: 'false'
-        # December 4, 2025: ~21 minutes
-        - cluster-name: 'cluster-five'
-          go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^HttpACL$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$|^TestKgateway$$/^WebSocket$$'
-          localstack: 'false'
-        # December 4, 2025: ~22 minutes
-        - cluster-name: 'cluster-six'
-          go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
-          localstack: 'false'
-        - cluster-name: 'api-validation' # TODO: rename to cluster-seven
-          go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^AttachedRoutes$$'
-          localstack: 'false'
-        # December 4, 2025: ~15 minutes
-        - cluster-name: 'cluster-metrics'
-          go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestKgateway$$/^FrontendTLS$$'
-          localstack: 'false'
-        # December 4, 2025: ~13 minutes
-        - cluster-name: 'cluster-multi-install'
-          go-test-args: '-timeout=5m'
-          go-test-run-regex: '^TestMultipleInstalls'
-          localstack: 'false'
+          # December 4, 2025: ~24 minutes
+          - cluster-name: 'cluster-one'
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^PathMatching$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$|^TestKgateway$$/^SessionPersistence$$'
+            localstack: 'false'
+          # December 4, 2025: ~23 minutes
+          - cluster-name: 'cluster-two'
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestKgatewayWaypoint$$'
+            localstack: 'false'
+          # December 4, 2025: ~22 minutes
+          - cluster-name: 'cluster-three'
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^ListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$|^TestKgateway$$/^FaultInjection$$'
+            localstack: 'true'
+          # December 4, 2025: ~19 minutes
+          - cluster-name: 'cluster-four'
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestKgateway$$/^GlobalRateLimit$$|^TestCustomGWP$$'
+            localstack: 'false'
+          # December 4, 2025: ~21 minutes
+          - cluster-name: 'cluster-five'
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^HttpACL$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$|^TestKgateway$$/^WebSocket$$'
+            localstack: 'false'
+          # December 4, 2025: ~22 minutes
+          - cluster-name: 'cluster-six'
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
+            localstack: 'false'
+          - cluster-name: 'api-validation' # TODO: rename to cluster-seven
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^AttachedRoutes$$'
+            localstack: 'false'
+          # December 4, 2025: ~15 minutes
+          - cluster-name: 'cluster-metrics'
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestKgateway$$/^FrontendTLS$$'
+            localstack: 'false'
+          # December 4, 2025: ~13 minutes
+          - cluster-name: 'cluster-multi-install'
+            go-test-args: '-timeout=5m'
+            go-test-run-regex: '^TestMultipleInstalls'
+            localstack: 'false'
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://kgateway.dev/docs/reference/versions/
         version-files:
           - file: './.github/workflows/.env/pr-tests/versions.env'
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-    - name: Prep Go Runner
-      uses: ./.github/actions/prep-go-runner
-    # The dotenv action is used to load key-value pairs from files.
-    # In this case, the file is specified in the matrix and will contain the versions of the tools to use
-    - name: Dotenv Action
-      uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
-      id: dotenv
-      with:
-        path: ${{ matrix.version-files.file }}
-        log-variables: true
-    - id: setup-kind-cluster
-      name: Setup KinD Cluster
-      if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
-      uses: ./.github/actions/setup-kind-cluster
-      with:
-        cluster-name: ${{ matrix.test.cluster-name }}
-        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-        istio-version: ${{ steps.dotenv.outputs.istio_version }}
-        localstack: ${{ matrix.test.localstack }}
-    - id: setup-k3d-cluster
-      name: Setup k3d Cluster
-      if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
-      uses: ./.github/actions/setup-k3d-cluster
-      with:
-        cluster-name: ${{ matrix.test.cluster-name }}
-        node-version: ${{ steps.dotenv.outputs.node_version }}
-        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-        istio-version: ${{ steps.dotenv.outputs.istio_version }}
-        localstack: ${{ matrix.test.localstack }}
-        github-token: ${{ github.token }}
-    - id: run-tests
-      uses: ./.github/actions/kubernetes-e2e-tests
-      with:
-        cluster-name: ${{ matrix.test.cluster-name }}
-        cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
-        test-args: ${{ matrix.test.go-test-args }}
-        run-regex: ${{ matrix.test.go-test-run-regex }}
-        istio-version: ${{ steps.dotenv.outputs.istio_version }}
-        matrix-label: "pr"
-    - id: debug-space
-      shell: bash
-      run: |
-        echo "After job disk space:"
-        df -h
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
+      # The dotenv action is used to load key-value pairs from files.
+      # In this case, the file is specified in the matrix and will contain the versions of the tools to use
+      - name: Dotenv Action
+        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        id: dotenv
+        with:
+          path: ${{ matrix.version-files.file }}
+          log-variables: true
+      - id: setup-kind-cluster
+        name: Setup KinD Cluster
+        if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
+        uses: ./.github/actions/setup-kind-cluster
+        with:
+          cluster-name: ${{ matrix.test.cluster-name }}
+          kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          localstack: ${{ matrix.test.localstack }}
+      - id: setup-k3d-cluster
+        name: Setup k3d Cluster
+        if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
+        uses: ./.github/actions/setup-k3d-cluster
+        with:
+          cluster-name: ${{ matrix.test.cluster-name }}
+          node-version: ${{ steps.dotenv.outputs.node_version }}
+          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          localstack: ${{ matrix.test.localstack }}
+          github-token: ${{ github.token }}
+      - id: run-tests
+        uses: ./.github/actions/kubernetes-e2e-tests
+        with:
+          cluster-name: ${{ matrix.test.cluster-name }}
+          cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
+          test-args: ${{ matrix.test.go-test-args }}
+          run-regex: ${{ matrix.test.go-test-run-regex }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          matrix-label: "pr"
+      - id: debug-space
+        shell: bash
+        run: |
+          echo "After job disk space:"
+          df -h

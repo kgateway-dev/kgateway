@@ -6,6 +6,7 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func TestValidateWeightedClusters(t *testing.T) {
@@ -86,6 +87,60 @@ func TestValidateWeightedClusters(t *testing.T) {
 			} else {
 				assert.Len(t, errs, 0)
 			}
+		})
+	}
+}
+
+func TestSetEnvoyPathMatcher_PathPrefix(t *testing.T) {
+	pathPrefix := gwv1.PathMatchPathPrefix
+
+	tests := []struct {
+		name         string
+		path         string
+		wantPrefix   string
+		wantSeparate bool
+	}{
+		{
+			name:         "uses path separated prefix for clean prefix",
+			path:         "/foo",
+			wantPrefix:   "/foo",
+			wantSeparate: true,
+		},
+		{
+			name:         "ignores trailing slash for non root prefix",
+			path:         "/foo/",
+			wantPrefix:   "/foo",
+			wantSeparate: true,
+		},
+		{
+			name:         "keeps root prefix unchanged",
+			path:         "/",
+			wantPrefix:   "/",
+			wantSeparate: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := &envoyroutev3.RouteMatch{}
+
+			setEnvoyPathMatcher(gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathPrefix,
+					Value: &tt.path,
+				},
+			}, out)
+
+			if tt.wantSeparate {
+				spec, ok := out.PathSpecifier.(*envoyroutev3.RouteMatch_PathSeparatedPrefix)
+				assert.True(t, ok)
+				assert.Equal(t, tt.wantPrefix, spec.PathSeparatedPrefix)
+				return
+			}
+
+			spec, ok := out.PathSpecifier.(*envoyroutev3.RouteMatch_Prefix)
+			assert.True(t, ok)
+			assert.Equal(t, tt.wantPrefix, spec.Prefix)
 		})
 	}
 }

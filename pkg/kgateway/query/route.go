@@ -85,16 +85,7 @@ func (r *RouteInfo) GetChildrenForRef(backendRef ir.ObjectSource) ([]*RouteInfo,
 
 // Clone creates a deep copy of the RouteInfo object.
 func (r *RouteInfo) Clone() *RouteInfo {
-	if r == nil {
-		return nil
-	}
-	return &RouteInfo{
-		Object:            r.Object,
-		ParentRef:         r.ParentRef,
-		ListenerParentRef: r.ListenerParentRef,
-		HostnameOverrides: slices.Clone(r.HostnameOverrides),
-		Children:          r.Children,
-	}
+	return cloneRouteInfoWithVariants(r, nil)
 }
 
 // UniqueRouteName returns a unique name for the route based on the route kind, name, namespace,

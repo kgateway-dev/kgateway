@@ -1,7 +1,7 @@
 name: Lint
 
 on:
-  pull_request: { }
+  pull_request: {}
   merge_group:
     types: [checks_requested]
   workflow_dispatch:
@@ -11,20 +11,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Lint Go code with golangci-lint
+  # Run source-tree linting and formatting checks
   go-lint:
     name: Go
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     steps:
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-    - name: Prep Go Runner
-      uses: ./.github/actions/prep-go-runner
-    - name: Lint Go code
-      run: make analyze
-    - name: Verify lint auto-fixes are checked in
-      run: git diff -U3 --exit-code
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
+      - name: Analyze source tree
+        run: make analyze
+      - name: Verify lint auto-fixes are checked in
+        run: git diff -U3 --exit-code
 
   # Lint Helm charts
   helm-lint:
@@ -32,10 +32,10 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-    - name: Lint Helm Charts
-      run: make lint-kgateway-charts
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Lint Helm Charts
+        run: make lint-kgateway-charts
 
   # Lint GitHub workflow files
   action-lint:
@@ -43,13 +43,13 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      with:
-        sparse-checkout: .github
-    - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
-      with:
-        go-version-file: 'go.mod'
-    - run: make lint-actions
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          sparse-checkout: .github
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: 'go.mod'
+      - run: make lint-actions
 
   # Lint Rust code
   rust-lint:
@@ -57,17 +57,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-    - name: Read Rust toolchain version
-      id: rust
-      run: echo "channel=$(awk -F'"' '/^channel[[:space:]]*=/ {print $2}' internal/envoy_modules/rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
-    - name: Install Rust
-      uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1.15.4
-      with:
-        toolchain: ${{ steps.rust.outputs.channel }}
-        components: clippy,rustfmt
-        cache: true
-    - name: Lint
-      run: |
-        make -C internal/envoy_modules lint
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Read Rust toolchain version
+        id: rust
+        run: echo "channel=$(awk -F'"' '/^channel[[:space:]]*=/ {print $2}' internal/envoy_modules/rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1.15.4
+        with:
+          toolchain: ${{ steps.rust.outputs.channel }}
+          components: clippy,rustfmt
+          cache: true
+      - name: Lint
+        run: |
+          make -C internal/envoy_modules lint

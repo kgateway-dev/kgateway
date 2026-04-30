@@ -25,6 +25,11 @@ func HashString(s string) uint64 {
 	return hasher.Sum64()
 }
 
+func HashStringField(hasher io.Writer, value string) {
+	hasher.Write([]byte(value))
+	hasher.Write([]byte{0})
+}
+
 func HashProtoWithHasher(hasher hash.Hash, resource proto.Message) {
 	var buffer [1024]byte
 	mo := proto.MarshalOptions{Deterministic: true}

@@ -52,7 +52,7 @@ func TestKgateway(t *testing.T) {
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	common.SetupBaseConfig(ctx, t, testInstallation, filepath.Join("manifests", "kgateway-base.yaml"))
-	common.SetupBaseGateway(ctx, testInstallation, types.NamespacedName{
+	common.SetupBaseGateway(ctx, t, testInstallation, types.NamespacedName{
 		Namespace: "kgateway-base",
 		Name:      "gateway",
 	})
