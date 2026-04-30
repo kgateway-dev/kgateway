@@ -19,10 +19,24 @@ type Image struct {
 
 	// The image tag.
 	//
+	// Tag and Digest are coupled at merge time: specifying a non-empty Tag
+	// without also specifying a Digest clears any inherited Digest, so the
+	// rendered image reference is `repo:tag`. To keep both an inherited (or
+	// overridden) tag and digest, specify non-empty values for both fields.
+	// To clear an inherited Tag while keeping an inherited Digest, set Tag to
+	// the empty string.
+	//
 	// +optional
 	Tag *string `json:"tag,omitempty"`
 
 	// The hash digest of the image, e.g. `sha256:12345...`
+	//
+	// Tag and Digest are coupled at merge time: specifying a non-empty Digest
+	// without also specifying a Tag clears any inherited Tag, so the rendered
+	// image reference is `repo@digest`. To keep both an inherited (or
+	// overridden) tag and digest, specify non-empty values for both fields.
+	// To clear an inherited Digest while keeping an inherited Tag, set Digest
+	// to the empty string.
 	//
 	// +optional
 	Digest *string `json:"digest,omitempty"`

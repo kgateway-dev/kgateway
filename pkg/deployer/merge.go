@@ -636,17 +636,32 @@ func DeepMergeImage(dst, src *kgateway.Image) *kgateway.Image {
 		}
 	}
 
-	// Pinning by digest in src clears any inherited tag from dst. If the
-	// user pins to a digest without specifying a tag, we treat that as an
-	// explicit choice to drop the default tag — the resulting image
-	// reference is `repo@digest`. We set the tag to an empty (but non-nil)
-	// string so that the value overrides any inherited/default tag during
-	// chart rendering.
-	// so that an explicit empty-string digest (e.g. to clear an inherited
-	// digest) does not also clobber the inherited tag.
-	if d := src.GetDigest(); d != nil && *d != "" && src.GetTag() == nil {
-		empty := ""
+	// Tag and digest are coupled: specifying one in non-empty form without
+	// also specifying the other clears any inherited value of the unspecified
+	// field, so each field is "load-bearing" only when the other is unset.
+	// To keep both an inherited (or overridden) tag and digest in the rendered
+	// image reference, callers must specify non-empty forms of both.
+	//
+	// Concretely:
+	//   - A non-empty digest with no tag in src clears any inherited tag,
+	//     yielding `repo@digest`.
+	//   - A non-empty tag with no digest in src clears any inherited digest,
+	//     yielding `repo:tag`.
+	// We require non-empty values so that an explicit empty-string override
+	// (e.g. `digest: ""` to clear an inherited digest) does not also clobber
+	// the other field. We set the cleared field to an empty (but non-nil)
+	// string so that the value overrides any inherited/default during chart
+	// rendering.
+	srcDigest := src.GetDigest()
+	srcTag := src.GetTag()
+	digestIsNonEmpty := srcDigest != nil && *srcDigest != ""
+	tagIsNonEmpty := srcTag != nil && *srcTag != ""
+	empty := ""
+	if digestIsNonEmpty && srcTag == nil {
 		dst.Tag = &empty
+	}
+	if tagIsNonEmpty && srcDigest == nil {
+		dst.Digest = &empty
 	}
 
 	return dst
