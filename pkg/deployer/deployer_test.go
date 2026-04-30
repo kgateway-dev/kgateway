@@ -1568,10 +1568,11 @@ var _ = Describe("Deployer", func() {
 				// When a digest is specified without a tag, the digest erases
 				// the inherited default tag — the rendered image is
 				// `repo@digest` with no `:tag`.
+				expectedTagDelimiter := expectedImageRegAndRepo + ":"
 				if expectedTagValue != "" {
-					Expect(actualImageString).To(ContainSubstring(":" + expectedTagValue))
+					Expect(actualImageString).To(ContainSubstring(expectedTagDelimiter + expectedTagValue))
 				} else {
-					Expect(actualImageString).ToNot(ContainSubstring(":"))
+					Expect(actualImageString).ToNot(ContainSubstring(expectedTagDelimiter))
 				}
 				if expectedDigestValue != "" {
 					Expect(actualImageString).To(HaveSuffix("@" + expectedDigestValue))
