@@ -1104,6 +1104,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableAwsEc2Discovery = true
 		})
 	})
 
