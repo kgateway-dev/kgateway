@@ -769,6 +769,7 @@ func summarizeRuleErrors(err error) string {
 	if err == nil {
 		return ""
 	}
+	// Flatten any nested errors.
 	flatErrs := ir.FlattenJoinedErr(err)
 
 	type key struct{ refID, msg string }
@@ -779,6 +780,7 @@ func summarizeRuleErrors(err error) string {
 	items := make([]item, 0, len(flatErrs))
 
 	for _, flatErr := range flatErrs {
+		// Extract key.
 		var refID, msg string
 		var pe *ir.PolicyError
 		if errors.As(flatErr, &pe) {
@@ -791,6 +793,7 @@ func summarizeRuleErrors(err error) string {
 		} else {
 			msg = flatErr.Error()
 		}
+		// Dedupe on (refID, msg).
 		k := key{refID, msg}
 		if _, dup := seen[k]; dup {
 			continue
@@ -802,6 +805,7 @@ func summarizeRuleErrors(err error) string {
 			rendered: flatErr.Error(),
 		})
 	}
+	// Sort on (refID, msg) for deterministic status message.
 	slices.SortFunc(items, func(a, b item) int {
 		if c := strings.Compare(a.refID, b.refID); c != 0 {
 			return c
@@ -809,6 +813,7 @@ func summarizeRuleErrors(err error) string {
 		return strings.Compare(a.msg, b.msg)
 	})
 
+	// Build the status message.
 	var b strings.Builder
 	for i, it := range items {
 		if i > 0 {
