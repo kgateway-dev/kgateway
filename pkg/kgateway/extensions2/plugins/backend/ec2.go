@@ -38,12 +38,12 @@ const (
 )
 
 type EC2Ir struct {
-	region      string
-	port        uint32
-	addressType kgateway.AwsAddressType
-	roleArn     string
-	filters     []ec2TagFilter
-	secret      *ir.Secret
+	region      string                  // +noKrtEquals
+	port        uint32                  // +noKrtEquals
+	addressType kgateway.AwsAddressType // +noKrtEquals
+	roleArn     string                  // +noKrtEquals
+	filters     []ec2TagFilter          // +noKrtEquals
+	secret      *ir.Secret              // +noKrtEquals
 }
 
 func (u *EC2Ir) Equals(other *EC2Ir) bool {
