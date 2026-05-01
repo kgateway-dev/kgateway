@@ -2251,6 +2251,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HTTPS listener with multiple cert refs, one missing", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/https-listener-multi-cert-one-missing.yaml",
+			outputFile: "invalid-filter-chains/https-listener-multi-cert-one-missing.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("HTTPS listener with invalid secret (missing private key)", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "invalid-filter-chains/https-listener-invalid-secret.yaml",
