@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	awssdk "github.com/aws/aws-sdk-go-v2/aws"
@@ -21,21 +21,18 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	plugincollections "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 const (
-	defaultAwsRegionValue   = "us-east-1"
-	defaultEc2Port          = 80
-	minEc2RefreshInterval   = 30 * time.Second
-	ec2RunningInstanceState = "running"
+	defaultAwsRegionValue = "us-east-1"
+	defaultEc2Port        = 80
+	minEc2RefreshInterval = 30 * time.Second
 )
 
 type EC2Ir struct {
@@ -44,22 +41,32 @@ type EC2Ir struct {
 	addressType kgateway.AwsAddressType
 	roleArn     string
 	filters     []ec2TagFilter
+	secret      *ir.Secret
 }
 
 func (u *EC2Ir) Equals(other *EC2Ir) bool {
-	if u == nil || other == nil {
-		return u == other
-	}
-	return u.region == other.region &&
-		u.port == other.port &&
-		u.addressType == other.addressType &&
-		u.roleArn == other.roleArn &&
-		slices.EqualFunc(u.filters, other.filters, func(a, b ec2TagFilter) bool {
-			return a == b
-		})
+	return cmputils.CompareWithNils(u, other, func(a, b *EC2Ir) bool {
+		return a.region == b.region &&
+			a.port == b.port &&
+			a.addressType == b.addressType &&
+			a.roleArn == b.roleArn &&
+			slices.Equal(a.filters, b.filters) &&
+			ec2SecretsEqual(a.secret, b.secret)
+	})
 }
 
-func buildEc2Ir(in *kgateway.AwsBackend) (*EC2Ir, error) {
+func ec2SecretsEqual(a, b *ir.Secret) bool {
+	switch {
+	case a == nil && b == nil:
+		return true
+	case a == nil || b == nil:
+		return false
+	default:
+		return a.Equals(*b)
+	}
+}
+
+func buildEc2Ir(in *kgateway.AwsBackend, secret *ir.Secret) (*EC2Ir, error) {
 	if in == nil || in.Ec2 == nil {
 		return nil, fmt.Errorf("ec2 config is nil")
 	}
@@ -70,6 +77,7 @@ func buildEc2Ir(in *kgateway.AwsBackend) (*EC2Ir, error) {
 		addressType: defaultEc2AddressType(in.Ec2.AddressType),
 		roleArn:     in.Ec2.RoleArn,
 		filters:     normalizeEc2TagFilters(in.Ec2.Filters),
+		secret:      secret,
 	}, nil
 }
 
@@ -97,26 +105,25 @@ type ec2TagFilter struct {
 
 type ec2BackendConfig struct {
 	resourceName string
-	namespace    string
 	region       string
 	roleArn      string
 	port         uint32
 	addressType  kgateway.AwsAddressType
 	filters      []ec2TagFilter
-	secretName   string
+	secret       *ir.Secret
 }
 
 type ec2CredentialKey struct {
-	region          string
-	roleArn         string
-	secretNamespace string
-	secretName      string
+	region                string
+	roleArn               string
+	secretResourceName    string
+	secretResourceVersion string
 }
 
 type ec2CredentialSource struct {
 	region  string
 	roleArn string
-	secret  *corev1.Secret
+	secret  *ir.Secret
 }
 
 type ec2DiscoveredInstance struct {
@@ -139,29 +146,53 @@ type ec2ResolvedBackend struct {
 	endpoints []ec2ResolvedEndpoint
 }
 
-func (b ec2ResolvedBackend) equals(other ec2ResolvedBackend) bool {
-	return b.port == other.port &&
-		slices.EqualFunc(b.endpoints, other.endpoints, func(a, c ec2ResolvedEndpoint) bool {
-			return a == c
-		})
+func (b ec2ResolvedBackend) Equals(other ec2ResolvedBackend) bool {
+	return b.port == other.port && slices.Equal(b.endpoints, other.endpoints)
 }
 
 type ec2InstanceLister interface {
 	ListInstances(ctx context.Context, source ec2CredentialSource) ([]ec2DiscoveredInstance, error)
 }
 
-type awsEc2InstanceLister struct{}
-
-var newEc2InstanceLister = func() ec2InstanceLister {
-	return &awsEc2InstanceLister{}
+type ec2ClientCacheKey struct {
+	region                string
+	roleArn               string
+	secretResourceName    string
+	secretResourceVersion string
 }
 
-func (l *awsEc2InstanceLister) ListInstances(ctx context.Context, source ec2CredentialSource) ([]ec2DiscoveredInstance, error) {
+type awsEc2InstanceLister struct {
+	mu      sync.Mutex
+	clients map[ec2ClientCacheKey]*awsec2.Client
+}
+
+var newEc2InstanceLister = func() ec2InstanceLister {
+	return &awsEc2InstanceLister{clients: map[ec2ClientCacheKey]*awsec2.Client{}}
+}
+
+func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
+	key := ec2ClientCacheKey{
+		region:  source.region,
+		roleArn: source.roleArn,
+	}
+	if source.secret != nil {
+		key.secretResourceName = source.secret.ResourceName()
+		if source.secret.Obj != nil {
+			key.secretResourceVersion = source.secret.Obj.GetResourceVersion()
+		}
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if client, ok := l.clients[key]; ok {
+		return client, nil
+	}
+
 	loadOptions := []func(*awsconfig.LoadOptions) error{
 		awsconfig.WithRegion(source.region),
 	}
 	if source.secret != nil {
-		derived, err := deriveStaticSecret(&ir.Secret{Data: source.secret.Data})
+		derived, err := deriveStaticSecret(source.secret)
 		if err != nil {
 			return nil, fmt.Errorf("invalid aws secret: %w", err)
 		}
@@ -181,10 +212,19 @@ func (l *awsEc2InstanceLister) ListInstances(ctx context.Context, source ec2Cred
 	}
 
 	client := awsec2.NewFromConfig(cfg)
+	l.clients[key] = client
+	return client, nil
+}
+
+func (l *awsEc2InstanceLister) ListInstances(ctx context.Context, source ec2CredentialSource) ([]ec2DiscoveredInstance, error) {
+	client, err := l.clientFor(ctx, source)
+	if err != nil {
+		return nil, err
+	}
 	paginator := awsec2.NewDescribeInstancesPaginator(client, &awsec2.DescribeInstancesInput{
 		Filters: []ec2types.Filter{{
 			Name:   awssdk.String("instance-state-name"),
-			Values: []string{ec2RunningInstanceState},
+			Values: []string{string(ec2types.InstanceStateNameRunning)},
 		}},
 	})
 
@@ -219,12 +259,9 @@ func (l *awsEc2InstanceLister) ListInstances(ctx context.Context, source ec2Cred
 type ec2EndpointsCollection struct {
 	enabled         bool
 	backends        krt.Collection[ir.BackendObjectIR]
-	client          apiclient.Client
 	trigger         *krt.RecomputeTrigger
 	refreshInterval time.Duration
 	lister          ec2InstanceLister
-
-	synced atomic.Bool
 
 	stateMu sync.RWMutex
 	state   map[string]ec2ResolvedBackend
@@ -239,7 +276,6 @@ func newEc2EndpointsCollection(
 	c := &ec2EndpointsCollection{
 		enabled:         commoncol.Settings.EnableAwsEc2Discovery,
 		backends:        backends,
-		client:          commoncol.Client,
 		trigger:         krt.NewRecomputeTrigger(true),
 		refreshInterval: minEc2RefreshInterval,
 		lister:          newEc2InstanceLister(),
@@ -248,7 +284,6 @@ func newEc2EndpointsCollection(
 
 	if !c.enabled {
 		c.Endpoints = krt.NewStaticCollection[ir.EndpointsForBackend](nil, nil, commoncol.KrtOpts.ToOptions("disable/AwsEc2Endpoints")...)
-		c.synced.Store(true)
 		return c
 	}
 
@@ -310,7 +345,7 @@ func (c *ec2EndpointsCollection) refreshOnce() {
 	}
 
 	c.stateMu.Lock()
-	changed := !equalResolvedEc2State(c.state, nextState)
+	changed := !maps.EqualFunc(c.state, nextState, ec2ResolvedBackend.Equals)
 	c.state = nextState
 	c.stateMu.Unlock()
 
@@ -325,7 +360,6 @@ func (c *ec2EndpointsCollection) refreshOnce() {
 		"changed", changed,
 	)
 
-	c.synced.Store(true)
 	if changed {
 		logger.Debug("triggering EC2 endpoint recomputation")
 		c.trigger.TriggerRecomputation()
@@ -347,17 +381,29 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 		return nextState, nil
 	}
 
+	// Carry forward the prior resolution for every backend so a transient
+	// failure in one credential group doesn't wipe healthy endpoints.
+	c.stateMu.RLock()
+	for _, cfg := range configs {
+		if prior, ok := c.state[cfg.resourceName]; ok {
+			nextState[cfg.resourceName] = prior
+		} else {
+			nextState[cfg.resourceName] = ec2ResolvedBackend{port: cfg.port}
+		}
+	}
+	c.stateMu.RUnlock()
+
 	byCredential := make(map[ec2CredentialKey][]ec2BackendConfig)
 	for _, cfg := range configs {
-		nextState[cfg.resourceName] = ec2ResolvedBackend{port: cfg.port}
 		key := ec2CredentialKey{
-			region:          cfg.region,
-			roleArn:         cfg.roleArn,
-			secretNamespace: cfg.namespace,
-			secretName:      cfg.secretName,
+			region:  cfg.region,
+			roleArn: cfg.roleArn,
 		}
-		if cfg.secretName == "" {
-			key.secretNamespace = ""
+		if cfg.secret != nil {
+			key.secretResourceName = cfg.secret.ResourceName()
+			if cfg.secret.Obj != nil {
+				key.secretResourceVersion = cfg.secret.Obj.GetResourceVersion()
+			}
 		}
 		byCredential[key] = append(byCredential[key], cfg)
 	}
@@ -367,58 +413,60 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 		"credential_groups", len(byCredential),
 	)
 
-	var errs []error
+	// Process credential groups concurrently. Each group is independent — a
+	// failure in one must not cancel the others, so use a plain WaitGroup
+	// and collect errors manually.
+	var (
+		wg          sync.WaitGroup
+		nextStateMu sync.Mutex
+		errs        []error
+	)
 	for key, groupedBackends := range byCredential {
-		source, err := c.loadCredentialSource(ctx, key)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		instances, err := c.lister.ListInstances(ctx, source)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("list ec2 instances for region %s: %w", key.region, err))
-			continue
-		}
-		logger.Debug(
-			"listed EC2 instances for credential scope",
-			"region", key.region,
-			"role_arn", key.roleArn,
-			"secret_namespace", key.secretNamespace,
-			"secret_name", key.secretName,
-			"instance_count", len(instances),
-			"backend_count", len(groupedBackends),
-		)
-		for _, cfg := range groupedBackends {
-			resolved := selectResolvedEc2Backend(cfg, instances)
-			nextState[cfg.resourceName] = resolved
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			source := ec2CredentialSource{
+				region:  key.region,
+				roleArn: key.roleArn,
+			}
+			if len(groupedBackends) > 0 {
+				source.secret = groupedBackends[0].secret
+			}
+			instances, err := c.lister.ListInstances(ctx, source)
+			if err != nil {
+				nextStateMu.Lock()
+				errs = append(errs, fmt.Errorf("list ec2 instances for region %s: %w", key.region, err))
+				nextStateMu.Unlock()
+				return
+			}
 			logger.Debug(
-				"resolved EC2 backend endpoints",
-				"backend", cfg.resourceName,
-				"region", cfg.region,
-				"address_type", cfg.addressType,
-				"filters", len(cfg.filters),
-				"resolved_endpoints", len(resolved.endpoints),
+				"listed EC2 instances for credential scope",
+				"region", key.region,
+				"role_arn", key.roleArn,
+				"secret", key.secretResourceName,
+				"instance_count", len(instances),
+				"backend_count", len(groupedBackends),
 			)
-		}
+			resolved := make(map[string]ec2ResolvedBackend, len(groupedBackends))
+			for _, cfg := range groupedBackends {
+				resolved[cfg.resourceName] = selectResolvedEc2Backend(cfg, instances)
+				logger.Debug(
+					"resolved EC2 backend endpoints",
+					"backend", cfg.resourceName,
+					"region", cfg.region,
+					"address_type", cfg.addressType,
+					"filters", len(cfg.filters),
+					"resolved_endpoints", len(resolved[cfg.resourceName].endpoints),
+				)
+			}
+			nextStateMu.Lock()
+			maps.Copy(nextState, resolved)
+			nextStateMu.Unlock()
+		}()
 	}
+	wg.Wait()
 
 	return nextState, errors.Join(errs...)
-}
-
-func (c *ec2EndpointsCollection) loadCredentialSource(ctx context.Context, key ec2CredentialKey) (ec2CredentialSource, error) {
-	source := ec2CredentialSource{
-		region:  key.region,
-		roleArn: key.roleArn,
-	}
-	if key.secretName == "" {
-		return source, nil
-	}
-	secret, err := c.client.Core().Kube().CoreV1().Secrets(key.secretNamespace).Get(ctx, key.secretName, metav1.GetOptions{})
-	if err != nil {
-		return source, fmt.Errorf("get secret %s/%s: %w", key.secretNamespace, key.secretName, err)
-	}
-	source.secret = secret
-	return source, nil
 }
 
 func (c *ec2EndpointsCollection) endpointsForBackend(backend ir.BackendObjectIR) *ir.EndpointsForBackend {
@@ -455,18 +503,20 @@ func ec2ConfigFromBackend(backend ir.BackendObjectIR) *ec2BackendConfig {
 	if !ok || obj.Spec.Aws == nil || obj.Spec.Aws.Ec2 == nil {
 		return nil
 	}
+	backendIR, ok := backend.ObjIr.(*backendIr)
+	if !ok || backendIR.awsIr == nil || backendIR.awsIr.ec2Ir == nil {
+		return nil
+	}
+	ec2Ir := backendIR.awsIr.ec2Ir
 
 	cfg := &ec2BackendConfig{
 		resourceName: backend.ResourceName(),
-		namespace:    obj.GetNamespace(),
-		region:       defaultAwsRegion(obj.Spec.Aws.Region),
-		roleArn:      obj.Spec.Aws.Ec2.RoleArn,
-		port:         defaultEc2PortValue(obj.Spec.Aws.Ec2.Port),
-		addressType:  defaultEc2AddressType(obj.Spec.Aws.Ec2.AddressType),
-		filters:      normalizeEc2TagFilters(obj.Spec.Aws.Ec2.Filters),
-	}
-	if obj.Spec.Aws.Auth != nil && obj.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret && obj.Spec.Aws.Auth.SecretRef != nil {
-		cfg.secretName = obj.Spec.Aws.Auth.SecretRef.Name
+		region:       ec2Ir.region,
+		roleArn:      ec2Ir.roleArn,
+		port:         ec2Ir.port,
+		addressType:  ec2Ir.addressType,
+		filters:      ec2Ir.filters,
+		secret:       ec2Ir.secret,
 	}
 	return cfg
 }
@@ -538,19 +588,6 @@ func normalizeEc2TagFilters(in []kgateway.AwsTagFilter) []ec2TagFilter {
 		}
 	}
 	return out
-}
-
-func equalResolvedEc2State(a, b map[string]ec2ResolvedBackend) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for key, aState := range a {
-		bState, ok := b[key]
-		if !ok || !aState.equals(bState) {
-			return false
-		}
-	}
-	return true
 }
 
 func defaultAwsRegion(region string) string {

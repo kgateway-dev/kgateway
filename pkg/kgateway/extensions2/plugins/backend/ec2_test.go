@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -12,7 +13,6 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	apifake "github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	plugincollections "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -60,10 +60,18 @@ func TestSelectResolvedEc2BackendUsesConfiguredAddressType(t *testing.T) {
 }
 
 func TestComputeStateBatchesByCredentialScopeAndFiltersInstances(t *testing.T) {
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "aws-creds",
+	secret := &ir.Secret{
+		ObjectSource: ir.ObjectSource{
+			Kind:      "Secret",
 			Namespace: "default",
+			Name:      "aws-creds",
+		},
+		Obj: &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            "aws-creds",
+				Namespace:       "default",
+				ResourceVersion: "1",
+			},
 		},
 		Data: map[string][]byte{
 			"accessKey":    []byte("access"),
@@ -72,14 +80,14 @@ func TestComputeStateBatchesByCredentialScopeAndFiltersInstances(t *testing.T) {
 		},
 	}
 
-	backendA := newEc2Backend("backend-a", "default", "arn:aws:iam::123456789012:role/shared", []kgateway.AwsTagFilter{tagKeyValue("app", "payments")})
-	backendB := newEc2Backend("backend-b", "default", "arn:aws:iam::123456789012:role/shared", []kgateway.AwsTagFilter{tagKey("owner")})
-	backendC := newEc2Backend("backend-c", "default", "arn:aws:iam::123456789012:role/other", nil)
+	backendA := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", []kgateway.AwsTagFilter{tagKeyValue("app", "payments")})
+	backendB := newEc2Backend("backend-b", "arn:aws:iam::123456789012:role/shared", []kgateway.AwsTagFilter{tagKey("owner")})
+	backendC := newEc2Backend("backend-c", "arn:aws:iam::123456789012:role/other", nil)
 
 	backends := krt.NewStaticCollection(nil, []ir.BackendObjectIR{
-		backendObjectIR(backendA),
-		backendObjectIR(backendB),
-		backendObjectIR(backendC),
+		backendObjectIR(backendA, secret),
+		backendObjectIR(backendB, secret),
+		backendObjectIR(backendC, secret),
 	})
 	lister := &fakeEc2InstanceLister{
 		instances: []ec2DiscoveredInstance{
@@ -102,7 +110,6 @@ func TestComputeStateBatchesByCredentialScopeAndFiltersInstances(t *testing.T) {
 	}
 	c := &ec2EndpointsCollection{
 		backends: backends,
-		client:   apifake.NewClient(t, secret),
 		lister:   lister,
 	}
 
@@ -117,13 +124,13 @@ func TestComputeStateBatchesByCredentialScopeAndFiltersInstances(t *testing.T) {
 		t.Fatal("computeState() did not load the configured secret")
 	}
 
-	if got := len(state[backendObjectIR(backendA).ResourceName()].endpoints); got != 1 {
+	if got := len(state[backendObjectIR(backendA, secret).ResourceName()].endpoints); got != 1 {
 		t.Fatalf("backend-a endpoints = %d, want 1", got)
 	}
-	if got := len(state[backendObjectIR(backendB).ResourceName()].endpoints); got != 2 {
+	if got := len(state[backendObjectIR(backendB, secret).ResourceName()].endpoints); got != 2 {
 		t.Fatalf("backend-b endpoints = %d, want 2", got)
 	}
-	if got := len(state[backendObjectIR(backendC).ResourceName()].endpoints); got != 2 {
+	if got := len(state[backendObjectIR(backendC, secret).ResourceName()].endpoints); got != 2 {
 		t.Fatalf("backend-c endpoints = %d, want 2", got)
 	}
 }
@@ -156,7 +163,7 @@ func TestSetEc2InstancesForTestPreservesTagKeyCase(t *testing.T) {
 func TestBuildTranslateFuncRejectsEc2WhenDiscoveryDisabled(t *testing.T) {
 	translate := buildTranslateFunc(nil, false)
 
-	backendIR := translate(nil, newEc2Backend("backend-a", "default", "", nil))
+	backendIR := translate(nil, newEc2Backend("backend-a", "", nil))
 
 	if len(backendIR.errors) != 1 {
 		t.Fatalf("translate() errors = %d, want 1", len(backendIR.errors))
@@ -171,7 +178,7 @@ func TestBuildTranslateFuncRejectsEc2WhenDiscoveryDisabled(t *testing.T) {
 
 func TestNewEc2EndpointsCollectionDisabledIsAlreadySynced(t *testing.T) {
 	backends := krt.NewStaticCollection(nil, []ir.BackendObjectIR{
-		backendObjectIR(newEc2Backend("backend-a", "default", "", nil)),
+		backendObjectIR(newEc2Backend("backend-a", "", nil), nil),
 	})
 
 	c := newEc2EndpointsCollection(&plugincollections.CommonCollections{
@@ -189,20 +196,23 @@ func TestNewEc2EndpointsCollectionDisabledIsAlreadySynced(t *testing.T) {
 }
 
 type fakeEc2InstanceLister struct {
+	mu        sync.Mutex
 	calls     []ec2CredentialSource
 	instances []ec2DiscoveredInstance
 }
 
 func (f *fakeEc2InstanceLister) ListInstances(_ context.Context, source ec2CredentialSource) ([]ec2DiscoveredInstance, error) {
+	f.mu.Lock()
 	f.calls = append(f.calls, source)
+	f.mu.Unlock()
 	return f.instances, nil
 }
 
-func newEc2Backend(name, namespace, roleArn string, filters []kgateway.AwsTagFilter) *kgateway.Backend {
+func newEc2Backend(name, roleArn string, filters []kgateway.AwsTagFilter) *kgateway.Backend {
 	return &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: "default",
 		},
 		Spec: kgateway.BackendSpec{
 			Aws: &kgateway.AwsBackend{
@@ -224,7 +234,7 @@ func newEc2Backend(name, namespace, roleArn string, filters []kgateway.AwsTagFil
 	}
 }
 
-func backendObjectIR(be *kgateway.Backend) ir.BackendObjectIR {
+func backendObjectIR(be *kgateway.Backend, secret *ir.Secret) ir.BackendObjectIR {
 	out := ir.NewBackendObjectIR(ir.ObjectSource{
 		Group:     "gateway.kgateway.dev",
 		Kind:      "Backend",
@@ -233,6 +243,17 @@ func backendObjectIR(be *kgateway.Backend) ir.BackendObjectIR {
 	}, 0, "")
 	out.GvPrefix = ExtensionName
 	out.Obj = be
+	if be.Spec.Aws != nil && be.Spec.Aws.Ec2 != nil {
+		ec2Ir, err := buildEc2Ir(be.Spec.Aws, secret)
+		if err != nil {
+			panic(err)
+		}
+		out.ObjIr = &backendIr{
+			awsIr: &AwsIr{
+				ec2Ir: ec2Ir,
+			},
+		}
+	}
 	return out
 }
 

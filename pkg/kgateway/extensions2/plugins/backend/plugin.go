@@ -208,7 +208,15 @@ func buildTranslateFunc(
 					beIr.errors = append(beIr.errors, errAwsEc2DiscoveryDisabled)
 					break
 				}
-				ec2Ir, err := buildEc2Ir(i.Spec.Aws)
+				var secret *ir.Secret
+				if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret {
+					var err error
+					secret, err = secrets.GetSecretWithoutRefGrant(krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
+					if err != nil {
+						beIr.errors = append(beIr.errors, err)
+					}
+				}
+				ec2Ir, err := buildEc2Ir(i.Spec.Aws, secret)
 				if err != nil {
 					beIr.errors = append(beIr.errors, err)
 				}
