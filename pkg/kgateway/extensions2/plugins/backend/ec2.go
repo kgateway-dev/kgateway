@@ -474,7 +474,6 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 	)
 	for key, groupedBackends := range byCredential {
 		wg.Go(func() {
-			defer wg.Done()
 			source := ec2CredentialSource{
 				region:  key.region,
 				roleArn: key.roleArn,
