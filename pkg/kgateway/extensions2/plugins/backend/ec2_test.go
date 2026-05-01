@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	awssdk "github.com/aws/aws-sdk-go-v2/aws"
+	awsec2 "github.com/aws/aws-sdk-go-v2/service/ec2"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
@@ -157,6 +161,124 @@ func TestSetEc2InstancesForTestPreservesTagKeyCase(t *testing.T) {
 	}
 	if _, found := instances[0].tags["app"]; found {
 		t.Fatal("ListInstances() unexpectedly normalized tag key casing")
+	}
+}
+
+func TestAwsEc2InstanceListerClientForDeduplicatesConcurrentMisses(t *testing.T) {
+	t.Helper()
+
+	var buildCalls atomic.Int32
+	release := make(chan struct{})
+	started := make(chan struct{})
+	lister := &awsEc2InstanceLister{
+		clients: map[ec2ClientCacheKey]*awsec2.Client{},
+		newClient: func(_ context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
+			if buildCalls.Add(1) == 1 {
+				close(started)
+			}
+			<-release
+			return awsec2.NewFromConfig(awssdk.Config{Region: source.region}), nil
+		},
+	}
+
+	const callers = 8
+	source := ec2CredentialSource{region: "us-east-1", roleArn: "arn:aws:iam::123456789012:role/shared"}
+	clients := make(chan *awsec2.Client, callers)
+	errs := make(chan error, callers)
+
+	var wg sync.WaitGroup
+	for range callers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			client, err := lister.clientFor(context.Background(), source)
+			if err != nil {
+				errs <- err
+				return
+			}
+			clients <- client
+		}()
+	}
+
+	select {
+	case <-started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the EC2 client builder to start")
+	}
+	close(release)
+	wg.Wait()
+	close(errs)
+	close(clients)
+
+	for err := range errs {
+		t.Fatalf("clientFor() error = %v", err)
+	}
+	if got := buildCalls.Load(); got != 1 {
+		t.Fatalf("newClient() calls = %d, want 1", got)
+	}
+
+	var first *awsec2.Client
+	for client := range clients {
+		if first == nil {
+			first = client
+			continue
+		}
+		if client != first {
+			t.Fatal("clientFor() returned different clients for the same cache key")
+		}
+	}
+}
+
+func TestAwsEc2InstanceListerClientForBuildsDifferentKeysConcurrently(t *testing.T) {
+	t.Helper()
+
+	release := make(chan struct{})
+	started := make(chan string, 2)
+	lister := &awsEc2InstanceLister{
+		clients: map[ec2ClientCacheKey]*awsec2.Client{},
+		newClient: func(_ context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
+			started <- source.region
+			<-release
+			return awsec2.NewFromConfig(awssdk.Config{Region: source.region}), nil
+		},
+	}
+
+	sources := []ec2CredentialSource{
+		{region: "us-east-1"},
+		{region: "us-west-2"},
+	}
+	errs := make(chan error, len(sources))
+
+	var wg sync.WaitGroup
+	for _, source := range sources {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := lister.clientFor(context.Background(), source)
+			errs <- err
+		}()
+	}
+
+	seen := map[string]bool{}
+	for range len(sources) {
+		select {
+		case region := <-started:
+			seen[region] = true
+		case <-time.After(2 * time.Second):
+			t.Fatal("timed out waiting for concurrent EC2 client builds")
+		}
+	}
+	close(release)
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("clientFor() error = %v", err)
+		}
+	}
+	if len(seen) != len(sources) {
+		t.Fatalf("newClient() started for %d keys, want %d", len(seen), len(sources))
 	}
 }
 

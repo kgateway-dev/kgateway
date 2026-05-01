@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"golang.org/x/sync/singleflight"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -163,12 +164,17 @@ type ec2ClientCacheKey struct {
 }
 
 type awsEc2InstanceLister struct {
-	mu      sync.Mutex
-	clients map[ec2ClientCacheKey]*awsec2.Client
+	mu          sync.Mutex
+	clients     map[ec2ClientCacheKey]*awsec2.Client
+	clientLoads singleflight.Group
+	newClient   func(context.Context, ec2CredentialSource) (*awsec2.Client, error)
 }
 
 var newEc2InstanceLister = func() ec2InstanceLister {
-	return &awsEc2InstanceLister{clients: map[ec2ClientCacheKey]*awsec2.Client{}}
+	return &awsEc2InstanceLister{
+		clients:   map[ec2ClientCacheKey]*awsec2.Client{},
+		newClient: newAwsEc2Client,
+	}
 }
 
 func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
@@ -184,11 +190,54 @@ func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2Credenti
 	}
 
 	l.mu.Lock()
-	defer l.mu.Unlock()
 	if client, ok := l.clients[key]; ok {
+		l.mu.Unlock()
 		return client, nil
 	}
+	l.mu.Unlock()
 
+	value, err, _ := l.clientLoads.Do(key.singleflightKey(), func() (any, error) {
+		l.mu.Lock()
+		if client, ok := l.clients[key]; ok {
+			l.mu.Unlock()
+			return client, nil
+		}
+		l.mu.Unlock()
+
+		client, err := l.newClient(ctx, source)
+		if err != nil {
+			return nil, err
+		}
+
+		l.mu.Lock()
+		defer l.mu.Unlock()
+		if cached, ok := l.clients[key]; ok {
+			return cached, nil
+		}
+		l.clients[key] = client
+		return client, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	client, ok := value.(*awsec2.Client)
+	if !ok {
+		return nil, fmt.Errorf("unexpected EC2 client type %T", value)
+	}
+	return client, nil
+}
+
+func (k ec2ClientCacheKey) singleflightKey() string {
+	return strings.Join([]string{
+		k.region,
+		k.roleArn,
+		k.secretResourceName,
+		k.secretResourceVersion,
+	}, "\x00")
+}
+
+func newAwsEc2Client(ctx context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
 	loadOptions := []func(*awsconfig.LoadOptions) error{
 		awsconfig.WithRegion(source.region),
 	}
@@ -212,9 +261,7 @@ func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2Credenti
 		cfg.Credentials = awssdk.NewCredentialsCache(stscreds.NewAssumeRoleProvider(stsClient, source.roleArn))
 	}
 
-	client := awsec2.NewFromConfig(cfg)
-	l.clients[key] = client
-	return client, nil
+	return awsec2.NewFromConfig(cfg), nil
 }
 
 func (l *awsEc2InstanceLister) ListInstances(ctx context.Context, source ec2CredentialSource) ([]ec2DiscoveredInstance, error) {
