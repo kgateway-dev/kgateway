@@ -189,7 +189,6 @@ func TestAwsEc2InstanceListerClientForDeduplicatesConcurrentMisses(t *testing.T)
 	var wg sync.WaitGroup
 	for range callers {
 		wg.Go(func() {
-			defer wg.Done()
 			client, err := lister.clientFor(context.Background(), source)
 			if err != nil {
 				errs <- err
@@ -251,7 +250,6 @@ func TestAwsEc2InstanceListerClientForBuildsDifferentKeysConcurrently(t *testing
 	var wg sync.WaitGroup
 	for _, source := range sources {
 		wg.Go(func() {
-			defer wg.Done()
 			_, err := lister.clientFor(context.Background(), source)
 			errs <- err
 		})
