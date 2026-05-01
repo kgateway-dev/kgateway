@@ -29,30 +29,27 @@ func (p *PolicyError) Unwrap() error {
 	return p.Err
 }
 
-// WrapPolicyErrors wraps each leaf of errs in *PolicyError keyed to ref.
-// Multi-errors (errors.Join) are flattened first so each leaf is attributed.
-// Already-wrapped entries pass through unchanged, making the call idempotent.
+// WrapPolicyErrors wraps each err of errs in *PolicyError keyed to ref.
+// Multi-errors (errors.Join) are flattened first, already wrapped error are left as is.
 func WrapPolicyErrors(ref *AttachedPolicyRef, errs []error) []error {
 	if len(errs) == 0 {
 		return nil
 	}
 	out := make([]error, 0, len(errs))
 	for _, e := range errs {
-		for _, leaf := range FlattenJoinedErr(e) {
+		for _, err := range FlattenJoinedErr(e) {
 			var pe *PolicyError
-			if errors.As(leaf, &pe) {
-				out = append(out, leaf)
+			if errors.As(err, &pe) {
+				out = append(out, err)
 				continue
 			}
-			out = append(out, &PolicyError{Ref: ref, Err: leaf})
+			out = append(out, &PolicyError{Ref: ref, Err: err})
 		}
 	}
 	return out
 }
 
-// FlattenJoinedErr walks nested errors.Join (and multi-%w fmt.Errorf) trees
-// down to leaf errors. errors.Join returns a value that implements
-// interface{ Unwrap() []error }; we recurse through any such node.
+// FlattenJoinedErr walks nested errors.Join (and multi-%w fmt.Errorf) trees to each error.
 func FlattenJoinedErr(err error) []error {
 	type unwrapMulti interface{ Unwrap() []error }
 	var out []error

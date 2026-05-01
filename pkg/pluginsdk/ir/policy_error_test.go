@@ -126,7 +126,7 @@ func TestWrapPolicyErrorsWithNilRef(t *testing.T) {
 }
 
 func TestWrapPolicyErrorsExpandsJoinedInputs(t *testing.T) {
-	// A single Errors entry can be a multi-error (errors.Join). Each leaf must
+	// A single Errors entry can be a multi-error (errors.Join). Each err must
 	// get its own *PolicyError so attribution renders on every line, not just
 	// the first.
 	ref := &AttachedPolicyRef{Group: "g", Kind: "K", Namespace: "ns", Name: "p"}
@@ -149,13 +149,13 @@ func TestFlattenJoinedErr(t *testing.T) {
 	// nil → nil
 	assert.Nil(t, FlattenJoinedErr(nil))
 
-	// single leaf → single-element slice with same pointer
-	leaf := errors.New("leaf")
-	got := FlattenJoinedErr(leaf)
+	// single err → single-element slice with same pointer
+	err := errors.New("err")
+	got := FlattenJoinedErr(err)
 	assert.Len(t, got, 1)
-	assert.Same(t, leaf, got[0])
+	assert.Same(t, err, got[0])
 
-	// nested errors.Join trees flatten to leaves only
+	// nested errors.Join trees flatten to errs only
 	a := errors.New("a")
 	b := errors.New("b")
 	c := errors.New("c")

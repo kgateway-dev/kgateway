@@ -285,6 +285,8 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		return nil
 	}
 
+	acceptanceMsg := summarizeRuleErrors(routeAcceptanceErr)
+
 	// For invalid matchers, we drop the route entirely instead of replacing it with a synthetic matcher.
 	if routeAcceptanceErr != nil && errors.Is(routeAcceptanceErr, ErrInvalidMatcher) {
 		h.logger.Info("invalid matcher", "error", routeAcceptanceErr)
@@ -292,7 +294,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
 			Reason:  reportssdk.RouteRuleDroppedReason,
-			Message: fmt.Sprintf("Dropped Rule (%d): %s", in.MatchIndex, formatRuleStatusError(routeAcceptanceErr)),
+			Message: fmt.Sprintf("Dropped Rule (%d): %s", in.MatchIndex, acceptanceMsg),
 		})
 		return nil
 	}
@@ -307,7 +309,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
 				Reason:  reportssdk.RouteRuleReplacedReason,
-				Message: fmt.Sprintf("Replaced Rule (%d): %s", in.MatchIndex, formatRuleStatusError(routeAcceptanceErr)),
+				Message: fmt.Sprintf("Replaced Rule (%d): %s", in.MatchIndex, acceptanceMsg),
 			})
 		}
 
@@ -759,11 +761,11 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoyroutev3.QueryParam
 	return out
 }
 
-// formatRuleStatusError renders err for a route status condition: flattens
+// summarizeRuleErrors renders err for a route status condition: flattens
 // errors.Join trees, dedupes and sorts on (PolicyRef.IDWithSectionName, msg)
 // for deterministic, attributed output. err itself is not modified, so
 // callers can still errors.Is/As against it.
-func formatRuleStatusError(err error) string {
+func summarizeRuleErrors(err error) string {
 	if err == nil {
 		return ""
 	}
