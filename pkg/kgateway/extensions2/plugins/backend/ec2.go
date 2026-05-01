@@ -473,8 +473,7 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 		errs        []error
 	)
 	for key, groupedBackends := range byCredential {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			defer wg.Done()
 			source := ec2CredentialSource{
 				region:  key.region,
@@ -513,7 +512,7 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 			nextStateMu.Lock()
 			maps.Copy(nextState, resolved)
 			nextStateMu.Unlock()
-		}()
+		})
 	}
 	wg.Wait()
 
@@ -685,9 +684,7 @@ func SetEc2InstancesForTest(instances []TestEc2Instance) func() {
 	converted := make([]ec2DiscoveredInstance, 0, len(instances))
 	for _, instance := range instances {
 		tags := make(map[string]string, len(instance.Tags))
-		for key, value := range instance.Tags {
-			tags[key] = value
-		}
+		maps.Copy(tags, instance.Tags)
 		converted = append(converted, ec2DiscoveredInstance{
 			instanceID: instance.InstanceID,
 			privateIP:  instance.PrivateIP,

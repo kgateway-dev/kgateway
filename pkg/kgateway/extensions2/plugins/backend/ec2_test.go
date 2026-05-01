@@ -188,8 +188,7 @@ func TestAwsEc2InstanceListerClientForDeduplicatesConcurrentMisses(t *testing.T)
 
 	var wg sync.WaitGroup
 	for range callers {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			defer wg.Done()
 			client, err := lister.clientFor(context.Background(), source)
 			if err != nil {
@@ -197,7 +196,7 @@ func TestAwsEc2InstanceListerClientForDeduplicatesConcurrentMisses(t *testing.T)
 				return
 			}
 			clients <- client
-		}()
+		})
 	}
 
 	select {
@@ -251,12 +250,11 @@ func TestAwsEc2InstanceListerClientForBuildsDifferentKeysConcurrently(t *testing
 
 	var wg sync.WaitGroup
 	for _, source := range sources {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			defer wg.Done()
 			_, err := lister.clientFor(context.Background(), source)
 			errs <- err
-		}()
+		})
 	}
 
 	seen := map[string]bool{}
