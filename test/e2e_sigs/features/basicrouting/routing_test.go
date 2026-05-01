@@ -4,14 +4,13 @@ package basicrouting
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/test/e2e_sigs/assertions"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e_sigs/common/gateway"
 )
 
 const (
@@ -24,7 +23,7 @@ func TestGatewayWithRoute(t *testing.T) {
 
 	feat := features.New("Gateway with Route").
 		Setup(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			addr, err := getGatewayAddress(ctx, cfg)
+			addr, err := gateway.GetAddress(ctx, cfg, "test-gateway", "kgateway-test")
 			if err != nil {
 				t.Fatalf("failed to get gateway address: %v", err)
 			}
@@ -40,22 +39,4 @@ func TestGatewayWithRoute(t *testing.T) {
 		Feature()
 
 	testenv.Test(t, feat)
-}
-
-func getGatewayAddress(ctx context.Context, cfg *envconf.Config) (string, error) {
-	gw := &gwv1.Gateway{}
-	if err := cfg.Client().Resources().Get(ctx, "test-gateway", "kgateway-test", gw); err != nil {
-		return "", err
-	}
-
-	if len(gw.Status.Addresses) == 0 {
-		return "", fmt.Errorf("gateway has no addresses in status")
-	}
-
-	address := gw.Status.Addresses[0].Value
-	if address == "" {
-		return "", fmt.Errorf("gateway address is empty")
-	}
-
-	return address, nil
 }
