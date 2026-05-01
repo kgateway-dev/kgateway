@@ -100,7 +100,7 @@ spec:
       port: 8080
       addressType: InternalIP
 `,
-			wantErrors: []string{"spec.aws.ec2.addressType in body should be one of"},
+			wantErrors: []string{`spec\.aws\.ec2\.addressType( in body should be one of|: Unsupported value: "InternalIP": supported values: "PrivateIP", "PublicIP")`},
 		},
 		{
 			name: "Backend: invalid EC2 role ARN",
