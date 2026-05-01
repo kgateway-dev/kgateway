@@ -13,12 +13,13 @@ import (
 	context "context"
 	reflect "reflect"
 
-	ir "github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	query "github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	gomock "go.uber.org/mock/gomock"
 	krt "istio.io/istio/pkg/kube/krt"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	ir "github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	query "github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 )
 
 // MockGatewayQueries is a mock of GatewayQueries interface.
