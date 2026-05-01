@@ -43,14 +43,19 @@ const (
 
 // AwsIr is the internal representation of an AWS backend.
 type AwsIr struct {
+	// +noKrtEquals
 	lambdaIr *LambdaIr
-	ec2Ir    *EC2Ir
+	// +noKrtEquals
+	ec2Ir *EC2Ir
 }
 
 // LambdaIr is the internal representation of a Lambda backend.
 type LambdaIr struct {
-	lambdaFilters         *lambdaFilters
-	lambdaEndpoint        *lambdaEndpointConfig
+	// +noKrtEquals
+	lambdaFilters *lambdaFilters
+	// +noKrtEquals
+	lambdaEndpoint *lambdaEndpointConfig
+	// +noKrtEquals
 	lambdaTransportSocket *envoycorev3.TransportSocket
 }
 

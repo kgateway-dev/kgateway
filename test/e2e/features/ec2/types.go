@@ -12,19 +12,18 @@ import (
 )
 
 const (
-	testNamespace      = "kgateway-base"
-	gatewayName        = "gateway"
-	routeName          = "ec2-route"
-	backendName        = "ec2-backend"
-	awsCredsSecretName = "aws-ec2-creds"
-	awsCliPodName      = "aws-cli-ec2"
-	localstackNS       = "localstack"
-	localstackSvc      = "localstack"
-	ec2Region          = "us-east-1"
-	ec2Port            = 8080
-	ec2TagApp          = "payments"
-	ec2TagSuite        = "kgateway-ec2-e2e"
-	ec2ClusterName     = "backend_kgateway-base_ec2-backend_0"
+	testNamespace  = "kgateway-base"
+	gatewayName    = "gateway"
+	routeName      = "ec2-route"
+	backendName    = "ec2-backend"
+	awsCliPodName  = "aws-cli-ec2"
+	localstackNS   = "localstack"
+	localstackSvc  = "localstack"
+	ec2Region      = "us-east-1"
+	ec2Port        = 8080
+	ec2TagApp      = "payments"
+	ec2TagSuite    = "kgateway-ec2-e2e"
+	ec2ClusterName = "backend_kgateway-base_ec2-backend_0"
 )
 
 var (

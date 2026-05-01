@@ -128,8 +128,6 @@ spec:
                           When multiple filters are provided, an instance must match all of them.
                         items:
                           description: AwsTagFilter matches EC2 instances by tag.
-                          maxProperties: 1
-                          minProperties: 1
                           properties:
                             key:
                               description: Key matches instances that contain the
