@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	awssdk "github.com/aws/aws-sdk-go-v2/aws"
@@ -262,6 +263,7 @@ type ec2EndpointsCollection struct {
 	trigger         *krt.RecomputeTrigger
 	refreshInterval time.Duration
 	lister          ec2InstanceLister
+	initialRefresh  atomic.Bool
 
 	stateMu sync.RWMutex
 	state   map[string]ec2ResolvedBackend
@@ -283,6 +285,7 @@ func newEc2EndpointsCollection(
 	}
 
 	if !c.enabled {
+		c.initialRefresh.Store(true)
 		c.Endpoints = krt.NewStaticCollection[ir.EndpointsForBackend](nil, nil, commoncol.KrtOpts.ToOptions("disable/AwsEc2Endpoints")...)
 		return c
 	}
@@ -302,7 +305,7 @@ func newEc2EndpointsCollection(
 }
 
 func (c *ec2EndpointsCollection) HasSynced() bool {
-	return c.Endpoints.HasSynced()
+	return c.Endpoints.HasSynced() && c.initialRefresh.Load()
 }
 
 func (c *ec2EndpointsCollection) run(stop <-chan struct{}) {
@@ -319,6 +322,7 @@ func (c *ec2EndpointsCollection) run(stop <-chan struct{}) {
 	logger.Debug("EC2 backend cache synced; running initial refresh")
 
 	c.refreshOnce()
+	c.initialRefresh.Store(true)
 
 	ticker := time.NewTicker(c.refreshInterval)
 	defer ticker.Stop()

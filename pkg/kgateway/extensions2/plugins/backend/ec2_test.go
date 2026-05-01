@@ -195,6 +195,23 @@ func TestNewEc2EndpointsCollectionDisabledIsAlreadySynced(t *testing.T) {
 	}
 }
 
+func TestEc2EndpointsCollectionHasSyncedWaitsForInitialRefresh(t *testing.T) {
+	c := &ec2EndpointsCollection{
+		enabled:   true,
+		Endpoints: krt.NewStaticCollection(nil, []ir.EndpointsForBackend{}),
+	}
+
+	if c.HasSynced() {
+		t.Fatal("HasSynced() = true, want false before the initial refresh completes")
+	}
+
+	c.initialRefresh.Store(true)
+
+	if !c.HasSynced() {
+		t.Fatal("HasSynced() = false, want true after the initial refresh completes")
+	}
+}
+
 type fakeEc2InstanceLister struct {
 	mu        sync.Mutex
 	calls     []ec2CredentialSource
