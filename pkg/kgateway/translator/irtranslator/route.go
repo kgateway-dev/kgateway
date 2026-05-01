@@ -759,21 +759,15 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoyroutev3.QueryParam
 	return out
 }
 
-// formatRuleStatusError renders a deterministic, deduped summary of err for a
-// route status condition message. The error value passed in is unchanged so
-// callers can still use errors.Is/As against it for replacement decisions.
-//
-//   - Walks errors.Join trees down to leaves so individual *PolicyError entries
-//     surface with attribution.
-//   - Dedupes on (PolicyRef.ID, message) so duplicates from extensionRefs +
-//     targetRefs of the same policy collapse to one line.
-//   - Sorts by (PolicyRef.ID, message) for deterministic status output, which
-//     reduces unnecessary status patches when KRT events fire in different orders.
+// formatRuleStatusError renders err for a route status condition: flattens
+// errors.Join trees, dedupes and sorts on (PolicyRef.IDWithSectionName, msg)
+// for deterministic, attributed output. err itself is not modified, so
+// callers can still errors.Is/As against it.
 func formatRuleStatusError(err error) string {
 	if err == nil {
 		return ""
 	}
-	flatErrs := flattenJoinedErr(err)
+	flatErrs := ir.FlattenJoinedErr(err)
 
 	type key struct{ refID, msg string }
 	seen := make(map[key]struct{}, len(flatErrs))
@@ -821,27 +815,4 @@ func formatRuleStatusError(err error) string {
 		b.WriteString(it.rendered)
 	}
 	return b.String()
-}
-
-// flattenJoinedErr walks nested errors.Join trees down to leaf errors. errors.Join
-// returns a value that implements interface{ Unwrap() []error }; we recurse
-// through any such node.
-func flattenJoinedErr(err error) []error {
-	type unwrapMulti interface{ Unwrap() []error }
-	var out []error
-	var walk func(error)
-	walk = func(e error) {
-		if e == nil {
-			return
-		}
-		if u, ok := e.(unwrapMulti); ok {
-			for _, child := range u.Unwrap() {
-				walk(child)
-			}
-			return
-		}
-		out = append(out, e)
-	}
-	walk(err)
-	return out
 }

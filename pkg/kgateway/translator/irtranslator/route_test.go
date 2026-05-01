@@ -238,12 +238,3 @@ func TestFormatRuleStatusError_FlattensNestedJoins(t *testing.T) {
 		"gateway.kgateway.dev/TrafficPolicy/ns/c-pol: c"
 	assert.Equal(t, want, got)
 }
-
-func TestFlattenJoined_HandlesNilAndLeaves(t *testing.T) {
-	assert.Nil(t, flattenJoinedErr(nil))
-
-	leaf := errors.New("leaf")
-	got := flattenJoinedErr(leaf)
-	assert.Len(t, got, 1)
-	assert.Same(t, leaf, got[0])
-}

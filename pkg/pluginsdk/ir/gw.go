@@ -3,7 +3,6 @@ package ir
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"maps"
 	"slices"
 	"strings"
@@ -110,55 +109,6 @@ func (c PolicyAtt) FormatErrors() string {
 		errs[i] = err.Error()
 	}
 	return strings.Join(errs, "; ")
-}
-
-// PolicyError wraps a policy IR construction error to its source policy.
-type PolicyError struct {
-	// Ref is the source policy that produced Err. May be nil if the error
-	// originated from a synthesized PolicyAtt with no associated CR.
-	Ref *AttachedPolicyRef
-	Err error
-}
-
-func (p *PolicyError) Error() string {
-	if p == nil || p.Err == nil {
-		return ""
-	}
-	if p.Ref == nil {
-		return p.Err.Error()
-	}
-	return p.Ref.IDWithSectionName() + ": " + p.Err.Error()
-}
-
-func (p *PolicyError) Unwrap() error {
-	if p == nil {
-		return nil
-	}
-	return p.Err
-}
-
-// WrapPolicyErrors returns errs with each entry wrapped in *PolicyError keyed
-// to ref. Entries already wrapped (anywhere in their unwrap chain) are returned
-// unchanged so the call is idempotent — safe to invoke at every site that
-// copies a PolicyAtt's Errors into another error bag, even if an earlier site
-// has already wrapped them.
-func WrapPolicyErrors(ref *AttachedPolicyRef, errs []error) []error {
-	if len(errs) == 0 {
-		return nil
-	}
-	out := make([]error, 0, len(errs))
-	for _, e := range errs {
-		if e == nil {
-			continue
-		}
-		var pe *PolicyError
-		if errors.As(e, &pe) {
-			out = append(out, e)
-			continue
-		}
-		out = append(out, &PolicyError{Ref: ref, Err: e})
-	}
-	return out
 }
 
 type PolicyAttachmentOpts func(*PolicyAtt)
