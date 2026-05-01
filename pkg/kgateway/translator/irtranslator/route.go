@@ -763,7 +763,7 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoyroutev3.QueryParam
 
 // summarizeRuleErrors renders err for a route status condition: flattens
 // errors.Join trees, dedupes and sorts on (PolicyRef.IDWithSectionName, msg)
-// for deterministic, attributed output. err itself is not modified, so
+// for deterministic status output. err itself is not modified, so
 // callers can still errors.Is/As against it.
 func summarizeRuleErrors(err error) string {
 	if err == nil {
