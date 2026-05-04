@@ -200,7 +200,7 @@ type listenerPolicyPluginGwPass struct {
 	reporter reporter.Reporter
 
 	healthCheckPolicy map[uint32]*healthcheckv3.HealthCheck
-	currentPort        uint32                // Current listener port being translated
+	currentPort       uint32 // Current listener port being translated
 }
 
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
