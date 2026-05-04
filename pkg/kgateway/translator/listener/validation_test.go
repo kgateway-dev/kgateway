@@ -1402,6 +1402,62 @@ func TestTerminatedTLSListenerSupportsTLSRouteAndTCPRouteKinds(t *testing.T) {
 	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
 }
 
+func TestMixedTLSModeListenersConflictWhenExperimentalGatewayAPIFeaturesDisabled(t *testing.T) {
+	gateway := mixedTLSModeGateway()
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGatewayWithSettings(gwToIr(gateway, nil, nil), reporter, ListenerTranslatorConfig{
+		EnableExperimentalGatewayAPIFeatures: false,
+	})
+	g := NewWithT(t)
+	g.Expect(validListeners).To(BeEmpty())
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tls-terminate": {
+			Name:           "tls-terminate",
+			SupportedKinds: []gwv1.RouteGroupKind{},
+			Conditions:     mixedTLSModeConflictConditions(),
+		},
+		"tls-passthrough": {
+			Name:           "tls-passthrough",
+			SupportedKinds: []gwv1.RouteGroupKind{},
+			Conditions:     mixedTLSModeConflictConditions(),
+		},
+	}
+	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
+}
+
+func TestMixedTLSModeListenersAllowedWhenExperimentalGatewayAPIFeaturesEnabled(t *testing.T) {
+	gateway := mixedTLSModeGateway()
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGatewayWithSettings(gwToIr(gateway, nil, nil), reporter, ListenerTranslatorConfig{
+		EnableExperimentalGatewayAPIFeatures: true,
+	})
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(2))
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tls-terminate": {
+			Name: "tls-terminate",
+			SupportedKinds: []gwv1.RouteGroupKind{{
+				Group: GroupNameHelper(),
+				Kind:  wellknown.TLSRouteKind,
+			}},
+		},
+		"tls-passthrough": {
+			Name: "tls-passthrough",
+			SupportedKinds: []gwv1.RouteGroupKind{{
+				Group: GroupNameHelper(),
+				Kind:  wellknown.TLSRouteKind,
+			}},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, reporter.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
+}
+
 func simpleGwTLSRoute() *gwv1.Gateway {
 	return &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1424,6 +1480,71 @@ func simpleGwTLSRoute() *gwv1.Gateway {
 					},
 				},
 			},
+		},
+	}
+}
+
+func mixedTLSModeGateway() *gwv1.Gateway {
+	terminateMode := gwv1.TLSModeTerminate
+	passthroughMode := gwv1.TLSModePassthrough
+	terminateHostname := gwv1.Hostname("terminate.example.com")
+	passthroughHostname := gwv1.Hostname("passthrough.example.com")
+	return &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "mixed-tls-mode-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "kgateway",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tls-terminate",
+					Port:     8443,
+					Protocol: gwv1.TLSProtocolType,
+					Hostname: &terminateHostname,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{{Kind: wellknown.TLSRouteKind}},
+					},
+					TLS: &gwv1.ListenerTLSConfig{
+						Mode: &terminateMode,
+					},
+				},
+				{
+					Name:     "tls-passthrough",
+					Port:     8443,
+					Protocol: gwv1.TLSProtocolType,
+					Hostname: &passthroughHostname,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{{Kind: wellknown.TLSRouteKind}},
+					},
+					TLS: &gwv1.ListenerTLSConfig{
+						Mode: &passthroughMode,
+					},
+				},
+			},
+		},
+	}
+}
+
+func mixedTLSModeConflictConditions() []metav1.Condition {
+	return []metav1.Condition{
+		{
+			Type:    string(gwv1.ListenerConditionConflicted),
+			Status:  metav1.ConditionTrue,
+			Reason:  string(gwv1.ListenerReasonProtocolConflict),
+			Message: ListenerMessageProtocolConflict,
+		},
+		{
+			Type:    string(gwv1.ListenerConditionAccepted),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(gwv1.ListenerReasonProtocolConflict),
+			Message: ListenerMessageProtocolConflict,
+		},
+		{
+			Type:    string(gwv1.ListenerConditionProgrammed),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(gwv1.ListenerReasonProtocolConflict),
+			Message: ListenerMessageProtocolConflict,
 		},
 	}
 }

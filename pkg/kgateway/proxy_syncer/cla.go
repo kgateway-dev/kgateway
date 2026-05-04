@@ -24,7 +24,9 @@ func (c UccWithEndpoints) ResourceName() string {
 }
 
 func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
-	return c.Client.Equals(in.Client) && c.EndpointsHash == in.EndpointsHash && c.endpointsName == in.endpointsName
+	return c.Client.Equals(in.Client) &&
+		c.EndpointsHash == in.EndpointsHash &&
+		c.endpointsName == in.endpointsName
 }
 
 type PerClientEnvoyEndpoints struct {

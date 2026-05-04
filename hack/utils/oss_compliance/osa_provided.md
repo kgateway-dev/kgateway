@@ -32,6 +32,7 @@ Name|Version|License
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.2|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.10.0|Apache License 2.0
+[go.uber.org/mock](https://go.uber.org/mock)|v0.6.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.1|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20260112195511-716be5621a96|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.20.0|BSD 3-clause "New" or "Revised" License

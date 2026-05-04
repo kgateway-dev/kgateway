@@ -16,6 +16,11 @@ Statuses:
         reason: Invalid
         status: "False"
         type: Programmed
+      - lastTransitionTime: null
+        message: One or more listeners have unresolved references
+        reason: ListenersNotResolved
+        status: "False"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 0
         conditions:

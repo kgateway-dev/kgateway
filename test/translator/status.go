@@ -9,11 +9,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -31,6 +34,7 @@ func buildStatusesFromReports(
 	reportsMap reports.ReportMap,
 	gateways map[types.NamespacedName]*gwv1.Gateway,
 	listenerSets map[types.NamespacedName]*gwv1.ListenerSet,
+	policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin,
 ) *Statuses {
 	ctx := context.Background()
 
@@ -155,13 +159,26 @@ func buildStatusesFromReports(
 	// Build Policy statuses
 	for policyKey := range reportsMap.Policies {
 		policyKeyStr := fmt.Sprintf("%s/%s/%s", policyKey.Kind, policyKey.Namespace, policyKey.Name)
-		if status := reportsMap.BuildPolicyStatus(ctx, policyKey, wellknown.DefaultGatewayControllerName, gwv1.PolicyStatus{}); status != nil {
+		if status := buildPolicyStatus(reportsMap, policyPlugins, policyKey, gwv1.PolicyStatus{}); status != nil {
 			normalizePolicyStatus(status, fixedTime)
 			statuses.Policies[policyKeyStr] = status
 		}
 	}
 
 	return statuses
+}
+
+func buildPolicyStatus(
+	reportsMap reports.ReportMap,
+	policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin,
+	policyKey pluginreporter.PolicyKey,
+	currentStatus gwv1.PolicyStatus,
+) *gwv1.PolicyStatus {
+	if plugin, ok := policyPlugins[schema.GroupKind{Group: policyKey.Group, Kind: policyKey.Kind}]; ok && plugin.BuildPolicyStatus != nil {
+		return plugin.BuildPolicyStatus(context.Background(), reportsMap, policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
+	}
+
+	return reportsMap.BuildPolicyStatus(context.Background(), policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
 }
 
 // normalizeStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing

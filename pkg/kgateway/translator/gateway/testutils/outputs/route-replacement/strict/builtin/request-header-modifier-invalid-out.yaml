@@ -67,6 +67,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
@@ -101,10 +106,9 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): invalid route configuration: validation failed:
-            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Incorrect configuration: %REQ(Correlation-Id. Couldn''t find valid command
-            at position 0'
+          message: |-
+            Replaced Rule (0): invalid route configuration
+            validation failed: invalid xds configuration: error initializing configuration '/dev/fd/0': Incorrect configuration: %REQ(Correlation-Id. Couldn't find valid command at position 0
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

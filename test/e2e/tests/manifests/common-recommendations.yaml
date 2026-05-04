@@ -21,7 +21,7 @@ controller:
   extraEnv:
     KGW_WEIGHTED_ROUTE_PRECEDENCE: "true" # enable weighted route precedence by default in tests
     KGW_ENABLE_AUTH_METADATA: "true" # enable the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
-# TODO enable other values
+    # TODO enable other values
   # deployment:
   #   livenessProbeEnabled: true
   #   customEnv:
@@ -48,28 +48,28 @@ controller:
   #     enabled: true # enable stats server for kgateway so we can collect the metrics in CI
 
 # TODO Configuration for the dynaimcally deployed proxies
-    # Panic mode allows Envoy load balancing to disregard host's health status.
-    # With panic mode enabled, it's possible that breaking changes to our health status configuration will still pass CI.
-    # As a result, we disable panic mode in our tests. This is not necessarily a recommendation for users running kgateway,
-    # but is a way of ensuring that our tests are validating health status configuration properly
-    # healthyPanicThreshold: 0
-    # podTemplate:
-    #   # Enable a readiness probe
-    #   probes: true
-    #   # Enable a liveness probe
-    #   livenessProbeEnabled: true
-    #   # Graceful shutdown allows Envoy to begin failing healthchecks (that have been configured via the health check filter)
-    #   # and then sleep for a certain, customized amount of time.
-    #   # This is particularly when kgateway is running behind some external load-balancer, and we need to signal
-    #   # to that load balancer that the proxies should stop receiving traffic, without affecting the current traffic on the pods
-    #   gracefulShutdown:
-    #     enabled: true
-    #     # This functionality isn't relied upon in our tests, but it's a good practice to define it,
-    #     # so we configure it here as an example
-    #     sleepTimeSeconds: 1
-    #   resources:
-    #     requests:
-    #       #  We have limited GitHub action resources which can cause containers to not create
-    #       # therefore we lessen the cpu resource requests values from the default (500m) to 100m.
-    #       cpu: 100m
-    #       memory: 256Mi
+# Panic mode allows Envoy load balancing to disregard host's health status.
+# With panic mode enabled, it's possible that breaking changes to our health status configuration will still pass CI.
+# As a result, we disable panic mode in our tests. This is not necessarily a recommendation for users running kgateway,
+# but is a way of ensuring that our tests are validating health status configuration properly
+# healthyPanicThreshold: 0
+# podTemplate:
+#   # Enable a readiness probe
+#   probes: true
+#   # Enable a liveness probe
+#   livenessProbeEnabled: true
+#   # Graceful shutdown allows Envoy to begin failing healthchecks (that have been configured via the health check filter)
+#   # and then sleep for a certain, customized amount of time.
+#   # This is particularly when kgateway is running behind some external load-balancer, and we need to signal
+#   # to that load balancer that the proxies should stop receiving traffic, without affecting the current traffic on the pods
+#   gracefulShutdown:
+#     enabled: true
+#     # This functionality isn't relied upon in our tests, but it's a good practice to define it,
+#     # so we configure it here as an example
+#     sleepTimeSeconds: 1
+#   resources:
+#     requests:
+#       #  We have limited GitHub action resources which can cause containers to not create
+#       # therefore we lessen the cpu resource requests values from the default (500m) to 100m.
+#       cpu: 100m
+#       memory: 256Mi

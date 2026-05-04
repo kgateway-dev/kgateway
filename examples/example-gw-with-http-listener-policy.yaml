@@ -4,20 +4,20 @@ metadata:
   name: example-route
 spec:
   parentRefs:
-  - name: gw
+    - name: gw
   hostnames:
-  - "example.com"
+    - "example.com"
   rules:
-  - backendRefs:
-    - name: httpbin
-      port: 8000
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /timeout
-    backendRefs:
-    - name: httpbin
-      port: 8000
+    - backendRefs:
+        - name: httpbin
+          port: 8000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /timeout
+      backendRefs:
+        - name: httpbin
+          port: 8000
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: HTTPListenerPolicy
@@ -25,14 +25,14 @@ metadata:
   name: access-logs
 spec:
   targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: gw
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
   preserveExternalRequestId: false
   accessLog:
-  - fileSink:
-      path: /dev/stdout
-      jsonFormat:
+    - fileSink:
+        path: /dev/stdout
+        jsonFormat:
           start_time: "%START_TIME%"
           method: "%REQ(X-ENVOY-ORIGINAL-METHOD?:METHOD)%"
           path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"

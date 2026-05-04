@@ -9,7 +9,6 @@
 #   # Using htpasswd tool (SHA-1):
 #   htpasswd -nbs username password
 #
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -18,9 +17,9 @@ metadata:
 spec:
   gatewayClassName: kgateway
   listeners:
-  - name: http
-    protocol: HTTP
-    port: 8080
+    - name: http
+      protocol: HTTP
+      port: 8080
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -29,17 +28,17 @@ metadata:
   namespace: default
 spec:
   parentRefs:
-  - name: example-gateway
+    - name: example-gateway
   hostnames:
-  - "api.example.com"
+    - "api.example.com"
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /api
-    backendRefs:
-    - name: backend-service
-      port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api
+      backendRefs:
+        - name: backend-service
+          port: 8080
 ---
 # Option 1: Inline users
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -49,9 +48,9 @@ metadata:
   namespace: default
 spec:
   targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: protected-route
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: protected-route
   basicAuth:
     users:
       # Generated with: htpasswd -nbs alice password123
@@ -77,9 +76,9 @@ metadata:
   namespace: default
 spec:
   targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: protected-route
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: protected-route
   basicAuth:
     secretRef:
       name: basic-auth-credentials
@@ -92,9 +91,9 @@ metadata:
   namespace: default
 spec:
   targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: example-gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: example-gateway
   basicAuth:
     users:
       - "gateway-user:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g="
@@ -107,12 +106,11 @@ metadata:
   namespace: default
 spec:
   targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: public-route
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: public-route
   basicAuth:
     disable: {}
----
 # Testing basic auth:
 # curl -v http://api.example.com/api
 # Expected: 401 Unauthorized
@@ -120,3 +118,4 @@ spec:
 # curl -v -u alice:password123 http://api.example.com/api
 # Expected: 200 OK (or backend response)
 #
+---
