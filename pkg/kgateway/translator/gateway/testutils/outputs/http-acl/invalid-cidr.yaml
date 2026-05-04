@@ -6,7 +6,7 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_gwtest_example-svc_80
+  name: kube_default_example-svc_80
   type: EDS
 - connectTimeout: 5s
   metadata: {}
@@ -16,7 +16,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8080
+      portValue: 80
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -32,18 +32,18 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~8080
+          routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: true
-    name: listener~8080
-  name: listener~8080
+    name: listener~80
+  name: listener~80
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~8080
+  name: listener~80
   virtualHosts:
   - domains:
-    - www.example.com
-    name: listener~8080~www_example_com
+    - example.com
+    name: listener~80~example_com
     routes:
     - directResponse:
         body:
@@ -52,10 +52,10 @@ Routes:
         status: 500
       match:
         prefix: /
-      name: listener~8080~www_example_com-route-0-httproute-invalid-traffic-policy-route-gwtest-0-0-matcher-0
+      name: listener~80~example_com-route-0-httproute-invalid-traffic-policy-route-default-0-0-matcher-0
 Statuses:
   gateways:
-    gwtest/example-gateway:
+    default/example-gateway:
       conditions:
       - lastTransitionTime: null
         message: Successfully accepted Gateway
@@ -102,11 +102,11 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
-    gwtest/invalid-traffic-policy-route:
+    default/invalid-traffic-policy-route:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-traffic-policy:
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/invalid-traffic-policy:
             acl: invalid CIDR(s): "172.18.0.0/12" (host bits set; did you mean "172.16.0.0/12"?)'
           reason: RouteRuleReplaced
           status: "False"
@@ -122,13 +122,13 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    TrafficPolicy/gwtest/invalid-traffic-policy:
+    TrafficPolicy/default/invalid-traffic-policy:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
           kind: Gateway
           name: example-gateway
-          namespace: gwtest
+          namespace: default
         conditions:
         - lastTransitionTime: null
           message: 'acl: invalid CIDR(s): "172.18.0.0/12" (host bits set; did you
