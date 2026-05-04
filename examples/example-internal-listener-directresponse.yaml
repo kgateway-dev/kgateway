@@ -2,7 +2,6 @@
 # This demonstrates how to create a DirectResponse that still gets all the standard upstream metrics
 # by bouncing through an internal listener
 
----
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
