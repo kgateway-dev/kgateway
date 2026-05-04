@@ -111,7 +111,7 @@ func buildHTTPHeaderFilterMutations(
 				return err
 			}
 			for _, p := range pairs {
-				mutations = append(mutations, headerMutation(p.name, p.value, action))
+				mutations = append(mutations, headerMutation(string(p.Name), p.Value, action))
 			}
 		}
 		return nil
@@ -135,21 +135,16 @@ func buildHTTPHeaderFilterMutations(
 	return mutations, nil
 }
 
-type headerPair struct {
-	name  string
-	value string
-}
-
-// resolveHeader resolves an HTTPHeader entry into one or more (headerName, value) pairs.
+// resolveHeader resolves an HTTPHeader entry into one or more gwv1.HTTPHeader pairs.
 // When both name and key are absent on a secretRef entry, all Secret data entries are returned.
 func resolveHeader(
 	krtctx krt.HandlerContext,
 	from krtcollections.From,
 	secrets *krtcollections.SecretIndex,
 	h sharedv1alpha1.HTTPHeader,
-) ([]headerPair, error) {
+) ([]gwv1.HTTPHeader, error) {
 	if h.Value != nil {
-		return []headerPair{{name: string(*h.Name), value: *h.Value}}, nil
+		return []gwv1.HTTPHeader{{Name: *h.Name, Value: *h.Value}}, nil
 	}
 
 	ref := h.SecretRef
@@ -169,11 +164,11 @@ func resolveHeader(
 
 	// Both name and key absent: inject every entry in the Secret as a header.
 	if ref.Key == nil && h.Name == nil {
-		pairs := make([]headerPair, 0, len(secret.Data))
+		pairs := make([]gwv1.HTTPHeader, 0, len(secret.Data))
 		for k, v := range secret.Data {
-			pairs = append(pairs, headerPair{name: k, value: string(v)})
+			pairs = append(pairs, gwv1.HTTPHeader{Name: gwv1.HTTPHeaderName(k), Value: string(v)})
 		}
-		sort.Slice(pairs, func(i, j int) bool { return pairs[i].name < pairs[j].name })
+		sort.Slice(pairs, func(i, j int) bool { return pairs[i].Name < pairs[j].Name })
 		return pairs, nil
 	}
 
@@ -192,11 +187,11 @@ func resolveHeader(
 	}
 
 	// Determine header name: explicit name, or fall back to key.
-	headerName := key
+	headerName := gwv1.HTTPHeaderName(key)
 	if h.Name != nil {
-		headerName = string(*h.Name)
+		headerName = *h.Name
 	}
-	return []headerPair{{name: headerName, value: string(data)}}, nil
+	return []gwv1.HTTPHeader{{Name: headerName, Value: string(data)}}, nil
 }
 
 func headerMutation(name, value string, action envoycorev3.HeaderValueOption_HeaderAppendAction) *mutation_rulesv3.HeaderMutation {
