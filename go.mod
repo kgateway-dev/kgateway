@@ -53,6 +53,7 @@ require sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 require (
 	github.com/PuerkitoBio/goquery v1.10.1
 	github.com/golang/protobuf v1.5.4
+	sigs.k8s.io/e2e-framework v0.7.0
 	sigs.k8s.io/gateway-api/conformance v1.5.1
 )
 
