@@ -34,6 +34,18 @@ func TestMergePoliciesPreservesErrors(t *testing.T) {
 
 	merged := policy.MergePolicies([]ir.PolicyAtt{p1, p2}, mergeTrafficPolicies, "")
 	require.Len(t, merged.Errors, 2)
-	assert.Contains(t, merged.Errors, err1)
-	assert.Contains(t, merged.Errors, err2)
+
+	// Each merged error should be a *PolicyError attributing the source policy
+	// while the original sentinel remains reachable via errors.Is.
+	byName := map[string]*ir.PolicyError{}
+	for _, e := range merged.Errors {
+		var pe *ir.PolicyError
+		require.True(t, errors.As(e, &pe), "merged error should be a *ir.PolicyError")
+		require.NotNil(t, pe.Ref)
+		byName[pe.Ref.Name] = pe
+	}
+	require.Contains(t, byName, "p1")
+	require.Contains(t, byName, "p2")
+	assert.True(t, errors.Is(byName["p1"], err1))
+	assert.True(t, errors.Is(byName["p2"], err2))
 }

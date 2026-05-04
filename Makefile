@@ -144,13 +144,30 @@ get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.
 init-git-hooks:  ## Use the tracked version of Git hooks from this repo
 	git config core.hooksPath .githooks
 
-.PHONY: fmt
-fmt:  ## Format the code with golangci-lint
+.PHONY: fmt-go
+fmt-go:
 	$(CUSTOM_GOLANGCI_LINT_FMT) ./...
 
-.PHONY: fmt-changed
-fmt-changed: ## Format only the changed code with golangci-lint (skip deleted files)
+.PHONY: fmt-go-changed
+fmt-go-changed:
 	git status -s -uno | awk '{print $$2}' | grep '.*.go$$' | xargs -r -I{} bash -lc '[ -f "{}" ] && $(CUSTOM_GOLANGCI_LINT_FMT) "{}" || true'
+
+YAMLFMT ?= go tool -modfile tools/go.mod yamlfmt
+YAML_PATHSPEC = '*.[Yy][Mm][Ll]' '*.[Yy][Aa][Mm][Ll]'
+
+.PHONY: fmt-yaml
+fmt-yaml: ## Format tracked YAML files with yamlfmt
+	git ls-files -z -- $(YAML_PATHSPEC) | xargs -0 sh -c 'if [ "$$#" -gt 0 ]; then exec $(YAMLFMT) "$$@"; fi' sh
+
+.PHONY: fmt-yaml-changed
+fmt-yaml-changed:
+	git diff --name-only -z --diff-filter=d HEAD -- $(YAML_PATHSPEC) | xargs -0 sh -c 'if [ "$$#" -gt 0 ]; then exec $(YAMLFMT) "$$@"; fi' sh
+
+.PHONY: fmt
+fmt: fmt-go fmt-yaml ## Format Go and YAML files
+
+.PHONY: fmt-changed
+fmt-changed: fmt-go-changed fmt-yaml-changed ## Format changed Go and YAML files (skip deleted files)
 
 .PHONY: mod-download
 mod-download:  ## Download transitive dependencies
@@ -169,7 +186,8 @@ mod-tidy: ## Tidy the go mod file
 #----------------------------------------------------------------------------
 
 .PHONY: analyze
-analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run golangci-lint. Override options with ANALYZE_ARGS.
+analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run repository lint checks. Override golangci-lint options with ANALYZE_ARGS.
+	$(MAKE) --no-print-directory fmt-yaml
 	$(CUSTOM_GOLANGCI_LINT_RUN) $(ANALYZE_ARGS) ./...
 
 $(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum .custom-gcl.yml
@@ -550,7 +568,7 @@ $(STAMP_DIR)/generate-licenses: $(MOD_FILES) | $(STAMP_DIR)
 # Formatting - only runs if generation steps changed
 $(STAMP_DIR)/fmt: $(STAMP_DIR)/go-generate-all $(CUSTOM_GOLANGCI_LINT_BIN)
 	@echo "Formatting code..."
-	$(CUSTOM_GOLANGCI_LINT_FMT) ./...
+	$(MAKE) --no-print-directory fmt-go
 	@touch $@
 
 # Fast generation using stamp files (for local development)

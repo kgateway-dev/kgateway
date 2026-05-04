@@ -4,19 +4,19 @@ metadata:
   name: example-route
 spec:
   parentRefs:
-  - name: gw
+    - name: gw
   hostnames:
-  - "example.com"
+    - "example.com"
   rules:
-  - backendRefs:
-    - name: example-svc
-      port: 8080
-    filters:
-    - type: RequestHeaderModifier
-      requestHeaderModifier:
-        add:
-        - name: my-header-name
-          value: my-header-value
+    - backendRefs:
+        - name: example-svc
+          port: 8080
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            add:
+              - name: my-header-name
+                value: my-header-value
 ---
 apiVersion: v1
 kind: Service
@@ -38,8 +38,8 @@ metadata:
     app.kubernetes.io/name: nginx
 spec:
   containers:
-  - name: nginx
-    image: nginx:stable
-    ports:
-    - containerPort: 80
-      name: http-web-svc
+    - name: nginx
+      image: nginx:stable
+      ports:
+        - containerPort: 80
+          name: http-web-svc

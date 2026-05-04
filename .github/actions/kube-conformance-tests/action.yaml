@@ -30,148 +30,148 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Prep Go Runner
-    uses: ./.github/actions/prep-go-runner
+    - name: Prep Go Runner
+      uses: ./.github/actions/prep-go-runner
 
 
-  - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4.0.1
-    id: kubectl
-    with:
-      version: ${{ inputs.kubectl-version }}
+    - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4.0.1
+      id: kubectl
+      with:
+        version: ${{ inputs.kubectl-version }}
 
-  - name: Set and retrieve environment variables
-    shell: bash
-    run: |
-      # We want to conditionally set the VERSION variable based on the inputs.version value
-      if [[ -z "${{ inputs.version }}" ]]; then
-        echo "VERSION=$(make print-VERSION)" >> $GITHUB_ENV
-      else
-        # else, set the VERSION variable to the inputs.version value and
-        # skip the docker build step so we use real image tags from
-        # the helm repository.
-        echo "VERSION=${{ inputs.version }}" >> $GITHUB_ENV
-        echo "SKIP_DOCKER=true" >> $GITHUB_ENV
-      fi
+    - name: Set and retrieve environment variables
+      shell: bash
+      run: |
+        # We want to conditionally set the VERSION variable based on the inputs.version value
+        if [[ -z "${{ inputs.version }}" ]]; then
+          echo "VERSION=$(make print-VERSION)" >> $GITHUB_ENV
+        else
+          # else, set the VERSION variable to the inputs.version value and
+          # skip the docker build step so we use real image tags from
+          # the helm repository.
+          echo "VERSION=${{ inputs.version }}" >> $GITHUB_ENV
+          echo "SKIP_DOCKER=true" >> $GITHUB_ENV
+        fi
 
-      # Set conformance environment variables
-      if [[ -n "${{ inputs.api-version }}" ]]; then
-        echo "CONFORMANCE_VERSION=${{ inputs.api-version }}" >> $GITHUB_ENV
-      fi
+        # Set conformance environment variables
+        if [[ -n "${{ inputs.api-version }}" ]]; then
+          echo "CONFORMANCE_VERSION=${{ inputs.api-version }}" >> $GITHUB_ENV
+        fi
 
-      if [[ -n "${{ inputs.api-channel }}" ]]; then
-        echo "CONFORMANCE_CHANNEL=${{ inputs.api-channel }}" >> $GITHUB_ENV
-      fi
+        if [[ -n "${{ inputs.api-channel }}" ]]; then
+          echo "CONFORMANCE_CHANNEL=${{ inputs.api-channel }}" >> $GITHUB_ENV
+        fi
 
-  - name: Setup test env
-    shell: bash
-    env:
-      CLUSTER_NODE_VERSION: ${{ inputs.kind-node-version }}
-      CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
-      CONFORMANCE_CHANNEL: ${{ env.CONFORMANCE_CHANNEL }}
-    run: ./hack/kind/setup-kind.sh
+    - name: Setup test env
+      shell: bash
+      env:
+        CLUSTER_NODE_VERSION: ${{ inputs.kind-node-version }}
+        CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
+        CONFORMANCE_CHANNEL: ${{ env.CONFORMANCE_CHANNEL }}
+      run: ./hack/kind/setup-kind.sh
 
-  - name: Install kgateway via helm
-    shell: bash
-    run: |
-      # Set experimental features flag based on conformance channel
-      EXPERIMENTAL_FLAG=""
-      if [[ "${{ inputs.api-channel }}" == "standard" ]]; then
-        EXPERIMENTAL_FLAG="--set controller.extraEnv.KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES=false"
-      fi
+    - name: Install kgateway via helm
+      shell: bash
+      run: |
+        # Set experimental features flag based on conformance channel
+        EXPERIMENTAL_FLAG=""
+        if [[ "${{ inputs.api-channel }}" == "standard" ]]; then
+          EXPERIMENTAL_FLAG="--set controller.extraEnv.KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES=false"
+        fi
 
-      echo "EXPERIMENTAL_FLAG: $EXPERIMENTAL_FLAG"
+        echo "EXPERIMENTAL_FLAG: $EXPERIMENTAL_FLAG"
 
-      # Check if additional Helm values file is provided
-      ADDITIONAL_VALUES=""
-      if [[ -n "${{ inputs.additional-helm-values }}" && -f "${{ inputs.additional-helm-values }}" ]]; then
-        ADDITIONAL_VALUES="-f ${{ inputs.additional-helm-values }}"
-        echo "Using additional Helm values from: ${{ inputs.additional-helm-values }}"
-      fi
+        # Check if additional Helm values file is provided
+        ADDITIONAL_VALUES=""
+        if [[ -n "${{ inputs.additional-helm-values }}" && -f "${{ inputs.additional-helm-values }}" ]]; then
+          ADDITIONAL_VALUES="-f ${{ inputs.additional-helm-values }}"
+          echo "Using additional Helm values from: ${{ inputs.additional-helm-values }}"
+        fi
 
-      if [[ -z "${{ inputs.version }}" ]]; then
-        # If inputs.version is empty, use the local chart path specified in the Makefile.
-        helm upgrade -i -n kgateway-system kgateway-crds ./install/helm/kgateway-crds/ \
-          --create-namespace
-        helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
-          --create-namespace \
-          ${EXPERIMENTAL_FLAG} \
-          --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
-          ${ADDITIONAL_VALUES}
-      else
-        # TODO(tim): this will require changes once the new helm chart is integrated
-        # and published with the release pipeline.
-        # Else, use the provided version to install kgateway from the helm repository.
-        helm upgrade -i -n kgateway-system kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
-          --version ${VERSION} \
-          --create-namespace
-        helm upgrade -i -n kgateway-system kgateway oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
-          --version ${VERSION} \
-          --create-namespace \
-          ${EXPERIMENTAL_FLAG} \
-          --set image.tag=${VERSION} \
-          ${ADDITIONAL_VALUES}
-      fi
+        if [[ -z "${{ inputs.version }}" ]]; then
+          # If inputs.version is empty, use the local chart path specified in the Makefile.
+          helm upgrade -i -n kgateway-system kgateway-crds ./install/helm/kgateway-crds/ \
+            --create-namespace
+          helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
+            --create-namespace \
+            ${EXPERIMENTAL_FLAG} \
+            --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
+            ${ADDITIONAL_VALUES}
+        else
+          # TODO(tim): this will require changes once the new helm chart is integrated
+          # and published with the release pipeline.
+          # Else, use the provided version to install kgateway from the helm repository.
+          helm upgrade -i -n kgateway-system kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
+            --version ${VERSION} \
+            --create-namespace
+          helm upgrade -i -n kgateway-system kgateway oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
+            --version ${VERSION} \
+            --create-namespace \
+            ${EXPERIMENTAL_FLAG} \
+            --set image.tag=${VERSION} \
+            ${ADDITIONAL_VALUES}
+        fi
 
-  - name: Run tests
-    shell: bash
-    run: |
-      case "${{ inputs.test-type }}" in
-        "gateway-api")
-          make conformance
-          ;;
-        *)
-          echo "Unknown test type: ${{ inputs.test-type }}"
-          exit 1
-          ;;
-      esac
+    - name: Run tests
+      shell: bash
+      run: |
+        case "${{ inputs.test-type }}" in
+          "gateway-api")
+            make conformance
+            ;;
+          *)
+            echo "Unknown test type: ${{ inputs.test-type }}"
+            exit 1
+            ;;
+        esac
 
-  - name: Capture debug information when tests fail
-    if: ${{ failure() }}
-    shell: bash
-    run: |
-      kubectl -n kgateway-system get events --sort-by='{.lastTimestamp}'
-      echo
-      kubectl -n gateway-conformance-infra get events --sort-by='{.lastTimestamp}'
-      echo
-      kubectl -n gateway-conformance-app-backend get events --sort-by='{.lastTimestamp}'
-      echo
-      kubectl -n gateway-conformance-web-backend get events --sort-by='{.lastTimestamp}'
-      echo
-      kubectl -n kgateway-system logs deploy/kgateway
+    - name: Capture debug information when tests fail
+      if: ${{ failure() }}
+      shell: bash
+      run: |
+        kubectl -n kgateway-system get events --sort-by='{.lastTimestamp}'
+        echo
+        kubectl -n gateway-conformance-infra get events --sort-by='{.lastTimestamp}'
+        echo
+        kubectl -n gateway-conformance-app-backend get events --sort-by='{.lastTimestamp}'
+        echo
+        kubectl -n gateway-conformance-web-backend get events --sort-by='{.lastTimestamp}'
+        echo
+        kubectl -n kgateway-system logs deploy/kgateway
 
-  - name: Set artifact name and path
-    id: artifact-info
-    shell: bash
-    run: |
-      case "${{ inputs.test-type }}" in
-        "gateway-api")
-          echo "name=conformance-kgateway-gateway-report@k8s${{ inputs.kubectl-version }}" >> $GITHUB_OUTPUT
-          echo "path=_test/conformance/${{ env.VERSION }}-report.yaml" >> $GITHUB_OUTPUT
-          ;;
-        *)
-          echo "Unknown test type: ${{ inputs.test-type }}"
-          exit 1
-          ;;
-      esac
+    - name: Set artifact name and path
+      id: artifact-info
+      shell: bash
+      run: |
+        case "${{ inputs.test-type }}" in
+          "gateway-api")
+            echo "name=conformance-kgateway-gateway-report@k8s${{ inputs.kubectl-version }}" >> $GITHUB_OUTPUT
+            echo "path=_test/conformance/${{ env.VERSION }}-report.yaml" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "Unknown test type: ${{ inputs.test-type }}"
+            exit 1
+            ;;
+        esac
 
-  - name: Summary
-    if: ${{ inputs.summarize-report == 'true' }}
-    shell: bash
-    run: |
-      echo -e '\n# Conformance Reports\n' >> $GITHUB_STEP_SUMMARY
-      if [[ -f "${{ steps.artifact-info.outputs.path }}" ]]; then
-        echo -e '```yaml' >> $GITHUB_STEP_SUMMARY
-        cat "${{ steps.artifact-info.outputs.path }}" >> $GITHUB_STEP_SUMMARY
-        echo -e '```\n' >> $GITHUB_STEP_SUMMARY
-      else
-        echo "Report file not found: ${{ steps.artifact-info.outputs.path }}" >> $GITHUB_STEP_SUMMARY
-      fi
+    - name: Summary
+      if: ${{ inputs.summarize-report == 'true' }}
+      shell: bash
+      run: |
+        echo -e '\n# Conformance Reports\n' >> $GITHUB_STEP_SUMMARY
+        if [[ -f "${{ steps.artifact-info.outputs.path }}" ]]; then
+          echo -e '```yaml' >> $GITHUB_STEP_SUMMARY
+          cat "${{ steps.artifact-info.outputs.path }}" >> $GITHUB_STEP_SUMMARY
+          echo -e '```\n' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Report file not found: ${{ steps.artifact-info.outputs.path }}" >> $GITHUB_STEP_SUMMARY
+        fi
 
-  - name: Upload reports
-    if: ${{ failure() && steps.artifact-info.outputs.path != '' }}
-    uses: ./.github/actions/upload-artifact
-    with:
-      # Name of the path to upload. The VERSION variable refers to the Makefile
-      # VERSION variable.
-      name: ${{ steps.artifact-info.outputs.name }}
-      path: ${{ steps.artifact-info.outputs.path }}
+    - name: Upload reports
+      if: ${{ failure() && steps.artifact-info.outputs.path != '' }}
+      uses: ./.github/actions/upload-artifact
+      with:
+        # Name of the path to upload. The VERSION variable refers to the Makefile
+        # VERSION variable.
+        name: ${{ steps.artifact-info.outputs.name }}
+        path: ${{ steps.artifact-info.outputs.path }}

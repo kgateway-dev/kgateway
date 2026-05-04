@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -84,6 +85,14 @@ type GatewayXdsResources struct {
 
 	// Secrets are items in the SDS response payload.
 	Secrets envoycache.Resources
+
+	// ReferencedClusters is the set of cluster names referenced by Routes and
+	// Listeners. It is derived from the proto contents, so it is a pure function
+	// of Routes.Version and Listeners.Version (already covered by Equals). Used
+	// by per-client snapshotting to avoid redundantly walking protos for every
+	// connected client on each update.
+	// +noKrtEquals
+	ReferencedClusters map[string]struct{}
 }
 
 func (r GatewayXdsResources) ResourceName() string {
@@ -119,17 +128,20 @@ func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 
 func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *GatewayXdsResources {
 	c, ch := sliceToResourcesHash(xdsSnap.ExtraClusters)
+	routes := sliceToResources(xdsSnap.Routes)
+	listeners := sliceToResources(xdsSnap.Listeners)
 	return &GatewayXdsResources{
 		NamespacedName: types.NamespacedName{
 			Namespace: gw.Obj.GetNamespace(),
 			Name:      gw.Obj.GetName(),
 		},
-		reports:      r,
-		ClustersHash: ch,
-		Clusters:     c,
-		Routes:       sliceToResources(xdsSnap.Routes),
-		Listeners:    sliceToResources(xdsSnap.Listeners),
-		Secrets:      sliceToResources(xdsSnap.Secrets),
+		reports:            r,
+		ClustersHash:       ch,
+		Clusters:           c,
+		Routes:             routes,
+		Listeners:          listeners,
+		Secrets:            sliceToResources(xdsSnap.Secrets),
+		ReferencedClusters: collectReferencedClusters(routes, listeners),
 	}
 }
 
@@ -208,8 +220,30 @@ func (r report) Equals(in report) bool {
 var logger = logging.New("proxy_syncer")
 
 func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
+	queries := query.NewData(s.commonCols)
+
+	gatewayBackendVariants := newGatewayBackendVariants(
+		ctx,
+		krtopts,
+		queries,
+		s.commonCols.GatewayIndex.Gateways,
+	)
+	gatewayBackendVariantBackends := krt.NewCollection(gatewayBackendVariants, func(kctx krt.HandlerContext, backendForGateway gatewayScopedBackend) *ir.BackendObjectIR {
+		if backendForGateway.backend == nil {
+			return nil
+		}
+		backend := *backendForGateway.backend
+		return &backend
+	}, krtopts.ToOptions("GatewayBackendClientCertificateVariantBackends")...)
+	gatewayBackendVariantBackendsWithPolicy, _ := s.commonCols.BackendIndex.AttachPoliciesToCollection(
+		gatewayBackendVariantBackends,
+		"GatewayBackendClientCertificateVariantBackendsWithPolicy",
+	)
+	gatewayBackendVariantEndpoints := newGatewayBackendVariantEndpoints(krtopts, gatewayBackendVariants, s.commonCols.Endpoints)
+
 	// all backends with policies attached in a single collection
-	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicy(),
+	finalBackends := krt.JoinCollection(
+		append(s.commonCols.BackendIndex.BackendsWithPolicy(), gatewayBackendVariantBackendsWithPolicy),
 		// WithJoinUnchecked enables a more optimized lookup on the hotpath by assuming we do not have any overlapping ResourceName
 		// in the backend collection.
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...)
@@ -217,6 +251,10 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		// WithJoinUnchecked enables a more optimized lookup on the hotpath by assuming we do not have any overlapping ResourceName
 		// in the backend collection.
 		append(krtopts.ToOptions("FinalBackendsWithPolicyStatus"), krt.WithJoinUnchecked())...)
+	allEndpoints := krt.JoinCollection(
+		[]krt.Collection[ir.EndpointsForBackend]{s.commonCols.Endpoints, gatewayBackendVariantEndpoints},
+		krtopts.ToOptions("AllEndpoints")...,
+	)
 
 	s.translator.Init(ctx)
 
@@ -237,7 +275,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	epPerClient := NewPerClientEnvoyEndpoints(
 		krtopts,
 		s.uniqueClients,
-		newFinalBackendEndpoints(krtopts, finalBackends, s.commonCols.Endpoints),
+		newFinalBackendEndpoints(krtopts, finalBackends, allEndpoints),
 		s.translator.TranslateEndpoints,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
@@ -427,10 +465,25 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				snapWrap := e.Latest()
 				s.proxyTranslator.syncXds(ctx, snapWrap)
 			} else {
-				// key := e.Latest().proxyKey
-				// if _, err := s.proxyTranslator.xdsCache.GetSnapshot(key); err == nil {
-				// 	s.proxyTranslator.xdsCache.ClearSnapshot(e.Latest().proxyKey)
-				// }
+				// Intentional no-op. When snapshotPerClient returns nil (its
+				// readiness guards deferred publishing), KRT surfaces a Delete
+				// for this UCC. Clearing the xDS cache here would withdraw
+				// Envoy's last coherent Snapshot for the duration of the defer,
+				// causing 500/NC on valid routes. Leaving the cache alone means
+				// Envoy keeps serving its previously-published config until a
+				// new coherent snapshot overwrites it — the "retain last good"
+				// behavior that prevents unresolvable cluster references from
+				// stranding live traffic.
+				//
+				// Known leak: this branch also fires when a UCC truly goes
+				// away (Envoy pod replaced on rollout, scaled down, etc.),
+				// and we cannot distinguish that from the "defer" case here.
+				// The SnapshotCache entry for that UCC is therefore never
+				// cleared and accumulates over the controller's lifetime.
+				// Pre-existing behavior (the prior ClearSnapshot call was
+				// already commented out); reclaiming these entries requires
+				// a separate signal — e.g. cross-referencing uccCol
+				// membership — and is left to a follow-up.
 			}
 
 			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{

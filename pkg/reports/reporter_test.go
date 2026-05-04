@@ -39,9 +39,13 @@ var _ = Describe("Reporting Infrastructure", func() {
 			status := rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
-			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Conditions).To(HaveLen(3))
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+			resolvedRefs := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionResolvedRefs))
+			Expect(resolvedRefs).NotTo(BeNil())
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+			Expect(resolvedRefs.Reason).To(Equal(string(gwv1.GatewayReasonResolvedRefs)))
 		})
 
 		It("should preserve conditions set externally", func() {
@@ -59,7 +63,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			status := rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
-			Expect(status.Conditions).To(HaveLen(3)) // 2 from the report, 1 from the original status
+			Expect(status.Conditions).To(HaveLen(4)) // 3 from the report, 1 from the original status
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 		})
@@ -177,7 +181,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			status := rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
-			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Conditions).To(HaveLen(3))
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 
@@ -197,12 +201,37 @@ var _ = Describe("Reporting Infrastructure", func() {
 			status := rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
-			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Conditions).To(HaveLen(3))
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 
+			gatewayResolvedRefs := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionResolvedRefs))
+			Expect(gatewayResolvedRefs).NotTo(BeNil())
+			Expect(gatewayResolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+			Expect(gatewayResolvedRefs.Reason).To(Equal(string(gwv1.GatewayReasonListenersNotResolved)))
+
 			resolvedRefs := meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionResolvedRefs))
 			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		It("should preserve an explicit Gateway resolved refs failure", func() {
+			gw := gw()
+			rm := reports.NewReportMap()
+			r := reports.NewReporter(&rm)
+			r.Gateway(gw).SetCondition(reporter.GatewayCondition{
+				Type:   gwv1.GatewayConditionResolvedRefs,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.GatewayReasonInvalidClientCertificateRef,
+			})
+
+			status := rm.BuildGWStatus(context.Background(), *gw, nil)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(3))
+			resolvedRefs := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionResolvedRefs))
+			Expect(resolvedRefs).NotTo(BeNil())
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+			Expect(resolvedRefs.Reason).To(Equal(string(gwv1.GatewayReasonInvalidClientCertificateRef)))
 		})
 
 		It("should not modify LastTransitionTime for existing conditions that have not changed", func() {
@@ -216,7 +245,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			status := rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
-			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Conditions).To(HaveLen(3))
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 
@@ -227,7 +256,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			status = rm.BuildGWStatus(context.Background(), *gw, nil)
 
 			Expect(status).NotTo(BeNil())
-			Expect(status.Conditions).To(HaveLen(2))
+			Expect(status.Conditions).To(HaveLen(3))
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 

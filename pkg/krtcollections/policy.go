@@ -138,62 +138,86 @@ func (i *BackendIndex) BackendsWithPolicyRequiringStatus() []krt.Collection[*ir.
 	return i.backendsRequiringPolicyStatus
 }
 
+func (i *BackendIndex) attachPoliciesToBackend(
+	kctx krt.HandlerContext,
+	backendObj ir.BackendObjectIR,
+) *ir.BackendObjectIR {
+	// Look up service-wide policies (no sectionName).
+	policies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
+	// Also look up port specific policies if the backend has a port name (for example BackendTLSPolicy with sectionName).
+	// excludeGlobal=true since global policies are already included from the first lookup above.
+	if backendObj.PortName != "" {
+		portPolicies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, backendObj.PortName, backendObj.GetObjectLabels(), true)
+		policies = preferPortSpecificBackendTLSPolicies(policies, portPolicies)
+		policies = append(policies, portPolicies...)
+	}
+	anyHasRef := false
+	for _, p := range policies {
+		if p.PolicyRef != nil {
+			anyHasRef = true
+			break
+		}
+	}
+	for _, aliasObjSrc := range backendObj.Aliases {
+		if aliasObjSrc.Namespace == "" {
+			// targeting policies must be namespace local
+			// some aliases might be "global" but for policy purposes, give them the src namespace
+			aliasObjSrc.Namespace = backendObj.GetNamespace()
+		}
+		aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, "", backendObj.GetObjectLabels(), true)
+		if backendObj.PortName != "" {
+			aliasPortPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, backendObj.PortName, backendObj.GetObjectLabels(), true)
+			aliasPolicies = preferPortSpecificBackendTLSPolicies(aliasPolicies, aliasPortPolicies)
+			aliasPolicies = append(aliasPolicies, aliasPortPolicies...)
+		}
+		if !anyHasRef {
+			for _, p := range aliasPolicies {
+				if p.PolicyRef != nil {
+					anyHasRef = true
+					break
+				}
+			}
+		}
+		policies = append(policies, aliasPolicies...)
+	}
+	backendObj.RequiresPolicyStatus = anyHasRef
+	backendObj.AttachedPolicies = ToAttachedPolicies(policies)
+	backend := &backendObj
+	return backend
+}
+
+// AttachPoliciesToCollection derives a new backend collection with all backend-attached
+// policies applied, plus the subset that requires policy status updates.
+func (i *BackendIndex) AttachPoliciesToCollection(
+	col krt.Collection[ir.BackendObjectIR],
+	name string,
+) (krt.Collection[*ir.BackendObjectIR], krt.Collection[*ir.BackendObjectIR]) {
+	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) **ir.BackendObjectIR {
+		backend := i.attachPoliciesToBackend(kctx, backendObj)
+		return &backend
+	}, i.krtopts.ToOptions(name)...)
+
+	statusName := ""
+	if name != "" {
+		statusName = name + "-requiring-status"
+	}
+	backendsRequiringPolicyStatus := krt.NewCollection(backendsWithPoliciesCol, func(ctx krt.HandlerContext, backend *ir.BackendObjectIR) **ir.BackendObjectIR {
+		if backend.RequiresPolicyStatus {
+			return &backend
+		}
+		return nil
+	}, i.krtopts.ToOptions(statusName)...)
+
+	return backendsWithPoliciesCol, backendsRequiringPolicyStatus
+}
+
 // AddBackends builds the backends stored in this BackendIndex by deriving a new BackendObjIR collection
 // based on the provided `col` with all Backend-attached policies included on the new BackendObjIR.
 // The BackendIndex will then store this collection of backendWithPolicies in its internal map, keyed by the
 // provied gk. I.e. for the provided gk, it will carry the collection of backends derived from it, with all
 // policies attached.
 func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR], aliasKinds ...schema.GroupKind) {
-	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) **ir.BackendObjectIR {
-		// Look up service-wide policies (no sectionName)
-		policies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
-		// Also look up port specific policies if the backend has a port name (e.g., BackendTLSPolicy with sectionName).
-		// excludeGlobal=true since global policies are already included from the first lookup above.
-		if backendObj.PortName != "" {
-			portPolicies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, backendObj.PortName, backendObj.GetObjectLabels(), true)
-			policies = preferPortSpecificBackendTLSPolicies(policies, portPolicies)
-			policies = append(policies, portPolicies...)
-		}
-		anyHasRef := false
-		for _, p := range policies {
-			if p.PolicyRef != nil {
-				anyHasRef = true
-				break
-			}
-		}
-		for _, aliasObjSrc := range backendObj.Aliases {
-			if aliasObjSrc.Namespace == "" {
-				// targeting policies must be namespace local
-				// some aliases might be "global" but for policy purposes, give them the src namespace
-				aliasObjSrc.Namespace = backendObj.GetNamespace()
-			}
-			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, "", backendObj.GetObjectLabels(), true)
-			// Also look up port specific alias policies
-			if backendObj.PortName != "" {
-				aliasPortPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, backendObj.PortName, backendObj.GetObjectLabels(), true)
-				aliasPolicies = preferPortSpecificBackendTLSPolicies(aliasPolicies, aliasPortPolicies)
-				aliasPolicies = append(aliasPolicies, aliasPortPolicies...)
-			}
-			if !anyHasRef {
-				for _, p := range aliasPolicies {
-					if p.PolicyRef != nil {
-						anyHasRef = true
-						break
-					}
-				}
-			}
-			policies = append(policies, aliasPolicies...)
-		}
-		backendObj.RequiresPolicyStatus = anyHasRef
-		backendObj.AttachedPolicies = ToAttachedPolicies(policies)
-		return new(&backendObj)
-	}, i.krtopts.ToOptions("")...)
-	backendsRequiringPolicyStatus := krt.NewCollection(backendsWithPoliciesCol, func(ctx krt.HandlerContext, i *ir.BackendObjectIR) **ir.BackendObjectIR {
-		if i.RequiresPolicyStatus {
-			return &i
-		}
-		return nil
-	}, i.krtopts.ToOptions("")...)
+	backendsWithPoliciesCol, backendsRequiringPolicyStatus := i.AttachPoliciesToCollection(col, "")
 	idxWithPolicy := krtpkg.UnnamedIndex(backendsWithPoliciesCol, func(backendObj *ir.BackendObjectIR) (aliasKeys []backendKey) {
 		if backendObj == nil {
 			return nil
@@ -586,6 +610,9 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		if gw.Spec.TLS != nil && gw.Spec.TLS.Frontend != nil {
 			frontendTLSConfig := getFrontendTLSConfig(gw.Spec.TLS.Frontend)
 			gwIR.FrontendTLSConfig = frontendTLSConfig
+		}
+		if gw.Spec.TLS != nil && gw.Spec.TLS.Backend != nil {
+			gwIR.BackendTLSConfig = getGatewayBackendTLSConfig(gw.Spec.TLS.Backend)
 		}
 
 		return gwIR
@@ -1515,7 +1542,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 		// still use its cluster name in case it comes up later?
 		// if so we need to think about the way create cluster names,
 		// so it only depends on the backend-ref
-		clusterName := "blackhole-cluster"
+		clusterName := wellknown.BlackholeClusterName
 		if backend != nil {
 			clusterName = backend.ClusterName()
 		} else if err == nil {
@@ -1538,7 +1565,7 @@ func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSourc
 	backends := make([]ir.BackendRefIR, 0, len(i))
 	for _, ref := range i {
 		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
-		clusterName := "blackhole-cluster"
+		clusterName := wellknown.BlackholeClusterName
 		if backend != nil {
 			clusterName = backend.ClusterName()
 		} else if err == nil {
@@ -1733,4 +1760,14 @@ func getRequiredClientCertificate(mode gwv1.FrontendValidationModeType) bool {
 		return true
 	}
 	return false
+}
+
+func getGatewayBackendTLSConfig(backendTLS *gwv1.GatewayBackendTLS) *ir.GatewayBackendTLSConfigIR {
+	if backendTLS == nil || backendTLS.ClientCertificateRef == nil {
+		return nil
+	}
+
+	return &ir.GatewayBackendTLSConfigIR{
+		ClientCertificateRef: backendTLS.ClientCertificateRef.DeepCopy(),
+	}
 }

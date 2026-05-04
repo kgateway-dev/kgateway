@@ -25,8 +25,7 @@ jobs:
           days-before-issue-stale: ${{ env.DAYS_BEFORE_ISSUE_STALE }}
           days-before-issue-close: ${{ env.DAYS_BEFORE_ISSUE_CLOSE }}
           stale-issue-message: >
-            This issue has been marked as stale because of no activity in the last ${{ env.DAYS_BEFORE_ISSUE_STALE }} days.
-            It will be closed in the next ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days unless it is tagged "no stalebot" or other activity occurs.
+            This issue has been marked as stale because of no activity in the last ${{ env.DAYS_BEFORE_ISSUE_STALE }} days. It will be closed in the next ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days unless it is tagged "no stalebot" or other activity occurs.
           close-issue-message: >
             This issue has been closed due to no activity in the last 12 months.
           stale-issue-label: 'stale' # https://github.com/kgateway-dev/kgateway/labels/stale
@@ -47,8 +46,7 @@ jobs:
           days-before-pr-stale: ${{ env.DAYS_BEFORE_PR_STALE }}
           days-before-pr-close: ${{ env.DAYS_BEFORE_PR_CLOSE }}
           stale-pr-message: >
-            This pull request has been marked as stale because of no activity in the last ${{ env.DAYS_BEFORE_PR_STALE }} days.
-            It will be closed in the next ${{ env.DAYS_BEFORE_PR_CLOSE }} days unless it is tagged "no stalebot" or other activity occurs.
+            This pull request has been marked as stale because of no activity in the last ${{ env.DAYS_BEFORE_PR_STALE }} days. It will be closed in the next ${{ env.DAYS_BEFORE_PR_CLOSE }} days unless it is tagged "no stalebot" or other activity occurs.
           close-pr-message: >
             This pull request has been closed due to no activity in the last ${{ env.DAYS_BEFORE_PR_STALE }} days.
           stale-pr-label: 'stale' # https://github.com/kgateway-dev/kgateway/labels/stale

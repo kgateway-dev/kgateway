@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	. "github.com/onsi/gomega"
 
@@ -437,6 +438,80 @@ func TestFindPortInEndpointSliceMatchesNamedTargetPortWhenEndpointPortNameDiffer
 
 	port := findPortInEndpointSlice(endpointSlice, false, servicePort)
 	g.Expect(port).To(Equal(uint32(8443)))
+}
+
+func TestEndpointsForGatewayScopedBackendsWithSameEndpointsHaveDifferentHashes(t *testing.T) {
+	g := NewWithT(t)
+
+	baseBackend := newBackendObjectIR(ir.BackendObjectIR{
+		ObjectSource: ir.ObjectSource{
+			Namespace: "ns",
+			Name:      "svc",
+			Group:     "",
+			Kind:      "Service",
+		},
+		Port: 8080,
+		Obj: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "svc",
+				Namespace: "ns",
+			},
+		},
+	})
+	baseBackend.GvPrefix = "kube"
+
+	clientCertificate := &ir.GatewayBackendClientCertificateIR{}
+	gateway1 := ir.ObjectSource{
+		Group:     gwv1.GroupVersion.Group,
+		Kind:      "Gateway",
+		Namespace: "ns",
+		Name:      "gw-1",
+	}
+	gateway2 := ir.ObjectSource{
+		Group:     gwv1.GroupVersion.Group,
+		Kind:      "Gateway",
+		Namespace: "ns",
+		Name:      "gw-2",
+	}
+
+	backend1 := baseBackend.CloneForGatewayBackendClientCertificate(gateway1, clientCertificate)
+	backend2 := baseBackend.CloneForGatewayBackendClientCertificate(gateway2, clientCertificate)
+
+	emd := ir.EndpointWithMd{
+		LbEndpoint: &envoyendpointv3.LbEndpoint{
+			HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+				Endpoint: &envoyendpointv3.Endpoint{
+					Address: &envoycorev3.Address{
+						Address: &envoycorev3.Address_SocketAddress{
+							SocketAddress: &envoycorev3.SocketAddress{
+								Address: "1.2.3.4",
+								PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+									PortValue: 8080,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		EndpointMd: ir.EndpointMetadata{
+			Labels: map[string]string{
+				corev1.LabelTopologyRegion: "region",
+				corev1.LabelTopologyZone:   "zone",
+			},
+		},
+	}
+
+	result1 := ir.NewEndpointsForBackend(backend1)
+	result1.Add(ir.PodLocality{Region: "region", Zone: "zone"}, emd)
+
+	result2 := ir.NewEndpointsForBackend(backend2)
+	result2.Add(ir.PodLocality{Region: "region", Zone: "zone"}, emd)
+
+	g.Expect(backend1.ResourceName()).NotTo(Equal(backend2.ResourceName()))
+	g.Expect(backend1.ClusterName()).NotTo(Equal(backend2.ClusterName()))
+	g.Expect(result1.LbEpsEqualityHash).NotTo(Equal(result2.LbEpsEqualityHash),
+		"Gateway-scoped backends with the same endpoints must still hash differently")
 }
 
 func TestEndpoints(t *testing.T) {

@@ -11,8 +11,8 @@ jobs:
       (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER') &&
       github.event.comment.body == '/retest'
     permissions:
-     contents: read
-     actions: write
+      contents: read
+      actions: write
     runs-on: ubuntu-22.04
     steps:
       - name: Check out code

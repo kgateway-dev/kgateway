@@ -29,18 +29,21 @@ func TestGetSupportedFeaturesForStandardGatewayExcludesKnownUnsupportedV15Featur
 	if _, ok := supportedNames[gwv1.FeatureName(features.SupportGatewayFrontendClientCertificateValidationInsecureFallback)]; !ok {
 		t.Fatalf("expected %q to remain supported", features.SupportGatewayFrontendClientCertificateValidationInsecureFallback)
 	}
+	if _, ok := supportedNames[gwv1.FeatureName(features.SupportGatewayBackendClientCertificate)]; !ok {
+		t.Fatalf("expected %q to remain supported once core BackendTLSPolicy support is advertised", features.SupportGatewayBackendClientCertificate)
+	}
 }
 
-func TestGetSupportedFeaturesForStandardGatewayExcludesTLSRouteWhenExperimentalDisabled(t *testing.T) {
+func TestGetSupportedFeaturesForStandardGatewayIncludesStandardTLSRouteWhenExperimentalDisabled(t *testing.T) {
 	t.Helper()
 
 	supportedNames := supportedFeatureSet(GetSupportedFeaturesForStandardGateway(false))
 
-	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRoute)]; ok {
-		t.Fatalf("expected %q to be exempted when experimental Gateway API features are disabled", features.SupportTLSRoute)
+	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRoute)]; !ok {
+		t.Fatalf("expected %q to remain supported when experimental Gateway API features are disabled", features.SupportTLSRoute)
 	}
-	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRouteModeTerminate)]; ok {
-		t.Fatalf("expected %q to be exempted when experimental Gateway API features are disabled", features.SupportTLSRouteModeTerminate)
+	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRouteModeTerminate)]; !ok {
+		t.Fatalf("expected %q to remain supported when experimental Gateway API features are disabled", features.SupportTLSRouteModeTerminate)
 	}
 	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRouteModeMixed)]; ok {
 		t.Fatalf("expected %q to be exempted when experimental Gateway API features are disabled", features.SupportTLSRouteModeMixed)
