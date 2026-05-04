@@ -494,16 +494,9 @@ func (s *testingSuite) TestHttpACLLargeRuleset() {
 }
 
 // TestHttpACLValidWithInvalidCIDRPolicy applies a valid ACL policy, verifies it enforces
-// allow/deny correctly, then adds a second TrafficPolicy whose CIDR has host bits set
-// (172.18.0.0/12) and repeats the same requests to observe how the control plane handles
-// the conflict.
-//
-// Expected outcome after the invalid policy is applied:
-//   - The invalid policy is rejected immediately (Accepted=False, reason=Invalid) with a
-//     message naming the offending CIDR and suggesting the correct network address.
-//   - The HTTPRoute remains Accepted=True — the route is NOT replaced with a 500 direct
-//     response, because the control plane catches the bad CIDR before any config reaches Envoy.
-//   - The valid policy's deny/allow rules continue to govern traffic unchanged.
+// allow/deny correctly, then adds a second TrafficPolicy whose CIDR is invalid by having the
+// host bits set (172.18.0.0/12) and repeats the same requests to observe how the control plane
+// handles the conflict.
 func (s *testingSuite) TestHttpACLValidWithInvalidCIDRPolicy() {
 	// ── Phase 1: valid ACL policy only ───────────────────────────────────────
 
@@ -563,8 +556,7 @@ func (s *testingSuite) TestHttpACLValidWithInvalidCIDRPolicy() {
 		g.Expect(cond.Message).To(gomega.ContainSubstring("172.18.0.0/12"), "error should name the bad CIDR")
 	}).WithTimeout(30 * time.Second).WithPolling(time.Second).Should(gomega.Succeed())
 
-	// The route must NOT be replaced — the invalid policy contributes no xDS config.
-	s.T().Log("Phase 2 — after invalid policy: 10.0.0.1 should still be allowed (route not replaced)")
+	s.T().Log("Phase 2 — after invalid policy: 10.0.0.1 route being replaced with 500 response")
 	common.BaseGateway.Send(
 		s.T(),
 		expectInternalServerError,
@@ -574,7 +566,7 @@ func (s *testingSuite) TestHttpACLValidWithInvalidCIDRPolicy() {
 		curl.WithHeader("X-Forwarded-For", "10.0.0.1"),
 	)
 
-	s.T().Log("Phase 2 — after invalid policy: 192.168.1.100 should still be denied (valid ACL preserved)")
+	s.T().Log("Phase 2 — after invalid policy: 192.168.1.100 route being replaced with 500 response")
 	common.BaseGateway.Send(
 		s.T(),
 		expectInternalServerError,
