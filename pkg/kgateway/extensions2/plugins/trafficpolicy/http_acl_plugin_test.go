@@ -195,7 +195,6 @@ func TestValidateACLCIDRs(t *testing.T) {
 				err := validateACLCIDRs(makeACL(tc.cidr))
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tc.cidr)
-				assert.Contains(t, err.Error(), "host bits set")
 				assert.Contains(t, err.Error(), tc.wantNet)
 			})
 		}

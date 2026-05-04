@@ -1,0 +1,17 @@
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: invalid-cidr-acl-policy
+  namespace: kgateway-base
+spec:
+  targetRefs:
+    - name: httpbin-route
+      kind: HTTPRoute
+      group: gateway.networking.k8s.io
+  acl:
+    defaultAction: allow
+    rules:
+      - cidrs:
+          - "172.18.0.0/12"  # invalid: host bits set; correct network address is 172.16.0.0/12
+        action: deny
