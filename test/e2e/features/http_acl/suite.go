@@ -15,9 +15,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/encoding/protojson"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
@@ -486,6 +490,63 @@ func (s *testingSuite) TestHttpACLLargeRuleset() {
 		curl.WithPort(80),
 		curl.WithPath("/status/200"),
 		curl.WithHeader("X-Forwarded-For", "8.8.8.8"),
+	)
+}
+
+// TestHttpACLValidWithInvalidCIDRPolicy verifies the behavior when a valid ACL policy and
+// an invalid ACL policy (CIDR with host bits set) both target the same HTTPRoute.
+//
+// The control plane catches the bad CIDR before any invalid xDS config reaches Envoy, so:
+//   - The invalid policy is rejected immediately (Accepted=False, reason=Invalid) with a
+//     message that names the offending CIDR and suggests the correct network address.
+//   - The HTTPRoute remains Accepted=True — the route is NOT replaced with a 500 direct
+//     response, because no invalid config was ever pushed to Envoy.
+//   - The valid policy's deny/allow rules continue to apply to traffic.
+func (s *testingSuite) TestHttpACLValidWithInvalidCIDRPolicy() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
+	)
+
+	// The invalid policy must be rejected with a clear CIDR error in its status.
+	s.T().Log("invalid-cidr-acl-policy should be rejected with a descriptive CIDR error")
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		tp := &kgateway.TrafficPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: "invalid-cidr-acl-policy", Namespace: "kgateway-base"},
+			tp,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "can get invalid-cidr-acl-policy TrafficPolicy")
+		g.Expect(tp.Status.Ancestors).NotTo(gomega.BeEmpty(), "TrafficPolicy should report ancestor status")
+
+		cond := apimeta.FindStatusCondition(tp.Status.Ancestors[0].Conditions, string(shared.PolicyConditionAccepted))
+		g.Expect(cond).NotTo(gomega.BeNil(), "TrafficPolicy should have an Accepted condition")
+		g.Expect(cond.Status).To(gomega.Equal(metav1.ConditionFalse), "invalid policy should be Accepted=False")
+		g.Expect(cond.Reason).To(gomega.Equal(string(shared.PolicyReasonInvalid)), "reason should be Invalid")
+		g.Expect(cond.Message).To(gomega.ContainSubstring("172.18.0.0/12"), "error should name the bad CIDR")
+		g.Expect(cond.Message).To(gomega.ContainSubstring("host bits set"), "error should explain why the CIDR is invalid")
+		g.Expect(cond.Message).To(gomega.ContainSubstring("172.16.0.0/12"), "error should suggest the correct network address")
+	}).WithTimeout(30 * time.Second).WithPolling(time.Second).Should(gomega.Succeed())
+
+	// The route must NOT be replaced with a 500 direct response — the valid policy still governs traffic.
+	s.T().Log("IP outside denied CIDR (10.0.0.1) should be allowed — route not replaced, valid ACL active")
+	common.BaseGateway.Send(
+		s.T(),
+		expectAllowed,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "10.0.0.1"),
+	)
+
+	s.T().Log("IP inside denied CIDR 192.168.0.0/16 should be denied — valid policy deny rule in effect")
+	common.BaseGateway.Send(
+		s.T(),
+		expectDenied,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "192.168.1.100"),
 	)
 }
 

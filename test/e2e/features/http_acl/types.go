@@ -15,17 +15,18 @@ import (
 
 var (
 	// manifests
-	setupManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	defaultAllowManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "default-allow.yaml")
-	defaultDenyManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "default-deny.yaml")
-	holePunchManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "hole-punch.yaml")
-	customDenyRespManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "custom-deny-response.yaml")
-	blockedByHeaderManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "blocked-by-header.yaml")
-	routeHTTPACLManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-http-acl.yaml")
-	httprouteHTTPACLManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute-http-acl.yaml")
-	gatewayHTTPACLManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-http-acl.yaml")
-	aclAccessLogManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "acl-access-log.yaml")
-	largeRulesetManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "large-ruleset.yaml")
+	setupManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	defaultAllowManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "default-allow.yaml")
+	defaultDenyManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "default-deny.yaml")
+	holePunchManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "hole-punch.yaml")
+	customDenyRespManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "custom-deny-response.yaml")
+	blockedByHeaderManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "blocked-by-header.yaml")
+	routeHTTPACLManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-http-acl.yaml")
+	httprouteHTTPACLManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute-http-acl.yaml")
+	gatewayHTTPACLManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-http-acl.yaml")
+	aclAccessLogManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "acl-access-log.yaml")
+	largeRulesetManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "large-ruleset.yaml")
+	validAndInvalidACLManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-and-invalid-acl.yaml")
 
 	// proxyObjectMeta targets the shared gateway deployment for Envoy admin API access.
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -79,6 +80,9 @@ var (
 		},
 		"TestHttpACLLargeRuleset": {
 			Manifests: []string{largeRulesetManifest},
+		},
+		"TestHttpACLValidWithInvalidCIDRPolicy": {
+			Manifests: []string{validAndInvalidACLManifest},
 		},
 	}
 )
