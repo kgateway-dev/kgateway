@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 var testenv env.Environment
@@ -16,8 +16,8 @@ var testenv env.Environment
 func TestMain(m *testing.M) {
 	// Register Gateway API types with the global scheme
 	// The framework's client uses the global scheme by default
-	_ = gwv1.AddToScheme(scheme.Scheme)
-	_ = gwv1beta1.AddToScheme(scheme.Scheme)
+	gwv1.Install(scheme.Scheme)
+	gwv1b1.Install(scheme.Scheme)
 
 	cfg, err := envconf.NewFromFlags()
 	if err != nil {

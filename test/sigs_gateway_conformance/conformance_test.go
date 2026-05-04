@@ -61,11 +61,9 @@ func TestConformance(t *testing.T) {
 	}
 
 	for _, feature := range features {
-		feature := feature
 		t.Run(feature.name, func(t *testing.T) {
 			t.Parallel()
 			for _, tc := range feature.tests {
-				tc := tc
 				t.Run(tc.ShortName, func(t *testing.T) {
 					t.Parallel()
 					tc.Run(t, suite)
