@@ -23,8 +23,7 @@ serviceAccount:
 deploymentAnnotations: {}
 
 # -- Add annotations to the kgateway pods. This field is deprecated in favor of controller.podAnnotations and will be removed in v3.0.
-podAnnotations:
-  prometheus.io/scrape: "true"
+podAnnotations: {}
 
 # -- Set the pod-level security context. For example, 'fsGroup: 2000' sets the filesystem group to 2000. This field is deprecated in favor of controller.podSecurityContext and will be removed in v3.0.
 podSecurityContext: {}
