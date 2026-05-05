@@ -1,6 +1,5 @@
 {{- $controllerPodAnnotations := ternary .Values.controller.podAnnotations .Values.podAnnotations (not (kindIs "invalid" .Values.controller.podAnnotations)) }}
-{{- $serviceMonitorEnabled := and .Values.controller.service.enabled .Values.controller.serviceMonitor.enabled (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") }}
-{{- if $serviceMonitorEnabled }}
+{{- if not .Values.controller.prometheusAnnotations }}
 {{- $controllerPodAnnotations = omit $controllerPodAnnotations "prometheus.io/scrape" "prometheus.io/path" "prometheus.io/port" }}
 {{- end }}
 {{- $controllerPodSecurityContext := ternary .Values.controller.podSecurityContext .Values.podSecurityContext (not (kindIs "invalid" .Values.controller.podSecurityContext)) }}
@@ -34,9 +33,9 @@ spec:
   {{- end }}
   template:
     metadata:
-      {{- if or (not $serviceMonitorEnabled) $controllerPodAnnotations }}
+      {{- if or .Values.controller.prometheusAnnotations $controllerPodAnnotations }}
       annotations:
-        {{- if not $serviceMonitorEnabled }}
+        {{- if .Values.controller.prometheusAnnotations }}
         prometheus.io/path: "/metrics"
         prometheus.io/port: {{ .Values.controller.service.ports.metrics | default 9092 | quote}}
         {{- end }}
