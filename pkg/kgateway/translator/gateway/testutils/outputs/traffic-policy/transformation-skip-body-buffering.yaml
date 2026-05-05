@@ -32,7 +32,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: rustformation
+            filterName: http_simple_mutations
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -74,7 +74,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"source","value":"route-attachment-1"}],"body":{"parseAs":"None"}},"response":{"set":[{"name":"source","value":"route-attachment-1"}],"body":{"parseAs":"None"}}}'
-          perRouteConfigName: rustformation
+          perRouteConfigName: http_simple_mutations
 Statuses:
   gateways:
     default/test:

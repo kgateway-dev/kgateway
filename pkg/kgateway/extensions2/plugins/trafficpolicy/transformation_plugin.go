@@ -16,7 +16,9 @@ import (
 
 const (
 	RustformationModuleName = "rust_module"
-	RustformationFilterName = "rustformation"
+	//  Cannot rename the filter until we upgrade to a new envoy that can recognize both name
+	//	RustformationFilterName = "rustformation"
+	RustformationFilterName = "http_simple_mutations"
 )
 
 type rustformationIR struct {
