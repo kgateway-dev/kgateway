@@ -23,6 +23,16 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
+        - disabled: true
+          name: dynamic_modules/simple_mutations
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -45,14 +55,27 @@ Routes:
     - www.example.com
     name: listener~8080~www_example_com
     routes:
-    - directResponse:
-        body:
-          inlineString: invalid route configuration detected and replaced with a direct
-            response.
-        status: 500
-      match:
+    - match:
         prefix: /
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            transformation:
+            - gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-traffic-policy
       name: listener~8080~www_example_com-route-0-httproute-invalid-traffic-policy-route-gwtest-0-0-matcher-0
+      route:
+        cluster: kube_gwtest_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        dynamic_modules/simple_mutations:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
+              }}"}}}'
+          perRouteConfigName: rustformation
 Statuses:
   gateways:
     gwtest/example-gateway:
@@ -106,103 +129,9 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: |-
-            Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-traffic-policy: invalid xds configuration: v2.3.0-main: Pulling from kgateway-dev/envoy-wrapper
-            Digest: sha256:b35084e0a16673275efb08e89037b463d133d9f728bef39145e48d20850b4624
-            Status: Image is up to date for ghcr.io/kgateway-dev/envoy-wrapper:v2.3.0-main
-
-            thread '<unnamed>' (1) panicked at module-init/src/lib.rs:78:14:
-            Unknown filter name: http_simple_mutations, known filters are: rustformation, http-acl
-            note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-
-            thread '<unnamed>' (1) panicked at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/panicking.rs:225:5:
-            panic in a function that cannot unwind
-            stack backtrace:
-               0:     0xeab2c00d432c - std[cc6062c208ed37d1]::backtrace_rs::backtrace::libunwind::trace
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/../../backtrace/src/backtrace/libunwind.rs:117:9
-               1:     0xeab2c00d432c - std[cc6062c208ed37d1]::backtrace_rs::backtrace::trace_unsynchronized::<std[cc6062c208ed37d1]::sys::backtrace::_print_fmt::{closure#1}>
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/../../backtrace/src/backtrace/mod.rs:66:14
-               2:     0xeab2c00d432c - std[cc6062c208ed37d1]::sys::backtrace::_print_fmt
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/sys/backtrace.rs:74:9
-               3:     0xeab2c00d432c - <<std[cc6062c208ed37d1]::sys::backtrace::BacktraceLock>::print::DisplayBacktrace as core[4e11ee24e72d71de]::fmt::Display>::fmt
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/sys/backtrace.rs:44:26
-               4:     0xeab2c00e98fc - <core[4e11ee24e72d71de]::fmt::rt::Argument>::fmt
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/fmt/rt.rs:152:76
-               5:     0xeab2c00e98fc - core[4e11ee24e72d71de]::fmt::write
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/fmt/mod.rs:1686:22
-               6:     0xeab2c00d81f0 - std[cc6062c208ed37d1]::io::default_write_fmt::<std[cc6062c208ed37d1]::sys::stdio::unix::Stderr>
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/io/mod.rs:639:11
-               7:     0xeab2c00d81f0 - <std[cc6062c208ed37d1]::sys::stdio::unix::Stderr as std[cc6062c208ed37d1]::io::Write>::write_fmt
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/io/mod.rs:1994:13
-               8:     0xeab2c00c3ff4 - <std[cc6062c208ed37d1]::sys::backtrace::BacktraceLock>::print
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/sys/backtrace.rs:47:9
-               9:     0xeab2c00c3ff4 - std[cc6062c208ed37d1]::panicking::default_hook::{closure#0}
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:292:27
-              10:     0xeab2c00d18e4 - std[cc6062c208ed37d1]::panicking::default_hook
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:319:9
-              11:     0xeab2c00d1a9c - std[cc6062c208ed37d1]::panicking::panic_with_hook
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:825:13
-              12:     0xeab2c00c40d0 - std[cc6062c208ed37d1]::panicking::panic_handler::{closure#0}
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:691:13
-              13:     0xeab2c00bb02c - std[cc6062c208ed37d1]::sys::backtrace::__rust_end_short_backtrace::<std[cc6062c208ed37d1]::panicking::panic_handler::{closure#0}, !>
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/sys/backtrace.rs:182:18
-              14:     0xeab2c00c4a3c - __rustc[b7974e8690430dd9]::rust_begin_unwind
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:689:5
-              15:     0xeab2c00ea050 - core[4e11ee24e72d71de]::panicking::panic_nounwind_fmt::runtime
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/panicking.rs:122:22
-              16:     0xeab2c00ea050 - core[4e11ee24e72d71de]::panicking::panic_nounwind_fmt
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/intrinsics/mod.rs:2447:9
-              17:     0xeab2c00e9fd8 - core[4e11ee24e72d71de]::panicking::panic_nounwind
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/panicking.rs:225:5
-              18:     0xeab2c00ea130 - core[4e11ee24e72d71de]::panicking::panic_cannot_unwind
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/panicking.rs:337:5
-              19:     0xeab2c00ad37c - envoy_dynamic_module_on_http_filter_per_route_config_new
-                                           at /usr/local/cargo/git/checkouts/envoy-51a762366ee0d0ba/5afe27f/source/extensions/dynamic_modules/sdk/rust/src/lib.rs:2891:1
-              20:     0xc735d0cf1544 - <unknown>
-              21:     0xc735d0ce135c - <unknown>
-              22:     0xc735d158e5d0 - <unknown>
-              23:     0xc735d158f1c4 - <unknown>
-              24:     0xc735d158e478 - <unknown>
-              25:     0xc735d153d894 - <unknown>
-              26:     0xc735d153ed78 - <unknown>
-              27:     0xc735d153eef8 - <unknown>
-              28:     0xc735d15415c4 - <unknown>
-              29:     0xc735d1541214 - <unknown>
-              30:     0xc735d15432c0 - <unknown>
-              31:     0xc735d15430b8 - <unknown>
-              32:     0xc735d152329c - <unknown>
-              33:     0xc735d152a060 - <unknown>
-              34:     0xc735d1521558 - <unknown>
-              35:     0xc735d15214d4 - <unknown>
-              36:     0xc735d1528f58 - <unknown>
-              37:     0xc735d1520f94 - <unknown>
-              38:     0xc735cf1d77a0 - <unknown>
-              39:     0xc735cf1d4e4c - <unknown>
-              40:     0xc735cf1d4fd8 - <unknown>
-              41:     0xc735d1357c7c - <unknown>
-              42:     0xc735d13663e8 - <unknown>
-              43:     0xc735d1365f58 - <unknown>
-              44:     0xc735d137d57c - <unknown>
-              45:     0xc735d13494e0 - <unknown>
-              46:     0xc735d1347638 - <unknown>
-              47:     0xc735d13611d4 - <unknown>
-              48:     0xc735d135fc58 - <unknown>
-              49:     0xc735d1477b00 - <unknown>
-              50:     0xc735d0d365c8 - <unknown>
-              51:     0xc735d0d34984 - <unknown>
-              52:     0xc735d0d3433c - <unknown>
-              53:     0xc735d0d0c0b0 - <unknown>
-              54:     0xc735d0d0c4e8 - <unknown>
-              55:     0xc735ceb3b144 - <unknown>
-              56:     0xeab2c11b7400 - <unknown>
-              57:     0xeab2c11b74d8 - __libc_start_main
-            thread caused non-unwinding panic. aborting.
-            Caught Aborted, suspect faulting address 0x277500000001
-            Backtrace (use tools/stack_decode.py to get line numbers):
-            Envoy version: 5afe27fb338b16d5bb06b3a7198bcd581b4e3dee/1.37.2/Clean/RELEASE/BoringSSL
-            Address mapping: c735ceb3b000-c735d1e5e000 /usr/local/bin/envoy
-          reason: RouteRuleReplaced
-          status: "False"
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references
@@ -224,107 +153,13 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: |-
-            invalid xds configuration: v2.3.0-main: Pulling from kgateway-dev/envoy-wrapper
-            Digest: sha256:b35084e0a16673275efb08e89037b463d133d9f728bef39145e48d20850b4624
-            Status: Image is up to date for ghcr.io/kgateway-dev/envoy-wrapper:v2.3.0-main
-
-            thread '<unnamed>' (1) panicked at module-init/src/lib.rs:78:14:
-            Unknown filter name: http_simple_mutations, known filters are: rustformation, http-acl
-            note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-
-            thread '<unnamed>' (1) panicked at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/panicking.rs:225:5:
-            panic in a function that cannot unwind
-            stack backtrace:
-               0:     0xeab2c00d432c - std[cc6062c208ed37d1]::backtrace_rs::backtrace::libunwind::trace
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/../../backtrace/src/backtrace/libunwind.rs:117:9
-               1:     0xeab2c00d432c - std[cc6062c208ed37d1]::backtrace_rs::backtrace::trace_unsynchronized::<std[cc6062c208ed37d1]::sys::backtrace::_print_fmt::{closure#1}>
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/../../backtrace/src/backtrace/mod.rs:66:14
-               2:     0xeab2c00d432c - std[cc6062c208ed37d1]::sys::backtrace::_print_fmt
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/sys/backtrace.rs:74:9
-               3:     0xeab2c00d432c - <<std[cc6062c208ed37d1]::sys::backtrace::BacktraceLock>::print::DisplayBacktrace as core[4e11ee24e72d71de]::fmt::Display>::fmt
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/sys/backtrace.rs:44:26
-               4:     0xeab2c00e98fc - <core[4e11ee24e72d71de]::fmt::rt::Argument>::fmt
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/fmt/rt.rs:152:76
-               5:     0xeab2c00e98fc - core[4e11ee24e72d71de]::fmt::write
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/fmt/mod.rs:1686:22
-               6:     0xeab2c00d81f0 - std[cc6062c208ed37d1]::io::default_write_fmt::<std[cc6062c208ed37d1]::sys::stdio::unix::Stderr>
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/io/mod.rs:639:11
-               7:     0xeab2c00d81f0 - <std[cc6062c208ed37d1]::sys::stdio::unix::Stderr as std[cc6062c208ed37d1]::io::Write>::write_fmt
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/io/mod.rs:1994:13
-               8:     0xeab2c00c3ff4 - <std[cc6062c208ed37d1]::sys::backtrace::BacktraceLock>::print
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/sys/backtrace.rs:47:9
-               9:     0xeab2c00c3ff4 - std[cc6062c208ed37d1]::panicking::default_hook::{closure#0}
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:292:27
-              10:     0xeab2c00d18e4 - std[cc6062c208ed37d1]::panicking::default_hook
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:319:9
-              11:     0xeab2c00d1a9c - std[cc6062c208ed37d1]::panicking::panic_with_hook
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:825:13
-              12:     0xeab2c00c40d0 - std[cc6062c208ed37d1]::panicking::panic_handler::{closure#0}
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:691:13
-              13:     0xeab2c00bb02c - std[cc6062c208ed37d1]::sys::backtrace::__rust_end_short_backtrace::<std[cc6062c208ed37d1]::panicking::panic_handler::{closure#0}, !>
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/sys/backtrace.rs:182:18
-              14:     0xeab2c00c4a3c - __rustc[b7974e8690430dd9]::rust_begin_unwind
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/std/src/panicking.rs:689:5
-              15:     0xeab2c00ea050 - core[4e11ee24e72d71de]::panicking::panic_nounwind_fmt::runtime
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/panicking.rs:122:22
-              16:     0xeab2c00ea050 - core[4e11ee24e72d71de]::panicking::panic_nounwind_fmt
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/intrinsics/mod.rs:2447:9
-              17:     0xeab2c00e9fd8 - core[4e11ee24e72d71de]::panicking::panic_nounwind
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/panicking.rs:225:5
-              18:     0xeab2c00ea130 - core[4e11ee24e72d71de]::panicking::panic_cannot_unwind
-                                           at /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library/core/src/panicking.rs:337:5
-              19:     0xeab2c00ad37c - envoy_dynamic_module_on_http_filter_per_route_config_new
-                                           at /usr/local/cargo/git/checkouts/envoy-51a762366ee0d0ba/5afe27f/source/extensions/dynamic_modules/sdk/rust/src/lib.rs:2891:1
-              20:     0xc735d0cf1544 - <unknown>
-              21:     0xc735d0ce135c - <unknown>
-              22:     0xc735d158e5d0 - <unknown>
-              23:     0xc735d158f1c4 - <unknown>
-              24:     0xc735d158e478 - <unknown>
-              25:     0xc735d153d894 - <unknown>
-              26:     0xc735d153ed78 - <unknown>
-              27:     0xc735d153eef8 - <unknown>
-              28:     0xc735d15415c4 - <unknown>
-              29:     0xc735d1541214 - <unknown>
-              30:     0xc735d15432c0 - <unknown>
-              31:     0xc735d15430b8 - <unknown>
-              32:     0xc735d152329c - <unknown>
-              33:     0xc735d152a060 - <unknown>
-              34:     0xc735d1521558 - <unknown>
-              35:     0xc735d15214d4 - <unknown>
-              36:     0xc735d1528f58 - <unknown>
-              37:     0xc735d1520f94 - <unknown>
-              38:     0xc735cf1d77a0 - <unknown>
-              39:     0xc735cf1d4e4c - <unknown>
-              40:     0xc735cf1d4fd8 - <unknown>
-              41:     0xc735d1357c7c - <unknown>
-              42:     0xc735d13663e8 - <unknown>
-              43:     0xc735d1365f58 - <unknown>
-              44:     0xc735d137d57c - <unknown>
-              45:     0xc735d13494e0 - <unknown>
-              46:     0xc735d1347638 - <unknown>
-              47:     0xc735d13611d4 - <unknown>
-              48:     0xc735d135fc58 - <unknown>
-              49:     0xc735d1477b00 - <unknown>
-              50:     0xc735d0d365c8 - <unknown>
-              51:     0xc735d0d34984 - <unknown>
-              52:     0xc735d0d3433c - <unknown>
-              53:     0xc735d0d0c0b0 - <unknown>
-              54:     0xc735d0d0c4e8 - <unknown>
-              55:     0xc735ceb3b144 - <unknown>
-              56:     0xeab2c11b7400 - <unknown>
-              57:     0xeab2c11b74d8 - __libc_start_main
-            thread caused non-unwinding panic. aborting.
-            Caught Aborted, suspect faulting address 0x277500000001
-            Backtrace (use tools/stack_decode.py to get line numbers):
-            Envoy version: 5afe27fb338b16d5bb06b3a7198bcd581b4e3dee/1.37.2/Clean/RELEASE/BoringSSL
-            Address mapping: c735ceb3b000-c735d1e5e000 /usr/local/bin/envoy
-          reason: Invalid
-          status: "False"
+          message: Policy accepted
+          reason: Valid
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: ""
-          reason: Pending
-          status: "False"
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway

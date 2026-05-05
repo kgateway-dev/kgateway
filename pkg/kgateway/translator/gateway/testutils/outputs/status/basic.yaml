@@ -41,7 +41,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -136,7 +136,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"abc","value":"custom-value-abc"}]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
         envoy.filters.http.cors:
           '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
           allowOriginStringMatch:

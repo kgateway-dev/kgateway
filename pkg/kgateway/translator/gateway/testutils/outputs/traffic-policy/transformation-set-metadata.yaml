@@ -32,7 +32,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -78,7 +78,7 @@ Routes:
               header(\"x-user-id\") }}"}}]},"response":{"set":[{"name":"x-user-response","value":"{{
               header(\"x-user-id\") }}"}],"dynamicMetadata":[{"namespace":"com.example.auth","key":"user-id-response","value":{"stringValue":"{{
               header(\"x-user-id\") }}"}}]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation
 Statuses:
   gateways:
     default/test:
