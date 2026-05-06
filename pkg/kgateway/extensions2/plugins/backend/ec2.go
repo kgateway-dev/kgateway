@@ -18,6 +18,7 @@ import (
 	awsec2 "github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/smithy-go"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"golang.org/x/sync/singleflight"
@@ -280,6 +281,7 @@ func (l *awsEc2InstanceLister) ListInstances(ctx context.Context, source ec2Cred
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
+			logEc2AWSAPIError(source, "DescribeInstances", err)
 			return nil, fmt.Errorf("describe instances: %w", err)
 		}
 		for _, reservation := range page.Reservations {
@@ -295,6 +297,14 @@ func (l *awsEc2InstanceLister) ListInstances(ctx context.Context, source ec2Cred
 					discovered.tags[awssdk.ToString(tag.Key)] = awssdk.ToString(tag.Value)
 				}
 				if discovered.privateIP == "" && discovered.publicIP == "" {
+					logger.Warn(
+						"skipping EC2 instance with no IP address",
+						"instance_id", discovered.instanceID,
+						"region", source.region,
+						"role_arn", source.roleArn,
+						"secret", ec2SecretResourceName(source.secret),
+						"availability_zone", discovered.zone,
+					)
 					continue
 				}
 				instances = append(instances, discovered)
@@ -572,10 +582,12 @@ func ec2ConfigFromBackend(backend ir.BackendObjectIR) *ec2BackendConfig {
 
 func selectResolvedEc2Backend(cfg ec2BackendConfig, instances []ec2DiscoveredInstance) ec2ResolvedBackend {
 	selected := ec2ResolvedBackend{port: cfg.port}
+	matchedFilters := 0
 	for _, instance := range instances {
 		if !matchesEc2Filters(instance, cfg.filters) {
 			continue
 		}
+		matchedFilters++
 		address := instance.privateIP
 		if cfg.addressType == kgateway.AwsAddressTypePublicIP {
 			address = instance.publicIP
@@ -603,6 +615,18 @@ func selectResolvedEc2Backend(cfg ec2BackendConfig, instances []ec2DiscoveredIns
 			return strings.Compare(a.instanceID, b.instanceID)
 		}
 	})
+
+	if len(cfg.filters) > 0 && matchedFilters == 0 {
+		logger.Warn(
+			"no EC2 instances matched configured filters",
+			"backend", cfg.resourceName,
+			"region", cfg.region,
+			"role_arn", cfg.roleArn,
+			"address_type", cfg.addressType,
+			"filters", ec2FiltersForLog(cfg.filters),
+			"listed_instances", len(instances),
+		)
+	}
 
 	return selected
 }
@@ -658,6 +682,55 @@ func defaultEc2AddressType(addressType kgateway.AwsAddressType) kgateway.AwsAddr
 		return kgateway.AwsAddressTypePrivateIP
 	}
 	return addressType
+}
+
+func logEc2AWSAPIError(source ec2CredentialSource, operation string, err error) {
+	attrs := []any{
+		"operation", operation,
+		"region", source.region,
+		"role_arn", source.roleArn,
+		"secret", ec2SecretResourceName(source.secret),
+		"error", err,
+	}
+	if code, message, ok := awsAPIErrorDetails(err); ok {
+		attrs = append(attrs,
+			"aws_error_code", code,
+			"aws_error_message", message,
+		)
+	}
+
+	logger.Error("AWS EC2 API returned an error", attrs...)
+}
+
+func awsAPIErrorDetails(err error) (string, string, bool) {
+	var apiErr smithy.APIError
+	if !errors.As(err, &apiErr) {
+		return "", "", false
+	}
+	return apiErr.ErrorCode(), apiErr.ErrorMessage(), true
+}
+
+func ec2SecretResourceName(secret *ir.Secret) string {
+	if secret == nil {
+		return ""
+	}
+	return secret.ResourceName()
+}
+
+func ec2FiltersForLog(filters []ec2TagFilter) []string {
+	if len(filters) == 0 {
+		return nil
+	}
+
+	out := make([]string, 0, len(filters))
+	for _, filter := range filters {
+		if filter.exact {
+			out = append(out, fmt.Sprintf("%s=%s", filter.key, filter.value))
+			continue
+		}
+		out = append(out, filter.key)
+	}
+	return out
 }
 
 type TestEc2Instance struct {

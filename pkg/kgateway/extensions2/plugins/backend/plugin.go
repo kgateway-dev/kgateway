@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -186,6 +187,7 @@ func buildTranslateFunc(
 					var err error
 					secret, err = secrets.GetSecretWithoutRefGrant(krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
 					if err != nil {
+						logAWSSecretReferenceError(i, i.Spec.Aws.Auth.SecretRef.Name, err)
 						beIr.errors = append(beIr.errors, err)
 					}
 				}
@@ -213,6 +215,7 @@ func buildTranslateFunc(
 					var err error
 					secret, err = secrets.GetSecretWithoutRefGrant(krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
 					if err != nil {
+						logAWSSecretReferenceError(i, i.Spec.Aws.Auth.SecretRef.Name, err)
 						beIr.errors = append(beIr.errors, err)
 					}
 				}
@@ -231,6 +234,15 @@ func buildTranslateFunc(
 		}
 		return &beIr
 	}
+}
+
+func logAWSSecretReferenceError(backend *kgateway.Backend, secretName string, err error) {
+	logger.Error(
+		"referenced AWS secret does not exist or could not be loaded",
+		"backend", fmt.Sprintf("%s/%s", backend.GetNamespace(), backend.GetName()),
+		"secret", fmt.Sprintf("%s/%s", backend.GetNamespace(), secretName),
+		"error", err,
+	)
 }
 
 func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
