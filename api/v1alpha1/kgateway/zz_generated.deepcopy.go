@@ -3227,6 +3227,11 @@ func (in *ListenerConfig) DeepCopyInto(out *ListenerConfig) {
 		*out = new(ProxyProtocolConfig)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.TCPKeepalive != nil {
+		in, out := &in.TCPKeepalive, &out.TCPKeepalive
+		*out = new(TCPKeepalive)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.PerConnectionBufferLimitBytes != nil {
 		in, out := &in.PerConnectionBufferLimitBytes, &out.PerConnectionBufferLimitBytes
 		*out = new(int32)

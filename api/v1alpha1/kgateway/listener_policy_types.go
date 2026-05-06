@@ -101,6 +101,10 @@ type ListenerConfig struct {
 	// +optional
 	ProxyProtocol *ProxyProtocolConfig `json:"proxyProtocol,omitempty"`
 
+	// TCPKeepalive configures OS-level TCP keepalive checks for downstream client connections accepted by this listener.
+	// +optional
+	TCPKeepalive *TCPKeepalive `json:"tcpKeepalive,omitempty"`
+
 	// PerConnectionBufferLimitBytes sets the per-connection buffer limit for all listeners on the gateway.
 	// This controls the maximum size of read and write buffers for new connections.
 	// When using Envoy as an edge proxy, configuring the listener buffer limit is important to guard against

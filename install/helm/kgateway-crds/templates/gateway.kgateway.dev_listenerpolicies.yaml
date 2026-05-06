@@ -2222,6 +2222,34 @@ spec:
                           Defaults to false.
                         type: boolean
                     type: object
+                  tcpKeepalive:
+                    description: TCPKeepalive configures OS-level TCP keepalive checks
+                      for downstream client connections accepted by this listener.
+                    properties:
+                      keepAliveInterval:
+                        description: The number of seconds between keep-alive probes.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: keepAliveInterval must be at least 1 second
+                          rule: duration(self) >= duration('1s')
+                      keepAliveProbes:
+                        description: Maximum number of keep-alive probes to send before
+                          dropping the connection.
+                        format: int32
+                        minimum: 0
+                        type: integer
+                      keepAliveTime:
+                        description: The number of seconds a connection needs to be
+                          idle before keep-alive probes start being sent.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: keepAliveTime must be at least 1 second
+                          rule: duration(self) >= duration('1s')
+                    type: object
                 type: object
               perPort:
                 description: |-
@@ -4345,6 +4373,36 @@ spec:
 
                                 Defaults to false.
                               type: boolean
+                          type: object
+                        tcpKeepalive:
+                          description: TCPKeepalive configures OS-level TCP keepalive
+                            checks for downstream client connections accepted by this
+                            listener.
+                          properties:
+                            keepAliveInterval:
+                              description: The number of seconds between keep-alive
+                                probes.
+                              type: string
+                              x-kubernetes-validations:
+                              - message: invalid duration value
+                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                              - message: keepAliveInterval must be at least 1 second
+                                rule: duration(self) >= duration('1s')
+                            keepAliveProbes:
+                              description: Maximum number of keep-alive probes to
+                                send before dropping the connection.
+                              format: int32
+                              minimum: 0
+                              type: integer
+                            keepAliveTime:
+                              description: The number of seconds a connection needs
+                                to be idle before keep-alive probes start being sent.
+                              type: string
+                              x-kubernetes-validations:
+                              - message: invalid duration value
+                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                              - message: keepAliveTime must be at least 1 second
+                                rule: duration(self) >= duration('1s')
                           type: object
                       type: object
                     port:

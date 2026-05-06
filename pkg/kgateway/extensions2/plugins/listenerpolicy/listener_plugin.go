@@ -53,6 +53,7 @@ type ListenerPolicyIR struct {
 
 type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
+	tcpKeepalive                  *envoycorev3.TcpKeepalive
 	perConnectionBufferLimitBytes *uint32
 	// only for default policy
 	clientCertificateValidation *ir.ClientCertificateValidationIR
@@ -75,6 +76,7 @@ func newListenerPolicy(
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
+		tcpKeepalive:                  translateTCPKeepalive(i.TCPKeepalive),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 		http:                          http,
 	}, errs
@@ -130,6 +132,10 @@ func (d *ListenerPolicyIR) GetClientCertificateValidation() *ir.ClientCertificat
 
 func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	if !proto.Equal(d.proxyProtocol, d2.proxyProtocol) {
+		return false
+	}
+
+	if !proto.Equal(d.tcpKeepalive, d2.tcpKeepalive) {
 		return false
 	}
 
@@ -336,6 +342,9 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	// Add proxy protocol listener filter if configured
 	if cfg.proxyProtocol != nil {
 		p.applyProxyProtocol(out, cfg.proxyProtocol)
+	}
+	if cfg.tcpKeepalive != nil {
+		out.TcpKeepalive = cfg.tcpKeepalive
 	}
 	// Set per connection buffer limit if configured
 	if cfg.perConnectionBufferLimitBytes != nil {
@@ -546,6 +555,25 @@ func convertClientCertificateValidationConfig(_ ir.ObjectSource, config *kgatewa
 		RequireClientCertificate: requireClientCertificate,
 		CACertificateRefs:        config.CACertificateRefs,
 	}
+}
+
+func translateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.TcpKeepalive {
+	if tcpKeepalive == nil {
+		return nil
+	}
+
+	out := &envoycorev3.TcpKeepalive{}
+	if tcpKeepalive.KeepAliveProbes != nil {
+		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
+	}
+	if tcpKeepalive.KeepAliveTime != nil {
+		out.KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveTime.Duration.Seconds())}
+	}
+	if tcpKeepalive.KeepAliveInterval != nil {
+		out.KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveInterval.Duration.Seconds())}
+	}
+
+	return out
 }
 
 func (p *listenerPolicyPluginGwPass) applyProxyProtocol(
