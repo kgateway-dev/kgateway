@@ -388,7 +388,7 @@ func TestAwsEc2InstanceListerClientForPrunesSupersededSecretVersions(t *testing.
 	}
 	if _, ok := lister.clients[ec2ClientCacheKey{
 		region:                "us-east-1",
-		secretResourceName:    "Secret/default/aws-creds",
+		secretResourceName:    sourceV2.secret.ResourceName(),
 		secretResourceVersion: "2",
 	}]; !ok {
 		t.Fatal("client cache did not retain the latest secret version")
