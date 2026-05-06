@@ -155,14 +155,22 @@ func buildTranslateFunc(
 				region := defaultAwsRegion(i.Spec.Aws.Region)
 				invokeMode := getLambdaInvocationMode(i.Spec.Aws)
 
+				secret, err := loadAWSSecret(krtctx, secrets, i)
+				if err != nil {
+					beIr.errors = append(beIr.errors, err)
+					break
+				}
+
 				lambdaArn, err := buildLambdaARN(i.Spec.Aws, region)
 				if err != nil {
 					beIr.errors = append(beIr.errors, err)
+					break
 				}
 
 				endpointConfig, err := configureLambdaEndpoint(i.Spec.Aws)
 				if err != nil {
 					beIr.errors = append(beIr.errors, err)
+					break
 				}
 
 				var lambdaTransportSocket *envoycorev3.TransportSocket
@@ -173,6 +181,7 @@ func buildTranslateFunc(
 					})
 					if err != nil {
 						beIr.errors = append(beIr.errors, err)
+						break
 					}
 					lambdaTransportSocket = &envoycorev3.TransportSocket{
 						Name: envoywellknown.TransportSocketTls,
@@ -182,20 +191,11 @@ func buildTranslateFunc(
 					}
 				}
 
-				var secret *ir.Secret
-				if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret {
-					var err error
-					secret, err = secrets.GetSecretWithoutRefGrant(krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
-					if err != nil {
-						logAWSSecretReferenceError(i, i.Spec.Aws.Auth.SecretRef.Name, err)
-						beIr.errors = append(beIr.errors, err)
-					}
-				}
-
 				lambdaFilters, err := buildLambdaFilters(
 					lambdaArn, region, secret, invokeMode, i.Spec.Aws.Lambda.PayloadTransformMode)
 				if err != nil {
 					beIr.errors = append(beIr.errors, err)
+					break
 				}
 
 				beIr.awsIr = &AwsIr{
@@ -210,18 +210,15 @@ func buildTranslateFunc(
 					beIr.errors = append(beIr.errors, errAwsEc2DiscoveryDisabled)
 					break
 				}
-				var secret *ir.Secret
-				if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret {
-					var err error
-					secret, err = secrets.GetSecretWithoutRefGrant(krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
-					if err != nil {
-						logAWSSecretReferenceError(i, i.Spec.Aws.Auth.SecretRef.Name, err)
-						beIr.errors = append(beIr.errors, err)
-					}
+				secret, err := loadAWSSecret(krtctx, secrets, i)
+				if err != nil {
+					beIr.errors = append(beIr.errors, err)
+					break
 				}
 				ec2Ir, err := buildEc2Ir(i.Spec.Aws, secret)
 				if err != nil {
 					beIr.errors = append(beIr.errors, err)
+					break
 				}
 				beIr.awsIr = &AwsIr{ec2Ir: ec2Ir}
 			}
@@ -234,6 +231,26 @@ func buildTranslateFunc(
 		}
 		return &beIr
 	}
+}
+
+func loadAWSSecret(krtctx krt.HandlerContext, secrets *krtcollections.SecretIndex, backend *kgateway.Backend) (*ir.Secret, error) {
+	if backend.Spec.Aws == nil || backend.Spec.Aws.Auth == nil || backend.Spec.Aws.Auth.Type != kgateway.AwsAuthTypeSecret {
+		return nil, nil
+	}
+	if backend.Spec.Aws.Auth.SecretRef == nil {
+		return nil, fmt.Errorf("aws auth secretRef is required when type is %q", kgateway.AwsAuthTypeSecret)
+	}
+	if secrets == nil {
+		return nil, errors.New("aws secret lookup is unavailable")
+	}
+
+	secretName := backend.Spec.Aws.Auth.SecretRef.Name
+	secret, err := secrets.GetSecretWithoutRefGrant(krtctx, secretName, backend.GetNamespace())
+	if err != nil {
+		logAWSSecretReferenceError(backend, secretName, err)
+		return nil, err
+	}
+	return secret, nil
 }
 
 func logAWSSecretReferenceError(backend *kgateway.Backend, secretName string, err error) {

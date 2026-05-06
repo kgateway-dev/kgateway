@@ -147,11 +147,14 @@ type ec2ResolvedEndpoint struct {
 
 type ec2ResolvedBackend struct {
 	port      uint32
+	config    ec2BackendStateKey
 	endpoints []ec2ResolvedEndpoint
 }
 
 func (b ec2ResolvedBackend) Equals(other ec2ResolvedBackend) bool {
-	return b.port == other.port && slices.Equal(b.endpoints, other.endpoints)
+	return b.port == other.port &&
+		b.config.Equals(other.config) &&
+		slices.Equal(b.endpoints, other.endpoints)
 }
 
 type ec2InstanceLister interface {
@@ -163,6 +166,26 @@ type ec2ClientCacheKey struct {
 	roleArn               string
 	secretResourceName    string
 	secretResourceVersion string
+}
+
+type ec2BackendStateKey struct {
+	region                string
+	roleArn               string
+	port                  uint32
+	addressType           kgateway.AwsAddressType
+	filters               []ec2TagFilter
+	secretResourceName    string
+	secretResourceVersion string
+}
+
+func (k ec2BackendStateKey) Equals(other ec2BackendStateKey) bool {
+	return k.region == other.region &&
+		k.roleArn == other.roleArn &&
+		k.port == other.port &&
+		k.addressType == other.addressType &&
+		slices.Equal(k.filters, other.filters) &&
+		k.secretResourceName == other.secretResourceName &&
+		k.secretResourceVersion == other.secretResourceVersion
 }
 
 type awsEc2InstanceLister struct {
@@ -217,6 +240,7 @@ func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2Credenti
 			return cached, nil
 		}
 		l.clients[key] = client
+		l.pruneSupersededClientsLocked(key)
 		return client, nil
 	})
 	if err != nil {
@@ -228,6 +252,25 @@ func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2Credenti
 		return nil, fmt.Errorf("unexpected EC2 client type %T", value)
 	}
 	return client, nil
+}
+
+func (l *awsEc2InstanceLister) pruneSupersededClientsLocked(key ec2ClientCacheKey) {
+	if key.secretResourceName == "" || key.secretResourceVersion == "" {
+		return
+	}
+
+	for existingKey := range l.clients {
+		if existingKey == key {
+			continue
+		}
+		if existingKey.region != key.region || existingKey.roleArn != key.roleArn {
+			continue
+		}
+		if existingKey.secretResourceName != key.secretResourceName {
+			continue
+		}
+		delete(l.clients, existingKey)
+	}
 }
 
 func (k ec2ClientCacheKey) singleflightKey() string {
@@ -454,10 +497,14 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 	// failure in one credential group doesn't wipe healthy endpoints.
 	c.stateMu.RLock()
 	for _, cfg := range configs {
-		if prior, ok := c.state[cfg.resourceName]; ok {
+		nextBackendState := ec2ResolvedBackend{
+			port:   cfg.port,
+			config: cfg.stateKey(),
+		}
+		if prior, ok := c.state[cfg.resourceName]; ok && prior.config.Equals(nextBackendState.config) {
 			nextState[cfg.resourceName] = prior
 		} else {
-			nextState[cfg.resourceName] = ec2ResolvedBackend{port: cfg.port}
+			nextState[cfg.resourceName] = nextBackendState
 		}
 	}
 	c.stateMu.RUnlock()
@@ -575,6 +622,10 @@ func ec2ConfigFromBackend(backend ir.BackendObjectIR) *ec2BackendConfig {
 		return nil
 	}
 	ec2Ir := backendIR.awsIr.ec2Ir
+	if obj.Spec.Aws.Auth != nil && obj.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret && ec2Ir.secret == nil {
+		logger.Debug("skipping EC2 backend discovery due to missing secret credentials", "backend", backend.ResourceName())
+		return nil
+	}
 
 	cfg := &ec2BackendConfig{
 		resourceName: backend.ResourceName(),
@@ -589,7 +640,10 @@ func ec2ConfigFromBackend(backend ir.BackendObjectIR) *ec2BackendConfig {
 }
 
 func selectResolvedEc2Backend(cfg ec2BackendConfig, instances []ec2DiscoveredInstance) ec2ResolvedBackend {
-	selected := ec2ResolvedBackend{port: cfg.port}
+	selected := ec2ResolvedBackend{
+		port:   cfg.port,
+		config: cfg.stateKey(),
+	}
 	matchedFilters := 0
 	for _, instance := range instances {
 		if !matchesEc2Filters(instance, cfg.filters) {
@@ -669,6 +723,23 @@ func normalizeEc2TagFilters(in []kgateway.AwsTagFilter) []ec2TagFilter {
 		}
 	}
 	return out
+}
+
+func (c ec2BackendConfig) stateKey() ec2BackendStateKey {
+	key := ec2BackendStateKey{
+		region:      c.region,
+		roleArn:     c.roleArn,
+		port:        c.port,
+		addressType: c.addressType,
+		filters:     slices.Clone(c.filters),
+	}
+	if c.secret != nil {
+		key.secretResourceName = c.secret.ResourceName()
+		if c.secret.Obj != nil {
+			key.secretResourceVersion = c.secret.Obj.GetResourceVersion()
+		}
+	}
+	return key
 }
 
 func defaultAwsRegion(region string) string {

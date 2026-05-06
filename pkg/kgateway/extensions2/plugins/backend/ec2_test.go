@@ -12,11 +12,15 @@ import (
 	awsec2 "github.com/aws/aws-sdk-go-v2/service/ec2"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	plugincollections "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -64,25 +68,7 @@ func TestSelectResolvedEc2BackendUsesConfiguredAddressType(t *testing.T) {
 }
 
 func TestComputeStateBatchesByCredentialScopeAndFiltersInstances(t *testing.T) {
-	secret := &ir.Secret{
-		ObjectSource: ir.ObjectSource{
-			Kind:      "Secret",
-			Namespace: "default",
-			Name:      "aws-creds",
-		},
-		Obj: &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:            "aws-creds",
-				Namespace:       "default",
-				ResourceVersion: "1",
-			},
-		},
-		Data: map[string][]byte{
-			"accessKey":    []byte("access"),
-			"secretKey":    []byte("secret"),
-			"sessionToken": []byte("session"),
-		},
-	}
+	secret := newTestAWSSecret("aws-creds", "default", "1")
 
 	backendA := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", []kgateway.AwsTagFilter{tagKeyValue("app", "payments")})
 	backendB := newEc2Backend("backend-b", "arn:aws:iam::123456789012:role/shared", []kgateway.AwsTagFilter{tagKey("owner")})
@@ -136,6 +122,101 @@ func TestComputeStateBatchesByCredentialScopeAndFiltersInstances(t *testing.T) {
 	}
 	if got := len(state[backendObjectIR(backendC, secret).ResourceName()].endpoints); got != 2 {
 		t.Fatalf("backend-c endpoints = %d, want 2", got)
+	}
+}
+
+func TestComputeStatePreservesEndpointsOnRefreshFailureWhenConfigIsUnchanged(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	backend := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", []kgateway.AwsTagFilter{tagKeyValue("app", "payments")})
+	backendIR := backendObjectIR(backend, secret)
+	cfg := ec2ConfigFromBackend(backendIR)
+	if cfg == nil {
+		t.Fatal("ec2ConfigFromBackend() returned nil")
+	}
+
+	c := &ec2EndpointsCollection{
+		backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{backendIR}),
+		lister: &fakeEc2InstanceLister{
+			err: errors.New("boom"),
+		},
+		state: map[string]ec2ResolvedBackend{
+			backendIR.ResourceName(): {
+				port:   cfg.port,
+				config: cfg.stateKey(),
+				endpoints: []ec2ResolvedEndpoint{{
+					address:    "10.0.0.10",
+					instanceID: "i-1",
+					region:     cfg.region,
+					zone:       "us-east-1a",
+				}},
+			},
+		},
+	}
+
+	state, err := c.computeState(context.Background())
+	if err == nil {
+		t.Fatal("computeState() error = nil, want error")
+	}
+
+	got := state[backendIR.ResourceName()]
+	if len(got.endpoints) != 1 {
+		t.Fatalf("backend endpoints = %d, want 1", len(got.endpoints))
+	}
+	if got.endpoints[0].address != "10.0.0.10" {
+		t.Fatalf("backend endpoint address = %q, want 10.0.0.10", got.endpoints[0].address)
+	}
+	if !got.config.Equals(cfg.stateKey()) {
+		t.Fatal("backend config key changed unexpectedly")
+	}
+}
+
+func TestComputeStateClearsEndpointsOnRefreshFailureAfterConfigChange(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	priorBackend := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", []kgateway.AwsTagFilter{tagKeyValue("app", "payments")})
+	currentBackend := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/updated", []kgateway.AwsTagFilter{tagKeyValue("app", "payments")})
+	currentBackend.Spec.Aws.Ec2.Port = 9090
+
+	priorBackendIR := backendObjectIR(priorBackend, secret)
+	currentBackendIR := backendObjectIR(currentBackend, secret)
+	priorCfg := ec2ConfigFromBackend(priorBackendIR)
+	currentCfg := ec2ConfigFromBackend(currentBackendIR)
+	if priorCfg == nil || currentCfg == nil {
+		t.Fatal("ec2ConfigFromBackend() returned nil")
+	}
+
+	c := &ec2EndpointsCollection{
+		backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{currentBackendIR}),
+		lister: &fakeEc2InstanceLister{
+			err: errors.New("boom"),
+		},
+		state: map[string]ec2ResolvedBackend{
+			priorBackendIR.ResourceName(): {
+				port:   priorCfg.port,
+				config: priorCfg.stateKey(),
+				endpoints: []ec2ResolvedEndpoint{{
+					address:    "10.0.0.10",
+					instanceID: "i-1",
+					region:     priorCfg.region,
+					zone:       "us-east-1a",
+				}},
+			},
+		},
+	}
+
+	state, err := c.computeState(context.Background())
+	if err == nil {
+		t.Fatal("computeState() error = nil, want error")
+	}
+
+	got := state[currentBackendIR.ResourceName()]
+	if got.port != 9090 {
+		t.Fatalf("backend port = %d, want 9090", got.port)
+	}
+	if len(got.endpoints) != 0 {
+		t.Fatalf("backend endpoints = %d, want 0 after config change", len(got.endpoints))
+	}
+	if !got.config.Equals(currentCfg.stateKey()) {
+		t.Fatal("backend config key did not update to the current config")
 	}
 }
 
@@ -278,6 +359,42 @@ func TestAwsEc2InstanceListerClientForBuildsDifferentKeysConcurrently(t *testing
 	}
 }
 
+func TestAwsEc2InstanceListerClientForPrunesSupersededSecretVersions(t *testing.T) {
+	lister := &awsEc2InstanceLister{
+		clients: map[ec2ClientCacheKey]*awsec2.Client{},
+		newClient: func(_ context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
+			return awsec2.NewFromConfig(awssdk.Config{Region: source.region}), nil
+		},
+	}
+
+	sourceV1 := ec2CredentialSource{
+		region: "us-east-1",
+		secret: newTestAWSSecret("aws-creds", "default", "1"),
+	}
+	sourceV2 := ec2CredentialSource{
+		region: "us-east-1",
+		secret: newTestAWSSecret("aws-creds", "default", "2"),
+	}
+
+	if _, err := lister.clientFor(context.Background(), sourceV1); err != nil {
+		t.Fatalf("clientFor(v1) error = %v", err)
+	}
+	if _, err := lister.clientFor(context.Background(), sourceV2); err != nil {
+		t.Fatalf("clientFor(v2) error = %v", err)
+	}
+
+	if len(lister.clients) != 1 {
+		t.Fatalf("client cache size = %d, want 1", len(lister.clients))
+	}
+	if _, ok := lister.clients[ec2ClientCacheKey{
+		region:                "us-east-1",
+		secretResourceName:    "Secret/default/aws-creds",
+		secretResourceVersion: "2",
+	}]; !ok {
+		t.Fatal("client cache did not retain the latest secret version")
+	}
+}
+
 func TestBuildTranslateFuncRejectsEc2WhenDiscoveryDisabled(t *testing.T) {
 	translate := buildTranslateFunc(nil, false)
 
@@ -291,6 +408,19 @@ func TestBuildTranslateFuncRejectsEc2WhenDiscoveryDisabled(t *testing.T) {
 	}
 	if backendIR.awsIr != nil {
 		t.Fatal("translate() unexpectedly built AWS IR while EC2 discovery was disabled")
+	}
+}
+
+func TestBuildTranslateFuncFailsClosedForMissingEc2Secret(t *testing.T) {
+	translate := buildTranslateFunc(newSecretIndexForTest(t), true)
+
+	backendIR := translate(krt.TestingDummyContext{}, newEc2Backend("backend-a", "", nil))
+
+	if len(backendIR.errors) == 0 {
+		t.Fatal("translate() errors = 0, want at least 1")
+	}
+	if backendIR.awsIr != nil {
+		t.Fatal("translate() unexpectedly built AWS IR when the EC2 secret lookup failed")
 	}
 }
 
@@ -333,6 +463,7 @@ func TestEc2EndpointsCollectionHasSyncedWaitsForInitialRefresh(t *testing.T) {
 type fakeEc2InstanceLister struct {
 	mu        sync.Mutex
 	calls     []ec2CredentialSource
+	err       error
 	instances []ec2DiscoveredInstance
 }
 
@@ -340,6 +471,9 @@ func (f *fakeEc2InstanceLister) ListInstances(_ context.Context, source ec2Crede
 	f.mu.Lock()
 	f.calls = append(f.calls, source)
 	f.mu.Unlock()
+	if f.err != nil {
+		return nil, f.err
+	}
 	return f.instances, nil
 }
 
@@ -403,4 +537,59 @@ func tagKeyValue(key, value string) kgateway.AwsTagFilter {
 			Value: value,
 		},
 	}
+}
+
+func newTestAWSSecret(name, namespace, resourceVersion string) *ir.Secret {
+	return &ir.Secret{
+		ObjectSource: ir.ObjectSource{
+			Kind:      "Secret",
+			Namespace: namespace,
+			Name:      name,
+		},
+		Obj: &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            name,
+				Namespace:       namespace,
+				ResourceVersion: resourceVersion,
+			},
+		},
+		Data: map[string][]byte{
+			"accessKey":    []byte("access"),
+			"secretKey":    []byte("secret"),
+			"sessionToken": []byte("session"),
+		},
+	}
+}
+
+func newSecretIndexForTest(t *testing.T, secrets ...*corev1.Secret) *krtcollections.SecretIndex {
+	t.Helper()
+
+	initObjs := make([]any, 0, len(secrets))
+	for _, secret := range secrets {
+		initObjs = append(initObjs, secret)
+	}
+
+	mock := krttest.NewMock(t, initObjs)
+	secretCol := krttest.GetMockCollection[*corev1.Secret](mock)
+	refGrantCol := krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock)
+	refgrants := krtcollections.NewRefGrantIndex(refGrantCol)
+	secretIndex := krtcollections.NewSecretIndex(map[schema.GroupKind]krt.Collection[ir.Secret]{
+		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(secretCol, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
+			return &ir.Secret{
+				ObjectSource: ir.ObjectSource{
+					Group:     "",
+					Kind:      "Secret",
+					Namespace: i.Namespace,
+					Name:      i.Name,
+				},
+				Obj:  i,
+				Data: i.Data,
+			}
+		}),
+	}, refgrants)
+	secretCol.WaitUntilSynced(nil)
+	refGrantCol.WaitUntilSynced(nil)
+	for !secretIndex.HasSynced() {
+	}
+	return secretIndex
 }
