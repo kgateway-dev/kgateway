@@ -170,7 +170,7 @@ func buildTranslateFunc(
 				endpointConfig, err := configureLambdaEndpoint(i.Spec.Aws)
 				if err != nil {
 					beIr.errors = append(beIr.errors, err)
-					break
+					return &beIr
 				}
 
 				var lambdaTransportSocket *envoycorev3.TransportSocket

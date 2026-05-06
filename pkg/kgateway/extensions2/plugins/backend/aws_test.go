@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
@@ -61,4 +62,30 @@ func TestBuildLambdaARNFallsBackToDeprecatedBackendAccountID(t *testing.T) {
 	arn, err := buildLambdaARN(backend, "us-east-1")
 	require.NoError(t, err)
 	assert.Equal(t, "arn:aws:lambda:us-east-1:111111111111:function:hello-function:live", arn)
+}
+
+func TestBuildTranslateFuncFailsClosedForLambdaEndpointWithoutPort(t *testing.T) {
+	translate := buildTranslateFunc(nil, true)
+
+	backendIR := translate(krt.TestingDummyContext{}, newLambdaBackend("lambda-backend", "https://lambda.us-east-1.amazonaws.com"))
+
+	require.NotEmpty(t, backendIR.errors)
+	assert.ErrorContains(t, backendIR.errors[0], "failed to parse port")
+	assert.Nil(t, backendIR.awsIr, "translate() should not build AWS IR for an invalid lambda endpoint")
+}
+
+func newLambdaBackend(name, endpointURL string) *kgateway.Backend {
+	return &kgateway.Backend{
+		Spec: kgateway.BackendSpec{
+			Aws: &kgateway.AwsBackend{
+				Region:    "us-east-1",
+				AccountId: "111111111111",
+				Lambda: &kgateway.AwsLambda{
+					FunctionName: "hello-function",
+					Qualifier:    "live",
+					EndpointURL:  &endpointURL,
+				},
+			},
+		},
+	}
 }
