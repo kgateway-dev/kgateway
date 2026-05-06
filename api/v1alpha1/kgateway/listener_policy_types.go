@@ -1,6 +1,7 @@
 package kgateway
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -110,7 +111,7 @@ type ListenerConfig struct {
 	// +kubebuilder:validation:Minimum=0
 	PerConnectionBufferLimitBytes *int32 `json:"perConnectionBufferLimitBytes,omitempty"`
 
-	// HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
+	// HTTPSettings is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
 	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
@@ -234,6 +235,12 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
+	// Http2ProtocolOptions configures downstream HTTP/2 behavior on the listener's
+	// HttpConnectionManager.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions
+	// +optional
+	Http2ProtocolOptions *ListenerHTTP2ProtocolOptions `json:"http2ProtocolOptions,omitempty"`
+
 	// HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
 	// +optional
 	HealthCheck *EnvoyHealthCheck `json:"healthCheck,omitempty"`
@@ -292,6 +299,31 @@ type AccessLog struct {
 	// Filter access logs configuration
 	// +optional
 	Filter *AccessLogFilter `json:"filter,omitempty"`
+}
+
+// ListenerHTTP2ProtocolOptions mirrors Http2ProtocolOptions for listener-facing
+// policies, but avoids the expensive CEL validations that push the listener CRDs
+// over Kubernetes' schema cost budget.
+type ListenerHTTP2ProtocolOptions struct {
+	// InitialStreamWindowSize is the initial window size for the stream.
+	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
+	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Values can be specified with units like "64Ki".
+	// +optional
+	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
+
+	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+	// Same range and default value as InitialStreamWindowSize.
+	// Values can be specified with units like "64Ki".
+	// +optional
+	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
+
+	// The maximum number of concurrent streams that the connection can have.
+	// Envoy defaults to 1024.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=2147483647
+	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
 }
 
 // FileSink represents the file sink configuration for access logs.
