@@ -28,7 +28,7 @@ gateway:
 
   # list of ports actually come from the Gateway resource driving this proxy
   ports:
-  - port: 80
-    targetPort: 80
-    protocol: TCP
-    name: http
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http

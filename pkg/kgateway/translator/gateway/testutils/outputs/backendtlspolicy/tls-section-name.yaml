@@ -79,6 +79,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
@@ -131,20 +136,19 @@ Statuses:
     BackendTLSPolicy/default/tls-policy-with-section-name:
       ancestors:
       - ancestorRef:
-          group: ""
-          kind: Service
-          name: backend-service
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
           namespace: default
-          sectionName: https
         conditions:
         - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
           message: Policy accepted
-          reason: Valid
+          reason: Accepted
           status: "True"
           type: Accepted
-        - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
-          type: Attached
         controllerName: kgateway.dev/kgateway

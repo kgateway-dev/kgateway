@@ -22,7 +22,7 @@ func UsesLegacyXListenerSet() bool {
 	}
 
 	return CurrentGwApiChannel() == GwApiChannelExperimental &&
-		version.LessThan(&GwApiV1_5_1.Version)
+		version.LessThan(&GwApiV1_5_0.Version)
 }
 
 func TransformListenerSetManifest(content string) string {

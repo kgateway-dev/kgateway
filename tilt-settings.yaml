@@ -8,7 +8,7 @@ helm_installation_namespace: kgateway-system
 
 # Inline Helm --set flags (key: value format)
 helm_flags: {}
-  # Example: controller.extraEnv.KGW_VALIDATION_MODE: "strict"
+# Example: controller.extraEnv.KGW_VALIDATION_MODE: "strict"
 
 enabled_providers:
   - kgateway

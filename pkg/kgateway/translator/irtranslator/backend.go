@@ -10,7 +10,10 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -19,6 +22,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -82,6 +86,10 @@ func (t *BackendTranslator) TranslateBackend(
 		logger.Error("failed to apply policies to cluster", "cluster", out.GetName(), "error", err)
 		return buildBlackholeCluster(backend), err
 	}
+	if err := applyGatewayBackendClientCertificate(out, backend); err != nil {
+		logger.Error("failed to apply gateway backend client certificate", "cluster", out.GetName(), "error", err)
+		return buildBlackholeCluster(backend), err
+	}
 
 	// In strict mode, validate the final cluster configuration using Envoy
 	if t.Mode == apisettings.ValidationStrict && t.Validator != nil {
@@ -129,9 +137,13 @@ func (t *BackendTranslator) runPolicies(
 		if policyPlugin.ProcessBackend == nil {
 			continue
 		}
+		policies := backend.AttachedPolicies.Policies[gk]
+		if policyPlugin.MergePolicies != nil && len(policies) > 0 {
+			policies = []ir.PolicyAtt{policyPlugin.MergePolicies(policies)}
+		}
 		// apply plugins to the backend. we want to skip applying the plugin if the
 		// attached IR encountered any errors during construction.
-		for _, polAttachment := range backend.AttachedPolicies.Policies[gk] {
+		for _, polAttachment := range policies {
 			if len(polAttachment.Errors) > 0 {
 				logger.Error("policy has errors", "gk", gk, "errors", polAttachment.Errors, "policyRef", polAttachment.PolicyRef)
 				errs = append(errs, polAttachment.Errors...)
@@ -321,4 +333,68 @@ func createCommonLbConfig(b *ir.BackendObjectIR) *envoyclusterv3.Cluster_CommonL
 		}
 	}
 	return nil
+}
+
+func applyGatewayBackendClientCertificate(out *envoyclusterv3.Cluster, backend *ir.BackendObjectIR) error {
+	if backend == nil || backend.GatewayBackendClientCertificate == nil {
+		return nil
+	}
+
+	certificate := backend.GatewayBackendClientCertificate.Certificate
+	if ts, err := injectGatewayBackendClientCertificate(out.GetTransportSocket(), certificate); err != nil {
+		return err
+	} else if ts != nil {
+		out.TransportSocket = ts
+	}
+	for _, match := range out.GetTransportSocketMatches() {
+		ts, err := injectGatewayBackendClientCertificate(match.GetTransportSocket(), certificate)
+		if err != nil {
+			return err
+		}
+		if ts != nil {
+			match.TransportSocket = ts
+		}
+	}
+	return nil
+}
+
+// injectGatewayBackendClientCertificate returns a clone of transportSocket with the
+// Gateway-scoped client cert/key set on its UpstreamTlsContext. Returns (nil, nil) when
+// transportSocket is not a TLS socket so the caller can leave it untouched. The clone
+// avoids aliasing transport-socket protos shared with other clusters by upstream plugins.
+func injectGatewayBackendClientCertificate(
+	transportSocket *envoycorev3.TransportSocket,
+	certificate ir.TLSCertificate,
+) (*envoycorev3.TransportSocket, error) {
+	if transportSocket == nil || transportSocket.GetName() != envoywellknown.TransportSocketTls {
+		return nil, nil
+	}
+	typedConfig := transportSocket.GetTypedConfig()
+	if typedConfig == nil {
+		return nil, nil
+	}
+
+	tlsContext := &envoytlsv3.UpstreamTlsContext{}
+	if err := typedConfig.UnmarshalTo(tlsContext); err != nil {
+		return nil, err
+	}
+	if tlsContext.CommonTlsContext == nil {
+		tlsContext.CommonTlsContext = &envoytlsv3.CommonTlsContext{}
+	}
+	tlsContext.CommonTlsContext.TlsCertificates = []*envoytlsv3.TlsCertificate{{
+		CertificateChain: pluginutils.InlineStringDataSource(string(certificate.CertChain)),
+		PrivateKey:       pluginutils.InlineStringDataSource(string(certificate.PrivateKey)),
+	}}
+	tlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = nil
+
+	updatedTypedConfig, err := utils.MessageToAny(tlsContext)
+	if err != nil {
+		return nil, err
+	}
+	clone, ok := proto.Clone(transportSocket).(*envoycorev3.TransportSocket)
+	if !ok {
+		return nil, errors.New("failed to clone transport socket")
+	}
+	clone.ConfigType = &envoycorev3.TransportSocket_TypedConfig{TypedConfig: updatedTypedConfig}
+	return clone, nil
 }

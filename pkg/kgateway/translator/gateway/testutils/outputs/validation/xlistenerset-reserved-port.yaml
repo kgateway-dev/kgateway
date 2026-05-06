@@ -16,6 +16,11 @@ Statuses:
         reason: Invalid
         status: "False"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
   listenerSets:
     default/test:
       conditions:

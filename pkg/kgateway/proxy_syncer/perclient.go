@@ -3,15 +3,22 @@ package proxy_syncer
 import (
 	"fmt"
 	"maps"
+	"sort"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/anypb"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -126,20 +133,44 @@ func snapshotPerClient(
 		clustersForUcc := krt.FetchOne(kctx, clusterSnapshot, krt.FilterKey(ucc.ResourceName()))
 		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
 
-		// HACK
-		// https://github.com/solo-io/gloo/pull/10611/files#diff-060acb7cdd3a287a3aef1dd864aae3e0193da17b6230c382b649ce9dc0eca80b
-		// Without this, we will send a "blip" where the DestinationRule
-		// or other per-client config is not applied to the clusters
-		// by sending the genericSnap clusters on the first pass, then
-		// the correct ones.
-		// This happens because the event for the new connected client
-		// triggers the per-client cluster transformation in parallel
-		// with this snapshotPerClient transformation. This Fetch is racing
-		// with that computation and will almost always lose.
-		// While we're looking for a way to make this ordering predictable
-		// to avoid hacks like this, it will do for now.
+		// Defer publishing a per-client snapshot until its per-client inputs
+		// are coherent. Three guards:
+		//
+		//  1. If per-client clusters or endpoints haven't been derived yet
+		//     for this UCC, return nil. This handler can fire before the
+		//     per-client collections — driven by the same upstream events —
+		//     have re-run, so FetchOne may briefly return nil even though
+		//     results are imminent.
+		//
+		//  2. If any cluster referenced as a dataplane routing target
+		//     (RouteAction / TcpProxy) is not yet present or explicitly
+		//     errored, return nil (see findMissingReferencedClusters below).
+		//     Publishing before then would emit a partial CDS referenced by
+		//     listeners/routes and cause Envoy to return 500/NC on routes
+		//     whose clusters just happen to be in the same CDS response.
+		//
+		//  3. If any referenced EDS cluster has no matching ClusterLoadAssignment
+		//     in the EDS resources that would be sent, return nil. Publishing
+		//     CDS/RDS/LDS before EDS catches up can make Envoy drop all hosts for
+		//     a route that was healthy before a controller restart.
+		//
+		// Returning nil removes this UCC's entry from the output collection,
+		// which surfaces as a Delete event in proxy_syncer.go's xDS
+		// subscriber. That Delete branch is intentionally a no-op so the
+		// xDS snapshot cache retains the last-published Snapshot for this
+		// client. Envoy therefore keeps serving its previous, coherent
+		// config until a new coherent snapshot overwrites it. This is what
+		// prevents an unresolvable reference — a user BackendRef typo, a
+		// plugin bug — from stranding Envoy: there is no error response on
+		// valid traffic during the defer window, only continuity.
+		//
+		// BackendRef typos never reach this gate as real cluster names:
+		// IR-time resolution substitutes wellknown.BlackholeClusterName,
+		// which findMissingReferencedClusters explicitly skips.
+		//
+		// Historical context: https://github.com/solo-io/gloo/pull/10611.
 		if clustersForUcc == nil || clientEndpointResources == nil {
-			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
+			logger.Info("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
 			return nil
 		}
 
@@ -156,13 +187,38 @@ func snapshotPerClient(
 			clusterResources.Version = fmt.Sprintf("%d", clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash)
 			clusterResources.Items = clustersProto
 		}
+		if missingClusters := findMissingReferencedClusters(
+			listenerRouteSnapshot.ReferencedClusters,
+			clusterResources.Items,
+			clustersForUcc.erroredClusters,
+		); len(missingClusters) > 0 {
+			logger.Info(
+				"defer building snapshot until all referenced clusters are ready",
+				"client", ucc.ResourceName(),
+				"missing_clusters", missingClusters,
+			)
+			return nil
+		}
+		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
+		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
+		if missingEndpointClusters := findMissingReferencedEndpointResources(
+			listenerRouteSnapshot.ReferencedClusters,
+			clusterResources.Items,
+			endpointRes.Items,
+			clustersForUcc.erroredClusters,
+		); len(missingEndpointClusters) > 0 {
+			logger.Info(
+				"defer building snapshot until all referenced EDS resources are ready",
+				"client", ucc.ResourceName(),
+				"missing_endpoint_clusters", missingEndpointClusters,
+			)
+			return nil
+		}
 
 		snap.erroredClusters = clustersForUcc.erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources
-		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
-		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
 		snapshot.Resources[envoycachetypes.Endpoint] = endpointRes
 		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
 		snapshot.Resources[envoycachetypes.Listener] = listenerRouteSnapshot.Listeners
@@ -254,6 +310,220 @@ func snapshotPerClient(
 	})
 
 	return xdsSnapshotsForUcc
+}
+
+// collectReferencedClusters returns the set of cluster names referenced as
+// dataplane routing targets (RouteAction and TcpProxy cluster / weighted-
+// cluster specifiers) by the given routes and listeners. It walks typed_config
+// extensions via protoreflect so it stays correct as Envoy adds new filter
+// types that embed dataplane-target clusters.
+//
+// Scope is intentionally narrowed to dataplane targets. Ancillary cluster
+// references (access-log GrpcService, JWT jwks HttpUri, ext_authz cluster,
+// ratelimit cluster, etc.) are deliberately ignored because:
+//
+//  1. The plugin that emits the filter is responsible for also emitting the
+//     ancillary cluster in the same per-gateway snapshot's ExtraClusters,
+//     so there is no reconnect race between listener and cluster — they
+//     arrive coherent or not at all.
+//  2. If a plugin emits an ancillary reference without declaring the
+//     cluster, that is a plugin bug. Gating on it would starve the entire
+//     gateway forever; publishing and letting the filter fail (or degrade
+//     per its failure_mode_allow) surfaces the bug without blocking valid
+//     traffic.
+//
+// This is computed once per GatewayXdsResources (shared across all connected
+// clients for that role) rather than per client — the proto walk and Any
+// unmarshalling are non-trivial on large LDS/RDS.
+func collectReferencedClusters(routes, listeners envoycache.Resources) map[string]struct{} {
+	referenced := make(map[string]struct{})
+	collectResourceClusterReferences(routes, referenced)
+	collectResourceClusterReferences(listeners, referenced)
+	return referenced
+}
+
+func findMissingReferencedClusters(
+	referencedClusters map[string]struct{},
+	clusters map[string]envoycachetypes.ResourceWithTTL,
+	erroredClusters []string,
+) []string {
+	erroredClusterSet := stringSet(erroredClusters)
+
+	missingClusters := make([]string, 0, len(referencedClusters))
+	for name := range referencedClusters {
+		if _, ok := clusters[name]; ok {
+			continue
+		}
+		if _, ok := erroredClusterSet[name]; ok {
+			continue
+		}
+		if name == wellknown.BlackholeClusterName {
+			continue
+		}
+		missingClusters = append(missingClusters, name)
+	}
+	sort.Strings(missingClusters)
+
+	return missingClusters
+}
+
+func findMissingReferencedEndpointResources(
+	referencedClusters map[string]struct{},
+	clusters map[string]envoycachetypes.ResourceWithTTL,
+	endpoints map[string]envoycachetypes.ResourceWithTTL,
+	erroredClusters []string,
+) []string {
+	erroredClusterSet := stringSet(erroredClusters)
+
+	missingEndpointClusters := make([]string, 0, len(referencedClusters))
+	for name := range referencedClusters {
+		if _, ok := erroredClusterSet[name]; ok {
+			continue
+		}
+		if name == wellknown.BlackholeClusterName {
+			continue
+		}
+
+		clusterResource, ok := clusters[name]
+		if !ok {
+			continue
+		}
+		endpointResourceName, requiresEndpointResource := endpointResourceNameForCluster(clusterResource)
+		if !requiresEndpointResource {
+			continue
+		}
+		if _, ok := endpoints[endpointResourceName]; ok {
+			continue
+		}
+		missingEndpointClusters = append(missingEndpointClusters, name)
+	}
+	sort.Strings(missingEndpointClusters)
+
+	return missingEndpointClusters
+}
+
+func endpointResourceNameForCluster(resource envoycachetypes.ResourceWithTTL) (string, bool) {
+	cluster, ok := resource.Resource.(*envoyclusterv3.Cluster)
+	if !ok {
+		return "", false
+	}
+	clusterType, ok := cluster.GetClusterDiscoveryType().(*envoyclusterv3.Cluster_Type)
+	if !ok || clusterType.Type != envoyclusterv3.Cluster_EDS {
+		return "", false
+	}
+	if edsServiceName := cluster.GetEdsClusterConfig().GetServiceName(); edsServiceName != "" {
+		return edsServiceName, true
+	}
+	return cluster.GetName(), true
+}
+
+func stringSet(values []string) map[string]struct{} {
+	out := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		out[value] = struct{}{}
+	}
+	return out
+}
+
+func collectResourceClusterReferences(resources envoycache.Resources, referencedClusters map[string]struct{}) {
+	for _, item := range resources.Items {
+		if item.Resource == nil {
+			continue
+		}
+		collectProtoClusterReferences(item.Resource, referencedClusters)
+	}
+}
+
+func collectProtoClusterReferences(msg proto.Message, referencedClusters map[string]struct{}) {
+	if msg == nil {
+		return
+	}
+
+	switch typedMsg := msg.(type) {
+	case *envoyroutev3.RouteAction:
+		switch clusterSpecifier := typedMsg.GetClusterSpecifier().(type) {
+		case *envoyroutev3.RouteAction_Cluster:
+			if clusterSpecifier.Cluster != "" {
+				referencedClusters[clusterSpecifier.Cluster] = struct{}{}
+			}
+		case *envoyroutev3.RouteAction_WeightedClusters:
+			if clusterSpecifier.WeightedClusters == nil {
+				break
+			}
+			for _, cluster := range clusterSpecifier.WeightedClusters.GetClusters() {
+				if cluster.GetName() != "" {
+					referencedClusters[cluster.GetName()] = struct{}{}
+				}
+			}
+		}
+	case *envoytcpv3.TcpProxy:
+		switch clusterSpecifier := typedMsg.GetClusterSpecifier().(type) {
+		case *envoytcpv3.TcpProxy_Cluster:
+			if clusterSpecifier.Cluster != "" {
+				referencedClusters[clusterSpecifier.Cluster] = struct{}{}
+			}
+		case *envoytcpv3.TcpProxy_WeightedClusters:
+			if clusterSpecifier.WeightedClusters == nil {
+				break
+			}
+			for _, cluster := range clusterSpecifier.WeightedClusters.GetClusters() {
+				if cluster.GetName() != "" {
+					referencedClusters[cluster.GetName()] = struct{}{}
+				}
+			}
+		}
+	}
+
+	collectNestedProtoClusterReferences(msg.ProtoReflect(), referencedClusters)
+}
+
+func collectNestedProtoClusterReferences(
+	msg protoreflect.Message,
+	referencedClusters map[string]struct{},
+) {
+	if !msg.IsValid() {
+		return
+	}
+
+	msg.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		switch {
+		case fd.IsList() && fd.Message() != nil:
+			list := v.List()
+			for i := 0; i < list.Len(); i++ {
+				collectProtoClusterReferencesFromValue(list.Get(i), referencedClusters)
+			}
+		case fd.IsMap() && fd.MapValue().Message() != nil:
+			m := v.Map()
+			m.Range(func(_ protoreflect.MapKey, value protoreflect.Value) bool {
+				collectProtoClusterReferencesFromValue(value, referencedClusters)
+				return true
+			})
+		case !fd.IsList() && !fd.IsMap() && fd.Message() != nil:
+			collectProtoClusterReferencesFromValue(v, referencedClusters)
+		}
+		return true
+	})
+}
+
+func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClusters map[string]struct{}) {
+	msg := v.Message()
+	if !msg.IsValid() {
+		return
+	}
+
+	if anyMsg, ok := msg.Interface().(*anypb.Any); ok {
+		nestedMsg, err := anyMsg.UnmarshalNew()
+		if err != nil {
+			// Typed extensions whose Go types aren't linked into this binary will fail here;
+			// that's expected, but log at debug so genuinely malformed configs are diagnosable.
+			logger.Debug("skipping typed_config during cluster reference scan", "type_url", anyMsg.GetTypeUrl(), "error", err)
+			return
+		}
+		collectProtoClusterReferences(nestedMsg, referencedClusters)
+		return
+	}
+
+	collectProtoClusterReferences(msg.Interface(), referencedClusters)
 }
 
 // filterEndpointResourcesForStaticClusters returns endpoint resources excluding CLAs for clusters

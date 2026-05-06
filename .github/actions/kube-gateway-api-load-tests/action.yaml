@@ -24,7 +24,7 @@ runs:
         go tool helm upgrade --install kgateway-crds ./install/helm/kgateway-crds/ \
           --namespace kgateway-system --create-namespace \
           --wait --timeout 5m
-        
+
         go tool helm upgrade --install kgateway ./install/helm/kgateway/ \
           --namespace kgateway-system --create-namespace \
           --set image.tag=${VERSION:-v1.0.0-ci1} \

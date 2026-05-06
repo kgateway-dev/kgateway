@@ -29,7 +29,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-//go:generate go tool github.com/golang/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query GatewayQueries
+//go:generate go tool go.uber.org/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query GatewayQueries
 
 var _ = Describe("Query", func() {
 	Describe("GetSecretRef", func() {

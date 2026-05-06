@@ -46,46 +46,48 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: invalid-transformation-policy
+  name: invalid-extauth-policy
   namespace: gwtest
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       name: conflict-route
-  transformation:
-    request:
-      headerTransformations:
-        add:
-          x-invalid-header: "{{ invalid_template_var"
+  extAuth:
+    extensionRef:
+      name: nonexistent-extauth-extension
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: invalid-ai-policy
+  name: invalid-extproc-policy
   namespace: gwtest
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       name: conflict-route
-  ai:
-    defaults:
-      - field: "config"
-        value: "{\"incomplete\": true"
+  extProc:
+    extensionRef:
+      name: nonexistent-extproc-extension
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: invalid-header-template-policy
+  name: invalid-ratelimit-policy
   namespace: gwtest
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       name: conflict-route
-  transformation:
-    request:
-      headerTransformations:
-        add:
-          x-template-header: "{{ REQUEST(invalid-variable) }}"
+  rateLimit:
+    global:
+      extensionRef:
+        name: nonexistent-ratelimit-extension
+      descriptors:
+        - entries:
+            - type: Generic
+              generic:
+                key: foo
+                value: bar

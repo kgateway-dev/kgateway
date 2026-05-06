@@ -285,6 +285,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 3
         conditions:
@@ -366,8 +371,8 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): extauth: failed to resolve ExtAuth gRPC backend:
-            missing reference grant'
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/route-denied-policy:
+            extauth: failed to resolve ExtAuth gRPC backend: missing reference grant'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

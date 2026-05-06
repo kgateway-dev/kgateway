@@ -10,6 +10,24 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 )
 
+func TestAttachedPolicyRefIDs(t *testing.T) {
+	ref := AttachedPolicyRef{
+		Group:     "gateway.kgateway.dev",
+		Kind:      "TrafficPolicy",
+		Namespace: "ns",
+		Name:      "p",
+	}
+	assert.Equal(t, "gateway.kgateway.dev/TrafficPolicy/ns/p", ref.ID())
+	assert.Equal(t, "gateway.kgateway.dev/TrafficPolicy/ns/p", ref.IDWithSectionName(),
+		"IDWithSectionName equals ID when SectionName is empty")
+
+	ref.SectionName = "rule-0"
+	assert.Equal(t, "gateway.kgateway.dev/TrafficPolicy/ns/p", ref.ID(),
+		"ID must not include SectionName so merge-tracking keys remain stable")
+	assert.Equal(t, "gateway.kgateway.dev/TrafficPolicy/ns/p/rule-0", ref.IDWithSectionName(),
+		"IDWithSectionName must include SectionName so distinct attachments are not collapsed")
+}
+
 func TestPolicyApplyOrderedGroupKinds(t *testing.T) {
 	fooGK := schema.GroupKind{Group: "foo", Kind: "bar"}
 	barGK := schema.GroupKind{Group: "bar", Kind: "baz"}

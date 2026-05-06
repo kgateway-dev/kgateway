@@ -39,14 +39,14 @@ jobs:
     name: Determine Branch
     runs-on: ubuntu-22.04
     steps:
-    - name: Determine Branch
-      shell: bash
-      run: |
-        BRANCH=main
-        if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.branch }}" == "workflow_initiating_branch" ]]; then
-          BRANCH="${{ inputs.branch }}"
-        fi
-        echo "BRANCH=${BRANCH}" >> "$GITHUB_ENV"
+      - name: Determine Branch
+        shell: bash
+        run: |
+          BRANCH=main
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.branch }}" == "workflow_initiating_branch" ]]; then
+            BRANCH="${{ inputs.branch }}"
+          fi
+          echo "BRANCH=${BRANCH}" >> "$GITHUB_ENV"
 
   kube_gateway_api_conformance_tests:
     name: Conformance (branch=main, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }}, gw-api=${{matrix.gateway-api-channel}})
@@ -56,26 +56,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env-versions: [ {file: "./.github/workflows/.env/nightly-tests/max_versions.env", label: "max_versions"},
-                        {file: "./.github/workflows/.env/nightly-tests/min_versions.env", label: "min_versions"} ]
-        gateway-api-channel: [ 'experimental', 'standard' ]
+        env-versions:
+          - file: "./.github/workflows/.env/nightly-tests/max_versions.env"
+            label: max_versions
+          - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
+            label: min_versions
+        gateway-api-channel: ['experimental', 'standard']
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      with:
-        ref: ${{ env.BRANCH }}
-    - name: Dotenv Action
-      uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
-      id: dotenv
-      with:
-        path: ${{ matrix.env-versions.file }}
-        log-variables: true
-    - uses: ./.github/actions/kube-conformance-tests
-      with:
-        test-type: gateway-api
-        api-channel: ${{ matrix.gateway-api-channel }}
-        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-        summarize-report: true
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ env.BRANCH }}
+      - name: Dotenv Action
+        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        id: dotenv
+        with:
+          path: ${{ matrix.env-versions.file }}
+          log-variables: true
+      - uses: ./.github/actions/kube-conformance-tests
+        with:
+          test-type: gateway-api
+          api-channel: ${{ matrix.gateway-api-channel }}
+          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+          kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+          summarize-report: true
 
   kube_gateway_api_load_tests:
     name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
@@ -85,13 +88,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kube-version: [ { node: 'v1.31.9@sha256:b94a3a6c06198d17f59cca8c6f486236fa05e2fb359cbd75dabbfc348a10b211', kubectl: 'v1.31.9', kind: 'v0.29.0' },
-                        { node: 'v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f', kubectl: 'v1.35.0', kind: 'v0.31.0' }]
+        kube-version:
+          - node: 'v1.31.9@sha256:b94a3a6c06198d17f59cca8c6f486236fa05e2fb359cbd75dabbfc348a10b211'
+            kubectl: v1.31.9
+            kind: v0.29.0
+          - node: 'v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f'
+            kubectl: v1.35.0
+            kind: v0.31.0
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      with:
-        ref: ${{ env.BRANCH }}
-    - uses: ./.github/actions/kube-gateway-api-load-tests
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ env.BRANCH }}
+      - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
     name: E2E (k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
@@ -101,64 +109,73 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env-versions: [ {file: "./.github/workflows/.env/nightly-tests/max_versions.env", label: "max"},
-                        {file: "./.github/workflows/.env/nightly-tests/min_versions.env", label: "min"} ]
-        gateway-api-version: [ { version: 'v1.5.1', channel: 'experimental' },
-                              { version: 'v1.5.1', channel: 'standard' },
-                              { version: 'v1.4.1', channel: 'experimental' },
-                              { version: 'v1.4.1', channel: 'standard' },
-                              { version: 'v1.3.0', channel: 'experimental' },
-                              { version: 'v1.3.0', channel: 'standard' }]
-        controllers: [
-          {regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$"}
-        ]
+        env-versions:
+          - file: "./.github/workflows/.env/nightly-tests/max_versions.env"
+            label: max
+          - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
+            label: min
+        gateway-api-version:
+          - version: 'v1.5.1'
+            channel: experimental
+          - version: 'v1.5.1'
+            channel: standard
+          - version: 'v1.4.1'
+            channel: experimental
+          - version: 'v1.4.1'
+            channel: standard
+          - version: 'v1.3.0'
+            channel: experimental
+          - version: 'v1.3.0'
+            channel: standard
+        controllers:
+          - regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$"
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      with:
-        ref: ${{ env.BRANCH }}
-    - name: Prep Go Runner
-      uses: ./.github/actions/prep-go-runner
-    - name: Dotenv Action
-      uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
-      id: dotenv
-      with:
-        path: ${{ matrix.env-versions.file }}
-        log-variables: true
-    - name: Setup KinD Cluster
-      if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
-      uses: ./.github/actions/setup-kind-cluster
-      with:
-        gateway-api-version: ${{ matrix.gateway-api-version.version }}
-        gateway-api-channel: ${{ matrix.gateway-api-version.channel }}
-        cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
-        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-        istio-version: ${{ steps.dotenv.outputs.istio_version }}
-        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-        localstack: "true"
-    - name: Setup k3d Cluster
-      if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
-      uses: ./.github/actions/setup-k3d-cluster
-      with:
-        gateway-api-version: ${{ matrix.gateway-api-version.version }}
-        gateway-api-channel: ${{ matrix.gateway-api-version.channel }}
-        cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
-        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-        istio-version: ${{ steps.dotenv.outputs.istio_version }}
-        node-version: ${{ steps.dotenv.outputs.node_version }}
-        localstack: "true"
-        github-token: ${{ github.token }}
-    - id: run-tests
-      uses: ./.github/actions/kubernetes-e2e-tests
-      env:
-        VERSION: 'v1.0.0-ci1'
-        GITHUB_TOKEN: ${{ github.token }}
-        GO_TEST_RETRIES: '3' # Use a higher number of retries because there are so many tests and we don't want to rerun
-        # A single test failure counts as a failure for each of its parent suites, and these tests run for a long time, so use a higher max failure count
-        GOTESTSUM_ARGS: '--format=standard-verbose --rerun-fails-max-failures 25'
-      with:
-        cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
-        cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
-        test-args: '-timeout=120m'
-        run-regex: ${{ matrix.controllers.regex }}
-        istio-version: ${{ steps.dotenv.outputs.istio_version }}
-        matrix-label: "nightly-kgw-api-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ env.BRANCH }}
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
+      - name: Dotenv Action
+        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        id: dotenv
+        with:
+          path: ${{ matrix.env-versions.file }}
+          log-variables: true
+      - name: Setup KinD Cluster
+        if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
+        uses: ./.github/actions/setup-kind-cluster
+        with:
+          gateway-api-version: ${{ matrix.gateway-api-version.version }}
+          gateway-api-channel: ${{ matrix.gateway-api-version.channel }}
+          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+          localstack: "true"
+      - name: Setup k3d Cluster
+        if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
+        uses: ./.github/actions/setup-k3d-cluster
+        with:
+          gateway-api-version: ${{ matrix.gateway-api-version.version }}
+          gateway-api-channel: ${{ matrix.gateway-api-version.channel }}
+          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          node-version: ${{ steps.dotenv.outputs.node_version }}
+          localstack: "true"
+          github-token: ${{ github.token }}
+      - id: run-tests
+        uses: ./.github/actions/kubernetes-e2e-tests
+        env:
+          VERSION: 'v1.0.0-ci1'
+          GITHUB_TOKEN: ${{ github.token }}
+          GO_TEST_RETRIES: '3' # Use a higher number of retries because there are so many tests and we don't want to rerun
+          # A single test failure counts as a failure for each of its parent suites, and these tests run for a long time, so use a higher max failure count
+          GOTESTSUM_ARGS: '--format=standard-verbose --rerun-fails-max-failures 25'
+        with:
+          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+          cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
+          test-args: '-timeout=120m'
+          run-regex: ${{ matrix.controllers.regex }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          matrix-label: "nightly-kgw-api-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"

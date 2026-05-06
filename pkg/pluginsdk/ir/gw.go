@@ -14,6 +14,8 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 )
 
+const delimiter = "/"
+
 var VirtualBuiltInGK = schema.GroupKind{
 	Group: "builtin",
 	Kind:  "builtin",
@@ -47,7 +49,16 @@ type AttachedPolicyRef struct {
 }
 
 func (ref *AttachedPolicyRef) ID() string {
-	return ref.Group + "/" + ref.Kind + "/" + ref.Namespace + "/" + ref.Name
+	return ref.Group + delimiter + ref.Kind + delimiter + ref.Namespace + delimiter + ref.Name
+}
+
+// IDWithSectionName returns ID() with SectionName appended when set.
+func (ref *AttachedPolicyRef) IDWithSectionName() string {
+	id := ref.ID()
+	if ref.SectionName != "" {
+		id += delimiter + ref.SectionName
+	}
+	return id
 }
 
 type PolicyAtt struct {
@@ -97,12 +108,7 @@ func (c PolicyAtt) FormatErrors() string {
 	for i, err := range c.Errors {
 		errs[i] = err.Error()
 	}
-
-	errsStr := strings.Join(errs, "; ")
-	if c.MergeOrigins.IsSet() {
-		return "Merged policy: " + errsStr
-	}
-	return errsStr
+	return strings.Join(errs, "; ")
 }
 
 type PolicyAttachmentOpts func(*PolicyAtt)

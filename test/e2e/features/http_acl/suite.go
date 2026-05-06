@@ -15,9 +15,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/encoding/protojson"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
@@ -486,6 +490,90 @@ func (s *testingSuite) TestHttpACLLargeRuleset() {
 		curl.WithPort(80),
 		curl.WithPath("/status/200"),
 		curl.WithHeader("X-Forwarded-For", "8.8.8.8"),
+	)
+}
+
+// TestHttpACLValidWithInvalidCIDRPolicy applies a valid ACL policy, verifies it enforces
+// allow/deny correctly, then adds a second TrafficPolicy whose CIDR is invalid by having the
+// host bits set (172.18.0.0/12) and repeats the same requests to observe how the control plane
+// handles the conflict.
+func (s *testingSuite) TestHttpACLValidWithInvalidCIDRPolicy() {
+	// ── Phase 1: valid ACL policy only ───────────────────────────────────────
+
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
+	)
+
+	s.T().Log("Phase 1 — valid ACL only: 10.0.0.1 should be allowed")
+	common.BaseGateway.Send(
+		s.T(),
+		expectAllowed,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "10.0.0.1"),
+	)
+
+	s.T().Log("Phase 1 — valid ACL only: 192.168.1.100 should be denied (matches 192.168.0.0/16)")
+	common.BaseGateway.Send(
+		s.T(),
+		expectDenied,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "192.168.1.100"),
+	)
+
+	// ── Phase 2: add the invalid ACL policy ──────────────────────────────────
+
+	s.T().Log("Phase 2 — applying invalid-cidr-acl-policy (172.18.0.0/12 has host bits set)")
+	s.Require().NoError(
+		s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, invalidACLPolicyManifest),
+		"apply invalid-acl-policy.yaml",
+	)
+	defer func() {
+		_ = s.TestInstallation.Actions.Kubectl().RunCommand(
+			s.Ctx, "delete", "trafficpolicy", "invalid-cidr-acl-policy",
+			"-n", "kgateway-base", "--ignore-not-found",
+		)
+	}()
+
+	// The invalid policy must be rejected with a clear CIDR error in its status.
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		tp := &kgateway.TrafficPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: "invalid-cidr-acl-policy", Namespace: "kgateway-base"},
+			tp,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "can get invalid-cidr-acl-policy TrafficPolicy")
+		g.Expect(tp.Status.Ancestors).NotTo(gomega.BeEmpty(), "TrafficPolicy should report ancestor status")
+
+		cond := apimeta.FindStatusCondition(tp.Status.Ancestors[0].Conditions, string(shared.PolicyConditionAccepted))
+		g.Expect(cond).NotTo(gomega.BeNil(), "TrafficPolicy should have an Accepted condition")
+		g.Expect(cond.Status).To(gomega.Equal(metav1.ConditionFalse), "invalid policy should be Accepted=False")
+		g.Expect(cond.Reason).To(gomega.Equal(string(shared.PolicyReasonInvalid)), "reason should be Invalid")
+		g.Expect(cond.Message).To(gomega.ContainSubstring("172.18.0.0/12"), "error should name the bad CIDR")
+	}).WithTimeout(30 * time.Second).WithPolling(time.Second).Should(gomega.Succeed())
+
+	s.T().Log("Phase 2 — after invalid policy: 10.0.0.1 route being replaced with 500 response")
+	common.BaseGateway.Send(
+		s.T(),
+		expectInternalServerError,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "10.0.0.1"),
+	)
+
+	s.T().Log("Phase 2 — after invalid policy: 192.168.1.100 route being replaced with 500 response")
+	common.BaseGateway.Send(
+		s.T(),
+		expectInternalServerError,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "192.168.1.100"),
 	)
 }
 
