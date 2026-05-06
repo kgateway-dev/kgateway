@@ -253,7 +253,7 @@ type Http2ProtocolOptions struct {
 
 	// The maximum number of concurrent streams that the connection can have.
 	// +optional
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
 	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
 
 	// Allows invalid HTTP messaging and headers. When disabled (default), then
