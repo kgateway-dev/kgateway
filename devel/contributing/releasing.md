@@ -49,7 +49,7 @@ If the release branch **does not** exist, create one:
 
 ### Patch Release
 
-A patch release is generated from an existing release branch, i.e. [v2.0.x](https://github.com/kgateway-dev/kgateway/commits/v2.0.x/).
+A patch release is generated from an existing release branch, e.g. [v2.2.x](https://github.com/kgateway-dev/kgateway/commits/v2.2.x/).
 After all the necessary backport pull requests have merged, you can proceed to the next section.
 
 ## Publish the Release
@@ -60,17 +60,19 @@ Use the "Run workflow" drop-down in the right corner of the page to dispatch a r
 
 - Select the branch to release from
   - Minor release: Select the `main` branch.
-  - Patch release: Select the release branch, e.g. `v2.0.x`, that will be patched.
+  - Patch release: Select the release branch, e.g. `v2.2.x`, that will be patched.
 - Enter the version for the release to create, e.g. `v2.0.3`. This will trigger
   the release process and result in a new GitHub release, [v2.0.3](https://github.com/kgateway-dev/kgateway/releases/tag/v2.0.3)
   for example.
 - Click on the "validate release" option, which bootstraps an environment from the
   generated artifacts and runs the conformance suite against that deployed environment.
-- Generate the release notes using the provided script (see [Generating Release Notes](#generating-release-notes) below).
+- The workflow automatically generates release notes and publishes them with the GitHub release. If you need to preview them locally, see [Generating Release Notes](#generating-release-notes) below.
 
 ## Generating Release Notes
 
-Use the `hack/generate-release-notes.sh` script to generate release notes from merged PRs:
+For workflow-dispatched releases, [release.yaml](../../.github/workflows/release.yaml) automatically runs `make release-notes` and passes the generated `_output/RELEASE_NOTES.md` file to GoReleaser for publishing.
+
+If you need to preview or regenerate the release notes locally, use the `hack/generate-release-notes.sh` script:
 
 ```bash
 GITHUB_TOKEN=<your_token> ./hack/generate-release-notes.sh -p v2.0.3 -c v2.1.0
@@ -86,7 +88,7 @@ The script does the following:
 
 Run `./hack/generate-release-notes.sh --help` to see all options.
 
-After running the script, review the generated file for accuracy, then add the content to the GitHub release description.
+After running the script, review the generated file for accuracy. The release workflow uses the same generated content for the GitHub release description.
 
 ## Verification
 

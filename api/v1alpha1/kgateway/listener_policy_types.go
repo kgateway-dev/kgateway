@@ -158,6 +158,7 @@ type ProxyProtocolConfig struct {
 
 // +kubebuilder:validation:XValidation:message="useRemoteAddress must be set to false if xffTrustedCIDRs is set",rule="!has(self.xffTrustedCIDRs) || (has(self.useRemoteAddress) && !self.useRemoteAddress)"
 // +kubebuilder:validation:XValidation:message="only one of xffNumTrustedHops and xffTrustedCIDRs may be set",rule="!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)"
+// +kubebuilder:validation:XValidation:message="forwardClientCertDetails.details requires mode to be AppendForward or SanitizeSet (or unset)",rule="!has(self.forwardClientCertDetails) || !has(self.forwardClientCertDetails.details) || !has(self.forwardClientCertDetails.mode) || self.forwardClientCertDetails.mode == 'AppendForward' || self.forwardClientCertDetails.mode == 'SanitizeSet'"
 type HTTPSettings struct {
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
@@ -260,6 +261,15 @@ type HTTPSettings struct {
 	// sure it did not come from the client.
 	// +optional
 	EarlyRequestHeaderModifier *gwv1.HTTPHeaderFilter `json:"earlyRequestHeaderModifier,omitempty"`
+
+	// ForwardClientCertDetails configures how Envoy handles the x-forwarded-client-cert (XFCC)
+	// header and which parts of the downstream client certificate are forwarded to upstream
+	// backends. Most modes only have effect on listeners where mTLS is configured. The exceptions
+	// are Sanitize, which strips XFCC unconditionally, and AlwaysForwardOnly, which forwards XFCC
+	// unconditionally; on a non-mTLS listener under any other mode the setting is a no-op.
+	// See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-forward-client-cert-details
+	// +optional
+	ForwardClientCertDetails *ForwardClientCertDetails `json:"forwardClientCertDetails,omitempty"`
 
 	// MaxRequestHeadersKb sets the maximum size of request headers that Envoy will accept.
 	// If unset, the Envoy default is 60 KiB.
@@ -964,3 +974,70 @@ const (
 	// but validates the certificate if one is presented. If validation fails, the connection is rejected.
 	ClientCertificateValidationModeOptional ClientCertificateValidationMode = "Optional"
 )
+
+// ForwardClientCertDetails configures how Envoy handles the x-forwarded-client-cert (XFCC)
+// header forwarded to upstream backends.
+type ForwardClientCertDetails struct {
+	// Mode controls how Envoy handles the XFCC header on the request forwarded upstream.
+	// If unset and Details is provided, Mode defaults to SanitizeSet.
+	// If both Mode and Details are unset, this field has no effect.
+	//
+	// - Sanitize: do not send the XFCC header upstream.
+	// - ForwardOnly: forward the XFCC header in the request unchanged.
+	// - AppendForward: append the current client's details to the XFCC header.
+	// - SanitizeSet: reset the XFCC header with the current client's details, ignoring any client-supplied value.
+	// - AlwaysForwardOnly: always forward the XFCC header, even for non-mTLS connections.
+	//
+	// +kubebuilder:validation:Enum=Sanitize;ForwardOnly;AppendForward;SanitizeSet;AlwaysForwardOnly
+	// +optional
+	Mode *ForwardClientCertMode `json:"mode,omitempty"`
+
+	// Details selects which fields from the downstream client certificate are written into
+	// the XFCC header that is sent upstream. These fields are only honored by Envoy when
+	// Mode is AppendForward or SanitizeSet.
+	// +optional
+	Details *SetCurrentClientCertDetails `json:"details,omitempty"`
+}
+
+// ForwardClientCertMode is the XFCC header forwarding mode for HTTP Connection Manager.
+type ForwardClientCertMode string
+
+const (
+	// ForwardClientCertModeSanitize strips the XFCC header from requests forwarded upstream.
+	ForwardClientCertModeSanitize ForwardClientCertMode = "Sanitize"
+	// ForwardClientCertModeForwardOnly forwards the XFCC header from the request unchanged.
+	ForwardClientCertModeForwardOnly ForwardClientCertMode = "ForwardOnly"
+	// ForwardClientCertModeAppendForward appends the current client's details to the XFCC header.
+	ForwardClientCertModeAppendForward ForwardClientCertMode = "AppendForward"
+	// ForwardClientCertModeSanitizeSet resets the XFCC header with the current client's details,
+	// ignoring any client-supplied value.
+	ForwardClientCertModeSanitizeSet ForwardClientCertMode = "SanitizeSet"
+	// ForwardClientCertModeAlwaysForwardOnly always forwards the XFCC header, even for non-mTLS connections.
+	ForwardClientCertModeAlwaysForwardOnly ForwardClientCertMode = "AlwaysForwardOnly"
+)
+
+// SetCurrentClientCertDetails selects fields from the downstream client certificate to include
+// in the XFCC header when Envoy sets or appends it. Fields default to false when unset.
+// See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-msg-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-setcurrentclientcertdetails
+type SetCurrentClientCertDetails struct {
+	// Subject forwards the certificate Subject in the XFCC header.
+	// +optional
+	Subject *bool `json:"subject,omitempty"`
+
+	// Cert forwards the entire client certificate in URL-encoded PEM format in the XFCC header.
+	// +optional
+	Cert *bool `json:"cert,omitempty"`
+
+	// Chain forwards the entire client certificate chain (including the leaf certificate) in
+	// URL-encoded PEM format in the XFCC header.
+	// +optional
+	Chain *bool `json:"chain,omitempty"`
+
+	// DNS forwards DNS-type Subject Alternative Names from the client certificate in the XFCC header.
+	// +optional
+	DNS *bool `json:"dns,omitempty"`
+
+	// URI forwards the URI-type Subject Alternative Name from the client certificate in the XFCC header.
+	// +optional
+	URI *bool `json:"uri,omitempty"`
+}

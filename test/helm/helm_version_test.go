@@ -280,6 +280,12 @@ func TestHelmChartTemplate(t *testing.T) {
 			apiVersions: []string{"monitoring.coreos.com/v1"},
 		},
 		{
+			name: "prometheus-annotations-disabled",
+			valuesYAML: `controller:
+  prometheusAnnotations: false
+`,
+		},
+		{
 			name: "hpa-and-vpa",
 			valuesYAML: `controller:
   horizontalPodAutoscaler:

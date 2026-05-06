@@ -937,6 +937,7 @@ func translateTLSConfig(
 	}
 
 	var certificates []ir.TLSCertificate
+	var certErr error
 	for _, certRef := range tls.CertificateRefs {
 		parentGVK := listener.Parent.GetObjectKind().GroupVersionKind()
 		if parentGVK.Empty() {
@@ -957,13 +958,15 @@ func translateTLSConfig(
 			certRef,
 		)
 		if err != nil {
-			return nil, err
+			certErr = errors.Join(certErr, err)
+			continue
 		}
 
 		// The resulting sslconfig will still have to go through a real translation where we run through this again.
 		// This means that while its nice to still fail early here we dont need to scrub the actual contents of the secret.
 		if _, err := sslutils.ValidateTlsSecretData(secret.Name, secret.Namespace, secret.Data); err != nil {
-			return nil, err
+			certErr = errors.Join(certErr, err)
+			continue
 		}
 
 		certChain := secret.Data[corev1.TLSCertKey]
@@ -975,6 +978,9 @@ func translateTLSConfig(
 			CertChain:  certChain,
 			CA:         rootCa,
 		})
+	}
+	if len(certificates) == 0 && certErr != nil {
+		return nil, certErr
 	}
 
 	tlsConfig := &ir.TLSConfig{
@@ -1007,7 +1013,7 @@ func translateTLSConfig(
 					"port", listener.Port,
 					"error", caErr,
 					"mode", "AllowValidOnly")
-				return nil, caErr
+				return nil, errors.Join(certErr, caErr)
 			}
 			// If client certs are not required (AllowInsecureFallback), log the error but don't fail the listener
 			// The listener will still work for connections without client certs
@@ -1039,11 +1045,11 @@ func translateTLSConfig(
 				"port", listener.Port,
 				"error", caErr,
 				"mode", "required")
-			return nil, caErr
+			return nil, errors.Join(certErr, caErr)
 		}
 	}
 
-	return tlsConfig, caErr
+	return tlsConfig, errors.Join(certErr, caErr)
 }
 
 // buildCaCertificateReference fetches and extracts a CA certificate from either a ConfigMap or Secret

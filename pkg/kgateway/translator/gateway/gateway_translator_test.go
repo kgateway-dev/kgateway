@@ -1470,6 +1470,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HTTPListenerPolicy with forwardClientCertDetails (mode defaulted)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/forward-client-cert-details.yaml",
+			outputFile: "httplistenerpolicy/forward-client-cert-details.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("HTTPListenerPolicy with uuidRequestIdConfig defaults", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "httplistenerpolicy/request-id-config-defaults.yaml",
@@ -1705,6 +1716,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/early-header-mutation.yaml",
 			outputFile: "listener-policy-http/early-header-mutation.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with forwardClientCertDetails (AppendForward)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/forward-client-cert-details.yaml",
+			outputFile: "listener-policy-http/forward-client-cert-details.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2075,6 +2097,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HttpACL Policy with invalid CIDR rejected", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/invalid-cidr.yaml",
+			outputFile: "http-acl/invalid-cidr.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("RBAC Policy at route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "rbac/route-cel-rbac.yaml",
@@ -2244,6 +2277,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "invalid-filter-chains/https-listener-invalid-secret-ref.yaml",
 			outputFile: "invalid-filter-chains/https-listener-invalid-secret-ref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPS listener with multiple cert refs, one missing", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/https-listener-multi-cert-one-missing.yaml",
+			outputFile: "invalid-filter-chains/https-listener-multi-cert-one-missing.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

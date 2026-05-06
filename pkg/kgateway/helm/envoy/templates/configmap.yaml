@@ -93,6 +93,13 @@ data:
       - name: readiness_listener
         address:
           socket_address: { address: 0.0.0.0, port_value: 8082 }
+{{- if $gateway.enableReadinessProbeProxyProtocol }}
+        listener_filters:
+          - name: envoy.filters.listener.proxy_protocol
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.listener.proxy_protocol.v3.ProxyProtocol
+              allow_requests_without_proxy_protocol: true
+{{- end }}{{/*if $gateway.enableReadinessProbeProxyProtocol*/}}
         filter_chains:
           - filters:
             - name: envoy.filters.network.http_connection_manager

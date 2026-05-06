@@ -474,3 +474,137 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 		})
 	}
 }
+
+func TestDeepMergeImage(t *testing.T) {
+	emptyStr := ""
+
+	tests := []struct {
+		name string
+		dst  *kgateway.Image
+		src  *kgateway.Image
+		want *kgateway.Image
+	}{
+		{
+			name: "non-empty digest with no tag in src clears inherited tag",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+			},
+			src: &kgateway.Image{
+				Digest: new("sha256:abc"),
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        &emptyStr,
+				Digest:     new("sha256:abc"),
+			},
+		},
+		{
+			name: "non-empty tag with no digest in src clears inherited digest",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Digest:     new("sha256:def"),
+			},
+			src: &kgateway.Image{
+				Tag: new("v2.0.0"),
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v2.0.0"),
+				Digest:     &emptyStr,
+			},
+		},
+		{
+			name: "non-empty tag and digest in src keep both",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     new("sha256:def"),
+			},
+			src: &kgateway.Image{
+				Tag:    new("v2.0.0"),
+				Digest: new("sha256:abc"),
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v2.0.0"),
+				Digest:     new("sha256:abc"),
+			},
+		},
+		{
+			name: "empty-string digest in src is an explicit clear and does not clobber inherited tag",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     new("sha256:def"),
+			},
+			src: &kgateway.Image{
+				Digest: &emptyStr,
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     &emptyStr,
+			},
+		},
+		{
+			name: "empty-string tag in src is an explicit clear and does not clobber inherited digest",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     new("sha256:def"),
+			},
+			src: &kgateway.Image{
+				Tag: &emptyStr,
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        &emptyStr,
+				Digest:     new("sha256:def"),
+			},
+		},
+		{
+			name: "nil src returns dst unchanged",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+			},
+			src: nil,
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+			},
+		},
+		{
+			name: "nil dst with digest-only src yields a tag-cleared result without mutating src",
+			dst:  nil,
+			src: &kgateway.Image{
+				Repository: new("repo"),
+				Digest:     new("sha256:abc"),
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        &emptyStr,
+				Digest:     new("sha256:abc"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Snapshot src so we can verify DeepMergeImage does not mutate it.
+			var srcBefore *kgateway.Image
+			if tt.src != nil {
+				cp := *tt.src
+				srcBefore = &cp
+			}
+
+			got := DeepMergeImage(tt.dst, tt.src)
+			assert.Equal(t, tt.want, got)
+
+			if tt.src != nil {
+				assert.Equal(t, srcBefore, tt.src, "DeepMergeImage must not mutate src")
+			}
+		})
+	}
+}
