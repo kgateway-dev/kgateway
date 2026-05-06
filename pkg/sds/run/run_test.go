@@ -41,10 +41,20 @@ func TestServerStartStop(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Start the server
+	runErr := make(chan error, 1)
 	go func() {
-		err := Run(ctx, []server.Secret{data.secret}, sdsClient, testServerAddress, logger)
-		r.NoError(err)
+		defer close(runErr)
+		runErr <- Run(ctx, []server.Secret{data.secret}, sdsClient, testServerAddress, logger)
 	}()
+	t.Cleanup(func() {
+		cancel()
+		select {
+		case err := <-runErr:
+			assert.NoError(t, err, "SDS server returned error")
+		case <-time.After(5 * time.Second):
+			assert.Fail(t, "Run did not return after context cancellation")
+		}
+	})
 	// Give enough time for the server to start
 	time.Sleep(100 * time.Millisecond)
 
@@ -68,6 +78,12 @@ func TestServerStartStop(t *testing.T) {
 		_, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 		require.Error(c, err, "expected error fetching secrets")
 	}, 10*time.Second, 1*time.Second)
+	select {
+	case err := <-runErr:
+		r.NoError(err, "Run returned unexpected error after context cancel")
+	case <-time.After(5 * time.Second):
+		t.Fatal("Run did not return after context cancellation")
+	}
 }
 
 func TestRunReturnsWhenContextCanceled(t *testing.T) {
@@ -142,14 +158,30 @@ func TestCertRotation(t *testing.T) {
 				require.False(c, open, "expected server port to be closed")
 			}, 5*time.Second, 500*time.Millisecond)
 
+			secret := data.secret
+			if !tc.ocsp {
+				secret.SslOcspFile = ""
+			}
+			runErr := make(chan error, 1)
 			go func() {
-				if !tc.ocsp {
-					data.secret.SslOcspFile = ""
-				}
-				err := Run(ctx, []server.Secret{data.secret}, sdsClient, testServerAddress, logger)
-				r.NoError(err, "error starting SDS server")
+				defer close(runErr)
+				runErr <- Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress, logger)
 			}()
 			time.Sleep(2 * time.Second)
+			select {
+			case err := <-runErr:
+				r.NoError(err, "SDS server exited before test completed")
+				r.FailNow("SDS server exited before test completed")
+			default:
+			}
+			t.Cleanup(func() {
+				select {
+				case err := <-runErr:
+					assert.NoError(t, err, "SDS server returned error")
+				case <-time.After(5 * time.Second):
+					assert.Fail(t, "SDS server did not stop after test context cancellation")
+				}
+			})
 
 			// Connect with the server
 			conn, err := grpc.NewClient(testServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))

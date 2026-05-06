@@ -89,7 +89,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.routeConfigName, pols...)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
-				errs = append(errs, pol.Errors...)
+				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
 				continue
 			}
 			pass.ApplyRouteConfigPlugin(&ir.RouteConfigContext{
@@ -285,14 +285,16 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		return nil
 	}
 
+	acceptanceMsg := summarizeRuleErrors(routeAcceptanceErr)
+
 	// For invalid matchers, we drop the route entirely instead of replacing it with a synthetic matcher.
 	if routeAcceptanceErr != nil && errors.Is(routeAcceptanceErr, ErrInvalidMatcher) {
 		h.logger.Info("invalid matcher", "error", routeAcceptanceErr)
 		routeReport.SetCondition(reportssdk.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleDroppedReason),
-			Message: fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
+			Reason:  reportssdk.RouteRuleDroppedReason,
+			Message: fmt.Sprintf("Dropped Rule (%d): %s", in.MatchIndex, acceptanceMsg),
 		})
 		return nil
 	}
@@ -306,8 +308,8 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			routeReport.SetCondition(reportssdk.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleReplacedReason),
-				Message: fmt.Sprintf("Replaced Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
+				Reason:  reportssdk.RouteRuleReplacedReason,
+				Message: fmt.Sprintf("Replaced Rule (%d): %s", in.MatchIndex, acceptanceMsg),
 			})
 		}
 
@@ -356,7 +358,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
-				errs = append(errs, pol.Errors...)
+				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
 				continue
 			}
 			pctx := &ir.VirtualHostContext{
@@ -428,7 +430,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			// skip plugin application if we encountered any errors while constructing
 			// the policy IR.
 			if len(pol.Errors) > 0 {
-				errs = append(errs, pol.Errors...)
+				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
 				continue
 			}
 
@@ -757,4 +759,67 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoyroutev3.QueryParam
 		out = append(out, envoyMatch)
 	}
 	return out
+}
+
+// summarizeRuleErrors renders err for a route status condition: flattens
+// errors.Join trees, dedupes and sorts on (PolicyRef.IDWithSectionName, msg)
+// for deterministic status output. err itself is not modified, so
+// callers can still errors.Is/As against it.
+func summarizeRuleErrors(err error) string {
+	if err == nil {
+		return ""
+	}
+	// Flatten any nested errors.
+	flatErrs := ir.FlattenJoinedErr(err)
+
+	type key struct{ refID, msg string }
+	seen := make(map[key]struct{}, len(flatErrs))
+	type item struct {
+		refID, msg, rendered string
+	}
+	items := make([]item, 0, len(flatErrs))
+
+	for _, flatErr := range flatErrs {
+		// Extract key.
+		var refID, msg string
+		var pe *ir.PolicyError
+		if errors.As(flatErr, &pe) {
+			if pe.Ref != nil {
+				refID = pe.Ref.IDWithSectionName()
+			}
+			if pe.Err != nil {
+				msg = pe.Err.Error()
+			}
+		} else {
+			msg = flatErr.Error()
+		}
+		// Dedupe on (refID, msg).
+		k := key{refID, msg}
+		if _, dup := seen[k]; dup {
+			continue
+		}
+		seen[k] = struct{}{}
+		items = append(items, item{
+			refID:    refID,
+			msg:      msg,
+			rendered: flatErr.Error(),
+		})
+	}
+	// Sort on (refID, msg) for deterministic status message.
+	slices.SortFunc(items, func(a, b item) int {
+		if c := strings.Compare(a.refID, b.refID); c != 0 {
+			return c
+		}
+		return strings.Compare(a.msg, b.msg)
+	})
+
+	// Build the status message.
+	var b strings.Builder
+	for i, it := range items {
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString(it.rendered)
+	}
+	return b.String()
 }

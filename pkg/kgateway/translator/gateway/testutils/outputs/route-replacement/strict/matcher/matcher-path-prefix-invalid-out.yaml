@@ -106,9 +106,9 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): invalid route configuration: error listener~8080~www_example_com-route-0-httproute-invalid-traffic-policy-route-gwtest-0-0-matcher-0:
-            the rewrite /new//../path is invalid: path [/new//../path] cannot contain
-            [//]'
+          message: |-
+            Replaced Rule (0): error listener~8080~www_example_com-route-0-httproute-invalid-traffic-policy-route-gwtest-0-0-matcher-0: the rewrite /new//../path is invalid: path [/new//../path] cannot contain [//]
+            invalid route configuration
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

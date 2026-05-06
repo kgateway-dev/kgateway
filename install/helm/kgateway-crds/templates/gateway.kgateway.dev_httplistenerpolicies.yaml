@@ -1442,6 +1442,62 @@ spec:
                     - name
                     x-kubernetes-list-type: map
                 type: object
+              forwardClientCertDetails:
+                description: |-
+                  ForwardClientCertDetails configures how Envoy handles the x-forwarded-client-cert (XFCC)
+                  header and which parts of the downstream client certificate are forwarded to upstream
+                  backends. Most modes only have effect on listeners where mTLS is configured. The exceptions
+                  are Sanitize, which strips XFCC unconditionally, and AlwaysForwardOnly, which forwards XFCC
+                  unconditionally; on a non-mTLS listener under any other mode the setting is a no-op.
+                  See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-forward-client-cert-details
+                properties:
+                  details:
+                    description: |-
+                      Details selects which fields from the downstream client certificate are written into
+                      the XFCC header that is sent upstream. These fields are only honored by Envoy when
+                      Mode is AppendForward or SanitizeSet.
+                    properties:
+                      cert:
+                        description: Cert forwards the entire client certificate in
+                          URL-encoded PEM format in the XFCC header.
+                        type: boolean
+                      chain:
+                        description: |-
+                          Chain forwards the entire client certificate chain (including the leaf certificate) in
+                          URL-encoded PEM format in the XFCC header.
+                        type: boolean
+                      dns:
+                        description: DNS forwards DNS-type Subject Alternative Names
+                          from the client certificate in the XFCC header.
+                        type: boolean
+                      subject:
+                        description: Subject forwards the certificate Subject in the
+                          XFCC header.
+                        type: boolean
+                      uri:
+                        description: URI forwards the URI-type Subject Alternative
+                          Name from the client certificate in the XFCC header.
+                        type: boolean
+                    type: object
+                  mode:
+                    description: |-
+                      Mode controls how Envoy handles the XFCC header on the request forwarded upstream.
+                      If unset and Details is provided, Mode defaults to SanitizeSet.
+                      If both Mode and Details are unset, this field has no effect.
+
+                      - Sanitize: do not send the XFCC header upstream.
+                      - ForwardOnly: forward the XFCC header in the request unchanged.
+                      - AppendForward: append the current client's details to the XFCC header.
+                      - SanitizeSet: reset the XFCC header with the current client's details, ignoring any client-supplied value.
+                      - AlwaysForwardOnly: always forward the XFCC header, even for non-mTLS connections.
+                    enum:
+                    - Sanitize
+                    - ForwardOnly
+                    - AppendForward
+                    - SanitizeSet
+                    - AlwaysForwardOnly
+                    type: string
+                type: object
               generateRequestId:
                 description: |-
                   GenerateRequestId:  Whether the connection manager will generate the x-request-id header if it does not exist.
@@ -2058,6 +2114,11 @@ spec:
                 !self.useRemoteAddress)'
             - message: only one of xffNumTrustedHops and xffTrustedCIDRs may be set
               rule: '!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)'
+            - message: forwardClientCertDetails.details requires mode to be AppendForward
+                or SanitizeSet (or unset)
+              rule: '!has(self.forwardClientCertDetails) || !has(self.forwardClientCertDetails.details)
+                || !has(self.forwardClientCertDetails.mode) || self.forwardClientCertDetails.mode
+                == ''AppendForward'' || self.forwardClientCertDetails.mode == ''SanitizeSet'''
           status:
             description: |-
               PolicyStatus defines the common attributes that all Policies should include within

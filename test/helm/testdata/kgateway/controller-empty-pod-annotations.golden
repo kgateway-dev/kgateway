@@ -319,6 +319,7 @@ spec:
       annotations:
         prometheus.io/path: "/metrics"
         prometheus.io/port: "9092"
+        prometheus.io/scrape: "true"
       labels:
         kgateway: kgateway
         app.kubernetes.io/name: kgateway

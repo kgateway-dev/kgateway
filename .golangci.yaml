@@ -30,6 +30,7 @@ linters:
     - sloglint
     - spancheck
     - staticcheck
+    - testifylint
     - unparam
     - unused
     - usestdlibvars
@@ -145,7 +146,15 @@ linters:
     staticcheck:
       checks:
         - SA1019 # deprecated usage
+        - SA2002 # testing.T FailNow/SkipNow called from goroutine
         - ST1019 # duplicate imports
+    testifylint:
+      disable-all: true
+      enable:
+        - go-require # require/assert.FailNow in non-test goroutines
+        - suite-subtest-run # use s.Run instead of s.T().Run in testify suites
+      go-require:
+        ignore-http-handlers: true
     sloglint:
       static-msg: true
       msg-style: lowercased

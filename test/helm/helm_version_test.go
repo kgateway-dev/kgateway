@@ -204,8 +204,9 @@ func TestHelmChartTemplate(t *testing.T) {
 	charts := []string{"kgateway"}
 
 	valuesCases := []struct {
-		name       string
-		valuesYAML string
+		name        string
+		valuesYAML  string
+		apiVersions []string
 	}{
 		{
 			name:       "default",
@@ -268,6 +269,20 @@ func TestHelmChartTemplate(t *testing.T) {
     publishNotReadyAddresses: true
     allocateLoadBalancerNodePorts: false
     trafficDistribution: PreferClose
+`,
+		},
+		{
+			name: "service-monitor-enabled",
+			valuesYAML: `controller:
+  serviceMonitor:
+    enabled: true
+`,
+			apiVersions: []string{"monitoring.coreos.com/v1"},
+		},
+		{
+			name: "prometheus-annotations-disabled",
+			valuesYAML: `controller:
+  prometheusAnnotations: false
 `,
 		},
 		{
@@ -493,6 +508,9 @@ controller:
 				// Build helm template command args
 				// Explicitly set namespace to avoid picking up the current kubectl context's namespace
 				args := []string{"template", "test-release", absHelmChartPath, "--namespace", "default"}
+				for _, apiVersion := range vc.apiVersions {
+					args = append(args, "--api-versions", apiVersion)
+				}
 
 				// If we have custom values, write them to a temp file
 				if vc.valuesYAML != "" {

@@ -175,7 +175,8 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+          message: 'gateway.kgateway.dev/TrafficPolicy/gwtest/listener-merge-invalid-policy/http-a:
+            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
             Failed to create pre-route filter config: Failed to initialize per-route
             dynamic module'
           reason: ListenerReplaced

@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
@@ -122,5 +123,96 @@ func TestHttpACLIREquals(t *testing.T) {
 		acl := &httpACLIR{config: allowAllCfg}
 		other := &rustformationIR{config: nil}
 		assert.False(t, acl.Equals(other), "httpACLIR should not equal a different PolicySubIR type")
+	})
+}
+
+func TestValidateACLCIDRs(t *testing.T) {
+	makeACL := func(cidrs ...string) *shared.ACLPolicy {
+		entries := make([]shared.IPOrCIDR, len(cidrs))
+		for i, c := range cidrs {
+			entries[i] = shared.IPOrCIDR(c)
+		}
+		return &shared.ACLPolicy{
+			DefaultAction: shared.ACLActionDeny,
+			Rules: []shared.ACLRule{
+				{CIDRs: entries, Action: shared.ACLActionAllow},
+			},
+		}
+	}
+
+	t.Run("valid CIDRs pass", func(t *testing.T) {
+		valid := []string{
+			"10.0.0.0/8",
+			"172.16.0.0/12",
+			"192.168.0.0/16",
+			"0.0.0.0/0",
+			"fd00::/8",
+			"2001:db8::/32",
+			"::/0",
+		}
+		for _, cidr := range valid {
+			t.Run(cidr, func(t *testing.T) {
+				assert.NoError(t, validateACLCIDRs(makeACL(cidr)))
+			})
+		}
+	})
+
+	t.Run("bare IPs pass", func(t *testing.T) {
+		bare := []string{
+			"192.168.1.100",
+			"10.0.0.1",
+			"2001:db8::1",
+			"::1",
+		}
+		for _, ip := range bare {
+			t.Run(ip, func(t *testing.T) {
+				assert.NoError(t, validateACLCIDRs(makeACL(ip)))
+			})
+		}
+	})
+
+	// CIDRs that have host bits set and must be rejected.
+	invalidCIDRs := []struct {
+		cidr    string
+		wantNet string // expected network address in "did you mean" suggestion
+	}{
+		{"172.18.0.0/12", "172.16.0.0/12"},
+		{"fd01::/8", "fd00::/8"},
+		{"172.29.0.0/12", "172.16.0.0/12"},
+		{"fd04::/8", "fd00::/8"},
+		{"fd05::/8", "fd00::/8"},
+		{"172.17.0.0/12", "172.16.0.0/12"},
+		{"172.22.0.0/12", "172.16.0.0/12"},
+		{"fd08::/8", "fd00::/8"},
+		{"fd09::/8", "fd00::/8"},
+		{"172.26.0.0/12", "172.16.0.0/12"},
+		{"fd0c::/8", "fd00::/8"},
+	}
+
+	t.Run("CIDRs with host bits set are rejected", func(t *testing.T) {
+		for _, tc := range invalidCIDRs {
+			t.Run(tc.cidr, func(t *testing.T) {
+				err := validateACLCIDRs(makeACL(tc.cidr))
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.cidr)
+				assert.Contains(t, err.Error(), tc.wantNet)
+			})
+		}
+	})
+
+	t.Run("all invalid CIDRs reported together", func(t *testing.T) {
+		all := make([]string, len(invalidCIDRs))
+		for i, tc := range invalidCIDRs {
+			all[i] = tc.cidr
+		}
+		err := validateACLCIDRs(makeACL(all...))
+		assert.Error(t, err)
+		for _, tc := range invalidCIDRs {
+			assert.Contains(t, err.Error(), tc.cidr)
+		}
+	})
+
+	t.Run("nil ACL policy", func(t *testing.T) {
+		assert.NoError(t, validateACLCIDRs(&shared.ACLPolicy{}))
 	})
 }

@@ -500,6 +500,13 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		}
 	}
 
+	if policy.forwardClientCertMode != nil {
+		out.ForwardClientCertDetails = *policy.forwardClientCertMode
+	}
+	if policy.setCurrentClientCertDetails != nil {
+		out.SetCurrentClientCertDetails = policy.setCurrentClientCertDetails
+	}
+
 	return nil
 }
 

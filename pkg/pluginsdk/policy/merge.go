@@ -183,7 +183,7 @@ func merge[T any](
 		p2 := any(policies[i].PolicyIr).(*T)
 		p2Ref := policies[i].PolicyRef
 
-		out.Errors = append(out.Errors, policies[i].Errors...)
+		out.Errors = append(out.Errors, ir.WrapPolicyErrors(p2Ref, policies[i].Errors)...)
 		if len(policies[i].Errors) > 0 {
 			slog.Warn("ignoring policy with errors", "resource_ref", p2Ref, "errors", policies[i].FormatErrors())
 			continue

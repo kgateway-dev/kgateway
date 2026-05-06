@@ -308,7 +308,6 @@ metadata:
     app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
 spec:
-  replicas: 1
   selector:
     matchLabels:
       kgateway: kgateway

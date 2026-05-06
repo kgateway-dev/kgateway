@@ -17,11 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
-var promotedTLSRouteGVR = schema.GroupVersionResource{
-	Group:    wellknown.GatewayGroup,
-	Version:  gwv1.GroupVersion.Version,
-	Resource: "tlsroutes",
-}
+var promotedTLSRouteGVR = wellknown.TLSRouteV1GVR
 
 var tlsRouteV1Alpha3GVR = schema.GroupVersionResource{
 	Group:    wellknown.GatewayGroup,

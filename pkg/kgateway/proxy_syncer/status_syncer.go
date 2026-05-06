@@ -413,7 +413,7 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 }
 
 func shouldFallbackTLSRouteLookup(err error) bool {
-	return apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err)
+	return apimeta.IsNoMatchError(err)
 }
 
 func updateUnstructuredTLSRouteStatus(ctx context.Context, writer statusWriter, route *unstructured.Unstructured, status gwv1.RouteStatus) error {

@@ -158,8 +158,8 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: |-
-            Replaced Rule (0): no action specified
-            invalid redirect status code: abc; must be one of 301, 302, 303, 307, 308
+            Replaced Rule (0): invalid redirect status code: abc; must be one of 301, 302, 303, 307, 308
+            no action specified
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
@@ -178,8 +178,8 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: |-
-            Replaced Rule (0): no action specified
-            invalid redirect status code: 200; must be one of 301, 302, 303, 307, 308
+            Replaced Rule (0): invalid redirect status code: 200; must be one of 301, 302, 303, 307, 308
+            no action specified
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

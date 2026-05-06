@@ -59,6 +59,8 @@ type HttpListenerPolicyIr struct {
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 	maxRequestHeadersKb           *uint32
 	uuidRequestIdConfig           *envoyuuidv3.UuidRequestIdConfig
+	forwardClientCertMode         *envoy_hcm.HttpConnectionManager_ForwardClientCertDetails
+	setCurrentClientCertDetails   *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
 }
 
 func (d *HttpListenerPolicyIr) Equals(in any) bool {
@@ -179,6 +181,14 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 
+	if !cmputils.PointerValsEqual(d.forwardClientCertMode, d2.forwardClientCertMode) {
+		return false
+	}
+
+	if !proto.Equal(d.setCurrentClientCertDetails, d2.setCurrentClientCertDetails) {
+		return false
+	}
+
 	return true
 }
 
@@ -271,6 +281,41 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		}
 	}
 
+	var forwardClientCertMode *envoy_hcm.HttpConnectionManager_ForwardClientCertDetails
+	var setCurrentClientCertDetails *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
+	if fccd := h.ForwardClientCertDetails; fccd != nil {
+		if fccd.Mode != nil {
+			switch *fccd.Mode {
+			case kgateway.ForwardClientCertModeSanitize:
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE)
+			case kgateway.ForwardClientCertModeForwardOnly:
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_FORWARD_ONLY)
+			case kgateway.ForwardClientCertModeAppendForward:
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_APPEND_FORWARD)
+			case kgateway.ForwardClientCertModeSanitizeSet:
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
+			case kgateway.ForwardClientCertModeAlwaysForwardOnly:
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_ALWAYS_FORWARD_ONLY)
+			}
+		}
+		if d := fccd.Details; d != nil {
+			setCurrentClientCertDetails = &envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails{
+				Cert:  ptr.Deref(d.Cert, false),
+				Chain: ptr.Deref(d.Chain, false),
+				Dns:   ptr.Deref(d.DNS, false),
+				Uri:   ptr.Deref(d.URI, false),
+			}
+			if d.Subject != nil {
+				setCurrentClientCertDetails.Subject = wrapperspb.Bool(*d.Subject)
+			}
+			// If Details is set but Mode is not, default to SANITIZE_SET so the
+			// configuration has effect (Envoy's default SANITIZE strips XFCC).
+			if forwardClientCertMode == nil {
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
+			}
+		}
+	}
+
 	return &HttpListenerPolicyIr{
 		accessLogConfig:               accessLog,
 		accessLogPolicies:             h.AccessLog,
@@ -293,6 +338,8 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
 		maxRequestHeadersKb:           maxRequestHeadersKb,
 		uuidRequestIdConfig:           uuidRequestIdConfig,
+		forwardClientCertMode:         forwardClientCertMode,
+		setCurrentClientCertDetails:   setCurrentClientCertDetails,
 	}, errs
 }
 

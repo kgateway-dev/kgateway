@@ -39,12 +39,10 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,
 	)
 	if !enableExperimentalGatewayAPIFeatures {
-		// TLSRoute processing is behind the experimental Gateway API feature flag.
-		// Standard conformance runs disable that flag, so the standard GatewayClass must not
-		// advertise TLSRoute support in that mode.
+		// TLSRoute and TLSRouteModeTerminate are standard as of Gateway API v1.5.
+		// TLSRouteModeMixed remains experimental and must not be advertised when
+		// experimental Gateway API features are disabled.
 		exemptFeatures.Insert(
-			features.TLSRouteFeature,
-			features.TLSRouteModeTerminateFeature,
 			features.TLSRouteModeMixedFeature,
 		)
 	}

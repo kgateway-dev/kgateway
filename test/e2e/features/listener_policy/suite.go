@@ -58,6 +58,26 @@ func (s *testingSuite) SetupSuite() {
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
 
+	// Apply cert Secrets used by the forwardClientCertDetails tests:
+	// - server cert + client CA in 'default' (consumed by the gw mtls-https
+	//   listener and the mtls-validation policy)
+	// - alice client cert + CA in 'curl' (mounted into the curl-mtls pod
+	//   created by setup.yaml)
+	// Applied at suite setup time so the listener is always programmable
+	// and curl-mtls can mount its volumes regardless of which test runs.
+	for _, m := range []string{
+		forwardClientCertServerSecret,
+		forwardClientCertCASecret,
+		forwardClientCertAliceSecret,
+	} {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, m)
+		s.NoError(err, "can apply "+m)
+	}
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, curlMtlsPod)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, curlMtlsPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=curl-mtls",
+	})
+
 	// include gateway manifests for tests, so we recreate it for each test run
 	s.manifests = map[string][]string{
 		"TestHttpListenerPolicyAllFields":        {gatewayManifest, httpRouteManifest, allFieldsManifest},
@@ -71,12 +91,31 @@ func (s *testingSuite) SetupSuite() {
 		// These tests use an echo server to verify x-request-id header behavior
 		"TestListenerPolicyRequestId":     {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
 		"TestHTTPListenerPolicyRequestId": {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
+
+		// forwardClientCertDetails tests. All share gateway + request-id-echo
+		// + the route + the mtls-validation policy. Each scenario adds (or
+		// omits, for the baseline) a forward-client-cert ListenerPolicy.
+		"TestForwardClientCertBaseline":           {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation},
+		"TestForwardClientCertSanitizeSetDefault": {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitizeSetDef},
+		"TestForwardClientCertSanitizeSetAll":     {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitizeSetAll},
+		"TestForwardClientCertAppendForward":      {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertAppendForward},
+		"TestForwardClientCertSanitize":           {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitize},
+		"TestForwardClientCertForwardOnly":        {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertForwardOnly},
 	}
 }
 
 func (s *testingSuite) TearDownSuite() {
 	if testutils.ShouldSkipCleanup(s.T()) {
 		return
+	}
+	// Tear down forwardClientCertDetails Secrets in reverse apply order.
+	for _, m := range []string{
+		forwardClientCertAliceSecret,
+		forwardClientCertCASecret,
+		forwardClientCertServerSecret,
+	} {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, m)
+		s.NoError(err, "can delete "+m)
 	}
 	// Check that the common setup manifest is deleted
 	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
@@ -437,5 +476,143 @@ func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
 			StatusCode: http.StatusOK,
 			// Verify x-request-id header was generated with valid UUID format
 			Body: gomega.MatchRegexp(`(?i)x-request-id: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`),
+		})
+}
+
+// forwardClientCertCurlOpts returns the curl options used by every
+// TestForwardClientCert* test: an mTLS HTTPS GET to gateway.local on the
+// 'mtls-https' listener (port 8443), authenticating with alice's client
+// cert mounted into the curl-mtls pod.
+func forwardClientCertCurlOpts(extra ...curl.Option) []curl.Option {
+	opts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+		curl.WithPort(8443),
+		curl.WithScheme("https"),
+		curl.WithSni("gateway.local"),
+		curl.WithHostHeader("gateway.local"),
+		curl.WithCaFile(forwardClientCertCAPath),
+		curl.WithClientCert(forwardClientCertAliceCertPath, forwardClientCertAliceKeyPath),
+	}
+	return append(opts, extra...)
+}
+
+// waitForEchoBackend ensures the request-id-echo backend used by every
+// TestForwardClientCert* test is healthy before issuing requests.
+func (s *testingSuite) waitForEchoBackend() {
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, requestIdEchoService, requestIdEchoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, requestIdEchoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=request-id-echo",
+	})
+}
+
+// TestForwardClientCertBaseline verifies that without a forwardClientCertDetails
+// policy, Envoy uses its default SANITIZE mode and the backend never sees an
+// X-Forwarded-Client-Cert header.
+func (s *testingSuite) TestForwardClientCertBaseline() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert:`)),
+		})
+}
+
+// TestForwardClientCertSanitizeSetDefault sets only `details: {subject: true}`
+// and relies on kgateway auto-default of mode=SanitizeSet. The backend
+// should see XFCC carrying alice's Subject.
+func (s *testingSuite) TestForwardClientCertSanitizeSetDefault() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Subject="OU=engineering,O=acme,CN=alice"`),
+		})
+}
+
+// TestForwardClientCertSanitizeSetAll sets every detail flag plus the
+// auto-emitted Hash. The backend should see XFCC carrying Hash, Cert,
+// Chain, Subject, URI, and DNS.
+func (s *testingSuite) TestForwardClientCertSanitizeSetAll() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			// All six selectors must appear on the same XFCC line. Hash is
+			// always emitted by Envoy on a 'set' operation; the rest come from
+			// the details: {} block in policy-sanitize-set-all.yaml.
+			Body: gomega.And(
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Hash=[0-9a-f]{64}`),
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Cert="-----BEGIN%20CERTIFICATE-----`),
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Chain="-----BEGIN%20CERTIFICATE-----`),
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Subject="OU=engineering,O=acme,CN=alice"`),
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*URI=spiffe://acme\.example\.com/ns/team-alpha/sa/alice`),
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*DNS=alice\.acme\.example\.com`),
+			),
+		})
+}
+
+// TestForwardClientCertAppendForward injects a spoofed inbound XFCC header.
+// AppendForward must preserve it and append the gateway's own entry,
+// comma-separated.
+func (s *testingSuite) TestForwardClientCertAppendForward() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(
+			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
+		),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			// Spoofed entry comes first, then a comma, then the gateway entry
+			// containing alice's Subject and URI.
+			Body: gomega.MatchRegexp(`(?i)x-forwarded-client-cert: By=outer-proxy;Subject="CN=spoofed",.*Subject="OU=engineering,O=acme,CN=alice".*URI=spiffe://acme\.example\.com/ns/team-alpha/sa/alice`),
+		})
+}
+
+// TestForwardClientCertSanitize injects a spoofed inbound XFCC and asserts
+// it is dropped before reaching the backend (no XFCC header at all).
+func (s *testingSuite) TestForwardClientCertSanitize() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(
+			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
+		),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert:`)),
+		})
+}
+
+// TestForwardClientCertForwardOnly injects a spoofed inbound XFCC and
+// asserts it is forwarded verbatim. The gateway must NOT add an entry of
+// its own: no comma (no appended entry), no Hash= (no gateway-emitted
+// leaf cert), and no alice Subject.
+func (s *testingSuite) TestForwardClientCertForwardOnly() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(
+			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
+		),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body: gomega.And(
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: By=outer-proxy;Subject="CN=spoofed"`),
+				gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert: [^\n]*,`)),
+				gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert: [^\n]*Hash=`)),
+			),
 		})
 }

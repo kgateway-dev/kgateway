@@ -240,8 +240,8 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): jwt: jwt: remote jwks: unresolved backend ref:
-            missing reference grant'
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/denied-policy:
+            jwt: jwt: remote jwks: unresolved backend ref: missing reference grant'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

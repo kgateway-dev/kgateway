@@ -1,4 +1,6 @@
 {{- $controllerPodAnnotations := ternary .Values.controller.podAnnotations .Values.podAnnotations (not (kindIs "invalid" .Values.controller.podAnnotations)) }}
+{{- /* The template owns prometheus.io/scrape|path|port whether they are enabled or disabled; strip them from user-provided annotations either way to avoid duplicate keys. */}}
+{{- $controllerPodAnnotations = omit $controllerPodAnnotations "prometheus.io/scrape" "prometheus.io/path" "prometheus.io/port" }}
 {{- $controllerPodSecurityContext := ternary .Values.controller.podSecurityContext .Values.podSecurityContext (not (kindIs "invalid" .Values.controller.podSecurityContext)) }}
 {{- $controllerSecurityContext := ternary .Values.controller.securityContext .Values.securityContext (not (kindIs "invalid" .Values.controller.securityContext)) }}
 {{- $controllerResources := ternary .Values.controller.resources .Values.resources (not (kindIs "invalid" .Values.controller.resources)) }}
@@ -18,7 +20,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if not (kindIs "invalid" .Values.controller.replicaCount) }}
+  {{- if and (empty .Values.controller.horizontalPodAutoscaler) (not (kindIs "invalid" .Values.controller.replicaCount)) }}
   replicas: {{ .Values.controller.replicaCount }}
   {{- end }}
   selector:
@@ -30,12 +32,17 @@ spec:
   {{- end }}
   template:
     metadata:
+      {{- if or .Values.controller.prometheusAnnotations $controllerPodAnnotations }}
       annotations:
+        {{- if .Values.controller.prometheusAnnotations }}
         prometheus.io/path: "/metrics"
         prometheus.io/port: {{ .Values.controller.service.ports.metrics | default 9092 | quote}}
+        prometheus.io/scrape: "true"
+        {{- end }}
         {{- with $controllerPodAnnotations }}
         {{- toYaml $controllerPodAnnotations | nindent 8 }}
         {{- end }}
+      {{- end }}
       labels:
         {{- include "kgateway.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: controller
