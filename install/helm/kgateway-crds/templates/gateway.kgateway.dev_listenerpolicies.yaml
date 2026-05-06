@@ -1647,8 +1647,9 @@ spec:
                             pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                             x-kubernetes-int-or-string: true
                           maxConcurrentStreams:
-                            description: The maximum number of concurrent streams
-                              that the connection can have.
+                            description: |-
+                              The maximum number of concurrent streams that the connection can have.
+                              Envoy defaults to 1024.
                             format: int32
                             minimum: 1
                             type: integer
@@ -3753,8 +3754,9 @@ spec:
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
                                 maxConcurrentStreams:
-                                  description: The maximum number of concurrent streams
-                                    that the connection can have.
+                                  description: |-
+                                    The maximum number of concurrent streams that the connection can have.
+                                    Envoy defaults to 1024.
                                   format: int32
                                   minimum: 1
                                   type: integer

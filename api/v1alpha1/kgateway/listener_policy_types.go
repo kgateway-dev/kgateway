@@ -329,6 +329,7 @@ type ListenerHTTP2ProtocolOptions struct {
 	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
 
 	// The maximum number of concurrent streams that the connection can have.
+	// Envoy defaults to 1024.
 	// +optional
 	// +kubebuilder:validation:Minimum=1
 	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
