@@ -25,6 +25,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -53,6 +54,7 @@ type ListenerPolicyIR struct {
 
 type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
+	tcpKeepalive                  *envoycorev3.TcpKeepalive
 	perConnectionBufferLimitBytes *uint32
 	// only for default policy
 	clientCertificateValidation *ir.ClientCertificateValidationIR
@@ -75,6 +77,7 @@ func newListenerPolicy(
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
+		tcpKeepalive:                  backendconfigpolicy.TranslateTCPKeepalive(i.TCPKeepalive),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 		http:                          http,
 	}, errs
@@ -130,6 +133,10 @@ func (d *ListenerPolicyIR) GetClientCertificateValidation() *ir.ClientCertificat
 
 func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	if !proto.Equal(d.proxyProtocol, d2.proxyProtocol) {
+		return false
+	}
+
+	if !proto.Equal(d.tcpKeepalive, d2.tcpKeepalive) {
 		return false
 	}
 
@@ -336,6 +343,9 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	// Add proxy protocol listener filter if configured
 	if cfg.proxyProtocol != nil {
 		p.applyProxyProtocol(out, cfg.proxyProtocol)
+	}
+	if cfg.tcpKeepalive != nil {
+		out.TcpKeepalive = cfg.tcpKeepalive
 	}
 	// Set per connection buffer limit if configured
 	if cfg.perConnectionBufferLimitBytes != nil {
