@@ -1547,7 +1547,7 @@ spec:
                     description: The maximum number of concurrent streams that the
                       connection can have.
                     format: int32
-                    minimum: 0
+                    minimum: 1
                     type: integer
                 type: object
               idleTimeout:
