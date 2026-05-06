@@ -25,6 +25,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -76,7 +77,7 @@ func newListenerPolicy(
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
-		tcpKeepalive:                  translateTCPKeepalive(i.TCPKeepalive),
+		tcpKeepalive:                  backendconfigpolicy.TranslateTCPKeepalive(i.TCPKeepalive),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 		http:                          http,
 	}, errs
@@ -555,25 +556,6 @@ func convertClientCertificateValidationConfig(_ ir.ObjectSource, config *kgatewa
 		RequireClientCertificate: requireClientCertificate,
 		CACertificateRefs:        config.CACertificateRefs,
 	}
-}
-
-func translateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.TcpKeepalive {
-	if tcpKeepalive == nil {
-		return nil
-	}
-
-	out := &envoycorev3.TcpKeepalive{}
-	if tcpKeepalive.KeepAliveProbes != nil {
-		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
-	}
-	if tcpKeepalive.KeepAliveTime != nil {
-		out.KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveTime.Duration.Seconds())}
-	}
-	if tcpKeepalive.KeepAliveInterval != nil {
-		out.KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveInterval.Duration.Seconds())}
-	}
-
-	return out
 }
 
 func (p *listenerPolicyPluginGwPass) applyProxyProtocol(
