@@ -41,8 +41,7 @@ type backendIr struct {
 	staticIr *StaticIr
 	dfpIr    *DfpIr
 	gcpIr    *GcpIr
-	// +noKrtEquals
-	errors []error
+	errors   []error
 }
 
 func (u *backendIr) Equals(other any) bool {
@@ -66,7 +65,26 @@ func (u *backendIr) Equals(other any) bool {
 	if !u.gcpIr.Equals(otherBackend.gcpIr) {
 		return false
 	}
+	if len(u.errors) != len(otherBackend.errors) {
+		return false
+	}
+	for i := range u.errors {
+		if !backendIRErrorEqual(u.errors[i], otherBackend.errors[i]) {
+			return false
+		}
+	}
 	return true
+}
+
+func backendIRErrorEqual(a, b error) bool {
+	switch {
+	case a == nil && b == nil:
+		return true
+	case a == nil || b == nil:
+		return false
+	default:
+		return a.Error() == b.Error()
+	}
 }
 
 func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
