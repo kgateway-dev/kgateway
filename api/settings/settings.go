@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -225,6 +226,10 @@ type Settings struct {
 	// EnableAwsEc2Discovery enables dynamic discovery of AWS EC2 instances for Backend resources.
 	// This is disabled by default and must be explicitly enabled by the controller operator.
 	EnableAwsEc2Discovery bool `split_words:"true" default:"false"`
+
+	// AwsEc2RefreshInterval controls how often the controller refreshes EC2 instance discovery
+	// for Backend resources when AWS EC2 discovery is enabled.
+	AwsEc2RefreshInterval time.Duration `split_words:"true" default:"30s"`
 
 	PolicyMerge string `split_words:"true" default:"{}"`
 

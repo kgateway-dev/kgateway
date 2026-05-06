@@ -25,6 +25,7 @@ import (
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	plugincollections "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -33,9 +34,9 @@ import (
 )
 
 const (
-	defaultAwsRegionValue = "us-east-1"
-	defaultEc2Port        = 80
-	minEc2RefreshInterval = 30 * time.Second
+	defaultAwsRegionValue     = "us-east-1"
+	defaultEc2Port            = 80
+	defaultEc2RefreshInterval = 30 * time.Second
 )
 
 type EC2Ir struct {
@@ -336,7 +337,7 @@ func newEc2EndpointsCollection(
 		enabled:         commoncol.Settings.EnableAwsEc2Discovery,
 		backends:        backends,
 		trigger:         krt.NewRecomputeTrigger(true),
-		refreshInterval: minEc2RefreshInterval,
+		refreshInterval: configuredEc2RefreshInterval(commoncol.Settings),
 		lister:          newEc2InstanceLister(),
 		state:           map[string]ec2ResolvedBackend{},
 	}
@@ -359,6 +360,13 @@ func newEc2EndpointsCollection(
 	go c.run(commoncol.KrtOpts.Stop)
 
 	return c
+}
+
+func configuredEc2RefreshInterval(settings apisettings.Settings) time.Duration {
+	if settings.AwsEc2RefreshInterval <= 0 {
+		return defaultEc2RefreshInterval
+	}
+	return settings.AwsEc2RefreshInterval
 }
 
 func (c *ec2EndpointsCollection) HasSynced() bool {

@@ -147,6 +147,8 @@ controller:
       enabled: false
   # -- Enable dynamic discovery of AWS EC2 instances for `Backend` resources.
   enableAwsEc2Discovery: false
+  # -- Set how often the controller refreshes discovered AWS EC2 instances for `Backend` resources.
+  awsEc2RefreshInterval: 30s
   # -- Change the rollout strategy from the Kubernetes default of a RollingUpdate with 25% maxUnavailable, 25% maxSurge.
   # E.g., to recreate pods, minimizing resources for the rollout but causing downtime:
   # strategy:
