@@ -255,6 +255,7 @@ type Http2ProtocolOptions struct {
 	// Envoy defaults to 1024.
 	// +optional
 	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=2147483647
 	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
 
 	// Allows invalid HTTP messaging and headers. When disabled (default), then

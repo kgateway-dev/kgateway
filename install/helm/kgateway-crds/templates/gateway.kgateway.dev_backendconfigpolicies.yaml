@@ -343,6 +343,7 @@ spec:
                       The maximum number of concurrent streams that the connection can have.
                       Envoy defaults to 1024.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   overrideStreamErrorOnInvalidHttpMessage:
