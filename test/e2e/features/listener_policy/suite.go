@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"time"
 
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -22,6 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -81,6 +85,7 @@ func (s *testingSuite) SetupSuite() {
 	// include gateway manifests for tests, so we recreate it for each test run
 	s.manifests = map[string][]string{
 		"TestHttpListenerPolicyAllFields":        {gatewayManifest, httpRouteManifest, allFieldsManifest},
+		"TestListenerPolicyHTTP2ProtocolOptions": {gatewayManifest, httpRouteManifest, http2ProtocolOptionsManifest},
 		"TestHttpListenerPolicyServerHeader":     {gatewayManifest, httpRouteManifest, serverHeaderManifest},
 		"TestPreserveHttp1HeaderCase":            {gatewayManifest, preserveHttp1HeaderCaseManifest},
 		"TestAccessLogEmittedToStdout":           {gatewayManifest, httpRouteManifest, accessLogManifest},
@@ -202,6 +207,25 @@ func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 				"server": "nginx/1.28.0", // Should be the backend server header, not "envoy"
 			},
 		})
+}
+
+func (s *testingSuite) TestListenerPolicyHTTP2ProtocolOptions() {
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(8080),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("Welcome to nginx!"),
+		},
+	)
+
+	s.assertListenerHTTP2ProtocolOptions("listener~8080")
+	s.assertListenerHTTP2ProtocolOptions("listener~8081")
 }
 
 func (s *testingSuite) TestPreserveHttp1HeaderCase() {
@@ -615,4 +639,47 @@ func (s *testingSuite) TestForwardClientCertForwardOnly() {
 				gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert: [^\n]*Hash=`)),
 			),
 		})
+}
+
+func (s *testingSuite) assertListenerHTTP2ProtocolOptions(listenerName string) {
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.ctx,
+		proxyObjectMeta,
+		func(ctx context.Context, adminClient *admincli.Client) {
+			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, listenerName)
+				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get listener %s", listenerName)
+				if err != nil {
+					return
+				}
+
+				g.Expect(listener.GetFilterChains()).NotTo(gomega.BeEmpty(), "listener %s should have filter chains", listenerName)
+				g.Expect(listener.GetFilterChains()[0].GetFilters()).NotTo(gomega.BeEmpty(), "listener %s should have filters", listenerName)
+
+				var hcmConfig *anypb.Any
+				for _, filter := range listener.GetFilterChains()[0].GetFilters() {
+					if filter.GetName() == "envoy.filters.network.http_connection_manager" {
+						hcmConfig = filter.GetTypedConfig()
+						break
+					}
+				}
+
+				g.Expect(hcmConfig).NotTo(gomega.BeNil(), "listener %s should include an HCM filter", listenerName)
+
+				hcm := &envoy_hcm.HttpConnectionManager{}
+				err = anypb.UnmarshalTo(hcmConfig, hcm, proto.UnmarshalOptions{})
+				g.Expect(err).NotTo(gomega.HaveOccurred(), "can unmarshal HCM for listener %s", listenerName)
+
+				http2Opts := hcm.GetHttp2ProtocolOptions()
+				g.Expect(http2Opts).NotTo(gomega.BeNil(), "listener %s should include http2 protocol options", listenerName)
+				g.Expect(http2Opts.GetInitialConnectionWindowSize().GetValue()).To(gomega.Equal(uint32(262144)))
+				g.Expect(http2Opts.GetInitialStreamWindowSize().GetValue()).To(gomega.Equal(uint32(131072)))
+				g.Expect(http2Opts.GetMaxConcurrentStreams().GetValue()).To(gomega.Equal(uint32(123)))
+			}).
+				WithContext(ctx).
+				WithTimeout(30*time.Second).
+				WithPolling(2*time.Second).
+				Should(gomega.Succeed(), "failed to observe expected http2 protocol options on listener %s", listenerName)
+		},
+	)
 }

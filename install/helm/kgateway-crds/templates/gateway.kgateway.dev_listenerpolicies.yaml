@@ -148,7 +148,7 @@ spec:
                     type: object
                   httpSettings:
                     description: |-
-                      HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
+                      HTTPSettings is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
                       that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
                     properties:
                       acceptHttp10:
@@ -1619,6 +1619,40 @@ spec:
                         required:
                         - path
                         type: object
+                      http2ProtocolOptions:
+                        description: |-
+                          Http2ProtocolOptions configures downstream HTTP/2 behavior on the listener's
+                          HttpConnectionManager.
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions
+                        properties:
+                          initialConnectionWindowSize:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: |-
+                              InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+                              Same range and default value as InitialStreamWindowSize.
+                              Values can be specified with units like "64Ki".
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          initialStreamWindowSize:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: |-
+                              InitialStreamWindowSize is the initial window size for the stream.
+                              Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
+                              Defaults to 268435456 (256 * 1024 * 1024).
+                              Values can be specified with units like "64Ki".
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          maxConcurrentStreams:
+                            description: The maximum number of concurrent streams
+                              that the connection can have.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                        type: object
                       idleTimeout:
                         description: |-
                           IdleTimeout is the idle timeout for connnections.
@@ -2201,7 +2235,7 @@ spec:
                       properties:
                         httpSettings:
                           description: |-
-                            HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
+                            HTTPSettings is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
                             that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
                           properties:
                             acceptHttp10:
@@ -3690,6 +3724,40 @@ spec:
                                   type: string
                               required:
                               - path
+                              type: object
+                            http2ProtocolOptions:
+                              description: |-
+                                Http2ProtocolOptions configures downstream HTTP/2 behavior on the listener's
+                                HttpConnectionManager.
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions
+                              properties:
+                                initialConnectionWindowSize:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  description: |-
+                                    InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+                                    Same range and default value as InitialStreamWindowSize.
+                                    Values can be specified with units like "64Ki".
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                initialStreamWindowSize:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  description: |-
+                                    InitialStreamWindowSize is the initial window size for the stream.
+                                    Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
+                                    Defaults to 268435456 (256 * 1024 * 1024).
+                                    Values can be specified with units like "64Ki".
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                maxConcurrentStreams:
+                                  description: The maximum number of concurrent streams
+                                    that the connection can have.
+                                  format: int32
+                                  minimum: 0
+                                  type: integer
                               type: object
                             idleTimeout:
                               description: |-

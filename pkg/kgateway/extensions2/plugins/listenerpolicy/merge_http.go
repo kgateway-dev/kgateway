@@ -33,6 +33,7 @@ func MergeHttpPolicies(
 		mergeServerHeaderTransformation,
 		mergeStreamIdleTimeout,
 		mergeIdleTimeout,
+		mergeHttp2ProtocolOptions,
 		mergeHealthCheckPolicy,
 		mergePreserveHttp1HeaderCase,
 		mergeAcceptHttp10,
@@ -294,6 +295,22 @@ func mergeIdleTimeout(
 
 	p1.idleTimeout = p2.idleTimeout
 	mergeOrigins.SetOne(origin+"mergeIdleTimeout", p2Ref, p2MergeOrigins)
+}
+
+func mergeHttp2ProtocolOptions(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.http2ProtocolOptions, p2.http2ProtocolOptions, opts) {
+		return
+	}
+
+	p1.http2ProtocolOptions = p2.http2ProtocolOptions
+	mergeOrigins.SetOne(origin+"http2ProtocolOptions", p2Ref, p2MergeOrigins)
 }
 
 func mergeHealthCheckPolicy(
