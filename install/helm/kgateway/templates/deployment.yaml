@@ -1,8 +1,6 @@
 {{- $controllerPodAnnotations := ternary .Values.controller.podAnnotations .Values.podAnnotations (not (kindIs "invalid" .Values.controller.podAnnotations)) }}
-{{- $serviceMonitorEnabled := and .Values.controller.service.enabled .Values.controller.serviceMonitor.enabled (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") }}
-{{- if $serviceMonitorEnabled }}
+{{- /* The template owns prometheus.io/scrape|path|port whether they are enabled or disabled; strip them from user-provided annotations either way to avoid duplicate keys. */}}
 {{- $controllerPodAnnotations = omit $controllerPodAnnotations "prometheus.io/scrape" "prometheus.io/path" "prometheus.io/port" }}
-{{- end }}
 {{- $controllerPodSecurityContext := ternary .Values.controller.podSecurityContext .Values.podSecurityContext (not (kindIs "invalid" .Values.controller.podSecurityContext)) }}
 {{- $controllerSecurityContext := ternary .Values.controller.securityContext .Values.securityContext (not (kindIs "invalid" .Values.controller.securityContext)) }}
 {{- $controllerResources := ternary .Values.controller.resources .Values.resources (not (kindIs "invalid" .Values.controller.resources)) }}
@@ -34,11 +32,12 @@ spec:
   {{- end }}
   template:
     metadata:
-      {{- if or (not $serviceMonitorEnabled) $controllerPodAnnotations }}
+      {{- if or .Values.controller.prometheusAnnotations $controllerPodAnnotations }}
       annotations:
-        {{- if not $serviceMonitorEnabled }}
+        {{- if .Values.controller.prometheusAnnotations }}
         prometheus.io/path: "/metrics"
         prometheus.io/port: {{ .Values.controller.service.ports.metrics | default 9092 | quote}}
+        prometheus.io/scrape: "true"
         {{- end }}
         {{- with $controllerPodAnnotations }}
         {{- toYaml $controllerPodAnnotations | nindent 8 }}

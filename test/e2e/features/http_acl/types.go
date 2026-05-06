@@ -26,6 +26,8 @@ var (
 	gatewayHTTPACLManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-http-acl.yaml")
 	aclAccessLogManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "acl-access-log.yaml")
 	largeRulesetManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "large-ruleset.yaml")
+	validACLOnlyManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-acl-only.yaml")
+	invalidACLPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-acl-policy.yaml")
 
 	// proxyObjectMeta targets the shared gateway deployment for Envoy admin API access.
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -39,6 +41,9 @@ var (
 	}
 	expectDenied = &testmatchers.HttpResponse{
 		StatusCode: http.StatusForbidden,
+	}
+	expectInternalServerError = &testmatchers.HttpResponse{
+		StatusCode: http.StatusInternalServerError,
 	}
 
 	// setup is the common infrastructure shared across all test cases.
@@ -79,6 +84,12 @@ var (
 		},
 		"TestHttpACLLargeRuleset": {
 			Manifests: []string{largeRulesetManifest},
+		},
+		// Only the valid-policy manifest is registered here so the framework
+		// auto-cleans up the HTTPRoute and valid TrafficPolicy after the test.
+		// The invalid TrafficPolicy is applied mid-test and cleaned up via defer.
+		"TestHttpACLValidWithInvalidCIDRPolicy": {
+			Manifests: []string{validACLOnlyManifest},
 		},
 	}
 )

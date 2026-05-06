@@ -1,0 +1,19 @@
+# Details only, mode omitted. kgateway auto-defaults mode to SanitizeSet so
+# the configuration has effect (Envoy default SANITIZE would strip XFCC).
+# Test asserts: backend sees XFCC with Subject only.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: forward-client-cert
+  namespace: default
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
+      sectionName: mtls-https
+  default:
+    httpSettings:
+      forwardClientCertDetails:
+        details:
+          subject: true

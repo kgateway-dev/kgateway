@@ -17,3 +17,19 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
+    # mTLS-terminating listener used by the TestForwardClientCert* tests.
+    # The server cert Secret is provisioned in setup.yaml so this listener
+    # is always programmable; client-cert validation is enabled per-test
+    # via the mtls-validation ListenerPolicy.
+    - protocol: HTTPS
+      port: 8443
+      name: mtls-https
+      hostname: gateway.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: forward-client-cert-server
+      allowedRoutes:
+        namespaces:
+          from: Same
