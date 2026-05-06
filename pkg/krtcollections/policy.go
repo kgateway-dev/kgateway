@@ -60,6 +60,21 @@ func (e *BackendPortNotAllowedError) Error() string {
 	return fmt.Sprintf("BackendRef to \"%s\" includes a port. Do not specify a port when referencing a Backend resource, as it defines its own port configuration", e.BackendName)
 }
 
+type ServicePortNotFoundError struct {
+	Namespace string
+	Name      string
+	Port      int32
+}
+
+func (e *ServicePortNotFoundError) Error() string {
+	return fmt.Sprintf("Service \"%s/%s\" found, but port %d not defined", e.Namespace, e.Name, e.Port)
+}
+
+func (e *ServicePortNotFoundError) Is(target error) bool {
+	_, ok := target.(*ServicePortNotFoundError)
+	return ok
+}
+
 // ListenerCollection defines an interface that returns the listeners belonging to the implementing struct
 type ListenerCollection interface {
 	GetListeners() []gwv1.Listener
@@ -75,6 +90,8 @@ type BackendIndex struct {
 	availableBackendsWithPolicyByGK map[schema.GroupKind]krt.Collection[*ir.BackendObjectIR]
 	// aliasIndexWithPolicy indexes the policy-attached backends for a given GK by alias.
 	aliasIndexWithPolicy map[schema.GroupKind]krt.Index[backendKey, *ir.BackendObjectIR]
+	// nameIndexByGK indexes backends by namespace+name only (without port) for O(1) existence checks.
+	nameIndexByGK map[schema.GroupKind]krt.Index[types.NamespacedName, *ir.BackendObjectIR]
 
 	// availableBackendsWithPolicy stores the policy-attached backend collections.
 	// BackendsWithPolicy is the public interface to access this.
@@ -105,6 +122,7 @@ func NewBackendIndex(
 		refgrants:                       refgrants,
 		availableBackendsWithPolicyByGK: map[schema.GroupKind]krt.Collection[*ir.BackendObjectIR]{},
 		aliasIndexWithPolicy:            map[schema.GroupKind]krt.Index[backendKey, *ir.BackendObjectIR]{},
+		nameIndexByGK:                   map[schema.GroupKind]krt.Index[types.NamespacedName, *ir.BackendObjectIR]{},
 		gkAliases:                       map[schema.GroupKind][]schema.GroupKind{},
 		krtopts:                         krtopts,
 	}
@@ -227,8 +245,15 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 		}
 		return aliasKeys
 	})
+	nameIdx := krtpkg.UnnamedIndex(backendsWithPoliciesCol, func(b *ir.BackendObjectIR) []types.NamespacedName {
+		if b == nil {
+			return nil
+		}
+		return []types.NamespacedName{{Namespace: b.ObjectSource.Namespace, Name: b.ObjectSource.Name}}
+	})
 	i.availableBackendsWithPolicyByGK[gk] = backendsWithPoliciesCol
 	i.aliasIndexWithPolicy[gk] = idxWithPolicy
+	i.nameIndexByGK[gk] = nameIdx
 	i.availableBackendsWithPolicy = append(i.availableBackendsWithPolicy, backendsWithPoliciesCol)
 	i.backendsRequiringPolicyStatus = append(i.backendsRequiringPolicyStatus, backendsRequiringPolicyStatus)
 
@@ -290,16 +315,18 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 
 	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.BackendResourceName(key, port, "")))
 	if up == nil {
-		var (
-			err     error
-			aliasUp *ir.BackendObjectIR
-		)
-		if aliasUp, err = i.getBackendFromAlias(kctx, gk, n, port); err != nil {
-			// getBackendFromAlias returns ErrUnknownBackendKind when there are no aliases
-			// so return our own NotFoundError here
-			return nil, &NotFoundError{NotFoundObj: key}
+		// Try aliases before giving up — an alias may resolve even if direct lookup fails.
+		if aliasUp, err := i.getBackendFromAlias(kctx, gk, n, port); err == nil {
+			return aliasUp, nil
 		}
-		return aliasUp, nil
+		// If the backend name exists but with a different port, return a more specific error.
+		if nameIdx, ok := i.nameIndexByGK[gk]; ok {
+			nn := types.NamespacedName{Namespace: n.Namespace, Name: n.Name}
+			if matches := krt.Fetch(kctx, col, krt.FilterIndex(nameIdx, nn)); len(matches) > 0 {
+				return nil, &ServicePortNotFoundError{Namespace: n.Namespace, Name: n.Name, Port: port}
+			}
+		}
+		return nil, &NotFoundError{NotFoundObj: key}
 	}
 
 	return *up, nil

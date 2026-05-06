@@ -209,6 +209,43 @@ func TestFailWithWrongNs(t *testing.T) {
 	}
 }
 
+func TestGetBackendWrongPort(t *testing.T) {
+	var wrongPort gwv1.PortNumber = 9090
+	route := &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httproute",
+			Namespace: "default",
+		},
+		Spec: gwv1.HTTPRouteSpec{
+			Rules: []gwv1.HTTPRouteRule{
+				{
+					BackendRefs: []gwv1.HTTPBackendRef{
+						{
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Name: gwv1.ObjectName("foo"),
+									Port: &wrongPort,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	// svc("") creates a Service "foo" in namespace "default" with port 8080.
+	// The route references port 9090, which does not exist on the service.
+	inputs := []any{svc(""), route}
+	r := translateRoute(t, inputs)
+	require.NotNil(t, r)
+	b := getBackends(r)
+	require.NotNil(t, b)
+	require.Error(t, b[0].Err)
+	assert.ErrorIs(t, b[0].Err, &ServicePortNotFoundError{})
+	assert.Contains(t, b[0].Err.Error(), "found, but port")
+	assert.Contains(t, b[0].Err.Error(), "9090")
+}
+
 func TestBackendPortNotAllowed(t *testing.T) {
 	cases := []struct {
 		name        string
