@@ -260,17 +260,19 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), backendConfigCtx.ResponseHeadersToAdd...)
 	out.ResponseHeadersToRemove = append(out.GetResponseHeadersToRemove(), backendConfigCtx.ResponseHeadersToRemove...)
 
-	// If routeProcessingErr is nil, check if the route has an action for non-delegating routes
-	// to treat this as an error that should result in route replacement.
 	// A delegating(parent) route does not need to have an output Action on itself,
 	// so do not treat it as an error
-	if routeProcessingErr == nil && out.GetAction() == nil && !in.Delegates {
-		routeProcessingErr = errors.New("no action specified")
-	}
-
-	// If there are no errors, validate the route will not be rejected by the xDS server.
-	if routeProcessingErr == nil {
-		routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
+	if !in.Delegates {
+		// If routeProcessingErr is nil, check if the route has an action for non-delegating routes
+		// to treat this as an error that should result in route replacement.
+		if routeProcessingErr == nil && out.GetAction() == nil {
+			routeProcessingErr = errors.New("no action specified")
+		}
+		// If there are no errors, validate the route will not be rejected by the xDS server.
+		// Skip delegating routes as they have no action and are not propagated to envoy
+		if routeProcessingErr == nil {
+			routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
+		}
 	}
 
 	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
