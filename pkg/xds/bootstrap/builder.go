@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
+	"net/http"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -40,7 +41,18 @@ func (b *ConfigBuilder) AddFilterConfig(name string, config proto.Message) {
 
 // AddRoute adds a route to the builder.
 func (b *ConfigBuilder) AddRoute(route *envoyroutev3.Route) {
-	b.routes = append(b.routes, route)
+	addedRoute := route
+	if route.GetAction() == nil {
+		// This is a delegating route. Envoy validation will fail if a route does not have an action, so add one now
+		clonedRoute := proto.Clone(route)
+		addedRoute = clonedRoute.(*envoyroutev3.Route)
+		addedRoute.Action = &envoyroutev3.Route_DirectResponse{
+			DirectResponse: &envoyroutev3.DirectResponseAction{
+				Status: http.StatusNotImplemented,
+			},
+		}
+	}
+	b.routes = append(b.routes, addedRoute)
 }
 
 // AddCluster adds a cluster to the builder.
