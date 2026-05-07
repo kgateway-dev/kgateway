@@ -2325,6 +2325,12 @@ func TestValidation(t *testing.T) {
 			inputFile: "invalid-outlier-detection-zero-interval.yaml",
 			minMode:   apisettings.ValidationStandard,
 		},
+		{
+			name:      "Route delegation is not rejected",
+			category:  "delegation",
+			inputFile: "route-delegation.yaml",
+			minMode:   apisettings.ValidationStrict,
+		},
 	}
 
 	runTest := func(t *testing.T, test validationTest, mode apisettings.ValidationMode) {
