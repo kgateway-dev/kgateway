@@ -6,7 +6,7 @@ For route delegation background, see [`design/10943-route-delegation.md`](/desig
 
 ## What "policy merging" means in kgateway
 
-Policy merging is **plugin opt-in**. A policy plugin participates by setting [`PolicyPlugin.MergePolicies`](pkg/pluginsdk/types.go).
+Policy merging is **plugin opt-in**. A policy plugin participates by setting [`PolicyPlugin.MergePolicies`](/pkg/pluginsdk/types.go).
 
 If a plugin does **not** provide `MergePolicies`, kgateway applies each attached policy one by one.
 

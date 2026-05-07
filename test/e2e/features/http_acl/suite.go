@@ -29,6 +29,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -527,16 +528,14 @@ func (s *testingSuite) TestHttpACLValidWithInvalidCIDRPolicy() {
 	// ── Phase 2: add the invalid ACL policy ──────────────────────────────────
 
 	s.T().Log("Phase 2 — applying invalid-cidr-acl-policy (172.18.0.0/12 has host bits set)")
-	s.Require().NoError(
-		s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, invalidACLPolicyManifest),
-		"apply invalid-acl-policy.yaml",
-	)
-	defer func() {
-		_ = s.TestInstallation.Actions.Kubectl().RunCommand(
-			s.Ctx, "delete", "trafficpolicy", "invalid-cidr-acl-policy",
-			"-n", "kgateway-base", "--ignore-not-found",
-		)
-	}()
+	testutils.Cleanup(s.T(), func() {
+		s.DeleteManifests(&base.TestCase{
+			Manifests: []string{invalidACLPolicyManifest},
+		})
+	})
+	s.ApplyManifests(&base.TestCase{
+		Manifests: []string{invalidACLPolicyManifest},
+	})
 
 	// The invalid policy must be rejected with a clear CIDR error in its status.
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
@@ -624,7 +623,7 @@ func (s *testingSuite) TestHttpACLMerge() {
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 
-	s.T().Log("10.2.0.1 matches block-internal-range (/8): denied with X-Blocked-By: block-internal-range")
+	s.T().Log("10.0.0.1 matches block-internal-range (/8): denied with X-Blocked-By: block-internal-range")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -647,7 +646,7 @@ func (s *testingSuite) TestHttpACLMerge() {
 		curl.WithHeader("X-Forwarded-For", "10.1.0.5"),
 	)
 
-	s.T().Log("192.168.0.2 matches block-private-range: denied with X-Blocked-By-2: block-private-range")
+	s.T().Log("192.168.0.2 matches block-private-range: denied with X-Blocked-By: block-private-range")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{

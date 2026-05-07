@@ -1,5 +1,5 @@
 ---
-# ACL's attached to the same route get deep merged together if no conflict
+# ACLs attached to the same route get deep merged together if no conflict
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
