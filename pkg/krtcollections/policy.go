@@ -320,10 +320,13 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 			return aliasUp, nil
 		}
 		// If the backend name exists but with a different port, return a more specific error.
-		if nameIdx, ok := i.nameIndexByGK[gk]; ok {
-			nn := types.NamespacedName{Namespace: n.Namespace, Name: n.Name}
-			if matches := krt.Fetch(kctx, col, krt.FilterIndex(nameIdx, nn)); len(matches) > 0 {
-				return nil, &ServicePortNotFoundError{Namespace: n.Namespace, Name: n.Name, Port: port}
+		// Only applies to core Services with an explicit port; other kinds use NotFoundError.
+		if gwport != nil && gk.Group == "" && gk.Kind == "Service" {
+			if nameIdx, ok := i.nameIndexByGK[gk]; ok {
+				nn := types.NamespacedName{Namespace: n.Namespace, Name: n.Name}
+				if matches := krt.Fetch(kctx, col, krt.FilterIndex(nameIdx, nn)); len(matches) > 0 {
+					return nil, &ServicePortNotFoundError{Namespace: n.Namespace, Name: n.Name, Port: port}
+				}
 			}
 		}
 		return nil, &NotFoundError{NotFoundObj: key}
