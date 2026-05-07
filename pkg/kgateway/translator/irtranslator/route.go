@@ -269,7 +269,8 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	}
 
 	// If there are no errors, validate the route will not be rejected by the xDS server.
-	if routeProcessingErr == nil {
+	// Skip delegating routes as they have no action
+	if routeProcessingErr == nil && !in.Delegates {
 		routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
 	}
 
