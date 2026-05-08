@@ -4,6 +4,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -203,11 +204,13 @@ func TestCustomGWP(t *testing.T) {
 		gcUpdated := &gwv1.GatewayClass{}
 		err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: wellknown.DefaultGatewayClassName}, gcUpdated)
 		assert.NoError(c, err, "failed to get kgateway GatewayClass after upgrade")
-		assert.NotNil(c, gcUpdated.Spec.ParametersRef, "kgateway GatewayClass spec.parametersRef is nil after upgrade")
+		if !assert.NotNil(c, gcUpdated.Spec.ParametersRef, "kgateway GatewayClass spec.parametersRef is nil after upgrade") {
+			return
+		}
 		assert.Equal(c, "custom-gwp-2", gcUpdated.Spec.ParametersRef.Name, "expected kgateway GatewayClass parametersRef.name to be 'custom-gwp-2' after upgrade")
 		assert.NotNil(c, gcUpdated.Spec.ParametersRef.Namespace, "kgateway GatewayClass spec.parametersRef.namespace is nil after upgrade")
 		assert.Equal(c, expectedNamespace, *gcUpdated.Spec.ParametersRef.Namespace, "expected kgateway GatewayClass parametersRef.namespace to be '%s' after upgrade", expectedNamespace)
-	}, 20*time.Second, 200*time.Millisecond)
+	}, 60*time.Second, 200*time.Millisecond)
 
 	// Ensure gateway pods are still running (even though the ParametersRef has changed to non-existent resource)
 	testInstallation.AssertionsT(t).EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
@@ -237,7 +240,7 @@ func TestCustomGWP(t *testing.T) {
 		assert.NotNil(c, pod.Labels, "pod labels are nil after upgrade")
 		assert.Contains(c, pod.Labels, "another", "pod should have the 'another' label after upgrade")
 		assert.Equal(c, "label", pod.Labels["another"], "pod should have the new label 'another: label' after upgrade")
-	}, 15*time.Second, 200*time.Millisecond)
+	}, 60*time.Second, 2*time.Second)
 }
 
 // deleteStaleKgatewayGatewayClasses removes any GatewayClass managed by the
@@ -260,7 +263,9 @@ func deleteStaleKgatewayGatewayClasses(ctx context.Context, t *testing.T, testIn
 	}
 }
 
-// verifyPodLabel checks that a pod for the given deployment has the specified label with the expected value.
+// verifyPodLabel checks that a pod for the given deployment eventually has the
+// specified label with the expected value. Uses EventuallyWithT to account for
+// the delay between pod creation and GatewayParameters reconciliation.
 func verifyPodLabel(
 	t *testing.T,
 	ctx context.Context,
@@ -269,33 +274,38 @@ func verifyPodLabel(
 	expectedValue string,
 	errorContext string,
 ) {
-	pods, err := kubeutils.GetReadyPodsForDeployment(ctx, testInstallation.ClusterContext.Clientset, proxyObjectMeta)
-	if err != nil {
-		t.Fatalf("failed to get ready pods for deployment %s: %v", errorContext, err)
-	}
-	if len(pods) == 0 {
-		t.Fatalf("no ready pods found for deployment %s", errorContext)
-	}
+	require.New(t).EventuallyWithT(func(c *assert.CollectT) {
+		pods, err := kubeutils.GetReadyPodsForDeployment(ctx, testInstallation.ClusterContext.Clientset, proxyObjectMeta)
+		if err != nil {
+			assert.NoError(c, err, "failed to get ready pods for deployment %s", errorContext)
+			return
+		}
+		if len(pods) == 0 {
+			assert.Fail(c, "no ready pods found for deployment", errorContext)
+			return
+		}
 
-	pod := &corev1.Pod{}
-	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{
-		Namespace: gatewayNamespace,
-		Name:      pods[0],
-	}, pod)
-	if err != nil {
-		t.Fatalf("failed to get pod %s: %v", errorContext, err)
-	}
+		pod := &corev1.Pod{}
+		err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{
+			Namespace: gatewayNamespace,
+			Name:      pods[0],
+		}, pod)
+		if err != nil {
+			assert.NoError(c, err, "failed to get pod %s", errorContext)
+			return
+		}
 
-	if pod.Labels == nil {
-		t.Fatalf("pod labels are nil %s", errorContext)
-	}
+		if pod.Labels == nil {
+			assert.Fail(c, "pod labels are nil", errorContext)
+			return
+		}
 
-	labelValue, ok := pod.Labels[labelKey]
-	if !ok {
-		t.Fatalf("pod does not have '%s' label %s", labelKey, errorContext)
-	}
+		labelValue, ok := pod.Labels[labelKey]
+		if !ok {
+			assert.Fail(c, fmt.Sprintf("pod does not have '%s' label", labelKey), errorContext)
+			return
+		}
 
-	if labelValue != expectedValue {
-		t.Fatalf("expected pod label '%s' to be '%s' %s, got '%s'", labelKey, expectedValue, errorContext, labelValue)
-	}
+		assert.Equal(c, expectedValue, labelValue, "expected pod label '%s' to be '%s' %s", labelKey, expectedValue, errorContext)
+	}, 60*time.Second, 2*time.Second)
 }
