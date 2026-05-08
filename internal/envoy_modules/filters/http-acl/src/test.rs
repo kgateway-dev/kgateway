@@ -28,7 +28,7 @@ fn mock_with_source(addr: Option<&'static str>) -> MockEnvoyHttpFilter {
     match addr {
         Some(s) => {
             mock.expect_get_attribute_string()
-                .returning(move |_| Some(EnvoyBuffer::new(s)));
+                .returning(move |_| Some(EnvoyBuffer::new(s.as_bytes())));
         }
         None => {
             mock.expect_get_attribute_string().returning(|_| None);
@@ -177,10 +177,9 @@ fn deny_uses_custom_status_code_and_headers() {
         .returning(|status, headers, body, _| {
             assert_eq!(status, 451);
             assert!(body.is_none());
-            let seen: Vec<(&str, &[u8])> = headers.into_iter().collect();
             assert_eq!(
-                seen,
-                vec![
+                headers,
+                [
                     ("X-Blocked-Reason", b"geo-policy" as &[u8]),
                     ("Retry-After", b"3600" as &[u8]),
                 ]
@@ -206,8 +205,7 @@ fn add_blocked_by_header_appended_with_rule_name() {
         .times(1)
         .returning(|status, headers, _, _| {
             assert_eq!(status, 403);
-            let seen: Vec<(&str, &[u8])> = headers.into_iter().collect();
-            assert_eq!(seen, vec![("X-Blocked-By", b"block-internal" as &[u8])]);
+            assert_eq!(headers, [("X-Blocked-By", b"block-internal" as &[u8])]);
         });
 
     assert_eq!(run(cfg, &mut mock), stop_status());
@@ -228,8 +226,7 @@ fn add_blocked_by_header_carries_rule_literal_for_unnamed_rule() {
     mock.expect_send_response()
         .times(1)
         .returning(|_, headers, _, _| {
-            let seen: Vec<(&str, &[u8])> = headers.into_iter().collect();
-            assert_eq!(seen, vec![("X-Blocked-By", b"rule" as &[u8])]);
+            assert_eq!(headers, [("X-Blocked-By", b"rule" as &[u8])]);
         });
 
     assert_eq!(run(cfg, &mut mock), stop_status());
@@ -249,8 +246,7 @@ fn add_blocked_by_header_carries_default_for_default_deny() {
     mock.expect_send_response()
         .times(1)
         .returning(|_, headers, _, _| {
-            let seen: Vec<(&str, &[u8])> = headers.into_iter().collect();
-            assert_eq!(seen, vec![("X-Blocked-By", b"default" as &[u8])]);
+            assert_eq!(headers, [("X-Blocked-By", b"default" as &[u8])]);
         });
 
     assert_eq!(run(cfg, &mut mock), stop_status());
@@ -272,7 +268,7 @@ fn per_route_config_overrides_filter_level_decision() {
     mock.expect_get_most_specific_route_config()
         .returning_st(move || Some(Arc::clone(&prc)));
     mock.expect_get_attribute_string()
-        .returning(|_| Some(EnvoyBuffer::new("8.8.8.8")));
+        .returning(|_| Some(EnvoyBuffer::new(b"8.8.8.8")));
     expect_metadata(&mut mock, "default");
     expect_counter_incremented_once(&mut mock);
     mock.expect_send_response()
@@ -291,7 +287,7 @@ fn per_route_config_none_falls_back_to_filter_level() {
     mock.expect_get_most_specific_route_config()
         .returning(|| None);
     mock.expect_get_attribute_string()
-        .returning(|_| Some(EnvoyBuffer::new("8.8.8.8")));
+        .returning(|_| Some(EnvoyBuffer::new(b"8.8.8.8")));
 
     assert_eq!(run(cfg, &mut mock), continue_status());
 }
@@ -307,7 +303,7 @@ fn per_route_config_wrong_type_logs_and_falls_back() {
     mock.expect_get_most_specific_route_config()
         .returning_st(move || Some(Arc::clone(&bogus)));
     mock.expect_get_attribute_string()
-        .returning(|_| Some(EnvoyBuffer::new("8.8.8.8")));
+        .returning(|_| Some(EnvoyBuffer::new(b"8.8.8.8")));
 
     assert_eq!(run(cfg, &mut mock), continue_status());
 }

@@ -39,20 +39,20 @@ fn test_injected_functions() {
 
     envoy_filter.expect_get_request_headers().returning(|| {
         vec![
-            (EnvoyBuffer::new("host"), EnvoyBuffer::new("example.com")),
+            (EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com")),
             (
-                EnvoyBuffer::new("x-donor"),
-                EnvoyBuffer::new("thedonorvalue"),
+                EnvoyBuffer::new(b"x-donor"),
+                EnvoyBuffer::new(b"thedonorvalue"),
             ),
         ]
     });
 
     envoy_filter.expect_get_response_headers().returning(|| {
         vec![
-            (EnvoyBuffer::new("host"), EnvoyBuffer::new("example.com")),
+            (EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com")),
             (
-                EnvoyBuffer::new("x-donor"),
-                EnvoyBuffer::new("thedonorvalue"),
+                EnvoyBuffer::new(b"x-donor"),
+                EnvoyBuffer::new(b"thedonorvalue"),
             ),
         ]
     });
@@ -147,20 +147,20 @@ fn test_minininja_functionality() {
 
     envoy_filter.expect_get_request_headers().returning(|| {
         vec![
-            (EnvoyBuffer::new("host"), EnvoyBuffer::new("example.com")),
+            (EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com")),
             (
-                EnvoyBuffer::new("x-donor"),
-                EnvoyBuffer::new("thedonorvalue"),
+                EnvoyBuffer::new(b"x-donor"),
+                EnvoyBuffer::new(b"thedonorvalue"),
             ),
         ]
     });
 
     envoy_filter.expect_get_response_headers().returning(|| {
         vec![
-            (EnvoyBuffer::new("host"), EnvoyBuffer::new("example.com")),
+            (EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com")),
             (
-                EnvoyBuffer::new("x-donor"),
-                EnvoyBuffer::new("thedonorvalue"),
+                EnvoyBuffer::new(b"x-donor"),
+                EnvoyBuffer::new(b"thedonorvalue"),
             ),
         ]
     });
@@ -222,8 +222,8 @@ fn test_metadata_transformation() {
 
     envoy_filter.expect_get_request_headers().returning(|| {
         vec![
-            (EnvoyBuffer::new("host"), EnvoyBuffer::new("example.com")),
-            (EnvoyBuffer::new("x-user-id"), EnvoyBuffer::new("alice")),
+            (EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com")),
+            (EnvoyBuffer::new(b"x-user-id"), EnvoyBuffer::new(b"alice")),
         ]
     });
 
@@ -258,6 +258,7 @@ fn test_metadata_transformation() {
 /// `get_received_request_body`, `parse_request_json_body` returns Null
 /// and the undeclared-variables check fires a 400.
 #[test]
+#[allow(static_mut_refs)]
 fn test_json_body_extracted_from_received_when_buffered_is_empty() {
     let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
 
@@ -282,7 +283,7 @@ fn test_json_body_extracted_from_received_when_buffered_is_empty() {
 
     envoy_filter
         .expect_get_request_headers()
-        .returning(|| vec![(EnvoyBuffer::new("host"), EnvoyBuffer::new("example.com"))]);
+        .returning(|| vec![(EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com"))]);
 
     // Simulate the single-chunk scenario:
     //   • buffered body is empty (None)
@@ -294,7 +295,7 @@ fn test_json_body_extracted_from_received_when_buffered_is_empty() {
     static mut BODY: [u8; 19] = *b"{\"model\":\"gpt-4\"}  ";
     envoy_filter
         .expect_get_received_request_body()
-        .returning(|| Some(vec![EnvoyMutBuffer::new(unsafe { &mut BODY[..17] })]));
+        .returning(|| Some(unsafe { vec![EnvoyMutBuffer::new(&mut BODY[..17])] }));
 
     // Expect the extracted header to be set with the model value.
     envoy_filter
