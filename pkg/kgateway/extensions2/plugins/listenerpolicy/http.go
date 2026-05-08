@@ -1,6 +1,7 @@
 package listenerpolicy
 
 import (
+	"fmt"
 	"net"
 	"reflect"
 	"slices"
@@ -29,6 +30,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
+const (
+	minHTTP2WindowSizeBytes int64 = 65535
+	maxHTTP2WindowSizeBytes int64 = 2147483647
+)
+
 type HttpListenerPolicyIr struct {
 	upgradeConfigs             []*envoy_hcm.HttpConnectionManager_UpgradeConfig
 	useRemoteAddress           *bool
@@ -38,6 +44,7 @@ type HttpListenerPolicyIr struct {
 	serverHeaderTransformation *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation
 	streamIdleTimeout          *time.Duration
 	idleTimeout                *time.Duration
+	http2ProtocolOptions       *envoycorev3.Http2ProtocolOptions
 	healthCheckPolicy          *healthcheckv3.HealthCheck
 	preserveHttp1HeaderCase    *bool
 	preserveExternalRequestId  *bool
@@ -58,7 +65,10 @@ type HttpListenerPolicyIr struct {
 	defaultHostForHttp10          *string
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 	maxRequestHeadersKb           *uint32
+	maxRequestsPerConnection      *uint32
 	uuidRequestIdConfig           *envoyuuidv3.UuidRequestIdConfig
+	forwardClientCertMode         *envoy_hcm.HttpConnectionManager_ForwardClientCertDetails
+	setCurrentClientCertDetails   *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
 }
 
 func (d *HttpListenerPolicyIr) Equals(in any) bool {
@@ -137,6 +147,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 
+	if !proto.Equal(d.http2ProtocolOptions, d2.http2ProtocolOptions) {
+		return false
+	}
+
 	// Check healthCheckPolicy
 	if d.healthCheckPolicy == nil && d2.healthCheckPolicy != nil {
 		return false
@@ -175,7 +189,19 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 
+	if !cmputils.PointerValsEqual(d.maxRequestsPerConnection, d2.maxRequestsPerConnection) {
+		return false
+	}
+
 	if !proto.Equal(d.uuidRequestIdConfig, d2.uuidRequestIdConfig) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.forwardClientCertMode, d2.forwardClientCertMode) {
+		return false
+	}
+
+	if !proto.Equal(d.setCurrentClientCertDetails, d2.setCurrentClientCertDetails) {
 		return false
 	}
 
@@ -213,6 +239,18 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 	if h.IdleTimeout != nil {
 		duration := h.IdleTimeout.Duration
 		idleTimeout = &duration
+	}
+
+	var http2ProtocolOptions *envoycorev3.Http2ProtocolOptions
+	if h.Http2ProtocolOptions != nil {
+		http2ProtocolOptionsErrs := validateHTTP2ProtocolOptions(h.Http2ProtocolOptions)
+		for _, err := range http2ProtocolOptionsErrs {
+			logger.Error("error translating http2 protocol options", "error", err)
+			errs = append(errs, err)
+		}
+		if len(http2ProtocolOptionsErrs) == 0 {
+			http2ProtocolOptions = translateHttp2ProtocolOptions(h.Http2ProtocolOptions)
+		}
 	}
 
 	healthCheckPolicy := convertHealthCheckPolicy(h)
@@ -263,11 +301,51 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		maxRequestHeadersKb = new(uint32(*h.MaxRequestHeadersKb)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
+	var maxRequestsPerConnection *uint32
+	if h.MaxRequestsPerConnection != nil && *h.MaxRequestsPerConnection > 0 {
+		maxRequestsPerConnection = new(uint32(*h.MaxRequestsPerConnection)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
+
 	var uuidRequestIdConfig *envoyuuidv3.UuidRequestIdConfig
 	if h.UuidRequestIdConfig != nil {
 		uuidRequestIdConfig = &envoyuuidv3.UuidRequestIdConfig{
 			PackTraceReason:              wrapperspb.Bool(ptr.Deref(h.UuidRequestIdConfig.PackTraceReason, true)),
 			UseRequestIdForTraceSampling: wrapperspb.Bool(ptr.Deref(h.UuidRequestIdConfig.UseRequestIDForTraceSampling, true)),
+		}
+	}
+
+	var forwardClientCertMode *envoy_hcm.HttpConnectionManager_ForwardClientCertDetails
+	var setCurrentClientCertDetails *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
+	if fccd := h.ForwardClientCertDetails; fccd != nil {
+		if fccd.Mode != nil {
+			switch *fccd.Mode {
+			case kgateway.ForwardClientCertModeSanitize:
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE)
+			case kgateway.ForwardClientCertModeForwardOnly:
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_FORWARD_ONLY)
+			case kgateway.ForwardClientCertModeAppendForward:
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_APPEND_FORWARD)
+			case kgateway.ForwardClientCertModeSanitizeSet:
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
+			case kgateway.ForwardClientCertModeAlwaysForwardOnly:
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_ALWAYS_FORWARD_ONLY)
+			}
+		}
+		if d := fccd.Details; d != nil {
+			setCurrentClientCertDetails = &envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails{
+				Cert:  ptr.Deref(d.Cert, false),
+				Chain: ptr.Deref(d.Chain, false),
+				Dns:   ptr.Deref(d.DNS, false),
+				Uri:   ptr.Deref(d.URI, false),
+			}
+			if d.Subject != nil {
+				setCurrentClientCertDetails.Subject = wrapperspb.Bool(*d.Subject)
+			}
+			// If Details is set but Mode is not, default to SANITIZE_SET so the
+			// configuration has effect (Envoy's default SANITIZE strips XFCC).
+			if forwardClientCertMode == nil {
+				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
+			}
 		}
 	}
 
@@ -286,13 +364,17 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		serverHeaderTransformation:    serverHeaderTransformation,
 		streamIdleTimeout:             streamIdleTimeout,
 		idleTimeout:                   idleTimeout,
+		http2ProtocolOptions:          http2ProtocolOptions,
 		healthCheckPolicy:             healthCheckPolicy,
 		preserveHttp1HeaderCase:       h.PreserveHttp1HeaderCase,
 		acceptHttp10:                  h.AcceptHttp10,
 		defaultHostForHttp10:          h.DefaultHostForHttp10,
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
 		maxRequestHeadersKb:           maxRequestHeadersKb,
+		maxRequestsPerConnection:      maxRequestsPerConnection,
 		uuidRequestIdConfig:           uuidRequestIdConfig,
+		forwardClientCertMode:         forwardClientCertMode,
+		setCurrentClientCertDetails:   setCurrentClientCertDetails,
 	}, errs
 }
 
@@ -328,6 +410,47 @@ func convertServerHeaderTransformation(transformation *kgateway.ServerHeaderTran
 	default:
 		return nil
 	}
+}
+
+func translateHttp2ProtocolOptions(http2ProtocolOptions *kgateway.ListenerHTTP2ProtocolOptions) *envoycorev3.Http2ProtocolOptions {
+	out := &envoycorev3.Http2ProtocolOptions{}
+	if http2ProtocolOptions.MaxConcurrentStreams != nil {
+		out.MaxConcurrentStreams = &wrapperspb.UInt32Value{Value: uint32(*http2ProtocolOptions.MaxConcurrentStreams)} //nolint:gosec // G115: API type constrains value to non-negative int32, safe for uint32
+	}
+	if http2ProtocolOptions.InitialStreamWindowSize != nil {
+		out.InitialStreamWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialStreamWindowSize.Value())} //nolint:gosec // G115: plugin validation ensures 65535-2147483647 range, safe for uint32
+	}
+	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
+		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.Value())} //nolint:gosec // G115: plugin validation ensures 65535-2147483647 range, safe for uint32
+	}
+	return out
+}
+
+func validateHTTP2ProtocolOptions(http2ProtocolOptions *kgateway.ListenerHTTP2ProtocolOptions) []error {
+	if http2ProtocolOptions == nil {
+		return nil
+	}
+
+	var errs []error
+	if http2ProtocolOptions.InitialStreamWindowSize != nil {
+		if err := validateHTTP2WindowSize("initialStreamWindowSize", http2ProtocolOptions.InitialStreamWindowSize.Value()); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
+		if err := validateHTTP2WindowSize("initialConnectionWindowSize", http2ProtocolOptions.InitialConnectionWindowSize.Value()); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+func validateHTTP2WindowSize(fieldName string, value int64) error {
+	if value < minHTTP2WindowSizeBytes || value > maxHTTP2WindowSizeBytes {
+		return fmt.Errorf("%s must be between %d and %d bytes (inclusive), got %d", fieldName, minHTTP2WindowSizeBytes, maxHTTP2WindowSizeBytes, value)
+	}
+	return nil
 }
 
 func convertHealthCheckPolicy(policy *kgateway.HTTPSettings) *healthcheckv3.HealthCheck {

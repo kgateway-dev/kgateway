@@ -1,0 +1,18 @@
+# Mode=Sanitize, no details.
+# Test asserts: backend sees no x-forwarded-client-cert header even when
+# the client injects one (spoofed inbound is dropped).
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: forward-client-cert
+  namespace: default
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
+      sectionName: mtls-https
+  default:
+    httpSettings:
+      forwardClientCertDetails:
+        mode: Sanitize
