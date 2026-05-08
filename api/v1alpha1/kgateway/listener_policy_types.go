@@ -240,6 +240,16 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
+	// MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
+	// keepalive connection. When the limit is reached, Envoy closes the connection, which forces
+	// clients to reconnect. This allows L4 load balancers like AWS NLB to rebalance long-lived
+	// HTTP/2 and gRPC connections across gateway pods.
+	// If set to 0 or unspecified, defaults to unlimited.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MaxRequestsPerConnection *int32 `json:"maxRequestsPerConnection,omitempty"`
+
 	// Http2ProtocolOptions configures downstream HTTP/2 behavior on the listener's
 	// HttpConnectionManager.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions

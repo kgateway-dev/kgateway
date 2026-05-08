@@ -65,6 +65,7 @@ type HttpListenerPolicyIr struct {
 	defaultHostForHttp10          *string
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 	maxRequestHeadersKb           *uint32
+	maxRequestsPerConnection      *uint32
 	uuidRequestIdConfig           *envoyuuidv3.UuidRequestIdConfig
 	forwardClientCertMode         *envoy_hcm.HttpConnectionManager_ForwardClientCertDetails
 	setCurrentClientCertDetails   *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
@@ -188,6 +189,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 
+	if !cmputils.PointerValsEqual(d.maxRequestsPerConnection, d2.maxRequestsPerConnection) {
+		return false
+	}
+
 	if !proto.Equal(d.uuidRequestIdConfig, d2.uuidRequestIdConfig) {
 		return false
 	}
@@ -296,6 +301,11 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		maxRequestHeadersKb = new(uint32(*h.MaxRequestHeadersKb)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
+	var maxRequestsPerConnection *uint32
+	if h.MaxRequestsPerConnection != nil && *h.MaxRequestsPerConnection > 0 {
+		maxRequestsPerConnection = new(uint32(*h.MaxRequestsPerConnection)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
+
 	var uuidRequestIdConfig *envoyuuidv3.UuidRequestIdConfig
 	if h.UuidRequestIdConfig != nil {
 		uuidRequestIdConfig = &envoyuuidv3.UuidRequestIdConfig{
@@ -361,6 +371,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		defaultHostForHttp10:          h.DefaultHostForHttp10,
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
 		maxRequestHeadersKb:           maxRequestHeadersKb,
+		maxRequestsPerConnection:      maxRequestsPerConnection,
 		uuidRequestIdConfig:           uuidRequestIdConfig,
 		forwardClientCertMode:         forwardClientCertMode,
 		setCurrentClientCertDetails:   setCurrentClientCertDetails,

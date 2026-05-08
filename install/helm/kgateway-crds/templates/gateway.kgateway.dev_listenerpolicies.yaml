@@ -1672,6 +1672,17 @@ spec:
                         maximum: 8192
                         minimum: 1
                         type: integer
+                      maxRequestsPerConnection:
+                        description: |-
+                          MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
+                          keepalive connection. When the limit is reached, Envoy closes the connection, which forces
+                          clients to reconnect. This allows L4 load balancers like AWS NLB to rebalance long-lived
+                          HTTP/2 and gRPC connections across gateway pods.
+                          If set to 0 or unspecified, defaults to unlimited.
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
+                        format: int32
+                        minimum: 0
+                        type: integer
                       preserveExternalRequestId:
                         description: |-
                           PreserveExternalRequestId determines whether the connection manager will keep the x-request-id header if passed for
@@ -3807,6 +3818,17 @@ spec:
                               format: int32
                               maximum: 8192
                               minimum: 1
+                              type: integer
+                            maxRequestsPerConnection:
+                              description: |-
+                                MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
+                                keepalive connection. When the limit is reached, Envoy closes the connection, which forces
+                                clients to reconnect. This allows L4 load balancers like AWS NLB to rebalance long-lived
+                                HTTP/2 and gRPC connections across gateway pods.
+                                If set to 0 or unspecified, defaults to unlimited.
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
+                              format: int32
+                              minimum: 0
                               type: integer
                             preserveExternalRequestId:
                               description: |-
