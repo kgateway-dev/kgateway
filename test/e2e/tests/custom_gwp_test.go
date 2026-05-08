@@ -228,15 +228,21 @@ func TestCustomGWP(t *testing.T) {
 	// Assert that eventually the deployment gateway pod is updated with the new label
 	r.EventuallyWithT(func(c *assert.CollectT) {
 		pods, err := kubeutils.GetReadyPodsForDeployment(ctx, testInstallation.ClusterContext.Clientset, proxyObjectMeta)
-		assert.NoError(c, err, "failed to get ready pods for deployment after upgrade")
-		assert.NotEmpty(c, pods, "no ready pods found for deployment after upgrade")
+		if !assert.NoError(c, err, "failed to get ready pods for deployment after upgrade") {
+			return
+		}
+		if !assert.NotEmpty(c, pods, "no ready pods found for deployment after upgrade") {
+			return
+		}
 
 		pod := &corev1.Pod{}
 		err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{
 			Namespace: gatewayNamespace,
 			Name:      pods[0],
 		}, pod)
-		assert.NoError(c, err, "failed to get pod after upgrade")
+		if !assert.NoError(c, err, "failed to get pod after upgrade") {
+			return
+		}
 		assert.NotNil(c, pod.Labels, "pod labels are nil after upgrade")
 		assert.Contains(c, pod.Labels, "another", "pod should have the 'another' label after upgrade")
 		assert.Equal(c, "label", pod.Labels["another"], "pod should have the new label 'another: label' after upgrade")
