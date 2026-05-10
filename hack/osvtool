@@ -1,0 +1,498 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: osvtool [--branch <branch> ...] [--repo <owner/repo>] [--state <state>] [--raw] [--worst]
+
+Fetch OSV-scanner code-scanning alerts from GitHub.
+
+By default, osvtool reads the default branch allowlist from
+.github/workflows/osv-scanner.yaml and prints a YAML summary for each
+branch. The summary contains:
+  - alerts: total number of alerts
+  - severity: counts by severity
+  - maxAgeDays: maximum alert age in days by severity
+  - lastSuccessfulScan: timestamp for the latest OSV code-scanning analysis
+
+Options:
+  --branch <branch>   Branch to query. May be repeated. If omitted, use the
+                      default branches from the OSV workflow.
+  --repo <owner/repo> Repository to query (default: kgateway-dev/kgateway)
+  --state <state>     One of: open|fixed|dismissed|todo (default: open)
+                      "todo" = open alerts with critical/high severity only.
+  --raw               Emit raw alert YAML instead of the summary. With one
+                      branch, output is a YAML sequence of alerts. With
+                      multiple branches, output is a YAML mapping keyed by
+                      branch.
+  --worst             Emit "worst: <severity>" for the highest severity
+                      found across the selected branches. Exits non-zero if the
+                      latest OSV code scan on any selected branch is missing or
+                      more than 72 hours old.
+  --workflow <path>   Workflow file used to discover default branches
+                      (default: .github/workflows/osv-scanner.yaml)
+  -h, --help          Show this help message
+
+Requires: gh, jq, yq.
+EOF
+}
+
+require_cmd() {
+    local cmd="$1"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "error: required command not found: $cmd" >&2
+        exit 1
+    fi
+}
+
+default_repo() {
+    echo "kgateway-dev/kgateway"
+}
+
+http_status() {
+    local response_file="$1"
+
+    awk '/^HTTP\// { status = $2 } END { print status }' "$response_file"
+}
+
+header_value() {
+    local response_file="$1"
+    local header="$2"
+
+    awk -v header="$header" '
+        BEGIN {
+            IGNORECASE = 1
+            header_re = header
+            gsub(/[][(){}.*+?^$|\\-]/, "\\\\&", header_re)
+        }
+        $0 ~ ("^" header_re ":[[:space:]]*") {
+            sub(/^[^:]+:[[:space:]]*/, "")
+            sub(/\r$/, "")
+            value = $0
+        }
+        END { print value }
+    ' "$response_file"
+}
+
+has_oauth_scope() {
+    local scopes="$1"
+    local scope="$2"
+    local normalized
+
+    normalized=",${scopes// /},"
+    [[ "$normalized" == *",${scope},"* ]]
+}
+
+print_code_scanning_auth_help() {
+    local repo="$1"
+    local response_file="$2"
+    local stderr_file="$3"
+    local status
+    local token_scopes
+    local accepted_scopes
+    local message
+
+    status="$(http_status "$response_file")"
+    token_scopes="$(header_value "$response_file" "X-Oauth-Scopes")"
+    accepted_scopes="$(header_value "$response_file" "X-Accepted-Oauth-Scopes")"
+    message="$(sed -n '/^{/,$p' "$response_file" | jq -r '.message // empty' 2>/dev/null || true)"
+
+    cat "$stderr_file" >&2
+    echo "error: GitHub token cannot read code-scanning alerts for ${repo}" >&2
+    if [[ -n "$status" ]]; then
+        echo "HTTP status: ${status}" >&2
+    fi
+    if [[ -n "$message" ]]; then
+        echo "GitHub response: ${message}" >&2
+    fi
+    echo "token OAuth scopes: ${token_scopes:-<none reported>}" >&2
+    echo "endpoint accepts OAuth scopes: ${accepted_scopes:-<none reported>}" >&2
+
+    if [[ -n "$token_scopes" ]] &&
+        ! has_oauth_scope "$token_scopes" "security_events" &&
+        ! has_oauth_scope "$token_scopes" "repo" &&
+        ! has_oauth_scope "$token_scopes" "public_repo"; then
+        echo "diagnosis: the token is missing a classic OAuth scope that can read code-scanning alerts" >&2
+    elif [[ -z "$token_scopes" ]]; then
+        echo "diagnosis: GitHub did not report classic OAuth scopes; this is common for fine-grained or app tokens" >&2
+    else
+        echo "diagnosis: the token reports a compatible classic OAuth scope, so repo access, SSO authorization, or code-scanning availability may be blocking access" >&2
+    fi
+
+    cat >&2 <<'EOF'
+
+How to grant access:
+  - For the GitHub CLI's stored classic token, run:
+      gh auth refresh --scopes security_events
+    The broader repo scope can also satisfy this endpoint, but security_events is the narrower code-scanning scope.
+  - If the organization enforces SAML SSO, authorize the refreshed GitHub CLI token for the organization when GitHub prompts you.
+  - For a fine-grained PAT, create or edit a token that has access to this repository and set Repository permissions -> Code scanning alerts -> Read-only. Then use it with:
+      export GH_TOKEN=<token>
+    or:
+      export GITHUB_TOKEN=<token>
+EOF
+}
+
+probe_code_scanning_permissions() {
+    local repo="$1"
+    local output_prefix="$2"
+    local response_file="${output_prefix}.response"
+    local stderr_file="${output_prefix}.stderr"
+
+    if ! gh api \
+        --include \
+        --method GET \
+        -H "Accept: application/vnd.github+json" \
+        -f state=open \
+        -f per_page=1 \
+        "/repos/${repo}/code-scanning/alerts" >"$response_file" 2>"$stderr_file"; then
+        print_code_scanning_auth_help "$repo" "$response_file" "$stderr_file"
+        exit 1
+    fi
+}
+
+workflow_default_branches() {
+    local workflow_path="$1"
+    local branches_json
+
+    if [[ ! -f "$workflow_path" ]]; then
+        echo "error: workflow file not found: $workflow_path" >&2
+        exit 1
+    fi
+
+    branches_json="$(sed -nE "s/^[[:space:]]*branches='(\\[[^']+\\])'/\\1/p" "$workflow_path" | head -n 1)"
+    if [[ -z "$branches_json" ]]; then
+        echo "error: could not discover default branches from $workflow_path" >&2
+        exit 1
+    fi
+
+    jq -r '.[]' <<<"$branches_json"
+}
+
+fetch_branch_alerts() {
+    local repo="$1"
+    local branch="$2"
+    local state="$3"
+    local output="$4"
+    local api_state="$state"
+    local pages_file="${output%.json}.pages.jsonl"
+    local stderr_file="${output%.json}.stderr"
+
+    if ! gh api \
+        -H "Accept: application/vnd.github+json" \
+        --paginate \
+        --method GET \
+        -f state="$api_state" \
+        -f ref="refs/heads/${branch}" \
+        -f per_page=100 \
+        "/repos/${repo}/code-scanning/alerts" >"$pages_file" 2>"$stderr_file"; then
+        cat "$stderr_file" >&2
+        echo "error: failed to fetch code-scanning alerts for ${repo} branch ${branch}" >&2
+        echo "hint: the repo-level code-scanning permission probe passed, so check that this branch exists and has uploaded code-scanning results" >&2
+        exit 1
+    fi
+
+    jq -s 'add' <"$pages_file" >"$output"
+}
+
+fetch_branch_scan_metadata() {
+    local repo="$1"
+    local branch="$2"
+    local output="$3"
+    local pages_file="${output%.json}.pages.json"
+    local stderr_file="${output%.json}.stderr"
+
+    if ! gh api \
+        -H "Accept: application/vnd.github+json" \
+        --method GET \
+        -f ref="refs/heads/${branch}" \
+        -f tool_name=osv-scanner \
+        -f per_page=100 \
+        "/repos/${repo}/code-scanning/analyses" >"$pages_file" 2>"$stderr_file"; then
+        cat "$stderr_file" >&2
+        echo "error: failed to fetch OSV code-scanning analyses for ${repo} branch ${branch}" >&2
+        exit 1
+    fi
+
+    jq '[.[] | select(.analysis_key == ".github/workflows/osv-scanner.yaml:scan")] | .[0] // null' \
+        <"$pages_file" >"$output"
+}
+
+emit_raw() {
+    local tmpdir="$1"
+    shift
+    local branches=("$@")
+    local branch
+    local file
+    local parts=""
+
+    if [[ "${#branches[@]}" -eq 1 ]]; then
+        jq '.' "${tmpdir}/branch_0.json"
+        return 0
+    fi
+
+    for i in "${!branches[@]}"; do
+        branch="${branches[$i]}"
+        file="${tmpdir}/branch_${i}.json"
+        parts="${parts}$(jq -c --arg branch "$branch" '{($branch): .}' "$file")"$'\n'
+    done
+
+    printf '%s' "$parts" | jq -s 'add'
+}
+
+emit_summary() {
+    local tmpdir="$1"
+    local repo="$2"
+    shift 2
+    local branches=("$@")
+    local branch
+    local file
+    local scan_file
+    local last_successful_scan
+    local url
+    local now
+    local parts=""
+
+    now="$(date +%s)"
+
+    for i in "${!branches[@]}"; do
+        branch="${branches[$i]}"
+        file="${tmpdir}/branch_${i}.json"
+        scan_file="${tmpdir}/branch_${i}.scan.json"
+        last_successful_scan="$(jq -r '.created_at // empty' "$scan_file")"
+        url="https://github.com/${repo}/security/code-scanning?query=is%3Aopen+branch%3A${branch}"
+        parts="${parts}$(
+            jq -c \
+                --arg branch "$branch" \
+                --argjson now "$now" \
+                --arg lastSuccessfulScan "$last_successful_scan" \
+                --arg url "$url" \
+                '
+                def sev: (.rule.security_severity_level // "unknown" | ascii_downcase);
+                def age_days($now): (($now - ((.created_at | fromdateiso8601)? // $now)) / 86400 | floor);
+                def zero_counts: {critical: 0, high: 0, medium: 0, low: 0, unknown: 0};
+                def zero_max_age: {critical: null, high: null, medium: null, low: null, unknown: null};
+                def counts:
+                    reduce .[] as $alert (zero_counts; .[$alert | sev] += 1);
+                def max_ages($now):
+                    reduce .[] as $alert (
+                        zero_max_age;
+                        ($alert | sev) as $severity
+                        | ($alert | age_days($now)) as $age
+                        | .[$severity] = (
+                            if .[$severity] == null or $age > .[$severity] then
+                                $age
+                            else
+                                .[$severity]
+                            end
+                        )
+                    );
+                {
+                    ($branch): {
+                        alerts: length,
+                        severity: counts,
+                        maxAgeDays: max_ages($now),
+                        lastSuccessfulScan: (
+                            if $lastSuccessfulScan == "" then
+                                null
+                            else
+                                $lastSuccessfulScan
+                            end
+                        ),
+                        url: $url
+                    }
+                }
+                ' \
+                "$file"
+        )"$'\n'
+    done
+
+    printf '%s' "$parts" | jq -s 'add'
+}
+
+emit_worst() {
+    local tmpdir="$1"
+    shift
+    local branches=("$@")
+    local now
+    local scan_created_at
+    local scan_age_seconds
+    local stale=()
+    local alert_files=()
+
+    now="$(date +%s)"
+
+    for i in "${!branches[@]}"; do
+        scan_created_at="$(jq -r '.created_at // empty' "${tmpdir}/branch_${i}.scan.json")"
+        if [[ -z "$scan_created_at" ]]; then
+            stale+=("${branches[$i]}: no successful OSV code scan found")
+            continue
+        fi
+
+        scan_age_seconds="$(jq -n \
+            --argjson now "$now" \
+            --arg createdAt "$scan_created_at" \
+            '$now - ($createdAt | fromdateiso8601)')"
+        if ((scan_age_seconds > 259200)); then
+            stale+=("${branches[$i]}: latest OSV code scan at ${scan_created_at} is older than 72 hours")
+        fi
+
+        alert_files+=("${tmpdir}/branch_${i}.json")
+    done
+
+    if [[ "${#stale[@]}" -gt 0 ]]; then
+        printf 'error: refusing to calculate worst severity because OSV scan data is stale\n' >&2
+        printf '%s\n' "${stale[@]}" >&2
+        exit 1
+    fi
+
+    jq -s '
+        def sev: (.rule.security_severity_level // "unknown" | ascii_downcase);
+        def rank($severity):
+            {
+                critical: 5,
+                high: 4,
+                medium: 3,
+                moderate: 3,
+                low: 2,
+                unknown: 1
+            }[$severity] // 1;
+        reduce (add[]? | sev) as $severity (
+            {worst: "none", rank: 0};
+            if rank($severity) > .rank then
+                {worst: $severity, rank: rank($severity)}
+            else
+                .
+            end
+        )
+        | {worst}
+    ' "${alert_files[@]}"
+}
+
+main() {
+    local repo
+    local state="open"
+    local raw=0
+    local worst=0
+    local workflow_path=".github/workflows/osv-scanner.yaml"
+    local filter='.'
+    local tmpdir=""
+    local branch
+    local i=0
+    local branches=()
+
+    require_cmd gh
+    require_cmd jq
+    require_cmd yq
+
+    repo="$(default_repo)"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                usage
+                exit 0
+                ;;
+            --branch)
+                if [[ $# -lt 2 || -z "${2:-}" ]]; then
+                    echo "error: --branch requires a value" >&2
+                    exit 2
+                fi
+                branches+=("$2")
+                shift 2
+                ;;
+            --repo)
+                if [[ $# -lt 2 || -z "${2:-}" ]]; then
+                    echo "error: --repo requires a value" >&2
+                    exit 2
+                fi
+                repo="$2"
+                shift 2
+                ;;
+            --state)
+                if [[ $# -lt 2 || -z "${2:-}" ]]; then
+                    echo "error: --state requires a value" >&2
+                    exit 2
+                fi
+                state="$2"
+                shift 2
+                ;;
+            --raw)
+                raw=1
+                shift
+                ;;
+            --worst)
+                worst=1
+                shift
+                ;;
+            --workflow)
+                if [[ $# -lt 2 || -z "${2:-}" ]]; then
+                    echo "error: --workflow requires a value" >&2
+                    exit 2
+                fi
+                workflow_path="$2"
+                shift 2
+                ;;
+            *)
+                echo "error: unknown argument: $1" >&2
+                usage >&2
+                exit 2
+                ;;
+        esac
+    done
+
+    if [[ "$raw" -eq 1 && "$worst" -eq 1 ]]; then
+        echo "error: --raw and --worst cannot be used together" >&2
+        exit 2
+    fi
+
+    case "$state" in
+        open|fixed|dismissed)
+            ;;
+        todo)
+            state="open"
+            filter='map(select((.rule.security_severity_level // "" | ascii_downcase) == "critical" or (.rule.security_severity_level // "" | ascii_downcase) == "high"))'
+            ;;
+        *)
+            echo "error: --state must be one of open|fixed|dismissed|todo" >&2
+            exit 2
+            ;;
+    esac
+
+    if [[ "${#branches[@]}" -eq 0 ]]; then
+        while IFS= read -r branch; do
+            if [[ -n "$branch" ]]; then
+                branches+=("$branch")
+            fi
+        done < <(workflow_default_branches "$workflow_path")
+    fi
+
+    if [[ "${#branches[@]}" -eq 0 ]]; then
+        echo "error: no branches to query" >&2
+        exit 1
+    fi
+
+    tmpdir="$(mktemp -d)"
+    trap 'rm -rf "${tmpdir:-}"' EXIT
+
+    probe_code_scanning_permissions "$repo" "${tmpdir}/permission_probe"
+
+    for branch in "${branches[@]}"; do
+        fetch_branch_alerts "$repo" "$branch" "$state" "${tmpdir}/branch_${i}.unfiltered.json"
+        jq "$filter" "${tmpdir}/branch_${i}.unfiltered.json" >"${tmpdir}/branch_${i}.json"
+        if [[ "$raw" -eq 0 || "$worst" -eq 1 ]]; then
+            fetch_branch_scan_metadata "$repo" "$branch" "${tmpdir}/branch_${i}.scan.json"
+        fi
+        i=$((i + 1))
+    done
+
+    if [[ "$raw" -eq 1 ]]; then
+        emit_raw "$tmpdir" "${branches[@]}" | yq -p=json -o=yaml
+    elif [[ "$worst" -eq 1 ]]; then
+        emit_worst "$tmpdir" "${branches[@]}" | yq -p=json -o=yaml
+    else
+        emit_summary "$tmpdir" "$repo" "${branches[@]}" | yq -p=json -o=yaml
+    fi
+}
+
+main "$@"

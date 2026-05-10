@@ -65,6 +65,42 @@ jobs:
         run: |
           echo "KGATEWAY_VALIDATOR_ENVOY_IMAGE=${{ steps.validator-image.outputs.image }}" >> "$GITHUB_ENV"
           echo "KGATEWAY_VALIDATOR_DOCKER_PULL_POLICY=never" >> "$GITHUB_ENV"
+      - name: Pre-pull validator image
+        # When rebuild=true the image was built locally and pull-policy is "never",
+        # so this step only matters for the default ghcr.io image path. Pulling it
+        # once up front (with retries) avoids per-test ghcr.io timeout flakes in
+        # the strict-validation tests, which spawn `docker run --pull always` for
+        # every validation invocation.
+        if: ${{ steps.validator-image.outputs.rebuild == 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          validator_image="${KGATEWAY_VALIDATOR_ENVOY_IMAGE:-}"
+          if [[ -z "$validator_image" ]]; then
+            validator_image="$(< pkg/validator/default_envoy_image.txt)"
+          fi
+          if [[ -z "$validator_image" ]]; then
+            echo "validator image is empty" >&2
+            exit 1
+          fi
+
+          attempt=1
+          max_attempts=5
+          delay=5
+          until docker pull "$validator_image"; do
+            if [[ "$attempt" -ge "$max_attempts" ]]; then
+              echo "docker pull failed after $attempt attempts" >&2
+              exit 1
+            fi
+            echo "docker pull attempt $attempt failed; retrying in ${delay}s" >&2
+            sleep "$delay"
+            attempt=$((attempt + 1))
+            delay=$((delay * 2))
+          done
+          # The image is now in the local docker daemon cache; tell the validator
+          # to use it without re-pulling on every invocation.
+          echo "KGATEWAY_VALIDATOR_ENVOY_IMAGE=${validator_image}" >> "$GITHUB_ENV"
+          echo "KGATEWAY_VALIDATOR_DOCKER_PULL_POLICY=never" >> "$GITHUB_ENV"
       - name: Run Tests
         shell: bash
         run: make unit-with-coverage
