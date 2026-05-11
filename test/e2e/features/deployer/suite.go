@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/stretchr/testify/assert"
@@ -38,6 +40,12 @@ import (
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
+
+const (
+	readinessListenerName      = "readiness_listener"
+	proxyProtocolFilterName    = "envoy.filters.listener.proxy_protocol"
+	proxyProtocolFilterTypeURL = "type.googleapis.com/envoy.extensions.filters.listener.proxy_protocol.v3.ProxyProtocol"
+)
 
 var (
 	setup = base.TestCase{
@@ -69,6 +77,9 @@ var (
 		},
 		"TestHPAPDBLifecycle": {
 			Manifests: []string{gatewayWithHPAPDB},
+		},
+		"TestReadinessProbeProxyProtocol": {
+			Manifests: []string{gatewayReadinessProxyProtocol},
 		},
 	}
 )
@@ -595,4 +606,61 @@ func xdsClusterAssertion(t *testing.T, testInstallation *e2e.TestInstallation) f
 			WithPolling(time.Millisecond * 200).
 			Should(gomega.Succeed())
 	}
+}
+
+// TestReadinessProbeProxyProtocol verifies that enabling
+// EnableReadinessProbeProxyProtocol on the GatewayParameters bootstrap config
+// wires the PROXY protocol listener filter onto the static readiness listener,
+// and that Envoy still starts (the gateway pod becomes ready via kubelet HTTP
+// probe, which does not prepend a PROXY header).
+func (s *testingSuite) TestReadinessProbeProxyProtocol() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.Ctx,
+		proxyObjectMeta,
+		readinessProxyProtocolAssertion(s.T(), s.TestInstallation),
+	)
+}
+
+func readinessProxyProtocolAssertion(t *testing.T, testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
+	return func(ctx context.Context, adminClient *admincli.Client) {
+		testInstallation.AssertionsT(t).Gomega.Eventually(func(g gomega.Gomega) {
+			cfgDump, err := adminClient.GetConfigDump(ctx, map[string]string{"resource": "static_listeners"})
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get static_listeners config dump from envoy admin")
+
+			readiness := findStaticListener(cfgDump, readinessListenerName)
+			g.Expect(readiness).NotTo(gomega.BeNil(),
+				"readiness listener %q must be present in static_listeners", readinessListenerName)
+
+			listenerFilters := readiness.GetListenerFilters()
+			g.Expect(listenerFilters).To(gomega.HaveLen(1),
+				"readiness listener should have exactly one listener filter when EnableReadinessProbeProxyProtocol is true")
+			g.Expect(listenerFilters[0].GetName()).To(gomega.Equal(proxyProtocolFilterName))
+			g.Expect(listenerFilters[0].GetTypedConfig().GetTypeUrl()).To(gomega.Equal(proxyProtocolFilterTypeURL))
+		}).
+			WithContext(ctx).
+			WithTimeout(30 * time.Second).
+			WithPolling(500 * time.Millisecond).
+			Should(gomega.Succeed())
+	}
+}
+
+// findStaticListener walks the static_listeners config dump and returns the
+// listener with the matching name, or nil if not found.
+func findStaticListener(cfgDump *adminv3.ConfigDump, name string) *envoylistenerv3.Listener {
+	for _, c := range cfgDump.GetConfigs() {
+		var sl adminv3.ListenersConfigDump_StaticListener
+		if err := c.UnmarshalTo(&sl); err != nil {
+			continue
+		}
+		var l envoylistenerv3.Listener
+		if err := sl.GetListener().UnmarshalTo(&l); err != nil {
+			continue
+		}
+		if l.GetName() == name {
+			return &l
+		}
+	}
+	return nil
 }

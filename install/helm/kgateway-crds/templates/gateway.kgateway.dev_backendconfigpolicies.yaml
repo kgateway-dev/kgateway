@@ -339,10 +339,12 @@ spec:
                         <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534'))
                         && quantity(self).isLessThan(quantity('2147483648')))
                   maxConcurrentStreams:
-                    description: The maximum number of concurrent streams that the
-                      connection can have.
+                    description: |-
+                      The maximum number of concurrent streams that the connection can have.
+                      Envoy defaults to 1024.
                     format: int32
-                    minimum: 0
+                    maximum: 2147483647
+                    minimum: 1
                     type: integer
                   overrideStreamErrorOnInvalidHttpMessage:
                     description: |-

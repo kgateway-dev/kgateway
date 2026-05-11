@@ -23,8 +23,7 @@ serviceAccount:
 deploymentAnnotations: {}
 
 # -- Add annotations to the kgateway pods. This field is deprecated in favor of controller.podAnnotations and will be removed in v3.0.
-podAnnotations:
-  prometheus.io/scrape: "true"
+podAnnotations: {}
 
 # -- Set the pod-level security context. For example, 'fsGroup: 2000' sets the filesystem group to 2000. This field is deprecated in favor of controller.podSecurityContext and will be removed in v3.0.
 podSecurityContext: {}
@@ -138,6 +137,13 @@ controller:
     allocateLoadBalancerNodePorts: null
     # -- Traffic distribution.
     trafficDistribution: ""
+  # -- Add Prometheus pod annotations (`prometheus.io/scrape`,
+  # `prometheus.io/path`, `prometheus.io/port`) to the controller pods
+  # so a vanilla Prometheus deployment using pod annotation discovery
+  # can scrape the controller metrics endpoint. See also
+  # https://kgateway.dev/docs/envoy/latest/observability/otel-stack/. Set
+  # to `false` to omit these annotations.
+  prometheusAnnotations: true
   # -- Controller ServiceMonitor configuration. A ServiceMonitor is a Prometheus Operator custom resource
   # -- that tells Prometheus how to discover and scrape the controller metrics Service.
   serviceMonitor:

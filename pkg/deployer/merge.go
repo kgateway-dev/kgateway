@@ -612,27 +612,56 @@ func DeepMergeImage(dst, src *kgateway.Image) *kgateway.Image {
 	}
 
 	if dst == nil {
-		return src
+		cp := *src
+		dst = &cp
+	} else {
+		if src.GetRegistry() != nil {
+			dst.Registry = src.GetRegistry()
+		}
+
+		if src.GetRepository() != nil {
+			dst.Repository = src.GetRepository()
+		}
+
+		if src.GetTag() != nil {
+			dst.Tag = src.GetTag()
+		}
+
+		if src.GetDigest() != nil {
+			dst.Digest = src.GetDigest()
+		}
+
+		if src.GetPullPolicy() != nil {
+			dst.PullPolicy = src.GetPullPolicy()
+		}
 	}
 
-	if src.GetRegistry() != nil {
-		dst.Registry = src.GetRegistry()
+	// Tag and digest are coupled: specifying one in non-empty form without
+	// also specifying the other clears any inherited value of the unspecified
+	// field, so each field is "load-bearing" only when the other is unset.
+	// To keep both an inherited (or overridden) tag and digest in the rendered
+	// image reference, callers must specify non-empty forms of both.
+	//
+	// Concretely:
+	//   - A non-empty digest with no tag in src clears any inherited tag,
+	//     yielding `repo@digest`.
+	//   - A non-empty tag with no digest in src clears any inherited digest,
+	//     yielding `repo:tag`.
+	// We require non-empty values so that an explicit empty-string override
+	// (e.g. `digest: ""` to clear an inherited digest) does not also clobber
+	// the other field. We set the cleared field to an empty (but non-nil)
+	// string so that the value overrides any inherited/default during chart
+	// rendering.
+	srcDigest := src.GetDigest()
+	srcTag := src.GetTag()
+	digestIsNonEmpty := srcDigest != nil && *srcDigest != ""
+	tagIsNonEmpty := srcTag != nil && *srcTag != ""
+	empty := ""
+	if digestIsNonEmpty && srcTag == nil {
+		dst.Tag = &empty
 	}
-
-	if src.GetRepository() != nil {
-		dst.Repository = src.GetRepository()
-	}
-
-	if src.GetTag() != nil {
-		dst.Tag = src.GetTag()
-	}
-
-	if src.GetDigest() != nil {
-		dst.Digest = src.GetDigest()
-	}
-
-	if src.GetPullPolicy() != nil {
-		dst.PullPolicy = src.GetPullPolicy()
+	if tagIsNonEmpty && srcDigest == nil {
+		dst.Digest = &empty
 	}
 
 	return dst
@@ -658,6 +687,10 @@ func deepMergeEnvoyBootstrap(dst, src *kgateway.EnvoyBootstrap) *kgateway.EnvoyB
 
 	dst.ComponentLogLevels = DeepMergeMaps(dst.GetComponentLogLevels(), src.GetComponentLogLevels())
 	dst.DnsResolver = deepMergeDnsResolver(dst.GetDnsResolver(), src.GetDnsResolver())
+
+	if src.GetEnableReadinessProbeProxyProtocol() != nil {
+		dst.EnableReadinessProbeProxyProtocol = src.GetEnableReadinessProbeProxyProtocol()
+	}
 
 	return dst
 }

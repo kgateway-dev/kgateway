@@ -27,7 +27,10 @@ on:
 env:
   # this uses the `github.repository_owner` to support releases from forks (useful for testing).
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
-  VANITY_REGISTRY: cr.kgateway.dev/kgateway-dev
+  # Only the official kgateway-dev/kgateway repo publishes to the vanity registry. Personal
+  # forks publish to ghcr.io/<owner>, so their release notes should point there too — otherwise
+  # the install commands in the GitHub release page reference images that don't exist.
+  VANITY_REGISTRY: ${{ github.repository == 'kgateway-dev/kgateway' && 'cr.kgateway.dev/kgateway-dev' || format('ghcr.io/{0}', github.repository_owner) }}
   MAIN_VERSION: v2.3.0-main
   GORELEASER_DISABLE_RELEASE: false
 

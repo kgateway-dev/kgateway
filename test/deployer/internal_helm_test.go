@@ -100,6 +100,21 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "base-gateway",
 		},
 		{
+			// Pinning the envoy image by digest without specifying a tag must
+			// drop the inherited default tag. The rendered image is
+			// `repo@digest`, not `repo:tag@digest`.
+			Name:      "envoy image pinned by digest erases inherited default tag",
+			InputFile: "envoy-image-digest-erases-tag",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				digest := "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+				assert.Contains(t, outputYaml, "image: ghcr.io/envoy-wrapper@"+digest,
+					"envoy image should render as repo@digest with no tag")
+				assert.NotContains(t, outputYaml, "envoy-wrapper:v2.1.0-dev@",
+					"the inherited default tag must not appear when the user pins by digest only")
+			},
+		},
+		{
 			Name:      "gateway with replicas GWP via GWC",
 			InputFile: "gwc-with-replicas",
 		},
@@ -160,6 +175,19 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 		{
 			Name:      "envoy dns resolver disable",
 			InputFile: "envoy-dns-resolver-zero",
+		},
+		{
+			Name:      "envoy readiness listener proxy protocol",
+			InputFile: "envoy-readiness-listener-proxy-protocol",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "envoy.filters.listener.proxy_protocol",
+					"readiness listener should include the proxy_protocol listener filter when enableReadinessProbeProxyProtocol is enabled")
+				assert.Contains(t, outputYaml, "allow_requests_without_proxy_protocol: true",
+					"proxy_protocol filter on the readiness listener must allow requests without PROXY headers so kubelet probes still succeed")
+				assert.Equal(t, 1, strings.Count(outputYaml, "envoy.filters.listener.proxy_protocol"),
+					"enableReadinessProbeProxyProtocol must wrap only the readiness listener")
+			},
 		},
 		{
 			Name:      "envoy JSON log",

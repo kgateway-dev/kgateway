@@ -49,6 +49,9 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
         // Add a new arm here for each new filter. See ../../docs/guides/adding-a-filter.md.
         "rustformation" => rustformation_filter::FilterConfig::new(filter_config)
             .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EHF>>),
+        // rustformation used to be http_simple_mutations, leaving this here for compatibility
+        "http_simple_mutations" => rustformation_filter::FilterConfig::new(filter_config)
+            .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EHF>>),
         "http-acl" => http_acl_filter::FilterConfig::new(envoy_filter_config, filter_config)
             .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EHF>>),
         _ => panic!(
@@ -72,6 +75,9 @@ fn new_http_filter_per_route_config_fn(name: &str, config: &[u8]) -> Option<Box<
     match name {
         // Add a new arm here for each new filter. See docs/adding-a-filter.md.
         "rustformation" => rustformation_filter::PerRouteConfig::new(per_route_config)
+            .map(|config| Box::new(config) as Box<dyn Any>),
+        // rustformation used to be http_simple_mutations, leaving this here for compatibility
+        "http_simple_mutations" => rustformation_filter::PerRouteConfig::new(per_route_config)
             .map(|config| Box::new(config) as Box<dyn Any>),
         "http-acl" => http_acl_filter::PerRouteConfig::new(per_route_config)
             .map(|config| Box::new(config) as Box<dyn Any>),

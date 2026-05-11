@@ -56,3 +56,48 @@ spec:
         limits:
           cpu: "200m"
           memory: "128Mi"
+---
+# Second curl pod with client cert + CA mounted, used by the
+# TestForwardClientCert* tests for outgoing mTLS requests. Cannot reuse the
+# 'curl' pod above because volume mounts are immutable after pod creation.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-mtls
+  namespace: curl
+  labels:
+    app: curl-mtls
+    version: v1
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+    - name: curl
+      image: ghcr.io/kgateway-dev/curl:7.83.1
+      imagePullPolicy: IfNotPresent
+      command:
+        - "tail"
+        - "-f"
+        - "/dev/null"
+      volumeMounts:
+        - name: client
+          mountPath: /etc/forward-client-cert/client
+          readOnly: true
+        - name: ca
+          mountPath: /etc/forward-client-cert/ca
+          readOnly: true
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "64Mi"
+        limits:
+          cpu: "200m"
+          memory: "128Mi"
+  volumes:
+    - name: client
+      secret:
+        secretName: forward-client-cert-alice
+        defaultMode: 0444
+    - name: ca
+      secret:
+        secretName: forward-client-cert-ca
+        defaultMode: 0444
