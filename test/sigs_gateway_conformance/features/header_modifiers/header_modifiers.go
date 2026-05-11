@@ -87,11 +87,11 @@ var RequestHeaderModifier = confsuite.ConformanceTest{
 			},
 		}
 
-		for i, tc := range testCases {
+		for _, tc := range testCases {
 			t.Run(tc.Request.Path, func(t *testing.T) {
 				http.MakeRequestAndExpectEventuallyConsistentResponse(
 					t, s.RoundTripper, s.TimeoutConfig,
-					gwAddr, testCases[i],
+					gwAddr, tc,
 				)
 			})
 		}

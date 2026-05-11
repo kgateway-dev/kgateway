@@ -21,10 +21,10 @@ var sharedTestdata embed.FS
 
 const gatewayClassName = "kgateway"
 
-// TestConformance exercises all kgateway Gateway API conformance scenarios.
+// TestE2EConformanceFramework exercises all kgateway Gateway API conformance scenarios.
 // It sets up a shared gateway and backend, then runs each feature's test suite
 // as parallel subtests, all using the same ConformanceTestSuite instance.
-func TestConformance(t *testing.T) {
+func TestE2EConformanceFramework(t *testing.T) {
 	manifestFS := []fs.FS{
 		sharedTestdata,
 		basicrouting.ManifestFS,
