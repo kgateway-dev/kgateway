@@ -10,6 +10,8 @@ import (
 	"sigs.k8s.io/gateway-api/conformance/utils/http"
 	"sigs.k8s.io/gateway-api/conformance/utils/kubernetes"
 	confsuite "sigs.k8s.io/gateway-api/conformance/utils/suite"
+
+	"github.com/kgateway-dev/kgateway/v2/test/sigs_gateway_conformance/common"
 )
 
 //go:embed testdata
@@ -17,7 +19,6 @@ var ManifestFS embed.FS
 
 const (
 	testNamespace = "kgateway-conformance-test"
-	gatewayName   = "basic-gateway"
 	routeName     = "header-modifiers-route"
 	routeHostname = "header-modifiers.example.com"
 	echoBackend   = "echo-server"
@@ -36,7 +37,7 @@ var RequestHeaderModifier = confsuite.ConformanceTest{
 	Description: "An HTTPRoute with request header modifier filters adds headers to backend requests.",
 	Manifests:   []string{"testdata/header-modifiers-http-route.yaml"},
 	Test: func(t *testing.T, s *confsuite.ConformanceTestSuite) {
-		gwNN := types.NamespacedName{Name: gatewayName, Namespace: testNamespace}
+		gwNN := types.NamespacedName{Name: common.GatewayName, Namespace: testNamespace}
 		routeNN := types.NamespacedName{Name: routeName, Namespace: testNamespace}
 
 		gwAddr := kubernetes.GatewayAndHTTPRoutesMustBeAccepted(

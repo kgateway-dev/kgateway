@@ -13,6 +13,8 @@ import (
 	"sigs.k8s.io/gateway-api/conformance/utils/http"
 	"sigs.k8s.io/gateway-api/conformance/utils/kubernetes"
 	confsuite "sigs.k8s.io/gateway-api/conformance/utils/suite"
+
+	"github.com/kgateway-dev/kgateway/v2/test/sigs_gateway_conformance/common"
 )
 
 //go:embed testdata
@@ -24,7 +26,6 @@ const (
 	routeHostname    = "example.com"
 	echoBackendName  = "echo-server"
 	testNamespace    = "kgateway-conformance-test"
-	gatewayName      = "basic-gateway"
 	routeName        = "basicrouting-route"
 )
 
@@ -42,7 +43,7 @@ var GatewayWithRoute = confsuite.ConformanceTest{
 	Description: "An HTTPRoute attached to a Gateway routes requests to the echo backend on each listener port.",
 	Manifests:   []string{"testdata/basicrouting-http-route.yaml"},
 	Test: func(t *testing.T, s *confsuite.ConformanceTestSuite) {
-		gwNN := types.NamespacedName{Name: gatewayName, Namespace: testNamespace}
+		gwNN := types.NamespacedName{Name: common.GatewayName, Namespace: testNamespace}
 		routeNN := types.NamespacedName{Name: routeName, Namespace: testNamespace}
 
 		gwAddr := kubernetes.GatewayAndHTTPRoutesMustBeAccepted(
