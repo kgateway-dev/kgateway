@@ -2583,7 +2583,7 @@ var _ = Describe("DeployObjs", func() {
 			Data:       map[string]string{"foo": "bar"},
 		}
 		fc := fake.NewClient(GinkgoT(), cm.DeepCopy())
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
 			Fail("Patch should not be called")
 			return errors.New("unexpected Patch call")
 		})
@@ -2605,7 +2605,7 @@ var _ = Describe("DeployObjs", func() {
 		// obj to deploy won't have a status set.
 		pod2.Status = corev1.PodStatus{}
 		fc := fake.NewClient(GinkgoT(), pod1.DeepCopy())
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
 			Fail("Patch should not be called")
 			return errors.New("unexpected Patch call")
 		})
@@ -2625,7 +2625,7 @@ var _ = Describe("DeployObjs", func() {
 		fc := fake.NewClient(GinkgoT(), cm.DeepCopy())
 		cm.Data = map[string]string{"foo": "bar", "bar": "baz"}
 		patched := false
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
 			patched = true
 			return nil
 		})
@@ -2643,7 +2643,7 @@ var _ = Describe("DeployObjs", func() {
 		}
 		fc := fake.NewClient(GinkgoT())
 		patched := false
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
 			patched = true
 			return nil
 		})
