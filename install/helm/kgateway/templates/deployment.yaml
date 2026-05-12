@@ -9,9 +9,19 @@
 {{- $controllerTolerations := ternary .Values.controller.tolerations .Values.tolerations (not (kindIs "invalid" .Values.controller.tolerations)) }}
 {{- $controllerTopologySpreadConstraints := ternary .Values.controller.topologySpreadConstraints .Values.topologySpreadConstraints (not (kindIs "invalid" .Values.controller.topologySpreadConstraints)) }}
 {{- $defaultReadinessProbe := dict "httpGet" (dict "path" "/readyz" "port" .Values.controller.service.ports.health) "initialDelaySeconds" 1 "periodSeconds" 10 }}
-{{- $controllerReadinessProbe := merge (.Values.controller.readinessProbe | default dict) $defaultReadinessProbe }}
+{{- $readinessProbeDefaults := deepCopy $defaultReadinessProbe }}
+{{- $controllerReadinessProbe := deepCopy (.Values.controller.readinessProbe | default dict) }}
+{{- if or (hasKey $controllerReadinessProbe "exec") (hasKey $controllerReadinessProbe "tcpSocket") (hasKey $controllerReadinessProbe "grpc") }}
+{{- $readinessProbeDefaults = omit $readinessProbeDefaults "httpGet" }}
+{{- end }}
+{{- $controllerReadinessProbe = merge $controllerReadinessProbe $readinessProbeDefaults }}
 {{- $defaultStartupProbe := dict "httpGet" (dict "path" "/readyz" "port" .Values.controller.service.ports.health) "initialDelaySeconds" 0 "periodSeconds" 1 "failureThreshold" 600 }}
-{{- $controllerStartupProbe := merge (.Values.controller.startupProbe | default dict) $defaultStartupProbe }}
+{{- $startupProbeDefaults := deepCopy $defaultStartupProbe }}
+{{- $controllerStartupProbe := deepCopy (.Values.controller.startupProbe | default dict) }}
+{{- if or (hasKey $controllerStartupProbe "exec") (hasKey $controllerStartupProbe "tcpSocket") (hasKey $controllerStartupProbe "grpc") }}
+{{- $startupProbeDefaults = omit $startupProbeDefaults "httpGet" }}
+{{- end }}
+{{- $controllerStartupProbe = merge $controllerStartupProbe $startupProbeDefaults }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
