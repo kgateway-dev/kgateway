@@ -107,9 +107,9 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: |-
-            Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-extauth-policy: extauth: gateway extension gwtest/nonexistent-extauth-extension not found
-            gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-extproc-policy: extproc: gateway extension gwtest/nonexistent-extproc-extension not found
-            gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-ratelimit-policy: ratelimit: gateway extension gwtest/nonexistent-ratelimit-extension not found
+            Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-extauth-policy: extauth: gwtest/nonexistent-extauth-extension: gateway extension not found
+            gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-extproc-policy: extproc: gwtest/nonexistent-extproc-extension: gateway extension not found
+            gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-ratelimit-policy: ratelimit: gwtest/nonexistent-ratelimit-extension: gateway extension not found
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
@@ -133,7 +133,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: gateway extension gwtest/nonexistent-extauth-extension
+          message: 'extauth: gwtest/nonexistent-extauth-extension: gateway extension
             not found'
           reason: Invalid
           status: "False"
@@ -153,7 +153,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'extproc: gateway extension gwtest/nonexistent-extproc-extension
+          message: 'extproc: gwtest/nonexistent-extproc-extension: gateway extension
             not found'
           reason: Invalid
           status: "False"
@@ -173,7 +173,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'ratelimit: gateway extension gwtest/nonexistent-ratelimit-extension
+          message: 'ratelimit: gwtest/nonexistent-ratelimit-extension: gateway extension
             not found'
           reason: Invalid
           status: "False"
