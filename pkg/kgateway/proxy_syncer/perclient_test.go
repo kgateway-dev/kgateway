@@ -759,6 +759,90 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 		"snapshot must stay published after an unresolvable BackendRef arrives; withdrawing it strands Envoy on restart")
 }
 
+// TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly pins the
+// defensive behaviour of snapshotPerClient when the per-client clusters
+// collection is empty for a UCC. In production this is hard to reach because
+// finalBackends emits a BackendObjectIR for every Service port in the
+// cluster, so the per-client clusters collection is non-empty even for a
+// gateway whose HTTPRoutes only use RequestRedirect or DirectResponse. The
+// test constructs that condition synthetically — zero entries in the cluster
+// collection and zero referenced clusters in the route config — to exercise
+// the branch that treats a nil clusterSnapshot entry as "zero clusters"
+// rather than "not yet computed". Without that branch the snapshot would
+// stall indefinitely whenever the path is reached (controller starting
+// before Service informers sync, or a deployment whose only backends are
+// non-K8s and all fail translation); with it, publishing proceeds because
+// the referenced-cluster gate has nothing to wait for.
+func TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
+	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
+
+	// Routes with only a Redirect action — no cluster references.
+	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{{
+				Name:    "vhost",
+				Domains: []string{"*"},
+				Routes: []*envoyroutev3.Route{{
+					Name: "redirect-only",
+					Action: &envoyroutev3.Route_Redirect{
+						Redirect: &envoyroutev3.RedirectAction{
+							SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_HttpsRedirect{HttpsRedirect: true},
+						},
+					},
+				}},
+			}},
+		},
+	})
+	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
+	referencedClusters := collectReferencedClusters(routes, listeners)
+	g.Expect(referencedClusters).To(gomega.BeEmpty(), "redirect-only routes must not produce cluster references")
+
+	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
+		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:             routes,
+		Listeners:          listeners,
+		ReferencedClusters: referencedClusters,
+	}})
+
+	// No per-client clusters at all for this UCC — simulates a deployment with
+	// only redirect-only routes and no Service-backed backends contributing
+	// clusters. clusterSnapshot's collection handler returns nil for this UCC.
+	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, nil)
+	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
+
+	snapshots := snapshotPerClient(
+		krtutil.KrtOptions{},
+		uccs,
+		mostXdsSnapshots,
+		PerClientEnvoyEndpoints{
+			endpoints: endpointCol,
+			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+				return []string{ep.Client.ResourceName()}
+			}),
+		},
+		PerClientEnvoyClusters{
+			clusters: clusterCol,
+			index: krtpkg.UnnamedIndex(clusterCol, func(cluster uccWithCluster) []string {
+				return []string{cluster.Client.ResourceName()}
+			}),
+		},
+	)
+
+	g.Eventually(func() int {
+		return len(snapshots.List())
+	}, 2*time.Second, 20*time.Millisecond).Should(gomega.Equal(1),
+		"a snapshot must publish even when there are zero per-client clusters and zero referenced clusters")
+
+	snap := snapshots.List()[0].snap
+	g.Expect(snap.Resources[envoycachetypes.Cluster].Items).To(gomega.BeEmpty())
+	g.Expect(snap.Resources[envoycachetypes.Listener].Items).To(gomega.HaveKey("listener"))
+}
+
 func mapKeys[M ~map[K]V, K comparable, V any](m M) []K {
 	keys := make([]K, 0, len(m))
 	for k := range m {

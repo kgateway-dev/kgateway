@@ -14,11 +14,16 @@ import (
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+
+	_ "embed"
 )
 
 // protoDebugPrefixRe matches the non-deterministic "goo.gle/..." URL that newer
 // protobuf C++ DebugString() prepends to text-format output.
 var protoDebugPrefixRe = regexp.MustCompile(`goo\.gle/\S+\s*`)
+
+//go:embed default_envoy_image.txt
+var defaultEnvoyImageFile string
 
 var (
 	defaultEnvoyPath = "/usr/local/bin/envoy"
@@ -28,7 +33,7 @@ var (
 	//       fix the validation test. CI can override this with KGATEWAY_VALIDATOR_ENVOY_IMAGE to run
 	//       against an image built from the current branch instead of waiting for the published tag.
 	//       Also probably need to change this version when backporting or creating a new release
-	defaultEnvoyImage = "ghcr.io/kgateway-dev/envoy-wrapper:v2.3.0-main"
+	defaultEnvoyImage = strings.TrimSpace(defaultEnvoyImageFile)
 	defaultDockerPull = "always"
 
 	validatorEnvoyImageEnvVar       = "KGATEWAY_VALIDATOR_ENVOY_IMAGE"

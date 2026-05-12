@@ -50,6 +50,7 @@ var logger = logging.New("gateway-controller")
 var _ manager.LeaderElectionRunnable = (*gatewayReconciler)(nil)
 
 type gatewayReconciler struct {
+	ctx            context.Context
 	deployer       *deployer.Deployer
 	gwParams       *internaldeployer.GatewayParameters
 	scheme         *runtime.Scheme
@@ -231,6 +232,7 @@ func (r *gatewayReconciler) NeedLeaderElection() bool {
 
 // Start starts the Gateway reconciler and blocks until the stop channel is closed.
 func (r *gatewayReconciler) Start(ctx context.Context) error {
+	r.ctx = ctx
 	// Add all clients handlers on gatewayReconciler
 	hasSynced := []cache.InformerSynced{
 		r.gwClient.HasSynced,
@@ -303,7 +305,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	}
 
 	logger.Info("reconciling Gateway", "ref", req)
-	ctx := context.Background()
+	ctx := r.ctx
 	objs, err := r.deployer.GetObjsToDeploy(ctx, gw)
 	if err != nil {
 		if errors.Is(err, internaldeployer.ErrNoValidPorts) {

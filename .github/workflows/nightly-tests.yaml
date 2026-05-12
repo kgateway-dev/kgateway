@@ -8,15 +8,14 @@ env:
 
 on:
   schedule:
-    - cron: "0 5 * * *" # every day @ 05:00 UTC, run tests against latest main
+    - cron: "0 5 * * *" # every day @ 05:00 UTC, run tests against the workflow commit
   workflow_dispatch:
     inputs:
-      branch:
-        description: "The branch to run tests against"
-        type: choice
-        options:
-          - main
-          - workflow_initiating_branch
+      target_ref:
+        description: "The Git ref to run tests against. Empty uses the workflow run commit."
+        type: string
+        required: false
+        default: ""
       run-conformance:
         description: "Run conformance tests"
         type: boolean
@@ -31,25 +30,35 @@ on:
         default: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ inputs.target_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  determine_branch:
-    name: Determine Branch
+  determine_ref:
+    name: Determine Ref
     runs-on: ubuntu-22.04
+    outputs:
+      checkout_ref: ${{ steps.determine.outputs.checkout_ref }}
+      display_ref: ${{ steps.determine.outputs.display_ref }}
     steps:
-      - name: Determine Branch
+      - id: determine
+        name: Determine Ref
         shell: bash
+        env:
+          INPUT_TARGET_REF: ${{ inputs.target_ref }}
         run: |
-          BRANCH=main
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.branch }}" == "workflow_initiating_branch" ]]; then
-            BRANCH="${{ inputs.branch }}"
+          checkout_ref="${INPUT_TARGET_REF:-}"
+          display_ref="${INPUT_TARGET_REF:-}"
+          if [[ -z "${checkout_ref}" ]]; then
+            checkout_ref="${GITHUB_SHA}"
+            display_ref="${GITHUB_REF_NAME}@${GITHUB_SHA::7}"
           fi
-          echo "BRANCH=${BRANCH}" >> "$GITHUB_ENV"
+          echo "checkout_ref=${checkout_ref}" >> "$GITHUB_OUTPUT"
+          echo "display_ref=${display_ref}" >> "$GITHUB_OUTPUT"
 
   kube_gateway_api_conformance_tests:
-    name: Conformance (branch=main, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }}, gw-api=${{matrix.gateway-api-channel}})
+    name: Conformance (ref=${{ needs.determine_ref.outputs.display_ref }}, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }}, gw-api=${{matrix.gateway-api-channel}})
+    needs: determine_ref
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
@@ -65,7 +74,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: ${{ env.BRANCH }}
+          ref: ${{ needs.determine_ref.outputs.checkout_ref }}
       - name: Dotenv Action
         uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
         id: dotenv
@@ -81,7 +90,8 @@ jobs:
           summarize-report: true
 
   kube_gateway_api_load_tests:
-    name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
+    name: Load Tests (ref=${{ needs.determine_ref.outputs.display_ref }}, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
+    needs: determine_ref
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
@@ -98,11 +108,12 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: ${{ env.BRANCH }}
+          ref: ${{ needs.determine_ref.outputs.checkout_ref }}
       - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
-    name: E2E (k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
+    name: E2E (ref=${{ needs.determine_ref.outputs.display_ref }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
+    needs: determine_ref
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
@@ -132,7 +143,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: ${{ env.BRANCH }}
+          ref: ${{ needs.determine_ref.outputs.checkout_ref }}
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
       - name: Dotenv Action

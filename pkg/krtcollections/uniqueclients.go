@@ -231,6 +231,9 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	defer x.stateLock.Unlock()
 	c, ok := x.clients[sid]
 	if !ok {
+		if err := logAndCheckEnvoyVersion(x.logger, r.GetNode()); err != nil {
+			return "", false, err
+		}
 		var locality ir.PodLocality
 		var ns string
 		var labels map[string]string
@@ -384,6 +387,51 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 	// the unique client resource name as well.
 	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc.ResourceName())
 	r.GetNode().Metadata = nodeMd
+	return nil
+}
+
+// minEnvoy{Minor,Patch}Version is the minimum Envoy version (under major 1) required to connect.
+// Old Envoy is not forward-compatible with newer control plane xDS schemas; new Envoy is
+// backward-compatible with older control planes, so we enforce a floor here to prevent a broken
+// state during helm upgrades.
+const (
+	minEnvoyMinorVersion = 37
+	minEnvoyPatchVersion = 2
+)
+
+func logAndCheckEnvoyVersion(logger *slog.Logger, node *envoycorev3.Node) error {
+	if node == nil {
+		return nil
+	}
+
+	versionStr := "unknown"
+	var major, minor, patch uint32
+	knownVersion := false
+
+	switch v := node.GetUserAgentVersionType().(type) {
+	case *envoycorev3.Node_UserAgentBuildVersion:
+		sv := v.UserAgentBuildVersion.GetVersion()
+		if sv != nil {
+			major = sv.GetMajorNumber()
+			minor = sv.GetMinorNumber()
+			patch = sv.GetPatch()
+			versionStr = fmt.Sprintf("%d.%d.%d", major, minor, patch)
+			knownVersion = true
+		}
+	case *envoycorev3.Node_UserAgentVersion:
+		versionStr = v.UserAgentVersion
+	}
+
+	logger.Info("envoy proxy connected", "version", versionStr, "node_id", node.GetId(), "user_agent", node.GetUserAgentName())
+
+	if !knownVersion {
+		return nil
+	}
+
+	if major < 1 || (major == 1 && minor < minEnvoyMinorVersion) || (major == 1 && minor == minEnvoyMinorVersion && patch < minEnvoyPatchVersion) {
+		return fmt.Errorf("envoy version %s is not compatible with this control plane: minimum required version is 1.%d.%d; upgrade envoy before upgrading the control plane",
+			versionStr, minEnvoyMinorVersion, minEnvoyPatchVersion)
+	}
 	return nil
 }
 

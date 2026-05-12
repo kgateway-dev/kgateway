@@ -409,6 +409,18 @@ type EnvoyBootstrap struct {
 	//
 	// +optional
 	DnsResolver *DnsResolver `json:"dnsResolver,omitempty"`
+
+	// EnableReadinessProbeProxyProtocol enables the PROXY protocol listener filter
+	// on the kgateway readiness listener (port 8082).
+	// Set this to true if and only if the load balancer in front of the gateway
+	// prepends PROXY protocol headers to incoming TCP connections targeting the
+	// readiness port. For example, when using an AWS NLB with proxy protocol v2
+	// enabled at the target group level
+	// (`service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"`).
+	// Defaults to false.
+	//
+	// +optional
+	EnableReadinessProbeProxyProtocol *bool `json:"enableReadinessProbeProxyProtocol,omitempty"`
 }
 
 // LogFormat configures Envoy's application log format. Either JSON or Text must be specified.
@@ -465,6 +477,13 @@ func (in *EnvoyBootstrap) GetDnsResolver() *DnsResolver {
 		return nil
 	}
 	return in.DnsResolver
+}
+
+func (in *EnvoyBootstrap) GetEnableReadinessProbeProxyProtocol() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.EnableReadinessProbeProxyProtocol
 }
 
 func (in *DnsResolver) GetUdpMaxQueries() *int32 {

@@ -77,9 +77,9 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructCompression(policyCR.Spec, &outSpec)
 
 	// Construct header modifiers specific IR
-	constructHeaderModifiers(policyCR.Spec, &outSpec)
-	// Construct header modifiers specific IR
-	constructHeaderModifiers(policyCR.Spec, &outSpec)
+	if err := constructHeaderModifiers(krtctx, policyCR, c.commoncol.Secrets, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
 	// Construct auto host rewrite specific IR
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
