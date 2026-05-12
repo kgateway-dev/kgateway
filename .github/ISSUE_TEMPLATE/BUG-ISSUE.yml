@@ -79,11 +79,11 @@ body:
     validations:
       required: false
   - type: textarea
-    id: envoy-logs
+    id: proxy-logs
     attributes:
       label: Proxy pod logs
       description: |
-        The envoy logs (from all running pods)
+        The proxy logs (from all running pods)
       placeholder: |
         This can be found by running :
         kubectl -n <proxy namespace> logs -l app.kubernetes.io/component=proxy
