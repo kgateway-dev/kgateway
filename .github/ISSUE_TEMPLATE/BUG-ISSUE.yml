@@ -86,8 +86,8 @@ body:
         The envoy logs (from all running pods)
       placeholder: |
         This can be found by running :
-        kubectl -n <proxy namespace> logs -l app.kubernetes.io/managed-by=kgateway
-        eg: kubectl -n kgateway-system logs -l app.kubernetes.io/managed-by=kgateway
+        kubectl -n <proxy namespace> logs -l app.kubernetes.io/component=proxy
+        eg: kubectl -n kgateway-system logs -l app.kubernetes.io/component=proxy
     validations:
       required: false
   - type: textarea
