@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/gateway-api/conformance/utils/http"
 	"sigs.k8s.io/gateway-api/conformance/utils/kubernetes"
 	confsuite "sigs.k8s.io/gateway-api/conformance/utils/suite"
-	"sigs.k8s.io/gateway-api/pkg/features"
 )
 
 //go:embed testdata
@@ -25,7 +24,7 @@ const (
 	routeHostname    = "example.com"
 	echoBackendName  = "echo-server"
 	testNamespace    = "kgateway-conformance-test"
-	gatewayName      = "conformance-gateway"
+	gatewayName      = "basic-gateway"
 	routeName        = "basicrouting-route"
 )
 
@@ -41,11 +40,7 @@ var Tests = []confsuite.ConformanceTest{
 var GatewayWithRoute = confsuite.ConformanceTest{
 	ShortName:   "GatewayWithRoute",
 	Description: "An HTTPRoute attached to a Gateway routes requests to the echo backend on each listener port.",
-	Features: []features.FeatureName{
-		features.SupportGateway,
-		features.SupportHTTPRoute,
-	},
-	Manifests: []string{"testdata/basicrouting-http-route.yaml"},
+	Manifests:   []string{"testdata/basicrouting-http-route.yaml"},
 	Test: func(t *testing.T, s *confsuite.ConformanceTestSuite) {
 		gwNN := types.NamespacedName{Name: gatewayName, Namespace: testNamespace}
 		routeNN := types.NamespacedName{Name: routeName, Namespace: testNamespace}
