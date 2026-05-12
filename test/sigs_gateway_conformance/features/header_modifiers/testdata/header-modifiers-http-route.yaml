@@ -1,0 +1,38 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: header-modifiers-route
+  namespace: kgateway-conformance-test
+spec:
+  parentRefs:
+    - name: basic-gateway
+      namespace: kgateway-conformance-test
+  hostnames:
+    - "header-modifiers.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /set
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: X-Test-Header
+                value: test-value
+      backendRefs:
+        - name: echo-backend
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /add
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            add:
+              - name: X-Added-Header
+                value: added-value
+      backendRefs:
+        - name: echo-backend
+          port: 8080

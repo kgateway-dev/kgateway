@@ -5,7 +5,7 @@ metadata:
   namespace: kgateway-conformance-test
 spec:
   parentRefs:
-    - name: conformance-gateway
+    - name: basic-gateway
       namespace: kgateway-conformance-test
   hostnames:
     - "example.com"
