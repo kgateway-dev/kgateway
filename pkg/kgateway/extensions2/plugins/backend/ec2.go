@@ -335,10 +335,6 @@ func (l *awsEc2InstanceLister) ListInstances(ctx context.Context, source ec2Cred
 					privateIP:  awssdk.ToString(instance.PrivateIpAddress),
 					publicIP:   awssdk.ToString(instance.PublicIpAddress),
 					zone:       awssdk.ToString(instance.Placement.AvailabilityZone),
-					tags:       make(map[string]string, len(instance.Tags)),
-				}
-				for _, tag := range instance.Tags {
-					discovered.tags[awssdk.ToString(tag.Key)] = awssdk.ToString(tag.Value)
 				}
 				if discovered.privateIP == "" && discovered.publicIP == "" {
 					logger.Warn(
@@ -350,6 +346,10 @@ func (l *awsEc2InstanceLister) ListInstances(ctx context.Context, source ec2Cred
 						"availability_zone", discovered.zone,
 					)
 					continue
+				}
+				discovered.tags = make(map[string]string, len(instance.Tags))
+				for _, tag := range instance.Tags {
+					discovered.tags[awssdk.ToString(tag.Key)] = awssdk.ToString(tag.Value)
 				}
 				instances = append(instances, discovered)
 			}
