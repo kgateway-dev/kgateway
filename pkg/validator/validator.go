@@ -10,10 +10,11 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	atomic_duration "go.uber.org/atomic"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
@@ -59,9 +60,8 @@ type Validator interface {
 
 // binaryValidator validates envoy using the binary.
 type binaryValidator struct {
-	calls    int64
-	duration time.Duration
-	mu       sync.Mutex
+	Calls    atomic.Uint64
+	Duration atomic_duration.Duration
 	path     string
 }
 
@@ -78,14 +78,12 @@ func NewBinary(path ...string) Validator {
 func (b *binaryValidator) Validate(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) error {
 	before := time.Now()
 	defer func() {
-		b.mu.Lock()
-		b.duration += time.Since(before)
-		b.calls++
-		// Print the cost every 10 calls so the logs aren't spammed
-		if b.calls%10 == 0 {
-			logger.Debug("total calls to envoy validation", "calls", b.calls, "duration", b.duration)
+		b.Duration.Add(time.Since(before))
+		b.Calls.Add(1)
+		// Print the cost every 100 calls so the logs aren't spammed
+		if b.Calls.Load()%100 == 0 {
+			logger.Debug("total calls to envoy validation", "calls", b.Calls.Load(), "duration", b.Duration.String())
 		}
-		b.mu.Unlock()
 	}()
 	marshalled, err := prepareBootstrapConfig(bootstrap)
 	if err != nil {
