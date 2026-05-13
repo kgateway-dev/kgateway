@@ -320,8 +320,6 @@ spec:
         prometheus.io/path: "/metrics"
         prometheus.io/port: "9092"
         prometheus.io/scrape: "true"
-        controller-only: "true"
-        overridden: controller
       labels:
         kgateway: kgateway
         app.kubernetes.io/name: kgateway
@@ -329,12 +327,8 @@ spec:
         app.kubernetes.io/component: controller
     spec:
       serviceAccountName: test-release-kgateway
-      securityContext:
-        runAsNonRoot: true
       containers:
         - name: controller
-          securityContext:
-            readOnlyRootFilesystem: true
           image: "cr.kgateway.dev/kgateway-dev/kgateway:v0.0.1"
           imagePullPolicy: IfNotPresent
           ports:
@@ -348,18 +342,19 @@ spec:
               name: metrics
               protocol: TCP
           readinessProbe:
+            failureThreshold: 3
             httpGet:
-              path: /readyz
-              port: 9093
-            initialDelaySeconds: 1
-            periodSeconds: 10
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 20
           startupProbe:
-            failureThreshold: 600
+            failureThreshold: 60
             httpGet:
-              path: /readyz
-              port: 9093
-            initialDelaySeconds: 0
-            periodSeconds: 1
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
           env:
             - name: GOMEMLIMIT
               valueFrom:
@@ -398,27 +393,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           resources:
-            limits:
-              cpu: 200m
-      nodeSelector:
-        kubernetes.io/arch: amd64
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app.kubernetes.io/name: kgateway
-              topologyKey: kubernetes.io/hostname
-            weight: 100
-      tolerations:
-        - effect: NoExecute
-          key: controller
-          operator: Exists
-      topologySpreadConstraints:
-        - labelSelector:
-            matchLabels:
-              source: controller
-          maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
+            {}
