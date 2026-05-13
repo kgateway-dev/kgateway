@@ -19,6 +19,42 @@ var (
 	gatewayWideInvalidPolicyManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-wide-invalid-policy.yaml")
 	listenerSpecificInvalidPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-specific-invalid-policy.yaml")
 	listenerMergeBlastRadiusManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-merge-blast-radius.yaml")
+	missingExtensionManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-attached-missing-extension.yaml")
+	dualErrorManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-attached-dual-error.yaml")
+
+	// Service that fronts the kgateway controller's /metrics endpoint, created
+	// by setup.yaml in the install namespace (where the controller pod lives).
+	kgatewayMetricsObjectMeta = metav1.ObjectMeta{
+		Name:      "kgateway-metrics",
+		Namespace: "route-replacement-test",
+	}
+
+	invalidPolicy = metav1.ObjectMeta{
+		Name:      "invalid-traffic-policy",
+		Namespace: "default",
+	}
+
+	missingExtensionRoute = &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "missing-extension-route",
+			Namespace: "default",
+		},
+	}
+	missingExtensionPolicy = metav1.ObjectMeta{
+		Name:      "missing-extension-policy",
+		Namespace: "default",
+	}
+
+	dualErrorRoute = &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "dual-error-route",
+			Namespace: "default",
+		},
+	}
+	dualErrorInvalidConfigPolicy = metav1.ObjectMeta{
+		Name:      "dual-error-invalid-config-policy",
+		Namespace: "default",
+	}
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",

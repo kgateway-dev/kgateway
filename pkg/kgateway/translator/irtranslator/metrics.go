@@ -18,9 +18,9 @@ const (
 	portLabel             = "port"
 	namespaceLabel        = "namespace"
 
-	errTypeRefNotFound = "ref_not_found"
-	errTypeInvalidCfg  = "invalid_config"
-	errTypeUnknown     = "unknown"
+	ErrTypeRefNotFound = "ref_not_found"
+	ErrTypeInvalidCfg  = "invalid_config"
+	ErrTypeUnknown     = "unknown"
 )
 
 var domainsPerListener = metrics.NewGauge(
@@ -93,22 +93,23 @@ func incRouteReplacementMetric(gw ir.GatewayIR, err error) {
 
 // classifyErr returns the error_type label for err. With errors.Join, the first
 // matching leaf wins, so the order in which callers join errors is significant.
-func classifyErr(JoinedErr error) string {
-	for _, err := range ir.FlattenJoinedErr(JoinedErr) {
+func classifyErr(joinedErr error) string {
+	for _, err := range ir.FlattenJoinedErr(joinedErr) {
 		switch {
 		case errors.Is(err, krtcollections.ErrPolicyNotFound),
 			errors.Is(err, krtcollections.ErrMissingReferenceGrant),
 			errors.Is(err, pluginutils.ErrGatewayExtensionNotFound):
-			return errTypeRefNotFound
+			return ErrTypeRefNotFound
 		case errors.Is(err, ErrInvalidMatcher),
 			errors.Is(err, ErrInvalidRoute),
 			errors.Is(err, krtcollections.ErrUnknownBackendKind):
-			return errTypeInvalidCfg
+			return ErrTypeInvalidCfg
 		}
 		var extTypeErr *pluginutils.ExtensionTypeError
-		if errors.As(err, &extTypeErr) {
-			return errTypeInvalidCfg
+		var polErr *ir.PolicyError
+		if errors.As(err, &extTypeErr) || errors.As(err, &polErr) {
+			return ErrTypeInvalidCfg
 		}
 	}
-	return errTypeUnknown
+	return ErrTypeUnknown
 }

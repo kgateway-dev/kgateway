@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -28,6 +27,10 @@ func TestDomainsPerListenerMetric(t *testing.T) {
 
 	gw := ir.GatewayIR{
 		SourceObject: &ir.Gateway{
+			ObjectSource: ir.ObjectSource{
+				Name:      "gateway",
+				Namespace: "default",
+			},
 			Listeners: []ir.Listener{
 				{Listener: gwv1.Listener{
 					Name:     "listener1",
@@ -40,18 +43,14 @@ func TestDomainsPerListenerMetric(t *testing.T) {
 					Protocol: gwv1.HTTPSProtocolType,
 				}},
 			},
-			Obj: &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "gateway",
-					Namespace: "default",
-				},
-			},
+			Obj: &gwv1.Gateway{},
 		},
 	}
 
 	lis := ir.ListenerIR{
-		Name:     "listener1",
-		BindPort: 80,
+		Name:        "listener1",
+		BindAddress: "0.0.0.0",
+		BindPort:    80,
 		HttpFilterChain: []ir.HttpFilterChainIR{{
 			Vhosts: []*ir.VirtualHost{
 				{
@@ -78,8 +77,9 @@ func TestDomainsPerListenerMetric(t *testing.T) {
 	}
 
 	lis2 := ir.ListenerIR{
-		Name:     "listener2",
-		BindPort: 443,
+		Name:        "listener2",
+		BindAddress: "0.0.0.0",
+		BindPort:    443,
 		HttpFilterChain: []ir.HttpFilterChainIR{{
 			Vhosts: []*ir.VirtualHost{
 				{
@@ -126,72 +126,77 @@ func TestClassifyErr(t *testing.T) {
 		{
 			name: "nil classifies as unknown",
 			err:  nil,
-			want: errTypeUnknown,
+			want: ErrTypeUnknown,
 		},
 		{
 			name: "ErrPolicyNotFound classifies as ref_not_found",
 			err:  krtcollections.ErrPolicyNotFound,
-			want: errTypeRefNotFound,
+			want: ErrTypeRefNotFound,
 		},
 		{
 			name: "ErrMissingReferenceGrant classifies as ref_not_found",
 			err:  krtcollections.ErrMissingReferenceGrant,
-			want: errTypeRefNotFound,
+			want: ErrTypeRefNotFound,
 		},
 		{
 			name: "ErrGatewayExtensionNotFound classifies as ref_not_found",
 			err:  pluginutils.ErrGatewayExtensionNotFound,
-			want: errTypeRefNotFound,
+			want: ErrTypeRefNotFound,
 		},
 		{
 			name: "wrapped ErrGatewayExtensionNotFound still classifies as ref_not_found",
 			err:  fmt.Errorf("extauth: %w", fmt.Errorf("default/missing: %w", pluginutils.ErrGatewayExtensionNotFound)),
-			want: errTypeRefNotFound,
+			want: ErrTypeRefNotFound,
 		},
 		{
 			name: "ErrInvalidMatcher classifies as invalid_config",
 			err:  ErrInvalidMatcher,
-			want: errTypeInvalidCfg,
+			want: ErrTypeInvalidCfg,
 		},
 		{
 			name: "ErrInvalidRoute classifies as invalid_config",
 			err:  ErrInvalidRoute,
-			want: errTypeInvalidCfg,
+			want: ErrTypeInvalidCfg,
 		},
 		{
 			name: "ErrUnknownBackendKind classifies as invalid_config",
 			err:  krtcollections.ErrUnknownBackendKind,
-			want: errTypeInvalidCfg,
+			want: ErrTypeInvalidCfg,
 		},
 		{
 			name: "ExtensionTypeError classifies as invalid_config via errors.As",
 			err:  pluginutils.ErrInvalidExtensionType(kgateway.GatewayExtensionTypeExtAuth),
-			want: errTypeInvalidCfg,
+			want: ErrTypeInvalidCfg,
 		},
 		{
 			name: "wrapped ExtensionTypeError classifies as invalid_config",
 			err:  fmt.Errorf("extauth: %w", pluginutils.ErrInvalidExtensionType(kgateway.GatewayExtensionTypeExtAuth)),
-			want: errTypeInvalidCfg,
+			want: ErrTypeInvalidCfg,
 		},
 		{
 			name: "bare unrecognised error classifies as unknown",
 			err:  errors.New("some random error"),
-			want: errTypeUnknown,
+			want: ErrTypeUnknown,
+		},
+		{
+			name: "PolicyError-wrapped unrecognised error classifies as invalid_config",
+			err:  &ir.PolicyError{Err: errors.New("invalid template syntax")},
+			want: ErrTypeInvalidCfg,
 		},
 		{
 			name: "first matching leaf wins on errors.Join",
 			err:  errors.Join(pluginutils.ErrGatewayExtensionNotFound, ErrInvalidMatcher),
-			want: errTypeRefNotFound,
+			want: ErrTypeRefNotFound,
 		},
 		{
 			name: "first matching leaf wins on errors.Join (reverse order)",
 			err:  errors.Join(ErrInvalidMatcher, pluginutils.ErrGatewayExtensionNotFound),
-			want: errTypeInvalidCfg,
+			want: ErrTypeInvalidCfg,
 		},
 		{
 			name: "join of all-unknown leaves classifies as unknown",
 			err:  errors.Join(errors.New("a"), errors.New("b")),
-			want: errTypeUnknown,
+			want: ErrTypeUnknown,
 		},
 	}
 	for _, tc := range tests {
@@ -224,7 +229,7 @@ func TestIncRouteReplacementLabels(t *testing.T) {
 			Labels: []metrics.Label{
 				{Name: gatewayNamespaceLabel, Value: "ns-a"},
 				{Name: gatewayLabel, Value: "gw-a"},
-				{Name: errorTypeLabel, Value: errTypeRefNotFound},
+				{Name: errorTypeLabel, Value: ErrTypeRefNotFound},
 			},
 			Value: 1,
 		},
@@ -232,7 +237,7 @@ func TestIncRouteReplacementLabels(t *testing.T) {
 			Labels: []metrics.Label{
 				{Name: gatewayNamespaceLabel, Value: "ns-a"},
 				{Name: gatewayLabel, Value: "gw-a"},
-				{Name: errorTypeLabel, Value: errTypeInvalidCfg},
+				{Name: errorTypeLabel, Value: ErrTypeInvalidCfg},
 			},
 			Value: 1,
 		},
@@ -240,7 +245,7 @@ func TestIncRouteReplacementLabels(t *testing.T) {
 			Labels: []metrics.Label{
 				{Name: gatewayNamespaceLabel, Value: "ns-a"},
 				{Name: gatewayLabel, Value: "gw-a"},
-				{Name: errorTypeLabel, Value: errTypeUnknown},
+				{Name: errorTypeLabel, Value: ErrTypeUnknown},
 			},
 			Value: 1,
 		},
