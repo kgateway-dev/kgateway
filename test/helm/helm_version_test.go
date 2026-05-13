@@ -594,6 +594,10 @@ controller:
 			name: "readiness-probe-override",
 			valuesYAML: `controller:
   readinessProbe:
+    exec:
+      command:
+      - cat
+      - /tmp/ready
     periodSeconds: 30
     failureThreshold: 5
 `,

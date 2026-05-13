@@ -342,10 +342,11 @@ spec:
               name: metrics
               protocol: TCP
           readinessProbe:
+            exec:
+              command:
+              - cat
+              - /tmp/ready
             failureThreshold: 5
-            httpGet:
-              path: /readyz
-              port: 9093
             initialDelaySeconds: 1
             periodSeconds: 30
           startupProbe:
