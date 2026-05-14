@@ -154,6 +154,33 @@ controller:
     annotations: {}
     # -- Extra labels for the ServiceMonitor.
     extraLabels: {}
+  # -- Configure the readiness probe for the controller container. Overrides the default probe when set.
+  # E.g.:
+  #
+  # readinessProbe:
+  #   httpGet:
+  #     path: /readyz
+  #     port: 9093
+  #   initialDelaySeconds: 1
+  #   periodSeconds: 10
+  #
+  # Probe settings are deep merged with the above config. Custom `exec`, `grpc`,
+  # or `tcpSocket` handlers replace the default `httpGet` handler.
+  readinessProbe: {}
+  # -- Configure the startup probe for the controller container. Overrides the default probe when set.
+  # E.g.:
+  #
+  # startupProbe:
+  #   httpGet:
+  #     path: /readyz
+  #     port: 9093
+  #   initialDelaySeconds: 0
+  #   periodSeconds: 1
+  #   failureThreshold: 600
+  #
+  # Probe settings are deep merged with the above config. Custom `exec`, `grpc`,
+  # or `tcpSocket` handlers replace the default `httpGet` handler.
+  startupProbe: {}
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
   # -- Configure TLS settings for the xDS gRPC servers.

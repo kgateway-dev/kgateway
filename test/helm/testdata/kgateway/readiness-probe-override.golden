@@ -320,8 +320,6 @@ spec:
         prometheus.io/path: "/metrics"
         prometheus.io/port: "9092"
         prometheus.io/scrape: "true"
-        controller-only: "true"
-        overridden: controller
       labels:
         kgateway: kgateway
         app.kubernetes.io/name: kgateway
@@ -329,12 +327,8 @@ spec:
         app.kubernetes.io/component: controller
     spec:
       serviceAccountName: test-release-kgateway
-      securityContext:
-        runAsNonRoot: true
       containers:
         - name: controller
-          securityContext:
-            readOnlyRootFilesystem: true
           image: "cr.kgateway.dev/kgateway-dev/kgateway:v0.0.1"
           imagePullPolicy: IfNotPresent
           ports:
@@ -348,11 +342,13 @@ spec:
               name: metrics
               protocol: TCP
           readinessProbe:
-            httpGet:
-              path: /readyz
-              port: 9093
+            exec:
+              command:
+              - cat
+              - /tmp/ready
+            failureThreshold: 5
             initialDelaySeconds: 1
-            periodSeconds: 10
+            periodSeconds: 30
           startupProbe:
             failureThreshold: 600
             httpGet:
@@ -398,27 +394,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           resources:
-            limits:
-              cpu: 200m
-      nodeSelector:
-        kubernetes.io/arch: amd64
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app.kubernetes.io/name: kgateway
-              topologyKey: kubernetes.io/hostname
-            weight: 100
-      tolerations:
-        - effect: NoExecute
-          key: controller
-          operator: Exists
-      topologySpreadConstraints:
-        - labelSelector:
-            matchLabels:
-              source: controller
-          maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
+            {}
