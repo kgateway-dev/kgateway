@@ -588,6 +588,7 @@ func (s *testingSuite) TestStripHostPortMatchingPort() {
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=raw-header-echo",
 	})
+	// Port matches listener port (8080) - should be stripped.
 	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
@@ -598,6 +599,19 @@ func (s *testingSuite) TestStripHostPortMatchingPort() {
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.Not(gomega.ContainSubstring("example.com:8080")),
+		},
+	)
+	// Port does not match listener port - should be preserved.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com:9999"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("example.com:9999"),
 		},
 	)
 }
