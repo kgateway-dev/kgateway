@@ -527,6 +527,14 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	if policy.setCurrentClientCertDetails != nil {
 		out.SetCurrentClientCertDetails = policy.setCurrentClientCertDetails
 	}
+	if policy.stripHostPortMode != nil {
+		switch *policy.stripHostPortMode {
+		case kgateway.StripMatchingHostPortMode:
+			out.StripMatchingHostPort = true
+		case kgateway.StripAnyHostPortMode:
+			out.StripPortMode = &envoy_hcm.HttpConnectionManager_StripAnyHostPort{StripAnyHostPort: true}
+		}
+	}
 
 	return nil
 }

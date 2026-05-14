@@ -69,6 +69,7 @@ type HttpListenerPolicyIr struct {
 	uuidRequestIdConfig           *envoyuuidv3.UuidRequestIdConfig
 	forwardClientCertMode         *envoy_hcm.HttpConnectionManager_ForwardClientCertDetails
 	setCurrentClientCertDetails   *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
+	stripHostPortMode             *kgateway.StripHostPortMode
 }
 
 func (d *HttpListenerPolicyIr) Equals(in any) bool {
@@ -202,6 +203,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	if !proto.Equal(d.setCurrentClientCertDetails, d2.setCurrentClientCertDetails) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.stripHostPortMode, d2.stripHostPortMode) {
 		return false
 	}
 
@@ -375,6 +380,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		uuidRequestIdConfig:           uuidRequestIdConfig,
 		forwardClientCertMode:         forwardClientCertMode,
 		setCurrentClientCertDetails:   setCurrentClientCertDetails,
+		stripHostPortMode:             h.StripHostPortMode,
 	}, errs
 }
 
