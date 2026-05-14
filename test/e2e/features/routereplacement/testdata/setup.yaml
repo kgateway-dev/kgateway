@@ -14,3 +14,19 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
+---
+# Exposes the controller's /metrics endpoint to the curl pod so the route
+# replacement metric tests can scrape it via ServiceFQDN.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kgateway-metrics
+  namespace: route-replacement-test
+spec:
+  selector:
+    app.kubernetes.io/name: kgateway
+  ports:
+  - protocol: TCP
+    port: 9092
+    targetPort: metrics
+    name: metrics

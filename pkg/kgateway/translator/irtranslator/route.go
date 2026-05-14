@@ -106,7 +106,9 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		// Anytime we encounter any errors while computing the RC or there's invalid policy
 		// attached to the RC (via Gateway or HTTPS listener), we need to replace the entire
 		// RC with a synthetic vhost that returns a 500 error for all traffic.
-		h.logger.Error("error applying route config plugins", "error", errors.Join(errs...))
+		joined := errors.Join(errs...)
+		h.logger.Error("error applying route config plugins", "error", joined)
+		incRouteReplacementMetric(h.gw, joined)
 		cfg.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("default", "*")}
 		return cfg
 	}
@@ -172,6 +174,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	// run any plugins attached to an HTTP-based listener on the computed vhost.
 	if err := h.runVhostPlugins(virtualHost, out, typedPerFilterConfigRoute); err != nil {
 		h.logger.Error("error running vhost plugins", "error", err)
+		incRouteReplacementMetric(h.gw, err)
 		reporter := virtualHost.ParentRef.GetParentReporter(h.reporter)
 		reporter.Listener(&virtualHost.ParentRef.Listener).SetCondition(reportssdk.ListenerCondition{
 			Type:    gwv1.ListenerConditionAccepted,
@@ -316,6 +319,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		}
 
 		if h.validationLevel == apisettings.ValidationStandard || h.validationLevel == apisettings.ValidationStrict {
+			incRouteReplacementMetric(h.gw, routeReplacementErr)
 			// Clear all headers and filter configs when the route is replaced with a direct response
 			out.TypedPerFilterConfig = nil
 			out.RequestHeadersToAdd = nil
