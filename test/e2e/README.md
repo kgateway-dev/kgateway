@@ -30,4 +30,4 @@ _We document the historical challenges we have experienced with writing and mana
 ### Framework
 We've learned from these challenges and have introduced a framework that we believe addresses the concerns. This framework allows us to write expressive end-to-end tests that reflect the experiences of users of the product.
 
-_For more details on the end-to-end framework, see the [e2e](./e2e) package._
+_For more details on the end-to-end framework, see the [E2E framework README](./README-e2e-framework.md)._

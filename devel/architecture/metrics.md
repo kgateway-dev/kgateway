@@ -9,7 +9,7 @@ The [metrics](/pkg/metrics/metrics.go) package provides constructors to create m
 These constructors handle registering the metrics with a metrics registry. By default, a new empty registry is created at startup. This can be replaced with a custom registry, or a built-in registry used by controller-runtime can be enabled by using:
 * `SetRegistry(useBuiltinRegistry bool, r RegistererGatherer)`
 
-The underlying implementation is based on [github.com/prometheus/client_golang/prometheus](github.com/prometheus/client_golang/prometheus).
+The underlying implementation is based on [github.com/prometheus/client_golang/prometheus](https://github.com/prometheus/client_golang/tree/main/prometheus).
 
 ### Best practices and common patterns
 * Metrics are expected to have a namespace and subsystem defined in their options
@@ -49,7 +49,7 @@ defer func() {
 rErr := DoSomeTranslation()
 ```
 
-These `Start` methods return a function to be defered to run on completion of the event handling, allowing collection of timing and other metrics. If the `Start` method is not called, those metrics will not be collected, but there will be no failures.
+These `Start` methods return a function to be deferred to run on completion of the event handling, allowing collection of timing and other metrics. If the `Start` method is not called, those metrics will not be collected, but there will be no failures.
 
 
 ### Gathering metrics from a KRT collection
