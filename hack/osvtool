@@ -173,6 +173,33 @@ workflow_default_branches() {
     jq -r '.[]' <<<"$branches_json"
 }
 
+workflow_image_platforms() {
+    local workflow_path="$1"
+    local platforms
+
+    if [[ ! -f "$workflow_path" ]]; then
+        echo "error: workflow file not found: $workflow_path" >&2
+        exit 1
+    fi
+
+    platforms="$(yq '.jobs.scan.strategy.matrix.platform[]' "$workflow_path" 2>/dev/null || true)"
+    if [[ -z "$platforms" ]]; then
+        echo "error: could not discover image scan platforms from $workflow_path" >&2
+        exit 1
+    fi
+
+    printf '%s\n' "$platforms"
+}
+
+expected_image_category() {
+    local branch="$1"
+    local platform="$2"
+    local safe_branch="${branch//[\/.]/-}"
+    local safe_platform="${platform//[\/.]/-}"
+
+    printf 'osv-scanner-%s-images-%s\n' "$safe_branch" "$safe_platform"
+}
+
 target_alert_filter() {
     local target="$1"
     local source_filter='((.tool.name // "") == "osv-scanner")'
@@ -411,9 +438,45 @@ scan_staleness() {
     local label="$3"
     local now="$4"
     local required="$5"
+    shift 5
+    local expected_categories=("$@")
     local scan_count
+    local expected_json
 
     scan_count="$(jq 'length' "$scan_file")"
+
+    if [[ "${#expected_categories[@]}" -gt 0 ]]; then
+        expected_json="$(printf '%s\n' "${expected_categories[@]}" | jq -R . | jq -s '.')"
+        jq -r \
+            --arg branch "$branch" \
+            --arg label "$label" \
+            --argjson now "$now" \
+            --argjson required "$required" \
+            --argjson expected "$expected_json" \
+            '
+            (INDEX(.category // "")) as $found
+            | $expected[]
+            | . as $cat
+            | if ($found[$cat]? // null) == null then
+                if $required == 1 then
+                    "\($branch): no successful \($label) OSV code scan found for category \($cat)"
+                else
+                    empty
+                end
+              else
+                ($found[$cat] | .created_at) as $created_at
+                | ($now - ($created_at | fromdateiso8601)) as $age
+                | if $age > 259200 then
+                    "\($branch): latest \($label) OSV code scan \($cat) at \($created_at) is older than 72 hours"
+                  else
+                    empty
+                  end
+              end
+            ' \
+            "$scan_file"
+        return 0
+    fi
+
     if [[ "$scan_count" -eq 0 ]]; then
         if [[ "$required" -eq 1 ]]; then
             echo "${branch}: no successful ${label} OSV code scan found"
@@ -440,6 +503,16 @@ emit_worst() {
     local tmpdir="$1"
     local target="$2"
     shift 2
+    local image_platforms_count="$1"
+    shift
+    local image_platforms=()
+    if [[ "$image_platforms_count" -gt 0 ]]; then
+        local p
+        for ((p = 0; p < image_platforms_count; p++)); do
+            image_platforms+=("$1")
+            shift
+        done
+    fi
     local branches=("$@")
     local now
     local source_alerts
@@ -447,6 +520,8 @@ emit_worst() {
     local require_source
     local require_image
     local stale_line
+    local expected_image_categories
+    local platform
     local stale=()
     local alert_files=()
 
@@ -467,11 +542,14 @@ emit_worst() {
                 ;;
             all)
                 require_source=1
-                if [[ "$image_alerts" -gt 0 ]]; then
-                    require_image=1
-                fi
+                require_image=1
                 ;;
         esac
+
+        expected_image_categories=()
+        for platform in "${image_platforms[@]}"; do
+            expected_image_categories+=("$(expected_image_category "${branches[$i]}" "$platform")")
+        done
 
         if [[ "$source_alerts" -gt 0 || "$require_source" -eq 1 ]]; then
             while IFS= read -r stale_line; do
@@ -482,7 +560,7 @@ emit_worst() {
         if [[ "$image_alerts" -gt 0 || "$require_image" -eq 1 ]]; then
             while IFS= read -r stale_line; do
                 [[ -n "$stale_line" ]] && stale+=("$stale_line")
-            done < <(scan_staleness "${tmpdir}/branch_${i}.image.scans.json" "${branches[$i]}" "image" "$now" "$require_image")
+            done < <(scan_staleness "${tmpdir}/branch_${i}.image.scans.json" "${branches[$i]}" "image" "$now" "$require_image" "${expected_image_categories[@]}")
         fi
 
         alert_files+=("${tmpdir}/branch_${i}.json")
@@ -663,7 +741,16 @@ main() {
     if [[ "$raw" -eq 1 ]]; then
         emit_raw "$tmpdir" "${branches[@]}" | yq -p=json -o=yaml
     elif [[ "$worst" -eq 1 ]]; then
-        emit_worst "$tmpdir" "$target" "${branches[@]}" | yq -p=json -o=yaml
+        local image_platforms=()
+        if [[ "$target" == "image" || "$target" == "all" ]]; then
+            local platform
+            while IFS= read -r platform; do
+                if [[ -n "$platform" ]]; then
+                    image_platforms+=("$platform")
+                fi
+            done < <(workflow_image_platforms "$workflow_path")
+        fi
+        emit_worst "$tmpdir" "$target" "${#image_platforms[@]}" "${image_platforms[@]}" "${branches[@]}" | yq -p=json -o=yaml
     else
         emit_summary "$tmpdir" "$repo" "$target" "${branches[@]}" | yq -p=json -o=yaml
     fi

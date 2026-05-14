@@ -270,10 +270,6 @@ osv-scan: ## Run OSV-Scanner locally; set OSV_SCAN_IMAGES="image-ref ..." to als
 			host_image_json="$$image_dir/$$safe_image.json"; \
 			host_image_sarif="$$image_dir/$$safe_image.sarif"; \
 			host_image_archive="$$image_dir/$$safe_image.tar"; \
-			if ! docker image inspect "$$image" > /dev/null 2>&1; then \
-				echo "Pulling Docker image: $$image"; \
-				docker pull "$$image"; \
-			fi; \
 			image_platform="$(OSV_SCAN_IMAGE_PLATFORM)"; \
 			image_os="$${image_platform%%/*}"; \
 			image_arch="$${image_platform#*/}"; \
@@ -289,9 +285,13 @@ osv-scan: ## Run OSV-Scanner locally; set OSV_SCAN_IMAGES="image-ref ..." to als
 				else \
 					echo "skopeo archive export failed for $$image; falling back to docker save"; \
 					rm -f "$$host_image_archive"; \
+					echo "Pulling Docker image $$image for platform $$image_platform"; \
+					docker pull --platform "$$image_platform" "$$image"; \
 					docker save "$$image" -o "$$host_image_archive"; \
 				fi; \
 			else \
+				echo "Pulling Docker image $$image for platform $$image_platform"; \
+				docker pull --platform "$$image_platform" "$$image"; \
 				docker save "$$image" -o "$$host_image_archive"; \
 			fi; \
 			echo "Running OSV-Scanner for Docker image: $$image"; \
