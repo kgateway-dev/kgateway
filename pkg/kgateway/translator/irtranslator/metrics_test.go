@@ -124,9 +124,9 @@ func TestClassifyErr(t *testing.T) {
 		want string
 	}{
 		{
-			name: "nil classifies as unknown",
+			name: "nil classifies as invalid_config",
 			err:  nil,
-			want: ErrTypeUnknown,
+			want: ErrTypeInvalidCfg,
 		},
 		{
 			name: "ErrPolicyNotFound classifies as ref_not_found",
@@ -174,12 +174,7 @@ func TestClassifyErr(t *testing.T) {
 			want: ErrTypeInvalidCfg,
 		},
 		{
-			name: "bare unrecognised error classifies as unknown",
-			err:  errors.New("some random error"),
-			want: ErrTypeUnknown,
-		},
-		{
-			name: "PolicyError-wrapped unrecognised error classifies as invalid_config",
+			name: "PolicyError-wrapped unrecognized error classifies as invalid_config",
 			err:  &ir.PolicyError{Err: errors.New("invalid template syntax")},
 			want: ErrTypeInvalidCfg,
 		},
@@ -192,11 +187,6 @@ func TestClassifyErr(t *testing.T) {
 			name: "first matching leaf wins on errors.Join (reverse order)",
 			err:  errors.Join(ErrInvalidMatcher, pluginutils.ErrGatewayExtensionNotFound),
 			want: ErrTypeInvalidCfg,
-		},
-		{
-			name: "join of all-unknown leaves classifies as unknown",
-			err:  errors.Join(errors.New("a"), errors.New("b")),
-			want: ErrTypeUnknown,
 		},
 	}
 	for _, tc := range tests {
@@ -219,35 +209,26 @@ func TestIncRouteReplacementLabels(t *testing.T) {
 		},
 	}
 
+	routeReplacementsTotal.Reset()
+
 	incRouteReplacementMetric(gw, krtcollections.ErrPolicyNotFound)
 	incRouteReplacementMetric(gw, ErrInvalidMatcher)
-	incRouteReplacementMetric(gw, errors.New("uncategorised"))
 
 	gathered := metricstest.MustGatherMetricsContext(ctx, t, "kgateway_routing_replacements_total")
-	gathered.AssertMetrics("kgateway_routing_replacements_total", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetric{
-			Labels: []metrics.Label{
-				{Name: gatewayNamespaceLabel, Value: "ns-a"},
-				{Name: gatewayLabel, Value: "gw-a"},
-				{Name: errorTypeLabel, Value: ErrTypeRefNotFound},
-			},
-			Value: 1,
+	assert.Equal(t, float64(1), gathered.MustGetMetricValueByLabels(
+		"kgateway_routing_replacements_total",
+		[]metrics.Label{
+			{Name: gatewayNamespaceLabel, Value: "ns-a"},
+			{Name: gatewayLabel, Value: "gw-a"},
+			{Name: errorTypeLabel, Value: ErrTypeRefNotFound},
 		},
-		&metricstest.ExpectedMetric{
-			Labels: []metrics.Label{
-				{Name: gatewayNamespaceLabel, Value: "ns-a"},
-				{Name: gatewayLabel, Value: "gw-a"},
-				{Name: errorTypeLabel, Value: ErrTypeInvalidCfg},
-			},
-			Value: 1,
+	))
+	assert.Equal(t, float64(1), gathered.MustGetMetricValueByLabels(
+		"kgateway_routing_replacements_total",
+		[]metrics.Label{
+			{Name: gatewayNamespaceLabel, Value: "ns-a"},
+			{Name: gatewayLabel, Value: "gw-a"},
+			{Name: errorTypeLabel, Value: ErrTypeInvalidCfg},
 		},
-		&metricstest.ExpectedMetric{
-			Labels: []metrics.Label{
-				{Name: gatewayNamespaceLabel, Value: "ns-a"},
-				{Name: gatewayLabel, Value: "gw-a"},
-				{Name: errorTypeLabel, Value: ErrTypeUnknown},
-			},
-			Value: 1,
-		},
-	})
+	))
 }

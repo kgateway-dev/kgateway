@@ -32,7 +32,9 @@ var (
 		Manifests: []string{
 			testdefaults.CurlPodManifest,
 			testdefaults.HttpbinManifest,
-			setupManifest,
+		},
+		ManifestsWithTransform: map[string]func(string) string{
+			setupManifest: transformInstallNamespace,
 		},
 	}
 

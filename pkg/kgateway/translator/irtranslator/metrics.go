@@ -20,7 +20,6 @@ const (
 
 	ErrTypeRefNotFound = "ref_not_found"
 	ErrTypeInvalidCfg  = "invalid_config"
-	ErrTypeUnknown     = "unknown"
 )
 
 var domainsPerListener = metrics.NewGauge(
@@ -93,6 +92,8 @@ func incRouteReplacementMetric(gw ir.GatewayIR, err error) {
 
 // classifyErr returns the error_type label for err. With errors.Join, the first
 // matching leaf wins, so the order in which callers join errors is significant.
+// Reaching this function means a replacement was emitted, so unrecognized errors
+// fall back to invalid_config rather than a distinct "unknown" bucket.
 func classifyErr(joinedErr error) string {
 	for _, err := range ir.FlattenJoinedErr(joinedErr) {
 		switch {
@@ -111,5 +112,5 @@ func classifyErr(joinedErr error) string {
 			return ErrTypeInvalidCfg
 		}
 	}
-	return ErrTypeUnknown
+	return ErrTypeInvalidCfg
 }
