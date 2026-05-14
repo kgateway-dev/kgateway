@@ -72,7 +72,7 @@ func TestHttpListenerPolicyIrEqualsStripHostPort(t *testing.T) {
 	}
 }
 
-func TestStripHostPortModeTranslation(t *testing.T) {
+func TestApplyHCMStripHostPortMode(t *testing.T) {
 	tests := []struct {
 		name                   string
 		mode                   *kgateway.StripHostPortMode
