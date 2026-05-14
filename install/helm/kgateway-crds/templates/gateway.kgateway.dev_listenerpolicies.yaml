@@ -1717,6 +1717,15 @@ spec:
                         x-kubernetes-validations:
                         - message: invalid duration value
                           rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                      stripHostPortMode:
+                        description: |-
+                          StripHostPortMode determines whether, and under what conditions, Envoy will strip the port
+                          from the Host or authority header. StripMatchingHostPort strips the port only if it matches
+                          the listener's own port. StripAnyHostPort strips the port unconditionally.
+                        enum:
+                        - MatchingPort
+                        - AnyPort
+                        type: string
                       tracing:
                         description: |-
                           Tracing contains various settings for Envoy's OpenTelemetry tracer.
@@ -3864,6 +3873,15 @@ spec:
                               x-kubernetes-validations:
                               - message: invalid duration value
                                 rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                            stripHostPortMode:
+                              description: |-
+                                StripHostPortMode determines whether, and under what conditions, Envoy will strip the port
+                                from the Host or authority header. StripMatchingHostPort strips the port only if it matches
+                                the listener's own port. StripAnyHostPort strips the port unconditionally.
+                              enum:
+                              - MatchingPort
+                              - AnyPort
+                              type: string
                             tracing:
                               description: |-
                                 Tracing contains various settings for Envoy's OpenTelemetry tracer.
