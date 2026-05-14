@@ -32,8 +32,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -752,9 +756,77 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			} else {
 				client = fake.NewClient(t, objs...)
 			}
-			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, client)
+			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, client, envTestCfg)
 		})
 	}
+}
+
+// TestEnvtestRejectsLongLabelValue tests the tests -- it proves that
+// the dry-run Create validation in RunHelmChartTest works, that the
+// envtest API server actually enforces label-value length (max 63
+// characters). Without this guarantee, the dry-run step in
+// RunHelmChartTest would silently rubber- stamp malformed helm
+// output.
+func TestEnvtestRejectsLongLabelValue(t *testing.T) {
+	envTestCfg := getEnvTestConfig(t)
+	if envTestCfg == nil {
+		t.Skip("envtest is required for this test (set USE_ENVTEST=true)")
+	}
+
+	scheme := schemes.GatewayScheme()
+	ctrlClient, err := ctrlclient.New(envTestCfg, ctrlclient.Options{Scheme: scheme})
+	require.NoError(t, err, "failed to create controller-runtime client")
+
+	newDeployment := func(labelValue string) *appsv1.Deployment {
+		return &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "envtest-validation-probe",
+				Namespace: "default",
+				Labels: map[string]string{
+					"validation-probe": labelValue,
+				},
+			},
+			Spec: appsv1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{"app": "probe"},
+				},
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"app": "probe"},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
+							Name:  "probe",
+							Image: "nginx:latest",
+						}},
+					},
+				},
+			},
+		}
+	}
+
+	// Green: a 63-character label value is the documented maximum, so the API
+	// server must accept it. If this fails, our dry-run pipeline is broken or
+	// validation rules have shifted under us.
+	t.Run("accepts 63-char label value", func(t *testing.T) {
+		labelValue := strings.Repeat("a", 63)
+		require.Len(t, labelValue, 63)
+		err := ctrlClient.Create(t.Context(), newDeployment(labelValue), ctrlclient.DryRunAll)
+		assert.NoError(t, err, "envtest API server should accept a 63-character label value")
+	})
+
+	// Red: a 253-character label value violates k8s validation. If the API
+	// server lets this through, the dry-run hook in RunHelmChartTest cannot be
+	// trusted — it would silently approve malformed manifests.
+	t.Run("rejects 253-char label value", func(t *testing.T) {
+		labelValue := strings.Repeat("a", 253)
+		require.Len(t, labelValue, 253)
+		err := ctrlClient.Create(t.Context(), newDeployment(labelValue), ctrlclient.DryRunAll)
+		require.Error(t, err, "envtest API server must reject a 253-character label value; "+
+			"if this passes, the dry-run validation in RunHelmChartTest is not actually validating")
+		assert.Contains(t, err.Error(), "must be no more than 63 characters",
+			"rejection should cite the 63-character label-value limit")
+	})
 }
 
 // TestDeployerManagedResourcesHaveRBACPermissions verifies that all Kubernetes
