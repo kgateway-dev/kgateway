@@ -52,37 +52,37 @@ spec:
     spec:
       securityContext:
         sysctls:
-        - name: net.ipv4.ip_unprivileged_port_start
-          value: "0"
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "0"
       containers:
-      - image: gcr.io/istio-testing/app:latest
-        imagePullPolicy: IfNotPresent
-        name: backend
-        resources:
-          requests:
-            cpu: "50m"
-            memory: "64Mi"
-        args:
-          - --tcp=9090
-          - --port=80
-          - --grpc=7070
-          - --port=443
-          - --tls=443
-          - --crt=/tls/tls.crt
-          - --key=/tls/tls.key
-        env:
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        volumeMounts:
-          - mountPath: /tls
-            name: certs
+        - image: gcr.io/istio-testing/app:latest
+          imagePullPolicy: IfNotPresent
+          name: backend
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+          args:
+            - --tcp=9090
+            - --port=80
+            - --grpc=7070
+            - --port=443
+            - --tls=443
+            - --crt=/tls/tls.crt
+            - --key=/tls/tls.key
+          env:
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          volumeMounts:
+            - mountPath: /tls
+              name: certs
       volumes:
-      - name: certs
-        secret:
-          secretName: certs
-          optional: false
+        - name: certs
+          secret:
+            secretName: certs
+            optional: false
 ---
 # From https://github.com/agentgateway/agentgateway/tree/main/examples/tls/certs
 # We use this since Istio's builtin cert is self signed which is not supported (https://github.com/agentgateway/agentgateway/issues/680)

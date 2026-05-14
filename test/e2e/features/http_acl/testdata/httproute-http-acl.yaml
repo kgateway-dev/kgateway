@@ -1,0 +1,54 @@
+---
+# ACL attached via targetRef to the HTTPRoute — applies to all route rules.
+# defaultAction=deny, allow 10.0.0.0/8.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route
+  namespace: kgateway-base
+spec:
+  hostnames:
+    - httpbin
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: kgateway-base
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /get
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /status
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: httproute-acl
+  namespace: kgateway-base
+spec:
+  targetRefs:
+    - kind: HTTPRoute
+      group: gateway.networking.k8s.io
+      name: httpbin-route
+  acl:
+    defaultAction: deny
+    rules:
+      - cidrs:
+          - "10.0.0.0/8"
+        action: allow

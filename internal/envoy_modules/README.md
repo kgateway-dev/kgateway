@@ -16,7 +16,7 @@ This module is organized as [Rust Workspaces](https://doc.rust-lang.org/cargo/re
   - `kgateway-example-filter`: skeleton showing the minimum code required to implement a new filter. This is not included in the rust workspace and not registered in `module-init`, so does not affect the build.
 - `lib`: libraries with abstraction and helpers shared among filters.
 
-To add a new filter, see [adding-a-filter.md](../../docs/guides/adding-a-filter.md).
+To add a new filter, see [adding-a-filter.md](./adding-a-filter.md).
 
 ## Building
 

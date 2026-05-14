@@ -2,12 +2,23 @@ package gateway_test
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	// Register the UuidRequestIdConfig proto type so that it can be unmarshaled from Any in tests
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/request_id/uuid/v3"
@@ -36,10 +47,11 @@ func TestBasic(t *testing.T) {
 			version.Version = prevVersion
 		}()
 
-		// Prepend setting EnableExperimentalGatewayAPIFeatures to true so it can be overwritten by settingOpts
+		// Prepend settings to true so they can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
 			func(s *apisettings.Settings) {
 				s.EnableExperimentalGatewayAPIFeatures = true
+				s.EnableAuthMetadata = true
 			},
 		}, settingOpts...)
 		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
@@ -810,6 +822,72 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+	t.Run("TrafficPolicy with header modifiers from secret (same namespace)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (cross namespace with ReferenceGrant)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-cross-namespace.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (cross namespace, no ReferenceGrant)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-cross-namespace-no-refgrant.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-cross-namespace-no-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (policy and secret in different namespace from Gateway)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-policy-cross-namespace.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-policy-cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (key/name defaulting)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-key-defaulting.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-key-defaulting.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (all keys)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-all-keys.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-all-keys.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with compression Policy", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/compression-route.yaml",
@@ -1139,6 +1217,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend TLS Policy conflict resolution", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendtlspolicy/conflict-resolution.yaml",
+			outputFile: "backendtlspolicy/conflict-resolution.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend TLS Policy with Gateway backend client certificate", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendtlspolicy/gateway-client-certificate.yaml",
+			outputFile: "backendtlspolicy/gateway-client-certificate.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Proxy with no routes", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "edge-cases/no_route.yaml",
@@ -1260,6 +1360,16 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy timeout targeting Gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/timeout-gateway.yaml",
+			outputFile: "traffic-policy/timeout-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 	t.Run("http gateway with session persistence (cookie)", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "session-persistence/cookie.yaml",
@@ -1308,6 +1418,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "httplistenerpolicy/idle-timeout.yaml",
 			outputFile: "httplistenerpolicy/idle-timeout.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPListenerPolicy with http2ProtocolOptions", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/http2-protocol-options.yaml",
+			outputFile: "httplistenerpolicy/http2-protocol-options.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1436,6 +1557,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HTTPListenerPolicy with forwardClientCertDetails (mode defaulted)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/forward-client-cert-details.yaml",
+			outputFile: "httplistenerpolicy/forward-client-cert-details.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("HTTPListenerPolicy with uuidRequestIdConfig defaults", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "httplistenerpolicy/request-id-config-defaults.yaml",
@@ -1495,6 +1627,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/idle-timeout.yaml",
 			outputFile: "listener-policy-http/idle-timeout.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with http2ProtocolOptions", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/http2-protocol-options.yaml",
+			outputFile: "listener-policy-http/http2-protocol-options.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with tcpKeepalive", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/tcp-keepalive.yaml",
+			outputFile: "listener-policy-http/tcp-keepalive.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1678,10 +1832,65 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with forwardClientCertDetails (AppendForward)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/forward-client-cert-details.yaml",
+			outputFile: "listener-policy-http/forward-client-cert-details.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with maxRequestHeadersKb", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/max-request-headers-kb.yaml",
 			outputFile: "listener-policy-http/max-request-headers-kb.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with maxRequestsPerConnection", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/max-requests-per-connection.yaml",
+			outputFile: "listener-policy-http/max-requests-per-connection.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with maxRequestsPerConnection set to zero", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/max-requests-per-connection-zero.yaml",
+			outputFile: "listener-policy-http/max-requests-per-connection-zero.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with maxRequestsPerConnection and idleTimeout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/max-requests-per-connection-with-idle-timeout.yaml",
+			outputFile: "listener-policy-http/max-requests-per-connection-with-idle-timeout.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy maxRequestsPerConnection merge conflict", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/max-requests-per-connection-merge-conflict.yaml",
+			outputFile: "listener-policy-http/max-requests-per-connection-merge-conflict.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2008,10 +2217,65 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HttpACL Policy at route level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/route-http-acl.yaml",
+			outputFile: "http-acl/route-http-acl.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HttpACL Policy at httproute level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/httproute-http-acl.yaml",
+			outputFile: "http-acl/httproute-http-acl.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HttpACL Policy at gateway level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/gateway-http-acl.yaml",
+			outputFile: "http-acl/gateway-http-acl.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HttpACL Policy with invalid CIDR rejected", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-acl/invalid-cidr.yaml",
+			outputFile: "http-acl/invalid-cidr.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("RBAC Policy at route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "rbac/route-cel-rbac.yaml",
 			outputFile: "rbac/route-cel-rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("RBAC Policy at route level with Deny action", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "rbac/route-cel-rbac-deny.yaml",
+			outputFile: "rbac/route-cel-rbac-deny.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2166,6 +2430,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "invalid-filter-chains/https-listener-invalid-secret-ref.yaml",
 			outputFile: "invalid-filter-chains/https-listener-invalid-secret-ref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPS listener with multiple cert refs, one missing", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/https-listener-multi-cert-one-missing.yaml",
+			outputFile: "invalid-filter-chains/https-listener-multi-cert-one-missing.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2603,6 +2878,146 @@ func TestBasic(t *testing.T) {
 	})
 }
 
+func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T) {
+	ctx := t.Context()
+
+	dir := fsutils.MustGetThisDir()
+	prevVersion := version.Version
+	version.Version = "v1.0.0-ci1"
+	defer func() {
+		version.Version = prevVersion
+	}()
+
+	tc := translatortest.TestCase{
+		InputFiles: []string{
+			filepath.Join(dir, "testutils/inputs/backendtlspolicy/multi-gateway-client-certificates.yaml"),
+		},
+	}
+	results, err := tc.Run(
+		t,
+		ctx,
+		translatortest.NewScheme(runtime.SchemeBuilder{}),
+		translatortest.ExtraConfig{},
+		func(s *apisettings.Settings) {
+			s.EnableExperimentalGatewayAPIFeatures = true
+		},
+	)
+	require.NoError(t, err)
+	require.Len(t, results, 2)
+
+	gatewayOne := types.NamespacedName{Namespace: "default", Name: "example-gateway-one"}
+	gatewayTwo := types.NamespacedName{Namespace: "default", Name: "example-gateway-two"}
+
+	resultOne, ok := results[gatewayOne]
+	require.True(t, ok, "expected first gateway result")
+	resultTwo, ok := results[gatewayTwo]
+	require.True(t, ok, "expected second gateway result")
+
+	statusOne := resultOne.ReportsMap.BuildGWStatus(ctx, *resultOne.Gateways[gatewayOne], map[string]uint{"http": 1})
+	statusTwo := resultTwo.ReportsMap.BuildGWStatus(ctx, *resultTwo.Gateways[gatewayTwo], map[string]uint{"http": 1})
+	require.NotNil(t, statusOne)
+	require.NotNil(t, statusTwo)
+
+	resolvedRefsOne := meta.FindStatusCondition(statusOne.Conditions, string(gwv1.GatewayConditionResolvedRefs))
+	require.NotNil(t, resolvedRefsOne)
+	assert.Equal(t, metav1.ConditionTrue, resolvedRefsOne.Status)
+
+	resolvedRefsTwo := meta.FindStatusCondition(statusTwo.Conditions, string(gwv1.GatewayConditionResolvedRefs))
+	require.NotNil(t, resolvedRefsTwo)
+	assert.Equal(t, metav1.ConditionTrue, resolvedRefsTwo.Status)
+
+	expectedClusterOne := "kube_default_backend-service_gw_backend_client_cert_default_example-gateway-one_443"
+	expectedClusterTwo := "kube_default_backend-service_gw_backend_client_cert_default_example-gateway-two_443"
+
+	assert.Equal(t, expectedClusterOne, requireSingleRouteClusterName(t, resultOne.Proxy.Routes))
+	assert.Equal(t, expectedClusterTwo, requireSingleRouteClusterName(t, resultTwo.Proxy.Routes))
+
+	clusterOne := requireClusterByName(t, resultOne.Clusters, expectedClusterOne)
+	clusterTwo := requireClusterByName(t, resultTwo.Clusters, expectedClusterTwo)
+
+	assert.Nil(t, findClusterByName(resultOne.Clusters, expectedClusterTwo), "first gateway should not publish second gateway variant")
+	assert.Nil(t, findClusterByName(resultTwo.Clusters, expectedClusterOne), "second gateway should not publish first gateway variant")
+
+	assert.Equal(t, "client.example.com", requireGatewayClientCertificateCommonName(t, clusterOne))
+	assert.Equal(t, "client2.example.com", requireGatewayClientCertificateCommonName(t, clusterTwo))
+}
+
+func requireSingleRouteClusterName(t *testing.T, routes []*envoyroutev3.RouteConfiguration) string {
+	t.Helper()
+
+	clusterNames := make(map[string]struct{})
+	for _, routeConfig := range routes {
+		for _, virtualHost := range routeConfig.GetVirtualHosts() {
+			for _, route := range virtualHost.GetRoutes() {
+				switch action := route.GetAction().(type) {
+				case *envoyroutev3.Route_Route:
+					if action.Route == nil {
+						continue
+					}
+					switch clusterSpecifier := action.Route.GetClusterSpecifier().(type) {
+					case *envoyroutev3.RouteAction_Cluster:
+						if clusterSpecifier.Cluster != "" {
+							clusterNames[clusterSpecifier.Cluster] = struct{}{}
+						}
+					case *envoyroutev3.RouteAction_WeightedClusters:
+						if clusterSpecifier.WeightedClusters == nil {
+							continue
+						}
+						for _, weightedCluster := range clusterSpecifier.WeightedClusters.GetClusters() {
+							if weightedCluster.GetName() != "" {
+								clusterNames[weightedCluster.GetName()] = struct{}{}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	require.Len(t, clusterNames, 1, "expected exactly one upstream cluster reference")
+	for name := range clusterNames {
+		return name
+	}
+	require.FailNow(t, "expected exactly one upstream cluster reference")
+	return ""
+}
+
+func findClusterByName(clusters []*envoyclusterv3.Cluster, name string) *envoyclusterv3.Cluster {
+	for _, cluster := range clusters {
+		if cluster.GetName() == name {
+			return cluster
+		}
+	}
+	return nil
+}
+
+func requireClusterByName(t *testing.T, clusters []*envoyclusterv3.Cluster, name string) *envoyclusterv3.Cluster {
+	t.Helper()
+
+	cluster := findClusterByName(clusters, name)
+	require.NotNil(t, cluster, "expected cluster %q to be present", name)
+	return cluster
+}
+
+func requireGatewayClientCertificateCommonName(t *testing.T, cluster *envoyclusterv3.Cluster) string {
+	t.Helper()
+
+	require.NotNil(t, cluster)
+	require.NotNil(t, cluster.GetTransportSocket(), "expected cluster %q to use upstream TLS", cluster.GetName())
+
+	tlsContext := &envoytlsv3.UpstreamTlsContext{}
+	require.NoError(t, cluster.GetTransportSocket().GetTypedConfig().UnmarshalTo(tlsContext))
+	require.Len(t, tlsContext.GetCommonTlsContext().GetTlsCertificates(), 1)
+
+	inlineCert := tlsContext.GetCommonTlsContext().GetTlsCertificates()[0].GetCertificateChain().GetInlineString()
+	block, _ := pem.Decode([]byte(inlineCert))
+	require.NotNil(t, block, "expected cluster %q to contain a PEM client certificate", cluster.GetName())
+
+	certificate, err := x509.ParseCertificate(block.Bytes)
+	require.NoError(t, err)
+	return certificate.Subject.CommonName
+}
+
 func TestValidation(t *testing.T) {
 	type validationTest struct {
 		name      string
@@ -2696,13 +3111,12 @@ func TestValidation(t *testing.T) {
 			inputFile: "policy-csrf-regex-invalid.yaml",
 			minMode:   apisettings.ValidationStrict,
 		},
-		// TODO(tim): Uncomment this test once #11995 is fixed.
-		// {
-		// 	name:      "Multiple Invalid Policies Conflict",
-		// 	category:  "policy",
-		// 	inputFile: "policy-multiple-invalid-conflict.yaml",
-		// 	minMode:   apisettings.ValidationStandard,
-		// },
+		{
+			name:      "Multiple Invalid Policies Conflict",
+			category:  "policy",
+			inputFile: "policy-multiple-invalid-conflict.yaml",
+			minMode:   apisettings.ValidationStandard,
+		},
 		{
 			name:      "ExtAuth Extension Ref Invalid",
 			category:  "policy",
@@ -2795,6 +3209,12 @@ func TestValidation(t *testing.T) {
 			inputFile: "invalid-outlier-detection-zero-interval.yaml",
 			minMode:   apisettings.ValidationStandard,
 		},
+		{
+			name:      "Route delegation is not rejected",
+			category:  "delegation",
+			inputFile: "route-delegation.yaml",
+			minMode:   apisettings.ValidationStrict,
+		},
 	}
 
 	runTest := func(t *testing.T, test validationTest, mode apisettings.ValidationMode) {
@@ -2816,6 +3236,7 @@ func TestValidation(t *testing.T) {
 		settingOpts := func(s *apisettings.Settings) {
 			s.ValidationMode = mode
 			s.EnableExperimentalGatewayAPIFeatures = true
+			s.EnableAuthMetadata = true
 		}
 		translatortest.TestTranslation(t, ctx, []string{inputFile}, outputFile, gwNN, settingOpts)
 	}
@@ -2852,6 +3273,7 @@ func TestRouteDelegation(t *testing.T) {
 		}
 		settingOpt := func(s *apisettings.Settings) {
 			s.EnableExperimentalGatewayAPIFeatures = true
+			s.EnableAuthMetadata = true
 		}
 		translatortest.TestTranslation(t, ctx, inputFiles, outputFile, gwNN, settingOpt)
 	}
@@ -2990,6 +3412,7 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
 			func(s *apisettings.Settings) {
 				s.DiscoveryNamespaceSelectors = cfgJSON
 				s.EnableExperimentalGatewayAPIFeatures = true
+				s.EnableAuthMetadata = true
 			},
 		}
 

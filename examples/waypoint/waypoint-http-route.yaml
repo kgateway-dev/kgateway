@@ -5,16 +5,16 @@ metadata:
   namespace: httpbin
 spec:
   parentRefs:
-  - name: httpbin
-    group: ""
-    kind: Service
-  rules:
-  - backendRefs:
     - name: httpbin
-      port: 8000
-    filters:
-    - type: ResponseHeaderModifier
-      responseHeaderModifier:
-        add:
-        - name: "Traversed-Waypoint"
-          value: "httpbin-waypoint"
+      group: ""
+      kind: Service
+  rules:
+    - backendRefs:
+        - name: httpbin
+          port: 8000
+      filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            add:
+              - name: "Traversed-Waypoint"
+                value: "httpbin-waypoint"

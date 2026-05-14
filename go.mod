@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2
 
-go 1.26.2
+go 1.26.3
 
 require (
 	github.com/avast/retry-go/v4 v4.7.0
@@ -13,7 +13,6 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
-	github.com/golang/mock v1.7.0-rc.1
 	github.com/google/go-cmp v0.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -27,6 +26,7 @@ require (
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
+	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
 	golang.org/x/net v0.52.0 // indirect
@@ -384,7 +384,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0
-	go.uber.org/atomic v1.11.0 // indirect
+	go.uber.org/atomic v1.11.0
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.49.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20251125195548-87e1e737ad39 // indirect
@@ -405,11 +405,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.6.1 // indirect
 	k8s.io/apiserver v0.35.3 // indirect
-	k8s.io/cli-runtime v0.35.3 // indirect
+	k8s.io/cli-runtime v0.35.3
 	k8s.io/code-generator v0.35.3 // indirect
 	k8s.io/component-base v0.35.3 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b // indirect
-	k8s.io/kubectl v0.35.3 // indirect
+	k8s.io/kubectl v0.35.3
 	mvdan.cc/gofumpt v0.9.2 // indirect
 	mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15 // indirect
 	sigs.k8s.io/controller-tools v0.20.1 // indirect
@@ -422,11 +422,11 @@ require (
 )
 
 tool (
-	github.com/golang/mock/mockgen
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 	github.com/onsi/ginkgo/v2/ginkgo
 	github.com/rhysd/actionlint/cmd/actionlint
+	go.uber.org/mock/mockgen
 	gotest.tools/gotestsum
 	helm.sh/helm/v3/cmd/helm
 	k8s.io/code-generator/cmd/applyconfiguration-gen

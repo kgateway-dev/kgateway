@@ -90,7 +90,7 @@ else
 endif
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.37.1
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.37.2
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -144,24 +144,39 @@ get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.
 init-git-hooks:  ## Use the tracked version of Git hooks from this repo
 	git config core.hooksPath .githooks
 
-.PHONY: fmt
-fmt:  ## Format the code with golangci-lint
+.PHONY: fmt-go
+fmt-go:
 	$(CUSTOM_GOLANGCI_LINT_FMT) ./...
 
-.PHONY: fmt-changed
-fmt-changed: ## Format only the changed code with golangci-lint (skip deleted files)
+.PHONY: fmt-go-changed
+fmt-go-changed:
 	git status -s -uno | awk '{print $$2}' | grep '.*.go$$' | xargs -r -I{} bash -lc '[ -f "{}" ] && $(CUSTOM_GOLANGCI_LINT_FMT) "{}" || true'
+
+YAMLFMT ?= go tool -modfile tools/go.mod yamlfmt
+YAML_PATHSPEC = '*.[Yy][Mm][Ll]' '*.[Yy][Aa][Mm][Ll]'
+
+.PHONY: fmt-yaml
+fmt-yaml: ## Format tracked YAML files with yamlfmt
+	git ls-files -z -- $(YAML_PATHSPEC) | xargs -0 sh -c 'if [ "$$#" -gt 0 ]; then exec $(YAMLFMT) "$$@"; fi' sh
+
+.PHONY: fmt-yaml-changed
+fmt-yaml-changed:
+	git diff --name-only -z --diff-filter=d HEAD -- $(YAML_PATHSPEC) | xargs -0 sh -c 'if [ "$$#" -gt 0 ]; then exec $(YAMLFMT) "$$@"; fi' sh
+
+.PHONY: fmt
+fmt: fmt-go fmt-yaml ## Format Go and YAML files
+
+.PHONY: fmt-changed
+fmt-changed: fmt-go-changed fmt-yaml-changed ## Format changed Go and YAML files (skip deleted files)
 
 .PHONY: mod-download
 mod-download:  ## Download transitive dependencies
 	go mod download
-	cd hack/utils/applier && go mod download
 	cd tools && go mod download
 	cd test/e2e/defaults/extproc && go mod download
 
 .PHONY: mod-tidy
 mod-tidy: ## Tidy the go mod file
-	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
 	@echo "Tidying tools..." && cd tools && go mod tidy
 	@echo "Tidying test/e2e/defaults/extproc..." && cd test/e2e/defaults/extproc && go mod tidy
 	@echo "Tidying top level" && go mod tidy
@@ -171,7 +186,8 @@ mod-tidy: ## Tidy the go mod file
 #----------------------------------------------------------------------------
 
 .PHONY: analyze
-analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run golangci-lint. Override options with ANALYZE_ARGS.
+analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run repository lint checks. Override golangci-lint options with ANALYZE_ARGS.
+	$(MAKE) --no-print-directory fmt-yaml
 	$(CUSTOM_GOLANGCI_LINT_RUN) $(ANALYZE_ARGS) ./...
 
 $(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum .custom-gcl.yml
@@ -527,7 +543,6 @@ MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go
 
 # Files that track dependency changes
 MOD_FILES := go.mod go.sum \
-	hack/utils/applier/go.mod hack/utils/applier/go.sum \
 	tools/go.mod tools/go.sum \
 	test/e2e/defaults/extproc/go.mod test/e2e/defaults/extproc/go.sum
 
@@ -578,7 +593,7 @@ $(STAMP_DIR)/generate-licenses: $(MOD_FILES) | $(STAMP_DIR)
 # Formatting - only runs if generation steps changed
 $(STAMP_DIR)/fmt: $(STAMP_DIR)/go-generate-all $(CUSTOM_GOLANGCI_LINT_BIN)
 	@echo "Formatting code..."
-	$(CUSTOM_GOLANGCI_LINT_FMT) ./...
+	$(MAKE) --no-print-directory fmt-go
 	@touch $@
 
 # Fast generation using stamp files (for local development)

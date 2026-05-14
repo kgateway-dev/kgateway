@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	appsv1 "k8s.io/api/apps/v1"
+	"sigs.k8s.io/yaml"
 )
 
 func TestHelmChartVersionAndAppVersion(t *testing.T) {
@@ -187,6 +189,41 @@ func TestImageTagVPrefix(t *testing.T) {
 	}
 }
 
+func TestHelmChartProbeHandlerOverrides(t *testing.T) {
+	valuesYAML := `controller:
+  readinessProbe:
+    exec:
+      command:
+        - cat
+        - /tmp/ready
+    periodSeconds: 30
+  startupProbe:
+    tcpSocket:
+      port: 9093
+    failureThreshold: 300
+`
+
+	output := renderHelmTemplate(t, "kgateway", valuesYAML, nil)
+	deployment := findDeployment(t, output)
+	require.NotEmpty(t, deployment.Spec.Template.Spec.Containers)
+
+	controller := deployment.Spec.Template.Spec.Containers[0]
+	require.NotNil(t, controller.ReadinessProbe)
+	require.Nil(t, controller.ReadinessProbe.HTTPGet)
+	require.NotNil(t, controller.ReadinessProbe.Exec)
+	require.Equal(t, []string{"cat", "/tmp/ready"}, controller.ReadinessProbe.Exec.Command)
+	require.Equal(t, int32(1), controller.ReadinessProbe.InitialDelaySeconds)
+	require.Equal(t, int32(30), controller.ReadinessProbe.PeriodSeconds)
+
+	require.NotNil(t, controller.StartupProbe)
+	require.Nil(t, controller.StartupProbe.HTTPGet)
+	require.NotNil(t, controller.StartupProbe.TCPSocket)
+	require.Equal(t, int32(9093), controller.StartupProbe.TCPSocket.Port.IntVal)
+	require.Equal(t, int32(0), controller.StartupProbe.InitialDelaySeconds)
+	require.Equal(t, int32(1), controller.StartupProbe.PeriodSeconds)
+	require.Equal(t, int32(300), controller.StartupProbe.FailureThreshold)
+}
+
 // extractImageLines extracts lines containing "image:" from the output for debugging
 func extractImageLines(output string) string {
 	var lines []string
@@ -198,14 +235,76 @@ func extractImageLines(output string) string {
 	return strings.Join(lines, "\n")
 }
 
+func renderHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersions []string) []byte {
+	t.Helper()
+
+	helmChartPath := filepath.Join("..", "..", "install", "helm", chart)
+	absHelmChartPath, err := filepath.Abs(helmChartPath)
+	require.NoError(t, err, "failed to get absolute path for helm chart")
+
+	_, err = os.Stat(absHelmChartPath)
+	require.NoError(t, err, "helm chart not found at %s", absHelmChartPath)
+
+	args := []string{"template", "test-release", absHelmChartPath, "--namespace", "default"}
+	for _, apiVersion := range apiVersions {
+		args = append(args, "--api-versions", apiVersion)
+	}
+
+	if valuesYAML != "" {
+		valuesFile, err := os.CreateTemp("", "values-*.yaml")
+		require.NoError(t, err, "failed to create temp values file")
+		defer os.Remove(valuesFile.Name())
+
+		_, err = valuesFile.WriteString(valuesYAML)
+		require.NoError(t, err, "failed to write values file")
+		err = valuesFile.Close()
+		require.NoError(t, err, "failed to close values file")
+
+		args = append(args, "-f", valuesFile.Name())
+	}
+
+	helmCmd := exec.Command("helm", args...)
+	var output bytes.Buffer
+	var stderr bytes.Buffer
+	helmCmd.Stdout = &output
+	helmCmd.Stderr = &stderr
+
+	err = helmCmd.Run()
+	require.NoError(t, err, "helm template failed: %s", stderr.String())
+
+	return output.Bytes()
+}
+
+func findDeployment(t *testing.T, manifests []byte) appsv1.Deployment {
+	t.Helper()
+
+	for manifest := range strings.SplitSeq(string(manifests), "\n---") {
+		var meta struct {
+			Kind string `json:"kind"`
+		}
+		require.NoError(t, yaml.Unmarshal([]byte(manifest), &meta))
+		if meta.Kind != "Deployment" {
+			continue
+		}
+
+		var deployment appsv1.Deployment
+		require.NoError(t, yaml.Unmarshal([]byte(manifest), &deployment))
+		return deployment
+	}
+
+	t.Fatal("deployment not found in rendered manifests")
+	return appsv1.Deployment{}
+}
+
 // TestHelmChartTemplate tests helm template output for the kgateway chart
 // with different values configurations.
 func TestHelmChartTemplate(t *testing.T) {
 	charts := []string{"kgateway"}
 
 	valuesCases := []struct {
-		name       string
-		valuesYAML string
+		name        string
+		valuesYAML  string
+		apiVersions []string
 	}{
 		{
 			name:       "default",
@@ -268,6 +367,20 @@ func TestHelmChartTemplate(t *testing.T) {
     publishNotReadyAddresses: true
     allocateLoadBalancerNodePorts: false
     trafficDistribution: PreferClose
+`,
+		},
+		{
+			name: "service-monitor-enabled",
+			valuesYAML: `controller:
+  serviceMonitor:
+    enabled: true
+`,
+			apiVersions: []string{"monitoring.coreos.com/v1"},
+		},
+		{
+			name: "prometheus-annotations-disabled",
+			valuesYAML: `controller:
+  prometheusAnnotations: false
 `,
 		},
 		{
@@ -477,6 +590,45 @@ controller:
   replicaCount: null
 `,
 		},
+		{
+			name: "readiness-probe-override",
+			valuesYAML: `controller:
+  readinessProbe:
+    exec:
+      command:
+      - cat
+      - /tmp/ready
+    periodSeconds: 30
+    failureThreshold: 5
+`,
+		},
+		{
+			name: "startup-probe-override",
+			valuesYAML: `controller:
+  startupProbe:
+    failureThreshold: 300
+    periodSeconds: 2
+`,
+		},
+		{
+			name: "probes-full-override",
+			valuesYAML: `controller:
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 20
+    failureThreshold: 3
+  startupProbe:
+    httpGet:
+      path: /healthz
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    failureThreshold: 60
+`,
+		},
 	}
 
 	for _, chart := range charts {
@@ -493,6 +645,9 @@ controller:
 				// Build helm template command args
 				// Explicitly set namespace to avoid picking up the current kubectl context's namespace
 				args := []string{"template", "test-release", absHelmChartPath, "--namespace", "default"}
+				for _, apiVersion := range vc.apiVersions {
+					args = append(args, "--api-versions", apiVersion)
+				}
 
 				// If we have custom values, write them to a temp file
 				if vc.valuesYAML != "" {

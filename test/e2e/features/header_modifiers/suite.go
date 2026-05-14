@@ -34,7 +34,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					base.GwApiV1_3_0: &setupWithListenerSets, // XListenerSet available in experimental >= 1.3
 				},
 				base.GwApiChannelStandard: {
-					base.GwApiV1_5_1: &setupWithListenerSets, // ListenerSet promoted in standard >= 1.5.1
+					base.GwApiV1_5_0: &setupWithListenerSets, // ListenerSet promoted in standard >= 1.5.0
 				},
 			}),
 		),
@@ -69,6 +69,15 @@ func (s *testingSuite) TestGatewayLevelHeaderModifiers() {
 func (s *testingSuite) TestListenerSetLevelHeaderModifiers() {
 	s.checkPodsRunning()
 	s.assertHeaders(8081, expectedRequestHeaders("ls"), expectedResponseHeaders("ls"))
+}
+
+func (s *testingSuite) TestHeaderModifiersFromSecret() {
+	s.checkPodsRunning()
+	// The TrafficPolicy injects X-Api-Key and X-Tenant-Id from the backend-creds Secret.
+	s.assertHeaders(8080, map[string][]any{
+		"X-Api-Key":   {"my-secret-api-key"},
+		"X-Tenant-Id": {"tenant-abc"},
+	}, nil)
 }
 
 func (s *testingSuite) TestMultiLevelHeaderModifiers() {

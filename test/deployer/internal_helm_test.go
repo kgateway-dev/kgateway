@@ -3,14 +3,15 @@ package deployer
 // This test suite validates helm chart rendering and post-processing with
 // overlays (strategic-merge-patch) for managed Gateway deployments.
 //
-// # Fake Client and Server-Side Apply Semantics
+// # Test Client and Server-Side Apply Semantics
 //
-// The fake client used in these tests (no need for envtest, which is slower
-// and still not as thorough as an e2e test) preserves null values in CRD
-// fields marked with x-kubernetes-preserve-unknown-fields, mimicking the
-// behavior of `kubectl apply --server-side`. This differs from regular
-// client-side `kubectl apply`, which strips null values before sending them to
-// the API server.
+// These tests use an envtest API server by default and can use the fast fake
+// client when USE_ENVTEST=false. The fake client preserves null values in CRD
+// fields marked with x-kubernetes-preserve-unknown-fields, matching the behavior
+// we need to cover for resources submitted through `kubectl apply --server-side`
+// and other server-side apply clients. This differs from regular client-side
+// `kubectl apply`, which strips null values before sending them to the API
+// server.
 //
 // This means tests here accurately reflect what happens when users apply
 // GatewayParameters with `kubectl apply --server-side`, helm 4 in default
@@ -32,18 +33,62 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/envtest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	pkgdeployer "github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer/strategicpatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
+	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
+
+var sharedEnvTest *envtestutil.SharedEnv
+
+// getEnvTestConfig returns nil only when USE_ENVTEST=false.
+func getEnvTestConfig(t *testing.T) *rest.Config {
+	t.Helper()
+
+	if !envutils.IsEnvTruthyOrDefault("USE_ENVTEST", true) {
+		return nil
+	}
+
+	if sharedEnvTest == nil {
+		gitRoot := testutils.GitRootDirectory()
+		crdDirs := []string{
+			filepath.Join(gitRoot, testutils.CRDPath),
+		}
+
+		gwapiDir, err := testutils.GetGatewayAPICRDDir()
+		require.NoError(t, err, "failed to get Gateway API CRD directory")
+		crdDirs = append(crdDirs, gwapiDir)
+
+		sharedEnvTest, err = envtestutil.NewSharedEnv(crdDirs)
+		require.NoError(t, err, "failed to create envtest environment")
+
+		env := sharedEnvTest
+		t.Cleanup(func() {
+			if err := env.Stop(); err != nil {
+				t.Logf("warning: failed to stop envtest: %v", err)
+			}
+			if sharedEnvTest == env {
+				sharedEnvTest = nil
+			}
+		})
+	}
+
+	cfg, err := sharedEnvTest.Start()
+	require.NoError(t, err, "failed to start envtest")
+	return cfg
+}
 
 func mockVersion(t *testing.T) {
 	// Save the original version and restore it after the test
@@ -98,6 +143,21 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 		{
 			Name:      "basic gateway with default gatewayclass and no gwparams",
 			InputFile: "base-gateway",
+		},
+		{
+			// Pinning the envoy image by digest without specifying a tag must
+			// drop the inherited default tag. The rendered image is
+			// `repo@digest`, not `repo:tag@digest`.
+			Name:      "envoy image pinned by digest erases inherited default tag",
+			InputFile: "envoy-image-digest-erases-tag",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				digest := "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+				assert.Contains(t, outputYaml, "image: ghcr.io/envoy-wrapper@"+digest,
+					"envoy image should render as repo@digest with no tag")
+				assert.NotContains(t, outputYaml, "envoy-wrapper:v2.1.0-dev@",
+					"the inherited default tag must not appear when the user pins by digest only")
+			},
 		},
 		{
 			Name:      "gateway with replicas GWP via GWC",
@@ -160,6 +220,19 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 		{
 			Name:      "envoy dns resolver disable",
 			InputFile: "envoy-dns-resolver-zero",
+		},
+		{
+			Name:      "envoy readiness listener proxy protocol",
+			InputFile: "envoy-readiness-listener-proxy-protocol",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "envoy.filters.listener.proxy_protocol",
+					"readiness listener should include the proxy_protocol listener filter when enableReadinessProbeProxyProtocol is enabled")
+				assert.Contains(t, outputYaml, "allow_requests_without_proxy_protocol: true",
+					"proxy_protocol filter on the readiness listener must allow requests without PROXY headers so kubelet probes still succeed")
+				assert.Equal(t, 1, strings.Count(outputYaml, "envoy.filters.listener.proxy_protocol"),
+					"enableReadinessProbeProxyProtocol must wrap only the readiness listener")
+			},
 		},
 		{
 			Name:      "envoy JSON log",
@@ -660,10 +733,26 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 	VerifyAllYAMLFilesReferenced(t, filepath.Join(dir, "testdata"), tests)
 	VerifyAllEnvoyBootstrapAreValid(t, filepath.Join(dir, "testdata"))
 
+	envTestCfg := getEnvTestConfig(t)
+	useEnvTest := envTestCfg != nil
+	if useEnvTest {
+		t.Log("Using envtest for API server simulation")
+	} else {
+		t.Log("Using fake client")
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			fakeClient := fake.NewClient(t, tester.GetObjects(t, tt, scheme, dir, crdDir)...)
-			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, fakeClient)
+			objs := tester.GetObjects(t, tt, scheme, dir, crdDir)
+			var client apiclient.Client
+			if useEnvTest {
+				var err error
+				client, err = envtest.NewClient(envTestCfg, objs...)
+				require.NoError(t, err, "failed to create envtest client")
+			} else {
+				client = fake.NewClient(t, objs...)
+			}
+			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, client)
 		})
 	}
 }

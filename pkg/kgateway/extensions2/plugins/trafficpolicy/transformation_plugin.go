@@ -2,6 +2,7 @@ package trafficpolicy
 
 import (
 	"encoding/json"
+	"sort"
 
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
@@ -11,6 +12,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+)
+
+const (
+	RustformationModuleName = "rust_module"
+	RustformationFilterName = "rustformation"
 )
 
 type rustformationIR struct {
@@ -77,9 +83,9 @@ func toRustFormationPerRouteConfig(t *kgateway.TransformationPolicy) (*dynamicmo
 	}
 	rustCfg := &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-			Name: "rust_module",
+			Name: RustformationModuleName,
 		},
-		PerRouteConfigName: "rustformation",
+		PerRouteConfigName: RustformationFilterName,
 		FilterConfig:       filterCfg,
 	}
 
@@ -93,5 +99,72 @@ func (p *trafficPolicyPluginGwPass) handleRustFormation(fcn string, typedFilterC
 	if rustTransform.config != nil {
 		typedFilterConfig.AddTypedConfig(rustformationFilterNamePrefix, rustTransform.config)
 		p.setTransformationInChain[fcn] = true
+	}
+}
+
+func GenerateBlankTransformationConfig() *dynamicmodulesv3.DynamicModuleFilter {
+	return &dynamicmodulesv3.DynamicModuleFilter{
+		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+			Name: RustformationModuleName,
+		},
+		FilterName: RustformationFilterName,
+		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
+			Value: "{}",
+		}),
+	}
+}
+
+func GenerateBlankTransformationConfigPerRoute() *dynamicmodulesv3.DynamicModuleFilterPerRoute {
+	return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
+		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+			Name: RustformationModuleName,
+		},
+		PerRouteConfigName: RustformationFilterName,
+		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
+			Value: "{}",
+		}),
+	}
+}
+
+func generateDynamicMetadata(ns string, kv map[string]kgateway.InjaTemplate) *dynamicmodulesv3.DynamicModuleFilterPerRoute {
+	var metadata []kgateway.DynamicMetadataTransformation
+
+	keys := make([]string, 0, len(kv))
+	for k := range kv {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		v := kv[k]
+		metadata = append(metadata, kgateway.DynamicMetadataTransformation{
+			Namespace: ns,
+			Key:       k,
+			Value: kgateway.DynamicMetadataValue{
+				StringValue: &v,
+			},
+		})
+	}
+	b, _ := json.Marshal(&kgateway.TransformationPolicy{
+		Request: &kgateway.Transform{
+			DynamicMetadata: metadata,
+			Body: &kgateway.BodyTransformation{
+				ParseAs: kgateway.BodyParseBehaviorNone,
+			},
+		},
+		Response: &kgateway.Transform{
+			Body: &kgateway.BodyTransformation{
+				ParseAs: kgateway.BodyParseBehaviorNone,
+			},
+		},
+	})
+	return &dynamicmodulesv3.DynamicModuleFilterPerRoute{
+		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+			Name: RustformationModuleName,
+		},
+		PerRouteConfigName: RustformationFilterName,
+		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
+			Value: string(b),
+		}),
 	}
 }

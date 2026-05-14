@@ -24,6 +24,8 @@ import (
 const (
 	GatewayAcceptedMessage         = "Successfully accepted Gateway"
 	GatewayProgrammedMessage       = "Successfully programmed Gateway"
+	GatewayResolvedRefsMessage     = "Successfully resolved all Gateway references"
+	GatewayListenersNotResolved    = "One or more listeners have unresolved references"
 	GatewayInsecureFallbackMessage = "Gateway frontend validation is configured to allow insecure fallback"
 	ListenerSetAcceptedMessage     = "Successfully accepted ListenerSet"
 	ListenerSetProgrammedMessage   = "Successfully programmed ListenerSet"
@@ -197,6 +199,7 @@ func isReporterOwnedGatewayConditionType(conditionType gwv1.GatewayConditionType
 	switch conditionType {
 	case gwv1.GatewayConditionAccepted,
 		gwv1.GatewayConditionProgrammed,
+		gwv1.GatewayConditionResolvedRefs,
 		gwv1.GatewayConditionInsecureFrontendValidationMode:
 		return true
 	default:
@@ -533,6 +536,26 @@ func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.GatewayReasonProgrammed,
 			Message: GatewayProgrammedMessage,
+		})
+	}
+	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionResolvedRefs)); cond == nil {
+		reason := gwv1.GatewayReasonResolvedRefs
+		status := metav1.ConditionTrue
+		message := GatewayResolvedRefsMessage
+		for _, lisReport := range gwReport.listeners {
+			lisResolvedRefs := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionResolvedRefs))
+			if lisResolvedRefs != nil && lisResolvedRefs.Status == metav1.ConditionFalse {
+				reason = gwv1.GatewayReasonListenersNotResolved
+				status = metav1.ConditionFalse
+				message = GatewayListenersNotResolved
+				break
+			}
+		}
+		gwReport.SetCondition(reporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionResolvedRefs,
+			Status:  status,
+			Reason:  reason,
+			Message: message,
 		})
 	}
 }

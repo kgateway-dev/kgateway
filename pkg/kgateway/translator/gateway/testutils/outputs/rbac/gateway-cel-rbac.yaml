@@ -163,8 +163,7 @@ Routes:
               name: action
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.rbac.v3.Action
-                action: DENY
-                name: deny-request
+                name: allow-request
   virtualHosts:
   - domains:
     - example.com
@@ -196,6 +195,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -48,31 +47,9 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/test/envtestassets"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 )
-
-func getAssetsDir(t *testing.T) string {
-	var assets string
-	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
-		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -s --no-print-directory -C $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
-		t.Log("out:", string(out))
-		if err != nil {
-			t.Fatalf("failed to get assets dir: %v", err)
-		}
-		assets = strings.TrimSpace(string(out))
-	}
-	if assets != "" {
-		info, err := os.Stat(assets)
-		if err != nil {
-			t.Fatalf("assets directory does not exist: %s: %v", assets, err)
-		}
-		if !info.IsDir() {
-			t.Fatalf("assets path is not a directory: %s", assets)
-		}
-	}
-	return assets
-}
 
 // testingWriter is a WriteSyncer that writes logs to testing.T.
 type testingWriter struct {
@@ -481,6 +458,11 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 		writer.set(nil)
 	})
 
+	assetsDir, err := envtestassets.GetEnvTestAssetsDir()
+	if err != nil {
+		t.Fatalf("failed to get assets dir: %v", err)
+	}
+
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
@@ -489,7 +471,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 		},
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
-		BinaryAssetsDirectory: getAssetsDir(t),
+		BinaryAssetsDirectory: assetsDir,
 		// This often hangs (for unknown reasons); we don't need cleanup so just kill it almost instantly
 		ControlPlaneStopTimeout: time.Millisecond,
 		// web hook to add cluster ips to services

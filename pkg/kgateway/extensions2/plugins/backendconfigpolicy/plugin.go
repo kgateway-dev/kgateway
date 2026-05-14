@@ -289,7 +289,7 @@ func translate(
 	}
 
 	if pol.Spec.TCPKeepalive != nil {
-		ir.tcpKeepalive = translateTCPKeepalive(pol.Spec.TCPKeepalive)
+		ir.tcpKeepalive = TranslateTCPKeepalive(pol.Spec.TCPKeepalive)
 	}
 
 	if pol.Spec.CommonHttpProtocolOptions != nil {
@@ -435,7 +435,10 @@ func applyUpstreamProxyProtocol(ppConfig *envoycorev3.ProxyProtocolConfig, out *
 	}
 }
 
-func translateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.TcpKeepalive {
+func TranslateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.TcpKeepalive {
+	if tcpKeepalive == nil {
+		return nil
+	}
 	out := &envoycorev3.TcpKeepalive{}
 	if tcpKeepalive.KeepAliveProbes != nil {
 		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32

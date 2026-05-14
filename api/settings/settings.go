@@ -235,6 +235,9 @@ type Settings struct {
 	// "namespace" (required), "group" (optional), and "kind" (optional) fields.
 	// E.g., {"gateway-class-name":{"name":"params-name","namespace":"params-namespace","group":"gateway.networking.k8s.io","kind":"GatewayParameters"}}
 	GatewayClassParametersRefs GatewayClassParametersRefs `split_words:"true" default:"{}"`
+
+	// Enables setting the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
+	EnableAuthMetadata bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

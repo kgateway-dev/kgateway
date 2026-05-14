@@ -1,6 +1,7 @@
 package kgateway
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -100,6 +101,10 @@ type ListenerConfig struct {
 	// +optional
 	ProxyProtocol *ProxyProtocolConfig `json:"proxyProtocol,omitempty"`
 
+	// TCPKeepalive configures OS-level TCP keepalive checks for downstream client connections accepted by this listener.
+	// +optional
+	TCPKeepalive *TCPKeepalive `json:"tcpKeepalive,omitempty"`
+
 	// PerConnectionBufferLimitBytes sets the per-connection buffer limit for all listeners on the gateway.
 	// This controls the maximum size of read and write buffers for new connections.
 	// When using Envoy as an edge proxy, configuring the listener buffer limit is important to guard against
@@ -110,7 +115,7 @@ type ListenerConfig struct {
 	// +kubebuilder:validation:Minimum=0
 	PerConnectionBufferLimitBytes *int32 `json:"perConnectionBufferLimitBytes,omitempty"`
 
-	// HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
+	// HTTPSettings is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
 	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
@@ -158,6 +163,7 @@ type ProxyProtocolConfig struct {
 
 // +kubebuilder:validation:XValidation:message="useRemoteAddress must be set to false if xffTrustedCIDRs is set",rule="!has(self.xffTrustedCIDRs) || (has(self.useRemoteAddress) && !self.useRemoteAddress)"
 // +kubebuilder:validation:XValidation:message="only one of xffNumTrustedHops and xffTrustedCIDRs may be set",rule="!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)"
+// +kubebuilder:validation:XValidation:message="forwardClientCertDetails.details requires mode to be AppendForward or SanitizeSet (or unset)",rule="!has(self.forwardClientCertDetails) || !has(self.forwardClientCertDetails.details) || !has(self.forwardClientCertDetails.mode) || self.forwardClientCertDetails.mode == 'AppendForward' || self.forwardClientCertDetails.mode == 'SanitizeSet'"
 type HTTPSettings struct {
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
@@ -234,6 +240,22 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
+	// MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
+	// keepalive connection. When the limit is reached, Envoy closes the connection, which forces
+	// clients to reconnect. This allows L4 load balancers like AWS NLB to rebalance long-lived
+	// HTTP/2 and gRPC connections across gateway pods.
+	// If set to 0 or unspecified, defaults to unlimited.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MaxRequestsPerConnection *int32 `json:"maxRequestsPerConnection,omitempty"`
+
+	// Http2ProtocolOptions configures downstream HTTP/2 behavior on the listener's
+	// HttpConnectionManager.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions
+	// +optional
+	Http2ProtocolOptions *ListenerHTTP2ProtocolOptions `json:"http2ProtocolOptions,omitempty"`
+
 	// HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
 	// +optional
 	HealthCheck *EnvoyHealthCheck `json:"healthCheck,omitempty"`
@@ -260,6 +282,15 @@ type HTTPSettings struct {
 	// sure it did not come from the client.
 	// +optional
 	EarlyRequestHeaderModifier *gwv1.HTTPHeaderFilter `json:"earlyRequestHeaderModifier,omitempty"`
+
+	// ForwardClientCertDetails configures how Envoy handles the x-forwarded-client-cert (XFCC)
+	// header and which parts of the downstream client certificate are forwarded to upstream
+	// backends. Most modes only have effect on listeners where mTLS is configured. The exceptions
+	// are Sanitize, which strips XFCC unconditionally, and AlwaysForwardOnly, which forwards XFCC
+	// unconditionally; on a non-mTLS listener under any other mode the setting is a no-op.
+	// See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-forward-client-cert-details
+	// +optional
+	ForwardClientCertDetails *ForwardClientCertDetails `json:"forwardClientCertDetails,omitempty"`
 
 	// MaxRequestHeadersKb sets the maximum size of request headers that Envoy will accept.
 	// If unset, the Envoy default is 60 KiB.
@@ -292,6 +323,31 @@ type AccessLog struct {
 	// Filter access logs configuration
 	// +optional
 	Filter *AccessLogFilter `json:"filter,omitempty"`
+}
+
+// ListenerHTTP2ProtocolOptions mirrors Http2ProtocolOptions for listener-facing
+// policies, but avoids the expensive CEL validations that push the listener CRDs
+// over Kubernetes' schema cost budget.
+type ListenerHTTP2ProtocolOptions struct {
+	// InitialStreamWindowSize is the initial window size for the stream.
+	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
+	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Values can be specified with units like "64Ki".
+	// +optional
+	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
+
+	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+	// Same range and default value as InitialStreamWindowSize.
+	// Values can be specified with units like "64Ki".
+	// +optional
+	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
+
+	// The maximum number of concurrent streams that the connection can have.
+	// Envoy defaults to 1024.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=2147483647
+	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
 }
 
 // FileSink represents the file sink configuration for access logs.
@@ -964,3 +1020,70 @@ const (
 	// but validates the certificate if one is presented. If validation fails, the connection is rejected.
 	ClientCertificateValidationModeOptional ClientCertificateValidationMode = "Optional"
 )
+
+// ForwardClientCertDetails configures how Envoy handles the x-forwarded-client-cert (XFCC)
+// header forwarded to upstream backends.
+type ForwardClientCertDetails struct {
+	// Mode controls how Envoy handles the XFCC header on the request forwarded upstream.
+	// If unset and Details is provided, Mode defaults to SanitizeSet.
+	// If both Mode and Details are unset, this field has no effect.
+	//
+	// - Sanitize: do not send the XFCC header upstream.
+	// - ForwardOnly: forward the XFCC header in the request unchanged.
+	// - AppendForward: append the current client's details to the XFCC header.
+	// - SanitizeSet: reset the XFCC header with the current client's details, ignoring any client-supplied value.
+	// - AlwaysForwardOnly: always forward the XFCC header, even for non-mTLS connections.
+	//
+	// +kubebuilder:validation:Enum=Sanitize;ForwardOnly;AppendForward;SanitizeSet;AlwaysForwardOnly
+	// +optional
+	Mode *ForwardClientCertMode `json:"mode,omitempty"`
+
+	// Details selects which fields from the downstream client certificate are written into
+	// the XFCC header that is sent upstream. These fields are only honored by Envoy when
+	// Mode is AppendForward or SanitizeSet.
+	// +optional
+	Details *SetCurrentClientCertDetails `json:"details,omitempty"`
+}
+
+// ForwardClientCertMode is the XFCC header forwarding mode for HTTP Connection Manager.
+type ForwardClientCertMode string
+
+const (
+	// ForwardClientCertModeSanitize strips the XFCC header from requests forwarded upstream.
+	ForwardClientCertModeSanitize ForwardClientCertMode = "Sanitize"
+	// ForwardClientCertModeForwardOnly forwards the XFCC header from the request unchanged.
+	ForwardClientCertModeForwardOnly ForwardClientCertMode = "ForwardOnly"
+	// ForwardClientCertModeAppendForward appends the current client's details to the XFCC header.
+	ForwardClientCertModeAppendForward ForwardClientCertMode = "AppendForward"
+	// ForwardClientCertModeSanitizeSet resets the XFCC header with the current client's details,
+	// ignoring any client-supplied value.
+	ForwardClientCertModeSanitizeSet ForwardClientCertMode = "SanitizeSet"
+	// ForwardClientCertModeAlwaysForwardOnly always forwards the XFCC header, even for non-mTLS connections.
+	ForwardClientCertModeAlwaysForwardOnly ForwardClientCertMode = "AlwaysForwardOnly"
+)
+
+// SetCurrentClientCertDetails selects fields from the downstream client certificate to include
+// in the XFCC header when Envoy sets or appends it. Fields default to false when unset.
+// See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-msg-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-setcurrentclientcertdetails
+type SetCurrentClientCertDetails struct {
+	// Subject forwards the certificate Subject in the XFCC header.
+	// +optional
+	Subject *bool `json:"subject,omitempty"`
+
+	// Cert forwards the entire client certificate in URL-encoded PEM format in the XFCC header.
+	// +optional
+	Cert *bool `json:"cert,omitempty"`
+
+	// Chain forwards the entire client certificate chain (including the leaf certificate) in
+	// URL-encoded PEM format in the XFCC header.
+	// +optional
+	Chain *bool `json:"chain,omitempty"`
+
+	// DNS forwards DNS-type Subject Alternative Names from the client certificate in the XFCC header.
+	// +optional
+	DNS *bool `json:"dns,omitempty"`
+
+	// URI forwards the URI-type Subject Alternative Name from the client certificate in the XFCC header.
+	// +optional
+	URI *bool `json:"uri,omitempty"`
+}

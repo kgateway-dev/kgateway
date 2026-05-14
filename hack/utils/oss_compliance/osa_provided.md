@@ -32,6 +32,8 @@ Name|Version|License
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.2|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.10.0|Apache License 2.0
+[go.uber.org/atomic](https://go.uber.org/atomic)|v1.11.0|MIT License
+[go.uber.org/mock](https://go.uber.org/mock)|v0.6.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.1|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20260112195511-716be5621a96|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.20.0|BSD 3-clause "New" or "Revised" License
@@ -46,8 +48,10 @@ Name|Version|License
 [k8s.io/api](https://k8s.io/api)|v0.35.3|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.35.3|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.35.3|Apache License 2.0
+[k8s.io/cli-runtime](https://k8s.io/cli-runtime)|v0.35.3|Apache License 2.0
 [k8s.io/client-go](https://k8s.io/client-go)|v0.35.3|Apache License 2.0
 [klog/v2](https://k8s.io/klog/v2)|v2.140.0|Apache License 2.0
+[k8s.io/kubectl](https://k8s.io/kubectl)|v0.35.3|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20260319190234-28399d86e0b5|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.23.3|Apache License 2.0
 [sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.5.1|Apache License 2.0

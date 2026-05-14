@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"time"
 
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -22,6 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -58,9 +62,30 @@ func (s *testingSuite) SetupSuite() {
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
 
+	// Apply cert Secrets used by the forwardClientCertDetails tests:
+	// - server cert + client CA in 'default' (consumed by the gw mtls-https
+	//   listener and the mtls-validation policy)
+	// - alice client cert + CA in 'curl' (mounted into the curl-mtls pod
+	//   created by setup.yaml)
+	// Applied at suite setup time so the listener is always programmable
+	// and curl-mtls can mount its volumes regardless of which test runs.
+	for _, m := range []string{
+		forwardClientCertServerSecret,
+		forwardClientCertCASecret,
+		forwardClientCertAliceSecret,
+	} {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, m)
+		s.NoError(err, "can apply "+m)
+	}
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, curlMtlsPod)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, curlMtlsPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=curl-mtls",
+	})
+
 	// include gateway manifests for tests, so we recreate it for each test run
 	s.manifests = map[string][]string{
 		"TestHttpListenerPolicyAllFields":        {gatewayManifest, httpRouteManifest, allFieldsManifest},
+		"TestListenerPolicyHTTP2ProtocolOptions": {gatewayManifest, httpRouteManifest, http2ProtocolOptionsManifest},
 		"TestHttpListenerPolicyServerHeader":     {gatewayManifest, httpRouteManifest, serverHeaderManifest},
 		"TestPreserveHttp1HeaderCase":            {gatewayManifest, preserveHttp1HeaderCaseManifest},
 		"TestAccessLogEmittedToStdout":           {gatewayManifest, httpRouteManifest, accessLogManifest},
@@ -69,14 +94,34 @@ func (s *testingSuite) SetupSuite() {
 		"TestProxyProtocol":                      {gatewayManifest, httpRouteManifest, proxyProtocolManifest},
 		// RequestID configuration tests for the new RequestID feature
 		// These tests use an echo server to verify x-request-id header behavior
-		"TestListenerPolicyRequestId":     {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
-		"TestHTTPListenerPolicyRequestId": {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
+		"TestListenerPolicyRequestId":                {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
+		"TestHTTPListenerPolicyRequestId":            {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
+		"TestListenerPolicyMaxRequestsPerConnection": {gatewayManifest, httpRouteManifest, maxRequestsPerConnectionManifest},
+
+		// forwardClientCertDetails tests. All share gateway + request-id-echo
+		// + the route + the mtls-validation policy. Each scenario adds (or
+		// omits, for the baseline) a forward-client-cert ListenerPolicy.
+		"TestForwardClientCertBaseline":           {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation},
+		"TestForwardClientCertSanitizeSetDefault": {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitizeSetDef},
+		"TestForwardClientCertSanitizeSetAll":     {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitizeSetAll},
+		"TestForwardClientCertAppendForward":      {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertAppendForward},
+		"TestForwardClientCertSanitize":           {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitize},
+		"TestForwardClientCertForwardOnly":        {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertForwardOnly},
 	}
 }
 
 func (s *testingSuite) TearDownSuite() {
 	if testutils.ShouldSkipCleanup(s.T()) {
 		return
+	}
+	// Tear down forwardClientCertDetails Secrets in reverse apply order.
+	for _, m := range []string{
+		forwardClientCertAliceSecret,
+		forwardClientCertCASecret,
+		forwardClientCertServerSecret,
+	} {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, m)
+		s.NoError(err, "can delete "+m)
 	}
 	// Check that the common setup manifest is deleted
 	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
@@ -163,6 +208,25 @@ func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 				"server": "nginx/1.28.0", // Should be the backend server header, not "envoy"
 			},
 		})
+}
+
+func (s *testingSuite) TestListenerPolicyHTTP2ProtocolOptions() {
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(8080),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("Welcome to nginx!"),
+		},
+	)
+
+	s.assertListenerHTTP2ProtocolOptions("listener~8080")
+	s.assertListenerHTTP2ProtocolOptions("listener~8081")
 }
 
 func (s *testingSuite) TestPreserveHttp1HeaderCase() {
@@ -438,4 +502,241 @@ func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
 			// Verify x-request-id header was generated with valid UUID format
 			Body: gomega.MatchRegexp(`(?i)x-request-id: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`),
 		})
+}
+
+// TestListenerPolicyMaxRequestsPerConnection checks that setting maxRequestsPerConnection
+// in a ListenerPolicy lands in Envoy's HCM config and doesn't break traffic.
+func (s *testingSuite) TestListenerPolicyMaxRequestsPerConnection() {
+	// A NACK from Envoy would surface here as a connection error, so this also serves as an acceptance check.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("Welcome to nginx!"),
+		},
+	)
+
+	// Verify the setting appears in the Envoy config dump via the admin API.
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.ctx,
+		proxyDeployment.ObjectMeta,
+		func(ctx context.Context, adminClient *admincli.Client) {
+			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
+				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get dynamic listener from config dump")
+				g.Expect(listener.GetFilterChains()).NotTo(gomega.BeEmpty(), "listener should have at least one filter chain")
+
+				// Search all network filters for the HCM; don't assume it's always at index 0.
+				var hcm *envoy_hcm.HttpConnectionManager
+				for _, chain := range listener.GetFilterChains() {
+					for _, f := range chain.GetFilters() {
+						candidate := &envoy_hcm.HttpConnectionManager{}
+						if err := f.GetTypedConfig().UnmarshalTo(candidate); err == nil {
+							hcm = candidate
+							break
+						}
+					}
+					if hcm != nil {
+						break
+					}
+				}
+				g.Expect(hcm).NotTo(gomega.BeNil(), "could not find an HCM filter in any filter chain")
+
+				// Assert the exact value, not just presence — a wiring bug can leave the field at 0.
+				g.Expect(hcm.GetCommonHttpProtocolOptions().GetMaxRequestsPerConnection().GetValue()).
+					To(gomega.Equal(uint32(100)),
+						"max_requests_per_connection should be 100 as set in the ListenerPolicy")
+			}).
+				WithContext(ctx).
+				WithTimeout(60 * time.Second).
+				WithPolling(2 * time.Second).
+				Should(gomega.Succeed())
+		},
+	)
+}
+
+// forwardClientCertCurlOpts returns the curl options used by every
+// TestForwardClientCert* test: an mTLS HTTPS GET to gateway.local on the
+// 'mtls-https' listener (port 8443), authenticating with alice's client
+// cert mounted into the curl-mtls pod.
+func forwardClientCertCurlOpts(extra ...curl.Option) []curl.Option {
+	opts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+		curl.WithPort(8443),
+		curl.WithScheme("https"),
+		curl.WithSni("gateway.local"),
+		curl.WithHostHeader("gateway.local"),
+		curl.WithCaFile(forwardClientCertCAPath),
+		curl.WithClientCert(forwardClientCertAliceCertPath, forwardClientCertAliceKeyPath),
+	}
+	return append(opts, extra...)
+}
+
+// waitForEchoBackend ensures the request-id-echo backend used by every
+// TestForwardClientCert* test is healthy before issuing requests.
+func (s *testingSuite) waitForEchoBackend() {
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, requestIdEchoService, requestIdEchoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, requestIdEchoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=request-id-echo",
+	})
+}
+
+// TestForwardClientCertBaseline verifies that without a forwardClientCertDetails
+// policy, Envoy uses its default SANITIZE mode and the backend never sees an
+// X-Forwarded-Client-Cert header.
+func (s *testingSuite) TestForwardClientCertBaseline() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert:`)),
+		})
+}
+
+// TestForwardClientCertSanitizeSetDefault sets only `details: {subject: true}`
+// and relies on kgateway auto-default of mode=SanitizeSet. The backend
+// should see XFCC carrying alice's Subject.
+func (s *testingSuite) TestForwardClientCertSanitizeSetDefault() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Subject="OU=engineering,O=acme,CN=alice"`),
+		})
+}
+
+// TestForwardClientCertSanitizeSetAll sets every detail flag plus the
+// auto-emitted Hash. The backend should see XFCC carrying Hash, Cert,
+// Chain, Subject, URI, and DNS.
+func (s *testingSuite) TestForwardClientCertSanitizeSetAll() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			// All six selectors must appear on the same XFCC line. Hash is
+			// always emitted by Envoy on a 'set' operation; the rest come from
+			// the details: {} block in policy-sanitize-set-all.yaml.
+			Body: gomega.And(
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Hash=[0-9a-f]{64}`),
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Cert="-----BEGIN%20CERTIFICATE-----`),
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Chain="-----BEGIN%20CERTIFICATE-----`),
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Subject="OU=engineering,O=acme,CN=alice"`),
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*URI=spiffe://acme\.example\.com/ns/team-alpha/sa/alice`),
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*DNS=alice\.acme\.example\.com`),
+			),
+		})
+}
+
+// TestForwardClientCertAppendForward injects a spoofed inbound XFCC header.
+// AppendForward must preserve it and append the gateway's own entry,
+// comma-separated.
+func (s *testingSuite) TestForwardClientCertAppendForward() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(
+			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
+		),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			// Spoofed entry comes first, then a comma, then the gateway entry
+			// containing alice's Subject and URI.
+			Body: gomega.MatchRegexp(`(?i)x-forwarded-client-cert: By=outer-proxy;Subject="CN=spoofed",.*Subject="OU=engineering,O=acme,CN=alice".*URI=spiffe://acme\.example\.com/ns/team-alpha/sa/alice`),
+		})
+}
+
+// TestForwardClientCertSanitize injects a spoofed inbound XFCC and asserts
+// it is dropped before reaching the backend (no XFCC header at all).
+func (s *testingSuite) TestForwardClientCertSanitize() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(
+			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
+		),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert:`)),
+		})
+}
+
+// TestForwardClientCertForwardOnly injects a spoofed inbound XFCC and
+// asserts it is forwarded verbatim. The gateway must NOT add an entry of
+// its own: no comma (no appended entry), no Hash= (no gateway-emitted
+// leaf cert), and no alice Subject.
+func (s *testingSuite) TestForwardClientCertForwardOnly() {
+	s.waitForEchoBackend()
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		curlMtlsPodExecOpt,
+		forwardClientCertCurlOpts(
+			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
+		),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body: gomega.And(
+				gomega.MatchRegexp(`(?i)x-forwarded-client-cert: By=outer-proxy;Subject="CN=spoofed"`),
+				gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert: [^\n]*,`)),
+				gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert: [^\n]*Hash=`)),
+			),
+		})
+}
+
+func (s *testingSuite) assertListenerHTTP2ProtocolOptions(listenerName string) {
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.ctx,
+		proxyObjectMeta,
+		func(ctx context.Context, adminClient *admincli.Client) {
+			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, listenerName)
+				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get listener %s", listenerName)
+				if err != nil {
+					return
+				}
+
+				g.Expect(listener.GetFilterChains()).NotTo(gomega.BeEmpty(), "listener %s should have filter chains", listenerName)
+				g.Expect(listener.GetFilterChains()[0].GetFilters()).NotTo(gomega.BeEmpty(), "listener %s should have filters", listenerName)
+
+				var hcmConfig *anypb.Any
+				for _, filter := range listener.GetFilterChains()[0].GetFilters() {
+					if filter.GetName() == "envoy.filters.network.http_connection_manager" {
+						hcmConfig = filter.GetTypedConfig()
+						break
+					}
+				}
+
+				g.Expect(hcmConfig).NotTo(gomega.BeNil(), "listener %s should include an HCM filter", listenerName)
+
+				hcm := &envoy_hcm.HttpConnectionManager{}
+				err = anypb.UnmarshalTo(hcmConfig, hcm, proto.UnmarshalOptions{})
+				g.Expect(err).NotTo(gomega.HaveOccurred(), "can unmarshal HCM for listener %s", listenerName)
+
+				http2Opts := hcm.GetHttp2ProtocolOptions()
+				g.Expect(http2Opts).NotTo(gomega.BeNil(), "listener %s should include http2 protocol options", listenerName)
+				g.Expect(http2Opts.GetInitialConnectionWindowSize().GetValue()).To(gomega.Equal(uint32(262144)))
+				g.Expect(http2Opts.GetInitialStreamWindowSize().GetValue()).To(gomega.Equal(uint32(131072)))
+				g.Expect(http2Opts.GetMaxConcurrentStreams().GetValue()).To(gomega.Equal(uint32(123)))
+			}).
+				WithContext(ctx).
+				WithTimeout(30*time.Second).
+				WithPolling(2*time.Second).
+				Should(gomega.Succeed(), "failed to observe expected http2 protocol options on listener %s", listenerName)
+		},
+	)
 }

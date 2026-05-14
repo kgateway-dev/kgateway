@@ -1,9 +1,16 @@
 package trafficpolicy
 
 import (
+	"fmt"
 	"testing"
 
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestValidateAndFilterSHAUsers(t *testing.T) {
@@ -80,7 +87,7 @@ user2:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=
 		},
 		{
 			name: "whitespace is trimmed",
-			htpasswdData: `  user1:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs=  
+			htpasswdData: `  user1:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs=
 	user2:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=	`,
 			expectedValid: []string{
 				"user1:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs=",
@@ -146,4 +153,82 @@ user:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=`,
 			assert.Equal(t, tt.expectedInvalid, invalidUsernames, "invalid usernames mismatch")
 		})
 	}
+}
+
+func TestHttpFiltersBasicAuth(t *testing.T) {
+	t.Run("adds basic auth filter and auth-enabled filter to chain", func(t *testing.T) {
+		plugin := &trafficPolicyPluginGwPass{
+			enableAuthMetadata: true,
+			basicAuthInChain: map[string]*envoy_basic_auth_v3.BasicAuth{
+				"test-filter-chain": {},
+			},
+		}
+		fcc := ir.FilterChainCommon{FilterChainName: "test-filter-chain"}
+
+		httpFilters, err := plugin.HttpFilters(ir.HttpFiltersContext{}, fcc)
+
+		require.NoError(t, err)
+		require.NotNil(t, httpFilters)
+		// basic auth filter followed by auth-enabled metadata filter
+		assert.Equal(t, 2, len(httpFilters))
+		assert.Equal(t, basicAuthFilterName, httpFilters[0].Filter.GetName())
+		assert.Equal(t, filters.DuringStage(filters.AuthNStage), httpFilters[0].Stage)
+		assert.Equal(t, BasicAuthEnabledFilterName, httpFilters[1].Filter.GetName())
+		assert.Equal(t, filters.AfterStage(filters.AuthNStage), httpFilters[1].Stage)
+	})
+}
+
+func TestBasicAuthPolicyPlugin(t *testing.T) {
+	t.Run("applies basic auth configuration to route", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				basicAuth: &basicAuthIR{
+					policy: &envoy_basic_auth_v3.BasicAuthPerRoute{},
+				},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		require.NotNil(t, pCtx.TypedFilterConfig)
+		basicAuthConfig, ok := pCtx.TypedFilterConfig[basicAuthFilterName]
+		assert.True(t, ok)
+		assert.NotNil(t, basicAuthConfig)
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[BasicAuthEnabledFilterName])
+		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[BasicAuthEnabledFilterName]),
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "basic_auth_enabled must set dynamic metadata")
+	})
+
+	t.Run("handles disabled basic auth configuration", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				basicAuth: &basicAuthIR{disable: true},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		assert.NotNil(t, pCtx.TypedFilterConfig, pCtx)
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[basicAuthFilterName])
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[BasicAuthEnabledFilterName])
+		assert.NotContains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[BasicAuthEnabledFilterName]), AuthSucceededMetadataKey, "basic_auth_enabled must not set dynamic metadata if the policy is disabled at the route level")
+	})
 }

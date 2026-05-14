@@ -1,0 +1,191 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_backendtlspolicy-conflicted-without-section-name-test_443
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        tlsParams: {}
+        validationContext:
+          matchTypedSubjectAltNames:
+          - matcher:
+              exact: other.example.com
+            sanType: DNS
+          trustedCa:
+            inlineString: |
+              -----BEGIN CERTIFICATE-----
+              MIIC1jCCAb4CCQCJczLyBBZ1GTANBgkqhkiG9w0BAQsFADAtMRUwEwYDVQQKDAxl
+              eGFtcGxlIEluYy4xFDASBgNVBAMMC2V4YW1wbGUuY29tMB4XDTI1MDMwNzE0Mjkx
+              NloXDTI2MDMwNzE0MjkxNlowLTEVMBMGA1UECgwMZXhhbXBsZSBJbmMuMRQwEgYD
+              VQQDDAtleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+              AN0U6TVYECkwqnxh1Kt3dS+LialrXBOXKagj9tE582T6dwmqThD75VZPrNKkRoYO
+              aUzCctfDkUBXRemOTMut7ES5xoAtSAhr2GAnqgM3+yBCLOxooSjEFdlpFT7dhi1w
+              jOPa5iMh6ve/pHuRHvEuaF/J6P8tr83wGutx/xFZVuGA9V1AmBmYhePM+JhdcwaB
+              1+IbJp30gGyPfY4vdRQ9VQWbThE8psEzah+3SgTKJSIT7NAdwiIu3O3rXORbaYYU
+              oycgXUHdOKRbJnbvy3pTnFZJ50sg1HIA4yBdX7c0diy8Zz3Suoondg3DforWr0pB
+              Hs6tySAQoz2RiAqDqcE2rbMCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAWPkz3dJW
+              b+LFtnv7MlOVM79Y4PqeiHnazP1G9FwnWBHARkjISsax3b0zX8/RHnU83c3tLP5D
+              VwenYb9B9mzXbLiWI8aaX0UXP//D593ti15y0Od7yC2hQszlqIbxYnkFVwXoT9fQ
+              bdQ9OtpCt8EZnKEyCxck+hlKEyYTcH2PqZ7Ndp0M8I2znz3Kut/uYHLUddfoPF/m
+              O0V6fbyB/Mx/G1uLiv/BVpx3AdP+3ygJyKtelXkD+IdlY3y110fzmVr6NgxAbz/h
+              n9KpuK4SEloIycZUaKVXAaX7T42SFYw7msmB+Uu7z5oLOijsjX6TjeofdFBZ/Byl
+              SxODgqhtaPnOxQ==
+              -----END CERTIFICATE-----
+      sni: other.example.com
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 80
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~80
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~80
+  name: listener~80
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~80
+  virtualHosts:
+  - domains:
+    - abc.example.com
+    name: listener~80~abc_example_com
+    routes:
+    - match:
+        path: /backendtlspolicy-conflicted-without-section-name
+      name: listener~80~abc_example_com-route-0-httproute-example-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_backendtlspolicy-conflicted-without-section-name-test_443
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+  httpRoutes:
+    default/example-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+  policies:
+    BackendTLSPolicy/default/conflicted-without-section-name-1:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        controllerName: kgateway.dev/kgateway
+    BackendTLSPolicy/default/conflicted-without-section-name-2:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Policy conflicts with higher priority policy
+          reason: Conflicted
+          status: "False"
+          type: Accepted
+        controllerName: kgateway.dev/kgateway

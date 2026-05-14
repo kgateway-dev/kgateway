@@ -96,6 +96,7 @@ func (o *oidcProviderConfigDiscoverer) discover(issuerURI string) (*oidcProvider
 	}
 
 	cfg := &oidcProviderConfig{}
+	client := &http.Client{Timeout: 30 * time.Second}
 	err = retry.Do(func() error {
 		// TODO: allow using custom certs for HTTPS Issuer URI
 		req, err := http.NewRequest(http.MethodGet, discoveryURL.String(), nil)
@@ -105,10 +106,6 @@ func (o *oidcProviderConfigDiscoverer) discover(issuerURI string) (*oidcProvider
 
 		req.Header.Set("Accept", oidcAcceptedContentType)
 		req.Header.Set("User-Agent", userAgent)
-
-		client := &http.Client{
-			Timeout: 30 * time.Second,
-		}
 
 		resp, err := client.Do(req)
 		if err != nil {

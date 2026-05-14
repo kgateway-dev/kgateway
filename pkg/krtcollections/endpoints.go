@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -293,10 +294,27 @@ func findPortInEndpointSlice(endpointSlice *discoveryv1.EndpointSlice, singlePor
 		}
 		// If the endpoint port is not named, it implies that
 		// the kube service only has a single unnamed port as well.
-		if singlePortService || (p.Name != nil && *p.Name == kubeServicePort.Name) {
+		if singlePortService || endpointSlicePortMatchesServicePort(p, kubeServicePort) {
 			return uint32(*p.Port) //nolint:gosec // G115: endpoint port is always valid port range
 		}
 	}
 
 	return port
+}
+
+func endpointSlicePortMatchesServicePort(endpointPort discoveryv1.EndpointPort, kubeServicePort *corev1.ServicePort) bool {
+	if endpointPort.Name != nil && *endpointPort.Name == kubeServicePort.Name {
+		return true
+	}
+
+	endpointPortUnnamed := endpointPort.Name == nil || *endpointPort.Name == ""
+
+	switch {
+	case kubeServicePort.TargetPort.Type == intstr.String && kubeServicePort.TargetPort.StrVal != "":
+		return endpointPort.Name != nil && *endpointPort.Name == kubeServicePort.TargetPort.StrVal
+	case kubeServicePort.TargetPort.Type == intstr.Int && kubeServicePort.TargetPort.IntVal != 0:
+		return endpointPortUnnamed && endpointPort.Port != nil && *endpointPort.Port == kubeServicePort.TargetPort.IntVal
+	default:
+		return endpointPortUnnamed && endpointPort.Port != nil && *endpointPort.Port == kubeServicePort.Port
+	}
 }

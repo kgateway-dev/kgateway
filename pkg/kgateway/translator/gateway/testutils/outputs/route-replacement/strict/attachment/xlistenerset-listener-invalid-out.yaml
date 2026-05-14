@@ -132,6 +132,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 0
         conditions:
@@ -197,7 +202,8 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+          message: 'gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-traffic-policy/http-9090:
+            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
             Failed to create pre-route filter config: Failed to initialize per-route
             dynamic module'
           reason: ListenerReplaced

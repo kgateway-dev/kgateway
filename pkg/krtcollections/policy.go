@@ -71,14 +71,12 @@ type StatusMarker struct{}
 // MARK: BackendIndex
 
 type BackendIndex struct {
-	// availableBackends are the backends as supplied by backend-contributed plugins.
-	// Any policies here are attached directly at Backend generation and not attached via
-	// policy index. Use availableBackendsWithPolicy when you need policy.
-	availableBackends map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]
-	// aliasIndex indexes the availableBackends for a given GK by the BackendObjectIR's Alias
-	aliasIndex map[schema.GroupKind]krt.Index[backendKey, ir.BackendObjectIR]
+	// availableBackendsWithPolicyByGK stores the policy-attached backend view keyed by backend GroupKind.
+	availableBackendsWithPolicyByGK map[schema.GroupKind]krt.Collection[*ir.BackendObjectIR]
+	// aliasIndexWithPolicy indexes the policy-attached backends for a given GK by alias.
+	aliasIndexWithPolicy map[schema.GroupKind]krt.Index[backendKey, *ir.BackendObjectIR]
 
-	// availableBackendsWithPolicy is built from availableBackends, attaching policy to the given backends.
+	// availableBackendsWithPolicy stores the policy-attached backend collections.
 	// BackendsWithPolicy is the public interface to access this.
 	availableBackendsWithPolicy []krt.Collection[*ir.BackendObjectIR]
 	// backendsRequiringPolicyStatus is a collection of backends that have policies that may require status to be written to them.
@@ -103,12 +101,12 @@ func NewBackendIndex(
 	refgrants *RefGrantIndex,
 ) *BackendIndex {
 	return &BackendIndex{
-		policies:          policies,
-		refgrants:         refgrants,
-		availableBackends: map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]{},
-		aliasIndex:        map[schema.GroupKind]krt.Index[backendKey, ir.BackendObjectIR]{},
-		gkAliases:         map[schema.GroupKind][]schema.GroupKind{},
-		krtopts:           krtopts,
+		policies:                        policies,
+		refgrants:                       refgrants,
+		availableBackendsWithPolicyByGK: map[schema.GroupKind]krt.Collection[*ir.BackendObjectIR]{},
+		aliasIndexWithPolicy:            map[schema.GroupKind]krt.Index[backendKey, *ir.BackendObjectIR]{},
+		gkAliases:                       map[schema.GroupKind][]schema.GroupKind{},
+		krtopts:                         krtopts,
 	}
 }
 
@@ -118,11 +116,6 @@ func (i *BackendIndex) HasSynced() bool {
 	}
 	if !i.refgrants.HasSynced() {
 		return false
-	}
-	for _, col := range i.availableBackends {
-		if !col.HasSynced() {
-			return false
-		}
 	}
 	for _, col := range i.availableBackendsWithPolicy {
 		if !col.HasSynced() {
@@ -145,68 +138,97 @@ func (i *BackendIndex) BackendsWithPolicyRequiringStatus() []krt.Collection[*ir.
 	return i.backendsRequiringPolicyStatus
 }
 
+func (i *BackendIndex) attachPoliciesToBackend(
+	kctx krt.HandlerContext,
+	backendObj ir.BackendObjectIR,
+) *ir.BackendObjectIR {
+	// Look up service-wide policies (no sectionName).
+	policies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
+	// Also look up port specific policies if the backend has a port name (for example BackendTLSPolicy with sectionName).
+	// excludeGlobal=true since global policies are already included from the first lookup above.
+	if backendObj.PortName != "" {
+		portPolicies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, backendObj.PortName, backendObj.GetObjectLabels(), true)
+		policies = preferPortSpecificBackendTLSPolicies(policies, portPolicies)
+		policies = append(policies, portPolicies...)
+	}
+	anyHasRef := false
+	for _, p := range policies {
+		if p.PolicyRef != nil {
+			anyHasRef = true
+			break
+		}
+	}
+	for _, aliasObjSrc := range backendObj.Aliases {
+		if aliasObjSrc.Namespace == "" {
+			// targeting policies must be namespace local
+			// some aliases might be "global" but for policy purposes, give them the src namespace
+			aliasObjSrc.Namespace = backendObj.GetNamespace()
+		}
+		aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, "", backendObj.GetObjectLabels(), true)
+		if backendObj.PortName != "" {
+			aliasPortPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, backendObj.PortName, backendObj.GetObjectLabels(), true)
+			aliasPolicies = preferPortSpecificBackendTLSPolicies(aliasPolicies, aliasPortPolicies)
+			aliasPolicies = append(aliasPolicies, aliasPortPolicies...)
+		}
+		if !anyHasRef {
+			for _, p := range aliasPolicies {
+				if p.PolicyRef != nil {
+					anyHasRef = true
+					break
+				}
+			}
+		}
+		policies = append(policies, aliasPolicies...)
+	}
+	backendObj.RequiresPolicyStatus = anyHasRef
+	backendObj.AttachedPolicies = ToAttachedPolicies(policies)
+	backend := &backendObj
+	return backend
+}
+
+// AttachPoliciesToCollection derives a new backend collection with all backend-attached
+// policies applied, plus the subset that requires policy status updates.
+func (i *BackendIndex) AttachPoliciesToCollection(
+	col krt.Collection[ir.BackendObjectIR],
+	name string,
+) (krt.Collection[*ir.BackendObjectIR], krt.Collection[*ir.BackendObjectIR]) {
+	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) **ir.BackendObjectIR {
+		backend := i.attachPoliciesToBackend(kctx, backendObj)
+		return &backend
+	}, i.krtopts.ToOptions(name)...)
+
+	statusName := ""
+	if name != "" {
+		statusName = name + "-requiring-status"
+	}
+	backendsRequiringPolicyStatus := krt.NewCollection(backendsWithPoliciesCol, func(ctx krt.HandlerContext, backend *ir.BackendObjectIR) **ir.BackendObjectIR {
+		if backend.RequiresPolicyStatus {
+			return &backend
+		}
+		return nil
+	}, i.krtopts.ToOptions(statusName)...)
+
+	return backendsWithPoliciesCol, backendsRequiringPolicyStatus
+}
+
 // AddBackends builds the backends stored in this BackendIndex by deriving a new BackendObjIR collection
 // based on the provided `col` with all Backend-attached policies included on the new BackendObjIR.
 // The BackendIndex will then store this collection of backendWithPolicies in its internal map, keyed by the
 // provied gk. I.e. for the provided gk, it will carry the collection of backends derived from it, with all
 // policies attached.
 func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR], aliasKinds ...schema.GroupKind) {
-	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) **ir.BackendObjectIR {
-		// Look up service-wide policies (no sectionName)
-		policies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
-		// Also look up port specific policies if the backend has a port name (e.g., BackendTLSPolicy with sectionName).
-		// excludeGlobal=true since global policies are already included from the first lookup above.
-		if backendObj.PortName != "" {
-			portPolicies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, backendObj.PortName, backendObj.GetObjectLabels(), true)
-			policies = append(policies, portPolicies...)
+	backendsWithPoliciesCol, backendsRequiringPolicyStatus := i.AttachPoliciesToCollection(col, "")
+	idxWithPolicy := krtpkg.UnnamedIndex(backendsWithPoliciesCol, func(backendObj *ir.BackendObjectIR) (aliasKeys []backendKey) {
+		if backendObj == nil {
+			return nil
 		}
-		anyHasRef := false
-		for _, p := range policies {
-			if p.PolicyRef != nil {
-				anyHasRef = true
-				break
-			}
-		}
-		for _, aliasObjSrc := range backendObj.Aliases {
-			if aliasObjSrc.Namespace == "" {
-				// targeting policies must be namespace local
-				// some aliases might be "global" but for policy purposes, give them the src namespace
-				aliasObjSrc.Namespace = backendObj.GetNamespace()
-			}
-			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, "", backendObj.GetObjectLabels(), true)
-			// Also look up port specific alias policies
-			if backendObj.PortName != "" {
-				aliasPortPolicies := i.policies.getTargetingPoliciesForBackends(kctx, aliasObjSrc, backendObj.PortName, backendObj.GetObjectLabels(), true)
-				aliasPolicies = append(aliasPolicies, aliasPortPolicies...)
-			}
-			if !anyHasRef {
-				for _, p := range aliasPolicies {
-					if p.PolicyRef != nil {
-						anyHasRef = true
-						break
-					}
-				}
-			}
-			policies = append(policies, aliasPolicies...)
-		}
-		backendObj.RequiresPolicyStatus = anyHasRef
-		backendObj.AttachedPolicies = ToAttachedPolicies(policies)
-		return new(&backendObj)
-	}, i.krtopts.ToOptions("")...)
-	backendsRequiringPolicyStatus := krt.NewCollection(backendsWithPoliciesCol, func(ctx krt.HandlerContext, i *ir.BackendObjectIR) **ir.BackendObjectIR {
-		if i.RequiresPolicyStatus {
-			return &i
-		}
-		return nil
-	}, i.krtopts.ToOptions("")...)
-	idx := krtpkg.UnnamedIndex(col, func(backendObj ir.BackendObjectIR) (aliasKeys []backendKey) {
 		for _, alias := range backendObj.Aliases {
 			aliasKeys = append(aliasKeys, backendKey{ObjectSource: alias, port: backendObj.Port})
 		}
 		return aliasKeys
 	})
-	i.availableBackends[gk] = col
-	i.aliasIndex[gk] = idx
+	i.availableBackendsWithPolicyByGK[gk] = backendsWithPoliciesCol
+	i.aliasIndexWithPolicy[gk] = idxWithPolicy
 	i.availableBackendsWithPolicy = append(i.availableBackendsWithPolicy, backendsWithPoliciesCol)
 	i.backendsRequiringPolicyStatus = append(i.backendsRequiringPolicyStatus, backendsRequiringPolicyStatus)
 
@@ -214,6 +236,32 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 	for _, aliasGK := range aliasKinds {
 		i.gkAliases[aliasGK] = append(i.gkAliases[aliasGK], gk)
 	}
+}
+
+// BackendTLSPolicy is special-cased here because sectionName targets a specific
+// Service port, and for that port the port-specific BackendTLSPolicy must win over
+// any service-wide BackendTLSPolicy. Other backend policies may merge or use their
+// own precedence rules, so we intentionally do not apply this filtering generically.
+func preferPortSpecificBackendTLSPolicies(basePolicies, portPolicies []ir.PolicyAtt) []ir.PolicyAtt {
+	hasPortSpecificBackendTLSPolicy := false
+	for _, policy := range portPolicies {
+		if policy.GroupKind == wellknown.BackendTLSPolicyGVK.GroupKind() {
+			hasPortSpecificBackendTLSPolicy = true
+			break
+		}
+	}
+	if !hasPortSpecificBackendTLSPolicy {
+		return basePolicies
+	}
+
+	filtered := make([]ir.PolicyAtt, 0, len(basePolicies))
+	for _, policy := range basePolicies {
+		if policy.GroupKind == wellknown.BackendTLSPolicyGVK.GroupKind() {
+			continue
+		}
+		filtered = append(filtered, policy)
+	}
+	return filtered
 }
 
 // if we want to make this function public, make it do ref grants
@@ -235,22 +283,26 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 		port = int32(*gwport)
 	}
 
-	col := i.availableBackends[gk]
+	col := i.availableBackendsWithPolicyByGK[gk]
 	if col == nil {
 		return i.getBackendFromAlias(kctx, gk, n, port)
 	}
 
 	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.BackendResourceName(key, port, "")))
 	if up == nil {
-		var err error
-		if up, err = i.getBackendFromAlias(kctx, gk, n, port); err != nil {
+		var (
+			err     error
+			aliasUp *ir.BackendObjectIR
+		)
+		if aliasUp, err = i.getBackendFromAlias(kctx, gk, n, port); err != nil {
 			// getBackendFromAlias returns ErrUnknownBackendKind when there are no aliases
 			// so return our own NotFoundError here
 			return nil, &NotFoundError{NotFoundObj: key}
 		}
+		return aliasUp, nil
 	}
 
-	return up, nil
+	return *up, nil
 }
 
 func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.GroupKind, n types.NamespacedName, port int32) (*ir.BackendObjectIR, error) {
@@ -267,14 +319,14 @@ func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.Gr
 	}
 
 	var didFetch bool
-	var results []ir.BackendObjectIR
+	var results []*ir.BackendObjectIR
 	for _, actualGk := range actualGks {
-		col, ok := i.availableBackends[actualGk]
+		col, ok := i.availableBackendsWithPolicyByGK[actualGk]
 		if !ok {
 			continue
 		}
 
-		results = append(results, krt.Fetch(kctx, col, krt.FilterIndex(i.aliasIndex[actualGk], key))...)
+		results = append(results, krt.Fetch(kctx, col, krt.FilterIndex(i.aliasIndexWithPolicy[actualGk], key))...)
 
 		didFetch = true
 	}
@@ -288,12 +340,12 @@ func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.Gr
 	// must return only one
 	for _, res := range results {
 		if out == nil {
-			out = &res // first result
+			out = res // first result
 		} else if res.Obj.GetCreationTimestamp().Time.Before(out.Obj.GetCreationTimestamp().Time) {
-			out = &res // newer
+			out = res // older
 		} else if res.Obj.GetCreationTimestamp().Time.Equal(out.Obj.GetCreationTimestamp().Time) &&
 			res.ResourceName() < out.ResourceName() {
-			out = &res // use name for tiebreaker
+			out = res // use name for tiebreaker
 		}
 	}
 
@@ -558,6 +610,9 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		if gw.Spec.TLS != nil && gw.Spec.TLS.Frontend != nil {
 			frontendTLSConfig := getFrontendTLSConfig(gw.Spec.TLS.Frontend)
 			gwIR.FrontendTLSConfig = frontendTLSConfig
+		}
+		if gw.Spec.TLS != nil && gw.Spec.TLS.Backend != nil {
+			gwIR.BackendTLSConfig = getGatewayBackendTLSConfig(gw.Spec.TLS.Backend)
 		}
 
 		return gwIR
@@ -1487,7 +1542,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 		// still use its cluster name in case it comes up later?
 		// if so we need to think about the way create cluster names,
 		// so it only depends on the backend-ref
-		clusterName := "blackhole-cluster"
+		clusterName := wellknown.BlackholeClusterName
 		if backend != nil {
 			clusterName = backend.ClusterName()
 		} else if err == nil {
@@ -1510,7 +1565,7 @@ func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSourc
 	backends := make([]ir.BackendRefIR, 0, len(i))
 	for _, ref := range i {
 		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
-		clusterName := "blackhole-cluster"
+		clusterName := wellknown.BlackholeClusterName
 		if backend != nil {
 			clusterName = backend.ClusterName()
 		} else if err == nil {
@@ -1705,4 +1760,14 @@ func getRequiredClientCertificate(mode gwv1.FrontendValidationModeType) bool {
 		return true
 	}
 	return false
+}
+
+func getGatewayBackendTLSConfig(backendTLS *gwv1.GatewayBackendTLS) *ir.GatewayBackendTLSConfigIR {
+	if backendTLS == nil || backendTLS.ClientCertificateRef == nil {
+		return nil
+	}
+
+	return &ir.GatewayBackendTLSConfigIR{
+		ClientCertificateRef: backendTLS.ClientCertificateRef.DeepCopy(),
+	}
 }

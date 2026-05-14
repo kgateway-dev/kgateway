@@ -107,8 +107,6 @@ func (c *CommonCollections) InitCollections(
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12879
 	var tcproutes krt.Collection[*gwv1a2.TCPRoute]
-	// Ref: https://github.com/kgateway-dev/kgateway/issues/12880
-	var tlsRoutes krt.Collection[*gwv1a2.TLSRoute]
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
 		tcproutes = krt.WrapClient(
 			newDelayedTypedInformer(c.Client, gvr.TCPRoute, func() kclient.Informer[*gwv1a2.TCPRoute] {
@@ -116,23 +114,28 @@ func (c *CommonCollections) InitCollections(
 			}),
 			c.KrtOpts.ToOptions("TCPRoute")...,
 		)
+	} else {
+		// If disabled, still build a collection but make it always empty
+		tcproutes = krt.NewStaticCollection[*gwv1a2.TCPRoute](nil, nil, c.KrtOpts.ToOptions("disable/TCPRoute")...)
+	}
 
-		servedTLSRouteVersions := getServedTLSRouteVersions(c.Client.Ext())
-		var tlsRouteCollections []krt.Collection[*gwv1a2.TLSRoute]
-		// Prefer the promoted watch when discovery confirms it is served; watching both
-		// served versions would duplicate the same logical TLSRoute.
-		if servedTLSRouteVersions.Promoted {
-			tlsRoutesV1 := krt.WrapClient(
-				kclient.NewDelayedInformer[*gwv1.TLSRoute](c.Client, promotedTLSRouteGVR, kubetypes.StandardInformer, filter),
-				c.KrtOpts.ToOptions("TLSRouteV1")...,
-			)
-			tlsRouteCollections = append(tlsRouteCollections, krt.NewManyCollection(tlsRoutesV1, func(kctx krt.HandlerContext, i *gwv1.TLSRoute) []*gwv1a2.TLSRoute {
-				if converted := convertTLSRouteV1ToV1Alpha2(i); converted != nil {
-					return []*gwv1a2.TLSRoute{converted}
-				}
-				return nil
-			}, c.KrtOpts.ToOptions("TLSRouteV1ToV1Alpha2")...))
-		}
+	// TLSRoute is standard as of Gateway API v1.5, so promoted v1 TLSRoutes
+	// are always enabled. Keep pre-v1 TLSRoute watches under the experimental
+	// feature flag for compatibility with older Gateway API channels.
+	servedTLSRouteVersions := getServedTLSRouteVersions(c.Client.Ext())
+	tlsRoutesV1 := krt.WrapClient(
+		kclient.NewDelayedInformer[*gwv1.TLSRoute](c.Client, promotedTLSRouteGVR, kubetypes.StandardInformer, filter),
+		c.KrtOpts.ToOptions("TLSRouteV1")...,
+	)
+	tlsRouteCollections := []krt.Collection[*gwv1a2.TLSRoute]{
+		krt.NewManyCollection(tlsRoutesV1, func(kctx krt.HandlerContext, i *gwv1.TLSRoute) []*gwv1a2.TLSRoute {
+			if converted := convertTLSRouteV1ToV1Alpha2(i); converted != nil {
+				return []*gwv1a2.TLSRoute{converted}
+			}
+			return nil
+		}, c.KrtOpts.ToOptions("TLSRouteV1ToV1Alpha2")...),
+	}
+	if globalSettings.EnableExperimentalGatewayAPIFeatures {
 		for _, preV1TLSRouteGVR := range preV1TLSRouteWatchGVRs(servedTLSRouteVersions) {
 			switch preV1TLSRouteGVR.Version {
 			case gwv1a2.GroupVersion.Version:
@@ -158,19 +161,16 @@ func (c *CommonCollections) InitCollections(
 				}, c.KrtOpts.ToOptions("TLSRoutePreV1Alpha3ToV1Alpha2")...))
 			}
 		}
+	}
 
-		switch len(tlsRouteCollections) {
-		case 0:
-			tlsRoutes = krt.NewStaticCollection[*gwv1a2.TLSRoute](nil, nil, c.KrtOpts.ToOptions("disable/TLSRoute")...)
-		case 1:
-			tlsRoutes = tlsRouteCollections[0]
-		default:
-			tlsRoutes = krt.JoinCollection(tlsRouteCollections, c.KrtOpts.ToOptions("TLSRoute")...)
-		}
-	} else {
-		// If disabled, still build a collection but make it always empty
-		tcproutes = krt.NewStaticCollection[*gwv1a2.TCPRoute](nil, nil, c.KrtOpts.ToOptions("disable/TCPRoute")...)
+	var tlsRoutes krt.Collection[*gwv1a2.TLSRoute]
+	switch len(tlsRouteCollections) {
+	case 0:
 		tlsRoutes = krt.NewStaticCollection[*gwv1a2.TLSRoute](nil, nil, c.KrtOpts.ToOptions("disable/TLSRoute")...)
+	case 1:
+		tlsRoutes = tlsRouteCollections[0]
+	default:
+		tlsRoutes = krt.JoinCollection(tlsRouteCollections, c.KrtOpts.ToOptions("TLSRoute")...)
 	}
 	metrics.RegisterEvents(tcproutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TCPRoute]())
 	metrics.RegisterEvents(tlsRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TLSRoute]())

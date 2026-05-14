@@ -91,6 +91,11 @@ var (
 		Version:  gwv1.GroupVersion.Version,
 		Resource: "httproutes",
 	}
+	TLSRouteV1GVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  gwv1.GroupVersion.Version,
+		Resource: "tlsroutes",
+	}
 	TLSRouteGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: gwv1a2.GroupVersion.Version,

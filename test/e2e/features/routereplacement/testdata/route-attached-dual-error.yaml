@@ -1,0 +1,53 @@
+---
+# HTTPRoute with TWO invalid TrafficPolicies attached, each producing a
+# different error class. Used to exercise the first-match-wins classifier
+# and the surfacing-after-fix behavior of the routing replacement metric.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: dual-error-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: gw
+    namespace: default
+  hostnames:
+  - "dual-error.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: dual-error-invalid-config-policy
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: dual-error-route
+  transformation:
+    request:
+      body:
+        parseAs: AsJson
+        value: "{{ invalid_template }"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: dual-error-ref-not-found-policy
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: dual-error-route
+  extAuth:
+    extensionRef:
+      name: nonexistent-extauth-extension

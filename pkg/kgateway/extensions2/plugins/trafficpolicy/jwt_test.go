@@ -2,9 +2,12 @@ package trafficpolicy
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,6 +18,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -682,5 +686,110 @@ func TestTranslateJwksRemote(t *testing.T) {
 		)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "remote jwks: unresolved backend ref")
+	})
+}
+
+func TestHttpFiltersJwt(t *testing.T) {
+	t.Run("adds jwt filter and auth-enabled filter to chain", func(t *testing.T) {
+		plugin := &trafficPolicyPluginGwPass{
+			enableAuthMetadata: true,
+			jwtPerProvider: ProviderNeededMap{
+				Providers: map[string][]Provider{
+					"test-filter-chain": {
+						{
+							Name: "test-jwt",
+							Extension: &TrafficPolicyGatewayExtensionIR{
+								Name: "test-jwt",
+								Jwt:  &envoymatchingv3.ExtensionWithMatcher{},
+							},
+						},
+					},
+				},
+			},
+		}
+		fcc := ir.FilterChainCommon{FilterChainName: "test-filter-chain"}
+
+		httpFilters, err := plugin.HttpFilters(ir.HttpFiltersContext{}, fcc)
+
+		require.NoError(t, err)
+		require.NotNil(t, httpFilters)
+		// global disable filter, auth-enabled metadata filter, then jwt filter
+		assert.Equal(t, 3, len(httpFilters))
+		assert.Equal(t, jwtGlobalDisableFilterName, httpFilters[0].Filter.GetName())
+		assert.Equal(t, filters.BeforeStage(filters.FaultStage), httpFilters[0].Stage)
+		assert.Equal(t, JwtEnabledFilterName, httpFilters[1].Filter.GetName())
+		assert.Equal(t, filters.AfterStage(filters.AuthNStage), httpFilters[1].Stage)
+		assert.Equal(t, jwtFilterName("test-jwt"), httpFilters[2].Filter.GetName())
+		assert.Equal(t, filters.DuringStage(filters.AuthNStage), httpFilters[2].Stage)
+	})
+}
+
+func TestJwtPolicyPlugin(t *testing.T) {
+	t.Run("applies jwt configuration to route", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				jwt: &jwtIr{
+					perProviderConfig: []*perProviderJwtConfig{
+						{
+							provider: &TrafficPolicyGatewayExtensionIR{
+								Name: "test-jwt",
+								Jwt:  &envoymatchingv3.ExtensionWithMatcher{},
+							},
+							perRouteConfig: &jwtauthnv3.PerRouteConfig{
+								RequirementSpecifier: &jwtauthnv3.PerRouteConfig_RequirementName{
+									RequirementName: "test-jwt",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		require.NotNil(t, pCtx.TypedFilterConfig)
+		jwtConfig, ok := pCtx.TypedFilterConfig[jwtFilterName("test-jwt")]
+		assert.True(t, ok)
+		assert.NotNil(t, jwtConfig)
+		assert.Empty(t, pCtx.TypedFilterConfig[jwtGlobalDisableFilterName])
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[JwtEnabledFilterName])
+		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[JwtEnabledFilterName]),
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "jwt_enabled must set dynamic metadata")
+	})
+
+	t.Run("handles disabled jwt configuration", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				jwt: &jwtIr{
+					disableAllProviders: true,
+				},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		assert.NotNil(t, pCtx.TypedFilterConfig, pCtx)
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[jwtGlobalDisableFilterName])
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[JwtEnabledFilterName])
+		assert.NotContains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[JwtEnabledFilterName]), AuthSucceededMetadataKey, "jwt_enabled must not set dynamic metadata if the policy is disabled at the route level")
 	})
 }
