@@ -76,6 +76,8 @@ func (s *testingSuite) SetupSuite() {
 		// These tests use an echo server to verify x-request-id header behavior
 		"TestListenerPolicyRequestId":     {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
 		"TestHTTPListenerPolicyRequestId": {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
+		"TestStripHostPortAnyPort":        {gatewayManifest, stripHostPortAnyPortManifest},
+		"TestStripHostPortMatchingPort":   {gatewayManifest, stripHostPortMatchingPortManifest},
 	}
 }
 
@@ -462,6 +464,60 @@ func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
 			// Verify x-request-id header was generated with valid UUID format
 			Body: gomega.MatchRegexp(`(?i)x-request-id: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`),
 		})
+}
+
+// Verifies that AnyPort strips the port from the Host header regardless of its value.
+func (s *testingSuite) TestStripHostPortAnyPort() {
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=raw-header-echo",
+	})
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com:443"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.Not(gomega.ContainSubstring("example.com:443")),
+		},
+	)
+}
+
+// Verifies that MatchingPort strips the port from the Host header when it matches the listener port.
+func (s *testingSuite) TestStripHostPortMatchingPort() {
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=raw-header-echo",
+	})
+	// Port matches listener port (8080) - should be stripped.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com:8080"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.Not(gomega.ContainSubstring("example.com:8080")),
+		},
+	)
+	// Port does not match listener port - should be preserved.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com:9999"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("example.com:9999"),
+		},
+	)
 }
 
 func (s *testingSuite) assertListenerHTTP2ProtocolOptions(listenerName string) {

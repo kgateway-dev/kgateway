@@ -66,6 +66,7 @@ type HttpListenerPolicyIr struct {
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 	maxRequestHeadersKb           *uint32
 	uuidRequestIdConfig           *envoyuuidv3.UuidRequestIdConfig
+	stripHostPortMode             *kgateway.StripHostPortMode
 }
 
 func (d *HttpListenerPolicyIr) Equals(in any) bool {
@@ -187,6 +188,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	if !proto.Equal(d.uuidRequestIdConfig, d2.uuidRequestIdConfig) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.stripHostPortMode, d2.stripHostPortMode) {
 		return false
 	}
 
@@ -317,6 +322,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
 		maxRequestHeadersKb:           maxRequestHeadersKb,
 		uuidRequestIdConfig:           uuidRequestIdConfig,
+		stripHostPortMode:             h.StripHostPortMode,
 	}, errs
 }
 

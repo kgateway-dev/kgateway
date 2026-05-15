@@ -24,6 +24,9 @@ var (
 	earlyHeaderMutationManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-early-header-route-match.yaml")
 	http2ProtocolOptionsManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-http2-protocol-options.yaml")
 	proxyProtocolManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-proxy-protocol.yaml")
+	stripHostPortAnyPortManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-strip-host-port-any-port.yaml")
+	stripHostPortMatchingPortManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-strip-host-port-matching-port.yaml")
+
 	// RequestID test manifests for testing the new RequestID configuration feature
 	listenerPolicyRequestIdManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-request-id.yaml")
 	requestIdEchoManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "request-id-echo.yaml")

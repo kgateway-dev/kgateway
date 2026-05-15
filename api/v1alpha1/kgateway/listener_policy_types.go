@@ -284,6 +284,15 @@ type HTTPSettings struct {
 	// This extension sets the x-request-id header to a UUID value.
 	// +optional
 	UuidRequestIdConfig *UuidRequestIdConfig `json:"uuidRequestIdConfig,omitempty"`
+
+	// StripHostPortMode determines whether, and under what conditions, Envoy will strip the port
+	// from the Host/authority header. StripMatchingHostPort strips the port only if it matches
+	// the listener's own port. StripAnyHostPort strips the port unconditionally.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-matching-host-port
+	// See also: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-any-host-port
+	// +kubebuilder:validation:Enum=MatchingPort;AnyPort
+	// +optional
+	StripHostPortMode *StripHostPortMode `json:"stripHostPortMode,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -944,6 +953,18 @@ const (
 	AppendIfAbsentServerHeaderTransformation ServerHeaderTransformation = "AppendIfAbsent"
 	// PassThroughServerHeaderTransformation passes through the server header unchanged.
 	PassThroughServerHeaderTransformation ServerHeaderTransformation = "PassThrough"
+)
+
+// StripHostPortMode determines whether or not Envoy strips the port component from the
+// Host/authority header.
+type StripHostPortMode string
+
+const (
+	// StripMatchingHostPortMode strips the port from the header if and only if it matches
+	// the listener's own port.
+	StripMatchingHostPortMode StripHostPortMode = "MatchingPort"
+	// StripAnyHostPortMode strips any port from the header, regardless of its value.
+	StripAnyHostPortMode StripHostPortMode = "AnyPort"
 )
 
 // EnvoyHealthCheck represents configuration for Envoy's health check filter.
