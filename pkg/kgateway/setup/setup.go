@@ -313,6 +313,7 @@ func (s *setup) Start(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		slog.Info("TLS certificate watcher enabled")
 		// certWatcher.Start() sets up file watches (polling up to 10s) then blocks
 		// in a ticker loop on success. If file watch setup fails, it returns an error
 		// immediately. We monitor for early return to catch startup failures instead
