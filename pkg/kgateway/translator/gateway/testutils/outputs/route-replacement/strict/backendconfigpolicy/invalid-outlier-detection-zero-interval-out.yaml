@@ -135,8 +135,10 @@ Statuses:
             { } } } } } } name: "placeholder_filter_chain" } } clusters { name: "test-cluster-for-validation"
             type: STATIC connect_timeout { seconds: 5 } outlier_detection { consecutive_5xx
             { value: 5 } interval { } base_ejection_time { seconds: 30 } max_ejection_percent
-            { value: 10 } } } } : Proto constraint validation failed (BootstrapValidationError.StaticResources:
-            embedded message failed validation | caused by StaticResourcesValidationError.Clusters[0]:
+            { value: 10 } } } secrets { name: "SYSTEM_CA_CERT" validation_context
+            { trusted_ca { filename: "/etc/ssl/cert.pem" } } } } : Proto constraint
+            validation failed (BootstrapValidationError.StaticResources: embedded
+            message failed validation | caused by StaticResourcesValidationError.Clusters[0]:
             embedded message failed validation | caused by ClusterValidationError.OutlierDetection:
             embedded message failed validation | caused by OutlierDetectionValidationError.Interval:
             value must be greater than 0s)'

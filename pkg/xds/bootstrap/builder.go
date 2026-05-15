@@ -111,19 +111,6 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 	}
 
 	staticResources := &envoybootstrapv3.Bootstrap_StaticResources{
-		Secrets: []*envoytlsv3.Secret{{
-			Name: envoyinit_utils.SystemCaSecretName,
-			Type: &envoytlsv3.Secret_ValidationContext{
-				ValidationContext: &envoytlsv3.CertificateValidationContext{
-					TrustedCa: &envoycorev3.DataSource{
-						Specifier: &envoycorev3.DataSource_Filename{
-							Filename: b.caPath,
-						},
-					},
-				},
-			},
-		}},
-
 		Listeners: []*envoylistenerv3.Listener{{
 			Name: "placeholder_listener",
 			Address: &envoycorev3.Address{
@@ -147,6 +134,20 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 	}
 	if len(b.clusters) > 0 {
 		staticResources.Clusters = b.clusters
+	}
+	if b.caPath != "" {
+		staticResources.Secrets = []*envoytlsv3.Secret{{
+			Name: envoyinit_utils.SystemCaSecretName,
+			Type: &envoytlsv3.Secret_ValidationContext{
+				ValidationContext: &envoytlsv3.CertificateValidationContext{
+					TrustedCa: &envoycorev3.DataSource{
+						Specifier: &envoycorev3.DataSource_Filename{
+							Filename: b.caPath,
+						},
+					},
+				},
+			},
+		}}
 	}
 
 	return &envoybootstrapv3.Bootstrap{
