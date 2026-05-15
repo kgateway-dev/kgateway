@@ -36,7 +36,7 @@ type ConfigBuilder struct {
 func New() *ConfigBuilder {
 	caPath, err := envoyinit.GetOSRootFilePath()
 	if err != nil {
-		logger.Error("Failed to get a supported OS CA certificate path", "error", err)
+		logger.Error("failed to get a supported OS CA certificate path", "error", err)
 	}
 
 	return &ConfigBuilder{
