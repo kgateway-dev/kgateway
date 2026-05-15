@@ -210,13 +210,18 @@ func setRouteAction(
 			continue
 		}
 
+		if backend.Backend == nil {
+			logger.Warn("unexpected nil backend, skipping")
+			continue
+		}
+
 		if err := backend.Backend.Err; err != nil {
 			query.ProcessBackendError(err, reporter)
 			logger.Debug("error on backend upstream", "error", err)
 		}
 
 		httpBackend := ir.HttpBackend{
-			Backend:          *backend.Backend, // TODO: Nil check?
+			Backend:          *backend.Backend,
 			AttachedPolicies: backend.AttachedPolicies,
 		}
 		outputRoute.Backends = append(outputRoute.Backends, httpBackend)
