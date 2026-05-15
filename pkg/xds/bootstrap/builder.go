@@ -10,15 +10,22 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 
+	envoyinit_utils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/envoyinit"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+var logger = logging.New("configbuilder")
+
 // ConfigBuilder helps construct a partial bootstrap config for validation.
 type ConfigBuilder struct {
+	caPath        string
 	filterConfigs ir.TypedFilterConfigMap
 	routes        []*envoyroutev3.Route
 	clusters      []*envoyclusterv3.Cluster
@@ -27,7 +34,13 @@ type ConfigBuilder struct {
 
 // New creates a new ConfigBuilder.
 func New() *ConfigBuilder {
+	caPath, err := envoyinit.GetOSRootFilePath()
+	if err != nil {
+		logger.Error("Failed to get a supported OS CA certificate path", "error", err)
+	}
+
 	return &ConfigBuilder{
+		caPath:        caPath,
 		filterConfigs: make(ir.TypedFilterConfigMap),
 	}
 }
@@ -98,6 +111,19 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 	}
 
 	staticResources := &envoybootstrapv3.Bootstrap_StaticResources{
+		Secrets: []*envoytlsv3.Secret{{
+			Name: envoyinit_utils.SystemCaSecretName,
+			Type: &envoytlsv3.Secret_ValidationContext{
+				ValidationContext: &envoytlsv3.CertificateValidationContext{
+					TrustedCa: &envoycorev3.DataSource{
+						Specifier: &envoycorev3.DataSource_Filename{
+							Filename: b.caPath,
+						},
+					},
+				},
+			},
+		}},
+
 		Listeners: []*envoylistenerv3.Listener{{
 			Name: "placeholder_listener",
 			Address: &envoycorev3.Address{

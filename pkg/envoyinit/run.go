@@ -38,7 +38,7 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 		log.Fatalf("initializer failed: %v", err)
 	}
 
-	caPath, err := getOSRootFilePath()
+	caPath, err := GetOSRootFilePath()
 	if err != nil {
 		log.Printf("Failed to get a supported OS CA certificate path: %v", err)
 	}
@@ -129,10 +129,10 @@ func getAndTransformConfig(inputFile string) (string, error) {
 	return buffer.String(), nil
 }
 
-// getOSRootFilePath returns the first file path detected from a list of known CA certificate file paths.
+// GetOSRootFilePath returns the first file path detected from a list of known CA certificate file paths.
 // If none of the known CA certificate files are found, a warning in printed and an empty string is returned.
 // Based on https://github.com/istio/istio/blob/d43c77c71df0150fa904d74bf6520d9e37180a1c/pkg/security/security.go#L463
-func getOSRootFilePath() (string, error) {
+func GetOSRootFilePath() (string, error) {
 	// Get and store the OS CA certificate path for Linux systems
 	// Source of CA File Paths: https://golang.org/src/crypto/x509/root_linux.go
 	certFiles := []string{
