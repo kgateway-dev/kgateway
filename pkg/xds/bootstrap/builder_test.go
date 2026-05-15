@@ -9,6 +9,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -100,6 +101,21 @@ func TestConfigBuilder_Build(t *testing.T) {
 				}
 				if clusters[0].GetName() != "test_cluster_2" {
 					t.Fatalf("expected cluster name 'test_cluster_2', got %q", clusters[0].GetName())
+				}
+			},
+		},
+		{
+			name: "with secret",
+			setup: func(b *ConfigBuilder) {
+				b.AddSecret(&envoytlsv3.Secret{Name: "test_secret"})
+			},
+			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
+				secrets := got.GetStaticResources().GetSecrets()
+				if len(secrets) != 1 {
+					t.Fatalf("expected 1 secret, got %d", len(secrets))
+				}
+				if secrets[0].GetName() != "test_secret" {
+					t.Fatalf("expected secret name 'test_secret', got %q", secrets[0].GetName())
 				}
 			},
 		},

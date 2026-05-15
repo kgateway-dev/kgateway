@@ -10,6 +10,7 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 
@@ -22,6 +23,7 @@ type ConfigBuilder struct {
 	filterConfigs ir.TypedFilterConfigMap
 	routes        []*envoyroutev3.Route
 	clusters      []*envoyclusterv3.Cluster
+	secrets       []*envoytlsv3.Secret
 	httpFilters   []*envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter
 }
 
@@ -46,6 +48,11 @@ func (b *ConfigBuilder) AddRoute(route *envoyroutev3.Route) {
 // AddCluster adds a cluster to the builder.
 func (b *ConfigBuilder) AddCluster(cluster *envoyclusterv3.Cluster) {
 	b.clusters = append(b.clusters, cluster)
+}
+
+// AddSecret adds a static secret to the bootstrap.
+func (b *ConfigBuilder) AddSecret(secret *envoytlsv3.Secret) {
+	b.secrets = append(b.secrets, secret)
 }
 
 // AddHttpFilter adds an HTTP filter to the HCM filter chain.
@@ -121,6 +128,9 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 	}
 	if len(b.clusters) > 0 {
 		staticResources.Clusters = b.clusters
+	}
+	if len(b.secrets) > 0 {
+		staticResources.Secrets = b.secrets
 	}
 
 	return &envoybootstrapv3.Bootstrap{
