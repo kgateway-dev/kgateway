@@ -78,11 +78,15 @@ func (t *translator) Translate(
 	}
 
 	for _, rErr := range routesForGw.RouteErrors {
+		message := string(rErr.Error.Reason)
+		if rErr.Error.E != nil {
+			message = rErr.Error.E.Error()
+		}
 		reporter.Route(rErr.Route.GetSourceObject()).ParentRef(&rErr.ParentRef).SetCondition(reports.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
 			Reason:  rErr.Error.Reason,
-			Message: rErr.Error.E.Error(),
+			Message: message,
 		})
 	}
 
