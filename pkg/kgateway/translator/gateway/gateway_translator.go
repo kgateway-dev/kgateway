@@ -79,10 +79,10 @@ func (t *translator) Translate(
 
 	for _, rErr := range routesForGw.RouteErrors {
 		reporter.Route(rErr.Route.GetSourceObject()).ParentRef(&rErr.ParentRef).SetCondition(reports.RouteCondition{
-			Type:   gwv1.RouteConditionAccepted,
-			Status: metav1.ConditionFalse,
-			Reason: rErr.Error.Reason,
-			// TODO message
+			Type:    gwv1.RouteConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  rErr.Error.Reason,
+			Message: rErr.Error.E.Error(),
 		})
 	}
 
