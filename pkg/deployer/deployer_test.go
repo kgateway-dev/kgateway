@@ -2660,6 +2660,36 @@ var _ = Describe("DeployObjs", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
 	})
+
+	It("cancels an in-flight patch when the caller context is canceled", func() {
+		testCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		cm := &corev1.ConfigMap{
+			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+		}
+		fc := fake.NewClient(GinkgoT())
+		patchStarted := make(chan struct{})
+		d := getDeployer(fc, func(gotCtx context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			close(patchStarted)
+			<-gotCtx.Done()
+			return gotCtx.Err()
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		errCh := make(chan error, 1)
+		go func() {
+			errCh <- d.DeployObjs(testCtx, []client.Object{cm})
+		}()
+
+		Eventually(patchStarted).Should(BeClosed(), "patch should start before canceling the caller context")
+		cancel()
+
+		var err error
+		Eventually(errCh).Should(Receive(&err), "DeployObjs should return when the caller context is canceled")
+		Expect(errors.Is(err, context.Canceled)).To(BeTrue(), "DeployObjs should return the patcher context cancellation")
+	})
 })
 
 var _ = Describe("SortByKindPriority", func() {
