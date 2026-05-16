@@ -321,7 +321,7 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 		}
 		// If the backend name exists but with a different port, return a more specific error.
 		// Only applies to core Services with an explicit port; other kinds use NotFoundError.
-		if gwport != nil && gk.Group == "" && gk.Kind == "Service" {
+		if gwport != nil && gk == wellknown.ServiceGVK.GroupKind() {
 			if nameIdx, ok := i.nameIndexByGK[gk]; ok {
 				nn := types.NamespacedName{Namespace: n.Namespace, Name: n.Name}
 				if matches := krt.Fetch(kctx, col, krt.FilterIndex(nameIdx, nn)); len(matches) > 0 {
