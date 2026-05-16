@@ -5,7 +5,7 @@ package loadtesting
 import (
 	"context"
 	"fmt"
-	"slices"
+	"os"
 	"sync"
 	"time"
 
@@ -21,13 +21,14 @@ import (
 
 // Timeout constants for the AttachedRoutes test suite
 const (
+	runLoadTestsEnv = "KGATEWAY_RUN_LOAD_TESTS"
+
 	// General operation timeouts
 	gatewayReadinessTimeout      = 60 * time.Second
 	routeConditionTimeout        = 60 * time.Second
 	translationCompletionTimeout = 5 * time.Minute
 
 	// Cleanup and sleep intervals
-	cleanupSleepInterval    = 2 * time.Second
 	monitoringSleepInterval = 500 * time.Millisecond
 
 	// Polling intervals
@@ -72,64 +73,59 @@ func (s *AttachedRoutesSuite) TearDownSuite() {
 		return
 	}
 	if s.loadTestManager != nil {
-		s.loadTestManager.CleanupAll()
+		if err := s.loadTestManager.CleanupAll(); err != nil {
+			s.T().Logf("Warning: failed to cleanup load test namespaces: %v", err)
+		}
 	}
 }
 
 func (s *AttachedRoutesSuite) BeforeTest(suiteName, testName string) {
+	if !loadTestsEnabled() {
+		return
+	}
+
 	testTimestamp := time.Now().UnixNano()
 	s.loadTestManager.testNamespace = fmt.Sprintf("kgateway-loadtest-%d", testTimestamp)
 	s.forceCleanupTestResources()
 }
 
 func (s *AttachedRoutesSuite) AfterTest(suiteName, testName string) {
+	if !loadTestsEnabled() {
+		return
+	}
+
 	if s.loadTestManager != nil {
-		s.loadTestManager.CleanupAll()
-		// Reset state
-		s.loadTestManager.createdResources = []client.Object{}
-		s.loadTestManager.createdGateways = []*gwv1.Gateway{}
-		s.loadTestManager.createdRoutes = []*gwv1.HTTPRoute{}
+		if err := s.loadTestManager.CleanupAll(); err != nil {
+			s.T().Logf("Warning: failed to cleanup load test namespaces: %v", err)
+		}
 	}
 }
 
 func (s *AttachedRoutesSuite) forceCleanupTestResources() {
-	deleteOptions := &client.DeleteOptions{
-		GracePeriodSeconds: func() *int64 { i := int64(0); return &i }(),
-		PropagationPolicy:  func() *metav1.DeletionPropagation { p := metav1.DeletePropagationBackground; return &p }(),
+	if err := s.loadTestManager.cleanupLoadTestNamespaces(); err != nil {
+		s.T().Logf("Warning: failed to cleanup stale load test namespaces: %v", err)
 	}
+}
 
-	// Clean up gateways
-	gatewayList := &gwv1.GatewayList{}
-	if err := s.testInstallation.ClusterContext.Client.List(s.ctx, gatewayList, &client.ListOptions{
-		Namespace: LoadTestNamespace,
-	}); err == nil {
-		testGateways := []string{"test-gateway", "gw-1", "gw-2", "gw-3"}
-		for _, gateway := range gatewayList.Items {
-			if slices.Contains(testGateways, gateway.Name) {
-				s.testInstallation.ClusterContext.Client.Delete(s.ctx, &gateway, deleteOptions)
-			}
-		}
+func loadTestsEnabled() bool {
+	return os.Getenv("GITHUB_ACTIONS") != "true" || os.Getenv(runLoadTestsEnv) == "true"
+}
+
+func (s *AttachedRoutesSuite) skipUnlessLoadTestsEnabled() {
+	if loadTestsEnabled() {
+		return
 	}
-
-	// Clean up routes
-	routeList := &gwv1.HTTPRouteList{}
-	if err := s.testInstallation.ClusterContext.Client.List(s.ctx, routeList, &client.ListOptions{
-		Namespace: LoadTestNamespace,
-	}); err == nil {
-		for _, route := range routeList.Items {
-			s.testInstallation.ClusterContext.Client.Delete(s.ctx, &route, deleteOptions)
-		}
-	}
-
-	time.Sleep(cleanupSleepInterval)
+	s.T().Skipf("load tests only run in the dedicated nightly load-test job; set %s=true to run them in GitHub Actions", runLoadTestsEnv)
 }
 
 func (s *AttachedRoutesSuite) TestAttachedRoutesBaseline() {
+	s.skipUnlessLoadTestsEnabled()
 	s.T().Log("=== AttachedRoutes Performance Test: Baseline (1000 routes) ===")
 	s.runTestWithConfig(1000)
 }
 
 func (s *AttachedRoutesSuite) TestAttachedRoutesProduction() {
+	s.skipUnlessLoadTestsEnabled()
 	s.T().Log("=== AttachedRoutes Performance Test: Production Scale (5000 routes) ===")
 	s.runTestWithConfig(5000)
 }
