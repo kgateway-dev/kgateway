@@ -27,6 +27,15 @@ func (s *testingSuite) assertCurlService(
 	s.assertCurlInner(from, fqdn(svcName, svcNs), "", matchers, "GET", path...)
 }
 
+func (s *testingSuite) assertStableCurlService(
+	from kubectl.PodExecOptions,
+	svcName, svcNs string,
+	matchers matchers.HttpResponse,
+	path ...string, //nolint:unparam // The variadic params might cause false positive
+) {
+	s.assertStableCurlInner(from, fqdn(svcName, svcNs), "", matchers, "GET", path...)
+}
+
 // assertCurlServicePost is a helper function to assert a POST request to a service
 func (s *testingSuite) assertCurlServicePost(
 	from kubectl.PodExecOptions,
@@ -50,6 +59,15 @@ func (s *testingSuite) assertCurlHost(
 	s.assertCurlInner(from, targetHost, "", matchers, "GET", path...)
 }
 
+func (s *testingSuite) assertStableCurlHost(
+	from kubectl.PodExecOptions,
+	targetHost string,
+	matchers matchers.HttpResponse,
+	path ...string, //nolint:unparam // The variadic params might cause false positive
+) {
+	s.assertStableCurlInner(from, targetHost, "", matchers, "GET", path...)
+}
+
 // assertCurlHostPost is a helper function to assert a POST request to a host
 func (s *testingSuite) assertCurlHostPost(
 	from kubectl.PodExecOptions,
@@ -68,6 +86,49 @@ func (s *testingSuite) assertCurlInner(
 	method string,
 	path ...string,
 ) {
+	curlOpts := buildCurlOptions(targetHost, hostHeader, method, path...)
+
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		from,
+		curlOpts,
+		&matchers,
+	)
+}
+
+func (s *testingSuite) assertStableCurlInner(
+	from kubectl.PodExecOptions,
+	targetHost string,
+	hostHeader string,
+	matchers matchers.HttpResponse,
+	method string,
+	path ...string,
+) {
+	curlOpts := buildCurlOptions(targetHost, hostHeader, method, path...)
+
+	// Waypoint dataplane startup can briefly return the right response before
+	// becoming stable, especially around AuthorizationPolicy setup.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		from,
+		curlOpts,
+		&matchers,
+		time.Minute,
+	)
+	s.testInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(
+		s.ctx,
+		from,
+		curlOpts,
+		&matchers,
+	)
+}
+
+func buildCurlOptions(
+	targetHost string,
+	hostHeader string,
+	method string,
+	path ...string,
+) []curl.Option {
 	curlOpts := []curl.Option{
 		curl.WithHost(targetHost),
 		curl.WithPort(testAppPort),
@@ -86,22 +147,7 @@ func (s *testingSuite) assertCurlInner(
 		curlOpts = append(curlOpts, curl.WithPath(path[0]))
 	}
 
-	// wait for 1 good response
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
-		from,
-		curlOpts,
-		&matchers,
-		time.Minute,
-	)
-
-	// then ensure it's consistently working
-	s.testInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(
-		s.ctx,
-		from,
-		curlOpts,
-		&matchers,
-	)
+	return curlOpts
 }
 
 // assertCurlGeneric is added to unify testing of mutlivalued iterating tests
@@ -111,4 +157,12 @@ func (s *testingSuite) assertCurlGeneric(
 	expected matchers.HttpResponse,
 ) {
 	s.assertCurlInner(from, fqdn(svc, testNamespace), "", expected, method, path)
+}
+
+func (s *testingSuite) assertStableCurlGeneric(
+	from kubectl.PodExecOptions,
+	svc, method, path string,
+	expected matchers.HttpResponse,
+) {
+	s.assertStableCurlInner(from, fqdn(svc, testNamespace), "", expected, method, path)
 }

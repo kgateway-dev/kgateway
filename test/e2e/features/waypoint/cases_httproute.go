@@ -33,7 +33,7 @@ func (s *testingSuite) TestServiceEntryHostnameHTTPRoute() {
 	s.applyOrFail("httproute-hostname.yaml", testNamespace)
 
 	// svc-a has the parent ref, so only have the route there
-	s.assertCurlHost(fromCurl, "se-a.serviceentry.com", hasHTTPRoute)
+	s.assertStableCurlHost(fromCurl, "se-a.serviceentry.com", hasHTTPRoute)
 	s.assertCurlHost(fromCurl, "se-b.serviceentry.com", noHTTPRoute)
 }
 
@@ -42,7 +42,7 @@ func (s *testingSuite) TestServiceEntryObjectHTTPRoute() {
 	s.applyOrFail("httproute-serviceentry.yaml", testNamespace)
 
 	// svc-a has the parent ref, so only have the route there
-	s.assertCurlHost(fromCurl, "se-a.serviceentry.com", hasHTTPRoute)
+	s.assertStableCurlHost(fromCurl, "se-a.serviceentry.com", hasHTTPRoute)
 	s.assertCurlHost(fromCurl, "se-b.serviceentry.com", noHTTPRoute)
 }
 
@@ -51,7 +51,7 @@ func (s *testingSuite) TestServiceHTTPRoute() {
 	s.applyOrFail("httproute-svc.yaml", testNamespace)
 
 	// svc-a has the parent ref, so only have the route there
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
+	s.assertStableCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, noHTTPRoute)
 }
 
@@ -60,6 +60,6 @@ func (s *testingSuite) TestGatewayHTTPRoute() {
 	s.applyOrFail("httproute-gw.yaml", testNamespace)
 
 	// both get the route since we parent to the Gateway
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
+	s.assertStableCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, hasHTTPRoute)
 }

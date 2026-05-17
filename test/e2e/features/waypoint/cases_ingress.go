@@ -18,12 +18,12 @@ func (s *testingSuite) TestIngressHTTPRouteWithoutLabel() {
 
 	// verifying first the in-mesh traffic
 	// svc-a has the parent ref, so only have the route there
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
+	s.assertStableCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, noHTTPRoute)
 
 	// verifying the ingress traffic does not go through waypoint because
 	// the ingress-use-waypoint label is not set
-	s.assertCurlInner(fromCurl, kubeutils.ServiceFQDN(metav1.ObjectMeta{
+	s.assertStableCurlInner(fromCurl, kubeutils.ServiceFQDN(metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: testNamespace,
 	}), "example.com", noHTTPRoute, "GET")
@@ -37,7 +37,7 @@ func (s *testingSuite) TestIngressHTTPRouteServiceLabel() {
 
 	// verifying first the in-mesh traffic
 	// svc-a has the parent ref, so only have the route there
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
+	s.assertStableCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, noHTTPRoute)
 
 	// verifying the ingress traffic goes through waypoint
@@ -48,7 +48,7 @@ func (s *testingSuite) TestIngressHTTPRouteServiceLabel() {
 		// istio.io/ingress-use-waypoint=true
 		expected = noHTTPRoute
 	}
-	s.assertCurlInner(fromCurl, kubeutils.ServiceFQDN(metav1.ObjectMeta{
+	s.assertStableCurlInner(fromCurl, kubeutils.ServiceFQDN(metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: testNamespace,
 	}), "example.com", expected, "GET")
@@ -62,7 +62,7 @@ func (s *testingSuite) TestIngressHTTPRouteNamespaceLabel() {
 
 	// verifying first the in-mesh traffic
 	// svc-a has the parent ref, so only have the route there
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
+	s.assertStableCurlService(fromCurl, "svc-a", testNamespace, hasHTTPRoute)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, noHTTPRoute)
 
 	// verifying the ingress traffic goes through waypoint
@@ -73,7 +73,7 @@ func (s *testingSuite) TestIngressHTTPRouteNamespaceLabel() {
 		// istio.io/ingress-use-waypoint=true
 		expected = noHTTPRoute
 	}
-	s.assertCurlInner(fromCurl, kubeutils.ServiceFQDN(metav1.ObjectMeta{
+	s.assertStableCurlInner(fromCurl, kubeutils.ServiceFQDN(metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: testNamespace,
 	}), "example.com", expected, "GET")

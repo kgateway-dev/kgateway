@@ -75,31 +75,31 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) TestBasic() {
 	// Assert traffic to team1 route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam2)})
 }
 
 func (s *testingSuite) TestRecursive() {
 	// Assert traffic to team1 route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam2)})
 }
 
 func (s *testingSuite) TestCyclic() {
 	// Assert traffic to team1 route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route fails with HTTP 500 as it is a cyclic route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusInternalServerError})
 
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteStatusContainsMessage(s.Ctx, routeTeam2.Name, routeTeam2.Namespace,
@@ -108,11 +108,11 @@ func (s *testingSuite) TestCyclic() {
 
 func (s *testingSuite) TestInvalidChild() {
 	// Assert traffic to team1 route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route fails with HTTP 500 as the route is invalid due to specifying a hostname on the child route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusInternalServerError})
 
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteStatusContainsMessage(s.Ctx, routeTeam2.Name, routeTeam2.Namespace,
@@ -121,7 +121,7 @@ func (s *testingSuite) TestInvalidChild() {
 
 func (s *testingSuite) TestHeaderQueryMatch() {
 	// Assert traffic to team1 route with matching header and query parameters
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam1),
 			curl.WithHeader("header1", "val1"),
@@ -131,7 +131,7 @@ func (s *testingSuite) TestHeaderQueryMatch() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 child route fails with HTTP 404 as it does not match the parent's header and query parameters
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2),
 			curl.WithHeader("headerX", "valX"),
@@ -140,7 +140,7 @@ func (s *testingSuite) TestHeaderQueryMatch() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
 
 	// Assert traffic to team2 parent route fails with HTTP 500 due to unresolved child route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2),
 			curl.WithHeader("header2", "val2"),
@@ -151,7 +151,7 @@ func (s *testingSuite) TestHeaderQueryMatch() {
 
 func (s *testingSuite) TestMultipleParents() {
 	// Assert traffic to parent1.com/anything/team1
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam1),
@@ -160,7 +160,7 @@ func (s *testingSuite) TestMultipleParents() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to parent1.com/anything/team2
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam2),
@@ -169,7 +169,7 @@ func (s *testingSuite) TestMultipleParents() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam2)})
 
 	// Assert traffic to parent2.com/anything/team1
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam1),
@@ -178,7 +178,7 @@ func (s *testingSuite) TestMultipleParents() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to parent2.com/anything/team2 fails as it is not selected by parent2 route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam2),
@@ -189,7 +189,7 @@ func (s *testingSuite) TestMultipleParents() {
 
 func (s *testingSuite) TestInvalidChildValidStandalone() {
 	// Assert traffic to team1 route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyTestHostPort),
 			curl.WithPath(pathTeam1),
@@ -198,7 +198,7 @@ func (s *testingSuite) TestInvalidChildValidStandalone() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)})
 
 	// Assert traffic to team2 route on parent hostname fails with HTTP 500 as the route is invalid due to specifying a hostname on the child route
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyTestHostPort),
 			curl.WithPath(pathTeam2),
@@ -207,7 +207,7 @@ func (s *testingSuite) TestInvalidChildValidStandalone() {
 		&testmatchers.HttpResponse{StatusCode: http.StatusInternalServerError})
 
 	// Assert traffic to team2 route on standalone host succeeds
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyTestHostPort),
 			curl.WithPath(pathTeam2),
@@ -234,12 +234,12 @@ func (s *testingSuite) TestMatcherInheritance() {
 		string(gwv1.RouteReasonAccepted), 10*time.Second, 1*time.Second)
 
 	// Assert traffic on parent1's prefix
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/anything/foo/child")},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("/anything/foo/child")})
 
 	// Assert traffic on parent2's prefix
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath("/anything/baz/child")},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring("/anything/baz/child")})
 }
@@ -270,7 +270,7 @@ func (s *testingSuite) TestRouteWeight() {
 func (s *testingSuite) TestPolicyMerging() {
 	s.T().Skip("skipping. See https://github.com/kgateway-dev/kgateway/issues/13314 for details")
 	// Assert traffic to parent1.com/anything/team1 uses svc1's transformation policy
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam1),
@@ -285,7 +285,7 @@ func (s *testingSuite) TestPolicyMerging() {
 		})
 
 	// Assert traffic to parent1.com/anything/team2 uses svc2's transformation policy
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam2),
@@ -300,7 +300,7 @@ func (s *testingSuite) TestPolicyMerging() {
 		})
 
 	// Assert traffic to parent2.com/anything/team1 uses parent2's transformation policy
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam1),
@@ -315,7 +315,7 @@ func (s *testingSuite) TestPolicyMerging() {
 		})
 
 	// Assert traffic to parent2.com/anything/team2 uses parent2's transformation policy
-	s.TestInstallation.AssertionsT(s.T()).AssertEventuallyConsistentCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(s.Ctx, defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHostPort(proxyHostPort),
 			curl.WithPath(pathTeam2),

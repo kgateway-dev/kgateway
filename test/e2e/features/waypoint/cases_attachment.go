@@ -52,14 +52,14 @@ func (s *testingSuite) TestServiceAttached() {
 		s.useWaypointLabelForTest("svc", "svc-a", testNamespace)
 
 		// only svc-a should through the waypoint
-		s.assertCurlService(fromCurl, "svc-a", testNamespace, hasEnvoy)
+		s.assertStableCurlService(fromCurl, "svc-a", testNamespace, hasEnvoy)
 		s.assertCurlService(fromCurl, "svc-b", testNamespace, noEnvoy)
 	})
 	s.Run("istio ServiceEntry", func() {
 		s.useWaypointLabelForTest("serviceentry", "se-a", testNamespace)
 
 		// only se-a should through the waypoint
-		s.assertCurlHost(fromCurl, "se-a.serviceentry.com", hasEnvoy)
+		s.assertStableCurlHost(fromCurl, "se-a.serviceentry.com", hasEnvoy)
 		s.assertCurlHost(fromCurl, "se-b.serviceentry.com", noEnvoy)
 	})
 }
@@ -69,12 +69,12 @@ func (s *testingSuite) TestNamespaceAttached() {
 
 	s.Run("kube Service", func() {
 		// everything goes through the waypoint
-		s.assertCurlService(fromCurl, "svc-a", testNamespace, hasEnvoy)
+		s.assertStableCurlService(fromCurl, "svc-a", testNamespace, hasEnvoy)
 		s.assertCurlService(fromCurl, "svc-b", testNamespace, hasEnvoy)
 	})
 	s.Run("istio ServiceEntry", func() {
 		// including ServiceEntry
-		s.assertCurlHost(fromCurl, "se-a.serviceentry.com", hasEnvoy)
+		s.assertStableCurlHost(fromCurl, "se-a.serviceentry.com", hasEnvoy)
 		s.assertCurlHost(fromCurl, "se-b.serviceentry.com", hasEnvoy)
 	})
 }

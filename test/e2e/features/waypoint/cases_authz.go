@@ -24,7 +24,7 @@ func (s *testingSuite) TestAuthzNoCurlSvcB() {
 	s.applyOrFail("authz-deny-notcurl-svc-b.yaml", testNamespace)
 
 	// ensure waypoint attachment, and all requests fromCurl succeed
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, hasEnvoy)
+	s.assertStableCurlService(fromCurl, "svc-a", testNamespace, hasEnvoy)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, hasEnvoy)
 
 	// ensure authz is only applied to svc-a
@@ -37,7 +37,7 @@ func (s *testingSuite) TestAuthzGatewayClassRef() {
 	s.applyOrFail("authz-gatewayclass-ref.yaml", "istio-system")
 
 	// Verify waypoint attachment
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, isForbidden)
+	s.assertStableCurlService(fromCurl, "svc-a", testNamespace, isForbidden)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, isForbidden)
 
 	// Verify that policy applies to all services for notcurl
@@ -50,7 +50,7 @@ func (s *testingSuite) TestAuthzGatewayRef() {
 	s.applyOrFail("authz-gateway-ref.yaml", testNamespace)
 
 	// Verify waypoint attachment
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, isForbidden)
+	s.assertStableCurlService(fromCurl, "svc-a", testNamespace, isForbidden)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, isForbidden)
 
 	// Verify that policy applies to all services for notcurl
@@ -63,7 +63,7 @@ func (s *testingSuite) TestAuthzMultiService() {
 	s.applyOrFail("authz-multi-service.yaml", testNamespace)
 
 	// Verify waypoint attachment
-	s.assertCurlService(fromCurl, "svc-a", testNamespace, isForbidden)
+	s.assertStableCurlService(fromCurl, "svc-a", testNamespace, isForbidden)
 	s.assertCurlService(fromCurl, "svc-b", testNamespace, isForbidden)
 
 	// Verify that policy applies to all services for notcurl
@@ -110,6 +110,10 @@ func (s *testingSuite) TestAuthzComplexRule() {
 					}
 
 					s.T().Run(key, func(t *testing.T) {
+						if from.name == "curl" && svc == "svc-a" && method == "GET" && path == "" {
+							s.assertStableCurlGeneric(from.opts, svc, method, path, expected)
+							return
+						}
 						s.assertCurlGeneric(from.opts, svc, method, path, expected)
 					})
 				}
@@ -123,7 +127,7 @@ func (s *testingSuite) TestAuthzServiceEntry() {
 	s.applyOrFail("authz-serviceentry.yaml", testNamespace)
 
 	// ensure waypoint attachment, and all requests fromCurl succeed
-	s.assertCurlHost(fromCurl, "se-a.serviceentry.com", hasEnvoy)
+	s.assertStableCurlHost(fromCurl, "se-a.serviceentry.com", hasEnvoy)
 	s.assertCurlHost(fromCurl, "se-b.serviceentry.com", isForbidden)
 
 	// ensure authz is only applied to svc-a
