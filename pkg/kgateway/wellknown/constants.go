@@ -36,6 +36,10 @@ const (
 	SdsTargetURI   = "127.0.0.1:8234"
 )
 
+// TransportSocketUpstreamProxyProtocol is the Envoy transport socket name for
+// the upstream proxy protocol wrapper.
+const TransportSocketUpstreamProxyProtocol = "envoy.transport_sockets.upstream_proxy_protocol"
+
 // BlackholeClusterName is the sentinel cluster name referenced by routes whose
 // backend could not be resolved. It is never materialized in the xDS snapshot.
 const BlackholeClusterName = "blackhole-cluster"

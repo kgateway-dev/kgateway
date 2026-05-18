@@ -37,9 +37,6 @@ import (
 
 const (
 	PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
-	// TransportSocketUpstreamProxyProtocol is the name of the upstream proxy protocol
-	// transport socket. Not defined in go-control-plane wellknown package.
-	TransportSocketUpstreamProxyProtocol = "envoy.transport_sockets.upstream_proxy_protocol"
 )
 
 type BackendConfigPolicyIR struct {
@@ -460,7 +457,7 @@ func applyUpstreamProxyProtocol(ppConfig *envoycorev3.ProxyProtocolConfig, out *
 		return
 	}
 	out.TransportSocket = &envoycorev3.TransportSocket{
-		Name: TransportSocketUpstreamProxyProtocol,
+		Name: wellknown.TransportSocketUpstreamProxyProtocol,
 		ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 			TypedConfig: typedConfig,
 		},

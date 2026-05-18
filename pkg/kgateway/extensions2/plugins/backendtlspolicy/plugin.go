@@ -38,11 +38,6 @@ import (
 
 var logger = logging.New("plugin/backendtlspolicy")
 
-// transportSocketUpstreamProxyProtocol matches the name used by
-// BackendConfigPolicy when wrapping a transport socket in upstream proxy
-// protocol.
-const transportSocketUpstreamProxyProtocol = "envoy.transport_sockets.upstream_proxy_protocol"
-
 var (
 	ErrConfigMapNotFound = errors.New("ConfigMap not found")
 
@@ -180,7 +175,7 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 	// upstream proxy protocol, preserve that wrapper and replace the inner
 	// socket with our TLS one. Otherwise BTP "wins" for TLS and we configure the
 	// TLS socket directly.
-	if existing := out.TransportSocket; existing != nil && existing.GetName() == transportSocketUpstreamProxyProtocol {
+	if existing := out.TransportSocket; existing != nil && existing.GetName() == kgwellknown.TransportSocketUpstreamProxyProtocol {
 		if wrapped, ok := replaceInnerInProxyProtocol(existing, tlsPol.transportSocket); ok {
 			out.TransportSocket = wrapped
 			return

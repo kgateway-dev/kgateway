@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -45,7 +46,7 @@ func proxyProtocolWrappedRawBuffer(t *testing.T) *envoycorev3.TransportSocket {
 	ppAny, err := utils.MessageToAny(pp)
 	require.NoError(t, err)
 	return &envoycorev3.TransportSocket{
-		Name: transportSocketUpstreamProxyProtocol,
+		Name: wellknown.TransportSocketUpstreamProxyProtocol,
 		ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 			TypedConfig: ppAny,
 		},
@@ -74,7 +75,7 @@ func TestProcessBackend_ReplacesInnerOfProxyProtocolWrapper(t *testing.T) {
 	processBackend(context.Background(), pol, ir.BackendObjectIR{}, cluster)
 
 	require.NotNil(t, cluster.TransportSocket)
-	require.Equal(t, transportSocketUpstreamProxyProtocol, cluster.TransportSocket.GetName(),
+	require.Equal(t, wellknown.TransportSocketUpstreamProxyProtocol, cluster.TransportSocket.GetName(),
 		"BTP must preserve the upstream_proxy_protocol wrapper")
 
 	pp := &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{}
