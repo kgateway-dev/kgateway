@@ -14,9 +14,29 @@ import (
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 
+	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
+
+const systemCAValidationPlaceholderCert = `-----BEGIN CERTIFICATE-----
+MIIC1jCCAb4CCQCJczLyBBZ1GTANBgkqhkiG9w0BAQsFADAtMRUwEwYDVQQKDAxl
+eGFtcGxlIEluYy4xFDASBgNVBAMMC2V4YW1wbGUuY29tMB4XDTI1MDMwNzE0Mjkx
+NloXDTI2MDMwNzE0MjkxNlowLTEVMBMGA1UECgwMZXhhbXBsZSBJbmMuMRQwEgYD
+VQQDDAtleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+AN0U6TVYECkwqnxh1Kt3dS+LialrXBOXKagj9tE582T6dwmqThD75VZPrNKkRoYO
+aUzCctfDkUBXRemOTMut7ES5xoAtSAhr2GAnqgM3+yBCLOxooSjEFdlpFT7dhi1w
+jOPa5iMh6ve/pHuRHvEuaF/J6P8tr83wGutx/xFZVuGA9V1AmBmYhePM+JhdcwaB
+1+IbJp30gGyPfY4vdRQ9VQWbThE8psEzah+3SgTKJSIT7NAdwiIu3O3rXORbaYYU
+oycgXUHdOKRbJnbvy3pTnFZJ50sg1HIA4yBdX7c0diy8Zz3Suoondg3DforWr0pB
+Hs6tySAQoz2RiAqDqcE2rbMCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAWPkz3dJW
+b+LFtnv7MlOVM79Y4PqeiHnazP1G9FwnWBHARkjISsax3b0zX8/RHnU83c3tLP5D
+VwenYb9B9mzXbLiWI8aaX0UXP//D593ti15y0Od7yC2hQszlqIbxYnkFVwXoT9fQ
+bdQ9OtpCt8EZnKEyCxck+hlKEyYTcH2PqZ7Ndp0M8I2znz3Kut/uYHLUddfoPF/m
+O0V6fbyB/Mx/G1uLiv/BVpx3AdP+3ygJyKtelXkD+IdlY3y110fzmVr6NgxAbz/h
+n9KpuK4SEloIycZUaKVXAaX7T42SFYw7msmB+Uu7z5oLOijsjX6TjeofdFBZ/Byl
+SxODgqhtaPnOxQ==
+-----END CERTIFICATE-----`
 
 // ConfigBuilder helps construct a partial bootstrap config for validation.
 type ConfigBuilder struct {
@@ -53,6 +73,46 @@ func (b *ConfigBuilder) AddCluster(cluster *envoyclusterv3.Cluster) {
 // AddSecret adds a static secret to the bootstrap.
 func (b *ConfigBuilder) AddSecret(secret *envoytlsv3.Secret) {
 	b.secrets = append(b.secrets, secret)
+}
+
+func SystemCAValidationSecret() *envoytlsv3.Secret {
+	return &envoytlsv3.Secret{
+		Name: eiutils.SystemCaSecretName,
+		Type: &envoytlsv3.Secret_ValidationContext{
+			ValidationContext: &envoytlsv3.CertificateValidationContext{
+				TrustedCa: &envoycorev3.DataSource{
+					Specifier: &envoycorev3.DataSource_InlineString{
+						InlineString: systemCAValidationPlaceholderCert,
+					},
+				},
+			},
+		},
+	}
+}
+
+func ClusterReferencesSystemCASecret(cluster *envoyclusterv3.Cluster) bool {
+	if cluster == nil || cluster.GetTransportSocket() == nil || cluster.GetTransportSocket().GetTypedConfig() == nil {
+		return false
+	}
+
+	upstreamTLS := &envoytlsv3.UpstreamTlsContext{}
+	if err := cluster.GetTransportSocket().GetTypedConfig().UnmarshalTo(upstreamTLS); err != nil {
+		return false
+	}
+
+	commonTLS := upstreamTLS.GetCommonTlsContext()
+	if commonTLS == nil {
+		return false
+	}
+
+	switch validation := commonTLS.GetValidationContextType().(type) {
+	case *envoytlsv3.CommonTlsContext_CombinedValidationContext:
+		return validation.CombinedValidationContext.GetValidationContextSdsSecretConfig().GetName() == eiutils.SystemCaSecretName
+	case *envoytlsv3.CommonTlsContext_ValidationContextSdsSecretConfig:
+		return validation.ValidationContextSdsSecretConfig.GetName() == eiutils.SystemCaSecretName
+	default:
+		return false
+	}
 }
 
 // AddHttpFilter adds an HTTP filter to the HCM filter chain.

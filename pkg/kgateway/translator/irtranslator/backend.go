@@ -172,6 +172,9 @@ func (t *BackendTranslator) runPolicies(
 func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *envoyclusterv3.Cluster) error {
 	builder := bootstrap.New()
 	builder.AddCluster(cluster)
+	if bootstrap.ClusterReferencesSystemCASecret(cluster) {
+		builder.AddSecret(bootstrap.SystemCAValidationSecret())
+	}
 	bootstrap, err := builder.Build()
 	if err != nil {
 		return err
