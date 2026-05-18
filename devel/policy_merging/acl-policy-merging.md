@@ -37,11 +37,13 @@ Given two ACL configs `p1` (higher priority / accumulator) and `p2`:
 
 | Field | Merge behavior |
 | --- | --- |
-| `defaultAction` | `p1` wins; conflict detected if values differ |
+| `defaultAction` | `p1` wins; conflict detected\* if values differ |
 | `rules` | unioned — `p1` rules first, then `p2` rules appended |
-| `denyResponse.statusCode` | `p1` wins; conflict detected if values differ |
+| `denyResponse.statusCode` | `p1` wins; conflict detected\* if values differ |
 | `denyResponse.blockedByHeaderName` | `p1` wins if set; otherwise taken from `p2` |
 | `denyResponse.headers` | unioned — `p1` headers first, then `p2` headers appended |
+
+\* See [Conflict detection and fallback](#conflict-detection-and-fallback).
 
 For `OverridableDeepMerge` (parent preferred over child), `p2` takes the `p1`
 role in the table above.
@@ -55,8 +57,10 @@ for conflicting values between `p1` and `p2`.
 If any conflict is found:
 
 1. A warning is logged for each conflicting field.
-2. The merge falls back to shallow (`defaultMerge`) so the whole `p1` ACL
-   config wins rather than producing a partially merged result.
+2. The merge falls back to the corresponding shallow strategy (`AugmentedShallowMerge`
+   or `OverridableShallowMerge`) so the whole winning ACL config is taken rather than
+   producing a partially merged result. For `AugmentedShallowMerge`, `p1` (higher-priority
+   policy) wins; for `OverridableShallowMerge`, `p2` (parent policy) wins.
 
 Fields that are absent from either policy do not count as conflicts; a missing
 `denyResponse` in one policy is simply filled from the other.

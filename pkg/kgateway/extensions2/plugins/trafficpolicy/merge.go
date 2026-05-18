@@ -27,8 +27,6 @@ type TrafficPolicyMergeOpts struct {
 	Transformation string `json:"transformation,omitempty"`
 
 	ACL string `json:"acl,omitempty"`
-
-	SameHierarchy bool
 }
 
 // MergeTrafficPolicies merges two TrafficPolicy IRs, returning a map that contains information
@@ -738,6 +736,12 @@ func mergeHttpACL(
 				if !p1HasHttpACL {
 					p1.spec.httpACL = nil
 				}
+				switch opts.Strategy {
+				case policy.AugmentedDeepMerge:
+					opts.Strategy = policy.AugmentedShallowMerge
+				case policy.OverridableDeepMerge:
+					opts.Strategy = policy.OverridableShallowMerge
+				}
 				defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "httpACL")
 				return
 			}
@@ -785,7 +789,7 @@ func detectHttpACLMergeConflict(m1, m2 map[string]any) []error {
 	sc1, hasSC1 := dr1["statusCode"]
 	sc2, hasSC2 := dr2["statusCode"]
 	if hasSC1 && hasSC2 && sc1 != sc2 {
-		conflicts = append(conflicts, fmt.Errorf("denyResponse.statusCode conflict: %d vs %d", sc1, sc2))
+		conflicts = append(conflicts, fmt.Errorf("denyResponse.statusCode conflict: %v vs %v", sc1, sc2))
 	}
 
 	name1, hasName1 := dr1["blockedByHeaderName"]
