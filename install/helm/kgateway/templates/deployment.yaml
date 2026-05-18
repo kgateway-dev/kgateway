@@ -139,7 +139,7 @@ spec:
               value: "true"
             {{- end }}
             {{- if .Values.controller.xds.tls.enabled }}
-            - name: KGW_XDS_TLS_ENABLED
+            - name: KGW_XDS_TLS
               value: "true"
             {{- end }}
             - name: POD_NAMESPACE
