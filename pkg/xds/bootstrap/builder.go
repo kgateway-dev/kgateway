@@ -75,7 +75,10 @@ func (b *ConfigBuilder) AddSecret(secret *envoytlsv3.Secret) {
 	b.secrets = append(b.secrets, secret)
 }
 
-func SystemCAValidationSecret() *envoytlsv3.Secret {
+// SystemCAValidationSecretPlaceholder returns a secret with a placeholder CA certificate.
+// This is used so that strict validation won't erroneously fail for backend TLS configs that reference system CA certificates,
+// that would otherwise be missing in the validation bootstrap config.
+func SystemCAValidationSecretPlaceholder() *envoytlsv3.Secret {
 	return &envoytlsv3.Secret{
 		Name: eiutils.SystemCaSecretName,
 		Type: &envoytlsv3.Secret_ValidationContext{

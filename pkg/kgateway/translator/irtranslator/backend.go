@@ -173,7 +173,7 @@ func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *
 	builder := bootstrap.New()
 	builder.AddCluster(cluster)
 	if bootstrap.ClusterReferencesSystemCASecret(cluster) {
-		builder.AddSecret(bootstrap.SystemCAValidationSecret())
+		builder.AddSecret(bootstrap.SystemCAValidationSecretPlaceholder())
 	}
 	bootstrap, err := builder.Build()
 	if err != nil {
