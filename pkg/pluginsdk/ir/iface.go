@@ -127,8 +127,14 @@ type HcmContext struct {
 // for the duration of the translation.
 // Each of the functions here will be called in the order they appear in the interface.
 type ProxyTranslationPass interface {
-	// ApplyListenerPlugin is called 1 time for each listener
+	// ApplyListenerPlugin is called 1 time per listener, before FilterChains are built.
 	ApplyListenerPlugin(
+		pCtx *ListenerContext,
+		out *envoylistenerv3.Listener,
+	)
+
+	// ApplyPostListener is called 1 time per listener, after FilterChains are built.
+	ApplyPostListener(
 		pCtx *ListenerContext,
 		out *envoylistenerv3.Listener,
 	)
@@ -199,6 +205,9 @@ type UnimplementedProxyTranslationPass struct{}
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
 
 func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyPostListener(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }
 
 func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {

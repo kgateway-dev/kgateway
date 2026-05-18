@@ -196,6 +196,8 @@ func (t *Translator) ComputeListener(
 		ret.ListenerFilters = append(ret.GetListenerFilters(), tlsInspectorFilter())
 	}
 
+	t.runPostListenerPlugins(pass, gw, lis, ret)
+
 	return ret, routes
 }
 
@@ -233,6 +235,39 @@ func (t *Translator) runListenerPlugins(
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, mergeOrigins, pols...)
+	}
+}
+
+// runPostListenerPlugins is called after a listener's FilterChains are built so that
+// plugins can mutate FilterChain-level fields via ApplyPostListener.
+func (t *Translator) runPostListenerPlugins(
+	pass TranslationPassPlugins,
+	gw ir.GatewayIR,
+	l ir.ListenerIR,
+	out *envoylistenerv3.Listener,
+) {
+	var attachedPolicies ir.AttachedPolicies
+	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
+	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+		pols := attachedPolicies.Policies[gk]
+		pass := pass[gk]
+		if pass == nil {
+			continue
+		}
+		policies, _ := mergePolicies(pass, pols)
+		for _, pol := range policies {
+			pctx := &ir.ListenerContext{
+				Port:   l.BindPort,
+				Policy: pol.PolicyIr,
+				PolicyAncestorRef: gwv1.ParentReference{
+					Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
+					Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+					Namespace: new(gwv1.Namespace(gw.SourceObject.GetNamespace())),
+					Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
+				},
+			}
+			pass.ApplyPostListener(pctx, out)
+		}
 	}
 }
 

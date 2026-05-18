@@ -119,6 +119,14 @@ type ListenerConfig struct {
 	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
+
+	// TransportSocketConnectTimeout is the timeout for the transport socket to complete after a new connection is accepted.
+	// If the timeout fires, the connection is closed. Setting this protects Envoy from clients that open connections and
+	// then never complete the TLS handshake. Applied to every filter chain on the listener.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#envoy-v3-api-field-config-listener-v3-filterchain-transport-socket-connect-timeout
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	TransportSocketConnectTimeout *metav1.Duration `json:"transportSocketConnectTimeout,omitempty"`
 }
 
 type ListenerDefaultConfig struct {
