@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -178,6 +179,42 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 					}
 					if !dnsCluster.GetRespectDnsTtl() {
 						return errors.New("expected respect dns ttl to be true")
+					}
+					return nil
+				},
+			},
+			mode:    apisettings.ValidationStrict,
+			wantErr: false,
+		},
+		{
+			name: "policy with system CA adds validation secret to bootstrap",
+			policyIR: &BackendConfigPolicyIR{
+				ct: time.Now(),
+				tlsConfig: &envoytlsv3.UpstreamTlsContext{
+					CommonTlsContext: &envoytlsv3.CommonTlsContext{
+						ValidationContextType: &envoytlsv3.CommonTlsContext_CombinedValidationContext{
+							CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
+								DefaultValidationContext: &envoytlsv3.CertificateValidationContext{},
+								ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+									Name: eiutils.SystemCaSecretName,
+								},
+							},
+						},
+					},
+				},
+			},
+			validator: &mockValidator{
+				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
+					secrets := config.GetStaticResources().GetSecrets()
+					if len(secrets) != 1 {
+						return fmt.Errorf("expected exactly one secret in bootstrap, got %d", len(secrets))
+					}
+					secret := secrets[0]
+					if secret.GetName() != eiutils.SystemCaSecretName {
+						return fmt.Errorf("expected secret name %q, got %q", eiutils.SystemCaSecretName, secret.GetName())
+					}
+					if secret.GetValidationContext().GetTrustedCa().GetInlineString() == "" {
+						return errors.New("expected placeholder CA cert in validation secret")
 					}
 					return nil
 				},
