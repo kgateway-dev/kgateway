@@ -263,7 +263,9 @@ osv-scan: ## Run OSV-Scanner locally; set OSV_SCAN_IMAGES="image-ref ..." to als
 		mkdir -p "$$image_dir"; \
 		echo "Scanning Docker images: $(OSV_SCAN_IMAGES)"; \
 		for image in $(OSV_SCAN_IMAGES); do \
-			safe_image="$$(printf '%s' "$$image" | sed 's/[^A-Za-z0-9_.-]/-/g')"; \
+			safe_image_base="$$(printf '%s' "$$image" | sed 's/[^A-Za-z0-9_.-]/-/g')"; \
+			image_hash="$$(printf '%s' "$$image" | sha256sum | cut -d' ' -f1)"; \
+			safe_image="$$safe_image_base-$$image_hash"; \
 			image_json="/output/osv/$$safe_branch/images/$$safe_image.json"; \
 			image_sarif="/output/osv/$$safe_branch/images/$$safe_image.sarif"; \
 			image_archive="/output/osv/$$safe_branch/images/$$safe_image.tar"; \
