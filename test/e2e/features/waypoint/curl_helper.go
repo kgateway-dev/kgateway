@@ -29,7 +29,7 @@ func (s *testingSuite) assertCurlService(
 
 func (s *testingSuite) assertStableCurlService(
 	from kubectl.PodExecOptions,
-	svcName, svcNs string,
+	svcName, svcNs string, //nolint:unparam // current callers all use "svc-a"/testNamespace, but kept parameterized to match the non-stable variant
 	matchers matchers.HttpResponse,
 	path ...string, //nolint:unparam // The variadic params might cause false positive
 ) {
@@ -61,7 +61,7 @@ func (s *testingSuite) assertCurlHost(
 
 func (s *testingSuite) assertStableCurlHost(
 	from kubectl.PodExecOptions,
-	targetHost string,
+	targetHost string, //nolint:unparam // current callers all use "se-a.serviceentry.com", but kept parameterized to match the non-stable variant
 	matchers matchers.HttpResponse,
 	path ...string, //nolint:unparam // The variadic params might cause false positive
 ) {
@@ -81,7 +81,7 @@ func (s *testingSuite) assertCurlHostPost(
 func (s *testingSuite) assertCurlInner(
 	from kubectl.PodExecOptions,
 	targetHost string,
-	hostHeader string,
+	hostHeader string, //nolint:unparam // hostHeader is wired through buildCurlOptions for future use; current callers all pass ""
 	matchers matchers.HttpResponse,
 	method string,
 	path ...string,
