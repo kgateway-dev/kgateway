@@ -344,7 +344,7 @@ spec:
               value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: "{}"
-            - name: KGW_XDS_TLS_ENABLED
+            - name: KGW_XDS_TLS
               value: "true"
             - name: POD_NAMESPACE
               valueFrom:
