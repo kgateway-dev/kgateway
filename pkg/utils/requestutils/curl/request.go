@@ -1,6 +1,7 @@
 package curl
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 )
@@ -98,6 +99,11 @@ type requestConfig struct {
 	clientKey  string
 
 	additionalArgs []string
+
+	// ctx is honored by ExecuteRequest only (the native Go HTTP path). BuildArgs
+	// produces shell args for the curl CLI and ignores ctx — curl has no
+	// equivalent of context cancellation. Set via WithContext.
+	ctx context.Context
 }
 
 func (c *requestConfig) generateArgs() []string {

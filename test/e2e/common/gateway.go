@@ -4,6 +4,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -26,44 +27,47 @@ type Gateway struct {
 	Address string
 }
 
-// Defaults for SendConsistently — mirror assertions.AssertEventuallyConsistentCurlResponse.
+// Defaults for SendConsistently — mirror values in assertions.AssertEventuallyConsistentCurlResponse.
 const (
 	defaultConsistencyWindow = 3 * time.Second
 	defaultConsistencyPoll   = 1 * time.Second
 )
 
-// Send curls the gateway and waits until the response matches.
+// Send curls the gateway and waits until the response matches using Istio default retry options (10s timeout, 100ms delay).
 func (g *Gateway) Send(t *testing.T, match *matchers.HttpResponse, opts ...curl.Option) {
 	t.Helper()
-	g.SendWithRetry(t, match, nil, opts...)
+	// Pass t.Context to match the signature
+	g.SendWithRetry(t.Context(), t, match, nil, opts...)
 }
 
 // SendWithRetry curls the gateway with caller-supplied retry options
 // (e.g. retry.Timeout, retry.Delay) for controlling the eventual-match behavior.
-func (g *Gateway) SendWithRetry(t *testing.T, match *matchers.HttpResponse, retryOpts []retry.Option, opts ...curl.Option) {
+func (g *Gateway) SendWithRetry(ctx context.Context, t *testing.T, match *matchers.HttpResponse, retryOpts []retry.Option, opts ...curl.Option) {
 	t.Helper()
 	fullOpts := g.curlOpts(opts)
 	retry.UntilSuccessOrFail(t, func() error {
-		return g.matchOnce(fullOpts, match)
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return g.matchOnce(ctx, fullOpts, match)
 	}, retryOpts...)
 }
 
 // SendConsistently curls the gateway, waits for the response to eventually match,
 // then asserts the response continues to match over a 3s window polled every 1s.
 // Mirrors assertions.AssertEventuallyConsistentCurlResponse semantics.
-func (g *Gateway) SendConsistently(t *testing.T, match *matchers.HttpResponse, opts ...curl.Option) {
+func (g *Gateway) SendConsistently(ctx context.Context, t *testing.T, match *matchers.HttpResponse, opts ...curl.Option) {
 	t.Helper()
-	g.SendConsistentlyFor(t, match, defaultConsistencyWindow, defaultConsistencyPoll, opts...)
+	g.SendConsistentlyFor(ctx, t, match, defaultConsistencyWindow, defaultConsistencyPoll, opts...)
 }
 
 // SendConsistentlyFor is SendConsistently with caller-supplied window and polling interval.
-// Any divergence within the window fails the test (no per-iteration retries).
-func (g *Gateway) SendConsistentlyFor(t *testing.T, match *matchers.HttpResponse, window, poll time.Duration, opts ...curl.Option) {
+func (g *Gateway) SendConsistentlyFor(ctx context.Context, t *testing.T, match *matchers.HttpResponse, window, poll time.Duration, opts ...curl.Option) {
 	t.Helper()
 	if poll <= 0 {
 		t.Fatalf("SendConsistentlyFor: poll interval must be positive, got %v", poll)
 	}
-	g.Send(t, match, opts...)
+	g.SendWithRetry(ctx, t, match, nil, opts...)
 
 	fullOpts := g.curlOpts(opts)
 	windowTimer := time.NewTimer(window)
@@ -73,10 +77,12 @@ func (g *Gateway) SendConsistentlyFor(t *testing.T, match *matchers.HttpResponse
 
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case <-windowTimer.C:
 			return
 		case <-ticker.C:
-			if err := g.matchOnce(fullOpts, match); err != nil {
+			if err := g.matchOnce(ctx, fullOpts, match); err != nil {
 				t.Fatalf("response did not consistently match within %v: %v", window, err)
 			}
 		}
@@ -87,8 +93,8 @@ func (g *Gateway) SendConsistentlyFor(t *testing.T, match *matchers.HttpResponse
 // The body is buffered before matching so it can be included in failure diagnostics
 // (the underlying gomega HaveHttpResponse matcher does not print the actual body —
 // see test/gomega/matchers/have_http_response.go).
-func (g *Gateway) matchOnce(fullOpts []curl.Option, match *matchers.HttpResponse) error {
-	r, err := curl.ExecuteRequest(fullOpts...)
+func (g *Gateway) matchOnce(ctx context.Context, fullOpts []curl.Option, match *matchers.HttpResponse) error {
+	r, err := curl.ExecuteRequest(append(fullOpts, curl.WithContext(ctx))...)
 	if err != nil {
 		return err
 	}
