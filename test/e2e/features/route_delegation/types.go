@@ -3,10 +3,8 @@
 package route_delegation
 
 import (
-	"fmt"
 	"path/filepath"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -26,8 +24,6 @@ var (
 		Name:      "http-gateway",
 		Namespace: "infra",
 	}
-	proxyService  = &corev1.Service{ObjectMeta: proxyMeta}
-	proxyHostPort = fmt.Sprintf("%s.%s.svc:%d", proxyService.Name, proxyService.Namespace, gatewayPort)
 )
 
 // ref: basic.yaml
@@ -76,9 +72,6 @@ var (
 		Name:      "http-gateway-test",
 		Namespace: "infra",
 	}
-	proxyTestService = &corev1.Service{ObjectMeta: proxyTestMeta}
-
-	proxyTestHostPort = fmt.Sprintf("%s.%s.svc:%d", proxyTestService.Name, proxyTestService.Namespace, gatewayTestPort)
 
 	routeParentHost = "parent.com"
 	routeTeam2Host  = "team2.com"
