@@ -1,10 +1,12 @@
 package buildtools
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -82,6 +84,58 @@ func TestToolsGoModVersionMatchesRoot(t *testing.T) {
 	}
 }
 
+func TestIstioVersionDefaultsDoNotDrift(t *testing.T) {
+	t.Parallel()
+
+	rootDir := repoRoot(t)
+
+	deployerPath := filepath.Join(rootDir, "pkg", "deployer", "gateway_parameters.go")
+	prTestVersionsPath := filepath.Join(rootDir, ".github", "workflows", ".env", "pr-tests", "versions.env")
+	nightlyMaxVersionsPath := filepath.Join(rootDir, ".github", "workflows", ".env", "nightly-tests", "max_versions.env")
+	e2eRuntimePath := filepath.Join(rootDir, "test", "e2e", "testutils", "runtime", "istio_version.go")
+
+	deployerTag := goStringConst(t, deployerPath, "DefaultIstioProxyImageTag")
+	prTestVersion := envValue(t, prTestVersionsPath, "istio_version")
+	nightlyMaxVersion := envValue(t, nightlyMaxVersionsPath, "istio_version")
+	e2eDefaultVersion := goStringConst(t, e2eRuntimePath, "DefaultIstioVersion")
+
+	for name, version := range map[string]string{
+		"PR test istio_version":     prTestVersion,
+		"nightly max istio_version": nightlyMaxVersion,
+		"e2e DefaultIstioVersion":   e2eDefaultVersion,
+	} {
+		if version != deployerTag {
+			t.Errorf(
+				"%s = %q, want %q to match deployer DefaultIstioProxyImageTag",
+				name, version, deployerTag,
+			)
+		}
+	}
+
+	staleProxyTag := "proxyv2:" + "1.22.0"
+	testdataDir := filepath.Join(rootDir, "test", "deployer", "testdata")
+	err := filepath.WalkDir(testdataDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(path, "-out.yaml") {
+			return nil
+		}
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(string(data), staleProxyTag) {
+			t.Errorf("%s contains stale Istio proxy image tag %q", path, staleProxyTag)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk %s: %v", testdataDir, err)
+	}
+}
+
 func repoRoot(t *testing.T) string {
 	t.Helper()
 
@@ -111,4 +165,36 @@ func repoRoot(t *testing.T) string {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func goStringConst(t *testing.T, path, name string) string {
+	t.Helper()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+
+	pattern := regexp.MustCompile(`(?m)^\s*(?:const\s+)?` + regexp.QuoteMeta(name) + `\s*=\s*"([^"]+)"\s*$`)
+	match := pattern.FindSubmatch(data)
+	if match == nil {
+		t.Fatalf("could not find string constant %s in %s", name, path)
+	}
+	return string(match[1])
+}
+
+func envValue(t *testing.T, path, name string) string {
+	t.Helper()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+
+	pattern := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(name) + `='([^']+)'\s*$`)
+	match := pattern.FindSubmatch(data)
+	if match == nil {
+		t.Fatalf("could not find env value %s in %s", name, path)
+	}
+	return string(match[1])
 }

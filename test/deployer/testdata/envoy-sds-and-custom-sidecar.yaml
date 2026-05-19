@@ -35,7 +35,7 @@ spec:
       istioProxyContainer:
         image:
           repository: docker.io/istio/proxyv2
-          tag: 1.22.0
+          tag: 1.29.2
         istioDiscoveryAddress: istiod.istio-system.svc:15012
         istioMetaMeshId: cluster.local
         istioMetaClusterId: Kubernetes
