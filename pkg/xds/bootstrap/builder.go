@@ -118,6 +118,24 @@ func ClusterReferencesSystemCASecret(cluster *envoyclusterv3.Cluster) bool {
 	}
 }
 
+func clustersReferenceSystemCASecret(clusters []*envoyclusterv3.Cluster) bool {
+	for _, cluster := range clusters {
+		if ClusterReferencesSystemCASecret(cluster) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasSecretNamed(secrets []*envoytlsv3.Secret, name string) bool {
+	for _, secret := range secrets {
+		if secret != nil && secret.GetName() == name {
+			return true
+		}
+	}
+	return false
+}
+
 // AddHttpFilter adds an HTTP filter to the HCM filter chain.
 func (b *ConfigBuilder) AddHttpFilter(filter *envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter) {
 	b.httpFilters = append(b.httpFilters, filter)
@@ -193,7 +211,10 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 		staticResources.Clusters = b.clusters
 	}
 	if len(b.secrets) > 0 {
-		staticResources.Secrets = b.secrets
+		staticResources.Secrets = append(staticResources.Secrets, b.secrets...)
+	}
+	if clustersReferenceSystemCASecret(b.clusters) && !hasSecretNamed(staticResources.GetSecrets(), eiutils.SystemCaSecretName) {
+		staticResources.Secrets = append(staticResources.Secrets, SystemCAValidationSecretPlaceholder())
 	}
 
 	return &envoybootstrapv3.Bootstrap{

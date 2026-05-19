@@ -58,9 +58,6 @@ func validateXDS(
 
 	builder := bootstrap.New()
 	builder.AddCluster(testCluster)
-	if bootstrap.ClusterReferencesSystemCASecret(testCluster) {
-		builder.AddSecret(bootstrap.SystemCAValidationSecretPlaceholder())
-	}
 	bootstrap, err := builder.Build()
 	if err != nil {
 		return err
