@@ -12,9 +12,9 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/google/go-cmp/cmp"
-	"google.golang.org/protobuf/types/known/anypb"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
 func TestConfigBuilder_Build(t *testing.T) {
@@ -126,7 +126,7 @@ func TestConfigBuilder_Build(t *testing.T) {
 		{
 			name: "auto-adds system ca placeholder secret when cluster references it",
 			setup: func(b *ConfigBuilder) {
-				tlsContextAny, err := anypb.New(&envoytlsv3.UpstreamTlsContext{
+				tlsContextAny, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
 					CommonTlsContext: &envoytlsv3.CommonTlsContext{
 						ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContextSdsSecretConfig{
 							ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
@@ -160,7 +160,7 @@ func TestConfigBuilder_Build(t *testing.T) {
 		{
 			name: "does not duplicate provided system ca secret",
 			setup: func(b *ConfigBuilder) {
-				tlsContextAny, err := anypb.New(&envoytlsv3.UpstreamTlsContext{
+				tlsContextAny, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
 					CommonTlsContext: &envoytlsv3.CommonTlsContext{
 						ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContextSdsSecretConfig{
 							ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
