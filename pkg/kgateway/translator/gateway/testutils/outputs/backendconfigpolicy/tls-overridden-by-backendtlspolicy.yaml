@@ -151,6 +151,11 @@ Statuses:
           reason: Attached
           status: "True"
           type: Attached
+        - lastTransitionTime: null
+          message: spec.tls overridden by BackendTLSPolicy default/httpbin-tls-policy
+          reason: ConflictedWithBackendTLSPolicy
+          status: "True"
+          type: Overridden
         controllerName: kgateway.dev/kgateway
     BackendTLSPolicy/default/httpbin-tls-policy:
       ancestors:
