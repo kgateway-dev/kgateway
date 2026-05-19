@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -136,6 +137,26 @@ func TestIstioVersionDefaultsDoNotDrift(t *testing.T) {
 	}
 }
 
+func TestEnvoyVersionTracksIstioVersion(t *testing.T) {
+	t.Parallel()
+
+	rootDir := repoRoot(t)
+
+	deployerPath := filepath.Join(rootDir, "pkg", "deployer", "gateway_parameters.go")
+	makefilePath := filepath.Join(rootDir, "Makefile")
+
+	istioMajor, istioMinor := majorMinorVersion(t, goStringConst(t, deployerPath, "DefaultIstioProxyImageTag"))
+	envoyImage := makeVarValue(t, makefilePath, "ENVOY_IMAGE")
+	envoyMajor, envoyMinor := majorMinorVersion(t, imageTag(t, envoyImage))
+
+	if envoyMajor != istioMajor || envoyMinor != istioMinor+8 {
+		t.Fatalf(
+			"Envoy and Istio versions must remain aligned; see issue 14011 for details: Envoy %d.%d should match Istio %d.%d plus 0.8",
+			envoyMajor, envoyMinor, istioMajor, istioMinor,
+		)
+	}
+}
+
 func repoRoot(t *testing.T) string {
 	t.Helper()
 
@@ -197,4 +218,50 @@ func envValue(t *testing.T, path, name string) string {
 		t.Fatalf("could not find env value %s in %s", name, path)
 	}
 	return string(match[1])
+}
+
+func makeVarValue(t *testing.T, path, name string) string {
+	t.Helper()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+
+	pattern := regexp.MustCompile(`(?m)^(?:export\s+)?` + regexp.QuoteMeta(name) + `\s*(?:\?=|=)\s*(\S+)\s*$`)
+	match := pattern.FindSubmatch(data)
+	if match == nil {
+		t.Fatalf("could not find Makefile variable %s in %s", name, path)
+	}
+	return string(match[1])
+}
+
+func imageTag(t *testing.T, image string) string {
+	t.Helper()
+
+	_, tag, ok := strings.Cut(image[strings.LastIndex(image, "/")+1:], ":")
+	if !ok {
+		t.Fatalf("image %q has no tag", image)
+	}
+	return tag
+}
+
+func majorMinorVersion(t *testing.T, version string) (int, int) {
+	t.Helper()
+
+	version = strings.TrimPrefix(version, "v")
+	parts := strings.Split(version, ".")
+	if len(parts) < 2 {
+		t.Fatalf("version %q does not include major and minor components", version)
+	}
+
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		t.Fatalf("parse major version from %q: %v", version, err)
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		t.Fatalf("parse minor version from %q: %v", version, err)
+	}
+	return major, minor
 }
