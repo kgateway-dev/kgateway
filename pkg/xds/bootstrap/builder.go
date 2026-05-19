@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
+	"slices"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -119,12 +120,7 @@ func ClusterReferencesSystemCASecret(cluster *envoyclusterv3.Cluster) bool {
 }
 
 func clustersReferenceSystemCASecret(clusters []*envoyclusterv3.Cluster) bool {
-	for _, cluster := range clusters {
-		if ClusterReferencesSystemCASecret(cluster) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(clusters, ClusterReferencesSystemCASecret)
 }
 
 func hasSecretNamed(secrets []*envoytlsv3.Secret, name string) bool {
