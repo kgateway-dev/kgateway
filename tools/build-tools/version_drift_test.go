@@ -113,7 +113,7 @@ func TestIstioVersionDefaultsDoNotDrift(t *testing.T) {
 		}
 	}
 
-	staleProxyTag := "proxyv2:" + "1.22.0"
+	proxyV2TagPattern := regexp.MustCompile(`proxyv2:([A-Za-z0-9._-]+)`)
 	testdataDir := filepath.Join(rootDir, "test", "deployer", "testdata")
 	err := filepath.WalkDir(testdataDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -127,8 +127,11 @@ func TestIstioVersionDefaultsDoNotDrift(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if strings.Contains(string(data), staleProxyTag) {
-			t.Errorf("%s contains stale Istio proxy image tag %q", path, staleProxyTag)
+		for _, match := range proxyV2TagPattern.FindAllSubmatch(data, -1) {
+			tag := string(match[1])
+			if tag != deployerTag {
+				t.Errorf("%s contains Istio proxy image tag %q, want %q", path, tag, deployerTag)
+			}
 		}
 		return nil
 	})
