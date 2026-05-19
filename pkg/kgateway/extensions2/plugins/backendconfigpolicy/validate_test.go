@@ -161,8 +161,12 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 				},
 			},
 			validator: &mockValidator{
-				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
-					secrets := config.GetStaticResources().GetSecrets()
+				validateFunc: func(ctx context.Context, config string) error {
+					var bootstrap envoybootstrapv3.Bootstrap
+					if err := protojson.Unmarshal([]byte(config), &bootstrap); err != nil {
+						return fmt.Errorf("failed to unmarshal bootstrap config: %w", err)
+					}
+					secrets := bootstrap.GetStaticResources().GetSecrets()
 					if len(secrets) != 1 {
 						return fmt.Errorf("expected exactly one secret in bootstrap, got %d", len(secrets))
 					}
