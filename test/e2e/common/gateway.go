@@ -17,6 +17,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
+// Gateway is a curl-able handle for a Gateway resource. Address is the literal value used by
+// curl — callers populate it however they like (LB IP, in-cluster DNS, port-forward, etc.).
+// GATEWAY_ADDRESS_OVERRIDE is applied only by SetupBaseGateway; direct constructions of this type
+// do not consult it.
 type Gateway struct {
 	types.NamespacedName
 	Address string

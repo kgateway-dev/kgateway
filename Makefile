@@ -302,6 +302,13 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 # CLUSTER_TYPE controls whether images are loaded via kind or k3d (default: kind)
+#
+# k3d note: under k3d, LB IPs are not host-reachable, so e2e tests use
+# GATEWAY_ADDRESS_OVERRIDE (e.g. "localhost") to direct curls to a port-forwarded
+# address. This override is honored only for the base gateway resolved by
+# common.SetupBaseGateway; multi-gateway suites that construct their own
+# common.Gateway values cannot disambiguate multiple gateways with a single env
+# var and are therefore out of scope under k3d.
 CLUSTER_TYPE ?= kind
 
 .PHONY: cluster-load-extproc-server

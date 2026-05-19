@@ -77,6 +77,11 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
+// This is a multi-gateway suite — TestInvalidChildValidStandalone creates a
+// second Gateway (proxyTestMeta) alongside the primary one. Because both gateways
+// need distinct addresses, this suite does not use common.SetupBaseGateway and
+// therefore does not honor GATEWAY_ADDRESS_OVERRIDE. Running it under k3d (where
+// LB IPs are not host-reachable) is out of scope.
 func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 
