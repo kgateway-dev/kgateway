@@ -481,7 +481,7 @@ spec:
               fieldPath: metadata.namespace
         - name: DISABLE_ENVOY
           value: "true"
-        image: docker.io/istio/proxyv2:1.22.0
+        image: docker.io/istio/proxyv2:1.29.2
         name: istio-proxy
         resources: {}
         volumeMounts:
