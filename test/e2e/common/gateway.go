@@ -27,7 +27,7 @@ type Gateway struct {
 	Address string
 }
 
-// Defaults for SendConsistently — mirror values in assertions.AssertEventuallyConsistentCurlResponse.
+// Defaults for SendEventuallyConsistent — mirror values in assertions.AssertEventuallyConsistentCurlResponse.
 const (
 	defaultConsistencyWindow = 3 * time.Second
 	defaultConsistencyPoll   = 1 * time.Second
@@ -47,27 +47,37 @@ func (g *Gateway) SendWithRetry(ctx context.Context, t *testing.T, match *matche
 	fullOpts := g.curlOpts(opts)
 	retry.UntilSuccessOrFail(t, func() error {
 		if err := ctx.Err(); err != nil {
-			return err
+			t.Fatalf("send retry interrupted by ctx: %v", err)
 		}
 		return g.matchOnce(ctx, fullOpts, match)
 	}, retryOpts...)
 }
 
-// SendConsistently curls the gateway, waits for the response to eventually match,
+// SendEventuallyConsistent curls the gateway, waits for the response to eventually match,
 // then asserts the response continues to match over a 3s window polled every 1s.
 // Mirrors assertions.AssertEventuallyConsistentCurlResponse semantics.
-func (g *Gateway) SendConsistently(ctx context.Context, t *testing.T, match *matchers.HttpResponse, opts ...curl.Option) {
+func (g *Gateway) SendEventuallyConsistent(ctx context.Context, t *testing.T, match *matchers.HttpResponse, opts ...curl.Option) {
 	t.Helper()
 	g.SendConsistentlyFor(ctx, t, match, defaultConsistencyWindow, defaultConsistencyPoll, opts...)
 }
 
-// SendConsistentlyFor is SendConsistently with caller-supplied window and polling interval.
+// SendConsistentlyFor is SendEventuallyConsistent with caller-supplied window and polling interval.
+// Both phases use window/poll: the eventual-wait phase as its retry timeout/delay, and the
+// consistency phase as its window/poll.
 func (g *Gateway) SendConsistentlyFor(ctx context.Context, t *testing.T, match *matchers.HttpResponse, window, poll time.Duration, opts ...curl.Option) {
 	t.Helper()
 	if poll <= 0 {
 		t.Fatalf("SendConsistentlyFor: poll interval must be positive, got %v", poll)
 	}
-	g.SendWithRetry(ctx, t, match, nil, opts...)
+	if window <= 0 {
+		t.Fatalf("SendConsistentlyFor: consistency window must be positive, got %v", window)
+	}
+	if window <= poll {
+		t.Fatalf("SendConsistentlyFor: consistency window (%v) must be greater than poll interval (%v)", window, poll)
+	}
+
+	// Get the intial match before entering the consistency loop
+	g.SendWithRetry(ctx, t, match, []retry.Option{retry.Timeout(window), retry.Delay(poll)}, opts...)
 
 	fullOpts := g.curlOpts(opts)
 	windowTimer := time.NewTimer(window)
@@ -78,7 +88,7 @@ func (g *Gateway) SendConsistentlyFor(ctx context.Context, t *testing.T, match *
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			t.Fatalf("consistency check interrupted by ctx: %v", ctx.Err())
 		case <-windowTimer.C:
 			return
 		case <-ticker.C:

@@ -32,8 +32,8 @@ const (
 type Option func(config *requestConfig)
 
 // WithContext returns the Option to set a context on the curl request. The context
-// is honored by ExecuteRequest (the native Go HTTP path) and ignored by BuildArgs
-// (which produces shell args for the curl CLI, where there is no context concept).
+// is used by ExecuteRequest to build the http.Request and aborts the in-flight
+// call when ctx cancels.
 func WithContext(ctx context.Context) Option {
 	return func(config *requestConfig) {
 		config.ctx = ctx

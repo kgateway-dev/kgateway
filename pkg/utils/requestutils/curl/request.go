@@ -100,9 +100,8 @@ type requestConfig struct {
 
 	additionalArgs []string
 
-	// ctx is honored by ExecuteRequest only (the native Go HTTP path). BuildArgs
-	// produces shell args for the curl CLI and ignores ctx — curl has no
-	// equivalent of context cancellation. Set via WithContext.
+	// ctx is used by ExecuteRequest to build the http.Request and aborts the
+	// in-flight call when ctx cancels. Set via WithContext.
 	ctx context.Context
 }
 
