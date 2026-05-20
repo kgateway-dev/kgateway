@@ -30,7 +30,9 @@ import (
 )
 
 type translatorTestCase struct {
+	// TODO(#14069): Replace inputFile with inputFiles across this test suite.
 	inputFile  string
+	inputFiles []string
 	outputFile string
 	gwNN       types.NamespacedName
 }
@@ -54,7 +56,14 @@ func TestBasic(t *testing.T) {
 				s.EnableAuthMetadata = true
 			},
 		}, settingOpts...)
-		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
+		inputs := in.inputFiles
+		if len(inputs) == 0 {
+			inputs = []string{in.inputFile}
+		}
+		inputFiles := make([]string, 0, len(inputs))
+		for _, input := range inputs {
+			inputFiles = append(inputFiles, filepath.Join(dir, "testutils/inputs/", input))
+		}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
 		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, settingOpts...)
 	}
@@ -1199,6 +1208,20 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backendtlspolicy/tls-section-name.yaml",
 			outputFile: "backendtlspolicy/tls-section-name.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend TLS Policy with terminated TLSRoute", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{
+				"tls-routing/tls-terminate.yaml",
+				"backendtlspolicy/tlsroute-terminated.yaml",
+			},
+			outputFile: "backendtlspolicy/tlsroute-terminated.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
