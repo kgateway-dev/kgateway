@@ -665,7 +665,7 @@ func mergeHttpACL(
 	tpOpts TrafficPolicyMergeOpts,
 ) {
 	if tpOpts.ACL != "" {
-		// same-hierarchy deep merge override (e.g. PolicyMerge setting)
+		// merge override (e.g. from PolicyMerge setting)
 		opts.Strategy = policy.ToInternalMergeStrategy(tpOpts.ACL)
 	} else if opts.SameHierarchy {
 		// if there is not policyMerge setting override
