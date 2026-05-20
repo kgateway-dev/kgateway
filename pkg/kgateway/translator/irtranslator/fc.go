@@ -374,8 +374,8 @@ func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilt
 	return sortedFilters
 }
 
-func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
-	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, reporter))
+func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
+	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, listenerReporter))
 
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix: l.FilterChainName,

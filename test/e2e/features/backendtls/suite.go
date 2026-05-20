@@ -135,7 +135,7 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
 		Status:             metav1.ConditionTrue,
 		Reason:             string(gwv1.BackendTLSPolicyReasonResolvedRefs),
-		Message:            "Resolved all references",
+		Message:            resolvedAllReferencesMsg,
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 
@@ -170,7 +170,7 @@ func (s *tsuite) TestBackendTLSPolicyStatusForTerminatedTLSRoute() {
 		Type:    string(gwv1.BackendTLSPolicyConditionResolvedRefs),
 		Status:  metav1.ConditionTrue,
 		Reason:  string(gwv1.BackendTLSPolicyReasonResolvedRefs),
-		Message: "Resolved all references",
+		Message: resolvedAllReferencesMsg,
 	})
 }
 
@@ -199,30 +199,32 @@ func (s *tsuite) assertPolicyStatusForPolicy(
 
 		g.Expect(ancestor.Conditions).To(gomega.HaveLen(2), "ancestor conditions wasn't length of 2")
 		cond := meta.FindStatusCondition(ancestor.Conditions, inCondition.Type)
-		if inCondition.ObservedGeneration == 0 {
-			inCondition.ObservedGeneration = tlsPol.Generation
+		expectedObservedGeneration := inCondition.ObservedGeneration
+		if expectedObservedGeneration == 0 {
+			expectedObservedGeneration = tlsPol.Generation
 		}
 		g.Expect(cond).NotTo(gomega.BeNil(), "policy should have expected condition")
 		g.Expect(cond.Status).To(gomega.Equal(inCondition.Status), "policy condition should have expected status")
 		g.Expect(cond.Reason).To(gomega.Equal(inCondition.Reason), "policy reason should match")
 		g.Expect(cond.Message).To(gomega.Equal(inCondition.Message))
-		g.Expect(cond.ObservedGeneration).To(gomega.Equal(inCondition.ObservedGeneration))
+		g.Expect(cond.ObservedGeneration).To(gomega.Equal(expectedObservedGeneration))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
-func gatewayParentReference(meta metav1.ObjectMeta) gwv1.ParentReference {
-	namespace := gwv1.Namespace(meta.Namespace)
+func gatewayParentReference(objMeta metav1.ObjectMeta) gwv1.ParentReference {
+	namespace := gwv1.Namespace(objMeta.Namespace)
 	return gwv1.ParentReference{
 		Group:     &gatewayGroup,
 		Kind:      &gatewayKind,
 		Namespace: &namespace,
-		Name:      gwv1.ObjectName(meta.Name),
+		Name:      gwv1.ObjectName(objMeta.Name),
 	}
 }
 
 const (
-	kgatewayControllerName = "kgateway.dev/kgateway"
-	otherControllerName    = "other-controller.example.com/controller"
+	resolvedAllReferencesMsg = "Resolved all references"
+	kgatewayControllerName   = "kgateway.dev/kgateway"
+	otherControllerName      = "other-controller.example.com/controller"
 )
 
 // TestBackendTLSPolicyClearStaleStatus verifies that stale status is cleared when targetRef becomes invalid
