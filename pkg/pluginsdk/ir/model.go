@@ -26,7 +26,7 @@ func (c PodLocality) String() string {
 	return fmt.Sprintf("%s/%s/%s", c.Region, c.Zone, c.Subzone)
 }
 
-type UniqlyConnectedClient struct {
+type UniquelyConnectedClient struct {
 	Role      string
 	Labels    map[string]string
 	Locality  PodLocality
@@ -38,24 +38,24 @@ type UniqlyConnectedClient struct {
 	resourceName string
 }
 
-func (c UniqlyConnectedClient) ResourceName() string {
+func (c UniquelyConnectedClient) ResourceName() string {
 	return c.resourceName
 }
 
-var _ krt.Equaler[UniqlyConnectedClient] = new(UniqlyConnectedClient)
+var _ krt.Equaler[UniquelyConnectedClient] = new(UniquelyConnectedClient)
 
-func (c UniqlyConnectedClient) Equals(k UniqlyConnectedClient) bool {
+func (c UniquelyConnectedClient) Equals(k UniquelyConnectedClient) bool {
 	return c.Role == k.Role && c.Namespace == k.Namespace && c.Locality == k.Locality && maps.Equal(c.Labels, k.Labels) && c.resourceName == k.resourceName
 }
 
 // note: if "ns" is empty, we assume the user doesn't want to use pod locality info, so we won't modify the role.
-func NewUniqlyConnectedClient(roleFromEnvoy string, ns string, labels map[string]string, locality PodLocality) UniqlyConnectedClient {
+func NewUniquelyConnectedClient(roleFromEnvoy string, ns string, labels map[string]string, locality PodLocality) UniquelyConnectedClient {
 	resourceName := roleFromEnvoy
 	if ns != "" {
 		snapshotKey := labeledRole(resourceName, labels)
 		resourceName = fmt.Sprintf("%s%s%s", snapshotKey, KeyDelimiter, ns)
 	}
-	return UniqlyConnectedClient{
+	return UniquelyConnectedClient{
 		Role:         roleFromEnvoy,
 		Namespace:    ns,
 		Locality:     locality,

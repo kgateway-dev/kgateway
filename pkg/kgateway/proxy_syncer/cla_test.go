@@ -49,7 +49,7 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R2"},
 		},
 	})
-	ucc := ir.UniqlyConnectedClient{
+	ucc := ir.UniquelyConnectedClient{
 		Namespace: "ns",
 		Locality:  ir.PodLocality{Region: "R1"},
 		Labels:    map[string]string{corev1.LabelTopologyRegion: "R1"},
@@ -119,7 +119,7 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R2"},
 		},
 	})
-	ucc := ir.UniqlyConnectedClient{
+	ucc := ir.UniquelyConnectedClient{
 		Namespace: "ns",
 		Locality:  ir.PodLocality{Region: "R1"},
 		Labels:    map[string]string{corev1.LabelTopologyRegion: "R1"},
