@@ -393,7 +393,7 @@ func (s *setup) buildKgatewayWithConfig(
 	mgr manager.Manager,
 	setupOpts *controller.SetupOpts,
 	commonCollections *collections.CommonCollections,
-	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
+	uccBuilder krtcollections.UniquelyConnectedClientsBuilder,
 ) error {
 	slog.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
