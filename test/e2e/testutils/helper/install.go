@@ -36,7 +36,8 @@ func getLocalChartPath(rootDir string, chartName string, assetDir string) (strin
 		dir = defaultTestAssetDir
 	}
 	testAssetDir := filepath.Join(rootDir, dir)
-	if fsutils.IsDirectory(testAssetDir) {
+
+	if _, err := os.Stat(filepath.Join(testAssetDir, HelmRepoIndexFileName)); err == nil {
 		chartPath, err := getPackagedChartPath(testAssetDir, chartName)
 		if err == nil {
 			return chartPath, nil

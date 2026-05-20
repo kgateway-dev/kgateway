@@ -63,3 +63,26 @@ func TestGetLocalChartPathFallsBackToChartDirectory(t *testing.T) {
 		t.Fatalf("expected chart dir %q, got %q", chartDir, chartPath)
 	}
 }
+
+// Common case after this PR: the asset directory exists (e.g. for bug_report
+// output) but charts are not packaged. We should silently fall through to the
+// unpackaged chart directory rather than attempting to parse a missing index.
+func TestGetLocalChartPathFallsBackWhenAssetDirHasNoIndex(t *testing.T) {
+	rootDir := t.TempDir()
+	assetDir := filepath.Join(rootDir, defaultTestAssetDir)
+	if err := os.MkdirAll(assetDir, 0o755); err != nil {
+		t.Fatalf("failed to create asset dir: %v", err)
+	}
+	chartDir := filepath.Join(rootDir, defaultHelmChartDir, "kgateway")
+	if err := os.MkdirAll(chartDir, 0o755); err != nil {
+		t.Fatalf("failed to create chart dir: %v", err)
+	}
+
+	chartPath, err := getLocalChartPath(rootDir, "kgateway", "")
+	if err != nil {
+		t.Fatalf("expected unpackaged chart path, got error: %v", err)
+	}
+	if chartPath != chartDir {
+		t.Fatalf("expected chart dir %q, got %q", chartDir, chartPath)
+	}
+}
