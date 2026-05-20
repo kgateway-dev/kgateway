@@ -5,12 +5,17 @@ package routereplacement
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -27,7 +32,9 @@ var (
 		Manifests: []string{
 			testdefaults.CurlPodManifest,
 			testdefaults.HttpbinManifest,
-			setupManifest,
+		},
+		ManifestsWithTransform: map[string]func(string) string{
+			setupManifest: transformInstallNamespace,
 		},
 	}
 
@@ -49,6 +56,13 @@ var (
 		},
 		"TestListenerSpecificIsolation": {
 			Manifests: []string{listenerMergeBlastRadiusManifest},
+		},
+		"TestRouteReplacementMetric": {
+			Manifests: []string{
+				routeAttachedInvalidPolicyManifest,
+				missingExtensionManifest,
+				dualErrorManifest,
+			},
 		},
 	}
 )
@@ -369,4 +383,113 @@ func (s *testingSuite) TestListenerSpecificIsolation() {
 			StatusCode: http.StatusOK,
 		},
 	)
+}
+
+const (
+	routeReplacementMetric = "kgateway_routing_replacements_total"
+	metricsPort            = 9092
+	metricsPollTimeout     = 20 * time.Second
+	metricsPollInterval    = time.Second
+)
+
+// TestRouteReplacementMetric verifies that the route replacement counter
+// increments and that the error_type label classifies correctly.
+func (s *testingSuite) TestRouteReplacementMetric() {
+	s.Run("invalid_config", func() {
+		s.assertReplacementMetricIncrements(
+			invalidPolicyRoute, invalidPolicy, irtranslator.ErrTypeInvalidCfg,
+			`{"spec":{"transformation":{"request":{"body":{"value":"{{ invalid_template_v2 "}}}}}`,
+		)
+	})
+
+	s.Run("ref_not_found", func() {
+		s.assertReplacementMetricIncrements(
+			missingExtensionRoute, missingExtensionPolicy, irtranslator.ErrTypeRefNotFound,
+			`{"spec":{"extAuth":{"extensionRef":{"name":"nonexistent-v2"}}}}`,
+		)
+	})
+
+	s.Run("shadowed_errors", func() {
+		// route has two invalid policies (one invalid_config, one ref_not_found); only
+		// one class is surfaced per translation.
+		s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+			s.Ctx, dualErrorRoute.Name, dualErrorRoute.Namespace,
+			gwv1.RouteConditionAccepted, metav1.ConditionFalse,
+		)
+
+		refNotFoundLabels := s.metricLabels(irtranslator.ErrTypeRefNotFound)
+
+		baseRefNotFound := s.scrapeReplacementCounter(refNotFoundLabels)
+
+		// Fix invalid_config policy and ref_not_found now surface and increment counter.
+		s.patchPolicy(dualErrorInvalidConfigPolicy,
+			`{"spec":{"transformation":{"request":{"body":{"value":"valid"}}}}}`)
+
+		s.TestInstallation.AssertionsT(s.T()).Assert.EventuallyWithT(func(c *assert.CollectT) {
+			curRefNotFound := s.scrapeReplacementCounter(refNotFoundLabels)
+			assert.Greater(c, curRefNotFound, baseRefNotFound,
+				"ref_not_found counter must increment after fixing the invalid_config policy")
+		}, metricsPollTimeout, metricsPollInterval)
+	})
+}
+
+func (s *testingSuite) assertReplacementMetricIncrements(
+	route *gwv1.HTTPRoute,
+	policy metav1.ObjectMeta,
+	expectedErrorType string,
+	patchJSON string,
+) {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.Ctx, route.Name, route.Namespace,
+		gwv1.RouteConditionAccepted, metav1.ConditionFalse,
+	)
+
+	labels := s.metricLabels(expectedErrorType)
+
+	baseline := s.scrapeReplacementCounter(labels)
+	s.Require().GreaterOrEqual(baseline, float64(1),
+		"counter should have incremented at least once after initial replacement")
+
+	s.patchPolicy(policy, patchJSON)
+
+	s.TestInstallation.AssertionsT(s.T()).Assert.EventuallyWithT(func(c *assert.CollectT) {
+		current := s.scrapeReplacementCounter(labels)
+		assert.GreaterOrEqual(c, current, baseline+1,
+			"counter must increment after a policy spec mutation")
+	}, metricsPollTimeout, metricsPollInterval)
+}
+
+func (s *testingSuite) metricLabels(errorType string) []metrics.Label {
+	return []metrics.Label{
+		{Name: "gateway", Value: proxyObjectMeta.Name},
+		{Name: "gateway_namespace", Value: proxyObjectMeta.Namespace},
+		{Name: "error_type", Value: errorType},
+	}
+}
+
+func (s *testingSuite) patchPolicy(policy metav1.ObjectMeta, patchJSON string) {
+	err := s.TestInstallation.Actions.Kubectl().RunCommand(
+		s.Ctx, "-n", policy.Namespace, "patch", "trafficpolicy", policy.Name,
+		"--type=merge", "-p", patchJSON,
+	)
+	s.Require().NoError(err)
+}
+
+func (s *testingSuite) scrapeReplacementCounter(labels []metrics.Label) float64 {
+	return s.scrapeMetrics().MustGetMetricValueByLabels(routeReplacementMetric, labels)
+}
+
+func (s *testingSuite) scrapeMetrics() metricstest.GatheredMetrics {
+	resp := s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlReturnResponse(
+		s.Ctx, testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(kgatewayMetricsObjectMeta)),
+			curl.WithPort(metricsPort),
+			curl.WithPath("/metrics"),
+		},
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK},
+	)
+	defer resp.Body.Close()
+
+	return metricstest.MustParseGatheredMetrics(s.T(), resp.Body)
 }

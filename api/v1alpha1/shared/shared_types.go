@@ -175,11 +175,138 @@ type StringMatcher struct {
 type HeaderModifiers struct {
 	// Request modifies request headers.
 	// +optional
-	Request *gwv1.HTTPHeaderFilter `json:"request,omitempty"`
+	Request *HTTPHeaderFilter `json:"request,omitempty"`
 
 	// Response modifies response headers.
 	// +optional
-	Response *gwv1.HTTPHeaderFilter `json:"response,omitempty"`
+	Response *HTTPHeaderFilter `json:"response,omitempty"`
+}
+
+// HTTPHeaderFilter defines a filter that modifies the headers of an HTTP request or response.
+// Only one action for a given header name is permitted. Filters specifying multiple actions of
+// the same or different type for any one header name are invalid and will be rejected by CRD
+// validation. Configuration to set or add multiple values for a header must use RFC 7230 header
+// value formatting, separating each value with a comma.
+// Unlike the Gateway API HTTPHeaderFilter, each entry also supports sourcing the value from a
+// Kubernetes Secret via secretRef.
+// +kubebuilder:validation:AtLeastOneOf=set;add;remove
+type HTTPHeaderFilter struct {
+	// Set overwrites the request with the given header (name, value) before the action.
+	//
+	// Input:
+	//   GET /foo HTTP/1.1
+	//   my-header: foo
+	//
+	// Config:
+	//   set:
+	//   - name: "my-header"
+	//     value: "bar"
+	//
+	// Output:
+	//   GET /foo HTTP/1.1
+	//   my-header: bar
+	//
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=16
+	Set []HTTPHeader `json:"set,omitempty"`
+
+	// Add adds the given header(s) (name, value) to the request before the action.
+	// It appends to any existing values associated with the header name.
+	//
+	// Input:
+	//   GET /foo HTTP/1.1
+	//   my-header: foo
+	//
+	// Config:
+	//   add:
+	//   - name: "my-header"
+	//     value: "bar,baz"
+	//
+	// Output:
+	//   GET /foo HTTP/1.1
+	//   my-header: foo,bar,baz
+	//
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=16
+	Add []HTTPHeader `json:"add,omitempty"`
+
+	// Remove the given header(s) from the HTTP request before the action. The
+	// value of Remove is a list of HTTP header names. Note that header names are
+	// case-insensitive (see https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+	//
+	// Input:
+	//   GET /foo HTTP/1.1
+	//   my-header1: foo
+	//   my-header2: bar
+	//   my-header3: baz
+	//
+	// Config:
+	//   remove: ["my-header1", "my-header3"]
+	//
+	// Output:
+	//   GET /foo HTTP/1.1
+	//   my-header2: bar
+	//
+	// +optional
+	// +listType=set
+	// +kubebuilder:validation:MaxItems=16
+	Remove []string `json:"remove,omitempty"`
+}
+
+// HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+// be set. When using secretRef, name and key interact as follows:
+//   - Both present: name is the header name, key is the Secret data key.
+//   - name absent, key present: the key is also used as the header name.
+//   - name present, key absent: the name is also used as the Secret data key.
+//   - Both absent: every entry in the Secret is injected as a header (data key -> header name).
+//
+// +kubebuilder:validation:ExactlyOneOf=value;secretRef
+// +kubebuilder:validation:XValidation:rule="has(self.value) ? has(self.name) : true",message="name is required when using an inline value"
+type HTTPHeader struct {
+	// Name is the HTTP header field name. Name matching is case-insensitive.
+	// (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+	// Required when value is set. When secretRef is used, if omitted the Secret data key is
+	// used as the header name; if both name and key are omitted every Secret entry is injected
+	// as a header.
+	// +optional
+	Name *gwv1.HTTPHeaderName `json:"name,omitempty"`
+
+	// Value is an inline string value for the header. Mutually exclusive with secretRef.
+	// Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=4096
+	// +kubebuilder:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`
+	Value *string `json:"value,omitempty"`
+
+	// SecretRef sources the header value from a key in a Kubernetes Secret.
+	// Mutually exclusive with value.
+	// +optional
+	SecretRef *SecretRefWithKey `json:"secretRef,omitempty"`
+}
+
+// SecretRefWithKey identifies a Kubernetes Secret and optionally a specific key within it.
+type SecretRefWithKey struct {
+	// Name is the name of the Kubernetes Secret.
+	// +required
+	Name gwv1.ObjectName `json:"name"`
+
+	// Key is the key within the Secret's data map to use as the header value. When omitted and
+	// the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+	// omitted, all entries in the Secret are injected as headers.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:Pattern=`^[-._a-zA-Z0-9]+$`
+	Key *string `json:"key,omitempty"`
+
+	// Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+	// referencing policy. Cross-namespace references require a ReferenceGrant in the target
+	// namespace permitting access from the policy's namespace.
+	// +optional
+	Namespace *gwv1.Namespace `json:"namespace,omitempty"`
 }
 
 // CIDR can be used wherever an address range in CIDR notation is expected.

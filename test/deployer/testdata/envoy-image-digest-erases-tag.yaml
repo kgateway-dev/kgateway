@@ -4,7 +4,7 @@ metadata:
   name: kgateway
 spec:
   controllerName: kgateway.dev/kgateway
-  description: Verifies that pinning the envoy image by digest erases the inherited default tag.
+  description: Envoy image digest pinning test.
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters

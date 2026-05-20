@@ -34,6 +34,16 @@ spec:
               - name: custom-config
                 configMap:
                   name: my-custom-config
+              - name: envoy-config
+                configMap:
+                  name: gw
+              - name: xds-token
+                projected:
+                  sources:
+                    - serviceAccountToken:
+                        audience: kgateway
+                        expirationSeconds: 43200
+                        path: xds-token
             containers:
               - name: kgateway-proxy
                 volumeMounts:

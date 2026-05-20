@@ -876,6 +876,72 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+	t.Run("TrafficPolicy with header modifiers from secret (same namespace)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (cross namespace with ReferenceGrant)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-cross-namespace.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (cross namespace, no ReferenceGrant)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-cross-namespace-no-refgrant.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-cross-namespace-no-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (policy and secret in different namespace from Gateway)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-policy-cross-namespace.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-policy-cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (key/name defaulting)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-key-defaulting.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-key-defaulting.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with header modifiers from secret (all keys)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/header-modifiers-from-secret-all-keys.yaml",
+			outputFile: "traffic-policy/header-modifiers-from-secret-all-keys.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with compression Policy", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/compression-route.yaml",
@@ -1348,6 +1414,16 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy timeout targeting Gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/timeout-gateway.yaml",
+			outputFile: "traffic-policy/timeout-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 	t.Run("http gateway with session persistence (cookie)", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "session-persistence/cookie.yaml",
@@ -1832,6 +1908,72 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with maxRequestsPerConnection", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/max-requests-per-connection.yaml",
+			outputFile: "listener-policy-http/max-requests-per-connection.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with maxRequestsPerConnection set to zero", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/max-requests-per-connection-zero.yaml",
+			outputFile: "listener-policy-http/max-requests-per-connection-zero.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with maxRequestsPerConnection and idleTimeout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/max-requests-per-connection-with-idle-timeout.yaml",
+			outputFile: "listener-policy-http/max-requests-per-connection-with-idle-timeout.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy maxRequestsPerConnection merge conflict", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/max-requests-per-connection-merge-conflict.yaml",
+			outputFile: "listener-policy-http/max-requests-per-connection-merge-conflict.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with stripHostPortMode AnyPort", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/strip-host-port-any-port.yaml",
+			outputFile: "listener-policy-http/strip-host-port-any-port.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with stripHostPortMode MatchingPort", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/strip-host-port-matching-port.yaml",
+			outputFile: "listener-policy-http/strip-host-port-matching-port.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with uuidRequestIdConfig explicit false", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/request-id-config-explicit.yaml",
@@ -2082,6 +2224,19 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		})
+	})
+
+	t.Run("Backend Config Policy with system ca TLS in strict mode", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendconfigpolicy/tls-system-ca.yaml",
+			outputFile: "backendconfigpolicy/tls-system-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
 		})
 	})
 
@@ -3142,6 +3297,12 @@ func TestValidation(t *testing.T) {
 			category:  "backendconfigpolicy",
 			inputFile: "invalid-outlier-detection-zero-interval.yaml",
 			minMode:   apisettings.ValidationStandard,
+		},
+		{
+			name:      "Route delegation is not rejected",
+			category:  "delegation",
+			inputFile: "route-delegation.yaml",
+			minMode:   apisettings.ValidationStrict,
 		},
 	}
 

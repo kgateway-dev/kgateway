@@ -94,8 +94,11 @@ func (s *testingSuite) SetupSuite() {
 		"TestProxyProtocol":                      {gatewayManifest, httpRouteManifest, proxyProtocolManifest},
 		// RequestID configuration tests for the new RequestID feature
 		// These tests use an echo server to verify x-request-id header behavior
-		"TestListenerPolicyRequestId":     {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
-		"TestHTTPListenerPolicyRequestId": {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
+		"TestListenerPolicyRequestId":                {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
+		"TestHTTPListenerPolicyRequestId":            {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
+		"TestListenerPolicyMaxRequestsPerConnection": {gatewayManifest, httpRouteManifest, maxRequestsPerConnectionManifest},
+		"TestStripHostPortAnyPort":                   {gatewayManifest, stripHostPortAnyPortManifest},
+		"TestStripHostPortMatchingPort":              {gatewayManifest, stripHostPortMatchingPortManifest},
 
 		// forwardClientCertDetails tests. All share gateway + request-id-echo
 		// + the route + the mtls-validation policy. Each scenario adds (or
@@ -501,6 +504,116 @@ func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
 			// Verify x-request-id header was generated with valid UUID format
 			Body: gomega.MatchRegexp(`(?i)x-request-id: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`),
 		})
+}
+
+// TestListenerPolicyMaxRequestsPerConnection checks that setting maxRequestsPerConnection
+// in a ListenerPolicy lands in Envoy's HCM config and doesn't break traffic.
+func (s *testingSuite) TestListenerPolicyMaxRequestsPerConnection() {
+	// A NACK from Envoy would surface here as a connection error, so this also serves as an acceptance check.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("Welcome to nginx!"),
+		},
+	)
+
+	// Verify the setting appears in the Envoy config dump via the admin API.
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.ctx,
+		proxyDeployment.ObjectMeta,
+		func(ctx context.Context, adminClient *admincli.Client) {
+			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
+				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get dynamic listener from config dump")
+				g.Expect(listener.GetFilterChains()).NotTo(gomega.BeEmpty(), "listener should have at least one filter chain")
+
+				// Search all network filters for the HCM; don't assume it's always at index 0.
+				var hcm *envoy_hcm.HttpConnectionManager
+				for _, chain := range listener.GetFilterChains() {
+					for _, f := range chain.GetFilters() {
+						candidate := &envoy_hcm.HttpConnectionManager{}
+						if err := f.GetTypedConfig().UnmarshalTo(candidate); err == nil {
+							hcm = candidate
+							break
+						}
+					}
+					if hcm != nil {
+						break
+					}
+				}
+				g.Expect(hcm).NotTo(gomega.BeNil(), "could not find an HCM filter in any filter chain")
+
+				// Assert the exact value, not just presence — a wiring bug can leave the field at 0.
+				g.Expect(hcm.GetCommonHttpProtocolOptions().GetMaxRequestsPerConnection().GetValue()).
+					To(gomega.Equal(uint32(100)),
+						"max_requests_per_connection should be 100 as set in the ListenerPolicy")
+			}).
+				WithContext(ctx).
+				WithTimeout(60 * time.Second).
+				WithPolling(2 * time.Second).
+				Should(gomega.Succeed())
+		},
+	)
+}
+
+// Verifies that AnyPort strips the port from the Host header regardless of its value.
+func (s *testingSuite) TestStripHostPortAnyPort() {
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=raw-header-echo",
+	})
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com:443"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.Not(gomega.ContainSubstring("example.com:443")),
+		},
+	)
+}
+
+// Verifies that MatchingPort strips the port from the Host header when it matches the listener port.
+func (s *testingSuite) TestStripHostPortMatchingPort() {
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=raw-header-echo",
+	})
+	// Port matches listener port (8080) - should be stripped.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com:8080"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.Not(gomega.ContainSubstring("example.com:8080")),
+		},
+	)
+	// Port does not match listener port - should be preserved.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com:9999"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("example.com:9999"),
+		},
+	)
 }
 
 // forwardClientCertCurlOpts returns the curl options used by every

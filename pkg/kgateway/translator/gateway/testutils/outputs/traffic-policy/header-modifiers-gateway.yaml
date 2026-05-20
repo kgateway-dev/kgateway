@@ -60,24 +60,24 @@ Routes:
       mutations:
         requestMutations:
         - append:
-            header:
-              key: X-Custom-Request-Header
-              value: custom-request-value-gw
-        - append:
             appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:
               key: X-Custom-Request-Header-Set
               value: custom-request-value-gw
-        - remove: X-Request-Id
-        responseMutations:
         - append:
             header:
-              key: X-Custom-Response-Header
-              value: custom-response-value-gw
+              key: X-Custom-Request-Header
+              value: custom-request-value-gw
+        - remove: X-Request-Id
+        responseMutations:
         - append:
             appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:
               key: X-Custom-Response-Header-Set
+              value: custom-response-value-gw
+        - append:
+            header:
+              key: X-Custom-Response-Header
               value: custom-response-value-gw
         - remove: X-Envoy-Upstream-Service-Time
   virtualHosts:

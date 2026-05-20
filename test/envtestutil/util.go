@@ -33,7 +33,66 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+	"github.com/kgateway-dev/kgateway/v2/test/envtestassets"
 )
+
+// SharedEnv holds a shared envtest environment that can be reused across tests.
+type SharedEnv struct {
+	testEnv  *envtest.Environment
+	restCfg  *rest.Config
+	started  bool
+	mu       sync.Mutex
+	stopOnce sync.Once
+}
+
+// NewSharedEnv creates a new shared envtest environment. Call Start() to start it.
+func NewSharedEnv(crdDirs []string) (*SharedEnv, error) {
+	assetsDir, err := envtestassets.GetEnvTestAssetsDir()
+	if err != nil {
+		return nil, err
+	}
+
+	return &SharedEnv{
+		testEnv: &envtest.Environment{
+			CRDDirectoryPaths:     crdDirs,
+			ErrorIfCRDPathMissing: false,
+			BinaryAssetsDirectory: assetsDir,
+		},
+	}, nil
+}
+
+// Start starts the envtest environment if not already started.
+func (s *SharedEnv) Start() (*rest.Config, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.started {
+		return s.restCfg, nil
+	}
+
+	cfg, err := s.testEnv.Start()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start envtest: %w", err)
+	}
+
+	s.restCfg = cfg
+	s.started = true
+	return cfg, nil
+}
+
+// Stop stops the envtest environment.
+func (s *SharedEnv) Stop() error {
+	var stopErr error
+	s.stopOnce.Do(func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.started {
+			stopErr = s.testEnv.Stop()
+			s.started = false
+		}
+	})
+	return stopErr
+}
 
 type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
