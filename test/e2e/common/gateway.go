@@ -76,7 +76,7 @@ func (g *Gateway) SendConsistentlyFor(ctx context.Context, t *testing.T, match *
 		t.Fatalf("SendConsistentlyFor: consistency window (%v) must be greater than poll interval (%v)", window, poll)
 	}
 
-	// Get the intial match before entering the consistency loop
+	// Get the initial match before entering the consistency loop
 	g.SendWithRetry(ctx, t, match, []retry.Option{retry.Timeout(window), retry.Delay(poll)}, opts...)
 
 	fullOpts := g.curlOpts(opts)

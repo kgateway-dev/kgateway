@@ -80,10 +80,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // This is a multi-gateway suite. The primary gateway is common.BaseGateway
 // (kgateway-base/gateway, set up by the top-level harness via SetupBaseGateway).
 // The secondary http-gateway-test is created by common.yaml at SetupSuite and
-// is used only by TestInvalidChildValidStandalone. Because the secondary gateway
-// has its own address that cannot be expressed by GATEWAY_ADDRESS_OVERRIDE,
-// running this suite under k3d (where LB IPs are not host-reachable) is out of
-// scope.
+// is used only by TestInvalidChildValidStandalone.
 func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 
