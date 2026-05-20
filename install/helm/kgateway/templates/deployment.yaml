@@ -138,8 +138,8 @@ spec:
             - name: KGW_ENABLE_WAYPOINT
               value: "true"
             {{- end }}
-            {{- if .Values.controller.xds.tls.enabled }}
-            - name: KGW_XDS_TLS_ENABLED
+            {{- if and .Values.controller.xds.tls.enabled (not (and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "KGW_XDS_TLS"))) }}
+            - name: KGW_XDS_TLS
               value: "true"
             {{- end }}
             - name: POD_NAMESPACE
