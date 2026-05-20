@@ -348,12 +348,12 @@ spec:
             initialDelaySeconds: 1
             periodSeconds: 10
           startupProbe:
+            failureThreshold: 600
             httpGet:
               path: /readyz
               port: 9093
             initialDelaySeconds: 0
             periodSeconds: 1
-            failureThreshold: 120
           env:
             - name: GOMEMLIMIT
               valueFrom:
@@ -387,7 +387,7 @@ spec:
               value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: "{}"
-            - name: KGW_XDS_TLS_ENABLED
+            - name: KGW_XDS_TLS
               value: "true"
             - name: POD_NAMESPACE
               valueFrom:

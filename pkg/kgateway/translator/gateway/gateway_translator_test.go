@@ -1898,6 +1898,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with stripHostPortMode AnyPort", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/strip-host-port-any-port.yaml",
+			outputFile: "listener-policy-http/strip-host-port-any-port.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with stripHostPortMode MatchingPort", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/strip-host-port-matching-port.yaml",
+			outputFile: "listener-policy-http/strip-host-port-matching-port.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with uuidRequestIdConfig explicit false", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/request-id-config-explicit.yaml",
@@ -2148,6 +2170,19 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		})
+	})
+
+	t.Run("Backend Config Policy with system ca TLS in strict mode", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendconfigpolicy/tls-system-ca.yaml",
+			outputFile: "backendconfigpolicy/tls-system-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
 		})
 	})
 

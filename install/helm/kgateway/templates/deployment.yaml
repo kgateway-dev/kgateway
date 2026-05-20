@@ -8,6 +8,20 @@
 {{- $controllerAffinity := ternary .Values.controller.affinity .Values.affinity (not (kindIs "invalid" .Values.controller.affinity)) }}
 {{- $controllerTolerations := ternary .Values.controller.tolerations .Values.tolerations (not (kindIs "invalid" .Values.controller.tolerations)) }}
 {{- $controllerTopologySpreadConstraints := ternary .Values.controller.topologySpreadConstraints .Values.topologySpreadConstraints (not (kindIs "invalid" .Values.controller.topologySpreadConstraints)) }}
+{{- $defaultReadinessProbe := dict "httpGet" (dict "path" "/readyz" "port" .Values.controller.service.ports.health) "initialDelaySeconds" 1 "periodSeconds" 10 }}
+{{- $readinessProbeDefaults := deepCopy $defaultReadinessProbe }}
+{{- $controllerReadinessProbe := deepCopy (.Values.controller.readinessProbe | default dict) }}
+{{- if or (hasKey $controllerReadinessProbe "exec") (hasKey $controllerReadinessProbe "tcpSocket") (hasKey $controllerReadinessProbe "grpc") }}
+{{- $readinessProbeDefaults = omit $readinessProbeDefaults "httpGet" }}
+{{- end }}
+{{- $controllerReadinessProbe = merge $controllerReadinessProbe $readinessProbeDefaults }}
+{{- $defaultStartupProbe := dict "httpGet" (dict "path" "/readyz" "port" .Values.controller.service.ports.health) "initialDelaySeconds" 0 "periodSeconds" 1 "failureThreshold" 600 }}
+{{- $startupProbeDefaults := deepCopy $defaultStartupProbe }}
+{{- $controllerStartupProbe := deepCopy (.Values.controller.startupProbe | default dict) }}
+{{- if or (hasKey $controllerStartupProbe "exec") (hasKey $controllerStartupProbe "tcpSocket") (hasKey $controllerStartupProbe "grpc") }}
+{{- $startupProbeDefaults = omit $startupProbeDefaults "httpGet" }}
+{{- end }}
+{{- $controllerStartupProbe = merge $controllerStartupProbe $startupProbeDefaults }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -78,19 +92,9 @@ spec:
               name: metrics
               protocol: TCP
           readinessProbe:
-            httpGet:
-              path: /readyz
-              port: {{ .Values.controller.service.ports.health }}
-            initialDelaySeconds: 1
-            periodSeconds: 10
+            {{- toYaml $controllerReadinessProbe | nindent 12 }}
           startupProbe:
-            httpGet:
-              path: /readyz
-              port: {{ .Values.controller.service.ports.health }}
-            initialDelaySeconds: 0
-            periodSeconds: 1
-            {{- /* Allow failing for 120s before the pod is killed */}}
-            failureThreshold: 120
+            {{- toYaml $controllerStartupProbe | nindent 12 }}
           env:
             - name: GOMEMLIMIT
               valueFrom:
@@ -134,8 +138,8 @@ spec:
             - name: KGW_ENABLE_WAYPOINT
               value: "true"
             {{- end }}
-            {{- if .Values.controller.xds.tls.enabled }}
-            - name: KGW_XDS_TLS_ENABLED
+            {{- if and .Values.controller.xds.tls.enabled (not (and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "KGW_XDS_TLS"))) }}
+            - name: KGW_XDS_TLS
               value: "true"
             {{- end }}
             - name: POD_NAMESPACE
