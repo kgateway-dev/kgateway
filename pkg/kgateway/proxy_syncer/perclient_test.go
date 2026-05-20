@@ -160,9 +160,9 @@ func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T)
 	g := gomega.NewWithT(t)
 
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
-	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
 
-	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
 		{
 			Name: "route-config",
@@ -250,9 +250,9 @@ func TestSnapshotPerClientDefersUntilReferencedEDSClustersHaveEndpoints(t *testi
 	g := gomega.NewWithT(t)
 
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
-	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
 
-	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
 		{
 			Name: "route-config",
@@ -339,9 +339,9 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 	g := gomega.NewWithT(t)
 
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
-	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
 
-	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
 		{
 			Name: "route-config",
@@ -570,8 +570,8 @@ func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) 
 	g := gomega.NewWithT(t)
 
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
-	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 
 	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
 		{
@@ -658,8 +658,8 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 	g := gomega.NewWithT(t)
 
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
-	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 
 	goodRoutes := sliceToResources([]*envoyroutev3.RouteConfiguration{
 		{
@@ -777,8 +777,8 @@ func TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
-	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 
 	// Routes with only a Redirect action — no cluster references.
 	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{

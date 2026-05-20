@@ -82,7 +82,7 @@ type PerClientProcessor struct {
 	waypointGatewayClassName string
 }
 
-func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	// If the ucc has a waypoint gateway class we will let it have an EDS cluster
 	// First try the annotation (for long gateway names > 63 chars), then fall back to the label
 	gwName := ucc.Labels[wellknown.GatewayNameAnnotation]

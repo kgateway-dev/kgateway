@@ -27,7 +27,7 @@ type EndpointsInputs struct {
 // PrioritizeEndpoints converts EndpointsInputs into a ClusterLoadAssignment.
 func PrioritizeEndpoints(
 	logger *slog.Logger,
-	ucc ir.UniqlyConnectedClient,
+	ucc ir.UniquelyConnectedClient,
 	inputs EndpointsInputs,
 ) *envoyendpointv3.ClusterLoadAssignment {
 	lbInfo := LoadBalancingInfo{
