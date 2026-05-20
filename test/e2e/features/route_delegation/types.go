@@ -11,19 +11,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
-const (
-	gatewayPort = 8080
-)
-
 // ref: common.yaml
 var (
 	commonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
-
-	// resources produced by deployer when Gateway is applied
-	proxyMeta = metav1.ObjectMeta{
-		Name:      "http-gateway",
-		Namespace: "infra",
-	}
 )
 
 // ref: basic.yaml
@@ -64,7 +54,7 @@ var (
 	pathTeam2 = "anything/team2/foo"
 )
 
-// ref: invalid_child_valid_standalone.yaml
+// ref: common.yaml (http-gateway-test) and invalid_child_valid_standalone.yaml
 var (
 	gatewayTestPort = 8090
 

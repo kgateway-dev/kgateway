@@ -1,7 +1,6 @@
 # Configuration:
 #
-# Gateway http-gateway-test:
-#  - HTTP listener on port 8090
+# Uses the secondary gateway infra/http-gateway-test (defined in common.yaml).
 #
 # Parent infra/root:
 #   - Delegate /anything/team1 to team1 namespace
@@ -16,21 +15,6 @@
 #   - Parent infra/root route and infra/http-gateway-test gateway
 #   - Invalid delegatee as route specifies hostname!
 #   - Valid standalone route as it also attaches to a Gateway
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: http-gateway-test
-  namespace: infra
-spec:
-  gatewayClassName: kgateway
-  listeners:
-  - protocol: HTTP
-    port: 8090
-    name: http
-    allowedRoutes:
-      namespaces:
-        from: All
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

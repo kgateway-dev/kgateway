@@ -77,25 +77,18 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-// This is a multi-gateway suite — TestInvalidChildValidStandalone creates a
-// second Gateway (proxyTestMeta) alongside the primary one. Because both gateways
-// need distinct addresses, this suite does not use common.SetupBaseGateway and
-// therefore does not honor GATEWAY_ADDRESS_OVERRIDE. Running it under k3d (where
-// LB IPs are not host-reachable) is out of scope.
+// This is a multi-gateway suite. The primary gateway is common.BaseGateway
+// (kgateway-base/gateway, set up by the top-level harness via SetupBaseGateway).
+// The secondary http-gateway-test is created by common.yaml at SetupSuite and
+// is used only by TestInvalidChildValidStandalone. Because the secondary gateway
+// has its own address that cannot be expressed by GATEWAY_ADDRESS_OVERRIDE,
+// running this suite under k3d (where LB IPs are not host-reachable) is out of
+// scope.
 func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 
-	addr := s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, proxyMeta.Name, proxyMeta.Namespace)
-	s.gateway = common.Gateway{
-		NamespacedName: types.NamespacedName{Name: proxyMeta.Name, Namespace: proxyMeta.Namespace},
-		Address:        fmt.Sprintf("%s:%d", addr, gatewayPort),
-	}
-}
+	s.gateway = common.BaseGateway
 
-// resolveTestGateway looks up the LB address for the secondary gateway used only
-// by TestInvalidChildValidStandalone. Called lazily so other tests don't pay the
-// wait — the Gateway itself is created by that test's per-test manifest.
-func (s *testingSuite) resolveTestGateway() {
 	addr := s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, proxyTestMeta.Name, proxyTestMeta.Namespace)
 	s.testGateway = common.Gateway{
 		NamespacedName: types.NamespacedName{Name: proxyTestMeta.Name, Namespace: proxyTestMeta.Namespace},
@@ -207,8 +200,6 @@ func (s *testingSuite) TestMultipleParents() {
 }
 
 func (s *testingSuite) TestInvalidChildValidStandalone() {
-	s.resolveTestGateway()
-
 	// Assert traffic to team1 route
 	s.testGateway.SendEventuallyConsistent(s.Ctx, s.T(),
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam1)},
