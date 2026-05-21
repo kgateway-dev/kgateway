@@ -29,7 +29,7 @@ func StandardKgatewayDumpOnFail(outLog io.Writer, kubectlCli *kubectl.Cli, outDi
 	if os.Getenv(testutils.SkipDump) == "true" {
 		return
 	}
-	fmt.Printf("Test failed. Dumping state from %s...\n", strings.Join(namespaces, ", "))
+	fmt.Printf("Starting cluster state dump for namespaces: %s...\n", strings.Join(namespaces, ", "))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -47,7 +47,7 @@ func StandardKgatewayDumpOnFail(outLog io.Writer, kubectlCli *kubectl.Cli, outDi
 	ControllerDumpOnFail(ctx, quietCli, outLog, outDir, namespaces)
 	EnvoyDumpOnFail(ctx, quietCli, outLog, outDir, namespaces)
 
-	fmt.Printf("Test failed. Logs and cluster state are available in %s\n", outDir)
+	fmt.Printf("Finished cluster state dump; logs and artifacts are available in %s\n", outDir)
 }
 
 // KubeDumpOnFail creates a small dump of the kubernetes state when a test fails.
