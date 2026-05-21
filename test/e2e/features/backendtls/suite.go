@@ -32,6 +32,7 @@ var (
 	configMapManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata/configmap.yaml")
 	backendTLSPolicyMissingTargetManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/missing-target.yaml")
 	terminatedTLSRouteManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata/terminated-tlsroute.yaml")
+	terminatedTLSRouteInvalidManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata/terminated-tlsroute-invalid.yaml")
 
 	backendTlsPolicy = &gwv1.BackendTLSPolicy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -53,6 +54,16 @@ var (
 		Name:      "tlsroute-gateway",
 		Namespace: "kgateway-base",
 	}
+	terminatedTLSRouteInvalidPolicy = &gwv1.BackendTLSPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "invalid-tlsroute-backend-tls",
+			Namespace: "kgateway-base",
+		},
+	}
+	terminatedTLSRouteInvalidGatewayMeta = metav1.ObjectMeta{
+		Name:      "invalid-tlsroute-gateway",
+		Namespace: "kgateway-base",
+	}
 	gatewayGroup = gwv1.Group(gwv1.GroupVersion.Group)
 	gatewayKind  = gwv1.Kind("Gateway")
 
@@ -65,6 +76,10 @@ var (
 	// test cases
 	testCases = map[string]*base.TestCase{
 		"TestBackendTLSPolicyAndStatus": {},
+		"TestBackendTLSPolicyErrorStatusForTerminatedTLSRoute": {
+			Manifests:       []string{terminatedTLSRouteInvalidManifest},
+			MinGwApiVersion: base.GwApiRequireTlsRoutes,
+		},
 		"TestBackendTLSPolicyStatusForTerminatedTLSRoute": {
 			Manifests:       []string{terminatedTLSRouteManifest},
 			MinGwApiVersion: base.GwApiRequireTlsRoutes,
@@ -147,14 +162,14 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
 		Status:             metav1.ConditionFalse,
 		Reason:             string(gwv1.BackendTLSPolicyReasonInvalidCACertificateRef),
-		Message:            fmt.Sprintf("invalid CA certificate ref ConfigMap/ca: %s: kgateway-base/ca", backendtlspolicy.ErrConfigMapNotFound),
+		Message:            invalidCAConfigMapMessage("ca"),
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 	s.assertPolicyStatus(metav1.Condition{
 		Type:               string(gwv1.PolicyConditionAccepted),
 		Status:             metav1.ConditionFalse,
 		Reason:             string(gwv1.BackendTLSPolicyReasonNoValidCACertificate),
-		Message:            fmt.Sprintf("invalid CA certificate ref ConfigMap/ca: %s: kgateway-base/ca", backendtlspolicy.ErrConfigMapNotFound),
+		Message:            invalidCAConfigMapMessage("ca"),
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 }
@@ -171,6 +186,22 @@ func (s *tsuite) TestBackendTLSPolicyStatusForTerminatedTLSRoute() {
 		Status:  metav1.ConditionTrue,
 		Reason:  string(gwv1.BackendTLSPolicyReasonResolvedRefs),
 		Message: resolvedAllReferencesMsg,
+	})
+}
+
+func (s *tsuite) TestBackendTLSPolicyErrorStatusForTerminatedTLSRoute() {
+	errMessage := invalidCAConfigMapMessage("missing-ca")
+	s.assertPolicyStatusForPolicy(terminatedTLSRouteInvalidPolicy, terminatedTLSRouteInvalidGatewayMeta, metav1.Condition{
+		Type:    string(gwv1.BackendTLSPolicyConditionResolvedRefs),
+		Status:  metav1.ConditionFalse,
+		Reason:  string(gwv1.BackendTLSPolicyReasonInvalidCACertificateRef),
+		Message: errMessage,
+	})
+	s.assertPolicyStatusForPolicy(terminatedTLSRouteInvalidPolicy, terminatedTLSRouteInvalidGatewayMeta, metav1.Condition{
+		Type:    string(gwv1.PolicyConditionAccepted),
+		Status:  metav1.ConditionFalse,
+		Reason:  string(gwv1.BackendTLSPolicyReasonNoValidCACertificate),
+		Message: errMessage,
 	})
 }
 
@@ -219,6 +250,10 @@ func gatewayParentReference(objMeta metav1.ObjectMeta) gwv1.ParentReference {
 		Namespace: &namespace,
 		Name:      gwv1.ObjectName(objMeta.Name),
 	}
+}
+
+func invalidCAConfigMapMessage(name string) string {
+	return fmt.Sprintf("invalid CA certificate ref ConfigMap/%s: %s: kgateway-base/%s", name, backendtlspolicy.ErrConfigMapNotFound, name)
 }
 
 const (

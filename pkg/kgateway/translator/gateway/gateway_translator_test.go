@@ -1229,6 +1229,20 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend TLS Policy with terminated TLSRoute invalid CA", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{
+				"tls-routing/tls-terminate.yaml",
+				"backendtlspolicy/tlsroute-terminated-invalid.yaml",
+			},
+			outputFile: "backendtlspolicy/tlsroute-terminated-invalid.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend TLS Policy with SAN", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backendtlspolicy/tls-san.yaml",
