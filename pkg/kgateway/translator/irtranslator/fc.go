@@ -404,6 +404,24 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, reporter sdkreport
 		}
 	}
 
+	// Allow plugins to tweak the TcpProxy (e.g. attaching access logs).
+	// Per-listener TCP policy state is stashed by ApplyListenerPlugin, so we only
+	// need to give each pass a chance to read it back here.
+	pctx := &ir.TcpContext{
+		ListenerPort: h.listener.BindPort,
+		Gateway:      h.gateway,
+	}
+	for _, plug := range h.pluginPass {
+		if err := plug.ApplyTcpProxy(pctx, cfg); err != nil {
+			reporter.SetCondition(sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Reason:  gwv1.ListenerReasonInvalid,
+				Status:  metav1.ConditionFalse,
+				Message: "Error processing TcpProxy plugin: " + err.Error(),
+			})
+		}
+	}
+
 	tcpFilter, _ := NewFilterWithTypedConfig(wellknown.TCPProxy, cfg)
 
 	return append(networkFilters, tcpFilter)

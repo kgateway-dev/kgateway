@@ -12,6 +12,7 @@ import (
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -123,6 +124,14 @@ type HcmContext struct {
 	Gateway      GatewayIR
 }
 
+// TcpContext is passed to ApplyTcpProxy when translating a TCP/TLS filter chain.
+// Unlike HcmContext, no Policy is provided: per-listener TCP policies are stashed
+// by ApplyListenerPlugin (keyed by port) and read back by the plugin during ApplyTcpProxy.
+type TcpContext struct {
+	ListenerPort uint32
+	Gateway      GatewayIR
+}
+
 // ProxyTranslationPass represents a single translation pass for a gateway using envoy. It can hold state
 // for the duration of the translation.
 // Each of the functions here will be called in the order they appear in the interface.
@@ -190,6 +199,12 @@ type ProxyTranslationPass interface {
 		pCtx *HcmContext,
 		out *envoy_hcm.HttpConnectionManager) error
 
+	// ApplyTcpProxy is called 1 time per TCP/TLS filter chain after listeners and allows tweaking
+	// the `tcp_proxy` network filter (e.g. attaching access logs).
+	ApplyTcpProxy(
+		pCtx *TcpContext,
+		out *envoytcpv3.TcpProxy) error
+
 	// called 1 time (per envoy proxy). replaces GeneratedResources and allows adding clusters to the envoy.
 	ResourcesToAdd() Resources
 }
@@ -202,6 +217,10 @@ func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(pCtx *ListenerCon
 }
 
 func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
+	return nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyTcpProxy(pCtx *TcpContext, out *envoytcpv3.TcpProxy) error {
 	return nil
 }
 
