@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/gateway-api/conformance/utils/kubernetes"
 	confsuite "sigs.k8s.io/gateway-api/conformance/utils/suite"
 
-	"github.com/kgateway-dev/kgateway/v2/test/sigs_gateway_conformance/common"
+	"github.com/kgateway-dev/kgateway/v2/test/sigs_gateway_api_framework/common"
 )
 
 //go:embed testdata

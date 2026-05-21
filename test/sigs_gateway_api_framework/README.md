@@ -28,7 +28,7 @@ All variations use the `e2e` build tag and run from the repository root.
 ### Run all conformance tests (both features)
 
 ```bash
-go test -tags e2e -v -timeout 10m ./test/sigs_gateway_conformance/...
+go test -tags e2e -v -timeout 10m ./test/sigs_gateway_api_framework/...
 ```
 
 ### Run a single feature
@@ -40,12 +40,12 @@ Use `-run` with the path to the feature subtest. The test name matches
 # Only basicrouting
 go test -tags e2e -v -timeout 10m \
   -run TestE2EConformanceFramework/basicrouting \
-  ./test/sigs_gateway_conformance/...
+  ./test/sigs_gateway_api_framework/...
 
 # Only header_modifiers
 go test -tags e2e -v -timeout 10m \
   -run TestE2EConformanceFramework/header_modifiers \
-  ./test/sigs_gateway_conformance/...
+  ./test/sigs_gateway_api_framework/...
 ```
 
 ### Run a single scenario
@@ -57,12 +57,12 @@ Append the scenario `ShortName` to the path:
 # Only the GatewayWithRoute scenario
 go test -tags e2e -v -timeout 10m \
   -run TestE2EConformanceFramework/basicrouting/GatewayWithRoute \
-  ./test/sigs_gateway_conformance/...
+  ./test/sigs_gateway_api_framework/...
 
 # Only the RequestHeaderModifier scenario
 go test -tags e2e -v -timeout 10m \
   -run TestE2EConformanceFramework/header_modifiers/RequestHeaderModifier \
-  ./test/sigs_gateway_conformance/...
+  ./test/sigs_gateway_api_framework/...
 ```
 
 ### Run a single sub-case within a scenario
@@ -74,7 +74,7 @@ the sub-case name to the path:
 # Only the /add path of RequestHeaderModifier
 go test -tags e2e -v -timeout 10m \
   -run TestE2EConformanceFramework/header_modifiers/RequestHeaderModifier//add \
-  ./test/sigs_gateway_conformance/...
+  ./test/sigs_gateway_api_framework/...
 ```
 
 ## How tests are orchestrated

@@ -9,8 +9,8 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 
-	"github.com/kgateway-dev/kgateway/v2/test/e2e_sigs/assertions"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e_sigs/common/gateway"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e_sigs_framework/assertions"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e_sigs_framework/common/gateway"
 )
 
 const (

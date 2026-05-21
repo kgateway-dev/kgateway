@@ -1,6 +1,6 @@
 //go:build e2e
 
-package sigs_gateway_conformance
+package sigs_gateway_api_framework
 
 import (
 	"embed"
@@ -11,9 +11,9 @@ import (
 	"sigs.k8s.io/gateway-api/conformance/utils/kubernetes"
 	confsuite "sigs.k8s.io/gateway-api/conformance/utils/suite"
 
-	"github.com/kgateway-dev/kgateway/v2/test/sigs_gateway_conformance/common"
-	"github.com/kgateway-dev/kgateway/v2/test/sigs_gateway_conformance/features/basicrouting"
-	"github.com/kgateway-dev/kgateway/v2/test/sigs_gateway_conformance/features/header_modifiers"
+	"github.com/kgateway-dev/kgateway/v2/test/sigs_gateway_api_framework/common"
+	"github.com/kgateway-dev/kgateway/v2/test/sigs_gateway_api_framework/features/basicrouting"
+	"github.com/kgateway-dev/kgateway/v2/test/sigs_gateway_api_framework/features/header_modifiers"
 )
 
 //go:embed testdata
