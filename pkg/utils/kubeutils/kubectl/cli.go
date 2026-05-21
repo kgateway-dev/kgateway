@@ -449,7 +449,7 @@ func (c *Cli) GetPodsInNsWithLabel(ctx context.Context, namespace string, label 
 	getPodNamesCmd := c.Command(ctx, "get", "pod", "-n", namespace,
 		"--selector", label, "--output", "jsonpath='{.items[*].metadata.name}'")
 	err := getPodNamesCmd.WithStdout(podStdOut).WithStderr(podStdErr).Run().Cause()
-	if err != nil && !c.quiet {
+	if err != nil {
 		fmt.Printf("error running get pod names command: %v\n", err)
 	}
 
