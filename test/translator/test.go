@@ -855,7 +855,7 @@ func (tc TestCase) Run(
 
 		ctx := context.Background()
 		t := translator.GetBackendTranslator()
-		ucc := ir.NewUniqlyConnectedClient("test", "test", nil, ir.PodLocality{})
+		ucc := ir.NewUniquelyConnectedClient("test", "test", nil, ir.PodLocality{})
 		var clusters []*envoyclusterv3.Cluster
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {

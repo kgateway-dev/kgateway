@@ -129,8 +129,8 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 	}, krtopts.ToOptions("ServiceBackends")...)
 	backends.AddBackends(schema.GroupKind{Group: "", Kind: "Service"}, serviceBackends)
 
-	ucc := ir.NewUniqlyConnectedClient("test-role", "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection(nil, []ir.UniqlyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
+	ucc := ir.NewUniquelyConnectedClient("test-role", "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
 	finalBackends := krt.JoinCollection(backends.BackendsWithPolicy(), krtopts.ToOptions("FinalBackends")...)
 	translator := &irtranslator.BackendTranslator{
 		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
