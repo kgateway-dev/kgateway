@@ -319,6 +319,17 @@ func TestHelmChartTemplate(t *testing.T) {
 `,
 		},
 		{
+			name: "xds-tls-enabled-extraenv-dedup",
+			valuesYAML: `controller:
+  xds:
+    tls:
+      enabled: true
+  extraEnv:
+    KGW_XDS_TLS: "true"
+    FOO: "bar"
+`,
+		},
+		{
 			name: "pdb-min-available",
 			valuesYAML: `controller:
   podDisruptionBudget:
