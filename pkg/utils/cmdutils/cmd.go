@@ -35,6 +35,12 @@ type Cmd interface {
 	// WithStderr sets the io.Reader used for stderr
 	WithStderr(io.Writer) Cmd
 
+	// WithQuiet suppresses the "+ <command>" trace line that is otherwise
+	// printed to stderr when running under the e2e build tag. Useful when a
+	// caller runs many commands and does not want to flood test output (for
+	// example, the test failure dump tool).
+	WithQuiet() Cmd
+
 	PrettyCommand() string
 }
 

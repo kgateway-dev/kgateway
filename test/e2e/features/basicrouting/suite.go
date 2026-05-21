@@ -88,6 +88,9 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TestGatewayWithRoute() {
+	// XXX TEMPORARY: deliberate failure to exercise the on-failure dump path in CI
+	// so we can verify the dump-logging cleanup. REVERT BEFORE MERGING.
+	s.T().Fatal("deliberate failure to trigger dump-on-fail (remove me)")
 	s.assertSuccessfulResponse()
 }
 
