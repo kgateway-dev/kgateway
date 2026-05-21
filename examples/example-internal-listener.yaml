@@ -1,0 +1,97 @@
+# Envoy Internal Listener Example
+#
+# This example demonstrates listener chaining with Envoy Internal Listeners.
+#
+# Typical use cases:
+#   - Chaining complex filter chains (e.g., "If header X is present, process with these 5 filters; if not, bypass them")
+#   - Normalize behaviour between backend types (e.g., get upstream metrics from a DirectResponse by going HTTPRoute -> Backend -> Internal HTTPRoute -> DirectResponse)
+#     (See example-internal-listener-directresponse.yaml)
+#
+# Prerequisites:
+#   - kgateway installed with the kgateway GatewayClass configured.
+#   - httpbin deployed via httpbin.yaml.
+#
+# Apply with:
+#   kubectl apply -f example-internal-listener.yaml
+
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gwp-internal-listener
+spec:
+  kube:
+    internalListener: {}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: internal-listener-gateway
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gwp-internal-listener
+  listeners:
+    - name: external
+      protocol: HTTP
+      port: 8080
+    - name: internal
+      protocol: HTTP
+      port: 8081
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: mark-internal-listener
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: internal-listener-gateway
+  perPort:
+    - port: 8081
+      listener:
+        internalListener: {}
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: internal-listener-backend
+spec:
+  type: InternalListener
+  internalListener:
+    listenerPort: 8081
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: external-to-internal
+spec:
+  parentRefs:
+    - name: internal-listener-gateway
+      sectionName: external
+  hostnames:
+    - "internal-listener.localhost"
+  rules:
+    - backendRefs:
+        - group: gateway.kgateway.dev
+          kind: Backend
+          name: internal-listener-backend
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: internal-to-httpbin
+spec:
+  parentRefs:
+    - name: internal-listener-gateway
+      sectionName: internal
+  hostnames:
+    - internal-listener.localhost
+  rules:
+    - backendRefs:
+        - name: httpbin
+          namespace: httpbin
+          port: 8000

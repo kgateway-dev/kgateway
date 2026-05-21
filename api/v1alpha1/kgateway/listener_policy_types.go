@@ -119,6 +119,22 @@ type ListenerConfig struct {
 	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
+
+	// InternalListener configures this listener as an Envoy internal listener.
+	// When set, the listener will not bind to a network address. Instead, it accepts
+	// connections forwarded from other listeners or clusters via envoy_internal:// addresses.
+	// The envoy.bootstrap.internal_listener bootstrap extension must be enabled in GatewayParameters
+	// for internal listeners to function.
+	// See https://www.envoyproxy.io/docs/envoy/latest/configuration/other_features/internal_listener
+	// for more information.
+	// +optional
+	InternalListener *InternalListenerConfig `json:"internalListener,omitempty"`
+}
+
+// InternalListenerConfig marks a listener as an Envoy internal listener.
+// The presence of this configuration is sufficient to enable the feature.
+type InternalListenerConfig struct {
+	// The presence or absence of this configuration is what matters.
 }
 
 type ListenerDefaultConfig struct {

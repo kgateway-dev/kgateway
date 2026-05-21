@@ -72,3 +72,20 @@ spec:
             - "tail"
             - "-f"
             - "/dev/null"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: httpbin-reference-grant
+  namespace: httpbin
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: kgateway-system
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: default
+  to:
+    - group: ""
+      kind: Service

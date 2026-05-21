@@ -933,6 +933,26 @@ spec:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                     type: object
+                  internalListener:
+                    description: |-
+                      InternalListener configures the Envoy bootstrap extension for internal listeners.
+                      When set, the envoy.bootstrap.internal_listener bootstrap extension will be added
+                      to the Envoy proxy configuration, enabling internal listener functionality.
+                      Internal listeners accept connections forwarded from other listeners or clusters
+                      via envoy_internal:// addresses, and are useful for listener chaining patterns
+                      such as HTTP CONNECT tunneling.
+                      See https://www.envoyproxy.io/docs/envoy/latest/configuration/other_features/internal_listener
+                      for more information.
+                    properties:
+                      bufferSizeKb:
+                        description: |-
+                          BufferSizeKb sets the internal listener client connection buffer size in KiB.
+                          If unspecified, the Envoy default of 1024 KiB is used.
+                          See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/bootstrap/internal_listener/v3/internal_listener.proto
+                        format: int32
+                        minimum: 1
+                        type: integer
+                    type: object
                   istio:
                     description: Configuration for the Istio integration.
                     properties:

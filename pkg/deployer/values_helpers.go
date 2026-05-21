@@ -306,6 +306,18 @@ func GetStatsValues(statsConfig *kgateway.StatsConfig) *HelmStatsConfig {
 	return vals
 }
 
+// GetInternalListenerValues converts the BootstrapInternalListenerConfig into Helm values
+// for the envoy.bootstrap.internal_listener bootstrap extension.
+func GetInternalListenerValues(cfg *kgateway.BootstrapInternalListenerConfig) *HelmInternalListenerConfig {
+	if cfg == nil {
+		return nil
+	}
+	return &HelmInternalListenerConfig{
+		Enabled:      true,
+		BufferSizeKb: cfg.GetBufferSizeKb(),
+	}
+}
+
 func toHelmStringMatcher(l []shared.StringMatcher) []HelmStringMatcher {
 	out := make([]HelmStringMatcher, 0, len(l))
 	for _, sm := range l {

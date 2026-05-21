@@ -214,6 +214,26 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "stats-matcher-exclusion",
 		},
 		{
+			Name:      "gwparams with internal listener bootstrap extension",
+			InputFile: "internal-listener",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "envoy.bootstrap.internal_listener",
+					"bootstrap_extensions should contain the internal_listener extension")
+			},
+		},
+		{
+			Name:      "gwparams with internal listener bootstrap extension and buffer size",
+			InputFile: "internal-listener-buffer-size",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "envoy.bootstrap.internal_listener",
+					"bootstrap_extensions should contain the internal_listener extension")
+				assert.Contains(t, outputYaml, "buffer_size_kb: 64",
+					"bootstrap_extensions should contain buffer_size_kb when set")
+			},
+		},
+		{
 			Name:      "envoy-infrastructure",
 			InputFile: "envoy-infrastructure",
 		},

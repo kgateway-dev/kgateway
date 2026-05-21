@@ -89,6 +89,7 @@ func mergeListenerPolicy(
 		mergeProxyProtocol,
 		mergeTCPKeepalive,
 		mergePerConnectionBufferLimitBytes,
+		mergeInternal,
 		// Not merging ClientCertificateValidation since its only used for tls config.
 		mergeHttpSettings,
 	}
@@ -164,4 +165,21 @@ func mergeHttpSettings(
 		origin += "httpSettings."
 	}
 	MergeHttpPolicies(origin, p1.http, p2.http, p2Ref, p2MergeOrigins, opts, mergeOrigins, "" /*no merge settings*/)
+}
+
+func mergeInternal(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	_ policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	// An internal listener flag is treated as a one-way toggle: once set to true it cannot
+	// be overridden to false by a lower-priority policy. Merging uses logical OR so that
+	// any policy marking the listener as internal wins.
+	if p2.internal && !p1.internal {
+		p1.internal = true
+		mergeOrigins.SetOne(origin+"internalListener", p2Ref, p2MergeOrigins)
+	}
 }
