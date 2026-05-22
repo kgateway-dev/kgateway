@@ -423,16 +423,24 @@ func translateScheme(out *envoyroutev3.RedirectAction, scheme *string) {
 }
 
 func translatePort(scheme string, port *gwv1.PortNumber) uint32 {
-	// If port is explicitly provided, use it regardless of scheme
+	// Gateway API says implementations SHOULD NOT include the port in the Location
+	// header when it resolves to the default HTTP/HTTPS port, so we only set
+	// PortRedirect for explicit non-default ports. A zero value is also the sentinel
+	// used later for the "inherit listener port" case when scheme and port are unset.
 	if port != nil {
-		return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
+		switch {
+		case strings.EqualFold(scheme, "http") && *port == 80:
+			return 0
+		case strings.EqualFold(scheme, "https") && *port == 443:
+			return 0
+		default:
+			return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
+		}
 	}
-	// Otherwise, use default port for the scheme
+
 	switch strings.ToLower(scheme) {
-	case "http":
-		return 80
-	case "https":
-		return 443
+	case "http", "https":
+		return 0
 	default:
 		// Scheme is empty and port is nil - needs listener port (return 0 as sentinel)
 		return 0

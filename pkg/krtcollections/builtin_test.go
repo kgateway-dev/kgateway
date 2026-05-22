@@ -685,7 +685,7 @@ func TestRequestRedirect(t *testing.T) {
 			expectedNeedsListener: true,
 		},
 		{
-			name: "scheme http with port nil uses default 80",
+			name: "scheme http with port nil omits default port 80",
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Scheme: new("http"),
 				Port:   nil,
@@ -695,12 +695,11 @@ func TestRequestRedirect(t *testing.T) {
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_SchemeRedirect{
 					SchemeRedirect: "http",
 				},
-				PortRedirect: 80,
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
 		},
 		{
-			name: "scheme https with port nil uses default 443",
+			name: "scheme https with port nil omits default port 443",
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Scheme: new("https"),
 				Port:   nil,
@@ -710,7 +709,6 @@ func TestRequestRedirect(t *testing.T) {
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_HttpsRedirect{
 					HttpsRedirect: true,
 				},
-				PortRedirect: 443,
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
 		},
@@ -753,6 +751,34 @@ func TestRequestRedirect(t *testing.T) {
 					HttpsRedirect: true,
 				},
 				PortRedirect: 8443,
+				ResponseCode: envoyroutev3.RedirectAction_FOUND,
+			},
+		},
+		{
+			name: "explicit default https port is omitted",
+			filter: &gwv1.HTTPRequestRedirectFilter{
+				Scheme: new("https"),
+				Port:   new(gwv1.PortNumber(443)),
+			},
+			listenerPort: 8080,
+			expectedRedirect: &envoyroutev3.RedirectAction{
+				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_HttpsRedirect{
+					HttpsRedirect: true,
+				},
+				ResponseCode: envoyroutev3.RedirectAction_FOUND,
+			},
+		},
+		{
+			name: "explicit default http port is omitted",
+			filter: &gwv1.HTTPRequestRedirectFilter{
+				Scheme: new("http"),
+				Port:   new(gwv1.PortNumber(80)),
+			},
+			listenerPort: 8080,
+			expectedRedirect: &envoyroutev3.RedirectAction{
+				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_SchemeRedirect{
+					SchemeRedirect: "http",
+				},
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
 		},
