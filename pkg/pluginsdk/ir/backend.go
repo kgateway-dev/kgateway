@@ -239,6 +239,9 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	if c.resourceName != in.resourceName {
 		return false
 	}
+	if c.ClusterName() != in.ClusterName() {
+		return false
+	}
 	if c.DisableIstioAutoMTLS != in.DisableIstioAutoMTLS {
 		return false
 	}
