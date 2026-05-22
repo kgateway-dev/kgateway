@@ -37,6 +37,11 @@ const (
 	dnsClusterExtensionName  = "envoy.clusters.dns"
 )
 
+// defaultConnectTimeout is the shared durationpb for the default cluster connect
+// timeout. Reused across all clusters built by initializeCluster since the value
+// is a constant. Treated as read-only.
+var defaultConnectTimeout = durationpb.New(clusterConnectionTimeout)
+
 type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
 	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
@@ -279,11 +284,15 @@ func toExtensionDnsLookupFamily(family envoyclusterv3.Cluster_DnsLookupFamily) e
 }
 
 func translateAppProtocol(appProtocol ir.AppProtocol) map[string]*anypb.Any {
-	typedExtensionProtocolOptions := map[string]*anypb.Any{}
-	if appProtocol == ir.HTTP2AppProtocol {
-		typedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = cloneAny(h2Options)
+	// Avoid allocating an empty map for the common HTTP/1 case. Downstream
+	// callers (utils/cluster.go, extensions2/pluginutils) lazily allocate the
+	// map when they need to set a key.
+	if appProtocol != ir.HTTP2AppProtocol {
+		return nil
 	}
-	return typedExtensionProtocolOptions
+	return map[string]*anypb.Any{
+		"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": cloneAny(h2Options),
+	}
 }
 
 func cloneAny(msg *anypb.Any) *anypb.Any {
@@ -299,10 +308,11 @@ func cloneAny(msg *anypb.Any) *anypb.Any {
 // initializeCluster creates a default envoy cluster with minimal configuration,
 // that will then be augmented by various backend plugins
 func initializeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
+	// Note: Metadata intentionally left nil. Downstream plugins that need it
+	// (e.g. backend/gcp.go) lazily allocate.
 	out := &envoyclusterv3.Cluster{
 		Name:                          b.ClusterName(),
-		Metadata:                      new(envoycorev3.Metadata),
-		ConnectTimeout:                durationpb.New(clusterConnectionTimeout),
+		ConnectTimeout:                defaultConnectTimeout,
 		TypedExtensionProtocolOptions: translateAppProtocol(b.AppProtocol),
 		CommonLbConfig:                createCommonLbConfig(b),
 	}
