@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
@@ -966,4 +967,53 @@ func TestRequestRedirectSamePolicyMultipleListeners(t *testing.T) {
 	assert.Equal(t, uint32(666), route666.GetRedirect().GetPortRedirect())
 	assert.Equal(t, uint32(8080), route8080.GetRedirect().GetPortRedirect())
 	assert.Equal(t, uint32(0), redirectIR.Redir.GetPortRedirect(), "IR redirect template must keep PortRedirect unset")
+}
+
+func TestRequestRedirectLowerPriorityPolicyDoesNotPostProcessWinningRedirect(t *testing.T) {
+	winningRedirectIR, err := convertRequestRedirectIR(nil, &gwv1.HTTPRequestRedirectFilter{
+		Scheme: new("https"),
+		Port:   new(gwv1.PortNumber(8443)),
+	}, nil, nil)
+	require.NoError(t, err)
+
+	losingRedirectIR, err := convertRequestRedirectIR(nil, &gwv1.HTTPRequestRedirectFilter{}, nil, nil)
+	require.NoError(t, err)
+
+	pass := &builtinPluginGwPass{}
+	outputRoute := &envoyroutev3.Route{}
+
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{
+		ListenerPort: 80,
+		Policy: &builtinPlugin{
+			filter: &filterIR{
+				filterType: gwv1.HTTPRouteFilterRequestRedirect,
+				policy:     winningRedirectIR,
+			},
+		},
+		InheritedPolicyPriority: apiannotations.ShallowMergePreferChild,
+	}, outputRoute))
+
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{
+		ListenerPort: 80,
+		Policy: &builtinPlugin{
+			filter: &filterIR{
+				filterType: gwv1.HTTPRouteFilterRequestRedirect,
+				policy:     losingRedirectIR,
+			},
+		},
+		InheritedPolicyPriority: apiannotations.ShallowMergePreferChild,
+	}, outputRoute))
+
+	expectedRedirect := &envoyroutev3.RedirectAction{
+		SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_HttpsRedirect{
+			HttpsRedirect: true,
+		},
+		PortRedirect: 8443,
+		ResponseCode: envoyroutev3.RedirectAction_FOUND,
+	}
+	assert.True(t, proto.Equal(expectedRedirect, outputRoute.GetRedirect()),
+		"lower-priority redirect must not mutate the winning redirect\nexpected: %+v\nactual: %+v",
+		expectedRedirect,
+		outputRoute.GetRedirect(),
+	)
 }
