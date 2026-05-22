@@ -28,7 +28,8 @@ const BackendClusterPrefix = "kube"
 // edsClusterConfig is shared across all EDS clusters since its contents are
 // identical for every kubernetes Service backend. Sharing the pointer avoids
 // reallocating the (ConfigSource, Ads, AggregatedConfigSource) tuple per UCC.
-// The xDS server must treat this as read-only.
+// Do not mutate this in place; clone first if per-cluster customization is
+// needed.
 var edsClusterConfig = &envoyclusterv3.Cluster_EdsClusterConfig{
 	EdsConfig: &envoycorev3.ConfigSource{
 		ResourceApiVersion: envoycorev3.ApiVersion_V3,
