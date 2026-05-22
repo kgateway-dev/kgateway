@@ -305,7 +305,7 @@ func versionEquals(a, b metav1.Object) bool {
 }
 
 func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
-	if !c.ObjectSource.Equals(in.ObjectSource) {
+	if c.ObjectSource != in.ObjectSource {
 		return false
 	}
 

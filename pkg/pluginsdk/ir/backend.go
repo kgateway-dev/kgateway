@@ -29,11 +29,6 @@ type ObjectSource struct {
 	Kind      string `json:"kind,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 	Name      string `json:"name"`
-
-	// resourceName caches the formatted resource name. Populated by
-	// withResourceName when an ObjectSource flows through a constructor that
-	// keys on it; lazy fallback in ResourceName covers struct-literal callers.
-	resourceName string
 }
 
 // GetKind returns the kind of the route.
@@ -55,25 +50,11 @@ func (c ObjectSource) GetNamespace() string {
 }
 
 func (c ObjectSource) ResourceName() string {
-	if c.resourceName != "" {
-		return c.resourceName
-	}
 	return buildObjectSourceName(c.Group, c.Kind, c.Namespace, c.Name)
 }
 
 func (c ObjectSource) String() string {
-	return c.ResourceName()
-}
-
-// withResourceName returns a copy of objSource with the resourceName cache
-// populated. Used by constructors that hand the ObjectSource off to KRT, where
-// ResourceName() will be called repeatedly as the key.
-func withResourceName(objSource ObjectSource) ObjectSource {
-	if objSource.resourceName != "" {
-		return objSource
-	}
-	objSource.resourceName = buildObjectSourceName(objSource.Group, objSource.Kind, objSource.Namespace, objSource.Name)
-	return objSource
+	return buildObjectSourceName(c.Group, c.Kind, c.Namespace, c.Name)
 }
 
 // buildObjectSourceName produces "group/kind/namespace/name" without the
@@ -215,7 +196,6 @@ type BackendObjectIR struct {
 // and cluster names. Callers that want a non-empty GvPrefix should follow up
 // with SetGvPrefix, which keeps the cached cluster name in sync.
 func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey string) BackendObjectIR {
-	objSource = withResourceName(objSource)
 	return BackendObjectIR{
 		ObjectSource: objSource,
 		Port:         port,

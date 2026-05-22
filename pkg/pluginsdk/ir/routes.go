@@ -72,7 +72,7 @@ func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
 	// as backends resolution may change when they are added/remove we need to check equality for them as well
 	// we don't need to check the whole backend, just the cluster name (that may swap in and out of black-hole)
 	// note - if we stop setting cluster to black whole here (and always set it to the expect cluster name) we can remove the backend equality check.
-	return c.ObjectSource.Equals(in.ObjectSource) &&
+	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
 		c.rulesEqual(in) &&
@@ -143,7 +143,7 @@ func (c TcpRouteIR) ResourceName() string {
 }
 
 func (c TcpRouteIR) Equals(in TcpRouteIR) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) &&
+	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
 		backendsEqual(c.Backends, in.Backends)
@@ -189,7 +189,7 @@ func (c TlsRouteIR) ResourceName() string {
 }
 
 func (c TlsRouteIR) Equals(in TlsRouteIR) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) &&
+	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
 		backendsEqual(c.Backends, in.Backends)
