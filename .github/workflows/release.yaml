@@ -31,7 +31,6 @@ env:
   # forks publish to ghcr.io/<owner>, so their release notes should point there too — otherwise
   # the install commands in the GitHub release page reference images that don't exist.
   VANITY_REGISTRY: ${{ github.repository == 'kgateway-dev/kgateway' && 'cr.kgateway.dev/kgateway-dev' || format('ghcr.io/{0}', github.repository_owner) }}
-  MAIN_VERSION: v2.3.0-main
   GORELEASER_DISABLE_RELEASE: false
 
 permissions:
@@ -108,7 +107,7 @@ jobs:
             NEEDS_RELEASE=true
             GORELEASER_ARGS="--clean --skip=validate --release-notes _output/RELEASE_NOTES.md"
           elif [[ $GITHUB_REF == refs/heads/main ]]; then
-            VERSION="${MAIN_VERSION}"
+            VERSION="$(make --no-print-directory print-ROLLING_MAIN_VERSION)"
             NEEDS_RELEASE=false
             GORELEASER_ARGS="--clean --skip=validate"
           elif [[ $GITHUB_REF == refs/pull/* ]]; then

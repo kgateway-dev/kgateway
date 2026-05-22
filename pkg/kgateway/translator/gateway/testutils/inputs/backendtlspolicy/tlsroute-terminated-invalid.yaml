@@ -1,0 +1,15 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: tlsroute-backend-tls-invalid
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: example-tls-svc
+  validation:
+    hostname: example.com
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: missing-ca

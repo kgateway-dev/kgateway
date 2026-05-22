@@ -50,11 +50,19 @@ func newOIDCProviderConfigDiscoverer() *oidcProviderConfigDiscoverer {
 // is desirable to prevent excessive network calls. However, to accommodate potential changes in the provider configuration,
 // the cache is cleared at regular intervals, prompting re-discovery on subsequent requests.
 func (o *oidcProviderConfigDiscoverer) refresh(ctx context.Context) {
+	ticker := time.NewTicker(o.cacheRefreshInterval)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(o.cacheRefreshInterval):
+		case <-ticker.C:
+			// Guard against the race where both ctx.Done() and ticker.C are
+			// ready simultaneously and the scheduler picks ticker.C first.
+			if ctx.Err() != nil {
+				return
+			}
 			// refresh the cache every 5 minutes; next get() will re-discover the config
 			o.cache.Clear()
 		}
