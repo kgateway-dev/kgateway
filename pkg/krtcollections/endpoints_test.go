@@ -458,7 +458,7 @@ func TestEndpointsForGatewayScopedBackendsWithSameEndpointsHaveDifferentHashes(t
 			},
 		},
 	})
-	baseBackend.GvPrefix = "kube"
+	baseBackend.SetGvPrefix("kube")
 
 	clientCertificate := &ir.GatewayBackendClientCertificateIR{}
 	gateway1 := ir.ObjectSource{

@@ -89,7 +89,7 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 			Name:      i.GetName(),
 		}
 		backend := ir.NewBackendObjectIR(objSrc, 0, "")
-		backend.GvPrefix = ExtensionName
+		backend.SetGvPrefix(ExtensionName)
 		backend.CanonicalHostname = hostname(i)
 		backend.AppProtocol = parseAppProtocol(i)
 		backend.Obj = i
@@ -98,8 +98,6 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 
 		// Parse common annotations
 		ir.ParseObjectAnnotations(&backend, i)
-
-		backend.InitClusterName()
 		return &backend
 	})
 	return sdk.Plugin{

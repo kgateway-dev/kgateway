@@ -29,6 +29,11 @@ type ObjectSource struct {
 	Kind      string `json:"kind,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 	Name      string `json:"name"`
+
+	// resourceName caches the formatted resource name. Populated by
+	// withResourceName when an ObjectSource flows through a constructor that
+	// keys on it; lazy fallback in ResourceName covers struct-literal callers.
+	resourceName string
 }
 
 // GetKind returns the kind of the route.
@@ -50,11 +55,25 @@ func (c ObjectSource) GetNamespace() string {
 }
 
 func (c ObjectSource) ResourceName() string {
+	if c.resourceName != "" {
+		return c.resourceName
+	}
 	return buildObjectSourceName(c.Group, c.Kind, c.Namespace, c.Name)
 }
 
 func (c ObjectSource) String() string {
-	return buildObjectSourceName(c.Group, c.Kind, c.Namespace, c.Name)
+	return c.ResourceName()
+}
+
+// withResourceName returns a copy of objSource with the resourceName cache
+// populated. Used by constructors that hand the ObjectSource off to KRT, where
+// ResourceName() will be called repeatedly as the key.
+func withResourceName(objSource ObjectSource) ObjectSource {
+	if objSource.resourceName != "" {
+		return objSource
+	}
+	objSource.resourceName = buildObjectSourceName(objSource.Group, objSource.Kind, objSource.Namespace, objSource.Name)
+	return objSource
 }
 
 // buildObjectSourceName produces "group/kind/namespace/name" without the
@@ -174,8 +193,10 @@ type BackendObjectIR struct {
 	// resourceName is the pre-calculated resource name. used as the krt resource name.
 	resourceName string
 
-	// clusterName is the pre-calculated Envoy cluster name. Populated by InitClusterName()
-	// after GvPrefix/ExtraKey are set. ClusterName() falls back to recomputing if empty.
+	// clusterName is the pre-calculated Envoy cluster name. Kept in sync by
+	// SetGvPrefix (the only setter that mutates a cluster-name-relevant field
+	// post-construction). ClusterName() falls back to recomputing if empty so
+	// struct-literal callers still work.
 	clusterName string
 
 	// TrafficDistribution is the desired traffic distribution for the backend.
@@ -190,13 +211,17 @@ type BackendObjectIR struct {
 	GatewayBackendClientCertificate *GatewayBackendClientCertificateIR
 }
 
-// NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name
+// NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource
+// and cluster names. Callers that want a non-empty GvPrefix should follow up
+// with SetGvPrefix, which keeps the cached cluster name in sync.
 func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey string) BackendObjectIR {
+	objSource = withResourceName(objSource)
 	return BackendObjectIR{
 		ObjectSource: objSource,
 		Port:         port,
 		ExtraKey:     extraKey,
 		resourceName: BackendResourceName(objSource, port, extraKey),
+		clusterName:  buildClusterName("", objSource.Kind, objSource.Namespace, objSource.Name, extraKey, port),
 	}
 }
 
@@ -253,9 +278,7 @@ func (c BackendObjectIR) CloneForGatewayBackendClientCertificate(
 	clone := c
 	clone.ExtraKey = gatewayBackendClientCertificateExtraKey(c.ExtraKey, gateway)
 	clone.resourceName = BackendResourceName(clone.ObjectSource, clone.Port, clone.ExtraKey)
-	// Invalidate the cached cluster name since ExtraKey changed; rebuild eagerly.
-	clone.clusterName = ""
-	clone.InitClusterName()
+	clone.clusterName = buildClusterName(clone.GvPrefix, clone.Kind, clone.Namespace, clone.Name, clone.ExtraKey, clone.Port)
 	clone.GatewayBackendClientCertificate = clientCertificate
 	return clone
 }
@@ -268,21 +291,20 @@ func gatewayBackendClientCertificateExtraKey(baseExtraKey string, gateway Object
 	return baseExtraKey + "_" + suffix
 }
 
+// SetGvPrefix sets GvPrefix and keeps the cached cluster name in sync. This is
+// the supported way to set GvPrefix post-construction; assigning the exported
+// field directly works but leaves the cached cluster name stale until the next
+// fallback recompute.
+func (c *BackendObjectIR) SetGvPrefix(prefix string) {
+	c.GvPrefix = prefix
+	c.clusterName = buildClusterName(prefix, c.Kind, c.Namespace, c.Name, c.ExtraKey, c.Port)
+}
+
 func (c BackendObjectIR) ClusterName() string {
 	if c.clusterName != "" {
 		return c.clusterName
 	}
 	return buildClusterName(c.GvPrefix, c.Kind, c.Namespace, c.Name, c.ExtraKey, c.Port)
-}
-
-// InitClusterName precomputes and caches the Envoy cluster name on the receiver.
-// Callers should invoke this after setting GvPrefix and ExtraKey (or any field
-// that participates in the cluster name). It is a no-op if already computed.
-func (c *BackendObjectIR) InitClusterName() {
-	if c.clusterName != "" {
-		return
-	}
-	c.clusterName = buildClusterName(c.GvPrefix, c.Kind, c.Namespace, c.Name, c.ExtraKey, c.Port)
 }
 
 func buildClusterName(gvPrefix, kind, namespace, name, extraKey string, port int32) string {
@@ -291,9 +313,10 @@ func buildClusterName(gvPrefix, kind, namespace, name, extraKey string, port int
 		gvPrefix = strings.ToLower(kind)
 	}
 	// Use strings.Builder + strconv to avoid fmt.Sprintf overhead since this
-	// runs on a hot translation path.
+	// runs on a hot translation path. Capacity: fields + up to 4 underscores +
+	// up to 5-digit port.
 	var sb strings.Builder
-	sb.Grow(len(gvPrefix) + len(namespace) + len(name) + len(extraKey) + 8)
+	sb.Grow(len(gvPrefix) + len(namespace) + len(name) + len(extraKey) + 9)
 	sb.WriteString(gvPrefix)
 	sb.WriteByte('_')
 	sb.WriteString(namespace)

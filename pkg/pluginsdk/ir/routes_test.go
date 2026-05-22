@@ -749,7 +749,7 @@ func TestHTTPRouteIREquals(t *testing.T) {
 			a := assert.New(t)
 
 			got := tt.a.Equals(tt.b)
-			a.Equal(tt.want, got, cmp.Diff(tt.a, tt.b, cmpopts.IgnoreUnexported(BackendObjectIR{})))
+			a.Equal(tt.want, got, cmp.Diff(tt.a, tt.b, cmpopts.IgnoreUnexported(BackendObjectIR{}, ObjectSource{})))
 		})
 	}
 }

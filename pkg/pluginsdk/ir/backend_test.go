@@ -201,6 +201,39 @@ func TestBackendObjectIRClusterName(t *testing.T) {
 	})
 }
 
+func TestBackendObjectIRSetGvPrefixUpdatesClusterName(t *testing.T) {
+	backend := NewBackendObjectIR(ObjectSource{
+		Namespace: "default",
+		Name:      "test-service",
+		Kind:      "Service",
+	}, 8080, "")
+
+	// Before SetGvPrefix the cached name uses the lowercased Kind as prefix.
+	assert.Equal(t, "service_default_test-service_8080", backend.ClusterName())
+
+	backend.SetGvPrefix("kube")
+
+	assert.Equal(t, "kube_default_test-service_8080", backend.ClusterName())
+}
+
+func TestBackendObjectIRCloneRecomputesClusterName(t *testing.T) {
+	backend := NewBackendObjectIR(ObjectSource{
+		Namespace: "ns",
+		Name:      "svc",
+		Kind:      "Service",
+	}, 80, "")
+	backend.SetGvPrefix("kube")
+
+	original := backend.ClusterName()
+	clone := backend.CloneForGatewayBackendClientCertificate(
+		ObjectSource{Group: "gateway.networking.k8s.io", Kind: "Gateway", Namespace: "gwns", Name: "gw"},
+		&GatewayBackendClientCertificateIR{},
+	)
+
+	assert.NotEqual(t, original, clone.ClusterName(), "clone should have a distinct cluster name after ExtraKey change")
+	assert.Contains(t, clone.ClusterName(), "gw_backend_client_cert_gwns_gw")
+}
+
 func TestGatewayBackendClientCertificateIRMarshalJSONRedactsCertificate(t *testing.T) {
 	clientCertificate := GatewayBackendClientCertificateIR{
 		Certificate: TLSCertificate{

@@ -146,11 +146,10 @@ func (s Service) BackendObject(port uint32) ir.BackendObjectIR {
 		Name:      s.GetName(),
 	}
 	backend := ir.NewBackendObjectIR(objSrc, int32(port), "") //nolint:gosec // G115: port is uint32 representing a port number, safe to convert to int32
-	backend.GvPrefix = kubernetes.BackendClusterPrefix
+	backend.SetGvPrefix(kubernetes.BackendClusterPrefix)
 	backend.CanonicalHostname = hostname
 	backend.Obj = s.Object
 	backend.AttachedPolicies = ir.AttachedPolicies{}
-	backend.InitClusterName()
 	return backend
 }
 
