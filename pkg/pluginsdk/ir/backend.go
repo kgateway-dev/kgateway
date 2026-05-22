@@ -178,6 +178,7 @@ type BackendObjectIR struct {
 	// SetGvPrefix (the only setter that mutates a cluster-name-relevant field
 	// post-construction). ClusterName() falls back to recomputing if empty so
 	// struct-literal callers still work.
+	// +noKrtEquals We compare the cached ClusterName in Equals()
 	clusterName string
 
 	// TrafficDistribution is the desired traffic distribution for the backend.
