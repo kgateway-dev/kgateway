@@ -25,6 +25,23 @@ import (
 
 const BackendClusterPrefix = "kube"
 
+// edsClusterConfig is shared across all EDS clusters since its contents are
+// identical for every kubernetes Service backend. Sharing the pointer avoids
+// reallocating the (ConfigSource, Ads, AggregatedConfigSource) tuple per UCC.
+// The xDS server must treat this as read-only.
+var edsClusterConfig = &envoyclusterv3.Cluster_EdsClusterConfig{
+	EdsConfig: &envoycorev3.ConfigSource{
+		ResourceApiVersion: envoycorev3.ApiVersion_V3,
+		ConfigSourceSpecifier: &envoycorev3.ConfigSource_Ads{
+			Ads: &envoycorev3.AggregatedConfigSource{},
+		},
+	},
+}
+
+var edsClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+	Type: envoyclusterv3.Cluster_EDS,
+}
+
 func NewPlugin(ctx context.Context, commonCol *collections.CommonCollections) sdk.Plugin {
 	epSliceClient := kclient.NewFiltered[*discoveryv1.EndpointSlice](
 		commonCol.Client,
@@ -108,17 +125,8 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 }
 
 func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
-	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
-		Type: envoyclusterv3.Cluster_EDS,
-	}
-	out.EdsClusterConfig = &envoyclusterv3.Cluster_EdsClusterConfig{
-		EdsConfig: &envoycorev3.ConfigSource{
-			ResourceApiVersion: envoycorev3.ApiVersion_V3,
-			ConfigSourceSpecifier: &envoycorev3.ConfigSource_Ads{
-				Ads: &envoycorev3.AggregatedConfigSource{},
-			},
-		},
-	}
+	out.ClusterDiscoveryType = edsClusterDiscoveryType
+	out.EdsClusterConfig = edsClusterConfig
 	out.IgnoreHealthOnHostRemoval = true
 	return nil
 }
