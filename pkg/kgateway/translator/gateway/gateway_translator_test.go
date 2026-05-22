@@ -709,7 +709,7 @@ func TestBasic(t *testing.T) {
 	// Default to deep merge but on conflict, fallback to shallow merge
 	t.Run("TrafficPolicy ACL route level override with conflict fallback to shallow merge", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/acl-conflict-fallback-to-shallow-merge.yaml",
+			inputFiles: []string{"traffic-policy/acl-conflict-fallback-to-shallow-merge.yaml"},
 			outputFile: "traffic-policy/acl-conflict-fallback-to-shallow-merge.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -721,7 +721,7 @@ func TestBasic(t *testing.T) {
 	// Default to deep merge, so rules are union together
 	t.Run("TrafficPolicy ACL multiple policies default deep merge", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/acl-merge.yaml",
+			inputFiles: []string{"traffic-policy/acl-merge.yaml"},
 			outputFile: "traffic-policy/acl-merge-deep.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -735,7 +735,7 @@ func TestBasic(t *testing.T) {
 	// policy a is skipped entirely and its rules never appear in the output.
 	t.Run("TrafficPolicy ACL multiple policies default merge", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/acl-merge.yaml",
+			inputFiles: []string{"traffic-policy/acl-merge.yaml"},
 			outputFile: "traffic-policy/acl-merge-shallow.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -751,7 +751,7 @@ func TestBasic(t *testing.T) {
 	// PolicyMerge is left at the default (no override) to show the annotation-driven behavior.
 	t.Run("TrafficPolicy ACL route delegation", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/acl-route-delegation.yaml",
+			inputFiles: []string{"traffic-policy/acl-route-delegation.yaml"},
 			outputFile: "traffic-policy/acl-route-delegation.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
