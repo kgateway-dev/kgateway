@@ -422,19 +422,13 @@ func translateScheme(out *envoyroutev3.RedirectAction, scheme *string) {
 	}
 }
 
-func translatePort(scheme string, port *gwv1.PortNumber) uint32 {
-	// If port is explicitly provided, use it regardless of scheme
-	if port != nil {
-		return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
-	}
-	// Otherwise, use default port for the scheme
+func defaultPortForScheme(scheme string) uint32 {
 	switch strings.ToLower(scheme) {
 	case "http":
 		return 80
 	case "https":
 		return 443
 	default:
-		// Scheme is empty and port is nil - needs listener port (return 0 as sentinel)
 		return 0
 	}
 }
@@ -824,12 +818,16 @@ func (h *RoutesIndex) convertfilterIR(
 }
 
 type requestRedirectIr struct {
-	// Redir is the redirect action to apply to the route.
+	// Redir is the base redirect action (hostname, status code, scheme rewrite,
+	// path rewrite). PortRedirect is intentionally left unset here and resolved
+	// per listener in applyRedirectPortPostProcessing, because the same IR is
+	// reused across every listener the HTTPRoute attaches to.
 	Redir *envoyroutev3.RedirectAction
-	// NeedsListenerPort indicates that the redirect port should be set to the listener port
-	// when scheme is empty and port is nil. This is set during IR creation and resolved
-	// during apply() when we have access to the listener context.
-	NeedsListenerPort bool
+	// Scheme and Port preserve the user's raw intent from the
+	// HTTPRequestRedirectFilter so that port resolution can distinguish
+	// "user omitted this field" from "user picked a default value".
+	Scheme *string
+	Port   *gwv1.PortNumber
 }
 
 func (r *requestRedirectIr) apply(
@@ -863,24 +861,32 @@ func convertRequestRedirectIR(
 		return nil, err
 	}
 
-	portRedirect := translatePort(ptr.Deref(f.Scheme, ""), f.Port)
 	redir := &envoyroutev3.RedirectAction{
 		HostRedirect: translateHostname(f.Hostname),
 		ResponseCode: statusCode,
-		PortRedirect: portRedirect,
+		// PortRedirect is intentionally left unset; see applyRedirectPortPostProcessing.
 	}
 	translateScheme(redir, f.Scheme)
 	translatePathRewrite(redir, f.Path)
 
 	return &requestRedirectIr{
-		Redir:             redir,
-		NeedsListenerPort: portRedirect == 0 && f.Scheme == nil && f.Port == nil,
+		Redir:  redir,
+		Scheme: f.Scheme,
+		Port:   f.Port,
 	}, nil
 }
 
-// applyRedirectPortPostProcessing handles the special case where redirect port needs
-// to be set to the listener port when both scheme and port are nil in the redirect filter.
-// Per Gateway API spec: "If redirect scheme is empty, the redirect port MUST be the Gateway Listener port."
+// applyRedirectPortPostProcessing resolves the redirect PortRedirect for the
+// current listener per the Gateway API spec:
+//
+//   - If filter.Port is set, use it.
+//   - Else if filter.Scheme is set, use the scheme's well-known port
+//     (http=80, https=443).
+//   - Else, use the Gateway Listener port.
+//
+// Per the spec the port is omitted from the Location header when the effective
+// port matches the effective scheme's well-known default (http+80, https+443).
+// In Envoy, leaving PortRedirect at 0 omits the port from the Location header.
 func applyRedirectPortPostProcessing(
 	pCtx *ir.RouteContext,
 	pol *builtinPlugin,
@@ -890,13 +896,41 @@ func applyRedirectPortPostProcessing(
 		return
 	}
 	redirectIr, ok := pol.filter.policy.(*requestRedirectIr)
-	if !ok || !redirectIr.NeedsListenerPort {
+	if !ok {
 		return
 	}
 	redirect := outputRoute.GetRedirect()
-	if redirect != nil && redirect.GetPortRedirect() == 0 {
-		redirect.PortRedirect = pCtx.ListenerPort
+	if redirect == nil {
+		return
 	}
+
+	// Effective scheme: filter.Scheme if set, otherwise inferred from the listener.
+	effectiveScheme := strings.ToLower(ptr.Deref(redirectIr.Scheme, ""))
+	if effectiveScheme == "" {
+		if pCtx.ListenerHasTLS {
+			effectiveScheme = "https"
+		} else {
+			effectiveScheme = "http"
+		}
+	}
+
+	// Effective port: filter.Port > scheme default > listener port.
+	var effectivePort uint32
+	switch {
+	case redirectIr.Port != nil:
+		effectivePort = uint32(*redirectIr.Port) //nolint:gosec // G115: Gateway API PortNumber is int32 in valid port range
+	case redirectIr.Scheme != nil:
+		effectivePort = defaultPortForScheme(effectiveScheme)
+	default:
+		effectivePort = pCtx.ListenerPort
+	}
+
+	// Omit the port when it matches the scheme's well-known default.
+	if effectivePort == defaultPortForScheme(effectiveScheme) {
+		redirect.PortRedirect = 0
+		return
+	}
+	redirect.PortRedirect = effectivePort
 }
 
 // URL REWRITE IR
