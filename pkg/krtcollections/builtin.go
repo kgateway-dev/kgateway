@@ -695,8 +695,17 @@ func (p *builtinPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *
 
 	var errs error
 	if pol.filter != nil {
+		// Only post-process redirects when this policy is allowed to set the
+		// route redirect. Lower-priority request-redirect policies still run
+		// through ApplyForRoute, but must not recompute PortRedirect for a
+		// higher-priority redirect that already won the merge.
+		canPostProcessRedirect := outputRoute != nil &&
+			pol.filter.filterType == gwv1.HTTPRouteFilterRequestRedirect &&
+			policy.IsSettable(outputRoute.GetRedirect(), mergeOpts)
 		pol.filter.apply(outputRoute, mergeOpts)
-		applyRedirectPortPostProcessing(pCtx, pol, outputRoute)
+		if canPostProcessRedirect {
+			applyRedirectPortPostProcessing(pCtx, pol, outputRoute)
+		}
 	}
 
 	p.applyRulePolicy(pCtx, pol.rule, mergeOpts, outputRoute)
