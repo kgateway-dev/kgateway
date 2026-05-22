@@ -113,8 +113,10 @@ type RouteContext struct {
 	TypedFilterConfig TypedFilterConfigMap
 	// ListenerPort is the port of the Gateway listener that this route is attached to
 	ListenerPort uint32
-	// ListenerProtocol is the protocol of the Gateway listener that this route is attached to.
-	ListenerProtocol gwv1.ProtocolType
+	// ListenerHasTLS reports whether the Gateway listener terminates TLS (i.e. is
+	// an HTTPS listener). Used by request-redirect post-processing to infer the
+	// effective scheme when the redirect filter doesn't set one.
+	ListenerHasTLS bool
 
 	InheritedPolicyPriority apiannotations.InheritedPolicyPriorityValue
 }

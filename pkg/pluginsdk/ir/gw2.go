@@ -55,7 +55,6 @@ type ListenerIR struct {
 	Name        string
 	BindAddress string
 	BindPort    uint32
-	Protocol    gwv1.ProtocolType
 
 	HttpFilterChain []HttpFilterChainIR
 	TcpFilterChain  []TcpIR

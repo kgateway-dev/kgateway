@@ -426,7 +426,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			In:                in,
 			TypedFilterConfig: typedPerFilterConfig,
 			ListenerPort:      h.listener.BindPort,
-			ListenerProtocol:  h.listener.Protocol,
+			ListenerHasTLS:    h.fc.TLS != nil,
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
