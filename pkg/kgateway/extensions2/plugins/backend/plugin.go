@@ -99,6 +99,7 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 		// Parse common annotations
 		ir.ParseObjectAnnotations(&backend, i)
 
+		backend.InitClusterName()
 		return &backend
 	})
 	return sdk.Plugin{

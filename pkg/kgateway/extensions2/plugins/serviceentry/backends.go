@@ -149,5 +149,6 @@ func BuildServiceEntryBackendObjectIR(
 	ir.ParseObjectAnnotations(&backend, se)
 
 	backend.AttachedPolicies = ir.AttachedPolicies{}
+	backend.InitClusterName()
 	return backend
 }

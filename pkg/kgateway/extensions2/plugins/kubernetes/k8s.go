@@ -104,6 +104,7 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	// Parse common annotations
 	ir.ParseObjectAnnotations(&backend, svc)
 
+	backend.InitClusterName()
 	return backend
 }
 

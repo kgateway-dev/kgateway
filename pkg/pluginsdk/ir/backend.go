@@ -159,6 +159,10 @@ type BackendObjectIR struct {
 	// resourceName is the pre-calculated resource name. used as the krt resource name.
 	resourceName string
 
+	// clusterName is the pre-calculated Envoy cluster name. Populated by InitClusterName()
+	// after GvPrefix/ExtraKey are set. ClusterName() falls back to recomputing if empty.
+	clusterName string
+
 	// TrafficDistribution is the desired traffic distribution for the backend.
 	TrafficDistribution wellknown.TrafficDistribution
 
@@ -234,6 +238,9 @@ func (c BackendObjectIR) CloneForGatewayBackendClientCertificate(
 	clone := c
 	clone.ExtraKey = gatewayBackendClientCertificateExtraKey(c.ExtraKey, gateway)
 	clone.resourceName = BackendResourceName(clone.ObjectSource, clone.Port, clone.ExtraKey)
+	// Invalidate the cached cluster name since ExtraKey changed; rebuild eagerly.
+	clone.clusterName = ""
+	clone.InitClusterName()
 	clone.GatewayBackendClientCertificate = clientCertificate
 	return clone
 }
@@ -247,15 +254,43 @@ func gatewayBackendClientCertificateExtraKey(baseExtraKey string, gateway Object
 }
 
 func (c BackendObjectIR) ClusterName() string {
+	if c.clusterName != "" {
+		return c.clusterName
+	}
+	return buildClusterName(c.GvPrefix, c.Kind, c.Namespace, c.Name, c.ExtraKey, c.Port)
+}
+
+// InitClusterName precomputes and caches the Envoy cluster name on the receiver.
+// Callers should invoke this after setting GvPrefix and ExtraKey (or any field
+// that participates in the cluster name). It is a no-op if already computed.
+func (c *BackendObjectIR) InitClusterName() {
+	if c.clusterName != "" {
+		return
+	}
+	c.clusterName = buildClusterName(c.GvPrefix, c.Kind, c.Namespace, c.Name, c.ExtraKey, c.Port)
+}
+
+func buildClusterName(gvPrefix, kind, namespace, name, extraKey string, port int32) string {
 	// TODO: fix this to somthing that's friendly to stats
-	gvPrefix := c.GvPrefix
-	if c.GvPrefix == "" {
-		gvPrefix = strings.ToLower(c.Kind)
+	if gvPrefix == "" {
+		gvPrefix = strings.ToLower(kind)
 	}
-	if c.ExtraKey != "" {
-		return fmt.Sprintf("%s_%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.ExtraKey, c.Port)
+	// Use strings.Builder + strconv to avoid fmt.Sprintf overhead since this
+	// runs on a hot translation path.
+	var sb strings.Builder
+	sb.Grow(len(gvPrefix) + len(namespace) + len(name) + len(extraKey) + 8)
+	sb.WriteString(gvPrefix)
+	sb.WriteByte('_')
+	sb.WriteString(namespace)
+	sb.WriteByte('_')
+	sb.WriteString(name)
+	if extraKey != "" {
+		sb.WriteByte('_')
+		sb.WriteString(extraKey)
 	}
-	return fmt.Sprintf("%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.Port)
+	sb.WriteByte('_')
+	sb.WriteString(strconv.Itoa(int(port)))
+	return sb.String()
 }
 
 func (c BackendObjectIR) GetObjectSource() ObjectSource {
