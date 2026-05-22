@@ -50,11 +50,26 @@ func (c ObjectSource) GetNamespace() string {
 }
 
 func (c ObjectSource) ResourceName() string {
-	return fmt.Sprintf("%s/%s/%s/%s", c.Group, c.Kind, c.Namespace, c.Name)
+	return buildObjectSourceName(c.Group, c.Kind, c.Namespace, c.Name)
 }
 
 func (c ObjectSource) String() string {
-	return fmt.Sprintf("%s/%s/%s/%s", c.Group, c.Kind, c.Namespace, c.Name)
+	return buildObjectSourceName(c.Group, c.Kind, c.Namespace, c.Name)
+}
+
+// buildObjectSourceName produces "group/kind/namespace/name" without the
+// fmt.Sprintf format-parse overhead. Hot path for KRT keying.
+func buildObjectSourceName(group, kind, namespace, name string) string {
+	var sb strings.Builder
+	sb.Grow(len(group) + len(kind) + len(namespace) + len(name) + 3)
+	sb.WriteString(group)
+	sb.WriteByte('/')
+	sb.WriteString(kind)
+	sb.WriteByte('/')
+	sb.WriteString(namespace)
+	sb.WriteByte('/')
+	sb.WriteString(name)
+	return sb.String()
 }
 
 func (c ObjectSource) Equals(in ObjectSource) bool {
