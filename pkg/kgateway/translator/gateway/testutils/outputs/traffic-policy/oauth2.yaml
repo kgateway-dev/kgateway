@@ -17,7 +17,6 @@ Clusters:
           healthCheckConfig:
             hostname: provider-1.com
           hostname: provider-1.com
-  metadata: {}
   name: backend_default_oauth-provider-1_0
 - clusterType:
     name: envoy.clusters.dns
@@ -37,7 +36,6 @@ Clusters:
           healthCheckConfig:
             hostname: provider-2.com
           hostname: provider-2.com
-  metadata: {}
   name: backend_default_oauth-provider-2_0
 - connectTimeout: 5s
   edsClusterConfig:
@@ -45,11 +43,9 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_test_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

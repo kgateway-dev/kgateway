@@ -17,7 +17,6 @@ Clusters:
           healthCheckConfig:
             hostname: example.com
           hostname: example.com
-  metadata: {}
   name: backend_default_example-backend_0
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -25,7 +24,6 @@ Clusters:
       explicitHttpConfig:
         http2ProtocolOptions: {}
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
