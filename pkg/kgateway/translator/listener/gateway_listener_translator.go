@@ -409,7 +409,8 @@ func (ml *MergedListener) TranslateListener(
 	return ir.ListenerIR{
 		Name:              ml.name,
 		BindAddress:       bindAddress,
-		BindPort:          uint32(ml.port),       //nolint:gosec // G115: Gateway listener port is int32, always positive, safe to convert to uint32
+		BindPort:          uint32(ml.port), //nolint:gosec // G115: Gateway listener port is int32, always positive, safe to convert to uint32
+		Protocol:          ml.listener.Protocol,
 		AttachedPolicies:  ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possible due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
 		HttpFilterChain:   httpFilterChains,
 		TcpFilterChain:    matchedTcpListeners,

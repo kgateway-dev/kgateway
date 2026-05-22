@@ -424,26 +424,38 @@ func translateScheme(out *envoyroutev3.RedirectAction, scheme *string) {
 
 func translatePort(scheme string, port *gwv1.PortNumber) uint32 {
 	// Gateway API says implementations SHOULD NOT include the port in the Location
-	// header when it resolves to the default HTTP/HTTPS port, so we only set
-	// PortRedirect for explicit non-default ports. A zero value is also the sentinel
-	// used later for the "inherit listener port" case when scheme and port are unset.
-	if port != nil {
-		switch {
-		case strings.EqualFold(scheme, "http") && *port == 80:
-			return 0
-		case strings.EqualFold(scheme, "https") && *port == 443:
-			return 0
-		default:
-			return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
-		}
+	// header when it resolves to the default HTTP/HTTPS port, so explicit default
+	// ports are omitted. A zero value also acts as the sentinel for "maybe inherit
+	// from the listener" when both scheme and port are unset; NeedsListenerPort is
+	// what disambiguates those two cases later.
+	if port == nil {
+		return 0
 	}
+	if isDefaultRedirectPortForScheme(scheme, uint32(*port)) {
+		return 0
+	}
+	return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
+}
 
+func isDefaultRedirectPortForScheme(scheme string, port uint32) bool {
 	switch strings.ToLower(scheme) {
-	case "http", "https":
-		return 0
+	case "http":
+		return port == 80
+	case "https":
+		return port == 443
 	default:
-		// Scheme is empty and port is nil - needs listener port (return 0 as sentinel)
-		return 0
+		return false
+	}
+}
+
+func isDefaultRedirectPortForListener(protocol gwv1.ProtocolType, port uint32) bool {
+	switch protocol {
+	case gwv1.HTTPProtocolType:
+		return port == 80
+	case gwv1.HTTPSProtocolType:
+		return port == 443
+	default:
+		return false
 	}
 }
 
@@ -902,7 +914,7 @@ func applyRedirectPortPostProcessing(
 		return
 	}
 	redirect := outputRoute.GetRedirect()
-	if redirect != nil && redirect.GetPortRedirect() == 0 {
+	if redirect != nil && redirect.GetPortRedirect() == 0 && !isDefaultRedirectPortForListener(pCtx.ListenerProtocol, pCtx.ListenerPort) {
 		redirect.PortRedirect = pCtx.ListenerPort
 	}
 }

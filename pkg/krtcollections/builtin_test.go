@@ -668,6 +668,7 @@ func TestRequestRedirect(t *testing.T) {
 		name                  string
 		filter                *gwv1.HTTPRequestRedirectFilter
 		listenerPort          uint32
+		listenerProtocol      gwv1.ProtocolType
 		expectedRedirect      *envoyroutev3.RedirectAction
 		expectedNeedsListener bool
 	}{
@@ -677,9 +678,36 @@ func TestRequestRedirect(t *testing.T) {
 				Scheme: nil,
 				Port:   nil,
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				PortRedirect: 8080,
+				ResponseCode: envoyroutev3.RedirectAction_FOUND,
+			},
+			expectedNeedsListener: true,
+		},
+		{
+			name: "scheme and port both nil omits default HTTP listener port 80",
+			filter: &gwv1.HTTPRequestRedirectFilter{
+				Scheme: nil,
+				Port:   nil,
+			},
+			listenerPort:     80,
+			listenerProtocol: gwv1.HTTPProtocolType,
+			expectedRedirect: &envoyroutev3.RedirectAction{
+				ResponseCode: envoyroutev3.RedirectAction_FOUND,
+			},
+			expectedNeedsListener: true,
+		},
+		{
+			name: "scheme and port both nil omits default HTTPS listener port 443",
+			filter: &gwv1.HTTPRequestRedirectFilter{
+				Scheme: nil,
+				Port:   nil,
+			},
+			listenerPort:     443,
+			listenerProtocol: gwv1.HTTPSProtocolType,
+			expectedRedirect: &envoyroutev3.RedirectAction{
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
 			},
 			expectedNeedsListener: true,
@@ -690,7 +718,8 @@ func TestRequestRedirect(t *testing.T) {
 				Scheme: new("http"),
 				Port:   nil,
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_SchemeRedirect{
 					SchemeRedirect: "http",
@@ -704,7 +733,8 @@ func TestRequestRedirect(t *testing.T) {
 				Scheme: new("https"),
 				Port:   nil,
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_HttpsRedirect{
 					HttpsRedirect: true,
@@ -718,7 +748,8 @@ func TestRequestRedirect(t *testing.T) {
 				Scheme: nil,
 				Port:   new(gwv1.PortNumber(9090)),
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				PortRedirect: 9090,
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
@@ -730,7 +761,8 @@ func TestRequestRedirect(t *testing.T) {
 				Scheme: new("http"),
 				Port:   new(gwv1.PortNumber(9090)),
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_SchemeRedirect{
 					SchemeRedirect: "http",
@@ -745,7 +777,8 @@ func TestRequestRedirect(t *testing.T) {
 				Scheme: new("https"),
 				Port:   new(gwv1.PortNumber(8443)),
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_HttpsRedirect{
 					HttpsRedirect: true,
@@ -760,7 +793,8 @@ func TestRequestRedirect(t *testing.T) {
 				Scheme: new("https"),
 				Port:   new(gwv1.PortNumber(443)),
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_HttpsRedirect{
 					HttpsRedirect: true,
@@ -774,7 +808,8 @@ func TestRequestRedirect(t *testing.T) {
 				Scheme: new("http"),
 				Port:   new(gwv1.PortNumber(80)),
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_SchemeRedirect{
 					SchemeRedirect: "http",
@@ -787,7 +822,8 @@ func TestRequestRedirect(t *testing.T) {
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				Hostname: new(gwv1.PreciseHostname("example.com")),
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				HostRedirect: "example.com",
 				PortRedirect: 8080,
@@ -800,7 +836,8 @@ func TestRequestRedirect(t *testing.T) {
 			filter: &gwv1.HTTPRequestRedirectFilter{
 				StatusCode: new(302),
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				PortRedirect: 8080,
 				ResponseCode: envoyroutev3.RedirectAction_FOUND,
@@ -819,7 +856,8 @@ func TestRequestRedirect(t *testing.T) {
 					ReplaceFullPath: new("/new-path"),
 				},
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_HttpsRedirect{
 					HttpsRedirect: true,
@@ -840,7 +878,8 @@ func TestRequestRedirect(t *testing.T) {
 					ReplacePrefixMatch: new("/api"),
 				},
 			},
-			listenerPort: 8080,
+			listenerPort:     8080,
+			listenerProtocol: gwv1.HTTPProtocolType,
 			expectedRedirect: &envoyroutev3.RedirectAction{
 				PathRewriteSpecifier: &envoyroutev3.RedirectAction_PrefixRewrite{
 					PrefixRewrite: "/api",
@@ -866,8 +905,9 @@ func TestRequestRedirect(t *testing.T) {
 				},
 			}
 			pCtx := &ir.RouteContext{
-				ListenerPort: tt.listenerPort,
-				Policy:       builtinPol,
+				ListenerPort:     tt.listenerPort,
+				ListenerProtocol: tt.listenerProtocol,
+				Policy:           builtinPol,
 			}
 
 			outputRoute := &envoyroutev3.Route{}
@@ -906,13 +946,25 @@ func TestRequestRedirectSamePolicyMultipleListeners(t *testing.T) {
 	pass := &builtinPluginGwPass{}
 
 	route80 := &envoyroutev3.Route{}
-	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{ListenerPort: 80, Policy: builtinPol}, route80))
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{
+		ListenerPort:     80,
+		ListenerProtocol: gwv1.HTTPProtocolType,
+		Policy:           builtinPol,
+	}, route80))
 	route666 := &envoyroutev3.Route{}
-	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{ListenerPort: 666, Policy: builtinPol}, route666))
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{
+		ListenerPort:     666,
+		ListenerProtocol: gwv1.HTTPProtocolType,
+		Policy:           builtinPol,
+	}, route666))
 	route8080 := &envoyroutev3.Route{}
-	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{ListenerPort: 8080, Policy: builtinPol}, route8080))
+	require.NoError(t, pass.ApplyForRoute(&ir.RouteContext{
+		ListenerPort:     8080,
+		ListenerProtocol: gwv1.HTTPProtocolType,
+		Policy:           builtinPol,
+	}, route8080))
 
-	assert.Equal(t, uint32(80), route80.GetRedirect().GetPortRedirect())
+	assert.Equal(t, uint32(0), route80.GetRedirect().GetPortRedirect())
 	assert.Equal(t, uint32(666), route666.GetRedirect().GetPortRedirect())
 	assert.Equal(t, uint32(8080), route8080.GetRedirect().GetPortRedirect())
 	assert.Equal(t, uint32(0), redirectIR.Redir.GetPortRedirect(), "IR redirect template must keep sentinel port")

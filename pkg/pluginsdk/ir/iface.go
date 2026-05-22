@@ -113,6 +113,8 @@ type RouteContext struct {
 	TypedFilterConfig TypedFilterConfigMap
 	// ListenerPort is the port of the Gateway listener that this route is attached to
 	ListenerPort uint32
+	// ListenerProtocol is the protocol of the Gateway listener that this route is attached to.
+	ListenerProtocol gwv1.ProtocolType
 
 	InheritedPolicyPriority apiannotations.InheritedPolicyPriorityValue
 }

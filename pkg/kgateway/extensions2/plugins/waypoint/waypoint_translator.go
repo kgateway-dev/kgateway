@@ -198,6 +198,7 @@ func (w *waypointTranslator) buildInboundListener(gw *ir.Gateway, reporter repor
 		Name:              "proxy_protocol_inbound",
 		BindAddress:       bindAddr,
 		BindPort:          uint32(gatewayListener.Port), //nolint:gosec // G115: Gateway API listener port is int32, always in valid range
+		Protocol:          gatewayListener.Protocol,
 		PolicyAncestorRef: gatewayListener.PolicyAncestorRef,
 
 		AttachedPolicies: ir.AttachedPolicies{
