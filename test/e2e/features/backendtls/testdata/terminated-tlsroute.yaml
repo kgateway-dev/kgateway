@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-tlsroute
+  namespace: kgateway-base
+spec:
+  selector:
+    app.kubernetes.io/name: nginx
+  ports:
+  - protocol: TCP
+    port: 8443
+    targetPort: https-web-svc
+    name: https
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: tlsroute-gateway
+  namespace: kgateway-base
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: tls
+    protocol: TLS
+    port: 8443
+    hostname: example.com
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: certs
+    allowedRoutes:
+      namespaces:
+        from: Same
+      kinds:
+      - kind: TLSRoute
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TLSRoute
+metadata:
+  name: tlsroute-backend-tls
+  namespace: kgateway-base
+spec:
+  parentRefs:
+  - name: tlsroute-gateway
+    sectionName: tls
+  hostnames:
+  - example.com
+  rules:
+  - backendRefs:
+    - name: nginx-tlsroute
+      port: 8443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: tlsroute-backend-tls
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: nginx-tlsroute
+  validation:
+    hostname: example.com
+    wellKnownCACertificates: System

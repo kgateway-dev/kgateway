@@ -31,7 +31,7 @@ import (
 
 func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 	var bt irtranslator.BackendTranslator
-	var ucc ir.UniqlyConnectedClient
+	var ucc ir.UniquelyConnectedClient
 	var kctx krt.TestingDummyContext
 	backend := &ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
@@ -96,7 +96,7 @@ func TestBackendTranslatorAppliesDnsLookupFamilyToDnsCluster(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
-	var ucc ir.UniqlyConnectedClient
+	var ucc ir.UniquelyConnectedClient
 	var kctx krt.TestingDummyContext
 
 	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
@@ -141,7 +141,7 @@ func TestBackendTranslatorHandlesBackendIRErrors(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
-	var ucc ir.UniqlyConnectedClient
+	var ucc ir.UniquelyConnectedClient
 	var kctx krt.TestingDummyContext
 	// Validate that the backend IR errors are propagated.
 	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
@@ -212,7 +212,7 @@ func TestBackendTranslatorPropagatesPolicyErrors(t *testing.T) {
 		},
 	}
 
-	var ucc ir.UniqlyConnectedClient
+	var ucc ir.UniquelyConnectedClient
 	var kctx krt.TestingDummyContext
 	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
 	// Validate that the policy errors are propagated.
@@ -271,7 +271,7 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 	bt.Mode = apisettings.ValidationStrict
 	bt.Validator = mockValidator
 
-	var ucc ir.UniqlyConnectedClient
+	var ucc ir.UniquelyConnectedClient
 	var kctx krt.TestingDummyContext
 	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
 
@@ -344,7 +344,7 @@ func TestBackendTranslatorAppliesGatewayBackendClientCertificate(t *testing.T) {
 		},
 	}
 
-	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniqlyConnectedClient{}, backend)
+	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, backend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	require.NotNil(t, cluster.TransportSocket)
@@ -386,7 +386,7 @@ func TestBackendTranslatorDoesNotEnableTLSForGatewayBackendClientCertificate(t *
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
-	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniqlyConnectedClient{}, backend)
+	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, backend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	assert.Nil(t, cluster.TransportSocket)
@@ -467,7 +467,7 @@ func TestBackendTranslatorAppliesGatewayBackendClientCertificateToTransportSocke
 		},
 	}
 
-	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniqlyConnectedClient{}, backend)
+	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, backend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	require.Nil(t, cluster.TransportSocket)

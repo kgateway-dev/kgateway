@@ -188,7 +188,7 @@ func TestGatewayBackendVariantBackendsRetainBackendPolicies(t *testing.T) {
 		},
 	}
 
-	cluster, err := translator.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniqlyConnectedClient{}, variantBackend)
+	cluster, err := translator.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, variantBackend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	require.NotNil(t, cluster.TransportSocket)

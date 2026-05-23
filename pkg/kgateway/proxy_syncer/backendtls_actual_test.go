@@ -154,8 +154,8 @@ func TestPerClientClustersUpdateWhenActualBackendTLSPolicyAddedLater(t *testing.
 		translator.ContributedBackends[gk] = backendPlugin.BackendInit
 	}
 
-	ucc := ir.NewUniqlyConnectedClient("test-role", "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection(nil, []ir.UniqlyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
+	ucc := ir.NewUniquelyConnectedClient("test-role", "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
 	finalBackends := krt.JoinCollection(
 		commoncol.BackendIndex.BackendsWithPolicy(),
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...,
@@ -245,8 +245,8 @@ func TestPerClientClustersUseActualBackendTLSPolicyWhenConflictsExistAtStartup(t
 		translator.ContributedBackends[gk] = backendPlugin.BackendInit
 	}
 
-	ucc := ir.NewUniqlyConnectedClient("test-role", "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection(nil, []ir.UniqlyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
+	ucc := ir.NewUniquelyConnectedClient("test-role", "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
 	finalBackends := krt.JoinCollection(
 		commoncol.BackendIndex.BackendsWithPolicy(),
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...,

@@ -208,8 +208,8 @@ func TestUniqueClients(t *testing.T) {
 			}
 
 			// propagating the event happens async
-			var allUcc []ir.UniqlyConnectedClient
-			g.Eventually(func() []ir.UniqlyConnectedClient {
+			var allUcc []ir.UniquelyConnectedClient
+			g.Eventually(func() []ir.UniquelyConnectedClient {
 				allUcc = ucc.List()
 				return allUcc
 			}, "1s").Should(HaveLen(len(tc.result)))
@@ -236,7 +236,7 @@ func TestUniqueClients(t *testing.T) {
 			}
 
 			// as events happens async, eventually after all clients disconnect all UCCs should be removed
-			g.Eventually(func() []ir.UniqlyConnectedClient {
+			g.Eventually(func() []ir.UniquelyConnectedClient {
 				allUcc = ucc.List()
 				return allUcc
 			}, "5s").Should(BeEmpty())
