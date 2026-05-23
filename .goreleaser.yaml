@@ -171,7 +171,7 @@ release:
   replace_existing_artifacts: true
   target_commitish: "{{ .FullCommit }}"
   header: |
-    {{ if eq .Env.VERSION "v2.3.0-main" }}
+    {{ if eq .Env.VERSION "v2.4.0-main" }}
     🚀 Rolling main build of kgateway!
     ---
     It includes the latest changes but may be unstable. Use it for testing and providing feedback.
