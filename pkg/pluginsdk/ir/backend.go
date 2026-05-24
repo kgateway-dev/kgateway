@@ -117,13 +117,19 @@ func ParseAppProtocol(appProtocol *string) AppProtocol {
 	}
 }
 
+// BackendObjectIR is the IR representation of a single backend target.
+//
+// Construct instances with NewBackendObjectIR and use the accessor methods
+// below for cluster-name-relevant identity fields. Those inputs are kept
+// private so callers cannot accidentally mutate cached derived values such as
+// ResourceName() and ClusterName() after construction.
 type BackendObjectIR struct {
-	// Ref to source object. sometimes the group and kind are not populated from api-server, so
-	// set them explicitly here, and pass this around as the reference.
-	ObjectSource `json:",inline"`
+	// objectSource identifies the source resource. Keep it private so callers
+	// cannot mutate cluster-name-relevant fields after construction.
+	objectSource ObjectSource
 	// optional port for if ObjectSource is a service that can have multiple ports.
 	// +krtEqualsTodo propagate backend port differences in equality
-	Port int32
+	port int32
 	// optional port name for the backend (e.g., "https", "http"). Used for sectionName based
 	// policy attachment (e.g., BackendTLSPolicy targeting a specific port by name).
 	// +krtEqualsTodo propagate backend port name differences in equality
@@ -135,7 +141,7 @@ type BackendObjectIR struct {
 	// prefix the cluster name with this string to distinguish it from other GVKs.
 	// here explicitly as it shows up in stats. each (group, kind) pair should have a unique prefix.
 	// +krtEqualsTodo incorporate prefix changes into equality or remove field
-	GvPrefix string
+	gvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
 	// +krtEqualsTodo evaluate canonical hostname equality
 	CanonicalHostname string
@@ -156,7 +162,7 @@ type BackendObjectIR struct {
 	// CanonicalHostname. We should see if it's possible to have multiple
 	// CanonicalHostnames.
 	// +krtEqualsTodo determine equality semantics for extra key
-	ExtraKey string
+	extraKey string
 
 	// RequiresPolicyStatus indicates if this Backend may require updating status of an attached policy
 	// This is essentially a precomputation of whether there are any 'AttachedPolicies' that are objects
@@ -193,14 +199,14 @@ type BackendObjectIR struct {
 	GatewayBackendClientCertificate *GatewayBackendClientCertificateIR
 }
 
-// NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource
-// and cluster names. Callers that want a non-empty GvPrefix should follow up
-// with SetGvPrefix, which keeps the cached cluster name in sync.
+// NewBackendObjectIR creates a BackendObjectIR with pre-calculated resource and
+// cluster names. Callers that need a non-default cluster prefix should follow
+// up with SetGvPrefix, which keeps the cached cluster name in sync.
 func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey string) BackendObjectIR {
 	return BackendObjectIR{
-		ObjectSource: objSource,
-		Port:         port,
-		ExtraKey:     extraKey,
+		objectSource: objSource,
+		port:         port,
+		extraKey:     extraKey,
 		resourceName: BackendResourceName(objSource, port, extraKey),
 		clusterName:  buildClusterName("", objSource.Kind, objSource.Namespace, objSource.Name, extraKey, port),
 	}
@@ -225,7 +231,7 @@ func (c BackendObjectIR) ResourceName() string {
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
-	if !c.ObjectSource.Equals(in.ObjectSource) {
+	if !c.objectSource.Equals(in.objectSource) {
 		return false
 	}
 	if !versionEquals(c.Obj, in.Obj) {
@@ -260,9 +266,9 @@ func (c BackendObjectIR) CloneForGatewayBackendClientCertificate(
 	clientCertificate *GatewayBackendClientCertificateIR,
 ) BackendObjectIR {
 	clone := c
-	clone.ExtraKey = gatewayBackendClientCertificateExtraKey(c.ExtraKey, gateway)
-	clone.resourceName = BackendResourceName(clone.ObjectSource, clone.Port, clone.ExtraKey)
-	clone.clusterName = buildClusterName(clone.GvPrefix, clone.Kind, clone.Namespace, clone.Name, clone.ExtraKey, clone.Port)
+	clone.extraKey = gatewayBackendClientCertificateExtraKey(c.extraKey, gateway)
+	clone.resourceName = BackendResourceName(clone.objectSource, clone.port, clone.extraKey)
+	clone.clusterName = buildClusterName(clone.gvPrefix, clone.objectSource.Kind, clone.objectSource.Namespace, clone.objectSource.Name, clone.extraKey, clone.port)
 	clone.GatewayBackendClientCertificate = clientCertificate
 	return clone
 }
@@ -275,20 +281,18 @@ func gatewayBackendClientCertificateExtraKey(baseExtraKey string, gateway Object
 	return baseExtraKey + "_" + suffix
 }
 
-// SetGvPrefix sets GvPrefix and keeps the cached cluster name in sync. This is
-// the supported way to set GvPrefix post-construction; assigning the exported
-// field directly works but leaves the cached cluster name stale until the next
-// fallback recompute.
+// SetGvPrefix sets the cluster-name prefix and keeps the cached cluster name in
+// sync.
 func (c *BackendObjectIR) SetGvPrefix(prefix string) {
-	c.GvPrefix = prefix
-	c.clusterName = buildClusterName(prefix, c.Kind, c.Namespace, c.Name, c.ExtraKey, c.Port)
+	c.gvPrefix = prefix
+	c.clusterName = buildClusterName(prefix, c.objectSource.Kind, c.objectSource.Namespace, c.objectSource.Name, c.extraKey, c.port)
 }
 
 func (c BackendObjectIR) ClusterName() string {
 	if c.clusterName != "" {
 		return c.clusterName
 	}
-	return buildClusterName(c.GvPrefix, c.Kind, c.Namespace, c.Name, c.ExtraKey, c.Port)
+	return buildClusterName(c.gvPrefix, c.objectSource.Kind, c.objectSource.Namespace, c.objectSource.Name, c.extraKey, c.port)
 }
 
 func buildClusterName(gvPrefix, kind, namespace, name, extraKey string, port int32) string {
@@ -315,8 +319,34 @@ func buildClusterName(gvPrefix, kind, namespace, name, extraKey string, port int
 	return sb.String()
 }
 
+// GetObjectSource returns the immutable identity for this backend.
 func (c BackendObjectIR) GetObjectSource() ObjectSource {
-	return c.ObjectSource
+	return c.objectSource
+}
+
+// GetGroupKind returns the backend source GroupKind.
+func (c BackendObjectIR) GetGroupKind() schema.GroupKind {
+	return c.objectSource.GetGroupKind()
+}
+
+// GetName returns the backend source name.
+func (c BackendObjectIR) GetName() string {
+	return c.objectSource.GetName()
+}
+
+// GetNamespace returns the backend source namespace.
+func (c BackendObjectIR) GetNamespace() string {
+	return c.objectSource.GetNamespace()
+}
+
+// NamespacedName returns the backend source namespaced name.
+func (c BackendObjectIR) NamespacedName() types.NamespacedName {
+	return c.objectSource.NamespacedName()
+}
+
+// GetPort returns the backend port associated with this backend instance.
+func (c BackendObjectIR) GetPort() int32 {
+	return c.port
 }
 
 func (c BackendObjectIR) GetObjectLabels() map[string]string {

@@ -143,11 +143,11 @@ func (i *BackendIndex) attachPoliciesToBackend(
 	backendObj ir.BackendObjectIR,
 ) *ir.BackendObjectIR {
 	// Look up service-wide policies (no sectionName).
-	policies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, "", backendObj.GetObjectLabels(), false)
+	policies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.GetObjectSource(), "", backendObj.GetObjectLabels(), false)
 	// Also look up port specific policies if the backend has a port name (for example BackendTLSPolicy with sectionName).
 	// excludeGlobal=true since global policies are already included from the first lookup above.
 	if backendObj.PortName != "" {
-		portPolicies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.ObjectSource, backendObj.PortName, backendObj.GetObjectLabels(), true)
+		portPolicies := i.policies.getTargetingPoliciesForBackends(kctx, backendObj.GetObjectSource(), backendObj.PortName, backendObj.GetObjectLabels(), true)
 		policies = preferPortSpecificBackendTLSPolicies(policies, portPolicies)
 		policies = append(policies, portPolicies...)
 	}
@@ -223,7 +223,7 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 			return nil
 		}
 		for _, alias := range backendObj.Aliases {
-			aliasKeys = append(aliasKeys, backendKey{ObjectSource: alias, port: backendObj.Port})
+			aliasKeys = append(aliasKeys, backendKey{ObjectSource: alias, port: backendObj.GetPort()})
 		}
 		return aliasKeys
 	})

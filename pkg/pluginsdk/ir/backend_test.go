@@ -72,13 +72,13 @@ func TestParseAppProtocol(t *testing.T) {
 
 func createTestBackendObjectIR(trafficDist wellknown.TrafficDistribution) BackendObjectIR {
 	return BackendObjectIR{
-		ObjectSource: ObjectSource{
+		objectSource: ObjectSource{
 			Namespace: "default",
 			Name:      "test-service",
 			Group:     "",
 			Kind:      "Service",
 		},
-		Port: 8080,
+		port: 8080,
 		Obj: &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "test-service",
@@ -178,8 +178,8 @@ func TestBackendObjectIREquals(t *testing.T) {
 
 func TestBackendObjectIRClusterName(t *testing.T) {
 	base := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
-	base.Kind = "Service"
-	base.resourceName = BackendResourceName(base.ObjectSource, base.Port, base.ExtraKey)
+	base.objectSource.Kind = "Service"
+	base.resourceName = BackendResourceName(base.objectSource, base.port, base.extraKey)
 
 	t.Run("keeps the same name when BackendTLSPolicy is attached", func(t *testing.T) {
 		withPolicy := base

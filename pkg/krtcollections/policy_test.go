@@ -63,10 +63,10 @@ func TestGetBackendSameNamespace(t *testing.T) {
 			if backends[0].Err != nil {
 				t.Fatalf("backend has error %v", backends[0].Err)
 			}
-			if backends[0].BackendObject.Name != "foo" {
+			if backends[0].BackendObject.GetName() != "foo" {
 				t.Fatalf("backend incorrect name")
 			}
-			if backends[0].BackendObject.Namespace != "default" {
+			if backends[0].BackendObject.GetNamespace() != "default" {
 				t.Fatalf("backend incorrect ns")
 			}
 		})
@@ -90,10 +90,10 @@ func TestGetBackendDifNsWithRefGrant(t *testing.T) {
 			if backends[0].Err != nil {
 				t.Fatalf("backend has error %v", backends[0].Err)
 			}
-			if backends[0].BackendObject.Name != "foo" {
+			if backends[0].BackendObject.GetName() != "foo" {
 				t.Fatalf("backend incorrect name")
 			}
-			if backends[0].BackendObject.Namespace != "default2" {
+			if backends[0].BackendObject.GetNamespace() != "default2" {
 				t.Fatalf("backend incorrect ns")
 			}
 		})

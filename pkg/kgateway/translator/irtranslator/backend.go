@@ -57,10 +57,7 @@ func (t *BackendTranslator) TranslateBackend(
 	backend *ir.BackendObjectIR,
 ) (*envoyclusterv3.Cluster, error) {
 	// defensive checks that the backend is supported and has a plugin that can translate it.
-	gk := schema.GroupKind{
-		Group: backend.Group,
-		Kind:  backend.Kind,
-	}
+	gk := backend.GetGroupKind()
 	process, ok := t.ContributedBackends[gk]
 	if !ok {
 		return nil, errors.New("no backend translator found for " + gk.String())
@@ -72,7 +69,7 @@ func (t *BackendTranslator) TranslateBackend(
 	// Check for pre-existing errors in the Backend IR before starting translation.
 	// Exit translation early if we have errors
 	if backend.Errors != nil {
-		logger.Error("backend has pre-existing errors", "backend", backend.Name, "errors", backend.Errors)
+		logger.Error("backend has pre-existing errors", "backend", backend.GetName(), "errors", backend.Errors)
 		return buildBlackholeCluster(backend), errors.Join(backend.Errors...)
 	}
 

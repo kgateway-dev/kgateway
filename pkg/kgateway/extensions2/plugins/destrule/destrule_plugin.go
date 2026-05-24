@@ -85,7 +85,7 @@ func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Con
 		return
 	}
 
-	trafficPolicy := getTrafficPolicy(destrule, uint32(in.Port)) //nolint:gosec // G115: BackendObjectIR.Port is int32 representing a port number, always in valid range
+	trafficPolicy := getTrafficPolicy(destrule, uint32(in.GetPort())) //nolint:gosec // G115: BackendObjectIR port is int32 representing a port number, always in valid range
 	outlier := trafficPolicy.GetOutlierDetection()
 	if outlier == nil {
 		return

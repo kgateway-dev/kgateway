@@ -445,13 +445,14 @@ func TestTracingConverter(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				provider, config, err := translateTracing(
 					tc.config,
-					&ir.BackendObjectIR{
-						ObjectSource: ir.ObjectSource{
+					func() *ir.BackendObjectIR {
+						backend := ir.NewBackendObjectIR(ir.ObjectSource{
 							Kind:      "Backend",
 							Name:      "test-service",
 							Namespace: "default",
-						},
-					},
+						}, 0, "")
+						return &backend
+					}(),
 				)
 				updateTracingConfig(&ir.HcmContext{
 					Gateway: ir.GatewayIR{

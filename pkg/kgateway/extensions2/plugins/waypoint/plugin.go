@@ -154,7 +154,7 @@ func ApplyIngressUseWaypointCluster(in ir.BackendObjectIR, out *envoyclusterv3.C
 		Endpoints:   make([]*envoyendpointv3.LocalityLbEndpoints, 0, 1),
 	}
 
-	if endpoint := claEndpoint(sortedAddresses, uint32(in.Port)); endpoint != nil { //nolint:gosec // G115: BackendObjectIR.Port is int32 representing a port number, always in valid range
+	if endpoint := claEndpoint(sortedAddresses, uint32(in.GetPort())); endpoint != nil { //nolint:gosec // G115: BackendObjectIR port is int32 representing a port number, always in valid range
 		out.GetLoadAssignment().Endpoints = append(out.GetLoadAssignment().GetEndpoints(), endpoint)
 	}
 }

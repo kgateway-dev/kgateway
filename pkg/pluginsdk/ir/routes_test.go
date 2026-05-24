@@ -308,8 +308,8 @@ func TestHTTPRouteIREquals(t *testing.T) {
 
 	// Test data for testing backing destination object comparison
 	httpBackendObj := BackendObjectIR{
-		ObjectSource:     ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"},
-		Port:             80,
+		objectSource:     ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"},
+		port:             80,
 		Obj:              base,
 		resourceName:     "/Service/ns/svc:80",
 		AppProtocol:      DefaultAppProtocol,
@@ -317,8 +317,8 @@ func TestHTTPRouteIREquals(t *testing.T) {
 	}
 	// same as httpBackendObj but with WebSocket AppProtocol. Generated is 2 to simulate an update.
 	wsBackendObj := BackendObjectIR{
-		ObjectSource:     ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"},
-		Port:             80,
+		objectSource:     ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"},
+		port:             80,
 		Obj:              baseGen2,
 		resourceName:     "/Service/ns/svc:80",
 		AppProtocol:      WebSocketAppProtocol,
