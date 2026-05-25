@@ -126,9 +126,11 @@ type HelmServiceAccount struct {
 // helmXds represents the xds host and port to which envoy will connect
 // to receive xds config updates
 type HelmXds struct {
-	Host *string     `json:"host,omitempty"`
-	Port *uint32     `json:"port,omitempty"`
-	Tls  *HelmXdsTls `json:"tls,omitempty"`
+	DeltaXds                  *bool       `json:"deltaXds,omitempty"`
+	Host                      *string     `json:"host,omitempty"`
+	Port                      *uint32     `json:"port,omitempty"`
+	SetNodeOnFirstMessageOnly *bool       `json:"setNodeOnFirstMessageOnly,omitempty"`
+	Tls                       *HelmXdsTls `json:"tls,omitempty"`
 }
 
 type HelmXdsTls struct {

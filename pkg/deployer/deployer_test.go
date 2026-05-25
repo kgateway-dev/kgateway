@@ -784,6 +784,232 @@ var _ = Describe("Deployer", func() {
 			Expect(matcher.GetExclusionList().Patterns[3].GetIgnoreCase()).To(BeTrue())
 			Expect(matcher.GetExclusionList().Patterns[4].GetSafeRegex().GetRegex()).To(Equal("cluster\\..*\\.upstream_cx.*"))
 		})
+
+		It("uses GRPC api_type in Envoy bootstrap by default", func() {
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "envoy-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
+							Group: kgateway.GroupName,
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []gwv1.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
+			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+			})
+			d, err := deployerinternal.NewGatewayDeployer(
+				wellknown.DefaultGatewayControllerName,
+				scheme,
+				fakeClient,
+				gwParams,
+			)
+			Expect(err).NotTo(HaveOccurred())
+			fakeClient.RunAndWait(context.Background().Done())
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+			objs := clientObjects(objsSlice)
+			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, "envoy-gateway")
+			adsConfig := bootstrapCfg.GetDynamicResources().GetAdsConfig()
+			Expect(adsConfig).ToNot(BeNil())
+			Expect(adsConfig.GetApiType()).To(Equal(envoycorev3.ApiConfigSource_GRPC))
+			Expect(adsConfig.GetSetNodeOnFirstMessageOnly()).To(BeFalse())
+		})
+
+		It("uses DELTA_GRPC api_type in Envoy bootstrap when DeltaXds is enabled", func() {
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "envoy-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
+							Group: kgateway.GroupName,
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []gwv1.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
+			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					DeltaXds: true,
+					XdsHost:  "something.cluster.local",
+					XdsPort:  1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+			})
+			d, err := deployerinternal.NewGatewayDeployer(
+				wellknown.DefaultGatewayControllerName,
+				scheme,
+				fakeClient,
+				gwParams,
+			)
+			Expect(err).NotTo(HaveOccurred())
+			fakeClient.RunAndWait(context.Background().Done())
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+			objs := clientObjects(objsSlice)
+			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, "envoy-gateway")
+			adsConfig := bootstrapCfg.GetDynamicResources().GetAdsConfig()
+			Expect(adsConfig).ToNot(BeNil())
+			Expect(adsConfig.GetApiType()).To(Equal(envoycorev3.ApiConfigSource_DELTA_GRPC))
+		})
+
+		It("sets set_node_on_first_message_only in Envoy bootstrap when enabled", func() {
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "envoy-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
+							Group: kgateway.GroupName,
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []gwv1.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
+			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					SetNodeOnFirstMessageOnly: true,
+					XdsHost:                   "something.cluster.local",
+					XdsPort:                   1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+			})
+			d, err := deployerinternal.NewGatewayDeployer(
+				wellknown.DefaultGatewayControllerName,
+				scheme,
+				fakeClient,
+				gwParams,
+			)
+			Expect(err).NotTo(HaveOccurred())
+			fakeClient.RunAndWait(context.Background().Done())
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+			objs := clientObjects(objsSlice)
+			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, "envoy-gateway")
+			adsConfig := bootstrapCfg.GetDynamicResources().GetAdsConfig()
+			Expect(adsConfig).ToNot(BeNil())
+			Expect(adsConfig.GetSetNodeOnFirstMessageOnly()).To(BeTrue())
+		})
+
+		It("sets both DELTA_GRPC and set_node_on_first_message_only in Envoy bootstrap when both are enabled", func() {
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "envoy-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
+							Group: kgateway.GroupName,
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []gwv1.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
+			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					DeltaXds:                  true,
+					SetNodeOnFirstMessageOnly: true,
+					XdsHost:                   "something.cluster.local",
+					XdsPort:                   1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+			})
+			d, err := deployerinternal.NewGatewayDeployer(
+				wellknown.DefaultGatewayControllerName,
+				scheme,
+				fakeClient,
+				gwParams,
+			)
+			Expect(err).NotTo(HaveOccurred())
+			fakeClient.RunAndWait(context.Background().Done())
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+			objs := clientObjects(objsSlice)
+			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, "envoy-gateway")
+			adsConfig := bootstrapCfg.GetDynamicResources().GetAdsConfig()
+			Expect(adsConfig).ToNot(BeNil())
+			Expect(adsConfig.GetApiType()).To(Equal(envoycorev3.ApiConfigSource_DELTA_GRPC))
+			Expect(adsConfig.GetSetNodeOnFirstMessageOnly()).To(BeTrue())
+		})
 	})
 
 	Context("special cases", func() {

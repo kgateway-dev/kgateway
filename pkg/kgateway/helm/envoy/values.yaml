@@ -12,6 +12,9 @@ gateway:
   xds:
     host: ""
     port: 8080
+    deltaXds: false
+    # setNodeOnFirstMessageOnly requires Envoy 1.38.0+ to support deltaXds.
+    setNodeOnFirstMessageOnly: false
 
   # actual default set in default GatewayParam service.type
   service:

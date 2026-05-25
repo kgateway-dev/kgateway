@@ -354,8 +354,10 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 		Xds: &deployer.HelmXds{
 			// The xds host/port MUST map to the Service definition for the Control Plane
 			// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-			Host: &k.inputs.ControlPlane.XdsHost,
-			Port: &k.inputs.ControlPlane.XdsPort,
+			DeltaXds:                  new(k.inputs.ControlPlane.DeltaXds),
+			Host:                      &k.inputs.ControlPlane.XdsHost,
+			Port:                      &k.inputs.ControlPlane.XdsPort,
+			SetNodeOnFirstMessageOnly: new(k.inputs.ControlPlane.SetNodeOnFirstMessageOnly),
 			Tls: &deployer.HelmXdsTls{
 				Enabled: new(k.inputs.ControlPlane.XdsTLS),
 				CaCert:  new(k.inputs.ControlPlane.XdsTlsCaPath),

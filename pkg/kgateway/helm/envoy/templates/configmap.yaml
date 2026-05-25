@@ -295,11 +295,14 @@ data:
     dynamic_resources:
       ads_config:
         transport_api_version: V3
-        api_type: GRPC
+        api_type: {{ if $gateway.xds.deltaXds }}DELTA_GRPC{{ else }}GRPC{{ end }}
         rate_limit_settings: {}
         grpc_services:
         - envoy_grpc:
             cluster_name: xds_cluster
+        {{- if $gateway.xds.setNodeOnFirstMessageOnly }}
+        set_node_on_first_message_only: true
+        {{- end }}
       cds_config:
         resource_api_version: V3
         initial_fetch_timeout: 0s

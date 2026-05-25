@@ -32,10 +32,12 @@ import (
 var logger = logging.New("deployer")
 
 type ControlPlaneInfo struct {
-	XdsHost      string
-	XdsPort      uint32
-	XdsTLS       bool
-	XdsTlsCaPath string
+	DeltaXds                  bool
+	SetNodeOnFirstMessageOnly bool
+	XdsHost                   string
+	XdsPort                   uint32
+	XdsTLS                    bool
+	XdsTlsCaPath              string
 }
 
 type ImageInfo struct {
