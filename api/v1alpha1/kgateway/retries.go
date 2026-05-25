@@ -29,7 +29,7 @@ type Retry struct {
 	// +kubebuilder:validation:Minimum=0
 	Attempts int32 `json:"attempts,omitempty"` //nolint:kubeapilinter
 
-	// PerTryTimeout specifies the timeout per retry attempt (incliding the initial attempt).
+	// PerTryTimeout specifies the timeout per retry attempt (including the initial attempt).
 	// If a global timeout is configured on a route, this timeout must be less than the global
 	// route timeout.
 	// It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".

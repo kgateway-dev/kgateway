@@ -1,5 +1,6 @@
 # Same HTTPRoute attached to multiple HTTP listeners with RequestRedirect and no scheme/port.
-# Each listener's redirect must use that listener's port (issue #13889).
+# Each listener's redirect must inherit that listener's port unless it is the default port
+# for the listener protocol, in which case the port should be omitted from Location.
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:

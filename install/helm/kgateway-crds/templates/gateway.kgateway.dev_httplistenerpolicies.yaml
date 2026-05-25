@@ -1554,7 +1554,7 @@ spec:
                 type: object
               idleTimeout:
                 description: |-
-                  IdleTimeout is the idle timeout for connnections.
+                  IdleTimeout is the idle timeout for connections.
                   See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions
                 type: string
                 x-kubernetes-validations:

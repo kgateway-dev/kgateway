@@ -53,7 +53,7 @@ type BackendTranslator struct {
 func (t *BackendTranslator) TranslateBackend(
 	ctx context.Context,
 	kctx krt.HandlerContext,
-	ucc ir.UniqlyConnectedClient,
+	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
 ) (*envoyclusterv3.Cluster, error) {
 	// defensive checks that the backend is supported and has a plugin that can translate it.
@@ -105,7 +105,7 @@ func (t *BackendTranslator) TranslateBackend(
 func (t *BackendTranslator) runPolicies(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	ucc ir.UniqlyConnectedClient,
+	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
 	inlineEps *ir.EndpointsForBackend,
 	out *envoyclusterv3.Cluster,
