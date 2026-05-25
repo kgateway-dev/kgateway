@@ -10,6 +10,11 @@ nameOverride: ""
 # -- Override the full name of resources created by the Helm chart, which is 'kgateway'. If you set 'fullnameOverride: "foo", the full name of the resources that the Helm release creates become 'foo', such as the deployment, service, and service account for the kgateway control plane in the kgateway-system namespace.
 fullnameOverride: ""
 
+# -- Configure RBAC resources (ClusterRole and ClusterRoleBinding) for the deployment.
+rbac:
+  # -- Specify whether RBAC resources should be created. Set to false if you manage RBAC externally.
+  create: true
+
 # -- Configure the service account for the deployment.
 serviceAccount:
   # -- Specify whether a service account should be created.
