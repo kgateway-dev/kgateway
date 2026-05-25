@@ -12,7 +12,6 @@ fullnameOverride: ""
 
 # -- Configure RBAC resources (ClusterRole and ClusterRoleBinding) for the deployment.
 rbac:
-  # -- Specify whether RBAC resources should be created. Set to false if you manage RBAC externally.
   create: true
 
 # -- Configure the service account for the deployment.
