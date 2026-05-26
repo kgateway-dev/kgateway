@@ -58,6 +58,7 @@ type ProxySyncer struct {
 
 	statusReport            krt.Singleton[report]
 	backendPolicyReport     krt.Singleton[report]
+	backendStatusReport     krt.Singleton[report]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
@@ -66,6 +67,7 @@ type ProxySyncer struct {
 
 	reportQueue              utils.AsyncQueue[reports.ReportMap]
 	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
+	backendStatusReportQueue utils.AsyncQueue[reports.ReportMap]
 }
 
 type GatewayXdsResources struct {
@@ -169,6 +171,7 @@ func NewProxySyncer(
 		plugins:                  mergedPlugins,
 		reportQueue:              utils.NewAsyncQueue[reports.ReportMap](),
 		backendPolicyReportQueue: utils.NewAsyncQueue[reports.ReportMap](),
+		backendStatusReportQueue: utils.NewAsyncQueue[reports.ReportMap](),
 	}
 }
 
@@ -213,6 +216,34 @@ func (r report) Equals(in report) bool {
 	}
 	if !maps.Equal(r.reportMap.Policies, in.reportMap.Policies) {
 		return false
+	}
+	if !maps.EqualFunc(r.reportMap.Backends, in.reportMap.Backends, backendReportEqual) {
+		return false
+	}
+	return true
+}
+
+// backendReportEqual compares BackendReports by condition content, ignoring LastTransitionTime.
+// Reports are rebuilt on every recomputation, so a pointer compare would never match.
+func backendReportEqual(a, b *reports.BackendReport) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	if a.GetObservedGeneration() != b.GetObservedGeneration() {
+		return false
+	}
+	ac, bc := a.GetConditions(), b.GetConditions()
+	if len(ac) != len(bc) {
+		return false
+	}
+	for i := range ac {
+		if ac[i].Type != bc[i].Type ||
+			ac[i].Status != bc[i].Status ||
+			ac[i].Reason != bc[i].Reason ||
+			ac[i].Message != bc[i].Message ||
+			ac[i].ObservedGeneration != bc[i].ObservedGeneration {
+			return false
+		}
 	}
 	return true
 }
@@ -313,6 +344,19 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
+
+	// backendStatusReport is the sole writer of the Backend Accepted condition: it merges
+	// each Backend's IR errors with its per-client translation errors.
+	kgwBackendCol := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()].Backends
+	s.backendStatusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
+		var kgwBackends []ir.BackendObjectIR
+		if kgwBackendCol != nil {
+			kgwBackends = krt.Fetch(kctx, kgwBackendCol)
+		}
+		clusters := krt.Fetch(kctx, clustersPerClient.clusters)
+		merged := GenerateBackendStatusReport(kgwBackends, clusters)
+		return &report{merged}
+	}, krtopts.ToOptions("BackendStatusReport")...)
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
@@ -457,6 +501,13 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		s.backendPolicyReportQueue.Enqueue(o.Latest().reportMap)
 	})
 
+	s.backendStatusReport.Register(func(o krt.Event[report]) {
+		if o.Event == controllers.EventDelete {
+			return
+		}
+		s.backendStatusReportQueue.Enqueue(o.Latest().reportMap)
+	})
+
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper]) {
 		for _, e := range o {
 			cd := getDetailsFromXDSClientResourceName(e.Latest().ResourceName())
@@ -518,6 +569,12 @@ func (s *ProxySyncer) ReportQueue() utils.AsyncQueue[reports.ReportMap] {
 // It will be constantly updated to contain the merged status report for backend policies.
 func (s *ProxySyncer) BackendPolicyReportQueue() utils.AsyncQueue[reports.ReportMap] {
 	return s.backendPolicyReportQueue
+}
+
+// BackendStatusReportQueue returns the queue that contains the latest status reports for Backends.
+// It will be constantly updated to contain the merged Accepted status report for Backends.
+func (s *ProxySyncer) BackendStatusReportQueue() utils.AsyncQueue[reports.ReportMap] {
+	return s.backendStatusReportQueue
 }
 
 // WaitForSync returns a list of functions that can be used to determine if all its informers have synced.

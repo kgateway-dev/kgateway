@@ -116,9 +116,6 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 				NewGatewayTranslationPass: newPlug,
 			},
 		},
-		ContributesLeaderAction: map[schema.GroupKind]func(){
-			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(cli, bcol),
-		},
 	}
 }
 

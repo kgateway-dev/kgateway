@@ -1,11 +1,17 @@
 package proxy_syncer
 
 import (
+	"errors"
+	"sort"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -79,6 +85,68 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 				})
 			}
 		}
+	}
+
+	return merged
+}
+
+// GenerateBackendStatusReport builds the Accepted condition for every kgateway Backend from
+// its IR-construction errors, falling back to the per-client translation errors (deduplicated
+// across connected clients) when there are none. IR errors take precedence because
+// TranslateBackend returns them and short-circuits before the per-client policy/validation runs.
+// Exported for testing.
+func GenerateBackendStatusReport(backends []ir.BackendObjectIR, clusters []uccWithCluster) reports.ReportMap {
+	merged := reports.NewReportMap()
+	reporter := reports.NewReporter(&merged)
+
+	backendGVK := wellknown.BackendGVK.GroupKind()
+
+	// aggregate per-client translation errors per Backend, deduplicated by message
+	type errSet struct {
+		msgs []string
+		seen map[string]struct{}
+	}
+	translationErrs := make(map[types.NamespacedName]*errSet)
+	for _, c := range clusters {
+		if c.Error == nil || c.BackendSource.GetGroupKind() != backendGVK {
+			continue
+		}
+		nn := types.NamespacedName{Namespace: c.BackendSource.Namespace, Name: c.BackendSource.Name}
+		es, ok := translationErrs[nn]
+		if !ok {
+			es = &errSet{seen: make(map[string]struct{})}
+			translationErrs[nn] = es
+		}
+		msg := c.Error.Error()
+		if _, dup := es.seen[msg]; !dup {
+			es.seen[msg] = struct{}{}
+			es.msgs = append(es.msgs, msg)
+		}
+	}
+
+	for i := range backends {
+		backend := backends[i]
+		if backend.Obj == nil {
+			continue
+		}
+		errs := make([]error, 0, len(backend.Errors))
+		errs = append(errs, backend.Errors...)
+		if len(errs) == 0 {
+			nn := types.NamespacedName{Namespace: backend.Namespace, Name: backend.Name}
+			if es := translationErrs[nn]; es != nil {
+				sort.Strings(es.msgs)
+				for _, m := range es.msgs {
+					errs = append(errs, errors.New(m))
+				}
+			}
+		}
+		cond := pluginutils.BuildCondition("Backend", errs)
+		reporter.Backend(backend.Obj).SetCondition(reportssdk.BackendCondition{
+			Type:    cond.Type,
+			Status:  cond.Status,
+			Reason:  cond.Reason,
+			Message: cond.Message,
+		})
 	}
 
 	return merged

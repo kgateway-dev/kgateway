@@ -24,6 +24,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -46,6 +47,7 @@ type StatusSyncer struct {
 
 	latestReportQueue              utils.AsyncQueue[reports.ReportMap]
 	latestBackendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
+	latestBackendStatusReportQueue utils.AsyncQueue[reports.ReportMap]
 	cacheSyncs                     []cache.InformerSynced
 
 	customStatusSync func(ctx context.Context, rm reports.ReportMap)
@@ -59,6 +61,7 @@ func NewStatusSyncer(
 	commonCols *collections.CommonCollections,
 	reportQueue utils.AsyncQueue[reports.ReportMap],
 	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap],
+	backendStatusReportQueue utils.AsyncQueue[reports.ReportMap],
 	cacheSyncs []cache.InformerSynced,
 	opts ...StatusSyncerOption,
 ) *StatusSyncer {
@@ -70,6 +73,7 @@ func NewStatusSyncer(
 		controllerName:                 controllerName,
 		latestReportQueue:              reportQueue,
 		latestBackendPolicyReportQueue: backendPolicyReportQueue,
+		latestBackendStatusReportQueue: backendStatusReportQueue,
 		cacheSyncs:                     cacheSyncs,
 		customStatusSync:               cfg.CustomStatusSync,
 	}
@@ -126,6 +130,16 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 				return
 			}
 			s.syncPolicyStatus(ctx, latestReport)
+		}
+	}()
+	go func() {
+		for {
+			latestReport, err := s.latestBackendStatusReportQueue.Dequeue(ctx)
+			if err != nil {
+				logger.Error("failed to dequeue backend status reports", "error", err)
+				return
+			}
+			s.syncBackendStatus(ctx, latestReport)
 		}
 	}()
 
@@ -733,6 +747,52 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 	}
 }
 
+func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportMap) {
+	for nsName := range rm.Backends {
+		finishMetrics := CollectStatusSyncMetrics(StatusSyncMetricLabels{
+			Name:      nsName.Name,
+			Namespace: nsName.Namespace,
+			Syncer:    "BackendStatusSyncer",
+		})
+
+		err := retry.Do(
+			func() error {
+				backend := new(kgateway.Backend)
+				if err := s.mgr.GetClient().Get(ctx, nsName, backend); err != nil {
+					if apierrors.IsNotFound(err) {
+						// the backend is gone; if it's recreated we'll retranslate it
+						return nil
+					}
+					logger.Error("error getting backend", "error", err, "resource_ref", nsName)
+					return err
+				}
+				status := rm.BuildBackendStatus(ctx, backend, backend.Status)
+				if status == nil || isBackendStatusEqual(&backend.Status, status) {
+					return nil
+				}
+				backend.Status = *status
+				return s.mgr.GetClient().Status().Update(ctx, backend)
+			},
+			retry.Attempts(5),
+			retry.Delay(100*time.Millisecond),
+			retry.DelayType(retry.BackOffDelay),
+		)
+		if err != nil {
+			logger.Error("all attempts failed at updating Backend status", "error", err, "backend", nsName)
+			finishMetrics(err)
+			continue
+		}
+
+		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
+			Namespace:    nsName.Namespace,
+			Gateway:      "",
+			ResourceType: wellknown.BackendGVK.Kind,
+			ResourceName: nsName.Name,
+		})
+		finishMetrics(nil)
+	}
+}
+
 func buildPolicyStatus(
 	ctx context.Context,
 	rm reports.ReportMap,
@@ -765,6 +825,10 @@ func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
 }
 
 func isListenerSetStatusEqual(objA, objB *gwv1.ListenerSetStatus) bool {
+	return cmp.Equal(objA, objB, opts)
+}
+
+func isBackendStatusEqual(objA, objB *kgateway.BackendStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 

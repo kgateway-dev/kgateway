@@ -173,6 +173,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.CommonCollections,
 			proxySyncer.ReportQueue(),
 			proxySyncer.BackendPolicyReportQueue(),
+			proxySyncer.BackendStatusReportQueue(),
 			proxySyncer.CacheSyncs(),
 			cfg.StatusSyncerOptions...,
 		)
