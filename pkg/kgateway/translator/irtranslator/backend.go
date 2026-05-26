@@ -37,11 +37,6 @@ const (
 	dnsClusterExtensionName  = "envoy.clusters.dns"
 )
 
-// defaultConnectTimeout is the shared durationpb for the default cluster connect
-// timeout. Reused across all clusters built by initializeCluster since the value
-// is a constant. Treated as read-only.
-var defaultConnectTimeout = durationpb.New(clusterConnectionTimeout)
-
 type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
 	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
@@ -308,11 +303,9 @@ func cloneAny(msg *anypb.Any) *anypb.Any {
 // initializeCluster creates a default envoy cluster with minimal configuration,
 // that will then be augmented by various backend plugins
 func initializeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
-	// Note: Metadata intentionally left nil. Downstream plugins that need it
-	// (e.g. backend/gcp.go) lazily allocate.
 	out := &envoyclusterv3.Cluster{
 		Name:                          b.ClusterName(),
-		ConnectTimeout:                defaultConnectTimeout,
+		ConnectTimeout:                durationpb.New(clusterConnectionTimeout),
 		TypedExtensionProtocolOptions: translateAppProtocol(b.AppProtocol),
 		CommonLbConfig:                createCommonLbConfig(b),
 	}
