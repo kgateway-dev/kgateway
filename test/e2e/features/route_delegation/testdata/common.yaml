@@ -9,7 +9,11 @@
 # - team2/svc2
 #
 # Gateway:
-# - infra/http-gateway
+# - infra/http-gateway-test (TestInvalidChildValidStandalone only)
+#
+# Note: the primary gateway is kgateway-base/gateway, set up by SetupBaseGateway
+# in the top-level test harness. HTTPRoutes in these testdata files use
+# parentRefs.namespace: kgateway-base to attach to it.
 ---
 apiVersion: v1
 kind: Namespace
@@ -130,20 +134,22 @@ kind: Namespace
 metadata:
   name: infra
 ---
+# Secondary gateway used only by TestInvalidChildValidStandalone. Created here so
+# its address can be resolved once at SetupSuite alongside the primary gateway.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: http-gateway
+  name: http-gateway-test
   namespace: infra
 spec:
   gatewayClassName: kgateway
   listeners:
   - protocol: HTTP
-    port: 8080
+    port: 8090
     name: http
     allowedRoutes:
       namespaces:
-        from: Same
+        from: All
 ---
 apiVersion: v1
 kind: Namespace

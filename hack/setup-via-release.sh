@@ -21,7 +21,7 @@ set -euo pipefail
 
 cluster_type="kind"
 cluster_name=""
-kgw_version="v2.3.0-main"
+kgw_version="v2.4.0-main"
 helm_registry="oci://cr.kgateway.dev/kgateway-dev/charts"
 namespace="kgateway-system"
 k8s_version=""
@@ -49,7 +49,7 @@ Options:
   -h, --help                     Show this help message
   --k3d                          Use k3d instead of kind
   -c, --cluster-name NAME        Cluster name                   (default: <type>-kgw-<version>-gw-<gw-version>-<channel>)
-  -v, --version VERSION          kgateway helm chart version    (default: v2.3.0-main)
+  -v, --version VERSION          kgateway helm chart version    (default: v2.4.0-main)
   -r, --registry URL             Helm OCI registry              (default: oci://cr.kgateway.dev/kgateway-dev/charts)
   -n, --namespace NS             Install namespace              (default: kgateway-system)
   -k, --k8s-version VER          Node image version             (kind: kindest/node tag, k3d: k3s semver)

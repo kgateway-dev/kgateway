@@ -12,7 +12,6 @@ on:
         options:
           - all
           - main
-          - v2.1.x
           - v2.2.x
           - v2.3.x
 
@@ -43,7 +42,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          branches='["main","v2.1.x","v2.2.x","v2.3.x"]'
+          branches='["main","v2.2.x","v2.3.x"]'
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             case "${{ inputs.branches }}" in
@@ -51,9 +50,6 @@ jobs:
                 ;;
               main)
                 branches='["main"]'
-                ;;
-              v2.1.x)
-                branches='["v2.1.x"]'
                 ;;
               v2.2.x)
                 branches='["v2.2.x"]'
