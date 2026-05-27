@@ -705,10 +705,13 @@ verify: generated-code  ## Verify that generated code is up to date (always rege
 	git diff -U3 --exit-code
 
 ENVOYINIT_DOCKERFILE = cmd/envoyinit/Dockerfile
-ENVOYINIT_DOCKERFILE_TEMPLATE = $(ENVOYINIT_DOCKERFILE).tmpl
+ENVOY_MODULE_DIR = internal/envoy_modules
+ENVOY_MODULE_DOCKERFILE = $(ENVOY_MODULE_DIR)/Dockerfile
+ENVOY_MODULE_DOCKERFILE_TEMPLATE = $(ENVOY_MODULE_DIR)/Dockerfile.tmpl
+ENVOY_MODULE_OUTPUT_DIR = $(OUTPUT_DIR)/$(ENVOY_MODULE_DIR)
 
 .PHONY: generate-all
-generate-all: $(STAMP_DIR)/generated-code $(ENVOYINIT_DOCKERFILE) ## Generate all code with optimized dependencies (uses stamp files for speed)
+generate-all: $(STAMP_DIR)/generated-code $(ENVOY_MODULE_DOCKERFILE) ## Generate all code with optimized dependencies (uses stamp files for speed)
 
 .PHONY: generate
 generate: generate-all  ## Alias for generate
@@ -756,7 +759,8 @@ kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 $(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/kgateway/Dockerfile
 	cp $< $@
 
-$(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile
+$(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so
+	cp $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so $(CONTROLLER_OUTPUT_DIR)/librust_module.so
 	$(BUILDX_BUILD) --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
@@ -837,23 +841,30 @@ $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
 
-$(ENVOYINIT_DOCKERFILE): $(ENVOYINIT_DOCKERFILE_TEMPLATE) cmd/envoyinit/generate-dockerfile.sh $(ENVOY_MODULES_DIR)/Cargo.toml
-	cmd/envoyinit/generate-dockerfile.sh $(ENVOY_MODULES_DIR) $< $@
+$(ENVOY_MODULE_DOCKERFILE): $(ENVOY_MODULE_DOCKERFILE_TEMPLATE) internal/envoy_modules/generate-dockerfile.sh $(ENVOY_MODULES_DIR)/Cargo.toml
+	internal/envoy_modules/generate-dockerfile.sh $(ENVOY_MODULES_DIR) $< $@
 
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE) $(ENVOY_MODULES_SRC_FILES)
-	echo "syncing envoy modules..."
-	rsync -av --delete --exclude 'target/' --exclude 'pkg/' ${ENVOY_MODULES_DIR} $(ENVOYINIT_OUTPUT_DIR)/envoy_modules
+$(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so: $(ENVOY_MODULES_SRC_FILES) $(ENVOY_MODULE_DOCKERFILE)
+	mkdir -p $(ENVOY_MODULE_OUTPUT_DIR)
+	docker buildx build \
+		$(PLATFORM) \
+		--output type=local,dest=$(ENVOY_MODULE_OUTPUT_DIR) \
+		--target export \
+		--build-arg RUST_BUILD_ARCH=$(RUST_BUILD_ARCH) \
+		-f $(ENVOY_MODULE_DOCKERFILE) \
+		$(ENVOY_MODULES_DIR)
+
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE)
 	cp $< $@
 
 $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: cmd/envoyinit/docker-entrypoint.sh
 	cp $< $@
 
-$(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
+$(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so
+	cp $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so $(ENVOYINIT_OUTPUT_DIR)/librust_module.so
 	$(BUILDX_BUILD) --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
-		--build-arg RUST_BUILD_ARCH=$(RUST_BUILD_ARCH) \
-		--build-arg ENVOY_MODULES_DIR=./envoy_modules \
 		$(ENVOYINIT_CACHE_FROM) \
 		$(ENVOYINIT_LOCAL_CACHE_FROM_ARG) \
 		$(ENVOYINIT_LOCAL_CACHE_TO_ARG) \
