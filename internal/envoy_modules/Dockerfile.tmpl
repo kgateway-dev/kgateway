@@ -19,6 +19,8 @@ COPY ${ENVOY_MODULES_DIR}/Cargo.toml ${ENVOY_MODULES_DIR}/Cargo.lock ./
 # __CRATE_DUMMY_SETUP__
 # __CRATE_CARGO_COPY__
 ARG RUST_BUILD_ARCH=x86_64 # options are x86_64 or aarch64
+# Install the cross-compilation target so cargo zigbuild can link for non-native arches.
+RUN rustup target add ${RUST_BUILD_ARCH}-unknown-linux-gnu
 # Because we built the dummy lib in this Stage to cache all the dependencies in docker build layer cache,
 # the dummy libs are also cached. In Stage 2 when we COPY, it preserves the timestamps of the
 # source code, so it never re-compiles the real lib.
