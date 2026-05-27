@@ -80,9 +80,9 @@ func (s *AttachedRoutesSuite) TearDownSuite() {
 }
 
 func (s *AttachedRoutesSuite) BeforeTest(suiteName, testName string) {
-	if !loadTestsEnabled() {
-		return
-	}
+	// testify has no first-class way to skip an entire suite, so we skip in
+	// BeforeTest to cover every test in one place (mirrors base.BaseTestingSuite).
+	s.skipUnlessLoadTestsEnabled()
 
 	testTimestamp := time.Now().UnixNano()
 	s.loadTestManager.testNamespace = fmt.Sprintf("kgateway-loadtest-%d", testTimestamp)
@@ -119,13 +119,11 @@ func (s *AttachedRoutesSuite) skipUnlessLoadTestsEnabled() {
 }
 
 func (s *AttachedRoutesSuite) TestAttachedRoutesBaseline() {
-	s.skipUnlessLoadTestsEnabled()
 	s.T().Log("=== AttachedRoutes Performance Test: Baseline (1000 routes) ===")
 	s.runTestWithConfig(1000)
 }
 
 func (s *AttachedRoutesSuite) TestAttachedRoutesProduction() {
-	s.skipUnlessLoadTestsEnabled()
 	s.T().Log("=== AttachedRoutes Performance Test: Production Scale (5000 routes) ===")
 	s.runTestWithConfig(5000)
 }
