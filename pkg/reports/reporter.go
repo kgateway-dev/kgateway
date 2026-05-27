@@ -241,11 +241,7 @@ func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 
 // backend returns a BackendReport for the provided backend object, nil if a report is not present.
 func (r *ReportMap) backend(obj metav1.Object) *BackendReport {
-	report := r.Backends[key(obj)]
-	if report != nil {
-		report.observedGeneration = obj.GetGeneration()
-	}
-	return report
+	return r.Backends[key(obj)]
 }
 
 func (r *ReportMap) newBackendReport(obj metav1.Object) *BackendReport {
