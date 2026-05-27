@@ -39,13 +39,16 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       refs: ${{ steps.determine.outputs.refs }}
+      e2e_matrix: ${{ steps.determine.outputs.e2e_matrix }}
     steps:
       - id: determine
         name: Determine Refs
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           INPUT_TARGET_REF: ${{ inputs.target_ref }}
         run: |
+          set -euo pipefail
           if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
             refs='[
               {"checkout_ref":"main","display_ref":"main"},
@@ -64,6 +67,36 @@ jobs:
           fi
           refs="$(jq -c . <<< "${refs}")"
           echo "refs=${refs}" >> "$GITHUB_OUTPUT"
+
+          # Build the E2E matrix entries by reading each ref's own
+          # .github/nightly-gwapi-versions.json. Each branch owns the list of
+          # Gateway API versions it wants tested. Missing or malformed file is
+          # a hard error: every supported branch must opt in explicitly.
+          entries="[]"
+          while read -r checkout_ref display_ref; do
+            versions="$(gh api \
+              "repos/${GITHUB_REPOSITORY}/contents/.github/nightly-gwapi-versions.json?ref=${checkout_ref}" \
+              --jq '.content' 2>/dev/null | base64 -d || true)"
+            if ! jq -e 'type == "array"' >/dev/null 2>&1 <<< "${versions}"; then
+              echo "::error::ref ${checkout_ref} is missing or has malformed .github/nightly-gwapi-versions.json"
+              exit 1
+            fi
+            # The bypassVersionCheck pass-through (and any matrix entry that sets
+            # it) exists only for v2.2.x's runtime-version-check escape hatch.
+            # Remove this line, and the matching workflow step below, once
+            # v2.2.x is EOL.
+            entries="$(jq -c \
+              --arg checkout_ref "${checkout_ref}" \
+              --arg display_ref "${display_ref}" \
+              --argjson versions "${versions}" \
+              '. + [$versions[] | {
+                 ref: {checkout_ref: $checkout_ref, display_ref: $display_ref},
+                 version: .version,
+                 channel: .channel,
+                 bypassVersionCheck: (.bypassVersionCheck // false)
+               }]' <<< "${entries}")"
+          done < <(jq -r '.[] | "\(.checkout_ref) \(.display_ref)"' <<< "${refs}")
+          echo "e2e_matrix=${entries}" >> "$GITHUB_OUTPUT"
 
   kube_gateway_api_conformance_tests:
     name: Conformance (ref=${{ matrix.ref.display_ref }}, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }}, gw-api=${{matrix.gateway-api-channel}})
@@ -123,7 +156,7 @@ jobs:
       - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
-    name: E2E (ref=${{ matrix.ref.display_ref }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
+    name: E2E (ref=${{ matrix.entry.ref.display_ref }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.entry.version }}-${{ matrix.entry.channel }})
     needs: determine_refs
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
@@ -131,61 +164,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ref: ${{ fromJson(needs.determine_refs.outputs.refs) }}
+        entry: ${{ fromJson(needs.determine_refs.outputs.e2e_matrix) }}
         env-versions:
           - file: "./.github/workflows/.env/nightly-tests/max_versions.env"
             label: max
           - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
             label: min
-        gateway-api-version:
-          - version: 'v1.5.1'
-            channel: experimental
-          - version: 'v1.5.1'
-            channel: standard
-          - version: 'v1.4.1'
-            channel: experimental
-          - version: 'v1.4.1'
-            channel: standard
-          - version: 'v1.3.0'
-            channel: experimental
-          - version: 'v1.3.0'
-            channel: standard
         controllers:
           - regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$"
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: ${{ matrix.ref.checkout_ref }}
-      # v2.2.x is built against Gateway API 1.4 and refuses to start on 1.5 (#13872), so the
-      # v2.2.x x v1.5.1 lanes need special handling: skip the standard channel entirely, and
-      # run the experimental channel with the version check bypassed to keep forward-compat
-      # signal. This is done with step guards rather than a matrix `exclude:` because every
-      # dimension here is object-valued and object-valued excludes are unreliable
-      # (actions/runner#1512).
-      - name: Determine run plan
-        id: guard
-        env:
-          REF: ${{ matrix.ref.checkout_ref }}
-          GW_API_VERSION: ${{ matrix.gateway-api-version.version }}
-          GW_API_CHANNEL: ${{ matrix.gateway-api-version.channel }}
-        shell: bash
-        run: |
-          run=true
-          bypass_version_check=false
-          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.5.1" ]]; then
-            case "${GW_API_CHANNEL}" in
-              standard)     run=false ;;
-              experimental) bypass_version_check=true ;;
-            esac
-          fi
-          echo "run=${run}" >> "${GITHUB_OUTPUT}"
-          echo "bypass_version_check=${bypass_version_check}" >> "${GITHUB_OUTPUT}"
-          echo "ref=${REF} gw-api=${GW_API_VERSION}-${GW_API_CHANNEL} -> run=${run} bypass_version_check=${bypass_version_check}"
-      # Bake KGW_SKIP_GATEWAY_API_VERSION_CHECK into the chart before setup-kind-cluster
-      # packages it (hack/kind/setup-kind.sh runs `make package-kgateway-charts` from source),
-      # so the controller starts despite the unsupported Gateway API version.
+          ref: ${{ matrix.entry.ref.checkout_ref }}
+      # v2.2.x-EOL cleanup: remove this step (and the bypassVersionCheck handling in
+      # determine_refs above) when v2.2.x is no longer supported. The runtime version
+      # check lives only in v2.2.x; main and later branches never set the flag, so
+      # nothing else needs touching. Bakes KGW_SKIP_GATEWAY_API_VERSION_CHECK into
+      # the chart before setup-kind-cluster packages it (hack/kind/setup-kind.sh runs
+      # `make package-kgateway-charts` from source) so the controller starts despite
+      # an unsupported Gateway API version. A branch opts in via bypassVersionCheck:
+      # true on its entry in .github/nightly-gwapi-versions.json.
       - name: Bypass Gateway API version check
-        if: ${{ steps.guard.outputs.bypass_version_check == 'true' }}
+        if: ${{ matrix.entry.bypassVersionCheck }}
         shell: bash
         run: |
           yq -i '.controller.extraEnv.KGW_SKIP_GATEWAY_API_VERSION_CHECK = "true"' \
@@ -200,30 +200,29 @@ jobs:
           path: ${{ matrix.env-versions.file }}
           log-variables: true
       - name: Setup KinD Cluster
-        if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' && steps.guard.outputs.run == 'true' }}
+        if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
         uses: ./.github/actions/setup-kind-cluster
         with:
-          gateway-api-version: ${{ matrix.gateway-api-version.version }}
-          gateway-api-channel: ${{ matrix.gateway-api-version.channel }}
-          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+          gateway-api-version: ${{ matrix.entry.version }}
+          gateway-api-channel: ${{ matrix.entry.channel }}
+          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
           kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           kind-node-version: ${{ steps.dotenv.outputs.node_version }}
           localstack: "true"
       - name: Setup k3d Cluster
-        if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' && steps.guard.outputs.run == 'true' }}
+        if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
         uses: ./.github/actions/setup-k3d-cluster
         with:
-          gateway-api-version: ${{ matrix.gateway-api-version.version }}
-          gateway-api-channel: ${{ matrix.gateway-api-version.channel }}
-          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+          gateway-api-version: ${{ matrix.entry.version }}
+          gateway-api-channel: ${{ matrix.entry.channel }}
+          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
           kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           node-version: ${{ steps.dotenv.outputs.node_version }}
           localstack: "true"
           github-token: ${{ github.token }}
       - id: run-tests
-        if: ${{ steps.guard.outputs.run == 'true' }}
         uses: ./.github/actions/kubernetes-e2e-tests
         env:
           VERSION: 'v1.0.0-ci1'
@@ -232,9 +231,9 @@ jobs:
           # A single test failure counts as a failure for each of its parent suites, and these tests run for a long time, so use a higher max failure count
           GOTESTSUM_ARGS: '--format=standard-verbose --rerun-fails-max-failures 25'
         with:
-          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
           cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
           test-args: '-timeout=120m'
           run-regex: ${{ matrix.controllers.regex }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
-          matrix-label: "nightly-kgw-api-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+          matrix-label: "nightly-kgw-api-${{ matrix.env-versions.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
