@@ -6,26 +6,8 @@ before:
     # Build the Rust dynamic module for amd64 and arm64 before any Docker images are built.
     # cargo zigbuild cross-compiles without needing QEMU; the container runs on the host
     # platform and targets the specified RUST_BUILD_ARCH.
-    - cmd: docker
-      args:
-        - buildx
-        - build
-        - "--output=type=local,dest=_output/rust/amd64"
-        - "--target=export"
-        - "--build-arg=RUST_BUILD_ARCH=x86_64"
-        - -f
-        - internal/envoy_modules/Dockerfile
-        - internal/envoy_modules/
-    - cmd: docker
-      args:
-        - buildx
-        - build
-        - "--output=type=local,dest=_output/rust/arm64"
-        - "--target=export"
-        - "--build-arg=RUST_BUILD_ARCH=aarch64"
-        - -f
-        - internal/envoy_modules/Dockerfile
-        - internal/envoy_modules/
+    - docker buildx build --output=type=local,dest=_output/rust/amd64 --target=export --build-arg=RUST_BUILD_ARCH=x86_64 -f internal/envoy_modules/Dockerfile internal/envoy_modules/
+    - docker buildx build --output=type=local,dest=_output/rust/arm64 --target=export --build-arg=RUST_BUILD_ARCH=aarch64 -f internal/envoy_modules/Dockerfile internal/envoy_modules/
 builds:
   - id: controller
     main: ./cmd/kgateway

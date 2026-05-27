@@ -20,7 +20,7 @@ COPY kgateway-linux-$GOARCH /usr/local/bin/kgateway
 
 ENV ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib
 ARG RUST_MODULE_DIR=.
-COPY ${RUST_MODULE_DIR}/librust_module.so ${ENVOY_DYNAMIC_MODULES_SEARCH_PATH}/librust_module.so
+COPY ${RUST_MODULE_DIR}/librust_module.so /usr/local/lib/librust_module.so
 
 USER 10101
 

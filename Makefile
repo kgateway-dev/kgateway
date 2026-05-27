@@ -47,7 +47,7 @@ OSV_SCAN_IMAGE_PLATFORM ?= linux/$(GOARCH)
 
 .PHONY: build-tools-image
 build-tools-image: ## Build the devcontainer build-tools image locally (override BUILD_TOOLS_IMAGE=... to change tag)
-	docker buildx build \
+	$(BUILDX_BUILD) \
 		--load \
 		-t $(BUILD_TOOLS_IMAGE) \
 		--build-arg VERSION=$(BUILD_TOOLS_VERSION) \
@@ -846,7 +846,7 @@ $(ENVOY_MODULE_DOCKERFILE): $(ENVOY_MODULE_DOCKERFILE_TEMPLATE) internal/envoy_m
 
 $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so: $(ENVOY_MODULES_SRC_FILES) $(ENVOY_MODULE_DOCKERFILE)
 	mkdir -p $(ENVOY_MODULE_OUTPUT_DIR)
-	docker buildx build \
+	$(BUILDX_BUILD) \
 		$(PLATFORM) \
 		--output type=local,dest=$(ENVOY_MODULE_OUTPUT_DIR) \
 		--target export \
