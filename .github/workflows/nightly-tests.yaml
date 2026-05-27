@@ -156,6 +156,41 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: ${{ matrix.ref.checkout_ref }}
+      # v2.2.x is built against Gateway API 1.4 and refuses to start on 1.5 (#13872), so the
+      # v2.2.x x v1.5.1 lanes need special handling: skip the standard channel entirely, and
+      # run the experimental channel with the version check bypassed to keep forward-compat
+      # signal. This is done with step guards rather than a matrix `exclude:` because every
+      # dimension here is object-valued and object-valued excludes are unreliable
+      # (actions/runner#1512).
+      - name: Determine run plan
+        id: guard
+        env:
+          REF: ${{ matrix.ref.checkout_ref }}
+          GW_API_VERSION: ${{ matrix.gateway-api-version.version }}
+          GW_API_CHANNEL: ${{ matrix.gateway-api-version.channel }}
+        shell: bash
+        run: |
+          run=true
+          bypass_version_check=false
+          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.5.1" ]]; then
+            case "${GW_API_CHANNEL}" in
+              standard)     run=false ;;
+              experimental) bypass_version_check=true ;;
+            esac
+          fi
+          echo "run=${run}" >> "${GITHUB_OUTPUT}"
+          echo "bypass_version_check=${bypass_version_check}" >> "${GITHUB_OUTPUT}"
+          echo "ref=${REF} gw-api=${GW_API_VERSION}-${GW_API_CHANNEL} -> run=${run} bypass_version_check=${bypass_version_check}"
+      # Bake KGW_SKIP_GATEWAY_API_VERSION_CHECK into the chart before setup-kind-cluster
+      # packages it (hack/kind/setup-kind.sh runs `make package-kgateway-charts` from source),
+      # so the controller starts despite the unsupported Gateway API version.
+      - name: Bypass Gateway API version check
+        if: ${{ steps.guard.outputs.bypass_version_check == 'true' }}
+        shell: bash
+        run: |
+          yq -i '.controller.extraEnv.KGW_SKIP_GATEWAY_API_VERSION_CHECK = "true"' \
+            install/helm/kgateway/values.yaml
+          echo "Set controller.extraEnv.KGW_SKIP_GATEWAY_API_VERSION_CHECK=true in install/helm/kgateway/values.yaml"
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
       - name: Dotenv Action
@@ -165,7 +200,7 @@ jobs:
           path: ${{ matrix.env-versions.file }}
           log-variables: true
       - name: Setup KinD Cluster
-        if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
+        if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' && steps.guard.outputs.run == 'true' }}
         uses: ./.github/actions/setup-kind-cluster
         with:
           gateway-api-version: ${{ matrix.gateway-api-version.version }}
@@ -176,7 +211,7 @@ jobs:
           kind-node-version: ${{ steps.dotenv.outputs.node_version }}
           localstack: "true"
       - name: Setup k3d Cluster
-        if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
+        if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' && steps.guard.outputs.run == 'true' }}
         uses: ./.github/actions/setup-k3d-cluster
         with:
           gateway-api-version: ${{ matrix.gateway-api-version.version }}
@@ -188,6 +223,7 @@ jobs:
           localstack: "true"
           github-token: ${{ github.token }}
       - id: run-tests
+        if: ${{ steps.guard.outputs.run == 'true' }}
         uses: ./.github/actions/kubernetes-e2e-tests
         env:
           VERSION: 'v1.0.0-ci1'
