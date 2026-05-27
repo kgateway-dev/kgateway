@@ -72,6 +72,16 @@ jobs:
           # .github/nightly-gwapi-versions.json. Each branch owns the list of
           # Gateway API versions it wants tested. Missing or malformed file is
           # a hard error: every supported branch must opt in explicitly.
+          #
+          # Each entry is cross-producted with the env-versions list below. An
+          # entry may set "envVersions": ["max"] (or similar) to opt out of a
+          # given env-version label — useful when a Gateway API version's CRDs
+          # require a newer k8s than the min env-version provides (e.g. v1.5.1
+          # CRDs use the isIP() CEL function added in k8s 1.31).
+          env_versions='[
+            {"file": "./.github/workflows/.env/nightly-tests/max_versions.env", "label": "max"},
+            {"file": "./.github/workflows/.env/nightly-tests/min_versions.env", "label": "min"}
+          ]'
           entries="[]"
           while read -r checkout_ref display_ref; do
             versions="$(gh api \
@@ -89,12 +99,19 @@ jobs:
               --arg checkout_ref "${checkout_ref}" \
               --arg display_ref "${display_ref}" \
               --argjson versions "${versions}" \
-              '. + [$versions[] | {
-                 ref: {checkout_ref: $checkout_ref, display_ref: $display_ref},
-                 version: .version,
-                 channel: .channel,
-                 bypassVersionCheck: (.bypassVersionCheck // false)
-               }]' <<< "${entries}")"
+              --argjson env_versions "${env_versions}" \
+              '. + [
+                 $versions[] as $v |
+                 $env_versions[] as $ev |
+                 select(($v.envVersions // ($env_versions | map(.label))) | index($ev.label)) |
+                 {
+                   ref: {checkout_ref: $checkout_ref, display_ref: $display_ref},
+                   version: $v.version,
+                   channel: $v.channel,
+                   bypassVersionCheck: ($v.bypassVersionCheck // false),
+                   envVersion: $ev
+                 }
+               ]' <<< "${entries}")"
           done < <(jq -r '.[] | "\(.checkout_ref) \(.display_ref)"' <<< "${refs}")
           echo "e2e_matrix=${entries}" >> "$GITHUB_OUTPUT"
 
@@ -156,7 +173,7 @@ jobs:
       - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
-    name: E2E (ref=${{ matrix.entry.ref.display_ref }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.entry.version }}-${{ matrix.entry.channel }})
+    name: E2E (ref=${{ matrix.entry.ref.display_ref }}, k8s=${{ matrix.entry.envVersion.label }}, gw-api=${{ matrix.entry.version }}-${{ matrix.entry.channel }})
     needs: determine_refs
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
@@ -165,11 +182,6 @@ jobs:
       fail-fast: false
       matrix:
         entry: ${{ fromJson(needs.determine_refs.outputs.e2e_matrix) }}
-        env-versions:
-          - file: "./.github/workflows/.env/nightly-tests/max_versions.env"
-            label: max
-          - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
-            label: min
         controllers:
           - regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$"
     steps:
@@ -197,7 +209,7 @@ jobs:
         uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
         id: dotenv
         with:
-          path: ${{ matrix.env-versions.file }}
+          path: ${{ matrix.entry.envVersion.file }}
           log-variables: true
       - name: Setup KinD Cluster
         if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
@@ -205,7 +217,7 @@ jobs:
         with:
           gateway-api-version: ${{ matrix.entry.version }}
           gateway-api-channel: ${{ matrix.entry.channel }}
-          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
+          cluster-name: "kgw-api-e2e-${{ matrix.entry.envVersion.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
           kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           kind-node-version: ${{ steps.dotenv.outputs.node_version }}
@@ -216,7 +228,7 @@ jobs:
         with:
           gateway-api-version: ${{ matrix.entry.version }}
           gateway-api-channel: ${{ matrix.entry.channel }}
-          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
+          cluster-name: "kgw-api-e2e-${{ matrix.entry.envVersion.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
           kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           node-version: ${{ steps.dotenv.outputs.node_version }}
@@ -231,9 +243,9 @@ jobs:
           # A single test failure counts as a failure for each of its parent suites, and these tests run for a long time, so use a higher max failure count
           GOTESTSUM_ARGS: '--format=standard-verbose --rerun-fails-max-failures 25'
         with:
-          cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
+          cluster-name: "kgw-api-e2e-${{ matrix.entry.envVersion.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
           cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
           test-args: '-timeout=120m'
           run-regex: ${{ matrix.controllers.regex }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
-          matrix-label: "nightly-kgw-api-${{ matrix.env-versions.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
+          matrix-label: "nightly-kgw-api-${{ matrix.entry.envVersion.label }}-${{ matrix.entry.version }}-${{ matrix.entry.channel }}"
