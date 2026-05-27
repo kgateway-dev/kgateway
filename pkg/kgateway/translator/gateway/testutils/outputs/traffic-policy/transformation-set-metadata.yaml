@@ -5,11 +5,9 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_test_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

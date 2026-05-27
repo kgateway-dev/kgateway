@@ -105,7 +105,7 @@ fn deny_by_named_rule_emits_rule_name_metadata() {
         .returning(|status, headers, body, _| {
             assert_eq!(status, 403);
             assert!(body.is_none());
-            // No blockedByHeaderName configured → no extra headers.
+            // No blockedByHeaderName configured: no extra headers.
             assert!(headers.is_empty());
         });
 
@@ -285,7 +285,7 @@ fn per_route_config_overrides_filter_level_decision() {
 
 #[test]
 fn per_route_config_none_falls_back_to_filter_level() {
-    // Filter-level: allow. Per-route absent → filter-level decides.
+    // Filter-level: allow. Per-route absent: filter-level decides.
     let cfg = make_filter_config(r#"{"defaultAction":"allow"}"#);
     let mut mock = MockEnvoyHttpFilter::default();
     mock.expect_get_most_specific_route_config()
@@ -298,7 +298,7 @@ fn per_route_config_none_falls_back_to_filter_level() {
 
 #[test]
 fn per_route_config_wrong_type_logs_and_falls_back() {
-    // Filter-level: allow. Per-route config is the wrong type → filter falls back
+    // Filter-level: allow. Per-route config is the wrong type: filter falls back
     // to filter-level allow.
     let cfg = make_filter_config(r#"{"defaultAction":"allow"}"#);
     let bogus: Arc<dyn Any> = Arc::new(42u32);

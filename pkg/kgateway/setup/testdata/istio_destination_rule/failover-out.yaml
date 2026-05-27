@@ -5,7 +5,6 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
 - commonLbConfig:
@@ -17,7 +16,6 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_reviews_8080
   outlierDetection:
     baseEjectionTime: 900s

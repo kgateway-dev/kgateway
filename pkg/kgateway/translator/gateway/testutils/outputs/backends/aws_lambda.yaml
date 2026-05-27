@@ -15,7 +15,6 @@ Clusters:
             socketAddress:
               address: 172.18.0.2
               portValue: 31566
-  metadata: {}
   name: backend_default_lambda-backend_0
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -57,7 +56,6 @@ Clusters:
             socketAddress:
               address: 172.18.0.2
               portValue: 31566
-  metadata: {}
   name: backend_default_lambda-without-payload-transform_0
   typedExtensionProtocolOptions:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -85,7 +83,6 @@ Clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

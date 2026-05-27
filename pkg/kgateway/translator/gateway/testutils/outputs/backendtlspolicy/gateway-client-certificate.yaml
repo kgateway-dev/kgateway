@@ -5,7 +5,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_backend-service_443
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -46,7 +45,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_backend-service_gw_backend_client_cert_default_example-gateway_443
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -134,7 +132,6 @@ Clusters:
       sni: example.com
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

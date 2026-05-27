@@ -1,10 +1,50 @@
 ---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gw-xds-wiretap
+spec:
+  kube:
+    deployment:
+      replicas: 1
+    deploymentOverlay:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: xds-wiretap
+                image: nicolaka/netshoot:v0.14@sha256:7f08c4aff13ff61a35d30e30c5c1ea8396eac6ab4ce19fd02d5a4b3b5d0d09a2
+                imagePullPolicy: IfNotPresent
+                command:
+                  - sh
+                  - -c
+                  - "trap : TERM INT; sleep infinity & wait"
+                securityContext:
+                  runAsNonRoot: false
+                  runAsUser: 0
+                  capabilities:
+                    add:
+                      - NET_ADMIN
+                      - NET_RAW
+                resources:
+                  requests:
+                    cpu: 10m
+                    memory: 64Mi
+                  limits:
+                    cpu: 100m
+                    memory: 128Mi
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: gw
 spec:
   gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gw-xds-wiretap
   listeners:
     - name: http
       protocol: HTTP
