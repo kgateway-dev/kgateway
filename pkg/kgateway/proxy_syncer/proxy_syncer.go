@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -223,8 +224,7 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
-// backendReportEqual compares BackendReports by condition content, ignoring LastTransitionTime.
-// Reports are rebuilt on every recomputation, so a pointer compare would never match.
+// backendReportEqual reports whether two BackendReports hold the same conditions and observed generation.
 func backendReportEqual(a, b *reports.BackendReport) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -237,11 +237,12 @@ func backendReportEqual(a, b *reports.BackendReport) bool {
 		return false
 	}
 	for i := range ac {
-		if ac[i].Type != bc[i].Type ||
-			ac[i].Status != bc[i].Status ||
-			ac[i].Reason != bc[i].Reason ||
-			ac[i].Message != bc[i].Message ||
-			ac[i].ObservedGeneration != bc[i].ObservedGeneration {
+		other := meta.FindStatusCondition(bc, ac[i].Type)
+		if other == nil ||
+			ac[i].Status != other.Status ||
+			ac[i].Reason != other.Reason ||
+			ac[i].Message != other.Message ||
+			ac[i].ObservedGeneration != other.ObservedGeneration {
 			return false
 		}
 	}
