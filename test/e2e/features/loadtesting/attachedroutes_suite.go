@@ -63,6 +63,12 @@ type AttachedRoutesSuite struct {
 }
 
 func (s *AttachedRoutesSuite) SetupSuite() {
+	// Load tests run only in the dedicated nightly job. Skipping in SetupSuite
+	// skips the whole suite with a single SKIP: testify runs SetupSuite on the
+	// suite-level T before any test method, so nothing below runs and there is
+	// nothing to tear down.
+	s.skipUnlessLoadTestsEnabled()
+
 	testTimestamp := time.Now().UnixNano()
 	testNamespace := fmt.Sprintf("kgateway-loadtest-%d", testTimestamp)
 	s.loadTestManager = NewLoadTestManager(s.ctx, s.testInstallation, testNamespace)
@@ -80,20 +86,14 @@ func (s *AttachedRoutesSuite) TearDownSuite() {
 }
 
 func (s *AttachedRoutesSuite) BeforeTest(suiteName, testName string) {
-	// testify has no first-class way to skip an entire suite, so we skip in
-	// BeforeTest to cover every test in one place (mirrors base.BaseTestingSuite).
-	s.skipUnlessLoadTestsEnabled()
-
 	testTimestamp := time.Now().UnixNano()
 	s.loadTestManager.testNamespace = fmt.Sprintf("kgateway-loadtest-%d", testTimestamp)
 	s.forceCleanupTestResources()
 }
 
 func (s *AttachedRoutesSuite) AfterTest(suiteName, testName string) {
-	if !loadTestsEnabled() {
-		return
-	}
-
+	// AfterTest only runs when tests ran, which only happens when load tests are
+	// enabled (otherwise SetupSuite skipped the whole suite).
 	if s.loadTestManager != nil {
 		if err := s.loadTestManager.CleanupAll(); err != nil {
 			s.T().Logf("Warning: failed to cleanup load test namespaces: %v", err)
