@@ -355,9 +355,10 @@ func (r *ReportMap) BuildBackendStatus(
 		return nil
 	}
 
+	observedGeneration := obj.GetGeneration()
 	finalConditions := make([]metav1.Condition, 0, len(report.Conditions))
 	for _, condition := range report.Conditions {
-		condition.ObservedGeneration = report.observedGeneration
+		condition.ObservedGeneration = observedGeneration
 		// Copy old condition to preserve LastTransitionTime, if it exists.
 		if cond := meta.FindStatusCondition(currentStatus.Conditions, condition.Type); cond != nil {
 			finalConditions = append(finalConditions, *cond)
