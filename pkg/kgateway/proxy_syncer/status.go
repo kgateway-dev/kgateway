@@ -101,21 +101,30 @@ func GenerateBackendStatusReport(backends []ir.BackendObjectIR, clusters []uccWi
 
 	backendGVK := wellknown.BackendGVK.GroupKind()
 
-	// aggregate per-client translation errors per Backend, deduplicated by message
+	// aggregate per-client translation errors per Backend generation, deduplicated by message.
+	// Keying by generation ensures errors from a stale generation aren't attributed to a newer
+	// one while the per-client clusters are still being recomputed.
+	type backendGen struct {
+		nn  types.NamespacedName
+		gen int64
+	}
 	type errSet struct {
 		msgs []string
 		seen map[string]struct{}
 	}
-	translationErrs := make(map[types.NamespacedName]*errSet)
+	translationErrs := make(map[backendGen]*errSet)
 	for _, c := range clusters {
 		if c.Error == nil || c.BackendSource.GetGroupKind() != backendGVK {
 			continue
 		}
-		nn := types.NamespacedName{Namespace: c.BackendSource.Namespace, Name: c.BackendSource.Name}
-		es, ok := translationErrs[nn]
+		k := backendGen{
+			nn:  types.NamespacedName{Namespace: c.BackendSource.Namespace, Name: c.BackendSource.Name},
+			gen: c.BackendGeneration,
+		}
+		es, ok := translationErrs[k]
 		if !ok {
 			es = &errSet{seen: make(map[string]struct{})}
-			translationErrs[nn] = es
+			translationErrs[k] = es
 		}
 		msg := c.Error.Error()
 		if _, dup := es.seen[msg]; !dup {
@@ -132,8 +141,11 @@ func GenerateBackendStatusReport(backends []ir.BackendObjectIR, clusters []uccWi
 		errs := make([]error, 0, len(backend.Errors))
 		errs = append(errs, backend.Errors...)
 		if len(errs) == 0 {
-			nn := types.NamespacedName{Namespace: backend.Namespace, Name: backend.Name}
-			if es := translationErrs[nn]; es != nil {
+			k := backendGen{
+				nn:  types.NamespacedName{Namespace: backend.Namespace, Name: backend.Name},
+				gen: backend.Obj.GetGeneration(),
+			}
+			if es := translationErrs[k]; es != nil {
 				sort.Strings(es.msgs)
 				for _, m := range es.msgs {
 					errs = append(errs, errors.New(m))
