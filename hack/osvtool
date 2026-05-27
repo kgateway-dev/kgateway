@@ -318,7 +318,8 @@ emit_summary() {
     local tmpdir="$1"
     local repo="$2"
     local target="$3"
-    shift 3
+    local state="$4"
+    shift 4
     local branches=("$@")
     local branch
     local file
@@ -337,7 +338,7 @@ emit_summary() {
         file="${tmpdir}/branch_${i}.json"
         source_scan_file="${tmpdir}/branch_${i}.source.scans.json"
         image_scan_file="${tmpdir}/branch_${i}.image.scans.json"
-        url="https://github.com/${repo}/security/code-scanning?query=is%3Aopen+branch%3A${branch}"
+        url="https://github.com/${repo}/security/code-scanning?query=is%3A${state}+branch%3A${branch}"
         source_url="${url}+tool%3Aosv-scanner"
         image_url="${url}+tool%3Aosv-image-scanner"
         parts="${parts}$(
@@ -439,7 +440,8 @@ emit_table() {
     local tmpdir="$1"
     local repo="$2"
     local target="$3"
-    shift 3
+    local state="$4"
+    shift 4
     local branches=("$@")
     local branch
     local file
@@ -458,7 +460,7 @@ emit_table() {
         file="${tmpdir}/branch_${i}.json"
         source_scan_file="${tmpdir}/branch_${i}.source.scans.json"
         image_scan_file="${tmpdir}/branch_${i}.image.scans.json"
-        url="https://github.com/${repo}/security/code-scanning?query=is%3Aopen+branch%3A${branch}"
+        url="https://github.com/${repo}/security/code-scanning?query=is%3A${state}+branch%3A${branch}"
 
         jq -r \
             --arg branch "$branch" \
@@ -815,9 +817,9 @@ main() {
         fi
         emit_worst "$tmpdir" "$target" "${#image_platforms[@]}" "${image_platforms[@]}" "${branches[@]}" | yq -p=json -o=yaml
     elif [[ "$table" -eq 1 ]]; then
-        emit_table "$tmpdir" "$repo" "$target" "${branches[@]}"
+        emit_table "$tmpdir" "$repo" "$target" "$api_state" "${branches[@]}"
     else
-        emit_summary "$tmpdir" "$repo" "$target" "${branches[@]}" | yq -p=json -o=yaml
+        emit_summary "$tmpdir" "$repo" "$target" "$api_state" "${branches[@]}" | yq -p=json -o=yaml
     fi
 }
 
