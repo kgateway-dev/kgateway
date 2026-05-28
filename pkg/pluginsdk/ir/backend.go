@@ -181,8 +181,7 @@ type BackendObjectIR struct {
 	// resourceName is the pre-calculated resource name. used as the krt resource name.
 	resourceName string
 
-	// clusterName is the pre-calculated Envoy cluster name. ClusterName() falls
-	// back to recomputing if empty so struct-literal callers still work.
+	// clusterName is the pre-calculated Envoy cluster name.
 	// +noKrtEquals We compare the cached ClusterName in Equals()
 	clusterName string
 
@@ -282,10 +281,7 @@ func gatewayBackendClientCertificateExtraKey(baseExtraKey string, gateway Object
 }
 
 func (c BackendObjectIR) ClusterName() string {
-	if c.clusterName != "" {
-		return c.clusterName
-	}
-	return buildClusterName(c.gvPrefix, c.objectSource.Kind, c.objectSource.Namespace, c.objectSource.Name, c.extraKey, c.port)
+	return c.clusterName
 }
 
 func buildClusterName(gvPrefix, kind, namespace, name, extraKey string, port int32) string {
