@@ -401,7 +401,7 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 				Group:     svcGk.Group,
 				Namespace: svc.Namespace,
 				Name:      svc.Name,
-			}, port.Port, "")
+			}, port.Port, "", "")
 			backend.Obj = svc
 			uss = append(uss, backend)
 		}
@@ -423,7 +423,7 @@ func backendUpstreams(backendCol krt.Collection[*kgateway.Backend]) krt.Collecti
 			Group:     backendGk.Group,
 			Namespace: backend.Namespace,
 			Name:      backend.Name,
-		}, port, "")
+		}, port, "", "")
 		backendIR.Obj = backend
 		return &backendIR
 	})

@@ -50,7 +50,7 @@ func validateXDS(
 		Kind:      "Service",
 		Name:      "test-backend",
 		Namespace: "test",
-	}, 80, "")
+	}, 80, "", "")
 	processBackend(ctx, policyIR, dummyBackend, testCluster)
 
 	builder := bootstrap.New()

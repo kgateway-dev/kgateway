@@ -112,7 +112,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					Name:      backingSvc.Name,
 					Kind:      "Service",
 					Group:     "",
-				}, 8080, "")
+				}, 8080, "", "")
 				backend.Obj = backingSvc
 				up = &backend
 				// Setup the route rules
@@ -192,7 +192,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					Name:      backingSvc.Name,
 					Kind:      "Service",
 					Group:     "",
-				}, 8080, "")
+				}, 8080, "", "")
 				backend.Obj = backingSvc
 				up = &backend
 				// Setup the route rules

@@ -17,7 +17,7 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 	us := ir.NewBackendObjectIR(ir.ObjectSource{
 		Namespace: "ns",
 		Name:      "name",
-	}, 0, "")
+	}, 0, "", "")
 	efu := ir.NewEndpointsForBackend(us)
 	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &envoyendpointv3.LbEndpoint{
@@ -85,7 +85,7 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 	us := ir.NewBackendObjectIR(ir.ObjectSource{
 		Namespace: "ns",
 		Name:      "name",
-	}, 0, "")
+	}, 0, "", "")
 	efu := ir.NewEndpointsForBackend(us)
 	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &envoyendpointv3.LbEndpoint{

@@ -63,7 +63,7 @@ func TestBackendPolicyStatus(t *testing.T) {
 		Kind:      "Service",
 		Namespace: "default",
 		Name:      "reviews",
-	}, 0, "")
+	}, 0, "", "")
 	backend1.AttachedPolicies = ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{
 			wellknown.BackendTLSPolicyGVK.GroupKind(): {
@@ -79,7 +79,7 @@ func TestBackendPolicyStatus(t *testing.T) {
 		Kind:      "Service",
 		Namespace: "default",
 		Name:      "ratings",
-	}, 0, "")
+	}, 0, "", "")
 	backend2.AttachedPolicies = ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{
 			wellknown.BackendTLSPolicyGVK.GroupKind(): {
@@ -228,7 +228,7 @@ func TestBackendPolicyStatusWithSectionName(t *testing.T) {
 		Kind:      "Service",
 		Namespace: "default",
 		Name:      "my-svc",
-	}, 0, "")
+	}, 0, "", "")
 	backend.AttachedPolicies = ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{
 			wellknown.BackendTLSPolicyGVK.GroupKind(): {

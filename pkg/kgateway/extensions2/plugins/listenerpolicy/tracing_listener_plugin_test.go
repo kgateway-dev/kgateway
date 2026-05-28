@@ -447,7 +447,7 @@ func TestTracingConverter(t *testing.T) {
 					Kind:      "Backend",
 					Name:      "test-service",
 					Namespace: "default",
-				}, 0, "")
+				}, 0, "", "")
 
 				provider, config, err := translateTracing(
 					tc.config,

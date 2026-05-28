@@ -88,8 +88,7 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 			Namespace: i.GetNamespace(),
 			Name:      i.GetName(),
 		}
-		backend := ir.NewBackendObjectIR(objSrc, 0, "")
-		backend.SetGvPrefix(ExtensionName)
+		backend := ir.NewBackendObjectIR(objSrc, 0, "", ExtensionName)
 		backend.CanonicalHostname = hostname(i)
 		backend.AppProtocol = parseAppProtocol(i)
 		backend.Obj = i

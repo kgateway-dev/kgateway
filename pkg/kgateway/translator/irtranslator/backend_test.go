@@ -30,7 +30,7 @@ import (
 )
 
 func newTestBackend(objSrc ir.ObjectSource, port int32) *ir.BackendObjectIR {
-	backend := ir.NewBackendObjectIR(objSrc, port, "")
+	backend := ir.NewBackendObjectIR(objSrc, port, "", "")
 	return &backend
 }
 
