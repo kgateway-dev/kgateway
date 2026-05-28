@@ -141,7 +141,7 @@ type BackendObjectIR struct {
 	// prefix the cluster name with this string to distinguish it from other GVKs.
 	// kept private and immutable after construction. each (group, kind) pair
 	// should have a unique prefix because it shows up in stats.
-	// +krtEqualsTodo incorporate prefix changes into equality or remove field
+	// +noKrtEquals gvPrefix is compared in ClusterName()
 	gvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
 	// +krtEqualsTodo evaluate canonical hostname equality
@@ -199,8 +199,12 @@ type BackendObjectIR struct {
 
 // NewBackendObjectIR creates a BackendObjectIR with pre-calculated resource and
 // cluster names. Callers should pass the final cluster prefix up front; if
-// empty, the lower-cased backend kind is used.
+// empty, the lower-cased backend kind is used and stored on the IR.
 func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey, gvPrefix string) BackendObjectIR {
+	if gvPrefix == "" {
+		gvPrefix = strings.ToLower(objSource.Kind)
+	}
+
 	return BackendObjectIR{
 		objectSource: objSource,
 		port:         port,

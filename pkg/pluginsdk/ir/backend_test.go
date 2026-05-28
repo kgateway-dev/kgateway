@@ -207,6 +207,17 @@ func TestBackendObjectIRConstructsClusterNameWithPrefix(t *testing.T) {
 	assert.Equal(t, "kube_default_test-service_8080", backend.ClusterName())
 }
 
+func TestBackendObjectIRNormalizesEmptyPrefix(t *testing.T) {
+	backend := NewBackendObjectIR(ObjectSource{
+		Namespace: "default",
+		Name:      "test-service",
+		Kind:      "Service",
+	}, 8080, "", "")
+
+	assert.Equal(t, "service", backend.gvPrefix)
+	assert.Equal(t, "service_default_test-service_8080", backend.ClusterName())
+}
+
 func TestBackendObjectIRCloneRecomputesClusterName(t *testing.T) {
 	backend := NewBackendObjectIR(ObjectSource{
 		Namespace: "ns",
