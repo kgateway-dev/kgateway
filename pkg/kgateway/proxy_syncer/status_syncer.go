@@ -53,29 +53,30 @@ type StatusSyncer struct {
 	customStatusSync func(ctx context.Context, rm reports.ReportMap)
 }
 
-func NewStatusSyncer(
-	mgr manager.Manager,
-	plugins plug.Plugin,
-	controllerName string,
-	client apiclient.Client,
-	commonCols *collections.CommonCollections,
-	reportQueue utils.AsyncQueue[reports.ReportMap],
-	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap],
-	backendStatusReportQueue utils.AsyncQueue[reports.ReportMap],
-	cacheSyncs []cache.InformerSynced,
-	opts ...StatusSyncerOption,
-) *StatusSyncer {
-	cfg := processStatusSyncerOptions(opts...)
+// StatusSyncerConfig holds the dependencies required to construct a StatusSyncer.
+type StatusSyncerConfig struct {
+	Mgr                      manager.Manager
+	Plugins                  plug.Plugin
+	ControllerName           string
+	Client                   apiclient.Client
+	ReportQueue              utils.AsyncQueue[reports.ReportMap]
+	BackendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
+	BackendStatusReportQueue utils.AsyncQueue[reports.ReportMap]
+	CacheSyncs               []cache.InformerSynced
+}
+
+func NewStatusSyncer(cfg StatusSyncerConfig, opts ...StatusSyncerOption) *StatusSyncer {
+	optCfg := processStatusSyncerOptions(opts...)
 	return &StatusSyncer{
-		mgr:                            mgr,
-		plugins:                        plugins,
-		istioClient:                    client,
-		controllerName:                 controllerName,
-		latestReportQueue:              reportQueue,
-		latestBackendPolicyReportQueue: backendPolicyReportQueue,
-		latestBackendStatusReportQueue: backendStatusReportQueue,
-		cacheSyncs:                     cacheSyncs,
-		customStatusSync:               cfg.CustomStatusSync,
+		mgr:                            cfg.Mgr,
+		plugins:                        cfg.Plugins,
+		istioClient:                    cfg.Client,
+		controllerName:                 cfg.ControllerName,
+		latestReportQueue:              cfg.ReportQueue,
+		latestBackendPolicyReportQueue: cfg.BackendPolicyReportQueue,
+		latestBackendStatusReportQueue: cfg.BackendStatusReportQueue,
+		cacheSyncs:                     cfg.CacheSyncs,
+		customStatusSync:               optCfg.CustomStatusSync,
 	}
 }
 
