@@ -15,16 +15,16 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// minWaypointIstioVersion is the lowest Istio version that supports multiple
-// TargetRef types (e.g. ServiceEntry) on Istio Authz policies.
-var minWaypointIstioVersion = "1.25.1"
+const (
+	minWaypointIstioVersion = "1.25.1"
+)
 
 func TestKgatewayWaypoint(t *testing.T) {
 	ctx := context.Background()
 
 	// Set Istio version if not already set
 	if os.Getenv(testruntime.IstioVersionEnv) == "" {
-		os.Setenv(testruntime.IstioVersionEnv, testruntime.DefaultIstioVersion)
+		os.Setenv(testruntime.IstioVersionEnv, testruntime.DefaultIstioVersion) // Using minimum required version that supports multiple TargetRef types for Istio Authz policies.
 	}
 
 	if testruntime.ShouldSkipIstioVersion(t, minWaypointIstioVersion) {
