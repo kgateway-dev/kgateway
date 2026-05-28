@@ -92,7 +92,7 @@ func (c *Cli) Command(ctx context.Context, args ...string) cmdutils.Cmd {
 		WithStdout(c.receiver).
 		WithStderr(c.receiver)
 	if c.quiet {
-		cmd = cmd.WithQuiet()
+		cmd = cmdutils.WithQuiet(cmd)
 	}
 	return cmd
 }
