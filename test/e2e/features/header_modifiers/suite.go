@@ -10,10 +10,11 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -23,6 +24,7 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 
 type testingSuite struct {
 	*base.BaseTestingSuite
+	localGateway common.Gateway
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -41,11 +43,24 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
+func (s *testingSuite) SetupSuite() {
+	s.BaseTestingSuite.SetupSuite()
+
+	address := s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(
+		s.Ctx,
+		proxyObjectMeta.Name,
+		proxyObjectMeta.Namespace,
+	)
+	s.localGateway = common.Gateway{
+		NamespacedName: types.NamespacedName{
+			Name:      proxyObjectMeta.Name,
+			Namespace: proxyObjectMeta.Namespace,
+		},
+		Address: address,
+	}
+}
+
 func (s *testingSuite) checkPodsRunning() {
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
-		testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-			LabelSelector: testdefaults.CurlPodLabelSelector,
-		})
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		testdefaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
 			LabelSelector: testdefaults.HttpbinLabelSelector,
@@ -119,25 +134,19 @@ func (s *testingSuite) assertHeaders(port int,
 	requestHeaders map[string][]any,
 	responseHeaders map[string]any,
 ) {
-	allOptions := []curl.Option{
-		curl.WithPath("/headers"),
-		curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-		curl.WithHostHeader("example.com"),
-		curl.WithPort(port),
-	}
-
 	requestHeadersJSON, err := json.Marshal(map[string]any{"headers": requestHeaders})
 	s.Require().NoError(err, "unable to marshal request headers to JSON")
 
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		allOptions,
+	s.localGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Headers:    responseHeaders,
 			NotHeaders: []string{"X-Request-Id", "X-Envoy-Upstream-Service-Time"},
 			Body:       testmatchers.JSONContains(requestHeadersJSON),
 		},
+		curl.WithPath("/headers"),
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(port),
 	)
 }

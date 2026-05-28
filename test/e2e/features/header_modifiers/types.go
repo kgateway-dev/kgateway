@@ -28,7 +28,7 @@ var (
 		Namespace: "default",
 	}
 
-	commonSetupManifests = []string{commonManifest, testdefaults.HttpbinManifest, testdefaults.CurlPodManifest}
+	commonSetupManifests = []string{commonManifest, testdefaults.HttpbinManifest}
 
 	setup = base.TestCase{
 		Manifests: append([]string{setupManifest}, commonSetupManifests...),
