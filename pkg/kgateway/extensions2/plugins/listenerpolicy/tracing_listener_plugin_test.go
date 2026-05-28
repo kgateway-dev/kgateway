@@ -443,16 +443,15 @@ func TestTracingConverter(t *testing.T) {
 			t.Cleanup(cancel)
 
 			t.Run(tc.name, func(t *testing.T) {
+				backend := ir.NewBackendObjectIR(ir.ObjectSource{
+					Kind:      "Backend",
+					Name:      "test-service",
+					Namespace: "default",
+				}, 0, "")
+
 				provider, config, err := translateTracing(
 					tc.config,
-					func() *ir.BackendObjectIR {
-						backend := ir.NewBackendObjectIR(ir.ObjectSource{
-							Kind:      "Backend",
-							Name:      "test-service",
-							Namespace: "default",
-						}, 0, "")
-						return &backend
-					}(),
+					&backend,
 				)
 				updateTracingConfig(&ir.HcmContext{
 					Gateway: ir.GatewayIR{
