@@ -214,7 +214,7 @@ func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey, gvPrefix s
 func BackendResourceName(objSource ObjectSource, port int32, extraKey string) string {
 	var sb strings.Builder
 	sb.WriteString(objSource.ResourceName())
-	sb.WriteString(fmt.Sprintf(":%d", port))
+	fmt.Fprintf(&sb, ":%d", port)
 
 	if extraKey != "" {
 		sb.WriteRune('_')
