@@ -101,6 +101,9 @@ func (s *testingSuite) SetupSuite() {
 		"TestStripHostPortAnyPort":                   {gatewayManifest, stripHostPortAnyPortManifest},
 		"TestStripHostPortMatchingPort":              {gatewayManifest, stripHostPortMatchingPortManifest},
 
+		"TestLocalReplyConfigDefaultFormat": {gatewayManifest, localReplyHttpRouteManifest, localReplyConfigManifest},
+		"TestLocalReplyConfigMapper":        {gatewayManifest, localReplyHttpRouteManifest, localReplyConfigManifest},
+
 		// forwardClientCertDetails tests. All share gateway + request-id-echo
 		// + the route + the mtls-validation policy. Each scenario adds (or
 		// omits, for the baseline) a forward-client-cert ListenerPolicy.
@@ -687,6 +690,40 @@ func (s *testingSuite) TestStripHostPortMatchingPort() {
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("example.com:9999"),
+		},
+	)
+}
+
+// Verifies that the default body format for local replies wraps a direct response.
+func (s *testingSuite) TestLocalReplyConfigDefaultFormat() {
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPath("/direct-response"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("<p>custom body</p>"),
+		},
+	)
+}
+
+// Verifies that a filtering mapper for a local reply adjusts the body.
+func (s *testingSuite) TestLocalReplyConfigMapper() {
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPath("/not-found"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring(`{"customValue":42,"originalBody":""}`),
 		},
 	)
 }

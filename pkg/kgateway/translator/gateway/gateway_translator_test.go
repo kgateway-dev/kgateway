@@ -1734,6 +1734,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HTTPListenerPolicy with localReplies", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"httplistenerpolicy/local-reply-config.yaml"},
+			outputFile: "httplistenerpolicy/local-reply-config.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("HTTPListenerPolicy merging", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"httplistenerpolicy/merge.yaml"},
@@ -2002,6 +2013,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy-http/default-host-for-http10-without-accept-http10.yaml"},
 			outputFile: "listener-policy-http/default-host-for-http10-without-accept-http10.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with localReplies", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/local-reply-config.yaml"},
+			outputFile: "listener-policy-http/local-reply-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
