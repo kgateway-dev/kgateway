@@ -13,7 +13,6 @@ Clusters:
     timeout: 3s
     unhealthyThreshold: 3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin-grpc_8080
   type: EDS
 - connectTimeout: 5s
@@ -31,11 +30,9 @@ Clusters:
     timeout: 3s
     unhealthyThreshold: 3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin_8080
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

@@ -5,11 +5,9 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_example-svc_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -73,7 +71,7 @@ Routes:
             name: rust_module
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
-            value: '{"defaultAction":"deny","rules":[{"cidrs":["10.0.0.0/8"],"action":"allow"},{"cidrs":["2001:db8::/32"],"action":"allow"},{"cidrs":["192.168.1.100"],"action":"allow"},{"cidrs":["2001:db8::1"],"action":"allow"}]}'
+            value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["10.0.0.0/8"]},{"action":"allow","cidrs":["2001:db8::/32"]},{"action":"allow","cidrs":["192.168.1.100"]},{"action":"allow","cidrs":["2001:db8::1"]}]}'
           perRouteConfigName: http-acl
     - match:
         pathSeparatedPrefix: /bar
@@ -93,7 +91,7 @@ Routes:
             name: rust_module
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
-            value: '{"defaultAction":"deny","rules":[{"cidrs":["10.0.0.0/8"],"action":"allow"},{"cidrs":["2001:db8::/32"],"action":"allow"},{"cidrs":["192.168.1.100"],"action":"allow"},{"cidrs":["2001:db8::1"],"action":"allow"}]}'
+            value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["10.0.0.0/8"]},{"action":"allow","cidrs":["2001:db8::/32"]},{"action":"allow","cidrs":["192.168.1.100"]},{"action":"allow","cidrs":["2001:db8::1"]}]}'
           perRouteConfigName: http-acl
 Statuses:
   gateways:

@@ -1,6 +1,7 @@
 package curl
 
 import (
+	"context"
 	"encoding/base64"
 	"net/http"
 	"strconv"
@@ -29,6 +30,15 @@ const (
 
 // Option represents an option for a curl request.
 type Option func(config *requestConfig)
+
+// WithContext returns the Option to set a context on the curl request. The context
+// is used by ExecuteRequest to build the http.Request and aborts the in-flight
+// call when ctx cancels.
+func WithContext(ctx context.Context) Option {
+	return func(config *requestConfig) {
+		config.ctx = ctx
+	}
+}
 
 // VerboseOutput returns the Option to emit a verbose output for the  curl request
 // https://curl.se/docs/manpage.html#-v

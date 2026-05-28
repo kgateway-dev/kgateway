@@ -289,7 +289,7 @@ type Pod struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 
 	// A selector which must be true for the pod to fit on a node. See
-	// https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
+	// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/ for
 	// details.
 	//
 	// +optional

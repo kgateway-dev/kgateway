@@ -369,6 +369,18 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 	}
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+	p.applyGatewayLevelPerRouteSettings(policy.spec, out)
+}
+
+func (p *trafficPolicyPluginGwPass) applyGatewayLevelPerRouteSettings(spec trafficPolicySpecIr, out *envoyroutev3.RouteConfiguration) {
+	for _, vh := range out.VirtualHosts {
+		for _, route := range vh.Routes {
+			if route.GetRoute() == nil {
+				continue
+			}
+			p.handlePerRoutePolicies(spec, route)
+		}
+	}
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
@@ -709,7 +721,10 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	}
 
 	if spec.timeouts != nil {
-		action.IdleTimeout = spec.timeouts.routeStreamIdleTimeout
+		// Only set idle timeout if not already set (route policy takes precedence)
+		if action.GetIdleTimeout() == nil {
+			action.IdleTimeout = spec.timeouts.routeStreamIdleTimeout
+		}
 		// Only set the route timeout if it is not already set, which implies that it was
 		// set by the builtin HTTPRouteTimeouts policy
 		if action.GetTimeout() == nil {

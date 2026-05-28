@@ -154,6 +154,33 @@ controller:
     annotations: {}
     # -- Extra labels for the ServiceMonitor.
     extraLabels: {}
+  # -- Configure the readiness probe for the controller container. Overrides the default probe when set.
+  # E.g.:
+  #
+  # readinessProbe:
+  #   httpGet:
+  #     path: /readyz
+  #     port: 9093
+  #   initialDelaySeconds: 1
+  #   periodSeconds: 10
+  #
+  # Probe settings are deep merged with the above config. Custom `exec`, `grpc`,
+  # or `tcpSocket` handlers replace the default `httpGet` handler.
+  readinessProbe: {}
+  # -- Configure the startup probe for the controller container. Overrides the default probe when set.
+  # E.g.:
+  #
+  # startupProbe:
+  #   httpGet:
+  #     path: /readyz
+  #     port: 9093
+  #   initialDelaySeconds: 0
+  #   periodSeconds: 1
+  #   failureThreshold: 600
+  #
+  # Probe settings are deep merged with the above config. Custom `exec`, `grpc`,
+  # or `tcpSocket` handlers replace the default `httpGet` handler.
+  startupProbe: {}
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
   # -- Configure TLS settings for the xDS gRPC servers.
@@ -219,7 +246,7 @@ image:
   # -- Set the default image pull policy.
   pullPolicy: IfNotPresent
 
-# -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/latest/install/advanced/#namespace-discovery.
+# -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/envoy/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
 
 # -- Map of GatewayClass names to GatewayParameters references that will be set on

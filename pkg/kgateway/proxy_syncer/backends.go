@@ -15,7 +15,7 @@ import (
 )
 
 type uccWithCluster struct {
-	Client ir.UniqlyConnectedClient
+	Client ir.UniquelyConnectedClient
 	// +krtEqualsTodo include full cluster diff in equality
 	Cluster        *envoyclusterv3.Cluster
 	ClusterVersion uint64
@@ -38,7 +38,7 @@ type PerClientEnvoyClusters struct {
 	index    krt.Index[string, uccWithCluster]
 }
 
-func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) []uccWithCluster {
+func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) []uccWithCluster {
 	return krt.Fetch(kctx, iu.clusters, krt.FilterIndex(iu.index, ucc.ResourceName()))
 }
 
@@ -47,7 +47,7 @@ func NewPerClientEnvoyClusters(
 	krtopts krtutil.KrtOptions,
 	translator *irtranslator.BackendTranslator,
 	finalBackends krt.Collection[*ir.BackendObjectIR],
-	uccs krt.Collection[ir.UniqlyConnectedClient],
+	uccs krt.Collection[ir.UniquelyConnectedClient],
 ) PerClientEnvoyClusters {
 	clusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj *ir.BackendObjectIR) []uccWithCluster {
 		backendLogger := logger.With("backend", backendObj)

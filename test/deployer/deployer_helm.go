@@ -1,6 +1,7 @@
 package deployer
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -15,7 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/yaml"
@@ -25,6 +29,7 @@ import (
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -226,6 +231,7 @@ func (dt DeployerTester) RunHelmChartTest(
 	dir string,
 	crdDir string,
 	fakeClient apiclient.Client,
+	envTestCfg *rest.Config,
 ) {
 	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
 	outputFile := filePath + "-out.yaml"
@@ -295,10 +301,83 @@ func (dt DeployerTester) RunHelmChartTest(
 	outputStr := "%s\nthe golden file, which can be refreshed via `REFRESH_GOLDEN=true go test ./test/deployer`, is\n%s"
 	assert.Empty(t, diff, outputStr, diff, outputFile)
 
+	// Hand the rendered objects to the envtest API server via dry-run Create.
+	// The API server runs the same admission/schema validation it would for a
+	// real apply, but discards the object — so this catches malformed
+	// metadata, label/annotation length limits, schema violations, etc. that
+	// the golden-file diff would otherwise let through.
+	if envTestCfg != nil {
+		validateObjectsAgainstAPIServer(t, ctx, envTestCfg, scheme, gtw.GetNamespace(), deployObjs)
+	}
+
 	// Run additional validation if provided
 	if tt.Validate != nil {
 		tt.Validate(t, string(data))
 	}
+}
+
+// validateObjectsAgainstAPIServer sends each rendered object to the API server
+// with client.DryRunAll. The server validates the object as if it were being
+// created (admission webhooks, schema, label/annotation rules, etc.) but does
+// not persist it. All errors are collected and reported together so the caller
+// sees every problem in one run rather than just the first.
+//
+// Objects whose GVK has no REST mapping in the test API server (typically
+// CRDs that weren't installed, e.g. VPA) are skipped with a log line — the
+// goal is to validate the well-known Kubernetes objects the deployer
+// produces, not to require every CRD to be present in envtest.
+//
+// Each object is converted to unstructured.Unstructured before being sent.
+// The deployer produces typed objects for some kinds (e.g. PodDisruptionBudget,
+// HorizontalPodAutoscaler) that aren't registered in the test scheme, and the
+// controller-runtime client would otherwise refuse to encode them. Converting
+// to unstructured mirrors what the API server actually receives over the wire
+// and makes this helper robust to any kind the deployer might emit.
+func validateObjectsAgainstAPIServer(
+	t *testing.T,
+	ctx context.Context,
+	cfg *rest.Config,
+	scheme *runtime.Scheme,
+	defaultNamespace string,
+	objs []client.Object,
+) {
+	t.Helper()
+
+	ctrlClient, err := client.New(cfg, client.Options{Scheme: scheme})
+	require.NoError(t, err, "failed to create controller-runtime client for dry-run validation")
+
+	var errs []error
+	for _, obj := range objs {
+		gvk := obj.GetObjectKind().GroupVersionKind()
+		u := &unstructured.Unstructured{}
+		raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj.DeepCopyObject())
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to convert %s %s/%s to unstructured: %w",
+				gvk.Kind, obj.GetNamespace(), obj.GetName(), err))
+			continue
+		}
+		u.Object = raw
+		u.GetObjectKind().SetGroupVersionKind(gvk)
+		// Owner references carry the source Gateway's UID, which the test
+		// inputs don't populate. Dry-run admission would reject the reference
+		// as malformed; drop it — we're validating the object shape, not the
+		// owner graph.
+		u.SetOwnerReferences(nil)
+		if kubeutils.IsNamespacedGVK(gvk) && u.GetNamespace() == "" {
+			u.SetNamespace(defaultNamespace)
+		}
+
+		if err := ctrlClient.Create(ctx, u, client.DryRunAll); err != nil {
+			if meta.IsNoMatchError(err) {
+				t.Logf("skipping dry-run for %s/%s: no API server mapping (CRD not installed): %v",
+					gvk.Kind, u.GetName(), err)
+				continue
+			}
+			errs = append(errs, fmt.Errorf("API server rejected %s %s/%s: %w",
+				gvk.Kind, u.GetNamespace(), u.GetName(), err))
+		}
+	}
+	assert.NoError(t, errors.Join(errs...), "rendered objects must pass API server validation")
 }
 
 // sanitizeOutput removes things that change often but are not relevant to the tests

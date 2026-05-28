@@ -28,7 +28,6 @@ Clusters:
               terminal: true
             - connectionProperties:
                 sourceIp: true
-  metadata: {}
   name: kube_default_httpbin-maglev_8080
   type: EDS
 - commonLbConfig:
@@ -54,11 +53,9 @@ Clusters:
                 headerName: x-session-id
           maximumRingSize: "2048"
           minimumRingSize: "1024"
-  metadata: {}
   name: kube_default_httpbin-ringhash_8080
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

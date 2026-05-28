@@ -1,0 +1,174 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test
+spec:
+  parentRefs:
+    - name: test
+  hostnames:
+    - "test.com"
+  rules:
+    - name: rule0
+      backendRefs:
+        - name: test
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /route-0
+    - name: rule1
+      backendRefs:
+        - name: test
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /route-1
+    - name: rule2
+      backendRefs:
+        - name: test
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /route-2
+---
+# Gateway-level ACL (higher priority). Default deny, allow trusted internal range.
+# With PolicyMerge acl=DeepMerge, merged with gateway-acl-2 at route-config level.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-acl-1
+  annotations:
+    kgateway.dev/policy-weight: "5"
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: test
+  acl:
+    defaultAction: deny
+    rules:
+      - cidrs:
+          - "10.0.0.0/8"
+        action: allow
+---
+# Gateway-level ACL (lower priority). Same defaultAction, adds another allow range.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-acl-2
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: test
+  acl:
+    defaultAction: deny
+    rules:
+      - cidrs:
+          - "192.168.0.0/16"
+        action: allow
+---
+# Route-level ACL for rule0 (higher priority). Default allow.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-acl-rule0-a
+  annotations:
+    kgateway.dev/policy-weight: "5"
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: test
+      sectionName: rule0
+  acl:
+    defaultAction: allow
+    rules:
+      - cidrs:
+          - "172.16.0.0/12"
+        action: deny
+---
+# Route-level ACL for rule0 (lower priority). Conflicting defaultAction (deny vs allow).
+# route-acl-rule0-a wins on defaultAction conflict falling back to shallow merge because
+# it has higher priority.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-acl-rule0-b
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: test
+      sectionName: rule0
+  acl:
+    defaultAction: deny
+    rules:
+      - cidrs:
+          - "10.10.0.0/16"
+        action: deny
+---
+# Route-level ACL for rule1. No conflict, Priority does not matter. Deep Merge.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-acl-rule1-a
+  annotations:
+    kgateway.dev/policy-weight: "5"
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: test
+      sectionName: rule1
+  acl:
+    defaultAction: deny
+    rules:
+      - cidrs:
+          - "138.16.0.0/12"
+        action: allow
+---
+# Route-level ACL for rule1. No conflict, Priority does not matter. Deep Merge.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-acl-rule1-b
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: test
+      sectionName: rule1
+  acl:
+    defaultAction: deny
+    rules:
+      - cidrs:
+          - "11.11.0.0/16"
+        action: deny
+---
+# rule2 have no route-level ACL; only the merged gateway-level ACL applies.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test

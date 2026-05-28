@@ -771,6 +771,9 @@ main() {
         echo "  CLUSTER_TYPE=${CLUSTER_TYPE}"
         echo "  CLUSTER_NAME=${CLUSTER_NAME}"
         if [[ "$CLUSTER_TYPE" == "k3d" ]]; then
+            # GATEWAY_ADDRESS_OVERRIDE only affects the base gateway resolved via
+            # common.SetupBaseGateway; multi-gateway suites that construct their own
+            # common.Gateway values do not honor it and are out of scope under k3d.
             echo "  GATEWAY_ADDRESS_OVERRIDE=${GATEWAY_ADDRESS_OVERRIDE:-localhost}"
         fi
         if is_truthy PERSIST_INSTALL; then

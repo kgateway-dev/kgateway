@@ -332,14 +332,14 @@ fn overlapping_allow_and_deny_longest_prefix_wins() {
             {"cidrs":["10.128.0.0/9"],"action":"deny"}
         ]}"#,
     );
-    // In the allow /8 only (lower half) → allowed.
+    // In the allow /8 only (lower half): allowed.
     assert_eq!(act(&acl, "10.1.0.0"), Action::Allow);
     assert_eq!(act(&acl, "10.127.255.255"), Action::Allow);
-    // In both /8 and /9 (upper half) → deny wins (more specific prefix).
+    // In both /8 and /9 (upper half): deny wins (more specific prefix).
     assert_eq!(act(&acl, "10.128.0.0"), Action::Deny);
     assert_eq!(act(&acl, "10.200.0.1"), Action::Deny);
     assert_eq!(act(&acl, "10.255.255.255"), Action::Deny);
-    // Outside both rules → default deny.
+    // Outside both rules: default deny.
     assert_eq!(act(&acl, "11.0.0.1"), Action::Deny);
 }
 

@@ -266,7 +266,7 @@ type XRateLimitHeadersStandard string
 const (
 	// XRateLimitHeaderOff disables emitting of XRateLimit headers.
 	XRateLimitHeaderOff XRateLimitHeadersStandard = "Off"
-	// XRateLimitHeaderDraftV03 outputs headers as described in [draft RFC version 03](https://tools.ietf.org/id/draft-polli-ratelimit-headers-03.html).
+	// XRateLimitHeaderDraftV03 outputs headers as described in [draft RFC version 03](https://datatracker.ietf.org/doc/id/draft-polli-ratelimit-headers-03.html).
 	XRateLimitHeaderDraftV03 XRateLimitHeadersStandard = "DraftVersion03"
 )
 

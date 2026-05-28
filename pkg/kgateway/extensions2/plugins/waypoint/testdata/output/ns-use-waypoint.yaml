@@ -11,7 +11,6 @@ Clusters:
               portValue: 9000
         loadBalancingWeight: 1
       loadBalancingWeight: 1
-  metadata: {}
   name: istio-se_infra_se-c_se-c.infra.svc.cluster.local_9000
   type: STATIC
 - connectTimeout: 5s
@@ -20,7 +19,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_infra_helloworld-headless_5000
   type: EDS
 - connectTimeout: 5s
@@ -29,7 +27,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_infra_svc-a_5000
   type: EDS
 - connectTimeout: 5s
@@ -38,11 +35,9 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_infra_svc-b_9000
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

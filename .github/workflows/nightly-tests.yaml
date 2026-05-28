@@ -8,7 +8,7 @@ env:
 
 on:
   schedule:
-    - cron: "0 5 * * *" # every day @ 05:00 UTC, run tests against the workflow commit
+    - cron: "0 5 * * *" # every day @ 05:00 UTC, run tests against main and supported LTS branches
   workflow_dispatch:
     inputs:
       target_ref:
@@ -34,37 +34,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  determine_ref:
-    name: Determine Ref
+  determine_refs:
+    name: Determine Refs
     runs-on: ubuntu-22.04
     outputs:
-      checkout_ref: ${{ steps.determine.outputs.checkout_ref }}
-      display_ref: ${{ steps.determine.outputs.display_ref }}
+      refs: ${{ steps.determine.outputs.refs }}
     steps:
       - id: determine
-        name: Determine Ref
+        name: Determine Refs
         shell: bash
         env:
           INPUT_TARGET_REF: ${{ inputs.target_ref }}
         run: |
-          checkout_ref="${INPUT_TARGET_REF:-}"
-          display_ref="${INPUT_TARGET_REF:-}"
-          if [[ -z "${checkout_ref}" ]]; then
-            checkout_ref="${GITHUB_SHA}"
-            display_ref="${GITHUB_REF_NAME}@${GITHUB_SHA::7}"
+          if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
+            refs='[
+              {"checkout_ref":"main","display_ref":"main"},
+              {"checkout_ref":"v2.2.x","display_ref":"v2.2.x"},
+              {"checkout_ref":"v2.3.x","display_ref":"v2.3.x"}
+            ]'
+          else
+            checkout_ref="${INPUT_TARGET_REF:-}"
+            display_ref="${INPUT_TARGET_REF:-}"
+            if [[ -z "${checkout_ref}" ]]; then
+              checkout_ref="${GITHUB_SHA}"
+              display_ref="${GITHUB_REF_NAME}@${GITHUB_SHA::7}"
+            fi
+            refs="$(jq -cn --arg checkout_ref "${checkout_ref}" --arg display_ref "${display_ref}" \
+              '[{checkout_ref:$checkout_ref,display_ref:$display_ref}]')"
           fi
-          echo "checkout_ref=${checkout_ref}" >> "$GITHUB_OUTPUT"
-          echo "display_ref=${display_ref}" >> "$GITHUB_OUTPUT"
+          refs="$(jq -c . <<< "${refs}")"
+          echo "refs=${refs}" >> "$GITHUB_OUTPUT"
 
   kube_gateway_api_conformance_tests:
-    name: Conformance (ref=${{ needs.determine_ref.outputs.display_ref }}, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }}, gw-api=${{matrix.gateway-api-channel}})
-    needs: determine_ref
+    name: Conformance (ref=${{ matrix.ref.display_ref }}, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }}, gw-api=${{matrix.gateway-api-channel}})
+    needs: determine_refs
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
+        ref: ${{ fromJson(needs.determine_refs.outputs.refs) }}
         env-versions:
           - file: "./.github/workflows/.env/nightly-tests/max_versions.env"
             label: max_versions
@@ -74,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: ${{ needs.determine_ref.outputs.checkout_ref }}
+          ref: ${{ matrix.ref.checkout_ref }}
       - name: Dotenv Action
         uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
         id: dotenv
@@ -90,14 +100,15 @@ jobs:
           summarize-report: true
 
   kube_gateway_api_load_tests:
-    name: Load Tests (ref=${{ needs.determine_ref.outputs.display_ref }}, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
-    needs: determine_ref
+    name: Load Tests (ref=${{ matrix.ref.display_ref }}, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
+    needs: determine_refs
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
+        ref: ${{ fromJson(needs.determine_refs.outputs.refs) }}
         kube-version:
           - node: 'v1.31.9@sha256:b94a3a6c06198d17f59cca8c6f486236fa05e2fb359cbd75dabbfc348a10b211'
             kubectl: v1.31.9
@@ -108,18 +119,19 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: ${{ needs.determine_ref.outputs.checkout_ref }}
+          ref: ${{ matrix.ref.checkout_ref }}
       - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
-    name: E2E (ref=${{ needs.determine_ref.outputs.display_ref }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
-    needs: determine_ref
+    name: E2E (ref=${{ matrix.ref.display_ref }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
+    needs: determine_refs
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
+        ref: ${{ fromJson(needs.determine_refs.outputs.refs) }}
         env-versions:
           - file: "./.github/workflows/.env/nightly-tests/max_versions.env"
             label: max
@@ -143,7 +155,42 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: ${{ needs.determine_ref.outputs.checkout_ref }}
+          ref: ${{ matrix.ref.checkout_ref }}
+      # v2.2.x is built against Gateway API 1.4 and refuses to start on 1.5 (#13872), so the
+      # v2.2.x x v1.5.1 lanes need special handling: skip the standard channel entirely, and
+      # run the experimental channel with the version check bypassed to keep forward-compat
+      # signal. This is done with step guards rather than a matrix `exclude:` because every
+      # dimension here is object-valued and object-valued excludes are unreliable
+      # (actions/runner#1512).
+      - name: Determine run plan
+        id: guard
+        env:
+          REF: ${{ matrix.ref.checkout_ref }}
+          GW_API_VERSION: ${{ matrix.gateway-api-version.version }}
+          GW_API_CHANNEL: ${{ matrix.gateway-api-version.channel }}
+        shell: bash
+        run: |
+          run=true
+          bypass_version_check=false
+          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.5.1" ]]; then
+            case "${GW_API_CHANNEL}" in
+              standard)     run=false ;;
+              experimental) bypass_version_check=true ;;
+            esac
+          fi
+          echo "run=${run}" >> "${GITHUB_OUTPUT}"
+          echo "bypass_version_check=${bypass_version_check}" >> "${GITHUB_OUTPUT}"
+          echo "ref=${REF} gw-api=${GW_API_VERSION}-${GW_API_CHANNEL} -> run=${run} bypass_version_check=${bypass_version_check}"
+      # Bake KGW_SKIP_GATEWAY_API_VERSION_CHECK into the chart before setup-kind-cluster
+      # packages it (hack/kind/setup-kind.sh runs `make package-kgateway-charts` from source),
+      # so the controller starts despite the unsupported Gateway API version.
+      - name: Bypass Gateway API version check
+        if: ${{ steps.guard.outputs.bypass_version_check == 'true' }}
+        shell: bash
+        run: |
+          yq -i '.controller.extraEnv.KGW_SKIP_GATEWAY_API_VERSION_CHECK = "true"' \
+            install/helm/kgateway/values.yaml
+          echo "Set controller.extraEnv.KGW_SKIP_GATEWAY_API_VERSION_CHECK=true in install/helm/kgateway/values.yaml"
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
       - name: Dotenv Action
@@ -153,7 +200,7 @@ jobs:
           path: ${{ matrix.env-versions.file }}
           log-variables: true
       - name: Setup KinD Cluster
-        if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
+        if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' && steps.guard.outputs.run == 'true' }}
         uses: ./.github/actions/setup-kind-cluster
         with:
           gateway-api-version: ${{ matrix.gateway-api-version.version }}
@@ -164,7 +211,7 @@ jobs:
           kind-node-version: ${{ steps.dotenv.outputs.node_version }}
           localstack: "true"
       - name: Setup k3d Cluster
-        if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
+        if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' && steps.guard.outputs.run == 'true' }}
         uses: ./.github/actions/setup-k3d-cluster
         with:
           gateway-api-version: ${{ matrix.gateway-api-version.version }}
@@ -176,6 +223,7 @@ jobs:
           localstack: "true"
           github-token: ${{ github.token }}
       - id: run-tests
+        if: ${{ steps.guard.outputs.run == 'true' }}
         uses: ./.github/actions/kubernetes-e2e-tests
         env:
           VERSION: 'v1.0.0-ci1'

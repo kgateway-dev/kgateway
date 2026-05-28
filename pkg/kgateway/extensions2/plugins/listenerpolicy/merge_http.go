@@ -40,8 +40,10 @@ func MergeHttpPolicies(
 		mergeDefaultHostForHttp10,
 		mergeEarlyHeaderMutation,
 		mergeMaxRequestHeadersKb,
+		mergeMaxRequestsPerConnection,
 		mergeUuidRequestIdConfig,
 		mergeForwardClientCertDetails,
+		mergeStripHostPortMode,
 	}
 	for _, mergeFunc := range mergeFuncs {
 		mergeFunc(origin, p1, p2, p2Ref, p2MergeOrigins, mergeOpts, mergeOrigins)
@@ -377,6 +379,22 @@ func mergeUuidRequestIdConfig(
 	mergeOrigins.SetOne(origin+"uuidRequestIdConfig", p2Ref, p2MergeOrigins)
 }
 
+func mergeMaxRequestsPerConnection(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.maxRequestsPerConnection, p2.maxRequestsPerConnection, opts) {
+		return
+	}
+
+	p1.maxRequestsPerConnection = p2.maxRequestsPerConnection
+	mergeOrigins.SetOne(origin+"maxRequestsPerConnection", p2Ref, p2MergeOrigins)
+}
+
 // mergeForwardClientCertDetails merges the mode and details sub fields
 // independently. This allows a policy that only sets one of those fields to still be merged.
 func mergeForwardClientCertDetails(
@@ -395,4 +413,20 @@ func mergeForwardClientCertDetails(
 		p1.setCurrentClientCertDetails = p2.setCurrentClientCertDetails
 		mergeOrigins.SetOne(origin+"forwardClientCertDetails.details", p2Ref, p2MergeOrigins)
 	}
+}
+
+func mergeStripHostPortMode(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.stripHostPortMode, p2.stripHostPortMode, opts) {
+		return
+	}
+
+	p1.stripHostPortMode = p2.stripHostPortMode
+	mergeOrigins.SetOne(origin+"stripHostPortMode", p2Ref, p2MergeOrigins)
 }

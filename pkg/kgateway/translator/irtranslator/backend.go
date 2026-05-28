@@ -53,7 +53,7 @@ type BackendTranslator struct {
 func (t *BackendTranslator) TranslateBackend(
 	ctx context.Context,
 	kctx krt.HandlerContext,
-	ucc ir.UniqlyConnectedClient,
+	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
 ) (*envoyclusterv3.Cluster, error) {
 	// defensive checks that the backend is supported and has a plugin that can translate it.
@@ -105,7 +105,7 @@ func (t *BackendTranslator) TranslateBackend(
 func (t *BackendTranslator) runPolicies(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	ucc ir.UniqlyConnectedClient,
+	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
 	inlineEps *ir.EndpointsForBackend,
 	out *envoyclusterv3.Cluster,
@@ -279,11 +279,15 @@ func toExtensionDnsLookupFamily(family envoyclusterv3.Cluster_DnsLookupFamily) e
 }
 
 func translateAppProtocol(appProtocol ir.AppProtocol) map[string]*anypb.Any {
-	typedExtensionProtocolOptions := map[string]*anypb.Any{}
-	if appProtocol == ir.HTTP2AppProtocol {
-		typedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = cloneAny(h2Options)
+	// Avoid allocating an empty map for the common HTTP/1 case. Downstream
+	// callers (utils/cluster.go, extensions2/pluginutils) lazily allocate the
+	// map when they need to set a key.
+	if appProtocol != ir.HTTP2AppProtocol {
+		return nil
 	}
-	return typedExtensionProtocolOptions
+	return map[string]*anypb.Any{
+		"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": cloneAny(h2Options),
+	}
 }
 
 func cloneAny(msg *anypb.Any) *anypb.Any {
@@ -301,7 +305,6 @@ func cloneAny(msg *anypb.Any) *anypb.Any {
 func initializeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
 	out := &envoyclusterv3.Cluster{
 		Name:                          b.ClusterName(),
-		Metadata:                      new(envoycorev3.Metadata),
 		ConnectTimeout:                durationpb.New(clusterConnectionTimeout),
 		TypedExtensionProtocolOptions: translateAppProtocol(b.AppProtocol),
 		CommonLbConfig:                createCommonLbConfig(b),

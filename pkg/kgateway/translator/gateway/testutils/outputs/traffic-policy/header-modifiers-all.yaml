@@ -5,11 +5,9 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_example-svc_8000
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -94,24 +92,24 @@ Routes:
       mutations:
         requestMutations:
         - append:
-            header:
-              key: X-Custom-Request-Header
-              value: custom-request-value-gw
-        - append:
             appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:
               key: X-Custom-Request-Header-Set
               value: custom-request-value-gw
-        - remove: X-Request-Id
-        responseMutations:
         - append:
             header:
-              key: X-Custom-Response-Header
-              value: custom-response-value-gw
+              key: X-Custom-Request-Header
+              value: custom-request-value-gw
+        - remove: X-Request-Id
+        responseMutations:
         - append:
             appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:
               key: X-Custom-Response-Header-Set
+              value: custom-response-value-gw
+        - append:
+            header:
+              key: X-Custom-Response-Header
               value: custom-response-value-gw
         - remove: X-Envoy-Upstream-Service-Time
   virtualHosts:
@@ -136,24 +134,24 @@ Routes:
           mutations:
             requestMutations:
             - append:
-                header:
-                  key: X-Custom-Request-Header
-                  value: custom-request-value-route
-            - append:
                 appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                 header:
                   key: X-Custom-Request-Header-Set
                   value: custom-request-value-route
-            - remove: X-Request-Id
-            responseMutations:
             - append:
                 header:
-                  key: X-Custom-Response-Header
-                  value: custom-response-value-route
+                  key: X-Custom-Request-Header
+                  value: custom-request-value-route
+            - remove: X-Request-Id
+            responseMutations:
             - append:
                 appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                 header:
                   key: X-Custom-Response-Header-Set
+                  value: custom-response-value-route
+            - append:
+                header:
+                  key: X-Custom-Response-Header
                   value: custom-response-value-route
             - remove: X-Envoy-Upstream-Service-Time
 - ignorePortInHostMatching: true
@@ -169,24 +167,24 @@ Routes:
       mutations:
         requestMutations:
         - append:
-            header:
-              key: X-Custom-Request-Header
-              value: custom-request-value-gw
-        - append:
             appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:
               key: X-Custom-Request-Header-Set
               value: custom-request-value-gw
-        - remove: X-Request-Id
-        responseMutations:
         - append:
             header:
-              key: X-Custom-Response-Header
-              value: custom-response-value-gw
+              key: X-Custom-Request-Header
+              value: custom-request-value-gw
+        - remove: X-Request-Id
+        responseMutations:
         - append:
             appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:
               key: X-Custom-Response-Header-Set
+              value: custom-response-value-gw
+        - append:
+            header:
+              key: X-Custom-Response-Header
               value: custom-response-value-gw
         - remove: X-Envoy-Upstream-Service-Time
   virtualHosts:
@@ -216,24 +214,24 @@ Routes:
           mutations:
             requestMutations:
             - append:
-                header:
-                  key: X-Custom-Request-Header
-                  value: custom-request-value-route
-            - append:
                 appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                 header:
                   key: X-Custom-Request-Header-Set
                   value: custom-request-value-route
-            - remove: X-Request-Id
-            responseMutations:
             - append:
                 header:
-                  key: X-Custom-Response-Header
-                  value: custom-response-value-route
+                  key: X-Custom-Request-Header
+                  value: custom-request-value-route
+            - remove: X-Request-Id
+            responseMutations:
             - append:
                 appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                 header:
                   key: X-Custom-Response-Header-Set
+                  value: custom-response-value-route
+            - append:
+                header:
+                  key: X-Custom-Response-Header
                   value: custom-response-value-route
             - remove: X-Envoy-Upstream-Service-Time
     typedPerFilterConfig:
@@ -242,24 +240,24 @@ Routes:
         mutations:
           requestMutations:
           - append:
-              header:
-                key: X-Custom-Request-Header
-                value: custom-request-value-ls
-          - append:
               appendAction: OVERWRITE_IF_EXISTS_OR_ADD
               header:
                 key: X-Custom-Request-Header-Set
                 value: custom-request-value-ls
-          - remove: X-Request-Id
-          responseMutations:
           - append:
               header:
-                key: X-Custom-Response-Header
-                value: custom-response-value-ls
+                key: X-Custom-Request-Header
+                value: custom-request-value-ls
+          - remove: X-Request-Id
+          responseMutations:
           - append:
               appendAction: OVERWRITE_IF_EXISTS_OR_ADD
               header:
                 key: X-Custom-Response-Header-Set
+                value: custom-response-value-ls
+          - append:
+              header:
+                key: X-Custom-Response-Header
                 value: custom-response-value-ls
           - remove: X-Envoy-Upstream-Service-Time
 Statuses:

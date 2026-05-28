@@ -11,6 +11,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -77,9 +78,9 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructCompression(policyCR.Spec, &outSpec)
 
 	// Construct header modifiers specific IR
-	constructHeaderModifiers(policyCR.Spec, &outSpec)
-	// Construct header modifiers specific IR
-	constructHeaderModifiers(policyCR.Spec, &outSpec)
+	if err := constructHeaderModifiers(krtctx, policyCR, c.commoncol.Secrets, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
 	// Construct auto host rewrite specific IR
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
@@ -138,7 +139,7 @@ func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerConte
 	gwExtNN := types.NamespacedName{Name: string(extensionRef.Name), Namespace: string(namespace)}
 	gatewayExtension := krt.FetchOne(krtctx, c.gatewayExtensions, krt.FilterObjectName(gwExtNN))
 	if gatewayExtension == nil {
-		return nil, fmt.Errorf("gateway extension %s not found", gwExtNN.String())
+		return nil, fmt.Errorf("%s: %w", gwExtNN.String(), pluginutils.ErrGatewayExtensionNotFound)
 	}
 	if gatewayExtension.Err != nil {
 		return gatewayExtension, gatewayExtension.Err

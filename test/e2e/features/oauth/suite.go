@@ -70,13 +70,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *tsuite) SetupSuite() {
+	// SetupSuite skips the whole suite via t.Skip when version requirements are
+	// not met, so any code below only runs when the suite is compatible.
 	s.BaseTestingSuite.SetupSuite()
-
-	// If the suite should be skipped due to version requirements, don't do additional setup
-	// This is usually handled in the base suite setup, but we also need to skip this additional setup.
-	if s.SkipSuite() {
-		return
-	}
 
 	var gwIP, keycloakIP string
 	var err error

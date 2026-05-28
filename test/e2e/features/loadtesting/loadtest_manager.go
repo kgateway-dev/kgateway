@@ -4,6 +4,7 @@ package loadtesting
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -22,7 +23,6 @@ type LoadTestManager struct {
 	ctx              context.Context
 	testInstallation *e2e.TestInstallation
 	testNamespace    string
-	createdResources []client.Object
 	createdGateways  []*gwv1.Gateway
 	createdRoutes    []*gwv1.HTTPRoute
 	simulator        *VClusterSimulator
@@ -35,7 +35,6 @@ func NewLoadTestManager(ctx context.Context, testInstallation *e2e.TestInstallat
 		ctx:              ctx,
 		testInstallation: testInstallation,
 		testNamespace:    namespace,
-		createdResources: []client.Object{},
 		createdGateways:  []*gwv1.Gateway{},
 		createdRoutes:    []*gwv1.HTTPRoute{},
 		gatewayHandlers:  make(map[types.NamespacedName][]func(*gwv1.Gateway)),
@@ -87,7 +86,6 @@ func (ltm *LoadTestManager) createResource(resource client.Object) error {
 	if err := client.IgnoreAlreadyExists(err); err != nil {
 		return err
 	}
-	ltm.createdResources = append(ltm.createdResources, resource)
 	return nil
 }
 
@@ -128,7 +126,6 @@ func (ltm *LoadTestManager) CreateGateways(gatewayNames []string) error {
 		}
 
 		ltm.createdGateways = append(ltm.createdGateways, gateway)
-		ltm.createdResources = append(ltm.createdResources, gateway)
 	}
 	return nil
 }
@@ -344,51 +341,6 @@ func (ltm *LoadTestManager) CollectKGatewayMetrics() KGatewayMetrics {
 	}
 }
 
-func (ltm *LoadTestManager) DeleteAllRoutes() error {
-	if len(ltm.createdRoutes) == 0 {
-		return nil
-	}
-
-	// Convert []*gwv1.HTTPRoute to []client.Object
-	resources := make([]client.Object, len(ltm.createdRoutes))
-	for i, route := range ltm.createdRoutes {
-		resources[i] = route
-	}
-
-	return ltm.deleteResourcesConcurrently(resources)
-}
-
-func (ltm *LoadTestManager) deleteResourcesConcurrently(resources []client.Object) error {
-	const maxConcurrency = 25
-	sem := make(chan struct{}, maxConcurrency)
-	errChan := make(chan error, len(resources))
-
-	deleteOptions := &client.DeleteOptions{
-		GracePeriodSeconds: func() *int64 { i := int64(0); return &i }(),
-		PropagationPolicy:  func() *metav1.DeletionPropagation { p := metav1.DeletePropagationBackground; return &p }(),
-	}
-
-	for _, resource := range resources {
-		sem <- struct{}{}
-		go func(r client.Object) {
-			defer func() { <-sem }()
-			err := ltm.testInstallation.ClusterContext.Client.Delete(ltm.ctx, r, deleteOptions)
-			if err != nil && client.IgnoreNotFound(err) != nil {
-				errChan <- fmt.Errorf("failed to delete resource: %w", err)
-				return
-			}
-			errChan <- nil
-		}(resource)
-	}
-
-	for range resources {
-		if err := <-errChan; err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (ltm *LoadTestManager) GetSimulationMetrics() VClusterMetrics {
 	if ltm.simulator == nil {
 		return VClusterMetrics{BackendSimulated: false}
@@ -410,22 +362,56 @@ func (ltm *LoadTestManager) GetSimulationMetrics() VClusterMetrics {
 }
 
 func (ltm *LoadTestManager) CleanupAll() error {
-	ltm.DeleteAllRoutes()
+	var errs []error
 
 	if ltm.simulator != nil {
-		ltm.simulator.Cleanup()
+		errs = append(errs, ltm.simulator.Cleanup())
 	}
 
-	for i := len(ltm.createdResources) - 1; i >= 0; i-- {
-		resource := ltm.createdResources[i]
-		deleteOptions := &client.DeleteOptions{
-			GracePeriodSeconds: func() *int64 { i := int64(0); return &i }(),
-			PropagationPolicy:  func() *metav1.DeletionPropagation { p := metav1.DeletePropagationBackground; return &p }(),
-		}
+	if ltm.testNamespace != "" {
+		errs = append(errs, ltm.deleteNamespace(ltm.testNamespace))
+	}
 
-		if err := ltm.testInstallation.ClusterContext.Client.Delete(ltm.ctx, resource, deleteOptions); err != nil && client.IgnoreNotFound(err) != nil {
-			fmt.Printf("Warning: failed to delete resource %v: %v\n", resource, err)
+	ltm.simulator = nil
+	ltm.createdGateways = nil
+	ltm.createdRoutes = nil
+
+	return errors.Join(errs...)
+}
+
+func (ltm *LoadTestManager) cleanupLoadTestNamespaces() error {
+	namespaceNames := map[string]struct{}{}
+
+	labelSets := []client.MatchingLabels{
+		{"loadtest": "true"},
+		{"vcluster-simulation": "true"},
+	}
+
+	for _, labels := range labelSets {
+		namespaceList := &corev1.NamespaceList{}
+		if err := ltm.testInstallation.ClusterContext.Client.List(ltm.ctx, namespaceList, labels); err != nil {
+			return fmt.Errorf("failed to list load test namespaces: %w", err)
 		}
+		for _, namespace := range namespaceList.Items {
+			namespaceNames[namespace.Name] = struct{}{}
+		}
+	}
+
+	namespaceNames[LoadTestNamespace] = struct{}{}
+
+	var errs []error
+	for namespaceName := range namespaceNames {
+		errs = append(errs, ltm.deleteNamespace(namespaceName))
+	}
+	return errors.Join(errs...)
+}
+
+func (ltm *LoadTestManager) deleteNamespace(name string) error {
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+	}
+	if err := ltm.testInstallation.ClusterContext.Client.Delete(ltm.ctx, namespace); err != nil && client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("failed to delete namespace %s: %w", name, err)
 	}
 	return nil
 }

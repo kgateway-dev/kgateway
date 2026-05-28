@@ -38,4 +38,6 @@ runs:
 
     - name: Run load tests
       shell: bash
+      env:
+        KGATEWAY_RUN_LOAD_TESTS: "true"
       run: make run-load-tests

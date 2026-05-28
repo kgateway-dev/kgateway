@@ -31,6 +31,8 @@ import (
 var (
 	configMapManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata/configmap.yaml")
 	backendTLSPolicyMissingTargetManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/missing-target.yaml")
+	terminatedTLSRouteManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata/terminated-tlsroute.yaml")
+	terminatedTLSRouteInvalidManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata/terminated-tlsroute-invalid.yaml")
 
 	backendTlsPolicy = &gwv1.BackendTLSPolicy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -40,6 +42,26 @@ var (
 	}
 	gatewayMeta = metav1.ObjectMeta{
 		Name:      "gateway",
+		Namespace: "kgateway-base",
+	}
+	terminatedTLSRoutePolicy = &gwv1.BackendTLSPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tlsroute-backend-tls",
+			Namespace: "kgateway-base",
+		},
+	}
+	terminatedTLSRouteGatewayMeta = metav1.ObjectMeta{
+		Name:      "tlsroute-gateway",
+		Namespace: "kgateway-base",
+	}
+	terminatedTLSRouteInvalidPolicy = &gwv1.BackendTLSPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "invalid-tlsroute-backend-tls",
+			Namespace: "kgateway-base",
+		},
+	}
+	terminatedTLSRouteInvalidGatewayMeta = metav1.ObjectMeta{
+		Name:      "invalid-tlsroute-gateway",
 		Namespace: "kgateway-base",
 	}
 	gatewayGroup = gwv1.Group(gwv1.GroupVersion.Group)
@@ -54,6 +76,14 @@ var (
 	// test cases
 	testCases = map[string]*base.TestCase{
 		"TestBackendTLSPolicyAndStatus": {},
+		"TestBackendTLSPolicyErrorStatusForTerminatedTLSRoute": {
+			Manifests:       []string{terminatedTLSRouteInvalidManifest},
+			MinGwApiVersion: base.GwApiRequireTlsRoutes,
+		},
+		"TestBackendTLSPolicyStatusForTerminatedTLSRoute": {
+			Manifests:       []string{terminatedTLSRouteManifest},
+			MinGwApiVersion: base.GwApiRequireTlsRoutes,
+		},
 	}
 )
 
@@ -120,7 +150,7 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
 		Status:             metav1.ConditionTrue,
 		Reason:             string(gwv1.BackendTLSPolicyReasonResolvedRefs),
-		Message:            "Resolved all references",
+		Message:            resolvedAllReferencesMsg,
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 
@@ -132,51 +162,104 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
 		Status:             metav1.ConditionFalse,
 		Reason:             string(gwv1.BackendTLSPolicyReasonInvalidCACertificateRef),
-		Message:            fmt.Sprintf("invalid CA certificate ref ConfigMap/ca: %s: kgateway-base/ca", backendtlspolicy.ErrConfigMapNotFound),
+		Message:            invalidCAConfigMapMessage("ca"),
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 	s.assertPolicyStatus(metav1.Condition{
 		Type:               string(gwv1.PolicyConditionAccepted),
 		Status:             metav1.ConditionFalse,
 		Reason:             string(gwv1.BackendTLSPolicyReasonNoValidCACertificate),
-		Message:            fmt.Sprintf("invalid CA certificate ref ConfigMap/ca: %s: kgateway-base/ca", backendtlspolicy.ErrConfigMapNotFound),
+		Message:            invalidCAConfigMapMessage("ca"),
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 }
 
+func (s *tsuite) TestBackendTLSPolicyStatusForTerminatedTLSRoute() {
+	s.assertPolicyStatusForPolicy(terminatedTLSRoutePolicy, terminatedTLSRouteGatewayMeta, metav1.Condition{
+		Type:    string(gwv1.PolicyConditionAccepted),
+		Status:  metav1.ConditionTrue,
+		Reason:  string(gwv1.PolicyReasonAccepted),
+		Message: reports.PolicyAcceptedMsg,
+	})
+	s.assertPolicyStatusForPolicy(terminatedTLSRoutePolicy, terminatedTLSRouteGatewayMeta, metav1.Condition{
+		Type:    string(gwv1.BackendTLSPolicyConditionResolvedRefs),
+		Status:  metav1.ConditionTrue,
+		Reason:  string(gwv1.BackendTLSPolicyReasonResolvedRefs),
+		Message: resolvedAllReferencesMsg,
+	})
+}
+
+func (s *tsuite) TestBackendTLSPolicyErrorStatusForTerminatedTLSRoute() {
+	errMessage := invalidCAConfigMapMessage("missing-ca")
+	s.assertPolicyStatusForPolicy(terminatedTLSRouteInvalidPolicy, terminatedTLSRouteInvalidGatewayMeta, metav1.Condition{
+		Type:    string(gwv1.BackendTLSPolicyConditionResolvedRefs),
+		Status:  metav1.ConditionFalse,
+		Reason:  string(gwv1.BackendTLSPolicyReasonInvalidCACertificateRef),
+		Message: errMessage,
+	})
+	s.assertPolicyStatusForPolicy(terminatedTLSRouteInvalidPolicy, terminatedTLSRouteInvalidGatewayMeta, metav1.Condition{
+		Type:    string(gwv1.PolicyConditionAccepted),
+		Status:  metav1.ConditionFalse,
+		Reason:  string(gwv1.BackendTLSPolicyReasonNoValidCACertificate),
+		Message: errMessage,
+	})
+}
+
 func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
+	s.assertPolicyStatusForPolicy(backendTlsPolicy, gatewayMeta, inCondition)
+}
+
+func (s *tsuite) assertPolicyStatusForPolicy(
+	policy *gwv1.BackendTLSPolicy,
+	ancestorMeta metav1.ObjectMeta,
+	inCondition metav1.Condition,
+) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	p := s.TestInstallation.AssertionsT(s.T())
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		tlsPol := &gwv1.BackendTLSPolicy{}
-		objKey := client.ObjectKeyFromObject(backendTlsPolicy)
+		objKey := client.ObjectKeyFromObject(policy)
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, tlsPol)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get BackendTLSPolicy %s", objKey)
 
 		g.Expect(tlsPol.Status.Ancestors).To(gomega.HaveLen(1), "ancestors didn't have length of 1")
 
-		expectedRef := gwv1.ParentReference{
-			Group:     &gatewayGroup,
-			Kind:      &gatewayKind,
-			Namespace: new(gwv1.Namespace(gatewayMeta.Namespace)),
-			Name:      gwv1.ObjectName(gatewayMeta.Name),
-		}
+		expectedRef := gatewayParentReference(ancestorMeta)
 		ancestor := tlsPol.Status.Ancestors[0]
 		g.Expect(ancestor.AncestorRef).To(gomega.BeEquivalentTo(expectedRef))
 
 		g.Expect(ancestor.Conditions).To(gomega.HaveLen(2), "ancestor conditions wasn't length of 2")
 		cond := meta.FindStatusCondition(ancestor.Conditions, inCondition.Type)
+		expectedObservedGeneration := inCondition.ObservedGeneration
+		if expectedObservedGeneration == 0 {
+			expectedObservedGeneration = tlsPol.Generation
+		}
 		g.Expect(cond).NotTo(gomega.BeNil(), "policy should have expected condition")
 		g.Expect(cond.Status).To(gomega.Equal(inCondition.Status), "policy condition should have expected status")
 		g.Expect(cond.Reason).To(gomega.Equal(inCondition.Reason), "policy reason should match")
 		g.Expect(cond.Message).To(gomega.Equal(inCondition.Message))
-		g.Expect(cond.ObservedGeneration).To(gomega.Equal(inCondition.ObservedGeneration))
+		g.Expect(cond.ObservedGeneration).To(gomega.Equal(expectedObservedGeneration))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
+func gatewayParentReference(objMeta metav1.ObjectMeta) gwv1.ParentReference {
+	namespace := gwv1.Namespace(objMeta.Namespace)
+	return gwv1.ParentReference{
+		Group:     &gatewayGroup,
+		Kind:      &gatewayKind,
+		Namespace: &namespace,
+		Name:      gwv1.ObjectName(objMeta.Name),
+	}
+}
+
+func invalidCAConfigMapMessage(name string) string {
+	return fmt.Sprintf("invalid CA certificate ref ConfigMap/%s: %s: kgateway-base/%s", name, backendtlspolicy.ErrConfigMapNotFound, name)
+}
+
 const (
-	kgatewayControllerName = "kgateway.dev/kgateway"
-	otherControllerName    = "other-controller.example.com/controller"
+	resolvedAllReferencesMsg = "Resolved all references"
+	kgatewayControllerName   = "kgateway.dev/kgateway"
+	otherControllerName      = "other-controller.example.com/controller"
 )
 
 // TestBackendTLSPolicyClearStaleStatus verifies that stale status is cleared when targetRef becomes invalid
@@ -219,12 +302,7 @@ func (s *tsuite) addAncestorStatus(policyName, policyNamespace, controllerName s
 
 		// Add fake ancestor status
 		fakeStatus := gwv1.PolicyAncestorStatus{
-			AncestorRef: gwv1.ParentReference{
-				Group:     &gatewayGroup,
-				Kind:      &gatewayKind,
-				Namespace: new(gwv1.Namespace(gatewayMeta.Namespace)),
-				Name:      gwv1.ObjectName(gatewayMeta.Name),
-			},
+			AncestorRef:    gatewayParentReference(gatewayMeta),
 			ControllerName: gwv1.GatewayController(controllerName),
 			Conditions: []metav1.Condition{
 				{

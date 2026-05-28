@@ -2493,6 +2493,11 @@ func (in *HTTPSettings) DeepCopyInto(out *HTTPSettings) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.MaxRequestsPerConnection != nil {
+		in, out := &in.MaxRequestsPerConnection, &out.MaxRequestsPerConnection
+		*out = new(int32)
+		**out = **in
+	}
 	if in.Http2ProtocolOptions != nil {
 		in, out := &in.Http2ProtocolOptions, &out.Http2ProtocolOptions
 		*out = new(ListenerHTTP2ProtocolOptions)
@@ -2537,6 +2542,11 @@ func (in *HTTPSettings) DeepCopyInto(out *HTTPSettings) {
 		in, out := &in.UuidRequestIdConfig, &out.UuidRequestIdConfig
 		*out = new(UuidRequestIdConfig)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.StripHostPortMode != nil {
+		in, out := &in.StripHostPortMode, &out.StripHostPortMode
+		*out = new(StripHostPortMode)
+		**out = **in
 	}
 }
 

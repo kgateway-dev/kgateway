@@ -5,11 +5,9 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_example-svc_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -107,7 +105,7 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-extauth-policy:
-            extauth: gateway extension gwtest/non-existent-auth-extension not found'
+            extauth: gwtest/non-existent-auth-extension: gateway extension not found'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
@@ -131,7 +129,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: gateway extension gwtest/non-existent-auth-extension
+          message: 'extauth: gwtest/non-existent-auth-extension: gateway extension
             not found'
           reason: Invalid
           status: "False"
