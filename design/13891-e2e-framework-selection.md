@@ -98,7 +98,7 @@ Tests are organized as `features/<area>/suite.go` and registered in `tests/<entr
 
 #### `sigs.k8s.io/e2e-framework`
 
-Upstream project: <https://github.com/kubernetes-sigs/e2e-framework>. A POC migration of the basicrouting tests lives at [`test/e2e_sigs/`](../test/e2e_sigs/) ([devc007/kgateway#1](https://github.com/devc007/kgateway/pull/1)).
+Upstream project: [`sigs.k8s.io/e2e-framework`](https://github.com/kubernetes-sigs/e2e-framework). A POC migration of the basicrouting tests lives at [`test/e2e_sigs_framework/`](https://github.com/kgateway-dev/kgateway/tree/lfx-e2e-framework-poc/test/e2e_sigs_framework).
 
 The framework provides a Go-test-native programming model:
 
@@ -109,7 +109,7 @@ The framework provides a Go-test-native programming model:
 
 **Strengths**:
 
-* **Standard Go test idioms.** No reflection-based suite runner. `go test -run TestGatewayWithRoute -v ./test/e2e_sigs/features/basicrouting` works the way every Go developer expects.
+* **Standard Go test idioms.** No reflection-based suite runner. `go test -run TestGatewayWithRoute -v ./test/e2e_sigs_framework/features/basicrouting` works the way every Go developer expects.
 * **Composable lifecycle.** Each feature owns its own `Setup` / `Assess` / `Teardown`. Per-feature state lives in the `context.Context` returned from each step, so there is no shared mutable suite struct.
 * **Labels and feature gates.** `WithLabel("type", "smoke")` plus `--feature` / `--labels` flags let CI pick subsets without restructuring code.
 * **Familiar to the community.** The framework is used by Crossplane, kueue, and several other CNCF projects. New contributors who have written tests for those projects will be immediately productive.
@@ -121,7 +121,7 @@ The framework provides a Go-test-native programming model:
 * **Manifest application is bring-your-own.** The framework gives you a controller-runtime client and `decoder.DecodeEachFile` helpers, but the polished "apply this YAML, then wait for the dynamically created proxy Deployment, then await pods running" flow we have in `BaseTestingSuite.ApplyManifests` is not provided.
 * **No `testify/suite`-style fixtures.** The framework offers two scopes: cluster-wide setup in `TestMain`, or per-feature setup inside `features.Feature`. There is no built-in scope in between — i.e., a fixture shared by a *group* of related tests (the equivalent of `testify/suite`'s `SetupSuite`). If several tests share expensive setup, you have to either hoist it to `TestMain` (paid by every test in the package) or thread state through `context.Context` by hand.
 * **Per-feature setup overhead.** The fluent `Setup -> Assess -> Teardown` per feature can mean re-doing work that was previously amortized at the `SetupSuite` level, unless we are deliberate about which steps live at `TestMain` vs. per-feature.
-* **Assertion style.** The framework intentionally takes no opinion on assertions. Tests in the wider community use a mix of `t.Fatal`, `require`, and `gomega`. The basicrouting POC pulls in Gomega via [`assertions/assertions.go`](../test/e2e_sigs/assertions/assertions.go) — that pattern works but is something we own, not something the framework gives us.
+* **Assertion style.** The framework intentionally takes no opinion on assertions. Tests in the wider community use a mix of `t.Fatal`, `require`, and `gomega`. The basicrouting POC pulls in Gomega via [`assertions/assertions.go`](https://github.com/kgateway-dev/kgateway/blob/lfx-e2e-framework-poc/test/e2e_sigs_framework/assertions/assertions.go) — that pattern works but is something we own, not something the framework gives us.
 
 #### Gateway API conformance framework
 
@@ -178,11 +178,11 @@ The basicrouting "Gateway with Route" test is implemented in all three framework
 
 #### Gateway API conformance framework
 
-POC: [PR #3](https://github.com/devc007/kgateway/pull/3)
+[POC](https://github.com/kgateway-dev/kgateway/tree/lfx-e2e-framework-poc):
 
 The framework needs three pieces wired up: a `TestMain` that constructs the `ConformanceTestSuite`, a `TestX` function that applies the Gateway and backend manifests, and the `ConformanceTest` value that asserts behaviour.
 
-`TestMain` ([`main_test.go`](https://github.com/devc007/kgateway/blob/basicrouting-gw-api-conformance/test/sigs_gateway_conformance/features/basicrouting/main_test.go)) constructs the suite once for the package:
+`TestMain` ([`main_test.go`](https://github.com/kgateway-dev/kgateway/blob/lfx-e2e-framework-poc/test/sigs_gateway_api_framework/main_test.go)) constructs the suite once for the package:
 
 ```go
 var suite *confsuite.ConformanceTestSuite
@@ -197,9 +197,8 @@ func TestMain(m *testing.M) {
 }
 ```
 
-`common.SetupConformanceSuite` ([`common/suite.go`](https://github.com/devc007/kgateway/blob/basicrouting-gw-api-conformance/test/sigs_gateway_conformance/common/suite.go)) is an in-repo helper that builds the client, calls `confsuite.NewConformanceTestSuite`, and configures `suite.Applier` directly instead of calling `suite.Setup()` — the upstream `Setup()` performs TLS bootstrap that does not fit kgateway's install flow.
+`common.SetupConformanceSuite` ([`common/suite.go`](https://github.com/kgateway-dev/kgateway/blob/lfx-e2e-framework-poc/test/sigs_gateway_api_framework/common/suite.go)) is an in-repo helper that builds the client, calls `confsuite.NewConformanceTestSuite`, and configures `suite.Applier` directly instead of calling `suite.Setup()` — the upstream `Setup()` performs TLS bootstrap that does not fit kgateway's install flow.
 
-The test function applies the Gateway and backend, resolves the controller name, and dispatches the `ConformanceTest` value via `test.Run(t, suite)` ([`routing_test.go`](https://github.com/devc007/kgateway/blob/basicrouting-gw-api-conformance/test/sigs_gateway_conformance/features/basicrouting/routing_test.go)):
 
 ```go
 func TestGatewayWithRoute(t *testing.T) {
@@ -304,7 +303,7 @@ The framework requires: a `TestCase` map definition, a `BaseTestingSuite` embedd
 
 #### sigs/e2e-framework POC
 
-POC: [PR #1](https://github.com/devc007/kgateway/pull/1)
+[POC](https://github.com/kgateway-dev/kgateway/tree/lfx-e2e-framework-poc/test/e2e_sigs_framework):
 
 ```go
 func TestGatewayWithRoute(t *testing.T) {
@@ -384,7 +383,7 @@ We didn't choose it because:
 
 ### Alternative 2 — Adopt `sigs.k8s.io/e2e-framework`
 
-We prototyped this in PR [#1](https://github.com/devc007/kgateway/pull/1), with code under `test/e2e_sigs/`. The framework gives a clean Go-test-native programming model and composable lifecycle steps (`env.Environment` with `Setup`/`Finish` hooks). It is used by Crossplane, kueue, and several other CNCF projects.
+We prototyped this in the [feature branch](https://github.com/kgateway-dev/kgateway/tree/lfx-e2e-framework-poc/test/e2e_sigs_framework), with code under `test/e2e_sigs_framework/`. The framework gives a clean Go-test-native programming model and composable lifecycle steps (`env.Environment` with `Setup`/`Finish` hooks). It is used by Crossplane, kueue, and several other CNCF projects.
 
 We didn't choose it because:
 
@@ -392,7 +391,7 @@ We didn't choose it because:
 * **The same maintenance-burden concern applies.** Even more so than the conformance framework, `sigs.k8s.io/e2e-framework` provides only generic lifecycle scaffolding — no manifest applier, no Gateway API readiness helpers, no eventual-consistency HTTP probe. We would own all of that in-repo indefinitely.
 * **Two frameworks is a tax.** Running the upstream Gateway API conformance suite for spec coverage *and* `sigs.k8s.io/e2e-framework` for kgateway-specific tests means contributors switch mental models depending on which directory they are in.
 
-The POC is preserved in the [feature branch](https://github.com/devc007/kgateway/pull/1) as a reference for the comparison.
+The POC is preserved in the [feature branch](https://github.com/kgateway-dev/kgateway/tree/lfx-e2e-framework-poc) as a reference for the comparison.
 
 
 ## Approval
