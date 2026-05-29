@@ -300,7 +300,7 @@ kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
 // ... 50+ more registrations ...
 ```
 
-The framework requires: a `TestCase` map definition, a `BaseTestingSuite` embedding, a `SetupSuite` method, explicit registration in a central file, and finally—after all that—the test method itself. The ceremony (three files, inheritance chain, setup maps) dominates the test code volume.
+The framework requires: a `TestCase` map definition, a `BaseTestingSuite` embedding, a `SetupSuite` method, explicit registration in a central file, and  test method itself.
 
 #### sigs/e2e-framework POC
 
