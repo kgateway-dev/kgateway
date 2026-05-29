@@ -270,7 +270,7 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TestGatewayWithRoute() {
-    s.assertSuccessfulResponse()  // Finally!
+    s.assertSuccessfulResponse()
 }
 ```
 
