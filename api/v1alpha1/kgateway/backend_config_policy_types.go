@@ -145,6 +145,14 @@ type CircuitBreakers struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	MaxRetries *int32 `json:"maxRetries,omitempty"`
+
+	// TrackRemaining controls whether Envoy tracks the remaining resource
+	// gauges for this circuit breaker threshold group. When enabled, the
+	// remaining_cx, remaining_pending, remaining_rq, and remaining_retries
+	// statistics are populated. Enabling this has a performance cost.
+	// If not specified, defaults to false.
+	// +optional
+	TrackRemaining *bool `json:"trackRemaining,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="!(has(self.jitter) && has(self.refreshRate)) || duration(self.jitter) <= duration(self.refreshRate)",message="jitter must be less than or equal to refreshRate"
@@ -244,8 +252,10 @@ type Http2ProtocolOptions struct {
 	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
 
 	// The maximum number of concurrent streams that the connection can have.
+	// Envoy defaults to 1024.
 	// +optional
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=2147483647
 	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
 
 	// Allows invalid HTTP messaging and headers. When disabled (default), then

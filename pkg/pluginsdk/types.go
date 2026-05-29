@@ -29,19 +29,19 @@ type (
 	EndpointPlugin  func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
-		ucc ir.UniqlyConnectedClient,
+		ucc ir.UniquelyConnectedClient,
 		out *EndpointsInputs,
 	) uint64
 )
 
 // TODO: consider changing PerClientProcessBackend to look like this:
-// PerClientProcessBackend  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR)
+// PerClientProcessBackend  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR)
 // so that it only attaches the policy to the backend, and doesn't modify the backend (except for attached policies) or the cluster itself.
 // leaving as is for now as this requires better understanding of how krt would handle this.
 type PerClientProcessBackend func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	ucc ir.UniqlyConnectedClient,
+	ucc ir.UniquelyConnectedClient,
 	in ir.BackendObjectIR,
 	out *envoyclusterv3.Cluster,
 )
@@ -51,6 +51,8 @@ type (
 	GetPolicyStatusFn func(context.Context, types.NamespacedName) (gwv1.PolicyStatus, error)
 	// PatchPolicyStatusFn is a type that plugins can implement to patch the PolicyStatus for the given policy
 	PatchPolicyStatusFn func(context.Context, types.NamespacedName, gwv1.PolicyStatus) error
+	// BuildPolicyStatusFn is a type that plugins can implement to build a PolicyStatus from a report map.
+	BuildPolicyStatusFn func(context.Context, reports.ReportMap, reporter.PolicyKey, string, gwv1.PolicyStatus) *gwv1.PolicyStatus
 )
 
 type PolicyPlugin struct {
@@ -73,6 +75,11 @@ type PolicyPlugin struct {
 
 	GetPolicyStatus   GetPolicyStatusFn
 	PatchPolicyStatus PatchPolicyStatusFn
+	BuildPolicyStatus BuildPolicyStatusFn
+
+	// PolicyStatusFromGatewayReports indicates that policy status should be reported from the
+	// Gateway translation report path rather than the backend-only report path.
+	PolicyStatusFromGatewayReports bool
 }
 
 type BackendPlugin struct {

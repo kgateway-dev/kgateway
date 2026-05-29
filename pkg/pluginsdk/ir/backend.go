@@ -1,6 +1,7 @@
 package ir
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -49,11 +50,26 @@ func (c ObjectSource) GetNamespace() string {
 }
 
 func (c ObjectSource) ResourceName() string {
-	return fmt.Sprintf("%s/%s/%s/%s", c.Group, c.Kind, c.Namespace, c.Name)
+	return buildObjectSourceName(c.Group, c.Kind, c.Namespace, c.Name)
 }
 
 func (c ObjectSource) String() string {
-	return fmt.Sprintf("%s/%s/%s/%s", c.Group, c.Kind, c.Namespace, c.Name)
+	return buildObjectSourceName(c.Group, c.Kind, c.Namespace, c.Name)
+}
+
+// buildObjectSourceName produces "group/kind/namespace/name" without the
+// fmt.Sprintf format-parse overhead. Hot path for KRT keying.
+func buildObjectSourceName(group, kind, namespace, name string) string {
+	var sb strings.Builder
+	sb.Grow(len(group) + len(kind) + len(namespace) + len(name) + 3)
+	sb.WriteString(group)
+	sb.WriteByte('/')
+	sb.WriteString(kind)
+	sb.WriteByte('/')
+	sb.WriteString(namespace)
+	sb.WriteByte('/')
+	sb.WriteString(name)
+	return sb.String()
 }
 
 func (c ObjectSource) Equals(in ObjectSource) bool {
@@ -101,13 +117,19 @@ func ParseAppProtocol(appProtocol *string) AppProtocol {
 	}
 }
 
+// BackendObjectIR is the IR representation of a single backend target.
+//
+// Construct instances with NewBackendObjectIR and use the accessor methods
+// below for cluster-name-relevant identity fields. Those inputs are kept
+// private so callers cannot accidentally mutate cached derived values such as
+// ResourceName() and ClusterName() after construction.
 type BackendObjectIR struct {
-	// Ref to source object. sometimes the group and kind are not populated from api-server, so
-	// set them explicitly here, and pass this around as the reference.
-	ObjectSource `json:",inline"`
+	// objectSource identifies the source resource. Keep it private so callers
+	// cannot mutate cluster-name-relevant fields after construction.
+	objectSource ObjectSource
 	// optional port for if ObjectSource is a service that can have multiple ports.
 	// +krtEqualsTodo propagate backend port differences in equality
-	Port int32
+	port int32
 	// optional port name for the backend (e.g., "https", "http"). Used for sectionName based
 	// policy attachment (e.g., BackendTLSPolicy targeting a specific port by name).
 	// +krtEqualsTodo propagate backend port name differences in equality
@@ -117,9 +139,10 @@ type BackendObjectIR struct {
 	AppProtocol AppProtocol
 
 	// prefix the cluster name with this string to distinguish it from other GVKs.
-	// here explicitly as it shows up in stats. each (group, kind) pair should have a unique prefix.
-	// +krtEqualsTodo incorporate prefix changes into equality or remove field
-	GvPrefix string
+	// kept private and immutable after construction. each (group, kind) pair
+	// should have a unique prefix because it shows up in stats.
+	// +noKrtEquals gvPrefix is compared in ClusterName()
+	gvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
 	// +krtEqualsTodo evaluate canonical hostname equality
 	CanonicalHostname string
@@ -140,7 +163,7 @@ type BackendObjectIR struct {
 	// CanonicalHostname. We should see if it's possible to have multiple
 	// CanonicalHostnames.
 	// +krtEqualsTodo determine equality semantics for extra key
-	ExtraKey string
+	extraKey string
 
 	// RequiresPolicyStatus indicates if this Backend may require updating status of an attached policy
 	// This is essentially a precomputation of whether there are any 'AttachedPolicies' that are objects
@@ -158,27 +181,44 @@ type BackendObjectIR struct {
 	// resourceName is the pre-calculated resource name. used as the krt resource name.
 	resourceName string
 
+	// clusterName is the pre-calculated Envoy cluster name.
+	// +noKrtEquals We compare the cached ClusterName in Equals()
+	clusterName string
+
 	// TrafficDistribution is the desired traffic distribution for the backend.
 	TrafficDistribution wellknown.TrafficDistribution
 
 	// DisableIstioAutoMTLS indicates if Istio auto-mTLS should be disabled for this backend
 	DisableIstioAutoMTLS bool
+
+	// GatewayBackendClientCertificate contains a Gateway-scoped backend client certificate.
+	// When set, the backend must be translated to a distinct cluster so the client
+	// identity does not leak across Gateways that share the same backend.
+	GatewayBackendClientCertificate *GatewayBackendClientCertificateIR
 }
 
-// NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name
-func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey string) BackendObjectIR {
+// NewBackendObjectIR creates a BackendObjectIR with pre-calculated resource and
+// cluster names. Callers should pass the final cluster prefix up front; if
+// empty, the lower-cased backend kind is used and stored on the IR.
+func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey, gvPrefix string) BackendObjectIR {
+	if gvPrefix == "" {
+		gvPrefix = strings.ToLower(objSource.Kind)
+	}
+
 	return BackendObjectIR{
-		ObjectSource: objSource,
-		Port:         port,
-		ExtraKey:     extraKey,
+		objectSource: objSource,
+		port:         port,
+		gvPrefix:     gvPrefix,
+		extraKey:     extraKey,
 		resourceName: BackendResourceName(objSource, port, extraKey),
+		clusterName:  buildClusterName(gvPrefix, objSource.Kind, objSource.Namespace, objSource.Name, extraKey, port),
 	}
 }
 
 func BackendResourceName(objSource ObjectSource, port int32, extraKey string) string {
 	var sb strings.Builder
 	sb.WriteString(objSource.ResourceName())
-	sb.WriteString(fmt.Sprintf(":%d", port))
+	fmt.Fprintf(&sb, ":%d", port)
 
 	if extraKey != "" {
 		sb.WriteRune('_')
@@ -194,7 +234,7 @@ func (c BackendObjectIR) ResourceName() string {
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
-	if !c.ObjectSource.Equals(in.ObjectSource) {
+	if !c.objectSource.Equals(in.objectSource) {
 		return false
 	}
 	if !versionEquals(c.Obj, in.Obj) {
@@ -209,30 +249,97 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	if c.resourceName != in.resourceName {
 		return false
 	}
+	if c.ClusterName() != in.ClusterName() {
+		return false
+	}
 	if c.DisableIstioAutoMTLS != in.DisableIstioAutoMTLS {
 		return false
 	}
 	if c.TrafficDistribution != in.TrafficDistribution {
 		return false
 	}
+	if !equalsGatewayBackendClientCertificate(c.GatewayBackendClientCertificate, in.GatewayBackendClientCertificate) {
+		return false
+	}
 	return true
 }
 
-func (c BackendObjectIR) ClusterName() string {
-	// TODO: fix this to somthing that's friendly to stats
-	gvPrefix := c.GvPrefix
-	if c.GvPrefix == "" {
-		gvPrefix = strings.ToLower(c.Kind)
-	}
-	if c.ExtraKey != "" {
-		return fmt.Sprintf("%s_%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.ExtraKey, c.Port)
-	}
-	return fmt.Sprintf("%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.Port)
-	// return fmt.Sprintf("%s~%s:%d", c.GvPrefix, c.ObjectSource.ResourceName(), c.Port)
+func (c BackendObjectIR) CloneForGatewayBackendClientCertificate(
+	gateway ObjectSource,
+	clientCertificate *GatewayBackendClientCertificateIR,
+) BackendObjectIR {
+	clone := c
+	clone.extraKey = gatewayBackendClientCertificateExtraKey(c.extraKey, gateway)
+	clone.resourceName = BackendResourceName(clone.objectSource, clone.port, clone.extraKey)
+	clone.clusterName = buildClusterName(clone.gvPrefix, clone.objectSource.Kind, clone.objectSource.Namespace, clone.objectSource.Name, clone.extraKey, clone.port)
+	clone.GatewayBackendClientCertificate = clientCertificate
+	return clone
 }
 
+func gatewayBackendClientCertificateExtraKey(baseExtraKey string, gateway ObjectSource) string {
+	suffix := fmt.Sprintf("gw_backend_client_cert_%s_%s", gateway.Namespace, gateway.Name)
+	if baseExtraKey == "" {
+		return suffix
+	}
+	return baseExtraKey + "_" + suffix
+}
+
+func (c BackendObjectIR) ClusterName() string {
+	return c.clusterName
+}
+
+func buildClusterName(gvPrefix, kind, namespace, name, extraKey string, port int32) string {
+	// TODO: fix this to somthing that's friendly to stats
+	if gvPrefix == "" {
+		gvPrefix = strings.ToLower(kind)
+	}
+	// Use strings.Builder + strconv to avoid fmt.Sprintf overhead since this
+	// runs on a hot translation path. Capacity: fields + up to 4 underscores +
+	// up to 5-digit port.
+	var sb strings.Builder
+	sb.Grow(len(gvPrefix) + len(namespace) + len(name) + len(extraKey) + 9)
+	sb.WriteString(gvPrefix)
+	sb.WriteByte('_')
+	sb.WriteString(namespace)
+	sb.WriteByte('_')
+	sb.WriteString(name)
+	if extraKey != "" {
+		sb.WriteByte('_')
+		sb.WriteString(extraKey)
+	}
+	sb.WriteByte('_')
+	sb.WriteString(strconv.Itoa(int(port)))
+	return sb.String()
+}
+
+// GetObjectSource returns the immutable identity for this backend.
 func (c BackendObjectIR) GetObjectSource() ObjectSource {
-	return c.ObjectSource
+	return c.objectSource
+}
+
+// GetGroupKind returns the backend source GroupKind.
+func (c BackendObjectIR) GetGroupKind() schema.GroupKind {
+	return c.objectSource.GetGroupKind()
+}
+
+// GetName returns the backend source name.
+func (c BackendObjectIR) GetName() string {
+	return c.objectSource.GetName()
+}
+
+// GetNamespace returns the backend source namespace.
+func (c BackendObjectIR) GetNamespace() string {
+	return c.objectSource.GetNamespace()
+}
+
+// NamespacedName returns the backend source namespaced name.
+func (c BackendObjectIR) NamespacedName() types.NamespacedName {
+	return c.objectSource.NamespacedName()
+}
+
+// GetPort returns the backend port associated with this backend instance.
+func (c BackendObjectIR) GetPort() int32 {
+	return c.port
 }
 
 func (c BackendObjectIR) GetObjectLabels() map[string]string {
@@ -349,6 +456,7 @@ type Gateway struct {
 
 	PerConnectionBufferLimitBytes *uint32
 	FrontendTLSConfig             *FrontendTLSConfigIR
+	BackendTLSConfig              *GatewayBackendTLSConfigIR
 }
 
 // FrontendTLSConfigIR represents the Gateway-level frontend TLS configuration
@@ -379,6 +487,24 @@ type ClientCertificateValidationIR struct {
 	AllowInsecureFallback bool
 }
 
+// GatewayBackendTLSConfigIR represents the Gateway-level backend TLS configuration.
+type GatewayBackendTLSConfigIR struct {
+	ClientCertificateRef *gwv1.SecretObjectReference
+}
+
+// GatewayBackendClientCertificateIR contains the resolved Gateway-scoped backend client identity.
+type GatewayBackendClientCertificateIR struct {
+	Certificate TLSCertificate
+}
+
+func (c GatewayBackendClientCertificateIR) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Certificate string `json:"certificate"`
+	}{
+		Certificate: "[REDACTED]",
+	})
+}
+
 func (c *ClientCertificateValidationIR) Equals(in any) bool {
 	c2, ok := in.(*ClientCertificateValidationIR)
 	if !ok {
@@ -400,7 +526,8 @@ func (c Gateway) Equals(in Gateway) bool {
 		c.Listeners.Equals(in.Listeners) &&
 		c.AllowedListenerSets.Equals(in.AllowedListenerSets) &&
 		c.DeniedListenerSets.Equals(in.DeniedListenerSets) &&
-		equalsFrontendTLSConfig(c.FrontendTLSConfig, in.FrontendTLSConfig)
+		equalsFrontendTLSConfig(c.FrontendTLSConfig, in.FrontendTLSConfig) &&
+		equalsGatewayBackendTLSConfig(c.BackendTLSConfig, in.BackendTLSConfig)
 }
 
 func equalsFrontendTLSConfig(a, b *FrontendTLSConfigIR) bool {
@@ -443,11 +570,41 @@ func equalsClientCertValidationIR(a, b *ClientCertificateValidationIR) bool {
 	return true
 }
 
+func equalsGatewayBackendTLSConfig(a, b *GatewayBackendTLSConfigIR) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return secretObjectRefEqual(a.ClientCertificateRef, b.ClientCertificateRef)
+}
+
+func equalsGatewayBackendClientCertificate(a, b *GatewayBackendClientCertificateIR) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return bytes.Equal(a.Certificate.CA, b.Certificate.CA) &&
+		bytes.Equal(a.Certificate.PrivateKey, b.Certificate.PrivateKey) &&
+		bytes.Equal(a.Certificate.CertChain, b.Certificate.CertChain)
+}
+
+func secretObjectRefEqual(a, b *gwv1.SecretObjectReference) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return ptrEquals(a.Group, b.Group) &&
+		ptrEquals(a.Kind, b.Kind) &&
+		a.Name == b.Name &&
+		ptrEquals(a.Namespace, b.Namespace)
+}
+
 func objectRefEqual(a, b gwv1.ObjectReference) bool {
 	return a.Group == b.Group &&
 		a.Kind == b.Kind &&
 		a.Name == b.Name &&
 		ptrEquals(a.Namespace, b.Namespace)
+}
+
+func (c Gateway) HasBackendClientCertificateRef() bool {
+	return c.BackendTLSConfig != nil && c.BackendTLSConfig.ClientCertificateRef != nil
 }
 
 type BackendRefIR struct {

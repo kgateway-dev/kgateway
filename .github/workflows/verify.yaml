@@ -1,7 +1,7 @@
 name: Verify
 
 on:
-  pull_request: { }
+  pull_request: {}
   merge_group:
     types: [checks_requested]
 
@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-    - name: Prep Go Runner
-      uses: ./.github/actions/prep-go-runner
-    - name: Generate Code
-      run: make verify
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
+      - name: Generate Code
+        run: make verify

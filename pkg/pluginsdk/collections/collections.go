@@ -102,7 +102,10 @@ func NewCommonCollections(
 
 	secretClient := kclient.NewFiltered[*corev1.Secret](
 		client,
-		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+		kclient.Filter{
+			FieldSelector: apiclient.SecretsFieldSelector,
+			ObjectFilter:  client.ObjectFilter(),
+		},
 	)
 	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(krtOptions.Stop), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
 	k8sSecrets := krt.NewCollection(k8sSecretsRaw, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {

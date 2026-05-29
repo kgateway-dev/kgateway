@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -31,7 +32,7 @@ var AllCRDs = []schema.GroupVersionResource{
 	gvr.GRPCRoute,
 	gvr.TCPRoute,
 	gvr.TLSRoute,
-	gvr.TLSRoute_v1alpha2,
+	wellknown.TLSRouteV1Alpha3GVR,
 	gvr.ReferenceGrant,
 	gvr.BackendTLSPolicy,
 	wellknown.XListenerSetGVR,
@@ -59,7 +60,31 @@ const (
 	CRDPath = "install/helm/kgateway-crds/templates"
 )
 
-// GetStructuralSchemas returns a map of GroupVersionKind to Structural schemas for all CRDs in the given directory.
+// GetGatewayAPICRDDir returns the path to Gateway API CRDs from the active module.
+// It looks for the experimental CRDs which include XListenerSet and other experimental features.
+func GetGatewayAPICRDDir() (string, error) {
+	cmd := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", "sigs.k8s.io/gateway-api")
+	cmd.Dir = GitRootDirectory()
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve gateway-api module directory: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	modDir := strings.TrimSpace(string(out))
+	if modDir == "" {
+		return "", fmt.Errorf("gateway-api module directory is empty")
+	}
+	crdDir := filepath.Join(modDir, "config", "crd", "experimental")
+
+	if _, err := os.Stat(crdDir); err != nil {
+		return "", fmt.Errorf("gateway-api CRD directory not found: %w", err)
+	}
+
+	return crdDir, nil
+}
+
+// GetStructuralSchemas returns a map of GroupVersionKind to Structural schemas for all CRDs in the given directories.
 func GetStructuralSchemas(
 	crdDir string,
 ) (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {

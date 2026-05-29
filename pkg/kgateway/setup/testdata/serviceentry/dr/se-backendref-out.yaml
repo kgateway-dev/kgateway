@@ -7,7 +7,6 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
-  metadata: {}
   name: istio-se_gwtest_example-se_se.example.com_80
   outlierDetection:
     baseEjectionTime: 900s
@@ -20,7 +19,6 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
 endpoints:

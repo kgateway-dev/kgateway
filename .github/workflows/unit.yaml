@@ -10,6 +10,8 @@ env:
   VERSION: 'v1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }}
   GO_TEST_RETRIES: 2
+  ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
+  CGO_ENABLED: '0'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -22,22 +24,104 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 25
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-    - name: Setup Go
-      uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
-      with:
-        go-version-file: go.mod
-    - name: Install dependencies
-      run: make mod-download
-    - name: Run Tests
-      shell: bash
-      run: make unit-with-coverage
-    - name: Validate Test Coverage
-      shell: bash
-      # The make will error if test coverage drops below a certain threshold
-      # We intentionally ignore the errors while we build out our test coverage, to establish a good baseline
-      # However, we should strive to establish a baseline, and then make it required on PRs
-      run: make --always-make --ignore-errors validate-test-coverage
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: go.mod
+      - name: Install dependencies
+        run: make mod-download
+      - name: Detect validator image rebuild
+        id: validator-image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rebuild=false
+          if [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            rebuild=true
+          elif ! git diff --quiet "${{ github.event.pull_request.base.sha }}...HEAD" -- cmd/envoyinit/ internal/envoy_modules/ Makefile; then
+            rebuild=true
+          fi
+
+          sha="$(git rev-parse --short=12 HEAD)"
+          {
+            echo "rebuild=${rebuild}"
+            echo "image=ghcr.io/kgateway-dev/envoy-wrapper:pr-${sha}"
+            echo "version=pr-${sha}"
+          } >> "$GITHUB_OUTPUT"
+      - name: Setup Buildx
+        if: ${{ steps.validator-image.outputs.rebuild == 'true' }}
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+      - name: Build validator image
+        if: ${{ steps.validator-image.outputs.rebuild == 'true' }}
+        env:
+          VERSION: ${{ steps.validator-image.outputs.version }}
+        run: make envoy-wrapper-docker
+      - name: Use locally built validator image
+        if: ${{ steps.validator-image.outputs.rebuild == 'true' }}
+        shell: bash
+        run: |
+          echo "KGATEWAY_VALIDATOR_ENVOY_IMAGE=${{ steps.validator-image.outputs.image }}" >> "$GITHUB_ENV"
+          echo "KGATEWAY_VALIDATOR_DOCKER_PULL_POLICY=never" >> "$GITHUB_ENV"
+      - name: Pre-pull validator image
+        # When rebuild=true the image was built locally and pull-policy is "never",
+        # so this step only matters for the default ghcr.io image path. Pulling it
+        # once up front (with retries) avoids per-test ghcr.io timeout flakes in
+        # the strict-validation tests, which spawn `docker run --pull always` for
+        # every validation invocation.
+        if: ${{ steps.validator-image.outputs.rebuild == 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          validator_image="${KGATEWAY_VALIDATOR_ENVOY_IMAGE:-}"
+          if [[ -z "$validator_image" ]]; then
+            validator_image="$(< pkg/validator/default_envoy_image.txt)"
+          fi
+          if [[ -z "$validator_image" ]]; then
+            echo "validator image is empty" >&2
+            exit 1
+          fi
+
+          attempt=1
+          max_attempts=5
+          delay=5
+          until docker pull "$validator_image"; do
+            if [[ "$attempt" -ge "$max_attempts" ]]; then
+              echo "docker pull failed after $attempt attempts" >&2
+              exit 1
+            fi
+            echo "docker pull attempt $attempt failed; retrying in ${delay}s" >&2
+            sleep "$delay"
+            attempt=$((attempt + 1))
+            delay=$((delay * 2))
+          done
+          # The image is now in the local docker daemon cache; tell the validator
+          # to use it without re-pulling on every invocation.
+          echo "KGATEWAY_VALIDATOR_ENVOY_IMAGE=${validator_image}" >> "$GITHUB_ENV"
+          echo "KGATEWAY_VALIDATOR_DOCKER_PULL_POLICY=never" >> "$GITHUB_ENV"
+      - name: Package helm charts
+        # Produces the real release artifact (_test/kgateway-*.tgz) via the same
+        # `make package-kgateway-charts` target release.yaml runs, so the
+        # packaged-chart parity test in ./test/helm has something to render
+        # against. KGW_REQUIRE_PACKAGED_CHART below makes that test fail loudly
+        # if this step is ever dropped, instead of silently skipping.
+        shell: bash
+        run: make package-kgateway-charts
+      - name: Run Tests
+        shell: bash
+        env:
+          CGO_ENABLED: '1'
+          KGW_REQUIRE_PACKAGED_CHART: 'true'
+        run: make unit-with-coverage
+      - name: Validate Test Coverage
+        shell: bash
+        # The make will error if test coverage drops below a certain threshold
+        # We intentionally ignore the errors while we build out our test coverage, to establish a good baseline
+        # However, we should strive to establish a baseline, and then make it required on PRs
+        run: make --always-make --ignore-errors validate-test-coverage
 
   # Catches version drift between go.mod, Dockerfile, and Makefile
   version-drift:
@@ -45,11 +129,11 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-    - name: Setup Go
-      uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
-      with:
-        go-version-file: tools/go.mod
-    - name: Run drift tests
-      working-directory: tools
-      run: go test -v -count=1 ./build-tools/
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Setup Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: tools/go.mod
+      - name: Run drift tests
+        working-directory: tools
+        run: go test -v -count=1 ./build-tools/

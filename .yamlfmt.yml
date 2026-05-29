@@ -1,0 +1,12 @@
+match_type: doublestar
+exclude:
+  - "**/templates/**"
+  - "**/testdata/**"
+  - "**/testutils/**"
+  - "pkg/kgateway/crds/**"
+formatter:
+  type: basic
+  retain_line_breaks: true
+  eof_newline: true
+  trim_trailing_whitespace: false
+  include_document_start: false

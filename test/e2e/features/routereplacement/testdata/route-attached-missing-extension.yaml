@@ -1,0 +1,36 @@
+---
+# HTTPRoute with a TrafficPolicy referencing a non-existent GatewayExtension.
+# Drives the route-replacement metric with error_type=ref_not_found.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: missing-extension-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: gw
+    namespace: default
+  hostnames:
+  - "missing-extension.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: missing-extension-policy
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: missing-extension-route
+  extAuth:
+    extensionRef:
+      name: nonexistent-extauth-extension

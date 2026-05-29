@@ -99,14 +99,15 @@ func endpointsFromWorkloads(
 	// this should never miss, we only call buildInlineCLA using BackendObjectIR
 	// generated from the ServiceEntry iteself
 	var servicePort *networking.ServicePort
+	backendPort := be.GetPort()
 	for _, sp := range se.Spec.GetPorts() {
-		if int32(sp.GetNumber()) == be.Port { //nolint:gosec // G115: ServiceEntry port numbers are always valid port range (1-65535)
+		if int32(sp.GetNumber()) == backendPort { //nolint:gosec // G115: ServiceEntry port numbers are always valid port range (1-65535)
 			servicePort = sp
 			break
 		}
 	}
 
-	seTargetPort := be.Port
+	seTargetPort := backendPort
 	if sePortTargetPort := servicePort.GetTargetPort(); sePortTargetPort > 0 {
 		seTargetPort = int32(sePortTargetPort) //nolint:gosec // G115: ServiceEntry target port numbers are always valid port range (1-65535)
 	}

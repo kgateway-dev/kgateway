@@ -17,7 +17,6 @@ Clusters:
           healthCheckConfig:
             hostname: example.com
           hostname: example.com
-  metadata: {}
   name: backend_default_backend1_0
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -72,7 +71,6 @@ Clusters:
           healthCheckConfig:
             hostname: example2.com
           hostname: example2.com
-  metadata: {}
   name: backend_default_backend2_0
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -92,7 +90,6 @@ Clusters:
             name: SYSTEM_CA_CERT
       sni: example2.com
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -132,8 +129,13 @@ Routes:
         prefix: /
       name: listener~80~*-route-0-httproute-example-route-default-0-0-matcher-0
       route:
-        cluster: backend_default_backend1_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        weightedClusters:
+          clusters:
+          - name: backend_default_backend1_0
+            weight: 1
+          - name: backend_default_backend2_0
+            weight: 1
 Statuses:
   gateways:
     default/example-gateway:
@@ -148,6 +150,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
@@ -200,38 +207,38 @@ Statuses:
     BackendTLSPolicy/default/tls-policy:
       ancestors:
       - ancestorRef:
-          group: gateway.kgateway.dev
-          kind: Backend
-          name: backend1
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
           namespace: default
         conditions:
         - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
           message: Policy accepted
-          reason: Valid
+          reason: Accepted
           status: "True"
           type: Accepted
-        - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
-          type: Attached
         controllerName: kgateway.dev/kgateway
     BackendTLSPolicy/default/tls-policy2:
       ancestors:
       - ancestorRef:
-          group: gateway.kgateway.dev
-          kind: Backend
-          name: backend2
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
           namespace: default
         conditions:
         - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
           message: Policy accepted
-          reason: Valid
+          reason: Accepted
           status: "True"
           type: Accepted
-        - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
-          type: Attached
         controllerName: kgateway.dev/kgateway

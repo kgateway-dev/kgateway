@@ -15,7 +15,7 @@ import (
 // validateWithValidationLevel performs validation based on validation level.
 // Callers who need validation level behavior should use this method instead of calling
 // the Validate() method on the TrafficPolicy type directly.
-func validateWithValidationLevel(ctx context.Context, p *TrafficPolicy, v validator.Validator, mode apisettings.ValidationMode) error {
+func validateWithValidationLevel(ctx context.Context, p *TrafficPolicy, v validator.Validator, mode apisettings.ValidationMode, enableAuthMetadata bool) error {
 	switch mode {
 	case apisettings.ValidationStandard:
 		return p.Validate()
@@ -23,7 +23,7 @@ func validateWithValidationLevel(ctx context.Context, p *TrafficPolicy, v valida
 		if err := p.Validate(); err != nil {
 			return err
 		}
-		return validateXDS(ctx, p, v)
+		return validateXDS(ctx, p, v, enableAuthMetadata)
 	}
 	return nil
 }
@@ -32,11 +32,11 @@ func validateWithValidationLevel(ctx context.Context, p *TrafficPolicy, v valida
 // it via envoy validate mode. It re-uses the ApplyForRoute method to ensure that the translation
 // and validation logic go through the same code path as normal.
 // This method can be called independently when only xDS validation is needed.
-func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator) error {
+func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator, enableAuthMetadata bool) error {
 	// use a fake translation pass to ensure we have the desired typed filter config
 	// on the placeholder vhost.
 	typedPerFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
-	fakePass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, nil).(*trafficPolicyPluginGwPass)
+	fakePass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, nil, enableAuthMetadata).(*trafficPolicyPluginGwPass)
 
 	// Use a placeholder filter chain name for validation
 	const validationFilterChain = "validation-filter-chain"

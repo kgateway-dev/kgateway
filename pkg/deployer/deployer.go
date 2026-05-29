@@ -45,7 +45,7 @@ type ImageInfo struct {
 }
 
 // Custom patcher; used for testing since SSA does not work with Dynamic fake client
-type Patcher func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error
+type Patcher func(ctx context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error
 
 // A Deployer is responsible for deploying proxies.
 type Deployer struct {
@@ -98,9 +98,9 @@ func NewDeployer(
 	return d
 }
 
-func applyPatch(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+func applyPatch(ctx context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
 	c := client.Dynamic().Resource(gvr).Namespace(namespace)
-	_, err := c.Patch(context.Background(), name, types.ApplyPatchType, data, metav1.PatchOptions{
+	_, err := c.Patch(ctx, name, types.ApplyPatchType, data, metav1.PatchOptions{
 		Force:        new(true),
 		FieldManager: fieldManager,
 	}, subresources...)
@@ -320,7 +320,7 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 		if err != nil {
 			return err
 		}
-		if err := d.patcher(d.client, controllerName, gvr, u.GetName(), u.GetNamespace(), js); err != nil {
+		if err := d.patcher(ctx, d.client, controllerName, gvr, u.GetName(), u.GetNamespace(), js); err != nil {
 			return fmt.Errorf("failed to apply object %s %s/%s: %w", u.GetObjectKind().GroupVersionKind().String(), u.GetNamespace(), u.GetName(), err)
 		}
 	}

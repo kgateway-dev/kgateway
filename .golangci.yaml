@@ -30,6 +30,7 @@ linters:
     - sloglint
     - spancheck
     - staticcheck
+    - testifylint
     - unparam
     - unused
     - usestdlibvars
@@ -48,15 +49,15 @@ linters:
         settings:
           linters:
             enable:
-            - "*"
+              - "*"
             disable:
-            - commentstart
-            - integers
-            - maxlength
-            - nobools
-            - nomaps
-            - optionalfields
-            - ssatags
+              - commentstart
+              - integers
+              - maxlength
+              - nobools
+              - nomaps
+              - optionalfields
+              - ssatags
           lintersConfig:
             conditions:
               isFirstField: Ignore
@@ -145,7 +146,15 @@ linters:
     staticcheck:
       checks:
         - SA1019 # deprecated usage
+        - SA2002 # testing.T FailNow/SkipNow called from goroutine
         - ST1019 # duplicate imports
+    testifylint:
+      disable-all: true
+      enable:
+        - go-require # require/assert.FailNow in non-test goroutines
+        - suite-subtest-run # use s.Run instead of s.T().Run in testify suites
+      go-require:
+        ignore-http-handlers: true
     sloglint:
       static-msg: true
       msg-style: lowercased
@@ -200,12 +209,12 @@ formatters:
   settings:
     gci:
       sections:
-      - standard
-      - default
-      - prefix(github.com/kgateway-dev)
-      - blank
-      - dot
-      - localmodule
+        - standard
+        - default
+        - prefix(github.com/kgateway-dev)
+        - blank
+        - dot
+        - localmodule
       custom-order: true
   exclusions:
     generated: lax

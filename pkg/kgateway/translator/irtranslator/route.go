@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -88,7 +89,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.routeConfigName, pols...)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
-				errs = append(errs, pol.Errors...)
+				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
 				continue
 			}
 			pass.ApplyRouteConfigPlugin(&ir.RouteConfigContext{
@@ -105,7 +106,9 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		// Anytime we encounter any errors while computing the RC or there's invalid policy
 		// attached to the RC (via Gateway or HTTPS listener), we need to replace the entire
 		// RC with a synthetic vhost that returns a 500 error for all traffic.
-		h.logger.Error("error applying route config plugins", "error", errors.Join(errs...))
+		joined := errors.Join(errs...)
+		h.logger.Error("error applying route config plugins", "error", joined)
+		incRouteReplacementMetric(h.gw, joined)
 		cfg.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("default", "*")}
 		return cfg
 	}
@@ -171,6 +174,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	// run any plugins attached to an HTTP-based listener on the computed vhost.
 	if err := h.runVhostPlugins(virtualHost, out, typedPerFilterConfigRoute); err != nil {
 		h.logger.Error("error running vhost plugins", "error", err)
+		incRouteReplacementMetric(h.gw, err)
 		reporter := virtualHost.ParentRef.GetParentReporter(h.reporter)
 		reporter.Listener(&virtualHost.ParentRef.Listener).SetCondition(reportssdk.ListenerCondition{
 			Type:    gwv1.ListenerConditionAccepted,
@@ -259,17 +263,19 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), backendConfigCtx.ResponseHeadersToAdd...)
 	out.ResponseHeadersToRemove = append(out.GetResponseHeadersToRemove(), backendConfigCtx.ResponseHeadersToRemove...)
 
-	// If routeProcessingErr is nil, check if the route has an action for non-delegating routes
-	// to treat this as an error that should result in route replacement.
 	// A delegating(parent) route does not need to have an output Action on itself,
 	// so do not treat it as an error
-	if routeProcessingErr == nil && out.GetAction() == nil && !in.Delegates {
-		routeProcessingErr = errors.New("no action specified")
-	}
-
-	// If there are no errors, validate the route will not be rejected by the xDS server.
-	if routeProcessingErr == nil {
-		routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
+	if !in.Delegates {
+		// If routeProcessingErr is nil, check if the route has an action for non-delegating routes
+		// to treat this as an error that should result in route replacement.
+		if routeProcessingErr == nil && out.GetAction() == nil {
+			routeProcessingErr = errors.New("no action specified")
+		}
+		// If there are no errors, validate the route will not be rejected by the xDS server.
+		// Skip delegating routes as they have no action and are not propagated to envoy
+		if routeProcessingErr == nil {
+			routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
+		}
 	}
 
 	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
@@ -284,14 +290,16 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		return nil
 	}
 
+	acceptanceMsg := summarizeRuleErrors(routeAcceptanceErr)
+
 	// For invalid matchers, we drop the route entirely instead of replacing it with a synthetic matcher.
 	if routeAcceptanceErr != nil && errors.Is(routeAcceptanceErr, ErrInvalidMatcher) {
 		h.logger.Info("invalid matcher", "error", routeAcceptanceErr)
 		routeReport.SetCondition(reportssdk.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleDroppedReason),
-			Message: fmt.Sprintf("Dropped Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
+			Reason:  reportssdk.RouteRuleDroppedReason,
+			Message: fmt.Sprintf("Dropped Rule (%d): %s", in.MatchIndex, acceptanceMsg),
 		})
 		return nil
 	}
@@ -305,12 +313,13 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			routeReport.SetCondition(reportssdk.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteConditionReason(reportssdk.RouteRuleReplacedReason),
-				Message: fmt.Sprintf("Replaced Rule (%d): %v", in.MatchIndex, routeAcceptanceErr),
+				Reason:  reportssdk.RouteRuleReplacedReason,
+				Message: fmt.Sprintf("Replaced Rule (%d): %s", in.MatchIndex, acceptanceMsg),
 			})
 		}
 
 		if h.validationLevel == apisettings.ValidationStandard || h.validationLevel == apisettings.ValidationStrict {
+			incRouteReplacementMetric(h.gw, routeReplacementErr)
 			// Clear all headers and filter configs when the route is replaced with a direct response
 			out.TypedPerFilterConfig = nil
 			out.RequestHeadersToAdd = nil
@@ -355,7 +364,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
-				errs = append(errs, pol.Errors...)
+				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
 				continue
 			}
 			pctx := &ir.VirtualHostContext{
@@ -417,6 +426,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			In:                in,
 			TypedFilterConfig: typedPerFilterConfig,
 			ListenerPort:      h.listener.BindPort,
+			ListenerHasTLS:    h.fc.TLS != nil,
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
@@ -427,7 +437,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			// skip plugin application if we encountered any errors while constructing
 			// the policy IR.
 			if len(pol.Errors) > 0 {
-				errs = append(errs, pol.Errors...)
+				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
 				continue
 			}
 
@@ -518,6 +528,8 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			Backend:           backend.Backend.BackendObject,
 			TypedFilterConfig: backendConfigCtx.typedPerFilterConfigRoute,
 		}
+
+		reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, h.pluginPass, backend.Backend.BackendObject)
 
 		// non attached policy translation
 		err := h.runBackend(
@@ -642,7 +654,7 @@ func translateMatcher(matcher gwv1.HTTPRouteMatch) *envoyroutev3.RouteMatch {
 
 var separatedPathRegex = regexp.MustCompile("^[^?#]+[^?#/]$")
 
-func isValidPathSparated(path string) bool {
+func isValidPathSeparated(path string) bool {
 	// see envoy docs:
 	//	Expect the value to not contain "?" or "#" and not to end in "/"
 	return separatedPathRegex.MatchString(path)
@@ -652,7 +664,11 @@ func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *envoyroutev3.RouteMatch
 	pathType, pathValue := routeutils.ParsePath(match.Path)
 	switch pathType {
 	case gwv1.PathMatchPathPrefix:
-		if !isValidPathSparated(pathValue) {
+		if len(pathValue) > 1 {
+			// per Gateway API spec, a trailing slash on a PathPrefix value is ignored.
+			pathValue = strings.TrimSuffix(pathValue, "/")
+		}
+		if !isValidPathSeparated(pathValue) {
 			out.PathSpecifier = &envoyroutev3.RouteMatch_Prefix{
 				Prefix: pathValue,
 			}
@@ -750,4 +766,67 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoyroutev3.QueryParam
 		out = append(out, envoyMatch)
 	}
 	return out
+}
+
+// summarizeRuleErrors renders err for a route status condition: flattens
+// errors.Join trees, dedupes and sorts on (PolicyRef.IDWithSectionName, msg)
+// for deterministic status output. err itself is not modified, so
+// callers can still errors.Is/As against it.
+func summarizeRuleErrors(err error) string {
+	if err == nil {
+		return ""
+	}
+	// Flatten any nested errors.
+	flatErrs := ir.FlattenJoinedErr(err)
+
+	type key struct{ refID, msg string }
+	seen := make(map[key]struct{}, len(flatErrs))
+	type item struct {
+		refID, msg, rendered string
+	}
+	items := make([]item, 0, len(flatErrs))
+
+	for _, flatErr := range flatErrs {
+		// Extract key.
+		var refID, msg string
+		var pe *ir.PolicyError
+		if errors.As(flatErr, &pe) {
+			if pe.Ref != nil {
+				refID = pe.Ref.IDWithSectionName()
+			}
+			if pe.Err != nil {
+				msg = pe.Err.Error()
+			}
+		} else {
+			msg = flatErr.Error()
+		}
+		// Dedupe on (refID, msg).
+		k := key{refID, msg}
+		if _, dup := seen[k]; dup {
+			continue
+		}
+		seen[k] = struct{}{}
+		items = append(items, item{
+			refID:    refID,
+			msg:      msg,
+			rendered: flatErr.Error(),
+		})
+	}
+	// Sort on (refID, msg) for deterministic status message.
+	slices.SortFunc(items, func(a, b item) int {
+		if c := strings.Compare(a.refID, b.refID); c != 0 {
+			return c
+		}
+		return strings.Compare(a.msg, b.msg)
+	})
+
+	// Build the status message.
+	var b strings.Builder
+	for i, it := range items {
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString(it.rendered)
+	}
+	return b.String()
 }

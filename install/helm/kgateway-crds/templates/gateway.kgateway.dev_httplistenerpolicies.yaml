@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.1-0.20251023132335-bf7d6b742e6a
+    controller-gen.kubebuilder.io/version: v0.20.1
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -267,6 +267,51 @@ spec:
                                     type: array
                                 required:
                                 - flags
+                                type: object
+                              runtimeFilter:
+                                description: |-
+                                  Filters for random sampling of access logs.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                properties:
+                                  percentSampled:
+                                    description: |-
+                                      By default, the runtime filter will log on every request when the runtime key is set.
+                                      If this field is set, it additionally applies a fractional percent check so that only a
+                                      fraction of requests are logged.
+                                    properties:
+                                      denominator:
+                                        description: |-
+                                          Specifies the denominator. If the denominator specified is less than the numerator,
+                                          the final fractional percentage is capped at 1 (100%).
+                                          Defaults to HUNDRED.
+                                        enum:
+                                        - HUNDRED
+                                        - TEN_THOUSAND
+                                        - MILLION
+                                        type: string
+                                      numerator:
+                                        description: Specifies the numerator. Defaults
+                                          to 0.
+                                        format: int32
+                                        minimum: 0
+                                        type: integer
+                                    required:
+                                    - numerator
+                                    type: object
+                                  runtimeKey:
+                                    description: |-
+                                      The runtime key to look up in the runtime implementation. This key determines whether
+                                      the access log is enabled. When the runtime key value is set, the filter checks this key
+                                      at runtime to decide whether to log each request.
+                                    minLength: 1
+                                    type: string
+                                  useIndependentRandomness:
+                                    description: |-
+                                      If set to true, the filter uses Envoy's independent randomness source.
+                                      When false (the default), the filter uses the runtime key lookup.
+                                    type: boolean
+                                required:
+                                - runtimeKey
                                 type: object
                               statusCodeFilter:
                                 description: |-
@@ -597,6 +642,51 @@ spec:
                                 required:
                                 - flags
                                 type: object
+                              runtimeFilter:
+                                description: |-
+                                  Filters for random sampling of access logs.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                properties:
+                                  percentSampled:
+                                    description: |-
+                                      By default, the runtime filter will log on every request when the runtime key is set.
+                                      If this field is set, it additionally applies a fractional percent check so that only a
+                                      fraction of requests are logged.
+                                    properties:
+                                      denominator:
+                                        description: |-
+                                          Specifies the denominator. If the denominator specified is less than the numerator,
+                                          the final fractional percentage is capped at 1 (100%).
+                                          Defaults to HUNDRED.
+                                        enum:
+                                        - HUNDRED
+                                        - TEN_THOUSAND
+                                        - MILLION
+                                        type: string
+                                      numerator:
+                                        description: Specifies the numerator. Defaults
+                                          to 0.
+                                        format: int32
+                                        minimum: 0
+                                        type: integer
+                                    required:
+                                    - numerator
+                                    type: object
+                                  runtimeKey:
+                                    description: |-
+                                      The runtime key to look up in the runtime implementation. This key determines whether
+                                      the access log is enabled. When the runtime key value is set, the filter checks this key
+                                      at runtime to decide whether to log each request.
+                                    minLength: 1
+                                    type: string
+                                  useIndependentRandomness:
+                                    description: |-
+                                      If set to true, the filter uses Envoy's independent randomness source.
+                                      When false (the default), the filter uses the runtime key lookup.
+                                    type: boolean
+                                required:
+                                - runtimeKey
+                                type: object
                               statusCodeFilter:
                                 description: |-
                                   StatusCodeFilter filters based on HTTP status code.
@@ -639,6 +729,51 @@ spec:
                               type: array
                           required:
                           - flags
+                          type: object
+                        runtimeFilter:
+                          description: |-
+                            Filters for random sampling of access logs.
+                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                          properties:
+                            percentSampled:
+                              description: |-
+                                By default, the runtime filter will log on every request when the runtime key is set.
+                                If this field is set, it additionally applies a fractional percent check so that only a
+                                fraction of requests are logged.
+                              properties:
+                                denominator:
+                                  description: |-
+                                    Specifies the denominator. If the denominator specified is less than the numerator,
+                                    the final fractional percentage is capped at 1 (100%).
+                                    Defaults to HUNDRED.
+                                  enum:
+                                  - HUNDRED
+                                  - TEN_THOUSAND
+                                  - MILLION
+                                  type: string
+                                numerator:
+                                  description: Specifies the numerator. Defaults to
+                                    0.
+                                  format: int32
+                                  minimum: 0
+                                  type: integer
+                              required:
+                              - numerator
+                              type: object
+                            runtimeKey:
+                              description: |-
+                                The runtime key to look up in the runtime implementation. This key determines whether
+                                the access log is enabled. When the runtime key value is set, the filter checks this key
+                                at runtime to decide whether to log each request.
+                              minLength: 1
+                              type: string
+                            useIndependentRandomness:
+                              description: |-
+                                If set to true, the filter uses Envoy's independent randomness source.
+                                When false (the default), the filter uses the runtime key lookup.
+                              type: boolean
+                          required:
+                          - runtimeKey
                           type: object
                         statusCodeFilter:
                           description: |-
@@ -1307,6 +1442,62 @@ spec:
                     - name
                     x-kubernetes-list-type: map
                 type: object
+              forwardClientCertDetails:
+                description: |-
+                  ForwardClientCertDetails configures how Envoy handles the x-forwarded-client-cert (XFCC)
+                  header and which parts of the downstream client certificate are forwarded to upstream
+                  backends. Most modes only have effect on listeners where mTLS is configured. The exceptions
+                  are Sanitize, which strips XFCC unconditionally, and AlwaysForwardOnly, which forwards XFCC
+                  unconditionally; on a non-mTLS listener under any other mode the setting is a no-op.
+                  See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-forward-client-cert-details
+                properties:
+                  details:
+                    description: |-
+                      Details selects which fields from the downstream client certificate are written into
+                      the XFCC header that is sent upstream. These fields are only honored by Envoy when
+                      Mode is AppendForward or SanitizeSet.
+                    properties:
+                      cert:
+                        description: Cert forwards the entire client certificate in
+                          URL-encoded PEM format in the XFCC header.
+                        type: boolean
+                      chain:
+                        description: |-
+                          Chain forwards the entire client certificate chain (including the leaf certificate) in
+                          URL-encoded PEM format in the XFCC header.
+                        type: boolean
+                      dns:
+                        description: DNS forwards DNS-type Subject Alternative Names
+                          from the client certificate in the XFCC header.
+                        type: boolean
+                      subject:
+                        description: Subject forwards the certificate Subject in the
+                          XFCC header.
+                        type: boolean
+                      uri:
+                        description: URI forwards the URI-type Subject Alternative
+                          Name from the client certificate in the XFCC header.
+                        type: boolean
+                    type: object
+                  mode:
+                    description: |-
+                      Mode controls how Envoy handles the XFCC header on the request forwarded upstream.
+                      If unset and Details is provided, Mode defaults to SanitizeSet.
+                      If both Mode and Details are unset, this field has no effect.
+
+                      - Sanitize: do not send the XFCC header upstream.
+                      - ForwardOnly: forward the XFCC header in the request unchanged.
+                      - AppendForward: append the current client's details to the XFCC header.
+                      - SanitizeSet: reset the XFCC header with the current client's details, ignoring any client-supplied value.
+                      - AlwaysForwardOnly: always forward the XFCC header, even for non-mTLS connections.
+                    enum:
+                    - Sanitize
+                    - ForwardOnly
+                    - AppendForward
+                    - SanitizeSet
+                    - AlwaysForwardOnly
+                    type: string
+                type: object
               generateRequestId:
                 description: |-
                   GenerateRequestId:  Whether the connection manager will generate the x-request-id header if it does not exist.
@@ -1325,9 +1516,45 @@ spec:
                 required:
                 - path
                 type: object
+              http2ProtocolOptions:
+                description: |-
+                  Http2ProtocolOptions configures downstream HTTP/2 behavior on the listener's
+                  HttpConnectionManager.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions
+                properties:
+                  initialConnectionWindowSize:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    description: |-
+                      InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+                      Same range and default value as InitialStreamWindowSize.
+                      Values can be specified with units like "64Ki".
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  initialStreamWindowSize:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    description: |-
+                      InitialStreamWindowSize is the initial window size for the stream.
+                      Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
+                      Defaults to 268435456 (256 * 1024 * 1024).
+                      Values can be specified with units like "64Ki".
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  maxConcurrentStreams:
+                    description: |-
+                      The maximum number of concurrent streams that the connection can have.
+                      Envoy defaults to 1024.
+                    format: int32
+                    maximum: 2147483647
+                    minimum: 1
+                    type: integer
+                type: object
               idleTimeout:
                 description: |-
-                  IdleTimeout is the idle timeout for connnections.
+                  IdleTimeout is the idle timeout for connections.
                   See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions
                 type: string
                 x-kubernetes-validations:
@@ -1341,6 +1568,17 @@ spec:
                 format: int32
                 maximum: 8192
                 minimum: 1
+                type: integer
+              maxRequestsPerConnection:
+                description: |-
+                  MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
+                  keepalive connection. When the limit is reached, Envoy closes the connection, which forces
+                  clients to reconnect. This allows L4 load balancers like AWS NLB to rebalance long-lived
+                  HTTP/2 and gRPC connections across gateway pods.
+                  If set to 0 or unspecified, defaults to unlimited.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
+                format: int32
+                minimum: 0
                 type: integer
               preserveExternalRequestId:
                 description: |-
@@ -1376,6 +1614,17 @@ spec:
                 x-kubernetes-validations:
                 - message: invalid duration value
                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+              stripHostPortMode:
+                description: |-
+                  StripHostPortMode determines whether, and under what conditions, Envoy will strip the port
+                  from the Host/authority header. StripMatchingHostPort strips the port only if it matches
+                  the listener's own port. StripAnyHostPort strips the port unconditionally.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-matching-host-port
+                  See also: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-any-host-port
+                enum:
+                - MatchingPort
+                - AnyPort
+                type: string
               targetRefs:
                 description: TargetRefs specifies the target resources by reference
                   to attach the policy to.
@@ -1923,6 +2172,11 @@ spec:
                 !self.useRemoteAddress)'
             - message: only one of xffNumTrustedHops and xffTrustedCIDRs may be set
               rule: '!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)'
+            - message: forwardClientCertDetails.details requires mode to be AppendForward
+                or SanitizeSet (or unset)
+              rule: '!has(self.forwardClientCertDetails) || !has(self.forwardClientCertDetails.details)
+                || !has(self.forwardClientCertDetails.mode) || self.forwardClientCertDetails.mode
+                == ''AppendForward'' || self.forwardClientCertDetails.mode == ''SanitizeSet'''
           status:
             description: |-
               PolicyStatus defines the common attributes that all Policies should include within

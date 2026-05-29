@@ -12,7 +12,7 @@ LABEL "io.kgateway.version"="${VERSION}"
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Pinned tool versions (not tracked in go.mod)
-ENV RUST_VERSION=1.86.0
+# RUST_VERSION is sourced from internal/envoy_modules/rust-toolchain.toml (see below).
 ENV KUBECTL_VERSION=1.35.0
 ENV PROTOC_VERSION=33.2
 ENV BUF_VERSION=v1.62.1
@@ -42,8 +42,10 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     --mount=type=cache,target=/var/cache/apt,sharing=locked \
     rm -f /etc/apt/apt.conf.d/docker-clean \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
+    && (sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list 2>/dev/null || true) \
+    && (sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true) \
+    && apt-get -o Acquire::Retries=5 update \
+    && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
       ca-certificates \
       curl \
       wget \
@@ -127,10 +129,14 @@ RUN set -eux; \
     curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${TARGETARCH}"; \
     chmod 555 /usr/local/bin/yq
 
-# Rust toolchain (for internal/envoyinit)
+# Rust toolchain (version sourced from rust-toolchain.toml)
+COPY internal/envoy_modules/rust-toolchain.toml /tmp/rust-toolchain.toml
 RUN set -eux; \
+    RUST_VERSION="$(awk -F'"' '/^channel[[:space:]]*=/ {print $2}' /tmp/rust-toolchain.toml)"; \
+    test -n "${RUST_VERSION}" || { echo "failed to parse channel from rust-toolchain.toml" >&2; exit 1; }; \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain "${RUST_VERSION}" --profile minimal --component rustfmt --component clippy; \
-    ln -s "${CARGO_HOME}/bin/"* /usr/local/bin/
+    ln -s "${CARGO_HOME}/bin/"* /usr/local/bin/; \
+    rm /tmp/rust-toolchain.toml
 
 # Install su-exec (like Istio: small, reliable privilege drop for entrypoint)
 RUN set -eux; \

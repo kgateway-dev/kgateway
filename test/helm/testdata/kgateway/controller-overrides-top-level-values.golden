@@ -319,6 +319,7 @@ spec:
       annotations:
         prometheus.io/path: "/metrics"
         prometheus.io/port: "9092"
+        prometheus.io/scrape: "true"
         controller-only: "true"
         overridden: controller
       labels:
@@ -353,12 +354,12 @@ spec:
             initialDelaySeconds: 1
             periodSeconds: 10
           startupProbe:
+            failureThreshold: 600
             httpGet:
               path: /readyz
               port: 9093
             initialDelaySeconds: 0
             periodSeconds: 1
-            failureThreshold: 120
           env:
             - name: GOMEMLIMIT
               valueFrom:

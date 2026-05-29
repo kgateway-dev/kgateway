@@ -5,7 +5,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_httpbin_8080
   type: EDS
 - connectTimeout: 5s
@@ -14,11 +13,9 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_oauth2-proxy_4180
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -76,6 +73,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
@@ -110,8 +112,9 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): invalid xds configuration: error initializing
-            configuration ''/dev/fd/0'': path_prefix should start with "/".'
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/oauth2-auth-policy:
+            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            path_prefix should start with "/".'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

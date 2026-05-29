@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -47,6 +45,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/test/envtestassets"
 )
 
 const (
@@ -79,6 +78,7 @@ type ControllerSuite struct {
 	env             *envtest.Environment
 	client          client.Client //nolint:forbidigo // can use client.Client in envtest
 	kubeconfigPath  string
+	managerErr      chan error
 }
 
 func TestControllerSuite(t *testing.T) {
@@ -94,7 +94,7 @@ func (s *ControllerSuite) SetupSuite() {
 	// Create a scheme and add Gateway types.
 	scheme := schemes.GatewayScheme()
 
-	assetsDir, err := getAssetsDir()
+	assetsDir, err := envtestassets.GetEnvTestAssetsDir()
 	s.Require().NoError(err)
 
 	s.env = &envtest.Environment{
@@ -127,6 +127,14 @@ func (s *ControllerSuite) TearDownSuite() {
 	// Envtest must be stopped after the manager/controllers stop, so cancel the Context first
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/1571#issuecomment-945535598
 	s.suitCtxCancelFn()
+	if s.managerErr != nil {
+		select {
+		case err := <-s.managerErr:
+			assert.NoError(s.T(), err, "controller-manager returned error")
+		case <-time.After(defaultPollTimeout):
+			s.T().Error("timed out waiting for controller-manager to stop")
+		}
+	}
 	err := s.env.Stop()
 	if err != nil {
 		s.T().Logf("error stopping Envtest after manager exit %v", err)
@@ -157,7 +165,8 @@ func (s *ControllerSuite) TestGatewayStatus() {
 	}
 
 	for _, tc := range testCases {
-		s.T().Run(tc.name, func(t *testing.T) {
+		s.Run(tc.name, func() {
+			t := s.T()
 			r := require.New(t)
 			ctx := t.Context()
 			gwName := "test-" + tc.gatewayClass
@@ -369,10 +378,11 @@ func (s *ControllerSuite) TestMetrics() {
 		r.Empty(probs)
 	}
 
-	s.T().Run("metrics generation", func(t *testing.T) {
+	s.Run("metrics generation", func() {
+		t := s.T()
 		t.Cleanup(func() {
 			err := s.client.Delete(ctx, gw)
-			s.NoError(err)
+			assert.NoError(t, err)
 		})
 
 		// Set up the Gateway
@@ -447,7 +457,8 @@ func (s *ControllerSuite) TestMetrics() {
 		}})
 	})
 
-	s.T().Run("metrics disabled", func(t *testing.T) {
+	s.Run("metrics disabled", func() {
+		t := s.T()
 		metrics.SetActive(false)
 		oldRegistry := metrics.Registry()
 		metrics.SetRegistry(false, metrics.NewRegistry())
@@ -457,7 +468,7 @@ func (s *ControllerSuite) TestMetrics() {
 			metrics.SetRegistry(false, oldRegistry)
 
 			err := s.client.Delete(ctx, gw)
-			s.NoError(err)
+			assert.NoError(t, err)
 		})
 
 		// Set up the Gateway
@@ -474,7 +485,8 @@ func (s *ControllerSuite) TestMetrics() {
 func (s *ControllerSuite) TestGatewayClass() {
 	ctx := context.Background()
 
-	s.T().Run("default GatewayClasses should be created", func(t *testing.T) {
+	s.Run("default GatewayClasses should be created", func() {
+		t := s.T()
 		r := require.New(t)
 
 		for _, gwClass := range gwClasses {
@@ -486,7 +498,8 @@ func (s *ControllerSuite) TestGatewayClass() {
 		}
 	})
 
-	s.T().Run("GatewayClass owned by external controller should not be mutated", func(t *testing.T) {
+	s.Run("GatewayClass owned by external controller should not be mutated", func() {
+		t := s.T()
 		externalController := gwv1.GatewayController("external.controller/name")
 		externalGC := &gwv1.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
@@ -498,7 +511,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 		}
 		t.Cleanup(func() {
 			err := s.client.Delete(ctx, externalGC)
-			s.NoError(err)
+			assert.NoError(t, err)
 		})
 
 		r := require.New(t)
@@ -520,7 +533,8 @@ func (s *ControllerSuite) TestGatewayClass() {
 		r.Equal(externalController, externalGC.Spec.ControllerName)
 	})
 
-	s.T().Run("default GatewayClasses should be recreated on deletion", func(t *testing.T) {
+	s.Run("default GatewayClasses should be recreated on deletion", func() {
+		t := s.T()
 		r := require.New(t)
 
 		for _, gwClass := range gwClasses {
@@ -543,7 +557,8 @@ func (s *ControllerSuite) TestGatewayClass() {
 		}
 	})
 
-	s.T().Run("default GatewayClass should not be overwritten when it is updated", func(t *testing.T) {
+	s.Run("default GatewayClass should not be overwritten when it is updated", func() {
+		t := s.T()
 		r := require.New(t)
 		gwc := &gwv1.GatewayClass{}
 
@@ -569,7 +584,8 @@ func (s *ControllerSuite) TestGatewayClass() {
 		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s", gatewayClassName)
 	})
 
-	s.T().Run("default GatewayClass ParametersRef should be restored when changed", func(t *testing.T) {
+	s.Run("default GatewayClass ParametersRef should be restored when changed", func() {
+		t := s.T()
 		r := require.New(t)
 		gwc := &gwv1.GatewayClass{}
 
@@ -622,28 +638,6 @@ func (f fakeDiscoveryNamespaceFilter) Filter(obj any) bool {
 }
 
 func (f fakeDiscoveryNamespaceFilter) AddHandler(func(selected, deselected istiosets.String)) {}
-
-func getAssetsDir() (string, error) {
-	var assets string
-	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
-		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -s --no-print-directory -C $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
-		if err != nil {
-			return "", err
-		}
-		assets = strings.TrimSpace(string(out))
-	}
-	if assets != "" {
-		info, err := os.Stat(assets)
-		if err != nil {
-			return "", err
-		}
-		if !info.IsDir() {
-			return "", fmt.Errorf("assets path is not a directory: %s", assets)
-		}
-	}
-	return assets, nil
-}
 
 func generateKubeconfig(restconfig *rest.Config) (string, error) {
 	clusters := make(map[string]*clientcmdapi.Cluster)
@@ -784,10 +778,11 @@ func (s *ControllerSuite) startController(
 		return err
 	}
 
+	s.managerErr = make(chan error, 1)
 	go func() {
+		defer close(s.managerErr)
 		mgr.GetLogger().Info("starting manager", "kubeconfig", s.kubeconfigPath)
-		err := mgr.Start(ctx)
-		s.Require().NoError(err, "error starting controller-manager")
+		s.managerErr <- mgr.Start(ctx)
 	}()
 
 	// Wait for manager to be ready by checking if we can list GatewayClasses
@@ -797,6 +792,14 @@ func (s *ControllerSuite) startController(
 		err := mgr.GetClient().List(ctx, &gcList)
 		assert.NoError(c, err, assert.NoError)
 	}, defaultPollTimeout, 250*time.Millisecond, "timed out waiting for Manager to be ready")
+	select {
+	case err := <-s.managerErr:
+		if err != nil {
+			return fmt.Errorf("controller-manager exited before it was ready: %w", err)
+		}
+		return fmt.Errorf("controller-manager exited before it was ready")
+	default:
+	}
 
 	return nil
 }

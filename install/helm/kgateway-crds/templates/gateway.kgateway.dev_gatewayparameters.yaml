@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.1-0.20251023132335-bf7d6b742e6a
+    controller-gen.kubebuilder.io/version: v0.20.1
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -257,6 +257,17 @@ spec:
                                 minimum: 0
                                 type: integer
                             type: object
+                          enableReadinessProbeProxyProtocol:
+                            description: |-
+                              EnableReadinessProbeProxyProtocol enables the PROXY protocol listener filter
+                              on the kgateway readiness listener (port 8082).
+                              Set this to true if and only if the load balancer in front of the gateway
+                              prepends PROXY protocol headers to incoming TCP connections targeting the
+                              readiness port. For example, when using an AWS NLB with proxy protocol v2
+                              enabled at the target group level
+                              (`service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"`).
+                              Defaults to false.
+                            type: boolean
                           logFormat:
                             description: |-
                               Envoy application log format. Does *not* affect access logs. Can be JSON or custom text format.
@@ -448,6 +459,25 @@ spec:
                           - name
                           type: object
                         type: array
+                      extraArgs:
+                        description: |-
+                          Additional arguments to pass to the Envoy binary.
+
+                          Similar to Kubernetes container args, variable references $(VAR_NAME) are
+                          expanded using the container's environment. If a variable cannot be
+                          resolved, the reference is left unchanged. Double $$ are reduced to a
+                          single $, which allows escaping the $(VAR_NAME) syntax.
+
+                          The following Envoy flags are already managed by kgateway and must not be
+                          set here: `--disable-hot-restart`, `--service-node`, `--log-level`, and
+                          `--component-log-level`. Consider using a DeploymentOverlay to override these values if desired.
+                        items:
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                        maxItems: 32
+                        minItems: 1
+                        type: array
                       extraVolumeMounts:
                         description: |-
                           Additional volume mounts to add to the container. See
@@ -522,7 +552,15 @@ spec:
                           version>\n\tpullPolicy: IfNotPresent"
                         properties:
                           digest:
-                            description: The hash digest of the image, e.g. `sha256:12345...`
+                            description: |-
+                              The hash digest of the image, e.g. `sha256:12345...`
+
+                              Tag and Digest are coupled at merge time: specifying a non-empty Digest
+                              without also specifying a Tag clears any inherited Tag, so the rendered
+                              image reference is `repo@digest`. To keep both an inherited (or
+                              overridden) tag and digest, specify non-empty values for both fields.
+                              To clear an inherited Digest while keeping an inherited Tag, set Digest
+                              to the empty string.
                             type: string
                           pullPolicy:
                             description: |-
@@ -537,7 +575,15 @@ spec:
                             description: The image repository (name).
                             type: string
                           tag:
-                            description: The image tag.
+                            description: |-
+                              The image tag.
+
+                              Tag and Digest are coupled at merge time: specifying a non-empty Tag
+                              without also specifying a Digest clears any inherited Digest, so the
+                              rendered image reference is `repo:tag`. To keep both an inherited (or
+                              overridden) tag and digest, specify non-empty values for both fields.
+                              To clear an inherited Tag while keeping an inherited Digest, set Tag to
+                              the empty string.
                             type: string
                         type: object
                       resources:
@@ -2449,7 +2495,15 @@ spec:
                               for details.
                             properties:
                               digest:
-                                description: The hash digest of the image, e.g. `sha256:12345...`
+                                description: |-
+                                  The hash digest of the image, e.g. `sha256:12345...`
+
+                                  Tag and Digest are coupled at merge time: specifying a non-empty Digest
+                                  without also specifying a Tag clears any inherited Tag, so the rendered
+                                  image reference is `repo@digest`. To keep both an inherited (or
+                                  overridden) tag and digest, specify non-empty values for both fields.
+                                  To clear an inherited Digest while keeping an inherited Tag, set Digest
+                                  to the empty string.
                                 type: string
                               pullPolicy:
                                 description: |-
@@ -2464,7 +2518,15 @@ spec:
                                 description: The image repository (name).
                                 type: string
                               tag:
-                                description: The image tag.
+                                description: |-
+                                  The image tag.
+
+                                  Tag and Digest are coupled at merge time: specifying a non-empty Tag
+                                  without also specifying a Digest clears any inherited Digest, so the
+                                  rendered image reference is `repo:tag`. To keep both an inherited (or
+                                  overridden) tag and digest, specify non-empty values for both fields.
+                                  To clear an inherited Tag while keeping an inherited Digest, set Tag to
+                                  the empty string.
                                 type: string
                             type: object
                           istioDiscoveryAddress:
@@ -5919,7 +5981,7 @@ spec:
                           type: string
                         description: |-
                           A selector which must be true for the pod to fit on a node. See
-                          https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
+                          https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/ for
                           details.
                         type: object
                       priorityClassName:
@@ -6731,7 +6793,15 @@ spec:
                           for details.
                         properties:
                           digest:
-                            description: The hash digest of the image, e.g. `sha256:12345...`
+                            description: |-
+                              The hash digest of the image, e.g. `sha256:12345...`
+
+                              Tag and Digest are coupled at merge time: specifying a non-empty Digest
+                              without also specifying a Tag clears any inherited Tag, so the rendered
+                              image reference is `repo@digest`. To keep both an inherited (or
+                              overridden) tag and digest, specify non-empty values for both fields.
+                              To clear an inherited Digest while keeping an inherited Tag, set Digest
+                              to the empty string.
                             type: string
                           pullPolicy:
                             description: |-
@@ -6746,7 +6816,15 @@ spec:
                             description: The image repository (name).
                             type: string
                           tag:
-                            description: The image tag.
+                            description: |-
+                              The image tag.
+
+                              Tag and Digest are coupled at merge time: specifying a non-empty Tag
+                              without also specifying a Digest clears any inherited Digest, so the
+                              rendered image reference is `repo:tag`. To keep both an inherited (or
+                              overridden) tag and digest, specify non-empty values for both fields.
+                              To clear an inherited Tag while keeping an inherited Digest, set Tag to
+                              the empty string.
                             type: string
                         type: object
                       resources:

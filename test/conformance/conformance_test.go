@@ -10,6 +10,7 @@ import (
 
 	"istio.io/istio/pkg/ptr"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -41,7 +42,16 @@ func TestConformance(t *testing.T) {
 
 	// Configure profiles and exempt features based on detected channel
 	profiles := sets.New(suite.GatewayGRPCConformanceProfileName, suite.GatewayHTTPConformanceProfileName)
-	if channel == features.FeatureChannelExperimental {
+	runTLSProfile := channel == features.FeatureChannelExperimental
+	if !runTLSProfile {
+		served, err := tlsRouteV1Served()
+		if err != nil {
+			t.Logf("Failed to detect TLSRoute v1 support: %v", err)
+		} else {
+			runTLSProfile = served
+		}
+	}
+	if runTLSProfile {
 		profiles.Insert(suite.GatewayTLSConformanceProfileName)
 	}
 	options.ConformanceProfiles = profiles
@@ -153,6 +163,36 @@ func detectGatewayAPIChannel() (string, error) {
 	}
 
 	return channel, nil
+}
+
+func tlsRouteV1Served() (bool, error) {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return false, err
+	}
+	clientset, err := apiextensionsclient.NewForConfig(cfg)
+	if err != nil {
+		return false, err
+	}
+
+	crd, err := clientset.ApiextensionsV1().CustomResourceDefinitions().Get(
+		context.Background(),
+		"tlsroutes.gateway.networking.k8s.io",
+		metav1.GetOptions{},
+	)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	for _, version := range crd.Spec.Versions {
+		if version.Name == gwv1.GroupVersion.Version {
+			return version.Served, nil
+		}
+	}
+	return false, nil
 }
 
 func featureSetToCommaSeparatedString(featureSet sets.Set[features.Feature]) string {

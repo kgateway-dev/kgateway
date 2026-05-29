@@ -215,9 +215,11 @@ data:
             cluster_name: xds_cluster
       cds_config:
         resource_api_version: V3
+        initial_fetch_timeout: 0s
         ads: {}
       lds_config:
         resource_api_version: V3
+        initial_fetch_timeout: 0s
         ads: {}
   xds_service_account_token.json: |
     {"resources":[{
@@ -479,7 +481,7 @@ spec:
               fieldPath: metadata.namespace
         - name: DISABLE_ENVOY
           value: "true"
-        image: docker.io/istio/proxyv2:1.22.0
+        image: docker.io/istio/proxyv2:1.29.2
         name: istio-proxy
         resources: {}
         volumeMounts:

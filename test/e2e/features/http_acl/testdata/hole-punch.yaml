@@ -1,0 +1,55 @@
+---
+# Hole-punch with named rules.
+# Corresponds to the internal/envoy_modules/filters/http-acl/README.md
+# "Hole-punch with named rules" example.
+# defaultAction=allow, block 10.0.0.0/8, allow 10.1.0.0/16, block bare host 10.1.2.3.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route
+  namespace: kgateway-base
+spec:
+  hostnames:
+    - httpbin
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: kgateway-base
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: http-acl-hole-punch
+  namespace: kgateway-base
+spec:
+  targetRefs:
+    - name: httpbin-route
+      kind: HTTPRoute
+      group: gateway.networking.k8s.io
+  acl:
+    defaultAction: allow
+    rules:
+      - name: block-internal-range
+        cidrs:
+          - "10.0.0.0/8"
+        action: deny
+      - name: allow-trusted-subnet
+        cidrs:
+          - "10.1.0.0/16"
+        action: allow
+      - name: block-rogue-host
+        cidrs:
+          - "10.1.2.3/32"
+        action: deny

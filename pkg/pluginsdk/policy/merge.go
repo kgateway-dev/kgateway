@@ -39,19 +39,27 @@ const (
 )
 
 // DeepMerge is used to opt-into policy deep merging for policies attached to the same resource
-const DeepMerge = "DeepMerge"
+const (
+	DeepMerge    = "DeepMerge"
+	ShallowMerge = "ShallowMerge"
+)
 
 type MergeOptions struct {
 	// Merge strategy to use
 	// Defaults to AugmentedMerge
 	Strategy MergeStrategy
+
+	// True when merging policies are at the same HierarchicalPriority.
+	SameHierarchy bool
 }
 
 func ToInternalMergeStrategy(s string) MergeStrategy {
 	if s == DeepMerge {
 		return AugmentedDeepMerge
+	} else if s == ShallowMerge {
+		return AugmentedShallowMerge
 	} else {
-		slog.Error("unsupported value, defaulting to shallow merge; allowed: DeepMerge", "strategy", s)
+		slog.Error("unsupported value, defaulting to shallow merge; allowed: DeepMerge, ShallowMerge", "strategy", s)
 		return AugmentedShallowMerge
 	}
 }
@@ -183,14 +191,15 @@ func merge[T any](
 		p2 := any(policies[i].PolicyIr).(*T)
 		p2Ref := policies[i].PolicyRef
 
-		out.Errors = append(out.Errors, policies[i].Errors...)
+		out.Errors = append(out.Errors, ir.WrapPolicyErrors(p2Ref, policies[i].Errors)...)
 		if len(policies[i].Errors) > 0 {
 			slog.Warn("ignoring policy with errors", "resource_ref", p2Ref, "errors", policies[i].FormatErrors())
 			continue
 		}
 
 		mergeOpts := MergeOptions{
-			Strategy: GetMergeStrategy(policies[i].InheritedPolicyPriority, sameHierarchy),
+			Strategy:      GetMergeStrategy(policies[i].InheritedPolicyPriority, sameHierarchy),
+			SameHierarchy: sameHierarchy,
 		}
 
 		mergeFn(merged, p2, p2Ref, policies[i].MergeOrigins, mergeOpts, out.MergeOrigins, mergeSettingsJSON)

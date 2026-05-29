@@ -3,6 +3,11 @@ before:
   hooks:
     - go mod tidy
     - go mod download
+    # Build the Rust dynamic module for amd64 and arm64 before any Docker images are built.
+    # cargo zigbuild cross-compiles without needing QEMU; the container runs on the host
+    # platform and targets the specified RUST_BUILD_ARCH.
+    - docker buildx build --output=type=local,dest=_output/rust/amd64 --target=export --build-arg=RUST_BUILD_ARCH=x86_64 -f internal/envoy_modules/Dockerfile internal/envoy_modules/
+    - docker buildx build --output=type=local,dest=_output/rust/arm64 --target=export --build-arg=RUST_BUILD_ARCH=aarch64 -f internal/envoy_modules/Dockerfile internal/envoy_modules/
 builds:
   - id: controller
     main: ./cmd/kgateway
@@ -57,22 +62,34 @@ dockers:
     dockerfile: &controller_dockerfile cmd/kgateway/Dockerfile
     goos: linux
     goarch: arm64
+    extra_files:
+      - _output/rust/arm64/librust_module.so
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--build-arg=RUST_MODULE_DIR=_output/rust/arm64"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:arm64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:arm64,mode=max,ignore-error=true"
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
       - &controller_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
     dockerfile: *controller_dockerfile
     goos: linux
     goarch: amd64
+    extra_files:
+      - _output/rust/amd64/librust_module.so
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--build-arg=RUST_MODULE_DIR=_output/rust/amd64"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:amd64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:amd64,mode=max,ignore-error=true"
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
       - &sds_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
@@ -80,10 +97,13 @@ dockers:
     goos: linux
     goarch: arm64
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=BASE_IMAGE={{ .Env.ALPINE_BASE_IMAGE }}"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:arm64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:arm64,mode=max,ignore-error=true"
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
       - &sds_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
@@ -91,47 +111,51 @@ dockers:
     goos: linux
     goarch: amd64
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=BASE_IMAGE={{ .Env.ALPINE_BASE_IMAGE }}"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:amd64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:amd64,mode=max,ignore-error=true"
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
       - &envoyinit_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
     dockerfile: &envoyinit_dockerfile cmd/envoyinit/Dockerfile
     goos: linux
     goarch: arm64
+    extra_files:
+      - cmd/envoyinit/docker-entrypoint.sh
+      - _output/rust/arm64/librust_module.so
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
-      - "--build-arg=RUST_BUILD_ARCH=aarch64"
-      - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
+      - "--build-arg=RUST_MODULE_DIR=_output/rust/arm64"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64,mode=max,ignore-error=true"
-    extra_files:
-      - cmd/envoyinit/docker-entrypoint.sh
-      - internal/envoyinit
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
       - &envoyinit_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
     dockerfile: *envoyinit_dockerfile
     goos: linux
     goarch: amd64
+    extra_files:
+      - cmd/envoyinit/docker-entrypoint.sh
+      - _output/rust/amd64/librust_module.so
     build_flag_templates:
-      - "--pull"
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
-      - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
+      - "--build-arg=RUST_MODULE_DIR=_output/rust/amd64"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64,mode=max,ignore-error=true"
-    extra_files:
-      - cmd/envoyinit/docker-entrypoint.sh
-      - internal/envoyinit
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
+      - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
 docker_manifests:
   - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}"
     image_templates:
@@ -157,7 +181,7 @@ release:
   replace_existing_artifacts: true
   target_commitish: "{{ .FullCommit }}"
   header: |
-    {{ if eq .Env.VERSION "v2.3.0-main" }}
+    {{ if eq .Env.VERSION "v2.4.0-main" }}
     🚀 Rolling main build of kgateway!
     ---
     It includes the latest changes but may be unstable. Use it for testing and providing feedback.

@@ -5,30 +5,47 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"slices"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	atomic_duration "go.uber.org/atomic"
 	protojson "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+
+	_ "embed"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
+
+var logger = logging.New("validator")
 
 // protoDebugPrefixRe matches the non-deterministic "goo.gle/..." URL that newer
 // protobuf C++ DebugString() prepends to text-format output.
 var protoDebugPrefixRe = regexp.MustCompile(`goo\.gle/\S+\s*`)
+
+//go:embed default_envoy_image.txt
+var defaultEnvoyImageFile string
 
 var (
 	defaultEnvoyPath = "/usr/local/bin/envoy"
 	// NOTE: We cannot use vanilla upstream image here because it won't have the rustformation dynamic
 	//       modules bundled into the image and some strict validation test on transformation will not work.
 	//       This can be a chicken and an egg problem if we need a fix in the rustformation module to
-	//       fix the validation test. We will need to merge the fix PR first and wait for the image to
-	//       be updated and then maybe update the golden files
+	//       fix the validation test. CI can override this with KGATEWAY_VALIDATOR_ENVOY_IMAGE to run
+	//       against an image built from the current branch instead of waiting for the published tag.
 	//       Also probably need to change this version when backporting or creating a new release
-	defaultEnvoyImage = "ghcr.io/kgateway-dev/envoy-wrapper:v2.3.0-main"
-	envoyDebugTokenRE = regexp.MustCompile(`goo\.gle/debug[a-zA-Z0-9]+`)
+	defaultEnvoyImage = strings.TrimSpace(defaultEnvoyImageFile)
+	defaultDockerPull = "always"
+
+	validatorEnvoyImageEnvVar       = "KGATEWAY_VALIDATOR_ENVOY_IMAGE"
+	validatorDockerPullPolicyEnvVar = "KGATEWAY_VALIDATOR_DOCKER_PULL_POLICY"
+	envoyDebugTokenRE               = regexp.MustCompile(`goo\.gle/debug[a-zA-Z0-9]+`)
 )
 
 // ErrInvalidXDS is returned when Envoy rejects the supplied JSON.
@@ -43,7 +60,9 @@ type Validator interface {
 
 // binaryValidator validates envoy using the binary.
 type binaryValidator struct {
-	path string
+	Calls    atomic.Uint64
+	Duration atomic_duration.Duration
+	path     string
 }
 
 var _ Validator = &binaryValidator{}
@@ -57,6 +76,15 @@ func NewBinary(path ...string) Validator {
 }
 
 func (b *binaryValidator) Validate(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) error {
+	before := time.Now()
+	defer func() {
+		b.Duration.Add(time.Since(before))
+		b.Calls.Add(1)
+		// Print the cost every 100 calls so the logs aren't spammed
+		if b.Calls.Load()%100 == 0 {
+			logger.Debug("total calls to envoy validation", "calls", b.Calls.Load(), "duration", b.Duration.String())
+		}
+	}()
 	marshalled, err := prepareBootstrapConfig(bootstrap)
 	if err != nil {
 		return fmt.Errorf("could not marshal bootstrap config: %w", err)
@@ -82,6 +110,7 @@ func (b *binaryValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 type dockerValidator struct {
 	img      string
 	etcEnvoy string
+	pull     string
 }
 
 type DockerValidatorOptions func(*dockerValidator)
@@ -98,12 +127,19 @@ func EtcEnvoyVolume(etcEnvoy string) func(*dockerValidator) {
 	}
 }
 
+func PullPolicy(policy string) func(*dockerValidator) {
+	return func(d *dockerValidator) {
+		d.pull = policy
+	}
+}
+
 var _ Validator = &dockerValidator{}
 
 // NewDocker creates a new docker validator. If img is empty, the default image is used.
 func NewDocker(opts ...DockerValidatorOptions) Validator {
 	ret := &dockerValidator{
-		img: defaultEnvoyImage,
+		img:  validatorEnvoyImage(),
+		pull: validatorDockerPullPolicy(),
 	}
 
 	for _, opt := range opts {
@@ -118,7 +154,9 @@ func (d *dockerValidator) args() []string {
 		"run",
 		"--rm",
 		"-i",
-		"--pull", "always",
+	}
+	if d.pull != "" {
+		args = append(args, "--pull", d.pull)
 	}
 	if d.etcEnvoy != "" {
 		args = append(args, "-v", fmt.Sprintf("%s:/etc/envoy/:ro", d.etcEnvoy))
@@ -202,6 +240,20 @@ func stripProtoDebugPrefix(s string) string {
 func normalizeEnvoyError(raw string) string {
 	normalized := strings.TrimSpace(raw)
 	return envoyDebugTokenRE.ReplaceAllString(normalized, "goo.gle/debug")
+}
+
+func validatorEnvoyImage() string {
+	if image := strings.TrimSpace(os.Getenv(validatorEnvoyImageEnvVar)); image != "" {
+		return image
+	}
+	return defaultEnvoyImage
+}
+
+func validatorDockerPullPolicy() string {
+	if pullPolicy := strings.TrimSpace(os.Getenv(validatorDockerPullPolicyEnvVar)); pullPolicy != "" {
+		return pullPolicy
+	}
+	return defaultDockerPull
 }
 
 func prepareBootstrapConfig(bootstrap *envoybootstrapv3.Bootstrap) ([]byte, error) {

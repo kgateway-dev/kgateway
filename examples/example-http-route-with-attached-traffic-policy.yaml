@@ -4,20 +4,20 @@ metadata:
   name: example-route
 spec:
   parentRefs:
-  - name: gw
+    - name: gw
   hostnames:
-  - "example.com"
+    - "example.com"
   rules:
-  - backendRefs:
-    - name: example-svc
-      port: 8080
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /ratelimit
-    backendRefs:
-    - name: example-svc
-      port: 8080
+    - backendRefs:
+        - name: example-svc
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /ratelimit
+      backendRefs:
+        - name: example-svc
+          port: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -26,9 +26,9 @@ metadata:
   namespace: kgateway-system
 spec:
   targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: gw
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
   rateLimit:
     local:
       tokenBucket:
@@ -56,8 +56,8 @@ metadata:
     app.kubernetes.io/name: nginx
 spec:
   containers:
-  - name: nginx
-    image: nginx:stable
-    ports:
-    - containerPort: 80
-      name: http-web-svc
+    - name: nginx
+      image: nginx:stable
+      ports:
+        - containerPort: 80
+          name: http-web-svc

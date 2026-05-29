@@ -8,6 +8,7 @@ type (
 )
 
 var (
-	NewPluginWithOpts = serviceentry.NewPluginWithOpts
-	HostnameAliaser   = serviceentry.HostnameAliaser
+	NewPluginWithOpts    = serviceentry.NewPluginWithOpts
+	HostnameAliaser      = serviceentry.HostnameAliaser
+	ParseExclusionLabels = serviceentry.ParseExclusionLabels
 )

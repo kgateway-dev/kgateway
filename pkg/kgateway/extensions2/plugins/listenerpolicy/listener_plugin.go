@@ -25,6 +25,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -53,10 +54,10 @@ type ListenerPolicyIR struct {
 
 type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
+	tcpKeepalive                  *envoycorev3.TcpKeepalive
 	perConnectionBufferLimitBytes *uint32
 	// only for default policy
 	clientCertificateValidation *ir.ClientCertificateValidationIR
-	rbacNetworkFilter           *anypb.Any
 	// +noKrtEquals
 	http *HttpListenerPolicyIr
 }
@@ -68,30 +69,16 @@ func newListenerPolicy(
 	if i == nil {
 		return listenerPolicy{}, nil
 	}
-	var errs []error
-
 	var perConnectionBufferLimitBytes *uint32
 	if i.PerConnectionBufferLimitBytes != nil {
 		perConnectionBufferLimitBytes = new(uint32(*i.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
 	}
-
-	// Translate network RBAC if configured
-	var rbacNetworkFilter *anypb.Any
-	if i.RBAC != nil {
-		filter, err := translateNetworkRbac(i.RBAC, objSrc)
-		if err != nil {
-			errs = append(errs, err)
-		}
-		rbacNetworkFilter = filter
-	}
-
-	http, httpErrs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
-	errs = append(errs, httpErrs...)
+	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
+		tcpKeepalive:                  backendconfigpolicy.TranslateTCPKeepalive(i.TCPKeepalive),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
-		rbacNetworkFilter:             rbacNetworkFilter,
 		http:                          http,
 	}, errs
 }
@@ -149,19 +136,21 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 		return false
 	}
 
+	if !proto.Equal(d.tcpKeepalive, d2.tcpKeepalive) {
+		return false
+	}
+
 	if !cmputils.PointerValsEqual(d.perConnectionBufferLimitBytes, d2.perConnectionBufferLimitBytes) {
 		return false
 	}
 
-	if !proto.Equal(d.rbacNetworkFilter, d2.rbacNetworkFilter) {
-		return false
-	}
 	if (d.clientCertificateValidation == nil) != (d2.clientCertificateValidation == nil) {
 		return false
 	}
 	if d.clientCertificateValidation != nil && !d.clientCertificateValidation.Equals(d2.clientCertificateValidation) {
 		return false
 	}
+
 	if (d.http == nil) != (d2.http == nil) {
 		return false
 	}
@@ -212,9 +201,7 @@ type listenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 	reporter reporter.Reporter
 
-	healthCheckPolicy  map[uint32]*healthcheckv3.HealthCheck
-	rbacNetworkFilters map[uint32]*anypb.Any // Track RBAC filters per port
-	currentPort        uint32                // Current listener port being translated
+	healthCheckPolicy map[uint32]*healthcheckv3.HealthCheck
 }
 
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
@@ -323,9 +310,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &listenerPolicyPluginGwPass{
-		reporter:           reporter,
-		healthCheckPolicy:  map[uint32]*healthcheckv3.HealthCheck{},
-		rbacNetworkFilters: map[uint32]*anypb.Any{},
+		reporter:          reporter,
+		healthCheckPolicy: map[uint32]*healthcheckv3.HealthCheck{},
 	}
 }
 
@@ -358,43 +344,16 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	if cfg.proxyProtocol != nil {
 		p.applyProxyProtocol(out, cfg.proxyProtocol)
 	}
+	if cfg.tcpKeepalive != nil {
+		out.TcpKeepalive = cfg.tcpKeepalive
+	}
 	// Set per connection buffer limit if configured
 	if cfg.perConnectionBufferLimitBytes != nil {
 		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *cfg.perConnectionBufferLimitBytes}
 	}
-	// Store RBAC network filter for this port; apply it during filter chain construction via NetworkFilters()
-
-	if cfg.rbacNetworkFilter != nil {
-		p.rbacNetworkFilters[pCtx.Port] = cfg.rbacNetworkFilter
-	}
-
-	// Track the current port being translated
-	p.currentPort = pCtx.Port
 	if http := cfg.http; http != nil {
 		p.healthCheckPolicy[pCtx.Port] = http.healthCheckPolicy
 	}
-}
-
-// NetworkFilters returns the RBAC network filter for the current listener port.
-func (p *listenerPolicyPluginGwPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
-	rbacFilter := p.rbacNetworkFilters[p.currentPort]
-	if rbacFilter == nil {
-		return nil, nil
-	}
-
-	envoyFilter := &envoylistenerv3.Filter{
-		Name: "envoy.filters.network.rbac",
-		ConfigType: &envoylistenerv3.Filter_TypedConfig{
-			TypedConfig: rbacFilter,
-		},
-	}
-
-	return []filters.StagedNetworkFilter{
-		{
-			Filter: envoyFilter,
-			Stage:  filters.BeforeStage(filters.AuthZStage),
-		},
-	}, nil
 }
 
 func (p *listenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
@@ -500,6 +459,17 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		out.GetCommonHttpProtocolOptions().IdleTimeout = durationpb.New(*policy.idleTimeout)
 	}
 
+	if policy.maxRequestsPerConnection != nil {
+		if out.CommonHttpProtocolOptions == nil {
+			out.CommonHttpProtocolOptions = &envoycorev3.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().MaxRequestsPerConnection = wrapperspb.UInt32(*policy.maxRequestsPerConnection)
+	}
+
+	if policy.http2ProtocolOptions != nil {
+		out.Http2ProtocolOptions = policy.http2ProtocolOptions
+	}
+
 	if policy.preserveHttp1HeaderCase != nil && *policy.preserveHttp1HeaderCase {
 		if out.HttpProtocolOptions == nil {
 			out.HttpProtocolOptions = &envoycorev3.Http1ProtocolOptions{}
@@ -551,6 +521,23 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		}
 	}
 
+	if policy.forwardClientCertMode != nil {
+		out.ForwardClientCertDetails = *policy.forwardClientCertMode
+	}
+	if policy.setCurrentClientCertDetails != nil {
+		out.SetCurrentClientCertDetails = policy.setCurrentClientCertDetails
+	}
+	if policy.stripHostPortMode != nil {
+		switch *policy.stripHostPortMode {
+		case kgateway.StripMatchingHostPortMode:
+			out.StripMatchingHostPort = true
+		case kgateway.StripAnyHostPortMode:
+			// strip_any_host_port lives inside a oneof strip_port_mode in the Envoy proto,
+			// so Go protobuf requires a wrapper struct rather than a plain bool assignment.
+			out.StripPortMode = &envoy_hcm.HttpConnectionManager_StripAnyHostPort{StripAnyHostPort: true}
+		}
+	}
+
 	return nil
 }
 
@@ -561,6 +548,9 @@ func convertProxyProtocolConfig(objSrc ir.ObjectSource, config *kgateway.ProxyPr
 	// Create the proxy protocol configuration
 	proxyProtocolConfig := &proxy_protocol.ProxyProtocol{
 		StatPrefix: fmt.Sprintf("%s_%s", objSrc.Namespace, objSrc.Name),
+	}
+	if config.AllowRequestsWithoutProxyProtocol != nil {
+		proxyProtocolConfig.AllowRequestsWithoutProxyProtocol = *config.AllowRequestsWithoutProxyProtocol
 	}
 
 	// Marshal to Any

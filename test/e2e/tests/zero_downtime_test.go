@@ -54,7 +54,7 @@ func TestZeroDowntimeRollout(t *testing.T) {
 	common.SetupBaseConfig(ctx, t, testInstallation,
 		filepath.Join(fsutils.MustGetThisDir(), "../features/zero_downtime_rollout/testdata", "gateway.yaml"),
 	)
-	common.SetupBaseGateway(ctx, testInstallation, types.NamespacedName{
+	common.SetupBaseGateway(ctx, t, testInstallation, types.NamespacedName{
 		Namespace: "default",
 		Name:      "gw",
 	})

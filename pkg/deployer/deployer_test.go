@@ -1487,6 +1487,12 @@ var _ = Describe("Deployer", func() {
 				return params
 			}
 
+			fullyDefinedGatewayParamsWithExtraArgs = func() *kgateway.GatewayParameters {
+				params := fullyDefinedGatewayParameters()
+				params.Spec.Kube.EnvoyContainer.ExtraArgs = []string{"--base-id", "7", "--cpuset-threads"}
+				return params
+			}
+
 			withGatewayParams = func(gw *gwv1.Gateway, gwpName string) *gwv1.Gateway {
 				gw.Spec.Infrastructure = &gwv1.GatewayInfrastructure{
 					ParametersRef: &gwv1.LocalParametersReference{
@@ -1550,18 +1556,24 @@ var _ = Describe("Deployer", func() {
 
 				Expect(actualImageString).To(HavePrefix(expectedImageRegAndRepo))
 				expectedTagPtr := apiImage.Tag
+				expectedDigestValue := ptr.Deref(apiImage.Digest, "")
 				expectedTagValue := ptr.Deref(expectedTagPtr, "")
-				if expectedTagPtr == nil {
-					// deepMergeImage indeed does a deep merge
+				if expectedTagPtr == nil && expectedDigestValue == "" {
+					// deepMergeImage indeed does a deep merge: if no tag was
+					// specified and no digest was specified, the default tag
+					// is inherited from the parent.
 					Expect(defaultTagValue).NotTo(BeEmpty())
 					expectedTagValue = defaultTagValue
 				}
+				// When a digest is specified without a tag, the digest erases
+				// the inherited default tag — the rendered image is
+				// `repo@digest` with no `:tag`.
+				expectedTagDelimiter := expectedImageRegAndRepo + ":"
 				if expectedTagValue != "" {
-					Expect(actualImageString).To(ContainSubstring(":" + expectedTagValue))
+					Expect(actualImageString).To(ContainSubstring(expectedTagDelimiter + expectedTagValue))
 				} else {
-					Expect(actualImageString).ToNot(ContainSubstring(":"))
+					Expect(actualImageString).ToNot(ContainSubstring(expectedTagDelimiter))
 				}
-				expectedDigestValue := ptr.Deref(apiImage.Digest, "")
 				if expectedDigestValue != "" {
 					Expect(actualImageString).To(HaveSuffix("@" + expectedDigestValue))
 				}
@@ -1795,6 +1807,15 @@ var _ = Describe("Deployer", func() {
 			}))
 		}
 
+		fullyDefinedValidationExtraArgs := func(objs clientObjects, inp *input) {
+			fullyDefinedValidationWithoutRunAsUser(objs, inp)
+
+			envoyContainer := objs.findDeployment(defaultDeploymentName).Spec.Template.Spec.Containers[0]
+			extraArgs := []string{"--base-id", "7", "--cpuset-threads"}
+			Expect(envoyContainer.Args).To(ContainElements(extraArgs[0], extraArgs[1], extraArgs[2]))
+			Expect(envoyContainer.Args[len(envoyContainer.Args)-len(extraArgs):]).To(Equal(extraArgs))
+		}
+
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
 			checkErr := func(err, expectedErr error) (shouldReturn bool) {
 				GinkgoHelper()
@@ -1933,6 +1954,15 @@ var _ = Describe("Deployer", func() {
 					fullyDefinedValidationCustomEnv(objs, inp)
 				},
 			}),
+			Entry("Fully defined GatewayParameters with extra args", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: fullyDefinedGatewayParamsWithExtraArgs(),
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) {
+					fullyDefinedValidationExtraArgs(objs, inp)
+				},
+			}),
 			Entry("no listeners on gateway", &input{
 				dInputs: defaultDeployerInputs(),
 				gw: &gwv1.Gateway{
@@ -1960,7 +1990,7 @@ var _ = Describe("Deployer", func() {
 					Expect(port.NodePort).To(Equal(int32(0)))
 				},
 			}),
-			Entry("static NodePort", &input{
+			Entry("static NodePort on NodePort service", &input{
 				dInputs:    defaultDeployerInputs(),
 				gw:         defaultGatewayWithGatewayParams(gwpOverrideName),
 				defaultGwp: defaultGatewayParams(),
@@ -1973,6 +2003,40 @@ var _ = Describe("Deployer", func() {
 						Kube: &kgateway.KubernetesProxyConfig{
 							Service: &kgateway.Service{
 								Type: ptr.To(corev1.ServiceTypeNodePort),
+								Ports: []kgateway.Port{
+									{
+										Port:     80,
+										NodePort: ptr.To[int32](30000),
+									},
+								},
+							},
+						},
+					},
+				},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) {
+					svc := objs.findService(defaultServiceName)
+					Expect(svc).NotTo(BeNil())
+
+					port := svc.Spec.Ports[0]
+					Expect(port.Port).To(Equal(int32(80)))
+					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
+					Expect(port.NodePort).To(Equal(int32(30000)))
+				},
+			}),
+			Entry("static NodePort on LoadBalancer service", &input{
+				dInputs:    defaultDeployerInputs(),
+				gw:         defaultGatewayWithGatewayParams(gwpOverrideName),
+				defaultGwp: defaultGatewayParams(),
+				overrideGwp: &kgateway.GatewayParameters{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      gwpOverrideName,
+						Namespace: defaultNamespace,
+					},
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
+							Service: &kgateway.Service{
+								Type: ptr.To(corev1.ServiceTypeLoadBalancer),
 								Ports: []kgateway.Port{
 									{
 										Port:     80,
@@ -2493,6 +2557,9 @@ func generateReadinessProbe() *corev1.Probe {
 	}
 }
 
+// deployObjsCtxKey is an unexported key used to verify context propagation in patcher tests.
+type deployObjsCtxKey struct{}
+
 var _ = Describe("DeployObjs", func() {
 	var (
 		ns   = "test-ns"
@@ -2519,7 +2586,7 @@ var _ = Describe("DeployObjs", func() {
 			Data:       map[string]string{"foo": "bar"},
 		}
 		fc := fake.NewClient(GinkgoT(), cm.DeepCopy())
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
 			Fail("Patch should not be called")
 			return errors.New("unexpected Patch call")
 		})
@@ -2541,7 +2608,7 @@ var _ = Describe("DeployObjs", func() {
 		// obj to deploy won't have a status set.
 		pod2.Status = corev1.PodStatus{}
 		fc := fake.NewClient(GinkgoT(), pod1.DeepCopy())
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
 			Fail("Patch should not be called")
 			return errors.New("unexpected Patch call")
 		})
@@ -2552,6 +2619,7 @@ var _ = Describe("DeployObjs", func() {
 	})
 
 	It("patches if object is different", func() {
+		testCtx := context.WithValue(ctx, deployObjsCtxKey{}, true)
 		cm := &corev1.ConfigMap{
 			TypeMeta: metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
 
@@ -2561,33 +2629,66 @@ var _ = Describe("DeployObjs", func() {
 		fc := fake.NewClient(GinkgoT(), cm.DeepCopy())
 		cm.Data = map[string]string{"foo": "bar", "bar": "baz"}
 		patched := false
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(gotCtx context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			Expect(gotCtx.Value(deployObjsCtxKey{})).To(BeTrue(), "patcher must receive the caller's context, not context.Background()")
 			patched = true
 			return nil
 		})
 		fc.RunAndWait(context.Background().Done())
 
-		err := d.DeployObjs(ctx, []client.Object{cm})
+		err := d.DeployObjs(testCtx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
 	})
 
 	It("patches if object does not exist (IsNotFound error)", func() {
+		testCtx := context.WithValue(ctx, deployObjsCtxKey{}, true)
 		cm := &corev1.ConfigMap{
 			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
 		}
 		fc := fake.NewClient(GinkgoT())
 		patched := false
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(gotCtx context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			Expect(gotCtx.Value(deployObjsCtxKey{})).To(BeTrue(), "patcher must receive the caller's context, not context.Background()")
 			patched = true
 			return nil
 		})
 		fc.RunAndWait(context.Background().Done())
 
-		err := d.DeployObjs(ctx, []client.Object{cm})
+		err := d.DeployObjs(testCtx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
+	})
+
+	It("cancels an in-flight patch when the caller context is canceled", func() {
+		testCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		cm := &corev1.ConfigMap{
+			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+		}
+		fc := fake.NewClient(GinkgoT())
+		patchStarted := make(chan struct{})
+		d := getDeployer(fc, func(gotCtx context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			close(patchStarted)
+			<-gotCtx.Done()
+			return gotCtx.Err()
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		errCh := make(chan error, 1)
+		go func() {
+			errCh <- d.DeployObjs(testCtx, []client.Object{cm})
+		}()
+
+		Eventually(patchStarted).Should(BeClosed(), "patch should start before canceling the caller context")
+		cancel()
+
+		var err error
+		Eventually(errCh).Should(Receive(&err), "DeployObjs should return when the caller context is canceled")
+		Expect(errors.Is(err, context.Canceled)).To(BeTrue(), "DeployObjs should return the patcher context cancellation")
 	})
 })
 

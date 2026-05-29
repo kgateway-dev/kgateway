@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,16 +107,14 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					},
 				}
 				// Setup the backendObjIR
-				up = &ir.BackendObjectIR{
-					ObjectSource: ir.ObjectSource{
-						Namespace: backingSvc.Namespace,
-						Name:      backingSvc.Name,
-						Kind:      "Service",
-						Group:     "",
-					},
-					Port: 8080,
-					Obj:  backingSvc,
-				}
+				backend := ir.NewBackendObjectIR(ir.ObjectSource{
+					Namespace: backingSvc.Namespace,
+					Name:      backingSvc.Name,
+					Kind:      "Service",
+					Group:     "",
+				}, 8080, "", "")
+				backend.Obj = backingSvc
+				up = &backend
 				// Setup the route rules
 				route.Spec.Rules = []gwv1.HTTPRouteRule{
 					{
@@ -189,16 +187,14 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		When("referencing a non-existent backing service", func() {
 			BeforeEach(func() {
 				// Setup the backendObjIR
-				up = &ir.BackendObjectIR{
-					ObjectSource: ir.ObjectSource{
-						Namespace: backingSvc.Namespace,
-						Name:      backingSvc.Name,
-						Kind:      "Service",
-						Group:     "",
-					},
-					Port: 8080,
-					Obj:  backingSvc,
-				}
+				backend := ir.NewBackendObjectIR(ir.ObjectSource{
+					Namespace: backingSvc.Namespace,
+					Name:      backingSvc.Name,
+					Kind:      "Service",
+					Group:     "",
+				}, 8080, "", "")
+				backend.Obj = backingSvc
+				up = &backend
 				// Setup the route rules
 				route.Spec.Rules = []gwv1.HTTPRouteRule{
 					{

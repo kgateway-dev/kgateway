@@ -41,16 +41,16 @@ type filterChainTranslator struct {
 	pluginPass TranslationPassPlugins
 }
 
-func computeListenerAddress(bindAddress string, port uint32, reporter sdkreporter.GatewayReporter) *envoycorev3.Address {
+func computeListenerAddress(bindAddress string, port uint32, reporter sdkreporter.GatewayReporter) (*envoycorev3.Address, error) {
 	_, isIpv4Address, err := utils.IsIpv4Address(bindAddress)
 	if err != nil {
-		// TODO: return error ????
 		reporter.SetCondition(sdkreporter.GatewayCondition{
 			Type:    gwv1.GatewayConditionProgrammed,
 			Reason:  gwv1.GatewayReasonInvalid,
 			Status:  metav1.ConditionFalse,
 			Message: "Error processing listener: " + err.Error(),
 		})
+		return nil, err
 	}
 
 	return &envoycorev3.Address{
@@ -67,7 +67,7 @@ func computeListenerAddress(bindAddress string, port uint32, reporter sdkreporte
 				Ipv4Compat: !isIpv4Address,
 			},
 		},
-	}
+	}, nil
 }
 
 func tlsInspectorFilter() *envoylistenerv3.ListenerFilter {
@@ -374,11 +374,16 @@ func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilt
 	return sortedFilters
 }
 
-func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
-	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, reporter))
+func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
+	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, listenerReporter))
 
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix: l.FilterChainName,
+	}
+	if h.reporter != nil {
+		for _, backend := range l.BackendRefs {
+			reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, h.pluginPass, backend.BackendObject)
+		}
 	}
 	if len(l.BackendRefs) == 1 {
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{

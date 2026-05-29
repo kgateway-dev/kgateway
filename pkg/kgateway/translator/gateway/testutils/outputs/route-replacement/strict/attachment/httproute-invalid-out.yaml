@@ -5,11 +5,9 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_example-svc_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -75,6 +73,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
@@ -109,9 +112,10 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): invalid xds configuration: error initializing
-            configuration ''/dev/fd/0'': Failed to create pre-route filter config:
-            Failed to initialize per-route dynamic module'
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-traffic-policy:
+            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            Failed to create pre-route filter config: Failed to initialize per-route
+            dynamic module'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

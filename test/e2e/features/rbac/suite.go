@@ -65,6 +65,35 @@ func (s *testingSuite) TestRBACHeaderAuthorizationWithRouteLevelRBAC() {
 	)
 }
 
+// TestRBACDenyActionAllowsNonMatchingTraffic verifies that a Deny RBAC policy only denies
+// traffic that matches the CEL expression, and allows everything else through.
+// This is a regression test for a bug where on_no_match was hardcoded to DENY, causing
+// all traffic to be denied regardless of whether it matched the policy.
+func (s *testingSuite) TestRBACDenyActionAllowsNonMatchingTraffic() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+
+	// No x-deny-me header: does not match the Deny expression, so traffic should be allowed.
+	s.T().Log("Request without x-deny-me header should be allowed (non-matching Deny policy)")
+	common.BaseGateway.Send(
+		s.T(),
+		expectStatus200Success,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/get"),
+	)
+
+	// x-deny-me: true: matches the Deny expression, so traffic should be denied.
+	s.T().Log("Request with x-deny-me: true should be denied (matching Deny policy)")
+	common.BaseGateway.Send(
+		s.T(),
+		expectRBACDenied,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/get"),
+		curl.WithHeader("x-deny-me", "true"),
+	)
+}
+
 // TestRBACHeaderAuthorization tests header based rbac
 func (s *testingSuite) TestRBACHeaderAuthorization() {
 	// Verify HTTPRoute is accepted before running the test

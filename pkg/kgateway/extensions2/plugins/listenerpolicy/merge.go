@@ -18,11 +18,10 @@ func MergePolicies(
 	if p1 == nil || p2 == nil {
 		return
 	}
-	if p1 != nil && p2 != nil {
-		if p1.NoOrigin || p2.NoOrigin {
-			p1.NoOrigin = true
-			p2.NoOrigin = true
-		}
+
+	if p1.NoOrigin || p2.NoOrigin {
+		p1.NoOrigin = true
+		p2.NoOrigin = true
 	}
 
 	mergeFuncs := []func(*ListenerPolicyIR, *ListenerPolicyIR, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
@@ -88,8 +87,8 @@ func mergeListenerPolicy(
 ) {
 	mergeFuncs := []func(string, *listenerPolicy, *listenerPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
 		mergeProxyProtocol,
+		mergeTCPKeepalive,
 		mergePerConnectionBufferLimitBytes,
-		mergeRbacNetworkFilter,
 		// Not merging ClientCertificateValidation since its only used for tls config.
 		mergeHttpSettings,
 	}
@@ -131,6 +130,22 @@ func mergePerConnectionBufferLimitBytes(
 	mergeOrigins.SetOne(origin+"perConnectionBufferLimitBytes", p2Ref, p2MergeOrigins)
 }
 
+func mergeTCPKeepalive(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.tcpKeepalive, p2.tcpKeepalive, opts) {
+		return
+	}
+
+	p1.tcpKeepalive = p2.tcpKeepalive
+	mergeOrigins.SetOne(origin+"tcpKeepalive", p2Ref, p2MergeOrigins)
+}
+
 func mergeHttpSettings(
 	origin string,
 	p1, p2 *listenerPolicy,
@@ -149,20 +164,4 @@ func mergeHttpSettings(
 		origin += "httpSettings."
 	}
 	MergeHttpPolicies(origin, p1.http, p2.http, p2Ref, p2MergeOrigins, opts, mergeOrigins, "" /*no merge settings*/)
-}
-
-func mergeRbacNetworkFilter(
-	origin string,
-	p1, p2 *listenerPolicy,
-	p2Ref *ir.AttachedPolicyRef,
-	p2MergeOrigins ir.MergeOrigins,
-	opts policy.MergeOptions,
-	mergeOrigins ir.MergeOrigins,
-) {
-	if !policy.IsMergeable(p1.rbacNetworkFilter, p2.rbacNetworkFilter, opts) {
-		return
-	}
-
-	p1.rbacNetworkFilter = p2.rbacNetworkFilter
-	mergeOrigins.SetOne(origin+"rbacNetworkFilter", p2Ref, p2MergeOrigins)
 }

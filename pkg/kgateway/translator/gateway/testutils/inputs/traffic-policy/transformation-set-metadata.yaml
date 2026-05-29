@@ -1,0 +1,71 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "test.com"
+  rules:
+  - name: rule0
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: rule0
+  transformation:
+    request:
+      set:
+      - name: x-user-request
+        value: '{{ header("x-user-id") }}'
+      dynamicMetadata:
+      - namespace: com.example.auth
+        key: user-id-request
+        value:
+          stringValue: '{{ header("x-user-id") }}'
+    response:
+      set:
+      - name: x-user-response
+        value: '{{ header("x-user-id") }}'
+      dynamicMetadata:
+      - namespace: com.example.auth
+        key: user-id-response
+        value:
+          stringValue: '{{ header("x-user-id") }}'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test

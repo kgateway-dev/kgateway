@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	. "github.com/onsi/gomega"
 
@@ -24,19 +25,34 @@ import (
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
-func newBackendObjectIR(in ir.BackendObjectIR) ir.BackendObjectIR {
-	src := in.ObjectSource
-	port := in.Port
-	extraKey := in.ExtraKey
-	b := ir.NewBackendObjectIR(src, port, extraKey)
+type backendObjectIRInput struct {
+	ObjectSource      ir.ObjectSource
+	Port              int32
+	ExtraKey          string
+	GvPrefix          string
+	Obj               metav1.Object
+	CanonicalHostname string
+	AppProtocol       ir.AppProtocol
+	PortName          string
+	Aliases           []ir.ObjectSource
+	AttachedPolicies  ir.AttachedPolicies
+}
+
+func newBackendObjectIR(in backendObjectIRInput) ir.BackendObjectIR {
+	b := ir.NewBackendObjectIR(in.ObjectSource, in.Port, in.ExtraKey, in.GvPrefix)
 	b.Obj = in.Obj
+	b.CanonicalHostname = in.CanonicalHostname
+	b.AppProtocol = in.AppProtocol
+	b.PortName = in.PortName
+	b.Aliases = in.Aliases
+	b.AttachedPolicies = in.AttachedPolicies
 	return b
 }
 
 func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 	g := NewWithT(t)
 
-	us := newBackendObjectIR(ir.BackendObjectIR{
+	us := newBackendObjectIR(backendObjectIRInput{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
@@ -159,7 +175,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 	g := NewWithT(t)
 
-	us := newBackendObjectIR(ir.BackendObjectIR{
+	us := newBackendObjectIR(backendObjectIRInput{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
@@ -182,7 +198,7 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 			},
 		},
 	})
-	usd := newBackendObjectIR(ir.BackendObjectIR{
+	usd := newBackendObjectIR(backendObjectIRInput{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "discovered-name",
@@ -289,7 +305,7 @@ func TestEndpointsForUpstreamWithDifferentTrafficDistributionButSameEndpoints(t 
 	g := NewWithT(t)
 
 	// Create base backend object
-	baseObj := ir.BackendObjectIR{
+	baseObj := backendObjectIRInput{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
@@ -398,6 +414,120 @@ func TestEndpointsForUpstreamWithDifferentTrafficDistributionButSameEndpoints(t 
 	}
 }
 
+func TestFindPortInEndpointSliceMatchesNumericTargetPortForMultiPortService(t *testing.T) {
+	g := NewWithT(t)
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		Ports: []discoveryv1.EndpointPort{
+			{
+				Port: new(int32(8443)),
+			},
+		},
+	}
+	servicePort := &corev1.ServicePort{
+		Name:       "https-1",
+		Port:       443,
+		TargetPort: intstr.FromInt(8443),
+	}
+
+	port := findPortInEndpointSlice(endpointSlice, false, servicePort)
+	g.Expect(port).To(Equal(uint32(8443)))
+}
+
+func TestFindPortInEndpointSliceMatchesNamedTargetPortWhenEndpointPortNameDiffersFromServicePortName(t *testing.T) {
+	g := NewWithT(t)
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		Ports: []discoveryv1.EndpointPort{
+			{
+				Name: new("tls-backend"),
+				Port: new(int32(8443)),
+			},
+		},
+	}
+	servicePort := &corev1.ServicePort{
+		Name:       "https-1",
+		Port:       443,
+		TargetPort: intstr.FromString("tls-backend"),
+	}
+
+	port := findPortInEndpointSlice(endpointSlice, false, servicePort)
+	g.Expect(port).To(Equal(uint32(8443)))
+}
+
+func TestEndpointsForGatewayScopedBackendsWithSameEndpointsHaveDifferentHashes(t *testing.T) {
+	g := NewWithT(t)
+
+	baseBackend := newBackendObjectIR(backendObjectIRInput{
+		ObjectSource: ir.ObjectSource{
+			Namespace: "ns",
+			Name:      "svc",
+			Group:     "",
+			Kind:      "Service",
+		},
+		Port:     8080,
+		GvPrefix: "kube",
+		Obj: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "svc",
+				Namespace: "ns",
+			},
+		},
+	})
+	clientCertificate := &ir.GatewayBackendClientCertificateIR{}
+	gateway1 := ir.ObjectSource{
+		Group:     gwv1.GroupVersion.Group,
+		Kind:      "Gateway",
+		Namespace: "ns",
+		Name:      "gw-1",
+	}
+	gateway2 := ir.ObjectSource{
+		Group:     gwv1.GroupVersion.Group,
+		Kind:      "Gateway",
+		Namespace: "ns",
+		Name:      "gw-2",
+	}
+
+	backend1 := baseBackend.CloneForGatewayBackendClientCertificate(gateway1, clientCertificate)
+	backend2 := baseBackend.CloneForGatewayBackendClientCertificate(gateway2, clientCertificate)
+
+	emd := ir.EndpointWithMd{
+		LbEndpoint: &envoyendpointv3.LbEndpoint{
+			HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+				Endpoint: &envoyendpointv3.Endpoint{
+					Address: &envoycorev3.Address{
+						Address: &envoycorev3.Address_SocketAddress{
+							SocketAddress: &envoycorev3.SocketAddress{
+								Address: "1.2.3.4",
+								PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+									PortValue: 8080,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		EndpointMd: ir.EndpointMetadata{
+			Labels: map[string]string{
+				corev1.LabelTopologyRegion: "region",
+				corev1.LabelTopologyZone:   "zone",
+			},
+		},
+	}
+
+	result1 := ir.NewEndpointsForBackend(backend1)
+	result1.Add(ir.PodLocality{Region: "region", Zone: "zone"}, emd)
+
+	result2 := ir.NewEndpointsForBackend(backend2)
+	result2.Add(ir.PodLocality{Region: "region", Zone: "zone"}, emd)
+
+	g.Expect(backend1.ResourceName()).NotTo(Equal(backend2.ResourceName()))
+	g.Expect(backend1.ClusterName()).NotTo(Equal(backend2.ClusterName()))
+	g.Expect(result1.LbEpsEqualityHash).NotTo(Equal(result2.LbEpsEqualityHash),
+		"Gateway-scoped backends with the same endpoints must still hash differently")
+}
+
 func TestEndpoints(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -463,7 +593,7 @@ func TestEndpoints(t *testing.T) {
 				},
 			},
 
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -526,7 +656,7 @@ func TestEndpoints(t *testing.T) {
 			name: "no endpoint slices returns empty endpoints",
 			// no EndpointSlice objects in inputs; only the Service backend is present
 			inputs: []any{},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -584,7 +714,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -712,7 +842,7 @@ func TestEndpoints(t *testing.T) {
 				},
 			},
 
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -862,7 +992,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -1012,7 +1142,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -1132,7 +1262,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -1228,7 +1358,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",

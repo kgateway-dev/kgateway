@@ -8,6 +8,17 @@ inputs:
     required: false
     default: '.'
 
+outputs:
+  go-build-cache-hit:
+    description: 'whether the Go build cache restore hit the primary key'
+    value: ${{ steps.go-build-cache.outputs.cache-hit }}
+  go-build-cache-key:
+    description: 'primary key for the Go build cache'
+    value: ${{ steps.go-cache-keys.outputs.go-build }}
+  go-build-cache-path:
+    description: 'path to the Go build cache directory'
+    value: ${{ steps.go-cache-paths.outputs.go-build }}
+
 runs:
   using: "composite"
   steps:
@@ -62,20 +73,34 @@ runs:
         check-latest: true
         # Caching in setup-go is limited, so we opt to use the more configurable https://github.com/actions/cache
         cache: false
+    - name: Use CGO Disabled Builds
+      shell: bash
+      run: echo "CGO_ENABLED=0" >> "$GITHUB_ENV"
     - name: Go Cache Paths
       id: go-cache-paths
       shell: bash
       run: |
         echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
-    - name: Cache
+        echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+    - name: Go Cache Keys
+      id: go-cache-keys
+      shell: bash
+      run: |
+        echo "go-build=${{ runner.os }}-go-build-v3-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}" >> $GITHUB_OUTPUT
+    - name: Restore Go Build Cache
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      id: go-build-cache
+      with:
+        path: ${{ steps.go-cache-paths.outputs.go-build }}
+        key: ${{ steps.go-cache-keys.outputs.go-build }}
+    - name: Cache Go Modules
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-      id: cache
+      id: go-mod-cache
       with:
         # https://github.com/actions/cache/blob/main/examples.md#go---modules
-        path: |
-          ${{ steps.go-cache-paths.outputs.go-mod }}
+        path: ${{ steps.go-cache-paths.outputs.go-mod }}
         key: ${{ runner.os }}-go-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
     - name: Install Dependencies
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.go-mod-cache.outputs.cache-hit != 'true'
       shell: bash
       run: time make mod-download

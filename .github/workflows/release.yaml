@@ -27,9 +27,12 @@ on:
 env:
   # this uses the `github.repository_owner` to support releases from forks (useful for testing).
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
-  VANITY_REGISTRY: cr.kgateway.dev/kgateway-dev
-  MAIN_VERSION: v2.3.0-main
+  # Only the official kgateway-dev/kgateway repo publishes to the vanity registry. Personal
+  # forks publish to ghcr.io/<owner>, so their release notes should point there too — otherwise
+  # the install commands in the GitHub release page reference images that don't exist.
+  VANITY_REGISTRY: ${{ github.repository == 'kgateway-dev/kgateway' && 'cr.kgateway.dev/kgateway-dev' || format('ghcr.io/{0}', github.repository_owner) }}
   GORELEASER_DISABLE_RELEASE: false
+  CGO_ENABLED: '0'
 
 permissions:
   contents: write
@@ -50,9 +53,42 @@ jobs:
           fetch-depth: 0
       - name: Set the release related variables
         id: set_vars
+        shell: bash
         run: |
           set -x
           GIT_SHA=$(git rev-parse --short HEAD)
+
+          find_previous_release_notes_tag() {
+            local version="$1"
+
+            if [[ ! "$version" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)([-+].*)?$ ]]; then
+              echo "Error: Version '$version' does not match required semver format" >&2
+              return 1
+            fi
+
+            local major="${BASH_REMATCH[1]}"
+            local minor="${BASH_REMATCH[2]}"
+            local patch="${BASH_REMATCH[3]}"
+            local prerelease=""
+            if [[ "$version" == *-* ]]; then
+              prerelease=1
+            fi
+
+            # Final minor release notes should cover everything since the previous
+            # minor GA, not just changes since the latest beta/RC tag on the branch.
+            if [[ -z "$prerelease" && "$patch" == "0" && "$minor" -gt 0 ]]; then
+              local previous_tag="v${major}.$((minor - 1)).0"
+              if git rev-parse --verify --quiet "refs/tags/${previous_tag}" >/dev/null; then
+                echo "$previous_tag"
+                return 0
+              fi
+
+              echo "Error: Expected previous minor tag '$previous_tag' to exist for release '$version'" >&2
+              return 1
+            fi
+
+            git describe --tags --abbrev=0 HEAD 2>/dev/null || true
+          }
 
           # Validate version input for workflow_dispatch
           if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
@@ -64,11 +100,15 @@ jobs:
               exit 1
             fi
             # Find the previous tag for release notes generation
-            PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD 2>/dev/null || echo "")
+            PREVIOUS_TAG=$(find_previous_release_notes_tag "$VERSION")
+            if [ -z "$PREVIOUS_TAG" ]; then
+              echo "Error: Could not determine previous tag for release notes"
+              exit 1
+            fi
             NEEDS_RELEASE=true
             GORELEASER_ARGS="--clean --skip=validate --release-notes _output/RELEASE_NOTES.md"
           elif [[ $GITHUB_REF == refs/heads/main ]]; then
-            VERSION="${MAIN_VERSION}"
+            VERSION="$(make --no-print-directory print-ROLLING_MAIN_VERSION)"
             NEEDS_RELEASE=false
             GORELEASER_ARGS="--clean --skip=validate"
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
@@ -175,6 +215,10 @@ jobs:
           name: release-notes
           path: _output
 
+      - name: Disable Docker cache for releases
+        if: ${{ needs.setup.outputs.needs_release == 'true' }}
+        run: echo "DOCKER_NO_CACHE=1" >> "$GITHUB_ENV"
+
       - name: Run goreleaser
         run: make release
         env:
@@ -216,7 +260,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [ 'amd64', 'arm64' ]
+        arch: ['amd64', 'arm64']
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Prep Go Runner

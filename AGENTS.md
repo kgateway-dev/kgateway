@@ -176,7 +176,7 @@ make conformance-HTTPRouteSimpleSameNamespace
 - **Base image**: Alpine 3.17.6 (distroless for production)
 - **Architectures**: amd64, arm64 (controlled via `GOARCH`)
 - **Image registry**: `ghcr.io/kgateway-dev` (override via `IMAGE_REGISTRY`)
-- **Rust components**: envoyinit includes dynamic filters built from `/internal/envoyinit/rustformations/`
+- **Rust components**: envoyinit includes dynamic filters built from `/internal/envoy_modules/`
 
 ## Key Make Targets
 ```bash

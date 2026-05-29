@@ -65,22 +65,39 @@ var (
 	}
 )
 
+// prerequisiteManifests contains the Secrets and ConfigMaps the curl pod mounts.
+// These must exist before the curl pod is scheduled, otherwise kubelet can
+// fail the volume mount and enter exponential backoff, leaving the pod stuck
+// in ContainerCreating past the base suite's 60s readiness timeout. See the
+// SetupSuite override below.
+func prerequisiteManifests() []string {
+	return []string{
+		clientCertsSecret,
+		clientCertSecretManifest,
+		caCertConfigMapManifest,
+		caCert2ConfigMapManifest,
+		clientCert2SecretManifest,
+		caAltNamesConfigMapManifest,
+		clientMatchingSanSecret,
+		clientNonMatchingSanSecret,
+		tlsSecretManifest,
+	}
+}
+
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	// The prerequisite manifests are intentionally duplicated in the base setup
+	// list so that TearDownSuite cleans them up via the standard flow. The
+	// duplicate ApplyYAMLFiles call during base SetupSuite is an idempotent
+	// server-side apply.
 	setup := base.TestCase{
-		Manifests: []string{
-			curlPodWithCerts,
-			testdefaults.HttpbinManifest,
-			clientCertsSecret,
-			clientCertSecretManifest,    // Include client-cert secret so pod can start
-			caCertConfigMapManifest,     // Required for FrontendTLSConfig per-port configs
-			caCert2ConfigMapManifest,    // Required for multiple CA certificates test
-			clientCert2SecretManifest,   // Required for multiple CA certificates test
-			caAltNamesConfigMapManifest, // Required for verify-subject-alt-names test
-			clientMatchingSanSecret,     // Required for verify-subject-alt-names test
-			clientNonMatchingSanSecret,  // Required for verify-subject-alt-names test
-			tlsSecretManifest,
-			gatewayManifest,
-		},
+		Manifests: append(
+			[]string{
+				curlPodWithCerts,
+				testdefaults.HttpbinManifest,
+				gatewayManifest,
+			},
+			prerequisiteManifests()...,
+		),
 	}
 
 	testCases := map[string]*base.TestCase{
@@ -95,8 +112,22 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		"TestVerifySubjectAltNames":  {}, // All required resources are already in setup
 	}
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireFrontendTLSConfig)),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireFrontendTLSConfig)),
 	}
+}
+
+// SetupSuite applies the Secrets and ConfigMaps that the curl pod mounts
+// BEFORE delegating to the base SetupSuite. The base suite's ApplyManifests
+// applies all manifest files in parallel via errgroup, which races the Pod
+// create against its dependent Secrets: if kubelet schedules the Pod before a
+// Secret is visible in the API, the mount fails and kubelet enters backoff,
+// leaving the Pod stuck in ContainerCreating past the 60s readiness timeout.
+// Applying prerequisites first eliminates that race.
+func (s *testingSuite) SetupSuite() {
+	err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", prerequisiteManifests()...)
+	s.Require().NoError(err, "failed to apply frontendtls prerequisite manifests")
+
+	s.BaseTestingSuite.SetupSuite()
 }
 
 // commonCurlOpts returns the common curl options used across all TLS tests for the default gateway

@@ -5,7 +5,6 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
 - connectTimeout: 5s
@@ -14,7 +13,6 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_reviews_8080
   type: EDS
 endpoints:
@@ -49,7 +47,7 @@ listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -92,4 +90,4 @@ routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"set":[{"name":"x-kgateway-response","value":"{{
               request_header(\"x-kgateway-request\") }}"}],"remove":["x-kgateway-request"]}}'
-          perRouteConfigName: http_simple_mutations
+          perRouteConfigName: rustformation

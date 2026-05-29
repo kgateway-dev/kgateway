@@ -4,17 +4,14 @@ package common
 
 import (
 	"context"
-	"fmt"
+	"os"
 	"testing"
 
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/test/util/assert"
-	"istio.io/istio/pkg/test/util/retry"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
 func SetupBaseConfig(ctx context.Context, t *testing.T, installation *e2e.TestInstallation, manifests ...string) {
@@ -25,41 +22,27 @@ func SetupBaseConfig(ctx context.Context, t *testing.T, installation *e2e.TestIn
 	assert.NoError(t, err)
 }
 
-func SetupBaseGateway(ctx context.Context, installation *e2e.TestInstallation, name types.NamespacedName) {
-	address := installation.Assertions.EventuallyGatewayAddress(
+// SetupBaseGateway resolves the LB address for the named Gateway and stores it in BaseGateway.
+//
+// GATEWAY_ADDRESS_OVERRIDE: when set, overrides the resolved address. This exists to support
+// environments where the LB IP is not directly reachable from the host (e.g., k3d on macOS using
+// port mapping). The override is applied ONLY here — single-gateway suites that use BaseGateway
+// pick it up automatically. Suites that construct their own common.Gateway values (e.g.,
+// multi-gateway suites that need more than one address) do NOT honor the override, since a single
+// env var cannot disambiguate multiple gateways. Running such suites under k3d is out of scope.
+func SetupBaseGateway(ctx context.Context, t *testing.T, installation *e2e.TestInstallation, name types.NamespacedName) {
+	address := installation.AssertionsT(t).EventuallyGatewayAddress(
 		ctx,
 		name.Name,
 		name.Namespace,
 	)
+	if override := os.Getenv("GATEWAY_ADDRESS_OVERRIDE"); override != "" {
+		address = override
+	}
 	BaseGateway = Gateway{
 		NamespacedName: name,
 		Address:        address,
 	}
 }
 
-type Gateway struct {
-	types.NamespacedName
-	Address string
-}
-
 var BaseGateway Gateway
-
-func (g *Gateway) Send(t *testing.T, match *matchers.HttpResponse, opts ...curl.Option) {
-	fullOpts := append([]curl.Option{curl.WithHost(g.Address)}, opts...)
-	retry.UntilSuccessOrFail(t, func() error {
-		r, err := curl.ExecuteRequest(fullOpts...)
-		if err != nil {
-			return err
-		}
-		defer r.Body.Close()
-		mm := matchers.HaveHttpResponse(match)
-		success, err := mm.Match(r)
-		if err != nil {
-			return err
-		}
-		if !success {
-			return fmt.Errorf("match failed: %v", mm.FailureMessage(r))
-		}
-		return nil
-	})
-}

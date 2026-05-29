@@ -26,6 +26,9 @@ func translateCircuitBreakers(cb *kgateway.CircuitBreakers) *envoyclusterv3.Circ
 	if cb.MaxRetries != nil {
 		threshold.MaxRetries = wrapperspb.UInt32(uint32(*cb.MaxRetries)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
+	if cb.TrackRemaining != nil {
+		threshold.TrackRemaining = *cb.TrackRemaining
+	}
 
 	return &envoyclusterv3.CircuitBreakers{
 		Thresholds: []*envoyclusterv3.CircuitBreakers_Thresholds{threshold},

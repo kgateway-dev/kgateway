@@ -33,7 +33,7 @@ export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
-BUILDX_BUILD ?= docker buildx build -q
+BUILDX_BUILD ?= docker buildx build
 
 #----------------------------------------------------------------------------------
 # Devcontainer build-tools image
@@ -41,10 +41,13 @@ BUILDX_BUILD ?= docker buildx build -q
 BUILD_TOOLS_DIR ?= tools/build-tools
 BUILD_TOOLS_IMAGE ?= kgateway-build-tools:dev
 BUILD_TOOLS_VERSION ?= $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo dev)
+OSV_SCANNER_IMAGE ?= ghcr.io/google/osv-scanner-action:v2.3.5
+OSV_SCAN_IMAGES ?=
+OSV_SCAN_IMAGE_PLATFORM ?= linux/$(GOARCH)
 
 .PHONY: build-tools-image
 build-tools-image: ## Build the devcontainer build-tools image locally (override BUILD_TOOLS_IMAGE=... to change tag)
-	docker buildx build \
+	$(BUILDX_BUILD) \
 		--load \
 		-t $(BUILD_TOOLS_IMAGE) \
 		--build-arg VERSION=$(BUILD_TOOLS_VERSION) \
@@ -60,6 +63,7 @@ comma := ,
 # where actual semver is desired.
 VERSION ?= v1.0.1-dev
 export VERSION
+ROLLING_MAIN_VERSION ?= v2.4.0-main
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
@@ -82,8 +86,14 @@ else
 	endif
 endif
 
+ifeq ($(IS_ARM_MACHINE), )
+	OSV_SCANNER_PLATFORM :=
+else
+	OSV_SCANNER_PLATFORM := --platform=linux/amd64
+endif
+
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.37.1
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.37.2
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -108,8 +118,8 @@ BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
 
-# Base Alpine image used for all containers. Exported for use in goreleaser.yaml.
-export ALPINE_BASE_IMAGE ?= alpine:3.17.6
+# Base Alpine image used for SDS and dummy-idp containers. Exported for use in goreleaser.yaml.
+export ALPINE_BASE_IMAGE ?= alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
 
 GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
@@ -137,24 +147,39 @@ get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.
 init-git-hooks:  ## Use the tracked version of Git hooks from this repo
 	git config core.hooksPath .githooks
 
-.PHONY: fmt
-fmt:  ## Format the code with golangci-lint
+.PHONY: fmt-go
+fmt-go:
 	$(CUSTOM_GOLANGCI_LINT_FMT) ./...
 
-.PHONY: fmt-changed
-fmt-changed: ## Format only the changed code with golangci-lint (skip deleted files)
+.PHONY: fmt-go-changed
+fmt-go-changed:
 	git status -s -uno | awk '{print $$2}' | grep '.*.go$$' | xargs -r -I{} bash -lc '[ -f "{}" ] && $(CUSTOM_GOLANGCI_LINT_FMT) "{}" || true'
+
+YAMLFMT ?= go tool -modfile tools/go.mod yamlfmt
+YAML_PATHSPEC = '*.[Yy][Mm][Ll]' '*.[Yy][Aa][Mm][Ll]'
+
+.PHONY: fmt-yaml
+fmt-yaml: ## Format tracked YAML files with yamlfmt
+	git ls-files -z -- $(YAML_PATHSPEC) | xargs -0 sh -c 'if [ "$$#" -gt 0 ]; then exec $(YAMLFMT) "$$@"; fi' sh
+
+.PHONY: fmt-yaml-changed
+fmt-yaml-changed:
+	git diff --name-only -z --diff-filter=d HEAD -- $(YAML_PATHSPEC) | xargs -0 sh -c 'if [ "$$#" -gt 0 ]; then exec $(YAMLFMT) "$$@"; fi' sh
+
+.PHONY: fmt
+fmt: fmt-go fmt-yaml ## Format Go and YAML files
+
+.PHONY: fmt-changed
+fmt-changed: fmt-go-changed fmt-yaml-changed ## Format changed Go and YAML files (skip deleted files)
 
 .PHONY: mod-download
 mod-download:  ## Download transitive dependencies
 	go mod download
-	cd hack/utils/applier && go mod download
 	cd tools && go mod download
 	cd test/e2e/defaults/extproc && go mod download
 
 .PHONY: mod-tidy
 mod-tidy: ## Tidy the go mod file
-	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
 	@echo "Tidying tools..." && cd tools && go mod tidy
 	@echo "Tidying test/e2e/defaults/extproc..." && cd test/e2e/defaults/extproc && go mod tidy
 	@echo "Tidying top level" && go mod tidy
@@ -164,7 +189,8 @@ mod-tidy: ## Tidy the go mod file
 #----------------------------------------------------------------------------
 
 .PHONY: analyze
-analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run golangci-lint. Override options with ANALYZE_ARGS.
+analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run repository lint checks. Override golangci-lint options with ANALYZE_ARGS.
+	$(MAKE) --no-print-directory fmt-yaml
 	$(CUSTOM_GOLANGCI_LINT_RUN) $(ANALYZE_ARGS) ./...
 
 $(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum .custom-gcl.yml
@@ -174,6 +200,163 @@ ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint
 .PHONY: lint-actions
 lint-actions: ## Lint the GitHub Actions workflows
 	$(ACTION_LINT)
+
+.PHONY: osv-scan
+osv-scan: ## Run OSV-Scanner locally; set OSV_SCAN_IMAGES="image-ref ..." to also scan Docker images
+	@set -euo pipefail; \
+	branch="$$(git rev-parse --abbrev-ref HEAD)"; \
+	if [[ "$$branch" == "HEAD" ]]; then \
+		branch="detached-$$(git rev-parse --short=12 HEAD)"; \
+	fi; \
+	safe_branch="$$(printf '%s' "$$branch" | tr '/.' '--')"; \
+	out_dir="$(OUTPUT_DIR)/osv/$$safe_branch"; \
+	mkdir -p "$$out_dir"; \
+	echo "Running OSV-Scanner for branch: $$branch"; \
+	echo "Writing results to: $$out_dir"; \
+	scanner_status=0; \
+	if docker run --rm \
+		$(OSV_SCANNER_PLATFORM) \
+		--entrypoint /root/osv-scanner \
+		-v "$(ROOTDIR):/workspace" \
+		-v "$(OUTPUT_DIR):/output" \
+		-w /workspace \
+		"$(OSV_SCANNER_IMAGE)" \
+		scan source \
+		--output-file=/output/osv/$$safe_branch/results.json \
+		--format=json \
+		--no-call-analysis=go \
+		--no-call-analysis=rust \
+		--verbosity=warn \
+		-r \
+		./; then \
+		:; \
+	else \
+		scanner_status=$$?; \
+	fi; \
+	if [[ ! -f "$$out_dir/results.json" ]]; then \
+		echo "osv-scanner did not produce $$out_dir/results.json" >&2; \
+		exit 1; \
+	fi; \
+	reporter_status=0; \
+	if docker run --rm \
+		$(OSV_SCANNER_PLATFORM) \
+		--entrypoint /root/osv-reporter \
+		-v "$(ROOTDIR):/workspace" \
+		-v "$(OUTPUT_DIR):/output" \
+		-w /workspace \
+		"$(OSV_SCANNER_IMAGE)" \
+		--output-files=sarif:/output/osv/$$safe_branch/results.sarif \
+		--new=/output/osv/$$safe_branch/results.json \
+		--fail-on-vuln=false; then \
+		:; \
+	else \
+		reporter_status=$$?; \
+	fi; \
+	if [[ ! -f "$$out_dir/results.sarif" ]]; then \
+		echo "osv-reporter did not produce $$out_dir/results.sarif" >&2; \
+		exit 1; \
+	fi; \
+	image_scanner_status=0; \
+	image_reporter_status=0; \
+	if [[ -n "$(strip $(OSV_SCAN_IMAGES))" ]]; then \
+		image_dir="$$out_dir/images"; \
+		mkdir -p "$$image_dir"; \
+		echo "Scanning Docker images: $(OSV_SCAN_IMAGES)"; \
+		for image in $(OSV_SCAN_IMAGES); do \
+			safe_image_base="$$(printf '%s' "$$image" | sed 's/[^A-Za-z0-9_.-]/-/g')"; \
+			image_hash="$$(printf '%s' "$$image" | sha256sum | cut -d' ' -f1)"; \
+			safe_image="$$safe_image_base-$$image_hash"; \
+			image_json="/output/osv/$$safe_branch/images/$$safe_image.json"; \
+			image_sarif="/output/osv/$$safe_branch/images/$$safe_image.sarif"; \
+			image_archive="/output/osv/$$safe_branch/images/$$safe_image.tar"; \
+			host_image_json="$$image_dir/$$safe_image.json"; \
+			host_image_sarif="$$image_dir/$$safe_image.sarif"; \
+			host_image_archive="$$image_dir/$$safe_image.tar"; \
+			image_platform="$(OSV_SCAN_IMAGE_PLATFORM)"; \
+			image_os="$${image_platform%%/*}"; \
+			image_arch="$${image_platform#*/}"; \
+			image_arch="$${image_arch%%/*}"; \
+			rm -f "$$host_image_archive"; \
+			if command -v skopeo > /dev/null 2>&1; then \
+				if skopeo copy \
+					--override-os "$$image_os" \
+					--override-arch "$$image_arch" \
+					"docker://$$image" \
+					"docker-archive:$$host_image_archive:$$image"; then \
+					:; \
+				else \
+					echo "skopeo archive export failed for $$image; falling back to docker save"; \
+					rm -f "$$host_image_archive"; \
+					echo "Pulling Docker image $$image for platform $$image_platform"; \
+					docker pull --platform "$$image_platform" "$$image"; \
+					docker save "$$image" -o "$$host_image_archive"; \
+				fi; \
+			else \
+				echo "Pulling Docker image $$image for platform $$image_platform"; \
+				docker pull --platform "$$image_platform" "$$image"; \
+				docker save "$$image" -o "$$host_image_archive"; \
+			fi; \
+			echo "Running OSV-Scanner for Docker image: $$image"; \
+			if docker run --rm \
+				$(OSV_SCANNER_PLATFORM) \
+				--entrypoint /root/osv-scanner \
+				-v "$(ROOTDIR):/workspace" \
+				-v "$(OUTPUT_DIR):/output" \
+				-w /workspace \
+				"$(OSV_SCANNER_IMAGE)" \
+				scan image \
+				--archive \
+				--config=/workspace/osv-scanner.toml \
+				--output-file="$$image_json" \
+				--format=json \
+				--verbosity=warn \
+				"$$image_archive"; then \
+				:; \
+			else \
+				image_scanner_status=$$?; \
+			fi; \
+			if [[ ! -f "$$host_image_json" ]]; then \
+				echo "osv-scanner did not produce $$host_image_json" >&2; \
+				exit 1; \
+			fi; \
+			rm -f "$$host_image_archive"; \
+			if docker run --rm \
+				$(OSV_SCANNER_PLATFORM) \
+				--entrypoint /root/osv-reporter \
+				-v "$(ROOTDIR):/workspace" \
+				-v "$(OUTPUT_DIR):/output" \
+				-w /workspace \
+				"$(OSV_SCANNER_IMAGE)" \
+				--output-files="sarif:$$image_sarif" \
+				--new="$$image_json" \
+				--fail-on-vuln=false; then \
+				:; \
+			else \
+				image_reporter_status=$$?; \
+			fi; \
+			if [[ ! -f "$$host_image_sarif" ]]; then \
+				echo "osv-reporter did not produce $$host_image_sarif" >&2; \
+				exit 1; \
+			fi; \
+			echo "Image JSON: $$host_image_json"; \
+			echo "Image SARIF: $$host_image_sarif"; \
+		done; \
+	fi; \
+	docker run --rm \
+		$(OSV_SCANNER_PLATFORM) \
+		--entrypoint /bin/chown \
+		-v "$(OUTPUT_DIR):/output" \
+		"$(OSV_SCANNER_IMAGE)" \
+		-R "$$(id -u):$$(id -g)" "/output/osv/$$safe_branch" > /dev/null; \
+	if [[ "$$scanner_status" -ne 0 || "$$reporter_status" -ne 0 || "$$image_scanner_status" -ne 0 || "$$image_reporter_status" -ne 0 ]]; then \
+		echo "OSV scan completed and wrote results despite non-zero scanner/reporter exit status."; \
+	fi; \
+	echo "JSON: $$out_dir/results.json"; \
+	echo "SARIF: $$out_dir/results.sarif"
+
+.PHONY: osv-scan-latest-main-images
+osv-scan-latest-main-images:
+	$(MAKE) osv-scan OSV_SCAN_IMAGES="ghcr.io/kgateway-dev/kgateway:$(ROLLING_MAIN_VERSION) ghcr.io/kgateway-dev/sds:$(ROLLING_MAIN_VERSION) ghcr.io/kgateway-dev/envoy-wrapper:$(ROLLING_MAIN_VERSION)"
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
@@ -211,11 +394,53 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # truthy. As it stands, a developer who runs `make unit` or `go test ./...`
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
+# CLUSTER_TYPE controls whether images are loaded via kind or k3d (default: kind)
+#
+# k3d note: under k3d, LB IPs are not host-reachable, so e2e tests use
+# GATEWAY_ADDRESS_OVERRIDE (e.g. "localhost") to direct curls to a port-forwarded
+# address. This override is honored only for the base gateway resolved by
+# common.SetupBaseGateway; multi-gateway suites that construct their own
+# common.Gateway values cannot disambiguate multiple gateways with a single env
+# var and are therefore out of scope under k3d.
+CLUSTER_TYPE ?= kind
+SKIP_EXTPROC_SERVER_SETUP ?= false
+
+E2E_SHARED_IMAGE_ARCHIVE ?= $(OUTPUT_DIR)/e2e-images/shared-images.tar
+E2E_SHARED_IMAGE_TAGS = \
+	$(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION) \
+	$(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION) \
+	$(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION) \
+	$(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) \
+	$(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
+
+.PHONY: cluster-load-extproc-server
+ifeq ($(CLUSTER_TYPE),k3d)
+cluster-load-extproc-server: k3d-load-extproc-server
+else
+cluster-load-extproc-server: kind-load-extproc-server
+endif
+
 .PHONY: e2e-test
-e2e-test: extproc-server-docker kind-load-extproc-server
+e2e-test: maybe-setup-extproc-server
 e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
+
+.PHONY: e2e-shared-images-docker
+e2e-shared-images-docker: kgateway-docker envoy-wrapper-docker sds-docker dummy-idp-docker extproc-server-docker ## Build shared docker images for e2e shards
+
+.PHONY: save-e2e-shared-images
+save-e2e-shared-images: e2e-shared-images-docker ## Save shared e2e shard images to a docker archive
+	@mkdir -p $(dir $(E2E_SHARED_IMAGE_ARCHIVE))
+	docker save -o $(E2E_SHARED_IMAGE_ARCHIVE) $(E2E_SHARED_IMAGE_TAGS)
+
+.PHONY: maybe-setup-extproc-server
+ifeq ($(SKIP_EXTPROC_SERVER_SETUP),true)
+maybe-setup-extproc-server:
+	@echo "Skipping extproc-server build and load"
+else
+maybe-setup-extproc-server: extproc-server-docker cluster-load-extproc-server
+endif
 
 
 # https://go.dev/blog/cover#heat-maps
@@ -418,7 +643,6 @@ MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go
 
 # Files that track dependency changes
 MOD_FILES := go.mod go.sum \
-	hack/utils/applier/go.mod hack/utils/applier/go.sum \
 	tools/go.mod tools/go.sum \
 	test/e2e/defaults/extproc/go.mod test/e2e/defaults/extproc/go.sum
 
@@ -469,7 +693,7 @@ $(STAMP_DIR)/generate-licenses: $(MOD_FILES) | $(STAMP_DIR)
 # Formatting - only runs if generation steps changed
 $(STAMP_DIR)/fmt: $(STAMP_DIR)/go-generate-all $(CUSTOM_GOLANGCI_LINT_BIN)
 	@echo "Formatting code..."
-	$(CUSTOM_GOLANGCI_LINT_FMT) ./...
+	$(MAKE) --no-print-directory fmt-go
 	@touch $@
 
 # Fast generation using stamp files (for local development)
@@ -480,15 +704,21 @@ $(STAMP_DIR)/generated-code: $(STAMP_DIR)/go-generate-all $(STAMP_DIR)/mod-tidy 
 verify: generated-code  ## Verify that generated code is up to date (always regenerates for CI safety)
 	git diff -U3 --exit-code
 
+ENVOYINIT_DOCKERFILE = cmd/envoyinit/Dockerfile
+ENVOY_MODULE_DIR = internal/envoy_modules
+ENVOY_MODULE_DOCKERFILE = $(ENVOY_MODULE_DIR)/Dockerfile
+ENVOY_MODULE_DOCKERFILE_TEMPLATE = $(ENVOY_MODULE_DIR)/Dockerfile.tmpl
+ENVOY_MODULE_OUTPUT_DIR = $(OUTPUT_DIR)/$(ENVOY_MODULE_DIR)
+
 .PHONY: generate-all
-generate-all: $(STAMP_DIR)/generated-code  ## Generate all code with optimized dependencies (uses stamp files for speed)
+generate-all: $(STAMP_DIR)/generated-code $(ENVOY_MODULE_DOCKERFILE) ## Generate all code with optimized dependencies (uses stamp files for speed)
 
 .PHONY: generate
 generate: generate-all  ## Alias for generate
 
 # Force full regeneration by cleaning stamps and generated files
 .PHONY: generated-code
-generated-code: clean-gen clean-stamps  ## Force regenerate all code (always runs, ignoring stamps)
+generated-code: clean-gen clean-stamps ## Force regenerate all code (always runs, ignoring stamps)
 	@$(MAKE) --no-print-directory generate-all
 
 # Convenience PHONY targets that trigger stamp-based generation
@@ -512,6 +742,11 @@ K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway pkg/ api/)
 CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/pkg/kgateway
 export CONTROLLER_IMAGE_REPO ?= kgateway
 
+# Registry cache repo for controller Docker build (set to enable, e.g., ghcr.io/kgateway-dev/kgateway-cache).
+# The arch tag is appended automatically as :$(GOARCH) to match what goreleaser publishes.
+CONTROLLER_CACHE_REF ?=
+CONTROLLER_CACHE_FROM := $(if $(CONTROLLER_CACHE_REF),--cache-from type=registry$(comma)ref=$(CONTROLLER_CACHE_REF):$(GOARCH),)
+
 # We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
@@ -524,10 +759,12 @@ kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 $(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/kgateway/Dockerfile
 	cp $< $@
 
-$(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile
+$(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so
+	cp $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so $(CONTROLLER_OUTPUT_DIR)/librust_module.so
 	$(BUILDX_BUILD) --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
+		$(CONTROLLER_CACHE_FROM) \
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 	@touch $@
 
@@ -543,6 +780,11 @@ SDS_SOURCES=$(call get_sources,$(SDS_DIR))
 SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
 export SDS_IMAGE_REPO ?= sds
 
+# Registry cache repo for sds Docker build (set to enable, e.g., ghcr.io/kgateway-dev/sds-cache).
+# The arch tag is appended automatically as :$(GOARCH) to match what goreleaser publishes.
+SDS_CACHE_REF ?=
+SDS_CACHE_FROM := $(if $(SDS_CACHE_REF),--cache-from type=registry$(comma)ref=$(SDS_CACHE_REF):$(GOARCH),)
+
 $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/sds/...
 
@@ -556,6 +798,7 @@ $(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(SDS_OUTPUT_DIR)/sds-linu
 	$(BUILDX_BUILD) --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
+		$(SDS_CACHE_FROM) \
 		-t $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)
 	@touch $@
 
@@ -573,17 +816,24 @@ export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
 # Registry cache for envoyinit Docker build (set to enable, e.g., ghcr.io/kgateway-dev/envoy-wrapper-cache)
 
-# Only --cache-from is used here because --cache-to type=registry requires the
-# docker-container buildx driver, but we use --load (though a Kind local
-# registry with --push would probably be better) which requires the docker
-# driver. Cache is populated by goreleaser when a PR lands on main or a release
-# is cut.
+# Registry cache-from targets the image goreleaser publishes on main/release.
+# The arch tag is appended automatically as :$(GOARCH) to match what goreleaser publishes.
 ENVOYINIT_CACHE_REF ?=
-ENVOYINIT_CACHE_FROM := $(if $(ENVOYINIT_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF),)
+ENVOYINIT_CACHE_FROM := $(if $(ENVOYINIT_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF):$(GOARCH),)
 
-RUSTFORMATIONS_DIR := internal/envoyinit/
-# find all the files under the rustformation directory but exclude the target and pkg directory
-RUSTFORMATIONS_SRC_FILES := $(shell find $(RUSTFORMATIONS_DIR) \( -type d -name target -o -type d -name pkg \) -prune -o -type f -print)
+# Optional local BuildKit cache paths, typically wired to actions/cache in CI
+# so PR runs can read AND write layer cache without needing registry push auth.
+# Requires the docker-container buildx driver (docker/setup-buildx-action).
+# mode=max exports intermediate stages, which is what lets rust_build_deps and
+# rust_builder stay cached across runs even when the registry cache has gaps.
+ENVOYINIT_LOCAL_CACHE_FROM ?=
+ENVOYINIT_LOCAL_CACHE_TO ?=
+ENVOYINIT_LOCAL_CACHE_FROM_ARG := $(if $(ENVOYINIT_LOCAL_CACHE_FROM),--cache-from type=local$(comma)src=$(ENVOYINIT_LOCAL_CACHE_FROM),)
+ENVOYINIT_LOCAL_CACHE_TO_ARG := $(if $(ENVOYINIT_LOCAL_CACHE_TO),--cache-to type=local$(comma)dest=$(ENVOYINIT_LOCAL_CACHE_TO)$(comma)mode=max,)
+
+ENVOY_MODULES_DIR := internal/envoy_modules/
+# find all the files under the envoy modules directory but exclude the target, vendor and pkg directory
+ENVOY_MODULES_SRC_FILES := $(shell find $(ENVOY_MODULES_DIR) \( -type d -name target -o -type d -name pkg -o -type d -name vendor \) -prune -o -type f -print)
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/envoyinit/...
@@ -591,25 +841,33 @@ $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
 
-# Allow override of Dockerfile for local development
-ENVOYINIT_DOCKERFILE ?= cmd/envoyinit/Dockerfile
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE) $(RUSTFORMATIONS_SRC_FILES)
-	@if [ "$(ENVOYINIT_DOCKERFILE)" = "cmd/envoyinit/Dockerfile" ]; then \
-		echo "syncing rustformations..."; \
-		rsync -av --delete --exclude 'target/' --exclude 'pkg/' ${RUSTFORMATIONS_DIR} $(ENVOYINIT_OUTPUT_DIR)/rustformations; \
-	fi
+$(ENVOY_MODULE_DOCKERFILE): $(ENVOY_MODULE_DOCKERFILE_TEMPLATE) internal/envoy_modules/generate-dockerfile.sh $(ENVOY_MODULES_DIR)/Cargo.toml
+	internal/envoy_modules/generate-dockerfile.sh $(ENVOY_MODULES_DIR) $< $@
+
+$(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so: $(ENVOY_MODULES_SRC_FILES) $(ENVOY_MODULE_DOCKERFILE)
+	mkdir -p $(ENVOY_MODULE_OUTPUT_DIR)
+	$(BUILDX_BUILD) \
+		$(PLATFORM) \
+		--output type=local,dest=$(ENVOY_MODULE_OUTPUT_DIR) \
+		--target export \
+		--build-arg RUST_BUILD_ARCH=$(RUST_BUILD_ARCH) \
+		-f $(ENVOY_MODULE_DOCKERFILE) \
+		$(ENVOY_MODULES_DIR)
+
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE)
 	cp $< $@
 
 $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: cmd/envoyinit/docker-entrypoint.sh
 	cp $< $@
 
-$(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
+$(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so
+	cp $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so $(ENVOYINIT_OUTPUT_DIR)/librust_module.so
 	$(BUILDX_BUILD) --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
-		--build-arg RUST_BUILD_ARCH=$(RUST_BUILD_ARCH) \
-		--build-arg RUSTFORMATIONS_DIR=./rustformations \
 		$(ENVOYINIT_CACHE_FROM) \
+		$(ENVOYINIT_LOCAL_CACHE_FROM_ARG) \
+		$(ENVOYINIT_LOCAL_CACHE_TO_ARG) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 	@touch $@
 
@@ -800,7 +1058,7 @@ deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgatew
 setup-base: kind-create gw-api-crds ## Setup the base infrastructure (kind cluster, CRDs, and load balancer)
 ifeq ($(CLOUD_PROVIDER_KIND),true)
 	$(MAKE) cloud-provider-kind
-else
+else ifneq ($(METAL_LB),false)
 	$(MAKE) metallb
 endif
 
@@ -869,6 +1127,67 @@ kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
 kind-load: kind-load-dummy-idp
+
+#----------------------------------------------------------------------------------
+# k3d Development
+#----------------------------------------------------------------------------------
+
+K3D ?= k3d
+ifeq ($(CLUSTER_TYPE),k3d)
+K3D_CLUSTER_NAME ?= $(CLUSTER_NAME)
+else
+K3D_CLUSTER_NAME ?= k3d
+endif
+K3D_NODE_IMAGE ?= rancher/k3s:v1.31.4-k3s1
+
+.PHONY: k3d-create
+k3d-create: ## Create a single-node k3d cluster with lightweight LoadBalancer IP assigner
+	$(K3D) cluster list -o json | jq -e '.[] | select(.name=="$(K3D_CLUSTER_NAME)")' > /dev/null 2>&1 || \
+		$(K3D) cluster create $(K3D_CLUSTER_NAME) --image $(K3D_NODE_IMAGE) \
+			--k3s-arg "--disable=traefik@server:0" \
+			--k3s-arg "--disable=servicelb@server:0" \
+			-p "80:80@loadbalancer" \
+			-p "443:443@loadbalancer"
+	@# Start background LB IP assigner (lightweight alternative to MetalLB).
+	@# Only launch if one is not already running for this cluster.
+	@if pgrep -f 'k3d-loadbalancer.sh $(K3D_CLUSTER_NAME)$$' > /dev/null 2>&1; then \
+		echo "k3d load balancer assigner already running for cluster $(K3D_CLUSTER_NAME)"; \
+	else \
+		nohup $(ROOTDIR)/hack/k3d/k3d-loadbalancer.sh $(K3D_CLUSTER_NAME) > /tmp/k3d-lb-$(K3D_CLUSTER_NAME).log 2>&1 & disown; \
+	fi
+
+k3d-load-%:
+	$(K3D) image import $(IMAGE_REGISTRY)/$*:$(VERSION) -c $(K3D_CLUSTER_NAME)
+
+k3d-build-and-load-%: %-docker k3d-load-% ; ## Use to build specified image and load it into k3d
+
+.PHONY: k3d-build-and-load ## Use to build all images and load them into k3d
+k3d-build-and-load: k3d-build-and-load-kgateway
+k3d-build-and-load: k3d-build-and-load-envoy-wrapper
+k3d-build-and-load: k3d-build-and-load-sds
+k3d-build-and-load: k3d-build-and-load-dummy-idp
+
+.PHONY: k3d-load ## Use to load all images into k3d
+k3d-load: k3d-load-kgateway
+k3d-load: k3d-load-envoy-wrapper
+k3d-load: k3d-load-sds
+k3d-load: k3d-load-dummy-idp
+
+.PHONY: k3d-load-dummy-idp
+k3d-load-dummy-idp:
+	$(K3D) image import $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) -c $(K3D_CLUSTER_NAME)
+
+.PHONY: k3d-load-extproc-server
+k3d-load-extproc-server:
+	$(K3D) image import $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION) -c $(K3D_CLUSTER_NAME)
+
+.PHONY: setup-base-k3d
+setup-base-k3d: k3d-create gw-api-crds ## Setup k3d base infrastructure (cluster, CRDs, custom instant-setup loadbalancer).
+
+.PHONY: setup-k3d
+setup-k3d: setup-base-k3d k3d-build-and-load package-kgateway-charts dummy-idp-docker k3d-load-dummy-idp ## Setup complete k3d infrastructure
+
+k3d-reload-%: k3d-build-and-load-% kind-set-image-% ; ## Use to build specified image, load it into k3d, and restart its deployment
 
 #----------------------------------------------------------------------------------
 # Load Testing
@@ -940,7 +1259,7 @@ bump-gtw: ## Bump Gateway API deps to $DEP_REF (or $DEP_VERSION). Example: make 
 envoyversion: ENVOY_VERSION_TAG ?= $(shell echo $(ENVOY_IMAGE) | cut -d':' -f2)
 envoyversion:
 	echo "Version is $(ENVOY_VERSION_TAG)"
-	echo "Current ABI in envoyinit can be found in the cargo.toml's envoy-proxy-dynamic-modules-rust-sdk"
+	echo "Current ABI in envoy_modules can be found in the cargo.toml's envoy-proxy-dynamic-modules-rust-sdk"
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

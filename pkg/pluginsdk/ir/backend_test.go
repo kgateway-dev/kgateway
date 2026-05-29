@@ -1,11 +1,14 @@
 package ir
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
@@ -68,25 +71,23 @@ func TestParseAppProtocol(t *testing.T) {
 }
 
 func createTestBackendObjectIR(trafficDist wellknown.TrafficDistribution) BackendObjectIR {
-	return BackendObjectIR{
-		ObjectSource: ObjectSource{
-			Namespace: "default",
-			Name:      "test-service",
-			Group:     "",
-			Kind:      "Service",
+	backend := NewBackendObjectIR(ObjectSource{
+		Namespace: "default",
+		Name:      "test-service",
+		Group:     "",
+		Kind:      "Service",
+	}, 8080, "", "")
+	backend.Obj = &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "test-service",
+			Namespace:       "default",
+			UID:             "test-uid",
+			ResourceVersion: "1",
+			Generation:      1,
 		},
-		Port: 8080,
-		Obj: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:            "test-service",
-				Namespace:       "default",
-				UID:             "test-uid",
-				ResourceVersion: "1",
-				Generation:      1,
-			},
-		},
-		TrafficDistribution: trafficDist,
 	}
+	backend.TrafficDistribution = trafficDist
+	return backend
 }
 
 func TestBackendObjectIREquals(t *testing.T) {
@@ -126,6 +127,30 @@ func TestBackendObjectIREquals(t *testing.T) {
 			backend2: func() BackendObjectIR { return createTestBackendObjectIR(wellknown.TrafficDistributionPreferNetwork) },
 			want:     true,
 		},
+		{
+			name: "backends with different gateway backend client certificates should not be equal",
+			backend1: func() BackendObjectIR {
+				backend := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+				backend.GatewayBackendClientCertificate = &GatewayBackendClientCertificateIR{
+					Certificate: TLSCertificate{
+						CertChain:  []byte("cert-a"),
+						PrivateKey: []byte("key-a"),
+					},
+				}
+				return backend
+			},
+			backend2: func() BackendObjectIR {
+				backend := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+				backend.GatewayBackendClientCertificate = &GatewayBackendClientCertificateIR{
+					Certificate: TLSCertificate{
+						CertChain:  []byte("cert-b"),
+						PrivateKey: []byte("key-b"),
+					},
+				}
+				return backend
+			},
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -147,4 +172,81 @@ func TestBackendObjectIREquals(t *testing.T) {
 			a.True(backend2.Equals(backend2), "reflexivity check failed for backend2")
 		})
 	}
+}
+
+func TestBackendObjectIRClusterName(t *testing.T) {
+	base := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+
+	t.Run("keeps the same name when BackendTLSPolicy is attached", func(t *testing.T) {
+		withPolicy := base
+		withPolicy.AttachedPolicies = AttachedPolicies{
+			Policies: map[schema.GroupKind][]PolicyAtt{
+				wellknown.BackendTLSPolicyGVK.GroupKind(): {{
+					GroupKind: wellknown.BackendTLSPolicyGVK.GroupKind(),
+					PolicyRef: &AttachedPolicyRef{
+						Group:     wellknown.BackendTLSPolicyGVK.Group,
+						Kind:      wellknown.BackendTLSPolicyGVK.Kind,
+						Namespace: "default",
+						Name:      "backend-tls",
+					},
+				}},
+			},
+		}
+
+		assert.Equal(t, base.ClusterName(), withPolicy.ClusterName())
+	})
+}
+
+func TestBackendObjectIRConstructsClusterNameWithPrefix(t *testing.T) {
+	backend := NewBackendObjectIR(ObjectSource{
+		Namespace: "default",
+		Name:      "test-service",
+		Kind:      "Service",
+	}, 8080, "", "kube")
+
+	assert.Equal(t, "kube_default_test-service_8080", backend.ClusterName())
+}
+
+func TestBackendObjectIRNormalizesEmptyPrefix(t *testing.T) {
+	backend := NewBackendObjectIR(ObjectSource{
+		Namespace: "default",
+		Name:      "test-service",
+		Kind:      "Service",
+	}, 8080, "", "")
+
+	assert.Equal(t, "service", backend.gvPrefix)
+	assert.Equal(t, "service_default_test-service_8080", backend.ClusterName())
+}
+
+func TestBackendObjectIRCloneRecomputesClusterName(t *testing.T) {
+	backend := NewBackendObjectIR(ObjectSource{
+		Namespace: "ns",
+		Name:      "svc",
+		Kind:      "Service",
+	}, 80, "", "kube")
+
+	original := backend.ClusterName()
+	clone := backend.CloneForGatewayBackendClientCertificate(
+		ObjectSource{Group: "gateway.networking.k8s.io", Kind: "Gateway", Namespace: "gwns", Name: "gw"},
+		&GatewayBackendClientCertificateIR{},
+	)
+
+	assert.NotEqual(t, original, clone.ClusterName(), "clone should have a distinct cluster name after ExtraKey change")
+	assert.Contains(t, clone.ClusterName(), "gw_backend_client_cert_gwns_gw")
+}
+
+func TestGatewayBackendClientCertificateIRMarshalJSONRedactsCertificate(t *testing.T) {
+	clientCertificate := GatewayBackendClientCertificateIR{
+		Certificate: TLSCertificate{
+			CertChain:  []byte("gateway-cert"),
+			PrivateKey: []byte("gateway-key"),
+		},
+	}
+
+	marshaled, err := json.Marshal(clientCertificate)
+	require.NoError(t, err)
+
+	assert.JSONEq(t, `{"certificate":"[REDACTED]"}`, string(marshaled))
+	assert.NotContains(t, string(marshaled), "gateway-cert")
+	assert.NotContains(t, string(marshaled), "gateway-key")
 }

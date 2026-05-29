@@ -28,5 +28,5 @@ const (
 	GatewayClassNameLabel = "gateway.networking.k8s.io/gateway-class-name"
 
 	// LeaderElectionID is the name of the lease that leader election will use for holding the leader lock.
-	LeaderElectionID = "kgateway"
+	LeaderElectionID = "kgateway-envoy"
 )
