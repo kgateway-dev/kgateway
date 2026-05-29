@@ -2,7 +2,7 @@
 
 * Issue: [13891](https://github.com/kgateway-dev/kgateway/issues/13891)
 * Parent epic: [Modernize and improve kgateway end-to-end testing](https://github.com/kgateway-dev/kgateway/issues/13351)
-* Reference PRs:
+* Reference:
   * [#12981 — Good tests](https://github.com/kgateway-dev/kgateway/issues/12981)
   * [#12993 — initial fast e2e attempt](https://github.com/kgateway-dev/kgateway/pull/12993)
 
@@ -50,8 +50,8 @@ The conclusion is to keep the custom framework and invest in incremental improve
 
 These are the potential areas for improvement. 
 
-* **Speed & efficiency.** To increase in the speed of execution. 
-* **Accessibility.** Easy to read and write. Minimize the kgateway-specific strucutres a contributor has to learn before writing their first test. 
+* **Speed & efficiency.** Improve execution speed and resource efficiency.
+* **Accessibility.** Easy to read and write. Minimize the kgateway-specific structures a contributor has to learn before writing their first test. 
 * **Reliability & reproducibility.** Same result locally and in CI. Deterministic setup and teardown. No cross-test state leakage.
 * **Maintenance burden.** Lean on upstream/community-maintained test code rather than carrying kgateway-specific equivalents in-repo.
 
@@ -370,8 +370,8 @@ We propose two refactors. They are independent and can land in any order.
 
 ## Alternatives
 
+We investigated both alternative frameworks below. We are not adopting either now; the immediate work is improving the current framework (see [Proposal](#proposal)). Of the two, the Gateway API conformance framework is the stronger option if kgateway later chooses to migrate.
 
-// stronger among both framework investigated. 
 ### Alternative 1 — Adopt the Gateway API conformance framework
 
 We prototyped adopting `sigs.k8s.io/gateway-api/conformance` as the single framework for kgateway end-to-end tests, with new tests written as `confsuite.ConformanceTest` values and existing tests migrated to that shape over time. The framework provides built-in Gateway API helpers (`kubernetes.GatewayAndHTTPRoutesMustBeAccepted`, `http.MakeRequestAndExpectEventuallyConsistentResponse`), a simple `ConformanceTest` struct as the core abstraction, and community familiarity — Gateway API conformance tests already use this shape.
