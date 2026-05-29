@@ -35,25 +35,11 @@ type Cmd interface {
 	// WithStderr sets the io.Reader used for stderr
 	WithStderr(io.Writer) Cmd
 
-	PrettyCommand() string
-}
-
-// QuietableCmd is an optional extension implemented by Cmd values that can
-// suppress the "+ <command>" trace line that is otherwise printed to stderr
-// when running under the e2e build tag.
-type QuietableCmd interface {
+	// WithQuiet suppresses the "+ <command>" trace line that is otherwise
+	// printed to stderr when running under the e2e build tag.
 	WithQuiet() Cmd
-}
 
-// WithQuiet suppresses command trace output for Cmd implementations that
-// support it. For Cmd values that do not implement QuietableCmd, it returns
-// the original command unchanged.
-func WithQuiet(cmd Cmd) Cmd {
-	if quietable, ok := cmd.(QuietableCmd); ok {
-		return quietable.WithQuiet()
-	}
-
-	return cmd
+	PrettyCommand() string
 }
 
 // Cmder abstracts over creating commands

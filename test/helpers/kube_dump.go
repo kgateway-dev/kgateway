@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -364,13 +363,13 @@ func ControllerDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog i
 				)
 
 			krtSnapshotFile := fileAtPath(filepath.Join(namespaceOutDir, fmt.Sprintf("%s.krt_snapshot.log", podName)))
-			err = cmdutils.WithQuiet(adminClient.KrtSnapshotCmd(ctx)).WithStdout(krtSnapshotFile).Run().Cause()
+			err = adminClient.KrtSnapshotCmd(ctx).WithQuiet().WithStdout(krtSnapshotFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running krt snapshot command: %v\n", err)
 			}
 
 			xdsSnapshotFile := fileAtPath(filepath.Join(namespaceOutDir, fmt.Sprintf("%s.xds_snapshot.log", podName)))
-			err = cmdutils.WithQuiet(adminClient.XdsSnapshotCmd(ctx)).WithStdout(xdsSnapshotFile).Run().Cause()
+			err = adminClient.XdsSnapshotCmd(ctx).WithQuiet().WithStdout(xdsSnapshotFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running xds snapshot command: %v\n", err)
 			}
@@ -414,25 +413,25 @@ func EnvoyDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, _ io.Writer, 
 			defer shutdown()
 
 			configDumpFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.config.log", proxy)))
-			err = cmdutils.WithQuiet(adminCli.ConfigDumpCmd(ctx, nil)).WithStdout(configDumpFile).Run().Cause()
+			err = adminCli.ConfigDumpCmd(ctx, nil).WithQuiet().WithStdout(configDumpFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running config dump command: %v\n", err)
 			}
 
 			statsFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.stats.log", proxy)))
-			err = cmdutils.WithQuiet(adminCli.StatsCmd(ctx, nil)).WithStdout(statsFile).Run().Cause()
+			err = adminCli.StatsCmd(ctx, nil).WithQuiet().WithStdout(statsFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running stats command: %v\n", err)
 			}
 
 			clustersFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.clusters.log", proxy)))
-			err = cmdutils.WithQuiet(adminCli.ClustersCmd(ctx)).WithStdout(clustersFile).Run().Cause()
+			err = adminCli.ClustersCmd(ctx).WithQuiet().WithStdout(clustersFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running clusters command: %v\n", err)
 			}
 
 			listenersFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.listeners.log", proxy)))
-			err = cmdutils.WithQuiet(adminCli.ListenersCmd(ctx)).WithStdout(listenersFile).Run().Cause()
+			err = adminCli.ListenersCmd(ctx).WithQuiet().WithStdout(listenersFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running listeners command: %v\n", err)
 			}
