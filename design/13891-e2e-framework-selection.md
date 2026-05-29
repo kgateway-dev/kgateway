@@ -388,7 +388,7 @@ We prototyped this in PR [#1](https://github.com/devc007/kgateway/pull/1), with 
 
 We didn't choose it because:
 
-* **It provides only the lifecycle scaffolding.** No assertion library, no Gateway API readiness helpers, no manifest applier, no eventual-consistency HTTP probe. The POC's `assertions/assertions.go` and `common/gateway/gateway.go` are the start of an in-repo equivalent of what `sigs.k8s.io/gateway-api/conformance/utils/` already provides. Adopting this framework means owning that reimplementation indefinitely — the exact failure mode the **Maintenance burden** goal is meant to prevent.
+* **It provides only the lifecycle scaffolding.** No assertion library, no Gateway API readiness helpers, no manifest applier, no eventual-consistency HTTP probe. The POC's `assertions/assertions.go` and `common/gateway/gateway.go` are the start of an in-repo equivalent of what `sigs.k8s.io/gateway-api/conformance/utils/` already provides. Adopting this framework means owning the implementation of that functionality.
 * **The same maintenance-burden concern applies.** Even more so than the conformance framework, `sigs.k8s.io/e2e-framework` provides only generic lifecycle scaffolding — no manifest applier, no Gateway API readiness helpers, no eventual-consistency HTTP probe. We would own all of that in-repo indefinitely.
 * **Two frameworks is a tax.** Running the upstream Gateway API conformance suite for spec coverage *and* `sigs.k8s.io/e2e-framework` for kgateway-specific tests means contributors switch mental models depending on which directory they are in.
 
