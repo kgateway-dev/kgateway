@@ -5,7 +5,6 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_httpbin_8000
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -46,7 +45,6 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_httpbin_9000
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -87,7 +85,6 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   transportSocketMatches:
   - match:

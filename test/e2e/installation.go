@@ -92,6 +92,9 @@ func (i *TestInstallation) UpgradeKgatewayCore(
 	if err != nil {
 		t.Fatalf("failed to get chart path: %v", err)
 	}
+	// Mirror InstallKgatewayCoreFromLocalChart: pin image.tag to the locally-built
+	// chart so upgrade points at the same image that install did.
+	mergedExtraArgs := append(helper.LocalChartImageTagArgs(), extraArgs...)
 	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
 		helmutils.InstallOpts{
@@ -100,7 +103,7 @@ func (i *TestInstallation) UpgradeKgatewayCore(
 			ValuesFiles:     valuesFiles,
 			ReleaseName:     helmutils.ChartName,
 			ChartUri:        chartUri,
-			ExtraArgs:       extraArgs,
+			ExtraArgs:       mergedExtraArgs,
 		})
 	if err != nil {
 		t.Fatalf("failed to upgrade Helm: %v", err)

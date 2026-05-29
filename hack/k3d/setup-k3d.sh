@@ -16,6 +16,8 @@ K3D_NODE_IMAGE="${K3D_NODE_IMAGE:-rancher/k3s:${K3S_SEMVER}-k3s1}"
 VERSION="${VERSION:-v1.0.0-ci1}"
 # Skip building docker images if we are testing a released version
 SKIP_DOCKER="${SKIP_DOCKER:-false}"
+# Load prebuilt docker images into the cluster instead of rebuilding them
+LOAD_DOCKER_IMAGES="${LOAD_DOCKER_IMAGES:-false}"
 # Stop after creating the k3d cluster
 JUST_K3D="${JUST_K3D:-false}"
 # The version of the k8s gateway api conformance tests to run.
@@ -89,12 +91,13 @@ function create_and_setup() {
 create_and_setup
 
 if [[ $SKIP_DOCKER == 'true' ]]; then
-  echo "SKIP_DOCKER=true, not building images or chart"
+  echo "SKIP_DOCKER=true, not building images"
+  if [[ $LOAD_DOCKER_IMAGES == 'true' ]]; then
+    VERSION=$VERSION K3D_CLUSTER_NAME=$CLUSTER_NAME make k3d-load
+  fi
 else
   # 2. Make all the docker images and load them to the k3d cluster
   VERSION=$VERSION K3D_CLUSTER_NAME=$CLUSTER_NAME make k3d-build-and-load k3d-load-dummy-idp
-
-  VERSION=$VERSION make package-kgateway-charts
 fi
 
 # 3. Setup localstack

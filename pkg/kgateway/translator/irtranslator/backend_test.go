@@ -29,19 +29,22 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
+func newTestBackend(objSrc ir.ObjectSource, port int32) *ir.BackendObjectIR {
+	backend := ir.NewBackendObjectIR(objSrc, port, "")
+	return &backend
+}
+
 func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 	var bt irtranslator.BackendTranslator
 	var ucc ir.UniquelyConnectedClient
 	var kctx krt.TestingDummyContext
-	backend := &ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "group",
-			Kind:      "kind",
-			Name:      "name",
-			Namespace: "namespace",
-		},
-		AppProtocol: ir.HTTP2AppProtocol,
-	}
+	backend := newTestBackend(ir.ObjectSource{
+		Group:     "group",
+		Kind:      "kind",
+		Name:      "name",
+		Namespace: "namespace",
+	}, 0)
+	backend.AppProtocol = ir.HTTP2AppProtocol
 	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
 		{Group: "group", Kind: "kind"}: {
 			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
@@ -64,14 +67,12 @@ func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 }
 
 func TestBackendTranslatorAppliesDnsLookupFamilyToDnsCluster(t *testing.T) {
-	backend := &ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "group",
-			Kind:      "kind",
-			Name:      "name",
-			Namespace: "namespace",
-		},
-	}
+	backend := newTestBackend(ir.ObjectSource{
+		Group:     "group",
+		Kind:      "kind",
+		Name:      "name",
+		Namespace: "namespace",
+	}, 0)
 
 	var bt irtranslator.BackendTranslator
 	bt.CommonCols = &collections.CommonCollections{
@@ -117,18 +118,15 @@ func TestBackendTranslatorHandlesBackendIRErrors(t *testing.T) {
 	// No attached policies needed for this test.
 	backendError1 := errors.New("invalid backend hostname")
 	backendError2 := errors.New("unsupported backend protocol")
-	backend := &ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "core",
-			Kind:      "Service",
-			Name:      "invalid-svc",
-			Namespace: "test-ns",
-		},
-		Port:   80,
-		Errors: []error{backendError1, backendError2},
-		AttachedPolicies: ir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]ir.PolicyAtt{},
-		},
+	backend := newTestBackend(ir.ObjectSource{
+		Group:     "core",
+		Kind:      "Service",
+		Name:      "invalid-svc",
+		Namespace: "test-ns",
+	}, 80)
+	backend.Errors = []error{backendError1, backendError2}
+	backend.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
 
 	var bt irtranslator.BackendTranslator
@@ -166,26 +164,24 @@ func TestBackendTranslatorHandlesBackendIRErrors(t *testing.T) {
 func TestBackendTranslatorPropagatesPolicyErrors(t *testing.T) {
 	policyError1 := errors.New("invalid TLS certificate")
 	policyError2 := errors.New("invalid health check configuration")
-	backend := &ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "group",
-			Kind:      "kind",
-			Name:      "name",
-			Namespace: "namespace",
-		},
-		AttachedPolicies: ir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]ir.PolicyAtt{
-				{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy"}: {
-					{
-						GroupKind: schema.GroupKind{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy"},
-						Errors:    []error{policyError1},
-					},
+	backend := newTestBackend(ir.ObjectSource{
+		Group:     "group",
+		Kind:      "kind",
+		Name:      "name",
+		Namespace: "namespace",
+	}, 0)
+	backend.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy"}: {
+				{
+					GroupKind: schema.GroupKind{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy"},
+					Errors:    []error{policyError1},
 				},
-				{Group: "gateway-api", Kind: "BackendTLSPolicy"}: {
-					{
-						GroupKind: schema.GroupKind{Group: "gateway-api", Kind: "BackendTLSPolicy"},
-						Errors:    []error{policyError2},
-					},
+			},
+			{Group: "gateway-api", Kind: "BackendTLSPolicy"}: {
+				{
+					GroupKind: schema.GroupKind{Group: "gateway-api", Kind: "BackendTLSPolicy"},
+					Errors:    []error{policyError2},
 				},
 			},
 		},
@@ -241,20 +237,15 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 	}
 
 	// BackendIR with no errors.
-	backend := &ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "core",
-			Kind:      "Service",
-			Name:      "test-svc",
-			Namespace: "test-ns",
-		},
-		Port: 80,
-		// No pre-existing errors
-		Errors: nil,
-		// No attached policies that would cause errors
-		AttachedPolicies: ir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]ir.PolicyAtt{},
-		},
+	backend := newTestBackend(ir.ObjectSource{
+		Group:     "core",
+		Kind:      "Service",
+		Name:      "test-svc",
+		Namespace: "test-ns",
+	}, 80)
+	backend.Errors = nil
+	backend.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
 
 	var bt irtranslator.BackendTranslator
@@ -291,26 +282,24 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 }
 
 func TestBackendTranslatorAppliesGatewayBackendClientCertificate(t *testing.T) {
-	backend := &ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "group",
-			Kind:      "kind",
-			Name:      "name",
-			Namespace: "namespace",
+	backend := newTestBackend(ir.ObjectSource{
+		Group:     "group",
+		Kind:      "kind",
+		Name:      "name",
+		Namespace: "namespace",
+	}, 0)
+	backend.GatewayBackendClientCertificate = &ir.GatewayBackendClientCertificateIR{
+		Certificate: ir.TLSCertificate{
+			CertChain:  []byte("gateway-cert"),
+			PrivateKey: []byte("gateway-key"),
 		},
-		GatewayBackendClientCertificate: &ir.GatewayBackendClientCertificateIR{
-			Certificate: ir.TLSCertificate{
-				CertChain:  []byte("gateway-cert"),
-				PrivateKey: []byte("gateway-key"),
-			},
-		},
-		AttachedPolicies: ir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]ir.PolicyAtt{
-				{Group: "gateway-api", Kind: "BackendTLSPolicy"}: {
-					{
-						GroupKind: schema.GroupKind{Group: "gateway-api", Kind: "BackendTLSPolicy"},
-						PolicyIr:  new(testPolicyIR),
-					},
+	}
+	backend.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			{Group: "gateway-api", Kind: "BackendTLSPolicy"}: {
+				{
+					GroupKind: schema.GroupKind{Group: "gateway-api", Kind: "BackendTLSPolicy"},
+					PolicyIr:  new(testPolicyIR),
 				},
 			},
 		},
@@ -358,22 +347,20 @@ func TestBackendTranslatorAppliesGatewayBackendClientCertificate(t *testing.T) {
 }
 
 func TestBackendTranslatorDoesNotEnableTLSForGatewayBackendClientCertificate(t *testing.T) {
-	backend := &ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "group",
-			Kind:      "kind",
-			Name:      "name",
-			Namespace: "namespace",
+	backend := newTestBackend(ir.ObjectSource{
+		Group:     "group",
+		Kind:      "kind",
+		Name:      "name",
+		Namespace: "namespace",
+	}, 0)
+	backend.GatewayBackendClientCertificate = &ir.GatewayBackendClientCertificateIR{
+		Certificate: ir.TLSCertificate{
+			CertChain:  []byte("gateway-cert"),
+			PrivateKey: []byte("gateway-key"),
 		},
-		GatewayBackendClientCertificate: &ir.GatewayBackendClientCertificateIR{
-			Certificate: ir.TLSCertificate{
-				CertChain:  []byte("gateway-cert"),
-				PrivateKey: []byte("gateway-key"),
-			},
-		},
-		AttachedPolicies: ir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]ir.PolicyAtt{},
-		},
+	}
+	backend.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
 
 	var bt irtranslator.BackendTranslator
@@ -393,26 +380,24 @@ func TestBackendTranslatorDoesNotEnableTLSForGatewayBackendClientCertificate(t *
 }
 
 func TestBackendTranslatorAppliesGatewayBackendClientCertificateToTransportSocketMatches(t *testing.T) {
-	backend := &ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "group",
-			Kind:      "kind",
-			Name:      "name",
-			Namespace: "namespace",
+	backend := newTestBackend(ir.ObjectSource{
+		Group:     "group",
+		Kind:      "kind",
+		Name:      "name",
+		Namespace: "namespace",
+	}, 0)
+	backend.GatewayBackendClientCertificate = &ir.GatewayBackendClientCertificateIR{
+		Certificate: ir.TLSCertificate{
+			CertChain:  []byte("gateway-cert"),
+			PrivateKey: []byte("gateway-key"),
 		},
-		GatewayBackendClientCertificate: &ir.GatewayBackendClientCertificateIR{
-			Certificate: ir.TLSCertificate{
-				CertChain:  []byte("gateway-cert"),
-				PrivateKey: []byte("gateway-key"),
-			},
-		},
-		AttachedPolicies: ir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]ir.PolicyAtt{
-				{Group: "istio.io", Kind: "Settings"}: {
-					{
-						GroupKind: schema.GroupKind{Group: "istio.io", Kind: "Settings"},
-						PolicyIr:  new(testPolicyIR),
-					},
+	}
+	backend.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			{Group: "istio.io", Kind: "Settings"}: {
+				{
+					GroupKind: schema.GroupKind{Group: "istio.io", Kind: "Settings"},
+					PolicyIr:  new(testPolicyIR),
 				},
 			},
 		},

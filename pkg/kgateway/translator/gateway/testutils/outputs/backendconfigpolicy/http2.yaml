@@ -5,7 +5,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin-h2c_8080
   type: EDS
   typedExtensionProtocolOptions:
@@ -23,7 +22,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin2_8080
   type: EDS
 - connectTimeout: 5s
@@ -32,7 +30,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin_8080
   type: EDS
   typedExtensionProtocolOptions:
@@ -45,7 +42,6 @@ Clusters:
       explicitHttpConfig:
         httpProtocolOptions: {}
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

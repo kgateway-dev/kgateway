@@ -80,7 +80,7 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	backend := ir.NewBackendObjectIR(objSrc, svcPort, "")
 	backend.Obj = svc
 	backend.AppProtocol = ir.ParseAppProtocol(&svcProtocol)
-	backend.GvPrefix = BackendClusterPrefix
+	backend.SetGvPrefix(BackendClusterPrefix)
 	backend.CanonicalHostname = kubeutils.GetServiceHostname(svc.Name, svc.Namespace)
 
 	// Set the port name for sectionName based policy attachment

@@ -142,7 +142,7 @@ func GenerateBackendStatusReport(backends []ir.BackendObjectIR, clusters []uccWi
 		errs = append(errs, backend.Errors...)
 		if len(errs) == 0 {
 			k := backendGen{
-				nn:  types.NamespacedName{Namespace: backend.Namespace, Name: backend.Name},
+				nn:  types.NamespacedName{Namespace: backend.GetNamespace(), Name: backend.GetName()},
 				gen: backend.Obj.GetGeneration(),
 			}
 			if es := translationErrs[k]; es != nil {

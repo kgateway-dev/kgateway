@@ -5,7 +5,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_example-svc_80
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -25,7 +24,6 @@ Clusters:
           tlsMinimumProtocolVersion: TLSv1_2
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

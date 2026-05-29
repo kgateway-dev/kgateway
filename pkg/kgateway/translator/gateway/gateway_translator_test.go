@@ -706,6 +706,60 @@ func TestBasic(t *testing.T) {
 			})
 	})
 
+	// Default to deep merge but on conflict, fallback to shallow merge
+	t.Run("TrafficPolicy ACL route level override with conflict fallback to shallow merge", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/acl-conflict-fallback-to-shallow-merge.yaml"},
+			outputFile: "traffic-policy/acl-conflict-fallback-to-shallow-merge.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	// Default to deep merge, so rules are union together
+	t.Run("TrafficPolicy ACL multiple policies default deep merge", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/acl-merge.yaml"},
+			outputFile: "traffic-policy/acl-merge-deep.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	// Same input as above but force PolicyMerge to shallowMerge
+	// means only the highest-priority policy (policy b, weight=5) wins per route;
+	// policy a is skipped entirely and its rules never appear in the output.
+	t.Run("TrafficPolicy ACL multiple policies default merge", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/acl-merge.yaml"},
+			outputFile: "traffic-policy/acl-merge-shallow.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		},
+			func(s *apisettings.Settings) {
+				s.PolicyMerge = `{"trafficPolicy":{"acl":"ShallowMerge"}}`
+			})
+	})
+
+	// Four delegation scenarios, one per inherited-policy-priority annotation value.
+	// PolicyMerge is left at the default (no override) to show the annotation-driven behavior.
+	t.Run("TrafficPolicy ACL route delegation", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/acl-route-delegation.yaml"},
+			outputFile: "traffic-policy/acl-route-delegation.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy Transformation skip body buffering", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/transformation-skip-body-buffering.yaml"},
@@ -1374,6 +1428,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/timeout-retry.yaml"},
 			outputFile: "traffic-policy/timeout-retry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy HTTPS retry", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/https-retry.yaml"},
+			outputFile: "traffic-policy/https-retry.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

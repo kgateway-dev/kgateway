@@ -18,7 +18,8 @@ metadata:
   namespace: infra
 spec:
   parentRefs:
-  - name: http-gateway
+  - name: gateway
+    namespace: kgateway-base
   rules:
   - matches:
     - path:
@@ -37,7 +38,8 @@ metadata:
   namespace: infra
 spec:
   parentRefs:
-  - name: http-gateway
+  - name: gateway
+    namespace: kgateway-base
   rules:
   - matches:
     - path:

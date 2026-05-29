@@ -130,7 +130,7 @@ func BuildServiceEntryBackendObjectIR(
 	// to get the ref-index-based logic instead of the krt-key based lookup.
 	backend := ir.NewBackendObjectIR(objSrc, svcPort, hostname)
 	backend.AppProtocol = ir.ParseAppProtocol(new(svcProtocol))
-	backend.GvPrefix = BackendClusterPrefix
+	backend.SetGvPrefix(BackendClusterPrefix)
 	backend.CanonicalHostname = hostname
 	backend.Obj = se
 

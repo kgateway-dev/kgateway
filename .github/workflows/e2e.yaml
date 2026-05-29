@@ -18,8 +18,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build_e2e_images:
+    name: Build End-to-End Images
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    if: ${{ !github.event.pull_request.draft }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+      - name: Restore envoyinit BuildKit cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: /tmp/.buildx-cache-envoyinit
+          key: ${{ runner.os }}-buildx-envoyinit-v1-${{ hashFiles('internal/envoy_modules/Cargo.lock', 'internal/envoy_modules/**/Cargo.toml', 'cmd/envoyinit/Dockerfile.tmpl', 'cmd/envoyinit/generate-dockerfile.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-envoyinit-v1-
+      - name: Build shared e2e images
+        env:
+          ENVOYINIT_LOCAL_CACHE_FROM: /tmp/.buildx-cache-envoyinit
+          ENVOYINIT_LOCAL_CACHE_TO: /tmp/.buildx-cache-envoyinit-new
+        run: |
+          mkdir -p /tmp/.buildx-cache-envoyinit
+          make save-e2e-shared-images
+      - name: Rotate envoyinit BuildKit cache
+        if: always()
+        run: |
+          if [ -d /tmp/.buildx-cache-envoyinit-new ]; then
+            rm -rf /tmp/.buildx-cache-envoyinit
+            mv /tmp/.buildx-cache-envoyinit-new /tmp/.buildx-cache-envoyinit
+          fi
+      - name: Upload shared e2e images
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-shared-images
+          path: _output/e2e-images/shared-images.tar
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
   end_to_end_tests:
     name: End-to-End (${{ matrix.test.cluster-name }})
+    needs: build_e2e_images
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
@@ -66,7 +107,7 @@ jobs:
             localstack: 'false'
           - cluster-name: 'api-validation' # TODO: rename to cluster-seven
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^AttachedRoutes$$'
+            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$'
             localstack: 'false'
           # December 4, 2025: ~15 minutes
           - cluster-name: 'cluster-metrics'
@@ -94,10 +135,21 @@ jobs:
         with:
           path: ${{ matrix.version-files.file }}
           log-variables: true
+      - name: Download shared e2e images
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: e2e-shared-images
+          path: _output/e2e-images
+      - name: Load shared e2e images
+        shell: bash
+        run: docker load --input _output/e2e-images/shared-images.tar
       - id: setup-kind-cluster
         name: Setup KinD Cluster
         if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
         uses: ./.github/actions/setup-kind-cluster
+        env:
+          SKIP_DOCKER: "true"
+          LOAD_DOCKER_IMAGES: "true"
         with:
           cluster-name: ${{ matrix.test.cluster-name }}
           kind-node-version: ${{ steps.dotenv.outputs.node_version }}
@@ -108,6 +160,9 @@ jobs:
         name: Setup k3d Cluster
         if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
         uses: ./.github/actions/setup-k3d-cluster
+        env:
+          SKIP_DOCKER: "true"
+          LOAD_DOCKER_IMAGES: "true"
         with:
           cluster-name: ${{ matrix.test.cluster-name }}
           node-version: ${{ steps.dotenv.outputs.node_version }}
@@ -115,8 +170,16 @@ jobs:
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           localstack: ${{ matrix.test.localstack }}
           github-token: ${{ github.token }}
+      - name: Load shared extproc server
+        shell: bash
+        env:
+          CLUSTER_NAME: ${{ matrix.test.cluster-name }}
+          CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
+        run: make cluster-load-extproc-server
       - id: run-tests
         uses: ./.github/actions/kubernetes-e2e-tests
+        env:
+          SKIP_EXTPROC_SERVER_SETUP: "true"
         with:
           cluster-name: ${{ matrix.test.cluster-name }}
           cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}

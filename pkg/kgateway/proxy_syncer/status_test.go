@@ -58,39 +58,35 @@ func TestBackendPolicyStatus(t *testing.T) {
 		},
 	}
 
-	backend1 := ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "",
-			Kind:      "Service",
-			Namespace: "default",
-			Name:      "reviews",
-		},
-		AttachedPolicies: ir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]ir.PolicyAtt{
-				wellknown.BackendTLSPolicyGVK.GroupKind(): {
-					tlsPolicyAtt,
-				},
-				connPolGK: {
-					connPolicy1Att,
-				},
+	backend1 := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group:     "",
+		Kind:      "Service",
+		Namespace: "default",
+		Name:      "reviews",
+	}, 0, "")
+	backend1.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			wellknown.BackendTLSPolicyGVK.GroupKind(): {
+				tlsPolicyAtt,
+			},
+			connPolGK: {
+				connPolicy1Att,
 			},
 		},
 	}
-	backend2 := ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "",
-			Kind:      "Service",
-			Namespace: "default",
-			Name:      "ratings",
-		},
-		AttachedPolicies: ir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]ir.PolicyAtt{
-				wellknown.BackendTLSPolicyGVK.GroupKind(): {
-					tlsPolicyAtt,
-				},
-				connPolGK: {
-					connPolicy2Att,
-				},
+	backend2 := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group:     "",
+		Kind:      "Service",
+		Namespace: "default",
+		Name:      "ratings",
+	}, 0, "")
+	backend2.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			wellknown.BackendTLSPolicyGVK.GroupKind(): {
+				tlsPolicyAtt,
+			},
+			connPolGK: {
+				connPolicy2Att,
 			},
 		},
 	}
@@ -110,10 +106,11 @@ func TestBackendPolicyStatus(t *testing.T) {
 		Name:      connPolicy1Att.PolicyRef.Name,
 	}]
 	a.Len(connpolicy1report.Ancestors, 1)
+	backend1ObjSrc := backend1.GetObjectSource()
 	ancestor1ConnPolicy1Report := connpolicy1report.Ancestors[reports.ParentRefKey{
-		Group:          backend1.Group,
-		Kind:           backend1.Kind,
-		NamespacedName: types.NamespacedName{Namespace: backend1.Namespace, Name: backend1.Name},
+		Group:          backend1ObjSrc.Group,
+		Kind:           backend1ObjSrc.Kind,
+		NamespacedName: backend1.NamespacedName(),
 	}]
 	a.NotNil(ancestor1ConnPolicy1Report)
 	diff := cmp.Diff(
@@ -144,10 +141,11 @@ func TestBackendPolicyStatus(t *testing.T) {
 		Name:      connPolicy2Att.PolicyRef.Name,
 	}]
 	a.Len(connpolicy2report.Ancestors, 1)
+	backend2ObjSrc := backend2.GetObjectSource()
 	ancestor1ConnPolicy2Report := connpolicy2report.Ancestors[reports.ParentRefKey{
-		Group:          backend2.Group,
-		Kind:           backend2.Kind,
-		NamespacedName: types.NamespacedName{Namespace: backend2.Namespace, Name: backend2.Name},
+		Group:          backend2ObjSrc.Group,
+		Kind:           backend2ObjSrc.Kind,
+		NamespacedName: backend2.NamespacedName(),
 	}]
 	a.NotNil(ancestor1ConnPolicy2Report)
 	diff = cmp.Diff(
@@ -173,9 +171,9 @@ func TestBackendPolicyStatus(t *testing.T) {
 	}]
 	a.Len(tlsPolicyreport.Ancestors, 2)
 	ancestor1TLSPolicyreport := tlsPolicyreport.Ancestors[reports.ParentRefKey{
-		Group:          backend1.Group,
-		Kind:           backend1.Kind,
-		NamespacedName: types.NamespacedName{Namespace: backend1.Namespace, Name: backend1.Name},
+		Group:          backend1ObjSrc.Group,
+		Kind:           backend1ObjSrc.Kind,
+		NamespacedName: backend1.NamespacedName(),
 	}]
 	a.NotNil(ancestor1TLSPolicyreport)
 	diff = cmp.Diff(
@@ -192,9 +190,9 @@ func TestBackendPolicyStatus(t *testing.T) {
 	)
 	a.Empty(diff)
 	ancestor2TLSPolicyreport := tlsPolicyreport.Ancestors[reports.ParentRefKey{
-		Group:          backend2.Group,
-		Kind:           backend2.Kind,
-		NamespacedName: types.NamespacedName{Namespace: backend2.Namespace, Name: backend2.Name},
+		Group:          backend2ObjSrc.Group,
+		Kind:           backend2ObjSrc.Kind,
+		NamespacedName: backend2.NamespacedName(),
 	}]
 	a.NotNil(ancestor2TLSPolicyreport)
 	diff = cmp.Diff(
@@ -225,18 +223,16 @@ func TestBackendPolicyStatusWithSectionName(t *testing.T) {
 		Errors: []error{},
 	}
 
-	backend := ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "",
-			Kind:      "Service",
-			Namespace: "default",
-			Name:      "my-svc",
-		},
-		AttachedPolicies: ir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]ir.PolicyAtt{
-				wellknown.BackendTLSPolicyGVK.GroupKind(): {
-					tlsPolicyWithSectionName,
-				},
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group:     "",
+		Kind:      "Service",
+		Namespace: "default",
+		Name:      "my-svc",
+	}, 0, "")
+	backend.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			wellknown.BackendTLSPolicyGVK.GroupKind(): {
+				tlsPolicyWithSectionName,
 			},
 		},
 	}

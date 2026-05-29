@@ -89,7 +89,7 @@ func NewPerClientEnvoyClusters(
 				// pass along the error(s) indicating to consumers that this cluster is not usable
 				Error:             err,
 				ClusterVersion:    utils.HashProto(c),
-				BackendSource:     backendObj.ObjectSource,
+				BackendSource:     backendObj.GetObjectSource(),
 				BackendGeneration: backendGeneration,
 			})
 		}

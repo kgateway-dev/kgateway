@@ -137,6 +137,6 @@ func testBackendObjectIR(name string, port int32) ir.BackendObjectIR {
 			Generation:      1,
 		},
 	}
-	backend.GvPrefix = "kube"
+	backend.SetGvPrefix("kube")
 	return backend
 }

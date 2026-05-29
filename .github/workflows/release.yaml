@@ -32,6 +32,7 @@ env:
   # the install commands in the GitHub release page reference images that don't exist.
   VANITY_REGISTRY: ${{ github.repository == 'kgateway-dev/kgateway' && 'cr.kgateway.dev/kgateway-dev' || format('ghcr.io/{0}', github.repository_owner) }}
   GORELEASER_DISABLE_RELEASE: false
+  CGO_ENABLED: '0'
 
 permissions:
   contents: write
