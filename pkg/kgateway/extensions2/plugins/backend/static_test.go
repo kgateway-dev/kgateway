@@ -60,3 +60,28 @@ func TestProcessStaticUsesCustomDnsCluster(t *testing.T) {
 	assert.Equal(t, "example.com", endpoint.GetAddress().GetSocketAddress().GetAddress())
 	assert.Equal(t, uint32(8080), endpoint.GetAddress().GetSocketAddress().GetPortValue())
 }
+
+func TestProcessStaticDoesNotMutateCachedLoadAssignment(t *testing.T) {
+	ir, err := buildStaticIr(&kgateway.StaticBackend{
+		Hosts: []kgateway.Host{{
+			Host: "example.com",
+			Port: 8080,
+		}},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, ir)
+	require.NotNil(t, ir.loadAssignment)
+	require.Empty(t, ir.loadAssignment.GetClusterName())
+
+	firstCluster := &envoyclusterv3.Cluster{Name: "first-cluster"}
+	secondCluster := &envoyclusterv3.Cluster{Name: "second-cluster"}
+
+	processStatic(ir, firstCluster)
+	processStatic(ir, secondCluster)
+
+	require.NotNil(t, firstCluster.LoadAssignment)
+	require.NotNil(t, secondCluster.LoadAssignment)
+	assert.Equal(t, "first-cluster", firstCluster.LoadAssignment.GetClusterName())
+	assert.Equal(t, "second-cluster", secondCluster.LoadAssignment.GetClusterName())
+	assert.Empty(t, ir.loadAssignment.GetClusterName(), "cached IR load assignment should remain reusable")
+}
