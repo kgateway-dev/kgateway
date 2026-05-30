@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	awssdk "github.com/aws/aws-sdk-go-v2/aws"
@@ -364,7 +363,6 @@ type ec2EndpointsCollection struct {
 	trigger         *krt.RecomputeTrigger
 	refreshInterval time.Duration
 	lister          ec2InstanceLister
-	initialRefresh  atomic.Bool
 
 	stateMu sync.RWMutex
 	state   map[string]ec2ResolvedBackend
@@ -377,16 +375,20 @@ func newEc2EndpointsCollection(
 	backends krt.Collection[ir.BackendObjectIR],
 ) *ec2EndpointsCollection {
 	c := &ec2EndpointsCollection{
-		enabled:         commoncol.Settings.EnableAwsEc2Discovery,
-		backends:        backends,
-		trigger:         krt.NewRecomputeTrigger(true),
+		enabled:  commoncol.Settings.EnableAwsEc2Discovery,
+		backends: backends,
+		// Start the trigger unsynced so that dependent collections (and thus
+		// Endpoints.HasSynced) block until the initial refresh has populated
+		// c.state and we explicitly MarkSynced in run(). This avoids a startup
+		// race where Envoy could observe the empty pre-refresh EDS view while
+		// HasSynced already reports complete.
+		trigger:         krt.NewRecomputeTrigger(false),
 		refreshInterval: configuredEc2RefreshInterval(commoncol.Settings),
 		lister:          newEc2InstanceLister(),
 		state:           map[string]ec2ResolvedBackend{},
 	}
 
 	if !c.enabled {
-		c.initialRefresh.Store(true)
 		c.Endpoints = krt.NewStaticCollection[ir.EndpointsForBackend](nil, nil, commoncol.KrtOpts.ToOptions("disable/AwsEc2Endpoints")...)
 		return c
 	}
@@ -413,7 +415,10 @@ func configuredEc2RefreshInterval(settings apisettings.Settings) time.Duration {
 }
 
 func (c *ec2EndpointsCollection) HasSynced() bool {
-	return c.Endpoints.HasSynced() && c.initialRefresh.Load()
+	// When enabled, Endpoints depends on the recompute trigger, which is only
+	// marked synced in run() once the initial refresh has populated c.state.
+	// So Endpoints.HasSynced() already implies the first refresh has propagated.
+	return c.Endpoints.HasSynced()
 }
 
 func (c *ec2EndpointsCollection) run(stop <-chan struct{}) {
@@ -430,7 +435,11 @@ func (c *ec2EndpointsCollection) run(stop <-chan struct{}) {
 	logger.Debug("EC2 backend cache synced; running initial refresh")
 
 	c.refreshOnce()
-	c.initialRefresh.Store(true)
+	// Mark the trigger synced only after the initial refresh has populated
+	// c.state (and fired any resulting recomputation). This unblocks
+	// Endpoints.HasSynced(), guaranteeing consumers never observe the empty
+	// pre-refresh EDS view as a fully-synced state.
+	c.trigger.MarkSynced()
 
 	ticker := time.NewTicker(c.refreshInterval)
 	defer ticker.Stop()

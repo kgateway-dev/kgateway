@@ -444,17 +444,37 @@ func TestNewEc2EndpointsCollectionDisabledIsAlreadySynced(t *testing.T) {
 }
 
 func TestEc2EndpointsCollectionHasSyncedWaitsForInitialRefresh(t *testing.T) {
+	// Mirror the real Endpoints wiring: an unsynced recompute trigger that the
+	// transform marks as a dependant. The trigger is only marked synced after
+	// run() completes its initial refresh, so HasSynced() must report false
+	// until then (otherwise consumers could observe the empty pre-refresh EDS
+	// view as a fully-synced state).
+	trigger := krt.NewRecomputeTrigger(false)
+	backends := krt.NewStaticCollection(nil, []ir.BackendObjectIR{
+		backendObjectIR(newEc2Backend("backend-a", "", nil), nil),
+	})
+	endpoints := krt.NewCollection(backends, func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
+		trigger.MarkDependant(kctx)
+		return nil
+	})
+
 	c := &ec2EndpointsCollection{
 		enabled:   true,
-		Endpoints: krt.NewStaticCollection(nil, []ir.EndpointsForBackend{}),
+		trigger:   trigger,
+		Endpoints: endpoints,
 	}
 
 	if c.HasSynced() {
-		t.Fatal("HasSynced() = true, want false before the initial refresh completes")
+		t.Fatal("HasSynced() = true, want false before the initial refresh marks the trigger synced")
 	}
 
-	c.initialRefresh.Store(true)
+	// Marking the trigger synced is what run() does after the initial refresh
+	// populates c.state.
+	trigger.MarkSynced()
 
+	if !endpoints.WaitUntilSynced(nil) {
+		t.Fatal("Endpoints failed to sync after the trigger was marked synced")
+	}
 	if !c.HasSynced() {
 		t.Fatal("HasSynced() = false, want true after the initial refresh completes")
 	}
