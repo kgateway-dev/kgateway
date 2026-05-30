@@ -160,11 +160,30 @@ type ec2InstanceLister interface {
 	ListInstances(ctx context.Context, source ec2CredentialSource) ([]ec2DiscoveredInstance, error)
 }
 
-type ec2ClientCacheKey struct {
-	region                string
-	roleArn               string
-	secretResourceName    string
+// ec2ClientIdentity identifies a cached EC2 client independent of the secret's
+// resource version. At most one client is cached per identity, so a newer
+// secret version overwrites (and thus evicts) the prior client without needing
+// to scan the cache for superseded entries.
+type ec2ClientIdentity struct {
+	region             string
+	roleArn            string
+	secretResourceName string
+}
+
+func (k ec2ClientIdentity) singleflightKey(secretResourceVersion string) string {
+	return strings.Join([]string{
+		k.region,
+		k.roleArn,
+		k.secretResourceName,
+		secretResourceVersion,
+	}, "\x00")
+}
+
+// ec2CachedClient is a cached client together with the secret resource version
+// it was built from, so a rotated secret can be detected on lookup.
+type ec2CachedClient struct {
 	secretResourceVersion string
+	client                *awsec2.Client
 }
 
 type ec2BackendStateKey struct {
@@ -189,42 +208,43 @@ func (k ec2BackendStateKey) Equals(other ec2BackendStateKey) bool {
 
 type awsEc2InstanceLister struct {
 	mu          sync.Mutex
-	clients     map[ec2ClientCacheKey]*awsec2.Client
+	clients     map[ec2ClientIdentity]ec2CachedClient
 	clientLoads singleflight.Group
 	newClient   func(context.Context, ec2CredentialSource) (*awsec2.Client, error)
 }
 
 var newEc2InstanceLister = func() ec2InstanceLister {
 	return &awsEc2InstanceLister{
-		clients:   map[ec2ClientCacheKey]*awsec2.Client{},
+		clients:   map[ec2ClientIdentity]ec2CachedClient{},
 		newClient: newAwsEc2Client,
 	}
 }
 
 func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
-	key := ec2ClientCacheKey{
+	identity := ec2ClientIdentity{
 		region:  source.region,
 		roleArn: source.roleArn,
 	}
+	version := ""
 	if source.secret != nil {
-		key.secretResourceName = source.secret.ResourceName()
+		identity.secretResourceName = source.secret.ResourceName()
 		if source.secret.Obj != nil {
-			key.secretResourceVersion = source.secret.Obj.GetResourceVersion()
+			version = source.secret.Obj.GetResourceVersion()
 		}
 	}
 
 	l.mu.Lock()
-	if client, ok := l.clients[key]; ok {
+	if cached, ok := l.clients[identity]; ok && cached.secretResourceVersion == version {
 		l.mu.Unlock()
-		return client, nil
+		return cached.client, nil
 	}
 	l.mu.Unlock()
 
-	value, err, _ := l.clientLoads.Do(key.singleflightKey(), func() (any, error) {
+	value, err, _ := l.clientLoads.Do(identity.singleflightKey(version), func() (any, error) {
 		l.mu.Lock()
-		if client, ok := l.clients[key]; ok {
+		if cached, ok := l.clients[identity]; ok && cached.secretResourceVersion == version {
 			l.mu.Unlock()
-			return client, nil
+			return cached.client, nil
 		}
 		l.mu.Unlock()
 
@@ -235,11 +255,13 @@ func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2Credenti
 
 		l.mu.Lock()
 		defer l.mu.Unlock()
-		if cached, ok := l.clients[key]; ok {
-			return cached, nil
+		// Another caller may have populated the entry for this version meanwhile.
+		// Storing per-identity means a different version overwrites (and evicts)
+		// the prior client without scanning the cache.
+		if cached, ok := l.clients[identity]; ok && cached.secretResourceVersion == version {
+			return cached.client, nil
 		}
-		l.clients[key] = client
-		l.pruneSupersededClientsLocked(key)
+		l.clients[identity] = ec2CachedClient{secretResourceVersion: version, client: client}
 		return client, nil
 	})
 	if err != nil {
@@ -251,34 +273,6 @@ func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2Credenti
 		return nil, fmt.Errorf("unexpected EC2 client type %T", value)
 	}
 	return client, nil
-}
-
-func (l *awsEc2InstanceLister) pruneSupersededClientsLocked(key ec2ClientCacheKey) {
-	if key.secretResourceName == "" || key.secretResourceVersion == "" {
-		return
-	}
-
-	for existingKey := range l.clients {
-		if existingKey == key {
-			continue
-		}
-		if existingKey.region != key.region || existingKey.roleArn != key.roleArn {
-			continue
-		}
-		if existingKey.secretResourceName != key.secretResourceName {
-			continue
-		}
-		delete(l.clients, existingKey)
-	}
-}
-
-func (k ec2ClientCacheKey) singleflightKey() string {
-	return strings.Join([]string{
-		k.region,
-		k.roleArn,
-		k.secretResourceName,
-		k.secretResourceVersion,
-	}, "\x00")
 }
 
 func newAwsEc2Client(ctx context.Context, source ec2CredentialSource) (*awsec2.Client, error) {

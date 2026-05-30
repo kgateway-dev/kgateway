@@ -252,7 +252,7 @@ func TestAwsEc2InstanceListerClientForDeduplicatesConcurrentMisses(t *testing.T)
 	release := make(chan struct{})
 	started := make(chan struct{})
 	lister := &awsEc2InstanceLister{
-		clients: map[ec2ClientCacheKey]*awsec2.Client{},
+		clients: map[ec2ClientIdentity]ec2CachedClient{},
 		newClient: func(_ context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
 			if buildCalls.Add(1) == 1 {
 				close(started)
@@ -314,7 +314,7 @@ func TestAwsEc2InstanceListerClientForBuildsDifferentKeysConcurrently(t *testing
 	release := make(chan struct{})
 	started := make(chan string, 2)
 	lister := &awsEc2InstanceLister{
-		clients: map[ec2ClientCacheKey]*awsec2.Client{},
+		clients: map[ec2ClientIdentity]ec2CachedClient{},
 		newClient: func(_ context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
 			started <- source.region
 			<-release
@@ -361,7 +361,7 @@ func TestAwsEc2InstanceListerClientForBuildsDifferentKeysConcurrently(t *testing
 
 func TestAwsEc2InstanceListerClientForPrunesSupersededSecretVersions(t *testing.T) {
 	lister := &awsEc2InstanceLister{
-		clients: map[ec2ClientCacheKey]*awsec2.Client{},
+		clients: map[ec2ClientIdentity]ec2CachedClient{},
 		newClient: func(_ context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
 			return awsec2.NewFromConfig(awssdk.Config{Region: source.region}), nil
 		},
@@ -386,12 +386,15 @@ func TestAwsEc2InstanceListerClientForPrunesSupersededSecretVersions(t *testing.
 	if len(lister.clients) != 1 {
 		t.Fatalf("client cache size = %d, want 1", len(lister.clients))
 	}
-	if _, ok := lister.clients[ec2ClientCacheKey{
-		region:                "us-east-1",
-		secretResourceName:    sourceV2.secret.ResourceName(),
-		secretResourceVersion: "2",
-	}]; !ok {
-		t.Fatal("client cache did not retain the latest secret version")
+	cached, ok := lister.clients[ec2ClientIdentity{
+		region:             "us-east-1",
+		secretResourceName: sourceV2.secret.ResourceName(),
+	}]
+	if !ok {
+		t.Fatal("client cache did not retain an entry for the secret identity")
+	}
+	if cached.secretResourceVersion != "2" {
+		t.Fatalf("client cache retained secret version %q, want the latest version %q", cached.secretResourceVersion, "2")
 	}
 }
 
