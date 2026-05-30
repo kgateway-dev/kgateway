@@ -308,6 +308,7 @@ metadata:
     app.kubernetes.io/component: controller
     app.kubernetes.io/managed-by: Helm
 spec:
+  replicas: 1
   selector:
     matchLabels:
       kgateway: kgateway
@@ -367,7 +368,7 @@ spec:
             - name: KGW_LOG_LEVEL
               value: "info"
             - name: KGW_ADMIN_BIND_ADDRESS
-              value: "localhost"
+              value: "0.0.0.0"
             - name: KGW_XDS_SERVICE_NAME
               value: test-release-kgateway
             - name: KGW_XDS_SERVICE_PORT
@@ -394,60 +395,3 @@ spec:
                   fieldPath: metadata.namespace
           resources:
             {}
----
-# Source: kgateway/templates/horizontalpodautoscaler.yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: test-release-kgateway
-  namespace: default
-  labels:
-    helm.sh/chart: kgateway-0.0.2
-    kgateway: kgateway
-    app.kubernetes.io/name: kgateway
-    app.kubernetes.io/instance: test-release
-    app.kubernetes.io/version: "0.0.1"
-    app.kubernetes.io/component: controller
-    app.kubernetes.io/managed-by: Helm
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: test-release-kgateway
-  maxReplicas: 5
-  metrics:
-  - resource:
-      name: cpu
-      target:
-        averageUtilization: 80
-        type: Utilization
-    type: Resource
-  minReplicas: 1
----
-# Source: kgateway/templates/verticalpodautoscaler.yaml
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: test-release-kgateway
-  namespace: default
-  labels:
-    helm.sh/chart: kgateway-0.0.2
-    kgateway: kgateway
-    app.kubernetes.io/name: kgateway
-    app.kubernetes.io/instance: test-release
-    app.kubernetes.io/version: "0.0.1"
-    app.kubernetes.io/component: controller
-    app.kubernetes.io/managed-by: Helm
-spec:
-  targetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: test-release-kgateway
-  resourcePolicy:
-    containerPolicies:
-    - containerName: '*'
-      minAllowed:
-        cpu: 100m
-        memory: 128Mi
-  updatePolicy:
-    updateMode: Auto

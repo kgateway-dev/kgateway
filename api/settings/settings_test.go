@@ -22,6 +22,7 @@ func allEnvVarsSet() map[string]string {
 	return map[string]string{
 		"KGW_DNS_LOOKUP_FAMILY":                        string(DnsLookupFamilyV4Only),
 		"KGW_LISTENER_BIND_IPV6":                       "false",
+		"KGW_ADMIN_BIND_ADDRESS":                       "0.0.0.0",
 		"KGW_ENABLE_ISTIO_INTEGRATION":                 "true",
 		"KGW_ENABLE_ISTIO_AUTO_MTLS":                   "true",
 		"KGW_ISTIO_NAMESPACE":                          "my-istio-namespace",
@@ -74,6 +75,7 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &Settings{
 				DnsLookupFamily:                      DnsLookupFamilyV4Preferred,
 				ListenerBindIpv6:                     true,
+				AdminBindAddress:                     "localhost",
 				EnableIstioIntegration:               false,
 				EnableIstioAutoMtls:                  false,
 				IstioNamespace:                       "istio-system",
@@ -110,6 +112,7 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &Settings{
 				DnsLookupFamily:                      DnsLookupFamilyV4Only,
 				ListenerBindIpv6:                     false,
+				AdminBindAddress:                     "0.0.0.0",
 				EnableIstioIntegration:               true,
 				EnableIstioAutoMtls:                  true,
 				IstioNamespace:                       "my-istio-namespace",
@@ -197,6 +200,7 @@ func TestSettings(t *testing.T) {
 				DnsLookupFamily:                      DnsLookupFamilyV4Preferred,
 				EnableIstioAutoMtls:                  true,
 				ListenerBindIpv6:                     true,
+				AdminBindAddress:                     "localhost",
 				IstioNamespace:                       "istio-system",
 				XdsServiceName:                       wellknown.DefaultXdsService,
 				XdsServicePort:                       wellknown.DefaultXdsPort,

@@ -369,6 +369,8 @@ spec:
                   resource: limits.cpu
             - name: KGW_LOG_LEVEL
               value: "info"
+            - name: KGW_ADMIN_BIND_ADDRESS
+              value: "localhost"
             - name: KGW_XDS_SERVICE_NAME
               value: test-release-kgateway
             - name: KGW_XDS_SERVICE_PORT
