@@ -9,7 +9,6 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -25,7 +24,6 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 // testingSuite is a suite of tests for external processing functionality
 type testingSuite struct {
 	*base.BaseTestingSuite
-	localGateway common.Gateway
 }
 
 var (
@@ -59,28 +57,11 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) SetupSuite() {
-	s.BaseTestingSuite.SetupSuite()
-
-	address := s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(
-		s.Ctx,
-		gatewayObjectMeta.Name,
-		gatewayObjectMeta.Namespace,
-	)
-	s.localGateway = common.Gateway{
-		NamespacedName: types.NamespacedName{
-			Name:      gatewayObjectMeta.Name,
-			Namespace: gatewayObjectMeta.Namespace,
-		},
-		Address: address,
-	}
-}
-
 // TestExtProcWithGatewayTargetRef tests ExtProc with targetRef to Gateway
 func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 	// Test that ExtProc is applied to all routes through the Gateway
 	// First route - should have ExtProc applied
-	s.localGateway.Send(
+	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -92,14 +73,13 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		},
 		curl.VerboseOutput(),
 		curl.WithHostHeader("www.example.com"),
-		curl.WithPort(8080),
 		curl.WithHeader("instructions", getInstructionsJson(instructions{
 			AddHeaders: map[string]string{"extproctest": "true"},
 		})),
 	)
 
 	// Second route rule0 - should also have ExtProc applied
-	s.localGateway.Send(
+	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -112,14 +92,13 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		curl.VerboseOutput(),
 		curl.WithHostHeader("www.example.com"),
 		curl.WithPath("/myapp"),
-		curl.WithPort(8080),
 		curl.WithHeader("instructions", getInstructionsJson(instructions{
 			AddHeaders: map[string]string{"extproctest": "true"},
 		})),
 	)
 
 	// Second route rule1 - should not have ExtProc applied since it has a disable policy applied
-	s.localGateway.Send(
+	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -132,7 +111,6 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		curl.VerboseOutput(),
 		curl.WithHostHeader("www.example.com"),
 		curl.WithPath("/extproc-disabled"),
-		curl.WithPort(8080),
 		curl.WithHeader("instructions", getInstructionsJson(instructions{
 			AddHeaders: map[string]string{"extproctest": "true"},
 		})),
@@ -142,7 +120,7 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 // TestExtProcWithHTTPRouteTargetRef tests ExtProc with targetRef to HTTPRoute
 func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 	// Test route with ExtProc - should have header modified
-	s.localGateway.Send(
+	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -155,14 +133,13 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 		curl.VerboseOutput(),
 		curl.WithHostHeader("www.example.com"),
 		curl.WithPath("/myapp"),
-		curl.WithPort(8080),
 		curl.WithHeader("instructions", getInstructionsJson(instructions{
 			AddHeaders: map[string]string{"extproctest": "true"},
 		})),
 	)
 
 	// Test route without ExtProc - should not have header modified
-	s.localGateway.Send(
+	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -174,7 +151,6 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 		},
 		curl.VerboseOutput(),
 		curl.WithHostHeader("www.example.com"),
-		curl.WithPort(8080),
 		curl.WithHeader("instructions", getInstructionsJson(instructions{
 			AddHeaders: map[string]string{"extproctest": "true"},
 		})),
@@ -186,7 +162,7 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 	// TODO: Should header-based routing work?
 
 	// Test route with ExtProc and matching header - should have header modified
-	s.localGateway.Send(
+	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -199,7 +175,6 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 		curl.VerboseOutput(),
 		curl.WithHostHeader("www.example.com"),
 		curl.WithPath("/myapp"),
-		curl.WithPort(8080),
 		// curl.WithHeader("x-test", "true"),
 		curl.WithHeader("instructions", getInstructionsJson(instructions{
 			AddHeaders: map[string]string{"extproctest": "true"},
@@ -207,7 +182,7 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 	)
 
 	// Test second rule - should not have header modified
-	s.localGateway.Send(
+	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -219,7 +194,6 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 		},
 		curl.VerboseOutput(),
 		curl.WithHostHeader("www.example.com"),
-		curl.WithPort(8080),
 		curl.WithHeader("instructions", getInstructionsJson(instructions{
 			AddHeaders: map[string]string{"extproctest": "true"},
 		})),
@@ -229,7 +203,7 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 // TestExtProcWithBackendFilter tests backend-level ExtProc filtering
 func (s *testingSuite) TestExtProcWithBackendFilter() {
 	// Test path with ExtProc enabled
-	s.localGateway.Send(
+	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -242,14 +216,13 @@ func (s *testingSuite) TestExtProcWithBackendFilter() {
 		curl.VerboseOutput(),
 		curl.WithHostHeader("www.example.com"),
 		curl.WithPath("/with-extproc"),
-		curl.WithPort(8080),
 		curl.WithHeader("instructions", getInstructionsJson(instructions{
 			AddHeaders: map[string]string{"extproctest": "true"},
 		})),
 	)
 
 	// Test path without ExtProc
-	s.localGateway.Send(
+	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -262,7 +235,6 @@ func (s *testingSuite) TestExtProcWithBackendFilter() {
 		curl.VerboseOutput(),
 		curl.WithHostHeader("www.example.com"),
 		curl.WithPath("/without-extproc"),
-		curl.WithPort(8080),
 		curl.WithHeader("instructions", getInstructionsJson(instructions{
 			AddHeaders: map[string]string{"extproctest": "true"},
 		})),

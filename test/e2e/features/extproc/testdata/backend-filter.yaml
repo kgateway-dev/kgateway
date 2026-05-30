@@ -5,7 +5,8 @@ metadata:
   name: backend-filter-route
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:

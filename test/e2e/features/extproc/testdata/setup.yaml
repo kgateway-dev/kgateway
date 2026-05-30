@@ -1,14 +1,3 @@
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: gw
-spec:
-  gatewayClassName: kgateway
-  listeners:
-    - name: http
-      protocol: HTTP
-      port: 8080
----
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:

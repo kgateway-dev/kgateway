@@ -5,7 +5,8 @@ metadata:
   name: route-with-extproc
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:
@@ -23,7 +24,8 @@ metadata:
   name: route-without-extproc
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:
