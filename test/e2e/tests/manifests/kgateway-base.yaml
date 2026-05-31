@@ -17,6 +17,9 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+  allowedListeners:
+    namespaces:
+      from: All
 ---
 apiVersion: v1
 kind: Service
