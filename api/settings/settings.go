@@ -185,8 +185,8 @@ type Settings struct {
 	// IngressUseWaypoints enables the waypoint feature for ingress traffic.
 	// When enabled, backends with the ambient.istio.io/redirection=enabled annotation and
 	// istio.io/ingress-use-waypoint=true label will be redirected through a waypoint proxy.
-	// The feature is enabled by default and can be disabled by setting this to false.
-	IngressUseWaypoints bool `split_words:"true" default:"true"`
+	// The feature is disabled by default and can be enabled by setting this to true.
+	IngressUseWaypoints bool `split_words:"true" default:"false"`
 
 	// LogLevel specifies the logging level (e.g., "trace", "debug", "info", "warn", "error").
 	// Defaults to "info" if not set.
