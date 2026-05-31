@@ -42,6 +42,11 @@ const (
 )
 
 // AwsIr is the internal representation of an AWS backend.
+//
+// Both fields are compared in Equals below, but the krtequals analyzer can't
+// trace fields through the CompareWithNils closure, so each is marked
+// +noKrtEquals to suppress it. When adding a field here, remember to also
+// compare it in Equals — the analyzer will not flag an omission.
 type AwsIr struct {
 	// +noKrtEquals
 	lambdaIr *LambdaIr
@@ -50,6 +55,9 @@ type AwsIr struct {
 }
 
 // LambdaIr is the internal representation of a Lambda backend.
+//
+// Every field is compared in Equals below; the +noKrtEquals markers suppress
+// the analyzer, which can't trace fields through the CompareWithNils closure.
 type LambdaIr struct {
 	// +noKrtEquals
 	lambdaFilters *lambdaFilters
@@ -267,8 +275,8 @@ func getLambdaAccountID(in *kgateway.AwsBackend) string {
 }
 
 // buildLambdaARN attempts to build a fully qualified lambda arn from the given backend configuration.
-// CEL validation should reject invalid `qualifier` values and handle defaulting, so we can assume
-// the qualifier passed here is valid.
+// CEL validation rejects invalid `qualifier` values, so we can assume the qualifier passed here is
+// valid; an unset qualifier defaults to "$LATEST".
 // An error is returned if the arn is not a valid lambda arn.
 func buildLambdaARN(in *kgateway.AwsBackend, region string) (string, error) {
 	qualifier := in.Lambda.Qualifier
