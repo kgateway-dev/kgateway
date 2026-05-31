@@ -106,7 +106,9 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		// Anytime we encounter any errors while computing the RC or there's invalid policy
 		// attached to the RC (via Gateway or HTTPS listener), we need to replace the entire
 		// RC with a synthetic vhost that returns a 500 error for all traffic.
-		h.logger.Error("error applying route config plugins", "error", errors.Join(errs...))
+		joined := errors.Join(errs...)
+		h.logger.Error("error applying route config plugins", "error", joined)
+		incRouteReplacementMetric(h.gw, joined)
 		cfg.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("default", "*")}
 		return cfg
 	}
@@ -172,6 +174,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	// run any plugins attached to an HTTP-based listener on the computed vhost.
 	if err := h.runVhostPlugins(virtualHost, out, typedPerFilterConfigRoute); err != nil {
 		h.logger.Error("error running vhost plugins", "error", err)
+		incRouteReplacementMetric(h.gw, err)
 		reporter := virtualHost.ParentRef.GetParentReporter(h.reporter)
 		reporter.Listener(&virtualHost.ParentRef.Listener).SetCondition(reportssdk.ListenerCondition{
 			Type:    gwv1.ListenerConditionAccepted,
@@ -260,17 +263,19 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), backendConfigCtx.ResponseHeadersToAdd...)
 	out.ResponseHeadersToRemove = append(out.GetResponseHeadersToRemove(), backendConfigCtx.ResponseHeadersToRemove...)
 
-	// If routeProcessingErr is nil, check if the route has an action for non-delegating routes
-	// to treat this as an error that should result in route replacement.
 	// A delegating(parent) route does not need to have an output Action on itself,
 	// so do not treat it as an error
-	if routeProcessingErr == nil && out.GetAction() == nil && !in.Delegates {
-		routeProcessingErr = errors.New("no action specified")
-	}
-
-	// If there are no errors, validate the route will not be rejected by the xDS server.
-	if routeProcessingErr == nil {
-		routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
+	if !in.Delegates {
+		// If routeProcessingErr is nil, check if the route has an action for non-delegating routes
+		// to treat this as an error that should result in route replacement.
+		if routeProcessingErr == nil && out.GetAction() == nil {
+			routeProcessingErr = errors.New("no action specified")
+		}
+		// If there are no errors, validate the route will not be rejected by the xDS server.
+		// Skip delegating routes as they have no action and are not propagated to envoy
+		if routeProcessingErr == nil {
+			routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
+		}
 	}
 
 	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
@@ -314,6 +319,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		}
 
 		if h.validationLevel == apisettings.ValidationStandard || h.validationLevel == apisettings.ValidationStrict {
+			incRouteReplacementMetric(h.gw, routeReplacementErr)
 			// Clear all headers and filter configs when the route is replaced with a direct response
 			out.TypedPerFilterConfig = nil
 			out.RequestHeadersToAdd = nil
@@ -420,6 +426,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			In:                in,
 			TypedFilterConfig: typedPerFilterConfig,
 			ListenerPort:      h.listener.BindPort,
+			ListenerHasTLS:    h.fc.TLS != nil,
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)

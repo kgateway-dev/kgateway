@@ -306,7 +306,7 @@ fn test_json_body_extracted_from_received_when_buffered_is_empty() {
             true
         });
 
-    // Phase 1: headers arrive, body not yet received → buffer.
+    // Phase 1: headers arrive, body not yet received: buffer.
     assert_eq!(
         filter.on_request_headers(&mut envoy_filter, false),
         abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration
@@ -314,7 +314,7 @@ fn test_json_body_extracted_from_received_when_buffered_is_empty() {
 
     // Phase 2: entire body arrives in one chunk (end_of_stream = true).
     // Without the fix this returns StopIterationAndBuffer (400 sent).
-    // With the fix the body is found via received fallback → Continue.
+    // With the fix the body is found via received fallback: Continue.
     assert_eq!(
         filter.on_request_body(&mut envoy_filter, true),
         abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue

@@ -28,7 +28,7 @@ metadata:
   name: kgateway
 spec:
   controllerName: kgateway.dev/kgateway
-  description: Test envoy extraArgs ordering across GatewayClass and Gateway params.
+  description: Test envoy extraArgs ordering.
   parametersRef:
     group: gateway.kgateway.dev
     kind: GatewayParameters

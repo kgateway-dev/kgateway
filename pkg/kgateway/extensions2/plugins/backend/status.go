@@ -36,8 +36,8 @@ func buildRegisterCallback(
 			}
 
 			resNN := types.NamespacedName{
-				Name:      in.ObjectSource.Name,
-				Namespace: in.ObjectSource.Namespace,
+				Name:      in.GetName(),
+				Namespace: in.GetNamespace(),
 			}
 
 			err := retry.Do(

@@ -1,6 +1,7 @@
 package kgateway
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -100,6 +101,10 @@ type ListenerConfig struct {
 	// +optional
 	ProxyProtocol *ProxyProtocolConfig `json:"proxyProtocol,omitempty"`
 
+	// TCPKeepalive configures OS-level TCP keepalive checks for downstream client connections accepted by this listener.
+	// +optional
+	TCPKeepalive *TCPKeepalive `json:"tcpKeepalive,omitempty"`
+
 	// PerConnectionBufferLimitBytes sets the per-connection buffer limit for all listeners on the gateway.
 	// This controls the maximum size of read and write buffers for new connections.
 	// When using Envoy as an edge proxy, configuring the listener buffer limit is important to guard against
@@ -110,7 +115,7 @@ type ListenerConfig struct {
 	// +kubebuilder:validation:Minimum=0
 	PerConnectionBufferLimitBytes *int32 `json:"perConnectionBufferLimitBytes,omitempty"`
 
-	// HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
+	// HTTPSettings is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
 	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
@@ -229,11 +234,27 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	StreamIdleTimeout *metav1.Duration `json:"streamIdleTimeout,omitempty"`
 
-	// IdleTimeout is the idle timeout for connnections.
+	// IdleTimeout is the idle timeout for connections.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
+
+	// MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
+	// keepalive connection. When the limit is reached, Envoy closes the connection, which forces
+	// clients to reconnect. This allows L4 load balancers like AWS NLB to rebalance long-lived
+	// HTTP/2 and gRPC connections across gateway pods.
+	// If set to 0 or unspecified, defaults to unlimited.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MaxRequestsPerConnection *int32 `json:"maxRequestsPerConnection,omitempty"`
+
+	// Http2ProtocolOptions configures downstream HTTP/2 behavior on the listener's
+	// HttpConnectionManager.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions
+	// +optional
+	Http2ProtocolOptions *ListenerHTTP2ProtocolOptions `json:"http2ProtocolOptions,omitempty"`
 
 	// HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
 	// +optional
@@ -283,6 +304,15 @@ type HTTPSettings struct {
 	// This extension sets the x-request-id header to a UUID value.
 	// +optional
 	UuidRequestIdConfig *UuidRequestIdConfig `json:"uuidRequestIdConfig,omitempty"`
+
+	// StripHostPortMode determines whether, and under what conditions, Envoy will strip the port
+	// from the Host/authority header. StripMatchingHostPort strips the port only if it matches
+	// the listener's own port. StripAnyHostPort strips the port unconditionally.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-matching-host-port
+	// See also: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-any-host-port
+	// +kubebuilder:validation:Enum=MatchingPort;AnyPort
+	// +optional
+	StripHostPortMode *StripHostPortMode `json:"stripHostPortMode,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -302,6 +332,31 @@ type AccessLog struct {
 	// Filter access logs configuration
 	// +optional
 	Filter *AccessLogFilter `json:"filter,omitempty"`
+}
+
+// ListenerHTTP2ProtocolOptions mirrors Http2ProtocolOptions for listener-facing
+// policies, but avoids the expensive CEL validations that push the listener CRDs
+// over Kubernetes' schema cost budget.
+type ListenerHTTP2ProtocolOptions struct {
+	// InitialStreamWindowSize is the initial window size for the stream.
+	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
+	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Values can be specified with units like "64Ki".
+	// +optional
+	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
+
+	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+	// Same range and default value as InitialStreamWindowSize.
+	// Values can be specified with units like "64Ki".
+	// +optional
+	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
+
+	// The maximum number of concurrent streams that the connection can have.
+	// Envoy defaults to 1024.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=2147483647
+	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
 }
 
 // FileSink represents the file sink configuration for access logs.
@@ -918,6 +973,18 @@ const (
 	AppendIfAbsentServerHeaderTransformation ServerHeaderTransformation = "AppendIfAbsent"
 	// PassThroughServerHeaderTransformation passes through the server header unchanged.
 	PassThroughServerHeaderTransformation ServerHeaderTransformation = "PassThrough"
+)
+
+// StripHostPortMode determines whether or not Envoy strips the port component from the
+// Host/authority header.
+type StripHostPortMode string
+
+const (
+	// StripMatchingHostPortMode strips the port from the header if and only if it matches
+	// the listener's own port.
+	StripMatchingHostPortMode StripHostPortMode = "MatchingPort"
+	// StripAnyHostPortMode strips any port from the header, regardless of its value.
+	StripAnyHostPortMode StripHostPortMode = "AnyPort"
 )
 
 // EnvoyHealthCheck represents configuration for Envoy's health check filter.

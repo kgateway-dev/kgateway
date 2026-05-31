@@ -374,15 +374,17 @@ func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilt
 	return sortedFilters
 }
 
-func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
-	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, reporter))
+func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
+	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, listenerReporter))
 
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix: l.FilterChainName,
 	}
-	// TODO(#13908): Emit BackendTLSPolicy Gateway-ancestor status for TCP/TLS
-	// BackendRefs here, matching the HTTP/GRPC path in route.go. This is
-	// primarily needed for terminated TLSRoute backends on the shared path.
+	if h.reporter != nil {
+		for _, backend := range l.BackendRefs {
+			reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, h.pluginPass, backend.BackendObject)
+		}
+	}
 	if len(l.BackendRefs) == 1 {
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
 			Cluster: l.BackendRefs[0].ClusterName,

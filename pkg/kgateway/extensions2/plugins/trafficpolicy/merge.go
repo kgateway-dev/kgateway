@@ -25,6 +25,8 @@ type TrafficPolicyMergeOpts struct {
 	ExtProc string `json:"extProc,omitempty"`
 
 	Transformation string `json:"transformation,omitempty"`
+
+	ACL string `json:"acl,omitempty"`
 }
 
 // MergeTrafficPolicies merges two TrafficPolicy IRs, returning a map that contains information
@@ -660,13 +662,184 @@ func mergeHttpACL(
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
 	mergeOrigins ir.MergeOrigins,
-	_ TrafficPolicyMergeOpts,
+	tpOpts TrafficPolicyMergeOpts,
 ) {
+	if tpOpts.ACL != "" {
+		// merge override (e.g. from PolicyMerge setting)
+		opts.Strategy = policy.ToInternalMergeStrategy(tpOpts.ACL)
+	} else if opts.SameHierarchy {
+		// if there is not policyMerge setting override
+		// default to deep merge, only fallback to shallow merge when there
+		// is a conflict
+		opts.Strategy = policy.AugmentedDeepMerge
+	}
+
+	if !policy.IsMergeable(p1.spec.httpACL, p2.spec.httpACL, opts) {
+		return
+	}
+
 	accessor := fieldAccessor[httpACLIR]{
 		Get: func(spec *trafficPolicySpecIr) *httpACLIR { return spec.httpACL },
 		Set: func(spec *trafficPolicySpecIr, val *httpACLIR) { spec.httpACL = val },
 	}
-	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "httpACL")
+
+	switch opts.Strategy {
+	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
+		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "httpACL")
+
+	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
+		p1HasHttpACL := true
+		if p1.spec.httpACL == nil {
+			p1HasHttpACL = false
+			filterCfg, _ := utils.MessageToAny(&wrapperspb.StringValue{Value: "{}"})
+			p1.spec.httpACL = &httpACLIR{config: &dynamicmodulesv3.DynamicModuleFilterPerRoute{
+				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+					Name: httpACLModuleName,
+				},
+				PerRouteConfigName: httpACLFilterName,
+				FilterConfig:       filterCfg,
+			}}
+		}
+
+		// At this point, p2.spec.httpACL cannot be nil for DeepMerge. isMergeable() above
+		// would have caught that and return early
+
+		p1Json, err := utils.AnyToJson(p1.spec.httpACL.config.FilterConfig)
+		if err != nil {
+			logger.Error("failed to convert p1 httpACL config to json", "error", err.Error())
+			return
+		}
+		p2Json, err := utils.AnyToJson(p2.spec.httpACL.config.FilterConfig)
+		if err != nil {
+			logger.Error("failed to convert p2 httpACL config to json", "error", err.Error())
+			return
+		}
+
+		var anyMsg *anypb.Any
+		if !p1HasHttpACL || p1Json == nil {
+			anyMsg, err = utils.JsonToAny(p2Json)
+		} else if p2Json == nil {
+			return
+		} else {
+			p1Map, ok1 := p1Json.(map[string]any)
+			p2Map, ok2 := p2Json.(map[string]any)
+			if !ok1 || !ok2 {
+				logger.Error("failed to cast httpACL json to map[string]any")
+				return
+			}
+			conflicts := detectHttpACLMergeConflict(p1Map, p2Map)
+			if len(conflicts) > 0 {
+				for _, c := range conflicts {
+					logger.Warn("httpACL deep merge conflict", "policy", p2Ref, "conflict", c.Error())
+				}
+				logger.Warn("httpACL deep merge conflict. Falling back to shallow merge")
+				if !p1HasHttpACL {
+					p1.spec.httpACL = nil
+				}
+				switch opts.Strategy {
+				case policy.AugmentedDeepMerge:
+					opts.Strategy = policy.AugmentedShallowMerge
+				case policy.OverridableDeepMerge:
+					opts.Strategy = policy.OverridableShallowMerge
+				}
+				defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "httpACL")
+				return
+			}
+			var mergedMap map[string]any
+			if opts.Strategy == policy.OverridableDeepMerge {
+				mergeHttpACLJsonInPlace(p2Map, p1Map)
+				mergedMap = p2Map
+			} else {
+				mergeHttpACLJsonInPlace(p1Map, p2Map)
+				mergedMap = p1Map
+			}
+			anyMsg, err = utils.JsonToAny(mergedMap)
+		}
+		if err != nil {
+			logger.Error("failed to convert merged httpACL json to any", "error", err.Error())
+			return
+		}
+
+		p1.spec.httpACL.config.FilterConfig = anyMsg
+		mergeOrigins.Append("httpACL", p2Ref, p2MergeOrigins)
+
+	default:
+		logger.Warn("unsupported merge strategy for httpACL policy", "strategy", opts.Strategy, "policy", p2Ref)
+	}
+}
+
+func detectHttpACLMergeConflict(m1, m2 map[string]any) []error {
+	var conflicts []error
+
+	// defaultAction: m1 wins; detect conflict if values differ
+	da1, hasDA1 := m1["defaultAction"].(string)
+	da2, hasDA2 := m2["defaultAction"].(string)
+	if !hasDA1 || !hasDA2 {
+		conflicts = append(conflicts, fmt.Errorf("defaultAction not set"))
+	} else if da1 != da2 {
+		conflicts = append(conflicts, fmt.Errorf("defaultAction conflict: %q vs %q", da1, da2))
+	}
+
+	dr1, hasDR1 := m1["denyResponse"].(map[string]any)
+	dr2, hasDR2 := m2["denyResponse"].(map[string]any)
+	if !hasDR1 || !hasDR2 {
+		return conflicts
+	}
+
+	sc1, hasSC1 := dr1["statusCode"]
+	sc2, hasSC2 := dr2["statusCode"]
+	if hasSC1 && hasSC2 && sc1 != sc2 {
+		conflicts = append(conflicts, fmt.Errorf("denyResponse.statusCode conflict: %v vs %v", sc1, sc2))
+	}
+
+	name1, hasName1 := dr1["blockedByHeaderName"]
+	name2, hasName2 := dr2["blockedByHeaderName"]
+	if hasName1 && hasName2 && name1 != name2 {
+		conflicts = append(conflicts, fmt.Errorf("denyResponse.blockedByHeaderName conflict: %q vs %q", name1, name2))
+	}
+
+	return conflicts
+}
+
+// mergeHttpACLJsonInPlace merges m2 into m1, rules and denyResponse.headers from both are unioned (m1 rules first).
+func mergeHttpACLJsonInPlace(m1, m2 map[string]any) {
+	// defaultAction should always be set and we already verified that in
+	// detectHttpACLConflicts() if not, so we are always using the one from m1
+
+	// rules: union (m1 rules first)
+	rules1, ok1 := m1["rules"].([]any)
+	rules2, ok2 := m2["rules"].([]any)
+	if !ok1 && ok2 {
+		m1["rules"] = rules2
+	} else if ok1 && ok2 {
+		m1["rules"] = append(rules1, rules2...)
+	}
+
+	// denyResponse:
+	// we already detected status conflict in detectHttpACLConflicts()
+	// so we are always using the status from m1. headers are unions
+	dr2, hasDR2 := m2["denyResponse"].(map[string]any)
+	if !hasDR2 {
+		return
+	}
+	dr1, hasDR1 := m1["denyResponse"].(map[string]any)
+	if !hasDR1 {
+		m1["denyResponse"] = dr2
+		return
+	}
+
+	if _, ok := dr1["blockedByHeaderName"]; !ok {
+		if v, ok := dr2["blockedByHeaderName"]; ok {
+			dr1["blockedByHeaderName"] = v
+		}
+	}
+	hdrs1, hOK1 := dr1["headers"].([]any)
+	hdrs2, hOK2 := dr2["headers"].([]any)
+	if !hOK1 && hOK2 {
+		dr1["headers"] = hdrs2
+	} else if hOK1 && hOK2 {
+		dr1["headers"] = append(hdrs1, hdrs2...)
+	}
 }
 
 // fieldAccessor defines how to access and set a field on trafficPolicySpecIr

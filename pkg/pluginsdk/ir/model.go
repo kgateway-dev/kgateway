@@ -26,7 +26,7 @@ func (c PodLocality) String() string {
 	return fmt.Sprintf("%s/%s/%s", c.Region, c.Zone, c.Subzone)
 }
 
-type UniqlyConnectedClient struct {
+type UniquelyConnectedClient struct {
 	Role      string
 	Labels    map[string]string
 	Locality  PodLocality
@@ -38,24 +38,24 @@ type UniqlyConnectedClient struct {
 	resourceName string
 }
 
-func (c UniqlyConnectedClient) ResourceName() string {
+func (c UniquelyConnectedClient) ResourceName() string {
 	return c.resourceName
 }
 
-var _ krt.Equaler[UniqlyConnectedClient] = new(UniqlyConnectedClient)
+var _ krt.Equaler[UniquelyConnectedClient] = new(UniquelyConnectedClient)
 
-func (c UniqlyConnectedClient) Equals(k UniqlyConnectedClient) bool {
+func (c UniquelyConnectedClient) Equals(k UniquelyConnectedClient) bool {
 	return c.Role == k.Role && c.Namespace == k.Namespace && c.Locality == k.Locality && maps.Equal(c.Labels, k.Labels) && c.resourceName == k.resourceName
 }
 
 // note: if "ns" is empty, we assume the user doesn't want to use pod locality info, so we won't modify the role.
-func NewUniqlyConnectedClient(roleFromEnvoy string, ns string, labels map[string]string, locality PodLocality) UniqlyConnectedClient {
+func NewUniquelyConnectedClient(roleFromEnvoy string, ns string, labels map[string]string, locality PodLocality) UniquelyConnectedClient {
 	resourceName := roleFromEnvoy
 	if ns != "" {
 		snapshotKey := labeledRole(resourceName, labels)
 		resourceName = fmt.Sprintf("%s%s%s", snapshotKey, KeyDelimiter, ns)
 	}
-	return UniqlyConnectedClient{
+	return UniquelyConnectedClient{
 		Role:         roleFromEnvoy,
 		Namespace:    ns,
 		Locality:     locality,
@@ -123,17 +123,18 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	// to mitigate https://github.com/envoyproxy/envoy/issues/13070 / https://github.com/envoyproxy/envoy/issues/13009
 
 	h := fnv.New64a()
+	objSrc := us.GetObjectSource()
 	h.Write([]byte(us.ResourceName()))
 	h.Write([]byte{0})
 	h.Write([]byte(us.ClusterName()))
 	h.Write([]byte{0})
-	h.Write([]byte(us.Group))
+	h.Write([]byte(objSrc.Group))
 	h.Write([]byte{0})
-	h.Write([]byte(us.Kind))
+	h.Write([]byte(objSrc.Kind))
 	h.Write([]byte{0})
-	h.Write([]byte(us.Name))
+	h.Write([]byte(objSrc.Name))
 	h.Write([]byte{0})
-	h.Write([]byte(us.Namespace))
+	h.Write([]byte(objSrc.Namespace))
 	for k, v := range labels {
 		h.Write([]byte{0})
 		h.Write([]byte(k + "=" + v))
@@ -147,7 +148,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          us.ClusterName(),
 		UpstreamResourceName: us.ResourceName(),
-		Port:                 uint32(us.Port), //nolint:gosec // G115: upstream port is always valid port range
+		Port:                 uint32(us.GetPort()), //nolint:gosec // G115: upstream port is always valid port range
 		Hostname:             us.CanonicalHostname,
 		LbEpsEqualityHash:    upstreamHash,
 		upstreamHash:         upstreamHash,

@@ -5,11 +5,9 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_example-svc_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -268,7 +266,7 @@ Statuses:
       attachedListenerSets: 1
       conditions:
       - lastTransitionTime: null
-        message: 'extauth: gateway extension gwtest/missing-extauth not found'
+        message: 'extauth: gwtest/missing-extauth: gateway extension not found'
         reason: GatewayReplaced
         status: "False"
         type: Accepted
@@ -394,7 +392,7 @@ Statuses:
         conditions:
         - lastTransitionTime: null
           message: 'gateway.kgateway.dev/TrafficPolicy/gwtest/xlistenerset-wide-invalid-policy:
-            extauth: gateway extension gwtest/missing-extauth not found'
+            extauth: gwtest/missing-extauth: gateway extension not found'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -493,7 +491,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: gateway extension gwtest/missing-extauth not found'
+          message: 'extauth: gwtest/missing-extauth: gateway extension not found'
           reason: Invalid
           status: "False"
           type: Accepted

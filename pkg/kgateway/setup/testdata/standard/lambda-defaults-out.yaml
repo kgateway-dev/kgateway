@@ -15,7 +15,6 @@ clusters:
             socketAddress:
               address: lambda.us-east-1.amazonaws.com
               portValue: 443
-  metadata: {}
   name: backend_gwtest_lambda-backend_0
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -48,7 +47,6 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
 listeners:

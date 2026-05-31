@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"time"
 
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -22,6 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -81,6 +85,7 @@ func (s *testingSuite) SetupSuite() {
 	// include gateway manifests for tests, so we recreate it for each test run
 	s.manifests = map[string][]string{
 		"TestHttpListenerPolicyAllFields":        {gatewayManifest, httpRouteManifest, allFieldsManifest},
+		"TestListenerPolicyHTTP2ProtocolOptions": {gatewayManifest, httpRouteManifest, http2ProtocolOptionsManifest},
 		"TestHttpListenerPolicyServerHeader":     {gatewayManifest, httpRouteManifest, serverHeaderManifest},
 		"TestPreserveHttp1HeaderCase":            {gatewayManifest, preserveHttp1HeaderCaseManifest},
 		"TestAccessLogEmittedToStdout":           {gatewayManifest, httpRouteManifest, accessLogManifest},
@@ -89,8 +94,11 @@ func (s *testingSuite) SetupSuite() {
 		"TestProxyProtocol":                      {gatewayManifest, httpRouteManifest, proxyProtocolManifest},
 		// RequestID configuration tests for the new RequestID feature
 		// These tests use an echo server to verify x-request-id header behavior
-		"TestListenerPolicyRequestId":     {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
-		"TestHTTPListenerPolicyRequestId": {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
+		"TestListenerPolicyRequestId":                {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
+		"TestHTTPListenerPolicyRequestId":            {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
+		"TestListenerPolicyMaxRequestsPerConnection": {gatewayManifest, httpRouteManifest, maxRequestsPerConnectionManifest},
+		"TestStripHostPortAnyPort":                   {gatewayManifest, stripHostPortAnyPortManifest},
+		"TestStripHostPortMatchingPort":              {gatewayManifest, stripHostPortMatchingPortManifest},
 
 		// forwardClientCertDetails tests. All share gateway + request-id-echo
 		// + the route + the mtls-validation policy. Each scenario adds (or
@@ -202,6 +210,25 @@ func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 				"server": "nginx/1.28.0", // Should be the backend server header, not "envoy"
 			},
 		})
+}
+
+func (s *testingSuite) TestListenerPolicyHTTP2ProtocolOptions() {
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(8080),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("Welcome to nginx!"),
+		},
+	)
+
+	s.assertListenerHTTP2ProtocolOptions("listener~8080")
+	s.assertListenerHTTP2ProtocolOptions("listener~8081")
 }
 
 func (s *testingSuite) TestPreserveHttp1HeaderCase() {
@@ -479,6 +506,116 @@ func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
 		})
 }
 
+// TestListenerPolicyMaxRequestsPerConnection checks that setting maxRequestsPerConnection
+// in a ListenerPolicy lands in Envoy's HCM config and doesn't break traffic.
+func (s *testingSuite) TestListenerPolicyMaxRequestsPerConnection() {
+	// A NACK from Envoy would surface here as a connection error, so this also serves as an acceptance check.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("Welcome to nginx!"),
+		},
+	)
+
+	// Verify the setting appears in the Envoy config dump via the admin API.
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.ctx,
+		proxyDeployment.ObjectMeta,
+		func(ctx context.Context, adminClient *admincli.Client) {
+			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
+				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get dynamic listener from config dump")
+				g.Expect(listener.GetFilterChains()).NotTo(gomega.BeEmpty(), "listener should have at least one filter chain")
+
+				// Search all network filters for the HCM; don't assume it's always at index 0.
+				var hcm *envoy_hcm.HttpConnectionManager
+				for _, chain := range listener.GetFilterChains() {
+					for _, f := range chain.GetFilters() {
+						candidate := &envoy_hcm.HttpConnectionManager{}
+						if err := f.GetTypedConfig().UnmarshalTo(candidate); err == nil {
+							hcm = candidate
+							break
+						}
+					}
+					if hcm != nil {
+						break
+					}
+				}
+				g.Expect(hcm).NotTo(gomega.BeNil(), "could not find an HCM filter in any filter chain")
+
+				// Assert the exact value, not just presence — a wiring bug can leave the field at 0.
+				g.Expect(hcm.GetCommonHttpProtocolOptions().GetMaxRequestsPerConnection().GetValue()).
+					To(gomega.Equal(uint32(100)),
+						"max_requests_per_connection should be 100 as set in the ListenerPolicy")
+			}).
+				WithContext(ctx).
+				WithTimeout(60 * time.Second).
+				WithPolling(2 * time.Second).
+				Should(gomega.Succeed())
+		},
+	)
+}
+
+// Verifies that AnyPort strips the port from the Host header regardless of its value.
+func (s *testingSuite) TestStripHostPortAnyPort() {
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=raw-header-echo",
+	})
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com:443"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.Not(gomega.ContainSubstring("example.com:443")),
+		},
+	)
+}
+
+// Verifies that MatchingPort strips the port from the Host header when it matches the listener port.
+func (s *testingSuite) TestStripHostPortMatchingPort() {
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=raw-header-echo",
+	})
+	// Port matches listener port (8080) - should be stripped.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com:8080"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.Not(gomega.ContainSubstring("example.com:8080")),
+		},
+	)
+	// Port does not match listener port - should be preserved.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com:9999"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("example.com:9999"),
+		},
+	)
+}
+
 // forwardClientCertCurlOpts returns the curl options used by every
 // TestForwardClientCert* test: an mTLS HTTPS GET to gateway.local on the
 // 'mtls-https' listener (port 8443), authenticating with alice's client
@@ -615,4 +752,47 @@ func (s *testingSuite) TestForwardClientCertForwardOnly() {
 				gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert: [^\n]*Hash=`)),
 			),
 		})
+}
+
+func (s *testingSuite) assertListenerHTTP2ProtocolOptions(listenerName string) {
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.ctx,
+		proxyObjectMeta,
+		func(ctx context.Context, adminClient *admincli.Client) {
+			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, listenerName)
+				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get listener %s", listenerName)
+				if err != nil {
+					return
+				}
+
+				g.Expect(listener.GetFilterChains()).NotTo(gomega.BeEmpty(), "listener %s should have filter chains", listenerName)
+				g.Expect(listener.GetFilterChains()[0].GetFilters()).NotTo(gomega.BeEmpty(), "listener %s should have filters", listenerName)
+
+				var hcmConfig *anypb.Any
+				for _, filter := range listener.GetFilterChains()[0].GetFilters() {
+					if filter.GetName() == "envoy.filters.network.http_connection_manager" {
+						hcmConfig = filter.GetTypedConfig()
+						break
+					}
+				}
+
+				g.Expect(hcmConfig).NotTo(gomega.BeNil(), "listener %s should include an HCM filter", listenerName)
+
+				hcm := &envoy_hcm.HttpConnectionManager{}
+				err = anypb.UnmarshalTo(hcmConfig, hcm, proto.UnmarshalOptions{})
+				g.Expect(err).NotTo(gomega.HaveOccurred(), "can unmarshal HCM for listener %s", listenerName)
+
+				http2Opts := hcm.GetHttp2ProtocolOptions()
+				g.Expect(http2Opts).NotTo(gomega.BeNil(), "listener %s should include http2 protocol options", listenerName)
+				g.Expect(http2Opts.GetInitialConnectionWindowSize().GetValue()).To(gomega.Equal(uint32(262144)))
+				g.Expect(http2Opts.GetInitialStreamWindowSize().GetValue()).To(gomega.Equal(uint32(131072)))
+				g.Expect(http2Opts.GetMaxConcurrentStreams().GetValue()).To(gomega.Equal(uint32(123)))
+			}).
+				WithContext(ctx).
+				WithTimeout(30*time.Second).
+				WithPolling(2*time.Second).
+				Should(gomega.Succeed(), "failed to observe expected http2 protocol options on listener %s", listenerName)
+		},
+	)
 }

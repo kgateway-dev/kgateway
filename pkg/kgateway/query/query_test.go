@@ -1389,16 +1389,14 @@ func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Ba
 		uss := []ir.BackendObjectIR{}
 
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, ir.BackendObjectIR{
-				ObjectSource: ir.ObjectSource{
-					Kind:      SvcGk.Kind,
-					Group:     SvcGk.Group,
-					Namespace: svc.Namespace,
-					Name:      svc.Name,
-				},
-				Obj:  svc,
-				Port: port.Port,
-			})
+			backend := ir.NewBackendObjectIR(ir.ObjectSource{
+				Kind:      SvcGk.Kind,
+				Group:     SvcGk.Group,
+				Namespace: svc.Namespace,
+				Name:      svc.Name,
+			}, port.Port, "", "")
+			backend.Obj = svc
+			uss = append(uss, backend)
 		}
 		return uss
 	})

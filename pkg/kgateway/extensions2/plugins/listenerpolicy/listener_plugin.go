@@ -25,6 +25,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -53,6 +54,7 @@ type ListenerPolicyIR struct {
 
 type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
+	tcpKeepalive                  *envoycorev3.TcpKeepalive
 	perConnectionBufferLimitBytes *uint32
 	// only for default policy
 	clientCertificateValidation *ir.ClientCertificateValidationIR
@@ -75,6 +77,7 @@ func newListenerPolicy(
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
+		tcpKeepalive:                  backendconfigpolicy.TranslateTCPKeepalive(i.TCPKeepalive),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 		http:                          http,
 	}, errs
@@ -130,6 +133,10 @@ func (d *ListenerPolicyIR) GetClientCertificateValidation() *ir.ClientCertificat
 
 func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	if !proto.Equal(d.proxyProtocol, d2.proxyProtocol) {
+		return false
+	}
+
+	if !proto.Equal(d.tcpKeepalive, d2.tcpKeepalive) {
 		return false
 	}
 
@@ -337,6 +344,9 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	if cfg.proxyProtocol != nil {
 		p.applyProxyProtocol(out, cfg.proxyProtocol)
 	}
+	if cfg.tcpKeepalive != nil {
+		out.TcpKeepalive = cfg.tcpKeepalive
+	}
 	// Set per connection buffer limit if configured
 	if cfg.perConnectionBufferLimitBytes != nil {
 		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *cfg.perConnectionBufferLimitBytes}
@@ -449,6 +459,17 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		out.GetCommonHttpProtocolOptions().IdleTimeout = durationpb.New(*policy.idleTimeout)
 	}
 
+	if policy.maxRequestsPerConnection != nil {
+		if out.CommonHttpProtocolOptions == nil {
+			out.CommonHttpProtocolOptions = &envoycorev3.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().MaxRequestsPerConnection = wrapperspb.UInt32(*policy.maxRequestsPerConnection)
+	}
+
+	if policy.http2ProtocolOptions != nil {
+		out.Http2ProtocolOptions = policy.http2ProtocolOptions
+	}
+
 	if policy.preserveHttp1HeaderCase != nil && *policy.preserveHttp1HeaderCase {
 		if out.HttpProtocolOptions == nil {
 			out.HttpProtocolOptions = &envoycorev3.Http1ProtocolOptions{}
@@ -505,6 +526,16 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	}
 	if policy.setCurrentClientCertDetails != nil {
 		out.SetCurrentClientCertDetails = policy.setCurrentClientCertDetails
+	}
+	if policy.stripHostPortMode != nil {
+		switch *policy.stripHostPortMode {
+		case kgateway.StripMatchingHostPortMode:
+			out.StripMatchingHostPort = true
+		case kgateway.StripAnyHostPortMode:
+			// strip_any_host_port lives inside a oneof strip_port_mode in the Envoy proto,
+			// so Go protobuf requires a wrapper struct rather than a plain bool assignment.
+			out.StripPortMode = &envoy_hcm.HttpConnectionManager_StripAnyHostPort{StripAnyHostPort: true}
+		}
 	}
 
 	return nil

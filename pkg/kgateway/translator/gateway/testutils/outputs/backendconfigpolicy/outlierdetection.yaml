@@ -5,7 +5,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin-grpc_8080
   outlierDetection:
     baseEjectionTime: 30s
@@ -19,7 +18,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin_8080
   outlierDetection:
     baseEjectionTime: 14400s
@@ -28,7 +26,6 @@ Clusters:
     maxEjectionPercent: 55
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

@@ -52,7 +52,6 @@ Clusters:
       '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       sni: example.googleapis.com
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 ExtraClusters:
 - altStatName: gcp_authn

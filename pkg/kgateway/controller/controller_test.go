@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -47,6 +45,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/test/envtestassets"
 )
 
 const (
@@ -95,7 +94,7 @@ func (s *ControllerSuite) SetupSuite() {
 	// Create a scheme and add Gateway types.
 	scheme := schemes.GatewayScheme()
 
-	assetsDir, err := getAssetsDir()
+	assetsDir, err := envtestassets.GetEnvTestAssetsDir()
 	s.Require().NoError(err)
 
 	s.env = &envtest.Environment{
@@ -639,28 +638,6 @@ func (f fakeDiscoveryNamespaceFilter) Filter(obj any) bool {
 }
 
 func (f fakeDiscoveryNamespaceFilter) AddHandler(func(selected, deselected istiosets.String)) {}
-
-func getAssetsDir() (string, error) {
-	var assets string
-	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
-		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -s --no-print-directory -C $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
-		if err != nil {
-			return "", err
-		}
-		assets = strings.TrimSpace(string(out))
-	}
-	if assets != "" {
-		info, err := os.Stat(assets)
-		if err != nil {
-			return "", err
-		}
-		if !info.IsDir() {
-			return "", fmt.Errorf("assets path is not a directory: %s", assets)
-		}
-	}
-	return assets, nil
-}
 
 func generateKubeconfig(restconfig *rest.Config) (string, error) {
 	clusters := make(map[string]*clientcmdapi.Cluster)

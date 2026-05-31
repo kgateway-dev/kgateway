@@ -1,6 +1,7 @@
 package pluginutils
 
 import (
+	"errors"
 	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -9,6 +10,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
+
+// ErrGatewayExtensionNotFound is returned when a referenced GatewayExtension cannot be resolved.
+var ErrGatewayExtensionNotFound = errors.New("gateway extension not found")
 
 // ExtensionTypeError is an error for when an extension type is mismatched
 type ExtensionTypeError struct {
@@ -43,7 +47,7 @@ func GetGatewayExtension(
 	}
 	gwExt := krt.FetchOne(kctx, gwExts, krt.FilterKey(gwExtKey.ResourceName()))
 	if gwExt == nil {
-		return nil, fmt.Errorf("failed to find GatewayExtension %s", fmt.Sprintf("%s/%s", ns, extensionName))
+		return nil, fmt.Errorf("%s/%s: %w", ns, extensionName, ErrGatewayExtensionNotFound)
 	}
 	return gwExt, nil
 }

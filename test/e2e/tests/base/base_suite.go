@@ -347,11 +347,16 @@ func (s *BaseTestingSuite) SetupSuite() {
 	// Detect and cache Gateway API version and channel once
 	s.detectAndCacheGwApiInfo()
 
-	// Check suite-level version requirements before proceeding
+	// Check suite-level version requirements before proceeding.
+	// Skipping here skips the entire suite: testify calls SetupSuite on the
+	// suite-level T before running any test method, so t.Skip aborts the whole
+	// suite with a single SKIP rather than skipping each test individually.
+	// This must stay above any setup so no (potentially incompatible) resources
+	// are applied; TearDownSuite does not run after a SetupSuite skip, which is
+	// fine here because nothing was set up.
 	if s.SkipSuite() {
-		// There isn't a way to skip the whole suite, but still need to check here to avoid the setup of potentially incompatible resources.
-		s.T().Logf("Suite requires Gateway API %s, but current is %s/%s", s.MinGwApiVersion, s.getCurrentGwApiChannel(), s.getCurrentGwApiVersion())
-		return
+		s.T().Skipf("Suite requires Gateway API %s, but current is %s/%s",
+			s.MinGwApiVersion, s.getCurrentGwApiChannel(), s.getCurrentGwApiVersion())
 	}
 
 	// set up the helpers once and store them on the suite
@@ -373,11 +378,6 @@ func (s *BaseTestingSuite) TearDownSuite() {
 }
 
 func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
-	// Check first if the suite should be skipped due to version requirements to cover cases when the testcase is not defined.
-	if s.SkipSuite() {
-		s.T().Skip("Skipping all tests in suite due to gateway API version requirements")
-	}
-
 	// apply test-specific manifests
 	testCase, ok := s.TestCases[testName]
 	if !ok {

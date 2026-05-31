@@ -188,7 +188,7 @@ func TestGatewayBackendVariantBackendsRetainBackendPolicies(t *testing.T) {
 		},
 	}
 
-	cluster, err := translator.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniqlyConnectedClient{}, variantBackend)
+	cluster, err := translator.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, variantBackend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	require.NotNil(t, cluster.TransportSocket)
@@ -210,7 +210,7 @@ func serviceBackends(services krt.Collection[*corev1.Service]) krt.Collection[ir
 				Kind:      "Service",
 				Namespace: svc.Namespace,
 				Name:      svc.Name,
-			}, port.Port, "")
+			}, port.Port, "", "")
 			backend.Obj = svc
 			backends = append(backends, backend)
 		}

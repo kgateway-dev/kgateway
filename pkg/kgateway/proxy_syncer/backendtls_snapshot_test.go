@@ -137,13 +137,13 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 	translator := kgtranslator.NewCombinedTranslator(ctx, plugins, commoncol, nil)
 	translator.Init(ctx)
 
-	ucc := ir.NewUniqlyConnectedClient(
+	ucc := ir.NewUniquelyConnectedClient(
 		xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "default", "example-gateway"),
 		"",
 		nil,
 		ir.PodLocality{},
 	)
-	uccs := krt.NewStaticCollection(nil, []ir.UniqlyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
 	finalBackends := krt.JoinCollection(
 		commoncol.BackendIndex.BackendsWithPolicy(),
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...,
@@ -376,13 +376,13 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 	translator := kgtranslator.NewCombinedTranslator(ctx, plugins, commoncol, nil)
 	translator.Init(ctx)
 
-	ucc := ir.NewUniqlyConnectedClient(
+	ucc := ir.NewUniquelyConnectedClient(
 		xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "default", "example-gateway"),
 		"",
 		nil,
 		ir.PodLocality{},
 	)
-	uccs := krt.NewStaticCollection(nil, []ir.UniqlyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
 	finalBackends := krt.JoinCollection(
 		commoncol.BackendIndex.BackendsWithPolicy(),
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...,

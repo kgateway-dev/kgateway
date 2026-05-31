@@ -8,6 +8,9 @@ schemaVersion: 2.0.0
 metadataTest:
   user: "10101"
   entrypoint: ["/usr/local/bin/kgateway"]
+  envVars:
+    - key: "ENVOY_DYNAMIC_MODULES_SEARCH_PATH"
+      value: "/usr/local/lib"
 
 fileExistenceTests:
   - name: "kgateway binary exists"
@@ -15,6 +18,15 @@ fileExistenceTests:
     shouldExist: true
     permissions: "-rwxr-xr-x"
     isExecutableBy: "owner"
+
+  - name: "envoy binary exists"
+    path: "/usr/local/bin/envoy"
+    shouldExist: true
+    isExecutableBy: "any"
+
+  - name: "Rust dynamic module exists"
+    path: "/usr/local/lib/librust_module.so"
+    shouldExist: true
 
   - name: "ca-certificates installed"
     path: "/etc/ssl/certs/ca-certificates.crt"
