@@ -260,8 +260,6 @@ type AwsTagFilter struct {
 }
 
 // AwsTagKeyValueFilter matches EC2 instances by a tag key/value pair.
-// +kubebuilder:validation:MinProperties=2
-// +kubebuilder:validation:MaxProperties=2
 type AwsTagKeyValueFilter struct {
 	// Key is the tag key to match.
 	// +required

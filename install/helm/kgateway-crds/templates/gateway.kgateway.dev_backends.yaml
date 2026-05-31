@@ -138,8 +138,6 @@ spec:
                             keyValue:
                               description: KeyValue matches instances that contain
                                 the given tag key/value pair.
-                              maxProperties: 2
-                              minProperties: 2
                               properties:
                                 key:
                                   description: Key is the tag key to match.
