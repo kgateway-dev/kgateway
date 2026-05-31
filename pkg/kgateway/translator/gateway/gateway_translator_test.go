@@ -1222,7 +1222,7 @@ func TestBasic(t *testing.T) {
 		defer restore()
 
 		test(t, translatorTestCase{
-			inputFile:  "backends/aws_ec2.yaml",
+			inputFiles: []string{"backends/aws_ec2.yaml"},
 			outputFile: "backends/aws_ec2.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
