@@ -532,8 +532,7 @@ func backendObjectIR(be *kgateway.Backend, secret *ir.Secret) ir.BackendObjectIR
 		Kind:      "Backend",
 		Namespace: be.Namespace,
 		Name:      be.Name,
-	}, 0, "")
-	out.GvPrefix = ExtensionName
+	}, 0, "", ExtensionName)
 	out.Obj = be
 	if be.Spec.Aws != nil && be.Spec.Aws.Ec2 != nil {
 		ec2Ir, err := buildEc2Ir(be.Spec.Aws, secret)
