@@ -37,6 +37,7 @@ const (
 	OauthCodeVerifierCookiePrefix = "OauthCodeVerifier"
 
 	defaultRedictURI            = "%REQ(x-forwarded-proto)%://%REQ(:authority)%/oauth2/redirect"
+	clientIDKey                 = "client-id"
 	clientSecretKey             = "client-secret"
 	defaultTokenEndpointTimeout = 15 * time.Second
 
@@ -122,6 +123,55 @@ func constructOAuth2(
 	return nil
 }
 
+// refDataKey returns the configured Secret data key, or def when no key is set.
+func refDataKey(key *string, def string) string {
+	return ptr.Deref(key, def)
+}
+
+// readSecretValue returns the value stored under key in the Secret's data, erroring if the key
+// is missing or empty.
+func readSecretValue(s *ir.Secret, key string, ext *ir.GatewayExtension) ([]byte, error) {
+	data, ok := s.Data[key]
+	if !ok || len(data) == 0 {
+		return nil, fmt.Errorf("%s not found or empty in secret %s referenced by GatewayExtension %s",
+			key, s.ResourceName(), ext.ResourceName())
+	}
+	return data, nil
+}
+
+// resolveClientID returns the OAuth2 client ID, either from the inline value or by reading it
+// from the referenced Secret. Envoy's OAuth2 filter only accepts the client ID as a plain
+// string, so a referenced value is resolved control-plane side.
+func resolveClientID(
+	krtctx krt.HandlerContext,
+	secrets *krtcollections.SecretIndex,
+	from krtcollections.From,
+	ext *ir.GatewayExtension,
+	creds kgwv1a1.OAuth2Credentials,
+) (string, error) {
+	if creds.ClientID != nil {
+		return *creds.ClientID, nil
+	}
+	ref := creds.ClientIDRef
+	if ref == nil {
+		// Should be unreachable thanks to the ExactlyOneOf CRD validation.
+		return "", fmt.Errorf("oauth2 credentials must set either clientID or clientIDRef")
+	}
+	idSecret, err := secrets.GetSecret(krtctx, from,
+		gwv1.SecretObjectReference{
+			Name: gwv1.ObjectName(ref.Name), Namespace: new(gwv1.Namespace(ext.Namespace)),
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+	data, err := readSecretValue(idSecret, refDataKey(ref.Key, clientIDKey), ext)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
 func buildOAuth2ProviderConfig(
 	krtctx krt.HandlerContext,
 	ext *ir.GatewayExtension,
@@ -187,9 +237,16 @@ func buildOAuth2ProviderConfig(
 		jwksBackend = resolved
 	}
 
-	// Fetch the client credentials
-	credSecret, err := secrets.GetSecret(krtctx,
-		krtcollections.From{GroupKind: wellknown.GatewayExtensionGVK.GroupKind(), Namespace: ext.Namespace},
+	from := krtcollections.From{GroupKind: wellknown.GatewayExtensionGVK.GroupKind(), Namespace: ext.Namespace}
+
+	// Resolve the client ID, either from the inline value or from the referenced Secret.
+	clientID, err := resolveClientID(krtctx, secrets, from, ext, in.Credentials)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch the client secret.
+	credSecret, err := secrets.GetSecret(krtctx, from,
 		gwv1.SecretObjectReference{
 			Name: gwv1.ObjectName(in.Credentials.ClientSecretRef.Name), Namespace: new(gwv1.Namespace(ext.Namespace)),
 		},
@@ -197,10 +254,9 @@ func buildOAuth2ProviderConfig(
 	if err != nil {
 		return nil, err
 	}
-	clientSecretData, ok := credSecret.Data[clientSecretKey]
-	if !ok || len(clientSecretData) == 0 {
-		return nil, fmt.Errorf("%s not found or empty in secret %s referenced by GatewayExtension %s",
-			clientSecretKey, credSecret.ResourceName(), ext.ResourceName())
+	clientSecretData, err := readSecretValue(credSecret, refDataKey(in.Credentials.ClientSecretRef.Key, clientSecretKey), ext)
+	if err != nil {
+		return nil, err
 	}
 	// TODO(shashank): customize cookie names for collisions
 	hmacSecret, err := secrets.GetSecretWithoutRefGrant(krtctx, wellknown.OAuth2HMACSecret.Name, wellknown.OAuth2HMACSecret.Namespace)
@@ -255,7 +311,7 @@ func buildOAuth2ProviderConfig(
 			PreserveAuthorizationHeader: !forwardBearerToken,
 			AuthScopes:                  in.Scopes,
 			Credentials: &envoyoauth2v3.OAuth2Credentials{
-				ClientId: in.Credentials.ClientID,
+				ClientId: clientID,
 				TokenSecret: &envoytlsv3.SdsSecretConfig{
 					Name:      oauthClientSecretName(in.Credentials.ClientSecretRef.Name, ext.Namespace),
 					SdsConfig: adsConfigSource(),

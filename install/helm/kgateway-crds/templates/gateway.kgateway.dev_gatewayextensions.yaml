@@ -1308,29 +1308,60 @@ spec:
                         description: |-
                           ClientID specifies the client ID issued to the client during the registration process.
                           Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
+                          Mutually exclusive with clientIDRef.
                         minLength: 1
                         type: string
-                      clientSecretRef:
+                      clientIDRef:
                         description: |-
-                          ClientSecretRef specifies a Secret that contains the client secret stored in the key 'client-secret'
-                          to use in the authentication request to obtain the access token.
+                          ClientIDRef sources the client ID from a Secret. When key is omitted, the client ID is read
+                          from the data key 'client-id'. Mutually exclusive with clientID.
                           Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
                         properties:
-                          name:
-                            default: ""
+                          key:
                             description: |-
-                              Name of the referent.
-                              This field is effectively required, but due to backwards compatibility is
-                              allowed to be empty. Instances of this type with an empty value here are
-                              almost certainly wrong.
-                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              Key is the key within the Secret's data map that holds the credential value. When omitted,
+                              a default key is used that depends on the referencing field (see the field documentation).
+                            maxLength: 253
+                            minLength: 1
+                            pattern: ^[-._a-zA-Z0-9]+$
                             type: string
+                          name:
+                            description: Name is the name of the Kubernetes Secret.
+                            minLength: 1
+                            type: string
+                        required:
+                        - name
                         type: object
-                        x-kubernetes-map-type: atomic
+                      clientSecretRef:
+                        description: |-
+                          ClientSecretRef specifies a Secret that contains the client secret to use in the
+                          authentication request to obtain the access token. When key is omitted, the client secret
+                          is read from the data key 'client-secret'.
+                          Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
+                        properties:
+                          key:
+                            description: |-
+                              Key is the key within the Secret's data map that holds the credential value. When omitted,
+                              a default key is used that depends on the referencing field (see the field documentation).
+                            maxLength: 253
+                            minLength: 1
+                            pattern: ^[-._a-zA-Z0-9]+$
+                            type: string
+                          name:
+                            description: Name is the name of the Kubernetes Secret.
+                            minLength: 1
+                            type: string
+                        required:
+                        - name
+                        type: object
                     required:
-                    - clientID
                     - clientSecretRef
                     type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of the fields in [clientID clientIDRef]
+                        must be set
+                      rule: '[has(self.clientID),has(self.clientIDRef)].filter(x,x==true).size()
+                        == 1'
                   denyRedirect:
                     description: |-
                       DenyRedirectMatcher specifies the matcher to match requests that should be denied redirects to the authorization endpoint.

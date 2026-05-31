@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -181,4 +182,49 @@ func TestOAuth2PolicyPlugin(t *testing.T) {
 		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[OauthEnabledFilterName]),
 			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "oauth2_enabled must set dynamic metadata")
 	})
+}
+
+func TestRefDataKey(t *testing.T) {
+	assert.Equal(t, "client-id", refDataKey(nil, "client-id"), "nil key falls back to default")
+	assert.Equal(t, "clientID", refDataKey(new("clientID"), "client-id"), "explicit key overrides default")
+}
+
+func TestReadSecretValue(t *testing.T) {
+	ext := &ir.GatewayExtension{ObjectSource: ir.ObjectSource{Namespace: "infra", Name: "my-ext"}}
+	secret := &ir.Secret{
+		ObjectSource: ir.ObjectSource{Namespace: "infra", Name: "creds"},
+		Data: map[string][]byte{
+			"clientID": []byte("the-id"),
+			"empty":    {},
+		},
+	}
+
+	t.Run("present key returns value", func(t *testing.T) {
+		got, err := readSecretValue(secret, "clientID", ext)
+		require.NoError(t, err)
+		assert.Equal(t, []byte("the-id"), got)
+	})
+
+	t.Run("missing key errors", func(t *testing.T) {
+		_, err := readSecretValue(secret, "client-id", ext)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "client-id not found or empty")
+		assert.ErrorContains(t, err, "my-ext")
+	})
+
+	t.Run("empty value errors", func(t *testing.T) {
+		_, err := readSecretValue(secret, "empty", ext)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "empty not found or empty")
+	})
+}
+
+func TestResolveClientIDInline(t *testing.T) {
+	ext := &ir.GatewayExtension{ObjectSource: ir.ObjectSource{Namespace: "infra", Name: "my-ext"}}
+	creds := kgwv1a1.OAuth2Credentials{ClientID: new("inline-id")}
+
+	// The inline path does not touch the Secret index, so it is safe to pass nil collections.
+	got, err := resolveClientID(nil, nil, krtcollections.From{}, ext, creds)
+	require.NoError(t, err)
+	assert.Equal(t, "inline-id", got)
 }

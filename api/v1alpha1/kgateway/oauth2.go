@@ -1,7 +1,6 @@
 package kgateway
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -161,20 +160,48 @@ type OAuth2CookieConfig struct {
 	DisableRefreshTokenSetCookie *bool `json:"disableRefreshTokenSetCookie,omitempty"`
 }
 
+// OAuth2SecretRef references a Kubernetes Secret in the GatewayExtension's namespace and an
+// optional data key within it.
+type OAuth2SecretRef struct {
+	// Name is the name of the Kubernetes Secret.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Key is the key within the Secret's data map that holds the credential value. When omitted,
+	// a default key is used that depends on the referencing field (see the field documentation).
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:Pattern=`^[-._a-zA-Z0-9]+$`
+	Key *string `json:"key,omitempty"`
+}
+
 // OAuth2Credentials specifies the Oauth2 client credentials.
+// Exactly one of clientID or clientIDRef must be set.
+//
+// +kubebuilder:validation:ExactlyOneOf=clientID;clientIDRef
 type OAuth2Credentials struct {
 	// ClientID specifies the client ID issued to the client during the registration process.
 	// Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
-	// +required
+	// Mutually exclusive with clientIDRef.
+	// +optional
 	//
 	// +kubebuilder:validation:MinLength=1
-	ClientID string `json:"clientID"`
+	ClientID *string `json:"clientID,omitempty"`
 
-	// ClientSecretRef specifies a Secret that contains the client secret stored in the key 'client-secret'
-	// to use in the authentication request to obtain the access token.
+	// ClientIDRef sources the client ID from a Secret. When key is omitted, the client ID is read
+	// from the data key 'client-id'. Mutually exclusive with clientID.
+	// Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
+	// +optional
+	ClientIDRef *OAuth2SecretRef `json:"clientIDRef,omitempty"`
+
+	// ClientSecretRef specifies a Secret that contains the client secret to use in the
+	// authentication request to obtain the access token. When key is omitted, the client secret
+	// is read from the data key 'client-secret'.
 	// Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
 	// +required
-	ClientSecretRef corev1.LocalObjectReference `json:"clientSecretRef"`
+	ClientSecretRef OAuth2SecretRef `json:"clientSecretRef"`
 }
 
 // OAuth2CookieNames specifies the names of the cookies used to store the tokens.

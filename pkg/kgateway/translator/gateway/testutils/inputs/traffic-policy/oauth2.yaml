@@ -216,9 +216,14 @@ spec:
     tokenEndpoint: https://provider-2.com/token
     authorizationEndpoint: https://provider-2.com/auth
     credentials:
-      clientID: client-id
+      # clientID sourced from a Secret using a custom data key
+      clientIDRef:
+        name: oauth-creds-custom
+        key: clientID
+      # clientSecret sourced from the same Secret using a custom data key
       clientSecretRef:
-        name: oauth-client-secret
+        name: oauth-creds-custom
+        key: clientSecret
     redirectURI: https://test.com/callback
     logoutPath: /log-out
     endSessionEndpoint: https://provider-2.com/logout
@@ -258,6 +263,15 @@ metadata:
   name: oauth-client-secret
 data:
   client-secret: Y2xpZW50LXNlY3JldA==
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  # holds both client ID and client secret under custom (non-default) data keys
+  name: oauth-creds-custom
+data:
+  clientID: Y3VzdG9tLWNsaWVudC1pZA==
+  clientSecret: Y3VzdG9tLWNsaWVudC1zZWNyZXQ=
 ---
 apiVersion: v1
 kind: Secret

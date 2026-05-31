@@ -217,7 +217,7 @@ Listeners:
               - groups
               authorizationEndpoint: https://provider-2.com/auth
               credentials:
-                clientId: client-id
+                clientId: custom-client-id
                 cookieNames:
                   bearerToken: AccessToken-6279f09211fccd49
                   codeVerifier: OauthCodeVerifier-6279f09211fccd49
@@ -232,7 +232,7 @@ Listeners:
                     ads: {}
                     resourceApiVersion: V3
                 tokenSecret:
-                  name: oauth2/client_secret/default/oauth-client-secret
+                  name: oauth2/client_secret/default/oauth-creds-custom
                   sdsConfig:
                     ads: {}
                     resourceApiVersion: V3
@@ -437,6 +437,10 @@ Secrets:
     secret:
       inlineBytes: Y2xpZW50LXNlY3JldA==
   name: oauth2/client_secret/default/oauth-client-secret
+- genericSecret:
+    secret:
+      inlineBytes: Y3VzdG9tLWNsaWVudC1zZWNyZXQ=
+  name: oauth2/client_secret/default/oauth-creds-custom
 - genericSecret:
     secret:
       inlineBytes: SE1BQyBzZWNyZXQ=
