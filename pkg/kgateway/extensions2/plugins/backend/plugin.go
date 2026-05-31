@@ -87,7 +87,7 @@ func backendIRErrorEqual(a, b error) bool {
 	}
 }
 
-func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	cli := kclient.NewFilteredDelayed[*kgateway.Backend](
 		commoncol.Client,
 		wellknown.BackendGVR,
@@ -120,7 +120,7 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 		ir.ParseObjectAnnotations(&backend, i)
 		return &backend
 	})
-	ec2Endpoints := newEc2EndpointsCollection(commoncol, bcol)
+	ec2Endpoints := newEc2EndpointsCollection(ctx, commoncol, bcol)
 	return sdk.Plugin{
 		ContributesBackends: map[schema.GroupKind]sdk.BackendPlugin{
 			gk: {

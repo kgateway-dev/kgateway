@@ -432,7 +432,7 @@ func TestNewEc2EndpointsCollectionDisabledIsAlreadySynced(t *testing.T) {
 		backendObjectIR(newEc2Backend("backend-a", "", nil), nil),
 	})
 
-	c := newEc2EndpointsCollection(&plugincollections.CommonCollections{
+	c := newEc2EndpointsCollection(context.Background(), &plugincollections.CommonCollections{
 		Settings: apisettings.Settings{
 			EnableAwsEc2Discovery: false,
 		},

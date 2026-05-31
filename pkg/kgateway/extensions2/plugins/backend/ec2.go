@@ -36,8 +36,19 @@ const (
 	defaultAwsRegionValue     = "us-east-1"
 	defaultEc2Port            = 80
 	defaultEc2RefreshInterval = 30 * time.Second
+	// ec2RefreshTimeout bounds a single discovery pass independently of the
+	// operator-configurable refresh interval, so a slow or hung AWS API call
+	// can stall discovery for at most this long rather than for an arbitrarily
+	// large interval.
+	ec2RefreshTimeout = 30 * time.Second
 )
 
+// EC2Ir is the internal representation of an EC2 backend.
+//
+// Every field is compared in Equals below, but the krtequals analyzer can't
+// trace fields through the CompareWithNils closure, so each is marked
+// +noKrtEquals to suppress it. When adding a field here, remember to also
+// compare it in Equals — the analyzer will not flag an omission.
 type EC2Ir struct {
 	region      string                  // +noKrtEquals
 	port        uint32                  // +noKrtEquals
@@ -365,6 +376,7 @@ type ec2EndpointsCollection struct {
 }
 
 func newEc2EndpointsCollection(
+	ctx context.Context,
 	commoncol *plugincollections.CommonCollections,
 	backends krt.Collection[ir.BackendObjectIR],
 ) *ec2EndpointsCollection {
@@ -396,7 +408,7 @@ func newEc2EndpointsCollection(
 		return c.endpointsForBackend(backend)
 	}, commoncol.KrtOpts.ToOptions("AwsEc2Endpoints")...)
 
-	go c.run(commoncol.KrtOpts.Stop)
+	go c.run(ctx)
 
 	return c
 }
@@ -415,20 +427,22 @@ func (c *ec2EndpointsCollection) HasSynced() bool {
 	return c.Endpoints.HasSynced()
 }
 
-func (c *ec2EndpointsCollection) run(stop <-chan struct{}) {
-	if stop == nil {
-		logger.Debug("EC2 endpoint refresher not started because stop channel is nil")
+// run drives EC2 discovery until ctx is cancelled (on controller shutdown),
+// which also cancels any in-flight AWS API call made by refreshOnce.
+func (c *ec2EndpointsCollection) run(ctx context.Context) {
+	if ctx == nil {
+		logger.Debug("EC2 endpoint refresher not started because context is nil")
 		return
 	}
 
 	logger.Debug("starting EC2 endpoint refresher", "refresh_interval", c.refreshInterval)
-	if !kube.WaitForCacheSync("ec2 backends", stop, c.backends.HasSynced) {
+	if !kube.WaitForCacheSync("ec2 backends", ctx.Done(), c.backends.HasSynced) {
 		logger.Debug("EC2 endpoint refresher stopped before backend cache sync completed")
 		return
 	}
 	logger.Debug("EC2 backend cache synced; running initial refresh")
 
-	c.refreshOnce()
+	c.refreshOnce(ctx)
 	// Mark the trigger synced only after the initial refresh has populated
 	// c.state (and fired any resulting recomputation). This unblocks
 	// Endpoints.HasSynced(), guaranteeing consumers never observe the empty
@@ -439,18 +453,18 @@ func (c *ec2EndpointsCollection) run(stop <-chan struct{}) {
 	defer ticker.Stop()
 	for {
 		select {
-		case <-stop:
+		case <-ctx.Done():
 			logger.Debug("stopping EC2 endpoint refresher")
 			return
 		case <-ticker.C:
 			logger.Debug("running scheduled EC2 endpoint refresh")
-			c.refreshOnce()
+			c.refreshOnce(ctx)
 		}
 	}
 }
 
-func (c *ec2EndpointsCollection) refreshOnce() {
-	ctx, cancel := context.WithTimeout(context.Background(), c.refreshInterval)
+func (c *ec2EndpointsCollection) refreshOnce(ctx context.Context) {
+	ctx, cancel := context.WithTimeout(ctx, ec2RefreshTimeout)
 	defer cancel()
 
 	logger.Debug("refreshing EC2 backends")
