@@ -2340,7 +2340,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("Backend Config Policy with upstream proxy protocol and BackendTLSPolicy", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "backendconfigpolicy/upstream-proxy-protocol-with-backendtlspolicy.yaml",
+			inputFiles: []string{"backendconfigpolicy/upstream-proxy-protocol-with-backendtlspolicy.yaml"},
 			outputFile: "backendconfigpolicy/upstream-proxy-protocol-with-backendtlspolicy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -2351,7 +2351,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("Backend Config Policy TLS overridden by BackendTLSPolicy", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "backendconfigpolicy/tls-overridden-by-backendtlspolicy.yaml",
+			inputFiles: []string{"backendconfigpolicy/tls-overridden-by-backendtlspolicy.yaml"},
 			outputFile: "backendconfigpolicy/tls-overridden-by-backendtlspolicy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -2362,7 +2362,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("Multiple Backend Config Policies merged on same backend", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "backendconfigpolicy/merge-multiple-bcp.yaml",
+			inputFiles: []string{"backendconfigpolicy/merge-multiple-bcp.yaml"},
 			outputFile: "backendconfigpolicy/merge-multiple-bcp.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
