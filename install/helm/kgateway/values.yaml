@@ -183,6 +183,11 @@ controller:
   startupProbe: {}
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
+  admin:
+    # -- Bind host for the controller admin/debug server on port 9095.
+    # Set to `0.0.0.0` only in trusted environments where exposing pprof,
+    # logging controls, and config snapshots outside the pod is acceptable.
+    bindAddress: localhost
   # -- Configure TLS settings for the xDS gRPC servers.
   xds:
     tls:

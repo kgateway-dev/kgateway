@@ -1,0 +1,104 @@
+---
+# GatewayExtension A (will be attached at Gateway level)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: ext-proc-a
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: ext-proc-server-a
+        port: 4444
+---
+# GatewayExtension B (will be attached at route level)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: ext-proc-b
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: ext-proc-server-b
+        port: 4444
+---
+# Gateway with deep merge annotation to allow cross-hierarchy ExtProc merge
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw-deep-merge
+  annotations:
+    kgateway.dev/inherited-policy-priority: DeepMergePreferParent
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+---
+# Gateway-level TrafficPolicy: ext-proc-a applies to all routes
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-gateway-level
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-deep-merge
+  extProc:
+    extensionRef:
+      name: ext-proc-a
+---
+# Route-level TrafficPolicy: ext-proc-b applies only to route-both
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-route-level
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-both
+  extProc:
+    extensionRef:
+      name: ext-proc-b
+---
+# Route with both gateway-level and route-level ExtProc (deep merge)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-both
+spec:
+  parentRefs:
+    - name: gw-deep-merge
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /both
+      backendRefs:
+        - name: backend
+          port: 3000
+---
+# Route with only gateway-level ExtProc (no route-level policy)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-gateway-only
+spec:
+  parentRefs:
+    - name: gw-deep-merge
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /gateway-only
+      backendRefs:
+        - name: backend
+          port: 3000

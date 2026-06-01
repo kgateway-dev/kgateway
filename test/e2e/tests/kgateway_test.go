@@ -29,6 +29,7 @@ func TestKgateway(t *testing.T) {
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 			ExtraHelmArgs: []string{
 				"--set", "controller.extraEnv.KGW_GLOBAL_POLICY_NAMESPACE=" + installNs,
+				"--set", "policyMerge.trafficPolicy.extProc=DeepMerge",
 			},
 		},
 	)

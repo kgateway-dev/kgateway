@@ -6,6 +6,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	backendconfigpolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -28,7 +30,9 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 	// we track each attachment point of the policy to be tracked as an
 	// ancestor for reporting status
 	for _, obj := range in {
-		for _, polAtts := range obj.GetAttachedPolicies().Policies {
+		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
+		bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
+		for gk, polAtts := range obj.GetAttachedPolicies().Policies {
 			for _, polAtt := range polAtts {
 				if _, excluded := excludedPolicyKinds[polAtt.GroupKind]; excluded {
 					continue
@@ -77,9 +81,38 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 					Reason:  string(shared.PolicyReasonAttached),
 					Message: reportssdk.PolicyAttachedMsg,
 				})
+
+				if gk == bcpGK {
+					if cond, ok := backendconfigpolicyplugin.BuildOverrideCondition(polAtt, conflictingBTP); ok {
+						r.SetCondition(cond)
+					}
+				}
 			}
 		}
 	}
 
 	return merged
+}
+
+// winningBackendTLSPolicyRef returns the ref of the BackendTLSPolicy whose TLS
+// config will apply to a backend, or nil if no BTP is attached or none of the policies
+// has a valid translation. Uses the same winner-by-creation-time-and-ref ordering used
+// inside the BTP plugin MergePolicies.
+func winningBackendTLSPolicyRef(attached ir.AttachedPolicies) *ir.AttachedPolicyRef {
+	btps := attached.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]
+	if len(btps) == 0 {
+		return nil
+	}
+	valid := make([]ir.PolicyAtt, 0, len(btps))
+	for _, p := range btps {
+		if len(p.Errors) > 0 {
+			continue
+		}
+		valid = append(valid, p)
+	}
+	if len(valid) == 0 {
+		return nil
+	}
+	winner := valid[ir.WinnerPolicyIndexByCreationTimeAndRef(valid)]
+	return winner.PolicyRef
 }

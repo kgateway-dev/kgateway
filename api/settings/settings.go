@@ -138,6 +138,11 @@ type Settings struct {
 	// Controls the listener bind address. Can be either V4 or V6
 	ListenerBindIpv6 bool `split_words:"true" default:"true"`
 
+	// AdminBindAddress controls which host the admin/debug server binds to.
+	// The default loopback-only binding avoids exposing pprof, logging control,
+	// and config snapshots outside the pod unless explicitly enabled.
+	AdminBindAddress string `split_words:"true" default:"localhost"`
+
 	EnableIstioIntegration bool `split_words:"true"`
 	EnableIstioAutoMtls    bool `split_words:"true"`
 

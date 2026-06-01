@@ -1,0 +1,159 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "test.com"
+  rules:
+  - name: before-auth
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /before-auth
+  - name: after-ratelimit
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /after-ratelimit
+  - name: default-stage
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /default
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-before-auth
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: before-auth
+  extProc:
+    extensionRef:
+      name: extproc-early
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-after-ratelimit
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: after-ratelimit
+  extProc:
+    extensionRef:
+      name: extproc-late
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: default-stage
+  extProc:
+    extensionRef:
+      name: extproc-default
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-early
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: extproc
+        port: 9091
+    filterStage:
+      stage: AuthN
+      predicate: Before
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-late
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: extproc
+        port: 9092
+    filterStage:
+      stage: RateLimit
+      predicate: After
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-default
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: extproc
+        port: 9093
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extproc
+spec:
+  ports:
+  - port: 9091
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+    targetPort: 9091
+  - port: 9092
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+    targetPort: 9092
+  - port: 9093
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+    targetPort: 9093
+  selector:
+    app: extproc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test

@@ -465,13 +465,20 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 			continue
 		}
 
-		// add the specific auth filter
+		// Use FilterStageSpec.Weight for filter chain ordering.
+		// PrecedenceWeight (from kgateway.dev/policy-weight annotation) is for
+		// policy merge ordering, not filter chain ordering, so it is not used here.
+		var weight int32
+		if provider.Extension.FilterStage != nil {
+			weight = provider.Extension.FilterStage.Weight
+		}
+
 		extProcName := extProcFilterName(provider.Name)
 		stagedExtProcFilter := filters.MustNewStagedFilterWithWeight(
 			extProcName,
 			extProcFilter,
-			filters.AfterStage(filters.WellKnownFilterStage(filters.AuthZStage)),
-			provider.Extension.PrecedenceWeight,
+			provider.FilterStage,
+			weight,
 		)
 
 		// handle the case where route level only should be fired

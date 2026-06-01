@@ -12,6 +12,7 @@ import (
 
 	kgateway "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
@@ -195,7 +196,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 
 	for _, cfg := range in.perProviderConfig {
 		providerName := providerName(cfg.provider)
-		p.extAuthPerProvider.Add(filterChain, providerName, cfg.provider)
+		p.extAuthPerProvider.Add(filterChain, providerName, cfg.provider, filters.DuringStage(filters.AuthNStage))
 
 		// Filter is not disabled, set the PerRouteConfig
 		if cfg.perRouteConfig != nil {
