@@ -94,14 +94,14 @@ image:
   # -- Set the default image pull policy.
   pullPolicy: IfNotPresent
 
-# -- Configure the integration with the Gateway API Inference Extension project, which lets you use kgateway to route to AI inference workloads like LLMs that run locally in your Kubernetes cluster. Documentation for Inference Extension can be found here: https://kgateway.dev/docs/integrations/inference-extension/
+# -- Configure the integration with the Gateway API Inference Extension project, which lets you use kgateway to route to AI inference workloads like LLMs that run locally in your Kubernetes cluster. Documentation for Inference Extension can be found here: https://kgateway.dev/docs/envoy/2.0.x/integrations/inference-extension/
 inferenceExtension:
   # -- Enable Inference Extension. If enabled, agentgateway.enabled should also be set to true. Enabling inference extension without agentgateway is deprecated in v2.1 and will not be supported in v2.2.
   enabled: false
   # -- Enable automatic provisioning for Inference Extension. Deprecated: this is deprecated in v2.1 and will be removed in v2.2.
   autoProvision: false
 
-# -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/operations/install/#namespace-discovery.
+# -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/envoy/2.1.x/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
 
 # -- Enable the integration with Agent Gateway, which lets you use kgateway to help manage agent connectivity across MCP servers, A2A agents, and REST APIs.
