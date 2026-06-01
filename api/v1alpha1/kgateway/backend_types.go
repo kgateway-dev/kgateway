@@ -240,6 +240,9 @@ type AwsEc2 struct {
 
 	// Filters select which instances should be associated with this backend.
 	// When multiple filters are provided, an instance must match all of them.
+	// If this list is omitted or empty, all running instances in the configured
+	// region are selected. Be careful: an accidentally empty filter list broadens
+	// the backend to the whole regional fleet rather than matching nothing.
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	Filters []AwsTagFilter `json:"filters,omitempty"`
