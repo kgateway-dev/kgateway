@@ -13,7 +13,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend
+  name: ext-proc-backend
 spec:
   ports:
     - name: http
@@ -55,4 +55,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: SERVICE_NAME
-              value: backend
+              value: ext-proc-backend

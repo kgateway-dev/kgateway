@@ -11,7 +11,7 @@ spec:
     - "www.example.com"
   rules:
     - backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
       matches:
         - path:
@@ -35,7 +35,7 @@ spec:
             type: PathPrefix
             value: /myapp
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
     - name: rule1
       matches:
@@ -43,7 +43,7 @@ spec:
             type: PathPrefix
             value: /extproc-disabled
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
 ---
 # Gateway-targeted policy must be co-located with the Gateway it targets
@@ -52,7 +52,7 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
-  name: ext-proc-extension
+  name: ext-proc-gateway-extension
   namespace: kgateway-base
 spec:
   type: ExtProc
@@ -75,7 +75,7 @@ spec:
       name: gateway
   extProc:
     extensionRef:
-      name: ext-proc-extension
+      name: ext-proc-gateway-extension
 ---
 # Allow the kgateway-base GatewayExtension to reference the ext-proc gRPC
 # service that lives in the default namespace.

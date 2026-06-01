@@ -15,7 +15,7 @@ spec:
             type: PathPrefix
             value: /myapp
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -30,7 +30,7 @@ spec:
     - "www.example.com"
   rules:
     - backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
       matches:
         - path:

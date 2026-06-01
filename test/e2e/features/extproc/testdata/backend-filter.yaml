@@ -15,7 +15,7 @@ spec:
             type: PathPrefix
             value: /with-extproc
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
           filters:
             - type: ExtensionRef
@@ -28,7 +28,7 @@ spec:
             type: PathPrefix
             value: /without-extproc
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
