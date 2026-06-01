@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
@@ -487,7 +488,7 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 	}
 
 	// TODO: add disable capability when needed
-	p.oauth2PerProvider.Add(filterChain, in.source.Name, in.source)
+	p.oauth2PerProvider.Add(filterChain, in.source.Name, in.source, filters.BeforeStage(filters.AuthNStage))
 	perFilterConfig.AddTypedConfig(oauthFilterName(in.source.Name), EnableFilterPerRoute())
 	if in.jwtCfg != nil {
 		perFilterConfig.AddTypedConfig(oauthJWTFilterName(in.source.Name), &envoyjwtauthnv3.PerRouteConfig{

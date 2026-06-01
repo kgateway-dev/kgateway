@@ -155,8 +155,6 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
   name: extproc-gateway-2
-  annotations:
-    kgateway.dev/policy-weight: "1" # higher weight than extproc-gateway-1
 spec:
   type: ExtProc
   extProc:
@@ -164,13 +162,15 @@ spec:
       backendRef:
         name: extproc
         port: 9091
+    filterStage:
+      stage: AuthZ
+      predicate: After
+      weight: 1 # higher weight than extproc-gateway-1
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
   name: extproc-listener-1
-  annotations:
-    kgateway.dev/policy-weight: "-1" # lower weight than extproc-listener-2
 spec:
   type: ExtProc
   extProc:
@@ -178,6 +178,10 @@ spec:
       backendRef:
         name: extproc
         port: 9092
+    filterStage:
+      stage: AuthZ
+      predicate: After
+      weight: -1 # lower weight than extproc-listener-2
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension

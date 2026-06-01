@@ -320,6 +320,13 @@ var helmChartTemplateCases = []helmTemplateCase{
 `,
 	},
 	{
+		name: "admin-bind-address",
+		valuesYAML: `controller:
+  admin:
+    bindAddress: 0.0.0.0
+`,
+	},
+	{
 		name: "pdb-min-available",
 		valuesYAML: `controller:
   podDisruptionBudget:

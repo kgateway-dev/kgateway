@@ -11,6 +11,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
@@ -199,7 +200,7 @@ func (p *trafficPolicyPluginGwPass) handleGlobalRateLimit(fcn string, typedFilte
 	providerName := globalRateLimit.provider.ResourceName()
 
 	// Initialize the map if it doesn't exist yet
-	p.rateLimitPerProvider.Add(fcn, providerName, globalRateLimit.provider)
+	p.rateLimitPerProvider.Add(fcn, providerName, globalRateLimit.provider, filters.DuringStage(filters.RateLimitStage))
 
 	// Configure rate limit per route - enabling it for this specific route
 	rateLimitPerRoute := &ratev3.RateLimitPerRoute{

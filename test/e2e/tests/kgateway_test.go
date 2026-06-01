@@ -33,6 +33,7 @@ func TestKgateway(t *testing.T) {
 		ExtraHelmArgs: []string{
 			"--set", "controller.enableAwsEc2Discovery=true",
 			"--set", "controller.extraEnv.KGW_GLOBAL_POLICY_NAMESPACE=" + installNs,
+			"--set", "policyMerge.trafficPolicy.extProc=DeepMerge",
 		},
 	}
 	testInstallation := e2e.CreateTestInstallation(
