@@ -72,9 +72,9 @@ func (p *Provider) EventuallyPodHasImageVersion(ctx context.Context, namespace s
 		g.Expect(pods.Items).NotTo(gomega.BeEmpty(), "no %s pods found", labelSelector)
 		for _, pod := range pods.Items {
 			for _, container := range pod.Spec.Containers {
-				parts := strings.SplitN(container.Image, ":", 2)
-				g.Expect(parts).To(gomega.HaveLen(2), "image %q missing tag", container.Image)
-				g.Expect(parts[1]).To(gomega.ContainSubstring(version),
+				i := strings.LastIndex(container.Image, ":")
+				g.Expect(i).To(gomega.BeNumerically(">", 0), "image %q missing tag", container.Image)
+				g.Expect(container.Image[i+1:]).To(gomega.ContainSubstring(version),
 					"pod %s container %s image tag should match version", pod.Name, container.Name)
 			}
 		}
