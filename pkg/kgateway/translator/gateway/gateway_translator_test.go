@@ -565,6 +565,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with local rate limiting descriptors", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/local-rate-limit-with-descriptors.yaml"},
+			outputFile: "traffic-policy/local-rate-limit-with-descriptors.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with local and global rate limiting combined", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/local-and-global-combined"},
