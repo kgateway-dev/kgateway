@@ -1287,20 +1287,22 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					tc.config,
 					// Example grpcBackends map for upstreams
 					map[string]*ir.BackendObjectIR{
-						"grpc-log-0": {
-							ObjectSource: ir.ObjectSource{
+						"grpc-log-0": func() *ir.BackendObjectIR {
+							backend := ir.NewBackendObjectIR(ir.ObjectSource{
 								Kind:      "Backend",
 								Name:      "test-service",
 								Namespace: "default",
-							},
-						},
-						"otel-log-0": {
-							ObjectSource: ir.ObjectSource{
+							}, 0, "", "")
+							return &backend
+						}(),
+						"otel-log-0": func() *ir.BackendObjectIR {
+							backend := ir.NewBackendObjectIR(ir.ObjectSource{
 								Kind:      "Backend",
 								Name:      "test-service",
 								Namespace: "default",
-							},
-						},
+							}, 0, "", "")
+							return &backend
+						}(),
 					},
 				)
 				require.NoError(t, err, "failed to convert access log config")

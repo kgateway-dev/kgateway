@@ -12,14 +12,18 @@ on:
         options:
           - all
           - main
-          - v2.1.x
           - v2.2.x
           - v2.3.x
 
 permissions:
   actions: read
   contents: read
+  packages: read
   security-events: write
+
+env:
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner-action:v2.3.5
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -38,7 +42,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          branches='["main","v2.1.x","v2.2.x","v2.3.x"]'
+          branches='["main","v2.2.x","v2.3.x"]'
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             case "${{ inputs.branches }}" in
@@ -46,9 +50,6 @@ jobs:
                 ;;
               main)
                 branches='["main"]'
-                ;;
-              v2.1.x)
-                branches='["v2.1.x"]'
                 ;;
               v2.2.x)
                 branches='["v2.2.x"]'
@@ -69,13 +70,16 @@ jobs:
 
   scan:
     needs: determine_branches
-    name: Scan (${{ matrix.branch }})
+    name: Scan (${{ matrix.branch }}, ${{ matrix.platform }})
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         branch: ${{ fromJson(needs.determine_branches.outputs.branches) }}
+        platform:
+          - linux/amd64
+          - linux/arm64
     steps:
       - name: Checkout branch
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -93,9 +97,54 @@ jobs:
             echo "ref=refs/heads/${{ matrix.branch }}"
             echo "sha=$(git rev-parse HEAD)"
             echo "category=osv-scanner-$(echo '${{ matrix.branch }}' | tr '/.' '--')"
+            echo "image_category=osv-scanner-$(echo '${{ matrix.branch }}' | tr '/.' '--')-images-$(echo '${{ matrix.platform }}' | tr '/.' '--')"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Run scanner
+      - name: Resolve image scan targets
+        id: image-targets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          branch="${{ matrix.branch }}"
+          case "${branch}" in
+            main)
+              image_version="$(make --no-print-directory print-ROLLING_MAIN_VERSION)"
+              ;;
+            v[0-9]*.[0-9]*.x)
+              series="${branch%.x}"
+              series_regex="${series//./\\.}"
+              image_version="$(
+                git ls-remote --tags --refs origin "${series}.*" \
+                  | sed -E 's#.*refs/tags/##' \
+                  | grep -E "^${series_regex}\\.[0-9]+$" \
+                  | sort -V \
+                  | tail -n 1 || true
+              )"
+              if [[ -z "${image_version}" ]]; then
+                echo "::error::No stable patch release tag found for ${branch}"
+                exit 1
+              fi
+              ;;
+            *)
+              echo "::error::Unsupported branch for image scan: ${branch}"
+              exit 1
+              ;;
+          esac
+
+          {
+            echo "image_version=${image_version}"
+            echo "images<<EOF"
+            echo "${IMAGE_REGISTRY}/kgateway:${image_version}"
+            echo "${IMAGE_REGISTRY}/sds:${image_version}"
+            echo "${IMAGE_REGISTRY}/envoy-wrapper:${image_version}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Resolved image version for ${branch}: ${image_version}"
+
+      - name: Run source scanner
+        if: ${{ matrix.platform == 'linux/amd64' }}
         uses: google/osv-scanner-action/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
         with:
           scan-args: |-
@@ -107,7 +156,8 @@ jobs:
             ./
         continue-on-error: true
 
-      - name: Convert results to SARIF
+      - name: Convert source results to SARIF
+        if: ${{ matrix.platform == 'linux/amd64' }}
         uses: google/osv-scanner-action/osv-reporter-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
         with:
           scan-args: |-
@@ -116,8 +166,8 @@ jobs:
             --gh-annotations=false
             --fail-on-vuln=false
 
-      - name: Upload SARIF
-        if: ${{ !cancelled() && hashFiles('results.sarif') != '' }}
+      - name: Upload source SARIF
+        if: ${{ matrix.platform == 'linux/amd64' && !cancelled() && hashFiles('results.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4.31.10
         with:
           sarif_file: results.sarif
@@ -125,8 +175,255 @@ jobs:
           sha: ${{ steps.metadata.outputs.sha }}
           category: ${{ steps.metadata.outputs.category }}
 
+      - name: Log in to GHCR for image scans
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Install skopeo
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y skopeo
+
+      - name: Run image scanner
+        shell: bash
+        env:
+          OSV_DOCKER_IMAGES: ${{ steps.image-targets.outputs.images }}
+          OSV_DOCKER_PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p image-results
+          archive_dir="${RUNNER_TEMP}/osv-image-archives"
+          mkdir -p "${archive_dir}"
+
+          scanner_status=0
+          reporter_status=0
+          mapfile -t images < <(printf '%s\n' "${OSV_DOCKER_IMAGES}" | tr '[:space:]' '\n' | sed '/^$/d')
+          for image in "${images[@]}"; do
+            safe_image="$(printf '%s' "${image}" | sed 's/[^A-Za-z0-9_.-]/-/g')"
+            image_archive="${archive_dir}/${safe_image}.tar"
+            result_json="image-results/${safe_image}.json"
+            result_sarif="image-results/${safe_image}.sarif"
+
+            image_platform="${OSV_DOCKER_PLATFORM}"
+            image_os="${image_platform%%/*}"
+            image_arch="${image_platform#*/}"
+            image_arch="${image_arch%%/*}"
+            rm -f "${image_archive}"
+            skopeo copy \
+              --override-os "${image_os}" \
+              --override-arch "${image_arch}" \
+              "docker://${image}" \
+              "docker-archive:${image_archive}:${image}"
+
+            echo "Running OSV-Scanner for Docker image: ${image}"
+            if docker run \
+              --rm \
+              -v "${PWD}:/workspace" \
+              -v "${archive_dir}:/archives:ro" \
+              -w /workspace \
+              --entrypoint /root/osv-scanner \
+              "${OSV_SCANNER_IMAGE}" \
+              scan image \
+              --archive \
+              --config=/workspace/osv-scanner.toml \
+              --output-file="/workspace/${result_json}" \
+              --format=json \
+              --verbosity=warn \
+              "/archives/${safe_image}.tar"; then
+              :
+            else
+              scanner_status=$?
+            fi
+
+            if [[ ! -f "${result_json}" ]]; then
+              echo "::error::osv-scanner did not produce ${result_json}"
+              exit 1
+            fi
+            rm -f "${image_archive}"
+
+            if docker run \
+              --rm \
+              -v "${PWD}:/workspace" \
+              -w /workspace \
+              --entrypoint /root/osv-reporter \
+              "${OSV_SCANNER_IMAGE}" \
+              --output-files="sarif:/workspace/${result_sarif}" \
+              --new="/workspace/${result_json}" \
+              --fail-on-vuln=false; then
+              :
+            else
+              reporter_status=$?
+            fi
+
+            if [[ ! -f "${result_sarif}" ]]; then
+              echo "::error::osv-reporter did not produce ${result_sarif}"
+              exit 1
+            fi
+
+            image_without_digest="${image%%@*}"
+            if [[ "${image_without_digest}" == *:* ]]; then
+              image_version="${image_without_digest##*:}"
+            else
+              image_version="untagged"
+            fi
+            safe_platform="$(printf '%s' "${OSV_DOCKER_PLATFORM}" | sed 's/[^A-Za-z0-9_.-]/-/g')"
+            safe_image_version="$(printf '%s' "${image_version}" | sed 's/[^A-Za-z0-9_.-]/-/g')"
+            jq \
+              --arg image "${image}" \
+              --arg image_version "${image_version}" \
+              --arg safe_image_version "${safe_image_version}" \
+              --arg platform "${OSV_DOCKER_PLATFORM}" \
+              --arg safe_platform "${safe_platform}" \
+              '
+                def rewrite_artifact_location:
+                  if ((.uri? // "") | startswith("file:///")) then
+                    . as $location |
+                    ($location.uri | sub("^file://"; "")) as $container_path |
+                    .uri = ("container-images/" + $safe_image_version + "/" + $safe_platform + "/" + ($container_path | sub("^/"; ""))) |
+                    .description = {
+                      text: ("Container image " + $image + " (" + $platform + "): " + $container_path)
+                    } |
+                    .properties = ((.properties // {}) + {
+                      containerImage: $image,
+                      containerImageVersion: $image_version,
+                      containerPlatform: $platform,
+                      originalContainerPath: $container_path
+                    }) |
+                    del(.index)
+                  else
+                    .
+                  end;
+
+                (.runs[]?.artifacts[]?.location) |= rewrite_artifact_location |
+                (.runs[]?.results[]?.locations[]?.physicalLocation.artifactLocation) |= rewrite_artifact_location
+              ' "${result_sarif}" > "${result_sarif}.tmp"
+            mv "${result_sarif}.tmp" "${result_sarif}"
+          done
+
+          if [[ "${scanner_status}" -ne 0 || "${reporter_status}" -ne 0 ]]; then
+            echo "OSV image scan completed and wrote results despite non-zero scanner/reporter exit status."
+          fi
+
+      - name: Consolidate image SARIF
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t sarif_files < <(find image-results -maxdepth 1 -type f -name '*.sarif' | sort)
+          if [[ "${#sarif_files[@]}" -eq 0 ]]; then
+            echo "::error::No image SARIF files found to consolidate"
+            exit 1
+          fi
+
+          jq -s '
+            [.[].runs[0]] as $runs |
+            .[0] as $base |
+            $base.runs[0] as $baseRun |
+            ($runs | map(.tool.driver.rules // []) | add // [] | unique_by(.id)) as $rules |
+            ($runs | map(.artifacts // []) | add // [] | unique_by(.location.uri // tostring)) as $artifacts |
+            ($runs | map(.invocations // []) | add // []) as $invocations |
+            ($runs | map(.logicalLocations // []) | add // [] | unique_by(.fullyQualifiedName // .name // tostring)) as $logicalLocations |
+            ($runs | map(.graphs // []) | add // []) as $graphs |
+            ($runs | map(.taxonomies // []) | add // []) as $taxonomies |
+            ($runs | map(.results // [] | map(del(.ruleIndex))) | add // []) as $rawResults |
+            def result_subject:
+              (.message.text // .message.markdown // "") as $message |
+              (try ($message | capture("Package \u0027(?<package>[^\u0027]+)\u0027 is vulnerable").package) catch "") as $package |
+              if $package == "" then
+                $message
+              else
+                $package | sub("@[^@]*$"; "")
+              end;
+            def result_key:
+              [
+                (.ruleId // ""),
+                result_subject,
+                ([.locations[]?.physicalLocation.artifactLocation.uri // ""] | sort | join("|"))
+              ];
+            def result_fingerprint:
+              (["osv-image-result-v1"] + result_key) | @json | @base64;
+            ($rawResults |
+              sort_by(result_key) |
+              group_by(result_key) |
+              map(
+                .[0] as $first |
+                ($first | result_fingerprint) as $fingerprint |
+                (map(.locations[]?.physicalLocation.artifactLocation.properties.containerImage? // empty) | unique) as $images |
+                (map(.locations[]?.physicalLocation.artifactLocation.properties.containerImageVersion? // empty) | unique) as $imageVersions |
+                (map(.locations[]?.physicalLocation.artifactLocation.properties.containerPlatform? // empty) | unique) as $platforms |
+                (map(.locations[]?.physicalLocation.artifactLocation.properties.originalContainerPath? // empty) | unique) as $paths |
+                $first |
+                .partialFingerprints = ((.partialFingerprints // {}) + {
+                  primaryLocationLineHash: $fingerprint,
+                  osvImageScannerV1: $fingerprint
+                }) |
+                .properties = ((.properties // {}) + {
+                  containerImages: $images,
+                  containerImageVersions: $imageVersions,
+                  containerPlatforms: $platforms,
+                  originalContainerPaths: $paths
+                }) |
+                .locations = (
+                  .locations |
+                  map(
+                    .physicalLocation.artifactLocation.description = {
+                      text: ("Container image scan (" + ($platforms | join(", ")) + "): " + ($paths | join(", ")) + " in " + ($images | join(", ")))
+                    } |
+                    .physicalLocation.artifactLocation.properties = ((.physicalLocation.artifactLocation.properties // {}) + {
+                      containerImages: $images,
+                      containerImageVersions: $imageVersions,
+                      containerPlatforms: $platforms,
+                      originalContainerPaths: $paths
+                    }) |
+                    del(
+                      .physicalLocation.artifactLocation.properties.containerImage,
+                      .physicalLocation.artifactLocation.properties.containerImageVersion,
+                      .physicalLocation.artifactLocation.properties.containerPlatform,
+                      .physicalLocation.artifactLocation.properties.originalContainerPath
+                    )
+                  )
+                )
+              )
+            ) as $results |
+            $base |
+            .runs = [
+              ($baseRun |
+                .tool.driver.name = "osv-image-scanner" |
+                .tool.driver.fullName = "OSV Image Scanner" |
+                .tool.driver.informationUri = "https://google.github.io/osv-scanner/usage/scan-image/" |
+                .tool.driver.properties = ((.tool.driver.properties // {}) + {
+                  sourceTool: "osv-scanner",
+                  scanTarget: "container-image"
+                }) |
+                .tool.driver.rules = $rules |
+                .artifacts = $artifacts |
+                .invocations = $invocations |
+                .logicalLocations = $logicalLocations |
+                .graphs = $graphs |
+                .taxonomies = $taxonomies |
+                .results = $results
+              )
+            ]
+          ' "${sarif_files[@]}" > image-results.sarif
+
+          jq -e '.runs | length == 1' image-results.sarif > /dev/null
+
+      - name: Upload image SARIF
+        if: ${{ !cancelled() && hashFiles('image-results.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4.31.10
+        with:
+          sarif_file: image-results.sarif
+          ref: ${{ steps.metadata.outputs.ref }}
+          sha: ${{ steps.metadata.outputs.sha }}
+          category: ${{ steps.metadata.outputs.image_category }}
+
       - name: Print Code Scanning URL
-        if: ${{ !cancelled() && hashFiles('results.sarif') != '' }}
+        if: ${{ matrix.platform == 'linux/amd64' && !cancelled() && hashFiles('results.sarif') != '' }}
         shell: bash
         run: |
           echo "View the branch-specific OSV-Scanner results in Security -> Code scanning:"

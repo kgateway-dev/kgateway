@@ -629,15 +629,12 @@ func TestTranslateJwksRemote(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
-		backend := &ir.BackendObjectIR{
-			ObjectSource: ir.ObjectSource{
-				Kind:      "Service",
-				Namespace: "backend-ns",
-				Name:      "backend",
-			},
-			GvPrefix: "svc",
-			Port:     8443,
-		}
+		backendVal := ir.NewBackendObjectIR(ir.ObjectSource{
+			Kind:      "Service",
+			Namespace: "backend-ns",
+			Name:      "backend",
+		}, 8443, "", "svc")
+		backend := &backendVal
 		resolver := &fakeBackendResolver{backend: backend}
 		out := &jwtauthnv3.JwtProvider{}
 		cacheDuration := metav1.Duration{Duration: time.Minute}

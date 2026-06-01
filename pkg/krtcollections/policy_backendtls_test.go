@@ -142,7 +142,7 @@ func TestGetBackendFromRefReturnsPolicyAttachedBackend(t *testing.T) {
 				Kind:      svcGk.Kind,
 				Namespace: svc.Namespace,
 				Name:      svc.Name,
-			}, port.Port, "")
+			}, port.Port, "", "")
 			backend.Obj = svc
 			backend.PortName = port.Name
 			out = append(out, backend)
@@ -264,7 +264,7 @@ func TestBackendPoliciesUpdateWhenBackendTLSPolicyCreatedAfterService(t *testing
 				Kind:      svcGk.Kind,
 				Namespace: svc.Namespace,
 				Name:      svc.Name,
-			}, port.Port, "")
+			}, port.Port, "", "")
 			backend.Obj = svc
 			backend.PortName = port.Name
 			out = append(out, backend)

@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/onsi/ginkgo/v2"
-
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
@@ -31,7 +29,7 @@ func StandardKgatewayDumpOnFail(outLog io.Writer, kubectlCli *kubectl.Cli, outDi
 	if os.Getenv(testutils.SkipDump) == "true" {
 		return
 	}
-	fmt.Printf("Test failed. Dumping state from %s...\n", strings.Join(namespaces, ", "))
+	fmt.Printf("Starting cluster state dump for namespaces: %s...\n", strings.Join(namespaces, ", "))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -39,11 +37,17 @@ func StandardKgatewayDumpOnFail(outLog io.Writer, kubectlCli *kubectl.Cli, outDi
 	// only wipe at the start of the dump
 	wipeOutDir(outDir)
 
-	KubeDumpOnFail(ctx, kubectlCli, outLog, outDir, namespaces)
-	ControllerDumpOnFail(ctx, kubectlCli, outLog, outDir, namespaces)
-	EnvoyDumpOnFail(ctx, kubectlCli, outLog, outDir, namespaces)
+	// Run all dump commands quietly so the cluster-state collection doesn't
+	// flood the test output with hundreds of "+ kubectl ..." trace lines.
+	// The collected state is still written to files under outDir and uploaded
+	// as a CI artifact for anyone who needs to debug further.
+	quietCli := kubectlCli.WithQuiet()
 
-	fmt.Printf("Test failed. Logs and cluster state are available in %s\n", outDir)
+	KubeDumpOnFail(ctx, quietCli, outLog, outDir, namespaces)
+	ControllerDumpOnFail(ctx, quietCli, outLog, outDir, namespaces)
+	EnvoyDumpOnFail(ctx, quietCli, outLog, outDir, namespaces)
+
+	fmt.Printf("Finished cluster state dump; logs and artifacts are available in %s\n", outDir)
 }
 
 // KubeDumpOnFail creates a small dump of the kubernetes state when a test fails.
@@ -64,8 +68,6 @@ func KubeDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog io.Writ
 	recordKubeState(ctx, kubectlCli, fileAtPath(filepath.Join(outDir, "kube-state.log")))
 
 	recordKubeDump(outDir, namespaces...)
-
-	fmt.Printf("Finished dumping kubernetes state\n")
 }
 
 func recordDockerState(f *os.File) {
@@ -163,12 +165,12 @@ func recordKubeDump(outDir string, namespaces ...string) {
 	for _, ns := range namespaces {
 		// ...a pod logs subdirectoy
 		if err := recordPods(filepath.Join(outDir, ns, "_pods"), ns); err != nil {
-			fmt.Printf("error recording pod logs: %f, \n", err)
+			fmt.Printf("error recording pod logs: %v\n", err)
 		}
 
 		// ...and a subdirectory for each kgateway CRD with non-zero resources
 		if err := recordCRs(filepath.Join(outDir, ns), ns); err != nil {
-			fmt.Printf("error recording pod logs: %f, \n", err)
+			fmt.Printf("error recording CRs: %v\n", err)
 		}
 	}
 }
@@ -277,7 +279,10 @@ func kubeGet(namespace string, kubeType string, name string) (string, string, er
 }
 
 func kubeExecute(args []string) (string, string, error) {
-	cli := kubectl.NewCli().WithReceiver(ginkgo.GinkgoWriter)
+	// Quiet so the dump doesn't emit "+ kubectl ..." trace lines. The default
+	// receiver (io.Discard) also drops kubectl's own stderr (e.g. the noisy
+	// "No resources found in X namespace." messages) since we only consume stdout.
+	cli := kubectl.NewCli().WithQuiet()
 
 	var outLocation threadsafe.Buffer
 	runError := cli.Command(context.Background(), args...).WithStdout(&outLocation).Run()
@@ -321,16 +326,13 @@ func ControllerDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog i
 	for _, ns := range namespaces {
 		controllerPodNames, err := kubectlCli.GetPodsInNsWithLabel(ctx, ns, "kgateway=kgateway")
 		if err != nil {
-			fmt.Printf("error fetching controller pod names: %f\n", err)
+			fmt.Printf("error fetching controller pod names: %v\n", err)
 			continue
 		}
 
 		if len(controllerPodNames) == 0 {
-			fmt.Printf("no kgateway=kgateway pods found in namespace %s\n", ns)
 			continue
 		}
-
-		fmt.Printf("found controller pods: %s\n", strings.Join(controllerPodNames, ", "))
 
 		namespaceOutDir := filepath.Join(outDir, ns)
 		setupOutDir(namespaceOutDir)
@@ -345,7 +347,7 @@ func ControllerDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog i
 				portforward.WithPorts(int(wellknown.KgatewayAdminPort), int(wellknown.KgatewayAdminPort)),
 			)
 			if err != nil {
-				fmt.Printf("error starting port forward to controller admin port: %f\n", err)
+				fmt.Printf("error starting port forward to controller admin port: %v\n", err)
 			}
 
 			defer func() {
@@ -361,18 +363,16 @@ func ControllerDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog i
 				)
 
 			krtSnapshotFile := fileAtPath(filepath.Join(namespaceOutDir, fmt.Sprintf("%s.krt_snapshot.log", podName)))
-			err = adminClient.KrtSnapshotCmd(ctx).WithStdout(krtSnapshotFile).Run().Cause()
+			err = adminClient.KrtSnapshotCmd(ctx).WithQuiet().WithStdout(krtSnapshotFile).Run().Cause()
 			if err != nil {
-				fmt.Printf("error running krt snapshot command: %f\n", err)
+				fmt.Printf("error running krt snapshot command: %v\n", err)
 			}
 
 			xdsSnapshotFile := fileAtPath(filepath.Join(namespaceOutDir, fmt.Sprintf("%s.xds_snapshot.log", podName)))
-			err = adminClient.XdsSnapshotCmd(ctx).WithStdout(xdsSnapshotFile).Run().Cause()
+			err = adminClient.XdsSnapshotCmd(ctx).WithQuiet().WithStdout(xdsSnapshotFile).Run().Cause()
 			if err != nil {
-				fmt.Printf("error running xds snapshot command: %f\n", err)
+				fmt.Printf("error running xds snapshot command: %v\n", err)
 			}
-
-			fmt.Printf("finished dumping controller state\n")
 		}
 	}
 }
@@ -390,56 +390,51 @@ func EnvoyDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, _ io.Writer, 
 
 		kubeGatewayProxies, err := kubectlCli.GetPodsInNsWithLabel(ctx, ns, "kgateway=kube-gateway")
 		if err != nil {
-			fmt.Printf("error fetching kube-gateway proxies: %f\n", err)
+			fmt.Printf("error fetching kube-gateway proxies: %v\n", err)
 		} else {
 			proxies = append(proxies, kubeGatewayProxies...)
 		}
 
 		if len(proxies) == 0 {
-			fmt.Printf("no proxies found in namespace %s\n", ns)
 			continue
 		}
-
-		fmt.Printf("found proxies: %s\n", strings.Join(proxies, ", "))
 
 		envoyOutDir := filepath.Join(outDir, ns)
 		setupOutDir(envoyOutDir)
 
 		for _, proxy := range proxies {
 			adminCli, shutdown, err := admincli.NewPortForwardedClient(ctx,
-				fmt.Sprintf("pod/%s", proxy), ns)
+				fmt.Sprintf("pod/%s", proxy), ns, portforward.WithQuiet())
 			if err != nil {
-				fmt.Printf("error creating admin cli: %f\n", err)
+				fmt.Printf("error creating admin cli: %v\n", err)
 				continue
 			}
 
 			defer shutdown()
 
 			configDumpFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.config.log", proxy)))
-			err = adminCli.ConfigDumpCmd(ctx, nil).WithStdout(configDumpFile).Run().Cause()
+			err = adminCli.ConfigDumpCmd(ctx, nil).WithQuiet().WithStdout(configDumpFile).Run().Cause()
 			if err != nil {
-				fmt.Printf("error running config dump command: %f\n", err)
+				fmt.Printf("error running config dump command: %v\n", err)
 			}
 
 			statsFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.stats.log", proxy)))
-			err = adminCli.StatsCmd(ctx, nil).WithStdout(statsFile).Run().Cause()
+			err = adminCli.StatsCmd(ctx, nil).WithQuiet().WithStdout(statsFile).Run().Cause()
 			if err != nil {
-				fmt.Printf("error running stats command: %f\n", err)
+				fmt.Printf("error running stats command: %v\n", err)
 			}
 
 			clustersFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.clusters.log", proxy)))
-			err = adminCli.ClustersCmd(ctx).WithStdout(clustersFile).Run().Cause()
+			err = adminCli.ClustersCmd(ctx).WithQuiet().WithStdout(clustersFile).Run().Cause()
 			if err != nil {
-				fmt.Printf("error running clusters command: %f\n", err)
+				fmt.Printf("error running clusters command: %v\n", err)
 			}
 
 			listenersFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.listeners.log", proxy)))
-			err = adminCli.ListenersCmd(ctx).WithStdout(listenersFile).Run().Cause()
+			err = adminCli.ListenersCmd(ctx).WithQuiet().WithStdout(listenersFile).Run().Cause()
 			if err != nil {
-				fmt.Printf("error running listeners command: %f\n", err)
+				fmt.Printf("error running listeners command: %v\n", err)
 			}
-
-			fmt.Printf("finished dumping envoy state\n")
 		}
 	}
 }
@@ -447,7 +442,7 @@ func EnvoyDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, _ io.Writer, 
 func wipeOutDir(outDir string) {
 	err := os.RemoveAll(outDir)
 	if err != nil {
-		fmt.Printf("error wiping out directory: %f\n", err)
+		fmt.Printf("error wiping out directory: %v\n", err)
 	}
 }
 
@@ -455,7 +450,7 @@ func wipeOutDir(outDir string) {
 func setupOutDir(outdir string) {
 	err := os.MkdirAll(outdir, os.ModePerm)
 	if err != nil {
-		fmt.Printf("error creating log directory: %f\n", err)
+		fmt.Printf("error creating log directory: %v\n", err)
 	}
 }
 
@@ -463,7 +458,7 @@ func setupOutDir(outdir string) {
 func fileAtPath(path string) *os.File {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {
-		fmt.Printf("unable to openfile: %f\n", err)
+		fmt.Printf("unable to openfile: %v\n", err)
 	}
 	return f
 }
@@ -487,6 +482,6 @@ func writeMetricsLog(ctx context.Context, outDir string, ns string, podName stri
 		"curl", "http://localhost:9091/metrics")
 	err := metricsCmd.WithStdout(metricsFile).WithStderr(metricsFile).Run().Cause()
 	if err != nil {
-		fmt.Printf("error running metrics command: %f\n", err)
+		fmt.Printf("error running metrics command: %v\n", err)
 	}
 }

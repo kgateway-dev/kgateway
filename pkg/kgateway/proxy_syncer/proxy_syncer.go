@@ -54,7 +54,7 @@ type ProxySyncer struct {
 	apiClient       apiclient.Client
 	proxyTranslator ProxyTranslator
 
-	uniqueClients krt.Collection[ir.UniqlyConnectedClient]
+	uniqueClients krt.Collection[ir.UniquelyConnectedClient]
 
 	statusReport            krt.Singleton[report]
 	backendPolicyReport     krt.Singleton[report]
@@ -152,7 +152,7 @@ func NewProxySyncer(
 	controllerName string,
 	mgr manager.Manager,
 	client apiclient.Client,
-	uniqueClients krt.Collection[ir.UniqlyConnectedClient],
+	uniqueClients krt.Collection[ir.UniquelyConnectedClient],
 	mergedPlugins plug.Plugin,
 	commonCols *collections.CommonCollections,
 	xdsCache envoycache.SnapshotCache,

@@ -82,7 +82,7 @@ type StartConfig struct {
 
 	CommonCollections *collections.CommonCollections
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
-	UniqueClients     krt.Collection[ir.UniqlyConnectedClient]
+	UniqueClients     krt.Collection[ir.UniquelyConnectedClient]
 
 	KrtOptions krtutil.KrtOptions
 

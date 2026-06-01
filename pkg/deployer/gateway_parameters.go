@@ -12,6 +12,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
+// DefaultIstioProxyImageTag is the default Istio proxyv2 image tag used for auto mTLS cert-agent sidecars.
+const DefaultIstioProxyImageTag = "1.29.2"
+
 // Inputs is the set of options used to configure gateway/inference pool deployment.
 type Inputs struct {
 	Dev                      bool
@@ -220,7 +223,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						Image: &kgateway.Image{
 							Registry:   new("docker.io/istio"),
 							Repository: new("proxyv2"),
-							Tag:        new("1.22.0"),
+							Tag:        new(DefaultIstioProxyImageTag),
 							PullPolicy: (*corev1.PullPolicy)(new(imageInfo.PullPolicy)),
 						},
 						LogLevel:              new("warning"),

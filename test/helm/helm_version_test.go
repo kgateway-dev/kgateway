@@ -296,45 +296,46 @@ func findDeployment(t *testing.T, manifests []byte) appsv1.Deployment {
 	return appsv1.Deployment{}
 }
 
-// TestHelmChartTemplate tests helm template output for the kgateway chart
-// with different values configurations.
-func TestHelmChartTemplate(t *testing.T) {
-	charts := []string{"kgateway"}
+// helmTemplateCase is a single `helm template` scenario, shared by the golden
+// snapshot test and the packaged-chart render parity test.
+type helmTemplateCase struct {
+	name        string
+	valuesYAML  string
+	apiVersions []string
+}
 
-	valuesCases := []struct {
-		name        string
-		valuesYAML  string
-		apiVersions []string
-	}{
-		{
-			name:       "default",
-			valuesYAML: "",
-		},
-		{
-			name: "xds-tls-enabled",
-			valuesYAML: `controller:
+// helmChartTemplateCases enumerates the values permutations exercised against
+// the kgateway chart.
+var helmChartTemplateCases = []helmTemplateCase{
+	{
+		name:       "default",
+		valuesYAML: "",
+	},
+	{
+		name: "xds-tls-enabled",
+		valuesYAML: `controller:
   xds:
     tls:
       enabled: true
 `,
-		},
-		{
-			name: "pdb-min-available",
-			valuesYAML: `controller:
+	},
+	{
+		name: "pdb-min-available",
+		valuesYAML: `controller:
   podDisruptionBudget:
     minAvailable: 1
 `,
-		},
-		{
-			name: "pdb-max-unavailable",
-			valuesYAML: `controller:
+	},
+	{
+		name: "pdb-max-unavailable",
+		valuesYAML: `controller:
   podDisruptionBudget:
     maxUnavailable: 25%
 `,
-		},
-		{
-			name: "service-full-config",
-			valuesYAML: `controller:
+	},
+	{
+		name: "service-full-config",
+		valuesYAML: `controller:
   service:
     type: LoadBalancer
     annotations:
@@ -368,24 +369,24 @@ func TestHelmChartTemplate(t *testing.T) {
     allocateLoadBalancerNodePorts: false
     trafficDistribution: PreferClose
 `,
-		},
-		{
-			name: "service-monitor-enabled",
-			valuesYAML: `controller:
+	},
+	{
+		name: "service-monitor-enabled",
+		valuesYAML: `controller:
   serviceMonitor:
     enabled: true
 `,
-			apiVersions: []string{"monitoring.coreos.com/v1"},
-		},
-		{
-			name: "prometheus-annotations-disabled",
-			valuesYAML: `controller:
+		apiVersions: []string{"monitoring.coreos.com/v1"},
+	},
+	{
+		name: "prometheus-annotations-disabled",
+		valuesYAML: `controller:
   prometheusAnnotations: false
 `,
-		},
-		{
-			name: "hpa-and-vpa",
-			valuesYAML: `controller:
+	},
+	{
+		name: "hpa-and-vpa",
+		valuesYAML: `controller:
   horizontalPodAutoscaler:
     minReplicas: 1
     maxReplicas: 5
@@ -406,23 +407,23 @@ func TestHelmChartTemplate(t *testing.T) {
             cpu: 100m
             memory: 128Mi
 `,
-		},
-		{
-			name: "priority-class-name",
-			valuesYAML: `controller:
+	},
+	{
+		name: "priority-class-name",
+		valuesYAML: `controller:
   priorityClassName: system-cluster-critical
 `,
-		},
-		{
-			name: "additional-labels",
-			valuesYAML: `commonLabels:
+	},
+	{
+		name: "additional-labels",
+		valuesYAML: `commonLabels:
     extra-label-key: extra-label-value
     another-label: "true"
 `,
-		},
-		{
-			name: "topology-spread-constraints",
-			valuesYAML: `topologySpreadConstraints:
+	},
+	{
+		name: "topology-spread-constraints",
+		valuesYAML: `topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone
     whenUnsatisfiable: DoNotSchedule
@@ -430,38 +431,38 @@ func TestHelmChartTemplate(t *testing.T) {
       matchLabels:
         app.kubernetes.io/name: kgateway
 `,
-		},
-		{
-			name: "tolerations",
-			valuesYAML: `tolerations:
+	},
+	{
+		name: "tolerations",
+		valuesYAML: `tolerations:
   - key: top-level
     operator: Exists
     effect: NoSchedule
 `,
-		},
-		{
-			name: "controller-empty-tolerations-override",
-			valuesYAML: `tolerations:
+	},
+	{
+		name: "controller-empty-tolerations-override",
+		valuesYAML: `tolerations:
   - key: top-level
     operator: Exists
     effect: NoSchedule
 controller:
   tolerations: []
 `,
-		},
-		{
-			name: "controller-null-tolerations-fallback",
-			valuesYAML: `tolerations:
+	},
+	{
+		name: "controller-null-tolerations-fallback",
+		valuesYAML: `tolerations:
   - key: top-level
     operator: Exists
     effect: NoSchedule
 controller:
   tolerations: null
 `,
-		},
-		{
-			name: "controller-empty-topology-spread-constraints-override",
-			valuesYAML: `topologySpreadConstraints:
+	},
+	{
+		name: "controller-empty-topology-spread-constraints-override",
+		valuesYAML: `topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone
     whenUnsatisfiable: DoNotSchedule
@@ -471,10 +472,10 @@ controller:
 controller:
   topologySpreadConstraints: []
 `,
-		},
-		{
-			name: "controller-null-topology-spread-constraints-fallback",
-			valuesYAML: `topologySpreadConstraints:
+	},
+	{
+		name: "controller-null-topology-spread-constraints-fallback",
+		valuesYAML: `topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone
     whenUnsatisfiable: DoNotSchedule
@@ -484,10 +485,10 @@ controller:
 controller:
   topologySpreadConstraints: null
 `,
-		},
-		{
-			name: "controller-overrides-top-level-values",
-			valuesYAML: `podAnnotations:
+	},
+	{
+		name: "controller-overrides-top-level-values",
+		valuesYAML: `podAnnotations:
   top-level-only: "true"
   overridden: top-level
 podSecurityContext:
@@ -553,46 +554,46 @@ controller:
         matchLabels:
           source: controller
  `,
-		},
-		{
-			name: "controller-overrides-replace-not-merge",
-			valuesYAML: `nodeSelector:
+	},
+	{
+		name: "controller-overrides-replace-not-merge",
+		valuesYAML: `nodeSelector:
   kubernetes.io/os: linux
   topology.kubernetes.io/zone: us-east-1a
 controller:
   nodeSelector:
     kubernetes.io/arch: amd64
 `,
-		},
-		{
-			name: "controller-empty-pod-annotations",
-			valuesYAML: `podAnnotations: null
+	},
+	{
+		name: "controller-empty-pod-annotations",
+		valuesYAML: `podAnnotations: null
 controller:
   podAnnotations: {}
 `,
-		},
-		{
-			name: "controller-null-pod-annotations",
-			valuesYAML: `podAnnotations: null
+	},
+	{
+		name: "controller-null-pod-annotations",
+		valuesYAML: `podAnnotations: null
 controller:
   podAnnotations: null
 `,
-		},
-		{
-			name: "replicas-zero",
-			valuesYAML: `controller:
+	},
+	{
+		name: "replicas-zero",
+		valuesYAML: `controller:
   replicaCount: 0
 `,
-		},
-		{
-			name: "replicas-null",
-			valuesYAML: `controller:
+	},
+	{
+		name: "replicas-null",
+		valuesYAML: `controller:
   replicaCount: null
 `,
-		},
-		{
-			name: "readiness-probe-override",
-			valuesYAML: `controller:
+	},
+	{
+		name: "readiness-probe-override",
+		valuesYAML: `controller:
   readinessProbe:
     exec:
       command:
@@ -601,18 +602,18 @@ controller:
     periodSeconds: 30
     failureThreshold: 5
 `,
-		},
-		{
-			name: "startup-probe-override",
-			valuesYAML: `controller:
+	},
+	{
+		name: "startup-probe-override",
+		valuesYAML: `controller:
   startupProbe:
     failureThreshold: 300
     periodSeconds: 2
 `,
-		},
-		{
-			name: "probes-full-override",
-			valuesYAML: `controller:
+	},
+	{
+		name: "probes-full-override",
+		valuesYAML: `controller:
   readinessProbe:
     httpGet:
       path: /healthz
@@ -628,8 +629,15 @@ controller:
     periodSeconds: 5
     failureThreshold: 60
 `,
-		},
-	}
+	},
+}
+
+// TestHelmChartTemplate tests helm template output for the kgateway chart
+// with different values configurations.
+func TestHelmChartTemplate(t *testing.T) {
+	charts := []string{"kgateway"}
+
+	valuesCases := helmChartTemplateCases
 
 	for _, chart := range charts {
 		for _, vc := range valuesCases {

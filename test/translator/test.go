@@ -767,7 +767,7 @@ func (tc TestCase) Run(
 		Kind:      "test-backend-plugin",
 		Namespace: "default",
 		Name:      "example-svc",
-	}, 80, "")
+	}, 80, "", "")
 	extensions.ContributesBackends[gk] = pluginsdk.BackendPlugin{
 		Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
 			testBackend,
@@ -855,7 +855,7 @@ func (tc TestCase) Run(
 
 		ctx := context.Background()
 		t := translator.GetBackendTranslator()
-		ucc := ir.NewUniqlyConnectedClient("test", "test", nil, ir.PodLocality{})
+		ucc := ir.NewUniquelyConnectedClient("test", "test", nil, ir.PodLocality{})
 		var clusters []*envoyclusterv3.Cluster
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {

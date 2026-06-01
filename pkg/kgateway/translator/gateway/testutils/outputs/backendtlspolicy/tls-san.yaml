@@ -17,7 +17,6 @@ Clusters:
           healthCheckConfig:
             hostname: example.com
           hostname: example.com
-  metadata: {}
   name: backend_default_backend1_0
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -72,7 +71,6 @@ Clusters:
           healthCheckConfig:
             hostname: example2.com
           hostname: example2.com
-  metadata: {}
   name: backend_default_backend2_0
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -92,7 +90,6 @@ Clusters:
             name: SYSTEM_CA_CERT
       sni: example2.com
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

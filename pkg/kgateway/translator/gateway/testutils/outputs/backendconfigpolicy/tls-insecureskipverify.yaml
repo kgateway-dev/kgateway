@@ -17,7 +17,6 @@ Clusters:
           healthCheckConfig:
             hostname: www.google.com
           hostname: www.google.com
-  metadata: {}
   name: backend_default_backend_0
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -27,7 +26,6 @@ Clusters:
         validationContext: {}
       sni: www.google.com
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
