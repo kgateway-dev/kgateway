@@ -694,7 +694,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("TrafficPolicy ExtProc with configurable filter stage", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/extproc-filter-stage.yaml",
+			inputFiles: []string{"traffic-policy/extproc-filter-stage.yaml"},
 			outputFile: "traffic-policy/extproc-filter-stage.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
