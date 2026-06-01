@@ -1220,6 +1220,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("AWS Lambda backend with AssumeRole auth", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backends/aws_lambda_assume_role.yaml"},
+			outputFile: "backends/aws_lambda_assume_role.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("GCP backend", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backends/gcp_backend.yaml"},

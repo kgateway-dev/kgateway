@@ -77,10 +77,64 @@ spec:
                       See the Envoy docs for more info:
                       https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
                     properties:
+                      assumeRole:
+                        description: |-
+                          AssumeRole configures STS role chaining. The gateway's ambient credentials
+                          (e.g. the gateway ServiceAccount's IRSA identity, or any credential resolved
+                          by the default provider chain) are used to assume the target role, and the
+                          resulting temporary credentials sign requests to the backend. This enables
+                          per-backend, least-privilege invoke roles without granting the gateway role
+                          direct access to every target.
+                          Required when type is 'AssumeRole'.
+                        properties:
+                          externalId:
+                            description: |-
+                              ExternalId is a unique identifier that may be required by the target role's
+                              trust policy, commonly used in cross-account access to mitigate the
+                              "confused deputy" problem.
+                            maxLength: 1224
+                            minLength: 2
+                            pattern: ^[\w+=,.@:/-]+$
+                            type: string
+                          roleArn:
+                            description: |-
+                              RoleArn is the ARN of the IAM role to assume, e.g.
+                              "arn:aws:iam::123456789012:role/my-invoke-role".
+                            maxLength: 2048
+                            minLength: 1
+                            pattern: ^arn:(aws|aws-cn|aws-us-gov):iam::[0-9]{12}:role/.+$
+                            type: string
+                          sessionDuration:
+                            description: |-
+                              SessionDuration is the duration of the assumed-role session, after which the
+                              temporary credentials expire and are refreshed. Must be between 15m (900s)
+                              and 12h (43200s), and may not exceed the target role's maximum session
+                              duration. When omitted, the AWS default (1h) is used.
+                            type: string
+                            x-kubernetes-validations:
+                            - message: invalid duration value
+                              rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                            - message: sessionDuration must be between 900s (15m)
+                                and 43200s (12h)
+                              rule: duration(self) >= duration('900s') && duration(self)
+                                <= duration('43200s')
+                          sessionName:
+                            description: |-
+                              SessionName is an identifier for the assumed role session, surfaced in
+                              AWS CloudTrail logs and usable in role trust/permission policies.
+                              When omitted, Envoy defaults it to the current timestamp.
+                            maxLength: 64
+                            minLength: 2
+                            pattern: ^[\w+=,.@-]+$
+                            type: string
+                        required:
+                        - roleArn
+                        type: object
                       secretRef:
                         description: |-
                           SecretRef references a Kubernetes Secret containing the AWS credentials.
                           The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
+                          Required when type is 'Secret'.
                         properties:
                           name:
                             default: ""
@@ -98,6 +152,7 @@ spec:
                           for the backend.
                         enum:
                         - Secret
+                        - AssumeRole
                         type: string
                     required:
                     - type
@@ -107,6 +162,10 @@ spec:
                       rule: '!(has(self.secretRef) && self.type != ''Secret'')'
                     - message: secretRef must be specified when type is 'Secret'
                       rule: '!(!has(self.secretRef) && self.type == ''Secret'')'
+                    - message: assumeRole must be nil if the type is not 'AssumeRole'
+                      rule: '!(has(self.assumeRole) && self.type != ''AssumeRole'')'
+                    - message: assumeRole must be specified when type is 'AssumeRole'
+                      rule: '!(!has(self.assumeRole) && self.type == ''AssumeRole'')'
                   lambda:
                     description: Lambda configures the AWS lambda service.
                     properties:

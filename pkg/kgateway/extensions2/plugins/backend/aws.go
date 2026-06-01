@@ -133,32 +133,66 @@ func processAws(ir *AwsIr, out *envoyclusterv3.Cluster) error {
 }
 
 // configureAWSAuth configures AWS authentication for the given backend.
-func configureAWSAuth(secret *ir.Secret, region string) (*envoy_request_signing_v3.AwsRequestSigning, error) {
-	// when no auth is specified, use the default aws auth provider documented by the lambda filter:
-	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#credentials.
-	if secret == nil || secret.Data == nil {
-		return &envoy_request_signing_v3.AwsRequestSigning{
-			ServiceName: lambdaServiceName,
-			Region:      region,
-		}, nil
-	}
-	// handle secret-based auth. configure inline credentials.
-	derived, err := deriveStaticSecret(secret)
-	if err != nil {
-		return nil, fmt.Errorf("failed to derive static secret: %v", err)
-	}
-
-	return &envoy_request_signing_v3.AwsRequestSigning{
+func configureAWSAuth(auth *kgateway.AwsAuth, secret *ir.Secret, region string) (*envoy_request_signing_v3.AwsRequestSigning, error) {
+	signing := &envoy_request_signing_v3.AwsRequestSigning{
 		ServiceName: lambdaServiceName,
 		Region:      region,
-		CredentialProvider: &envoy_aws_common_v3.AwsCredentialProvider{
+	}
+
+	// When no explicit auth is specified, use the default aws auth provider chain documented
+	// by the lambda filter:
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#credentials.
+	if auth == nil {
+		return signing, nil
+	}
+
+	switch auth.Type {
+	case kgateway.AwsAuthTypeSecret:
+		// handle secret-based auth. configure inline credentials.
+		if secret == nil || secret.Data == nil {
+			return nil, fmt.Errorf("secret is required for %q auth", kgateway.AwsAuthTypeSecret)
+		}
+		derived, err := deriveStaticSecret(secret)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive static secret: %v", err)
+		}
+		signing.CredentialProvider = &envoy_aws_common_v3.AwsCredentialProvider{
 			InlineCredential: &envoy_aws_common_v3.InlineCredentialProvider{
 				AccessKeyId:     derived.access,
 				SecretAccessKey: derived.secret,
 				SessionToken:    derived.session,
 			},
-		},
-	}, nil
+		}
+
+	case kgateway.AwsAuthTypeAssumeRole:
+		// handle STS role chaining. The base credentials that sign the AssumeRole request are
+		// left unset so Envoy resolves them from the default provider chain (e.g. the gateway
+		// ServiceAccount's IRSA identity). The temporary credentials returned by STS are then
+		// used to sign requests to the backend.
+		if auth.AssumeRole == nil {
+			return nil, fmt.Errorf("assumeRole is required for %q auth", kgateway.AwsAuthTypeAssumeRole)
+		}
+		assumeRole := &envoy_aws_common_v3.AssumeRoleCredentialProvider{
+			RoleArn: auth.AssumeRole.RoleArn,
+		}
+		if auth.AssumeRole.SessionName != nil {
+			assumeRole.RoleSessionName = *auth.AssumeRole.SessionName
+		}
+		if auth.AssumeRole.ExternalId != nil {
+			assumeRole.ExternalId = *auth.AssumeRole.ExternalId
+		}
+		if auth.AssumeRole.SessionDuration != nil {
+			assumeRole.SessionDuration = durationpb.New(auth.AssumeRole.SessionDuration.Duration)
+		}
+		signing.CredentialProvider = &envoy_aws_common_v3.AwsCredentialProvider{
+			AssumeRoleCredentialProvider: assumeRole,
+		}
+
+	default:
+		return nil, fmt.Errorf("unsupported aws auth type: %q", auth.Type)
+	}
+
+	return signing, nil
 }
 
 // lambdaFilters is a helper struct to store the lambda filters for the given backend.
@@ -184,6 +218,7 @@ func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
 func buildLambdaFilters(
 	arn string,
 	region string,
+	auth *kgateway.AwsAuth,
 	secret *ir.Secret,
 	invokeMode envoy_lambda_v3.Config_InvocationMode,
 	payloadTransformMode kgateway.AWSLambdaPayloadTransformMode,
@@ -205,7 +240,7 @@ func buildLambdaFilters(
 		return nil, fmt.Errorf("failed to create lambda config: %v", err)
 	}
 
-	awsRequestSigning, err := configureAWSAuth(secret, region)
+	awsRequestSigning, err := configureAWSAuth(auth, secret, region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create aws request signing config: %v", err)
 	}

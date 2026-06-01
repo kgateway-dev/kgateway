@@ -136,20 +136,72 @@ type AwsAuthType string
 const (
 	// AwsAuthTypeSecret uses credentials stored in a Kubernetes Secret.
 	AwsAuthTypeSecret AwsAuthType = "Secret"
+	// AwsAuthTypeAssumeRole assumes an IAM role via STS, chaining off the
+	// gateway's ambient credentials (e.g. IRSA). The temporary credentials
+	// returned by STS are used to sign requests to the backend.
+	AwsAuthTypeAssumeRole AwsAuthType = "AssumeRole"
 )
 
 // AwsAuth specifies the authentication method to use for the backend.
 // +kubebuilder:validation:XValidation:message="secretRef must be nil if the type is not 'Secret'",rule="!(has(self.secretRef) && self.type != 'Secret')"
 // +kubebuilder:validation:XValidation:message="secretRef must be specified when type is 'Secret'",rule="!(!has(self.secretRef) && self.type == 'Secret')"
+// +kubebuilder:validation:XValidation:message="assumeRole must be nil if the type is not 'AssumeRole'",rule="!(has(self.assumeRole) && self.type != 'AssumeRole')"
+// +kubebuilder:validation:XValidation:message="assumeRole must be specified when type is 'AssumeRole'",rule="!(!has(self.assumeRole) && self.type == 'AssumeRole')"
 type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
 	// +required
-	// +kubebuilder:validation:Enum=Secret
+	// +kubebuilder:validation:Enum=Secret;AssumeRole
 	Type AwsAuthType `json:"type"`
 	// SecretRef references a Kubernetes Secret containing the AWS credentials.
 	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
+	// Required when type is 'Secret'.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+	// AssumeRole configures STS role chaining. The gateway's ambient credentials
+	// (e.g. the gateway ServiceAccount's IRSA identity, or any credential resolved
+	// by the default provider chain) are used to assume the target role, and the
+	// resulting temporary credentials sign requests to the backend. This enables
+	// per-backend, least-privilege invoke roles without granting the gateway role
+	// direct access to every target.
+	// Required when type is 'AssumeRole'.
+	// +optional
+	AssumeRole *AwsAssumeRole `json:"assumeRole,omitempty"`
+}
+
+// AwsAssumeRole configures assuming an IAM role via STS to obtain the credentials
+// used to sign requests to the backend.
+type AwsAssumeRole struct {
+	// RoleArn is the ARN of the IAM role to assume, e.g.
+	// "arn:aws:iam::123456789012:role/my-invoke-role".
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=2048
+	// +kubebuilder:validation:Pattern="^arn:(aws|aws-cn|aws-us-gov):iam::[0-9]{12}:role/.+$"
+	RoleArn string `json:"roleArn"`
+	// SessionName is an identifier for the assumed role session, surfaced in
+	// AWS CloudTrail logs and usable in role trust/permission policies.
+	// When omitted, Envoy defaults it to the current timestamp.
+	// +optional
+	// +kubebuilder:validation:MinLength=2
+	// +kubebuilder:validation:MaxLength=64
+	// +kubebuilder:validation:Pattern="^[\\w+=,.@-]+$"
+	SessionName *string `json:"sessionName,omitempty"`
+	// ExternalId is a unique identifier that may be required by the target role's
+	// trust policy, commonly used in cross-account access to mitigate the
+	// "confused deputy" problem.
+	// +optional
+	// +kubebuilder:validation:MinLength=2
+	// +kubebuilder:validation:MaxLength=1224
+	// +kubebuilder:validation:Pattern="^[\\w+=,.@:/-]+$"
+	ExternalId *string `json:"externalId,omitempty"`
+	// SessionDuration is the duration of the assumed-role session, after which the
+	// temporary credentials expire and are refreshed. Must be between 15m (900s)
+	// and 12h (43200s), and may not exceed the target role's maximum session
+	// duration. When omitted, the AWS default (1h) is used.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('900s') && duration(self) <= duration('43200s')",message="sessionDuration must be between 900s (15m) and 43200s (12h)"
+	SessionDuration *metav1.Duration `json:"sessionDuration,omitempty"`
 }
 
 const (
