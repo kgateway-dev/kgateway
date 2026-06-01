@@ -9,15 +9,18 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
+	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
@@ -79,10 +82,20 @@ func TestKgateway(t *testing.T) {
 		gatewayManifest = "kgateway-base-gateway-listenersets.yaml"
 	}
 
+	// Apply shared base config once for the whole run: the base gateway + echo backend,
+	// plus the shared nginx pod (ns nginx) that suites reference instead of each deploying
+	// their own. The nginx manifest also carries a ReferenceGrant allowing default-ns routes
+	// to reach it cross-namespace.
 	common.SetupBaseConfig(ctx, t, testInstallation,
 		filepath.Join("manifests", "kgateway-base.yaml"),
 		filepath.Join("manifests", gatewayManifest),
+		testdefaults.NginxPodManifest,
 	)
+	// SetupBaseConfig only applies manifests; wait once here for the shared nginx pod so
+	// suites referencing it don't race a cold image pull (replaces the per-suite wait).
+	testInstallation.AssertionsT(t).EventuallyPodsRunning(ctx, "nginx", metav1.ListOptions{
+		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
+	}, time.Second*120)
 	common.SetupBaseGateway(ctx, t, testInstallation, types.NamespacedName{
 		Namespace: "kgateway-base",
 		Name:      "gateway",

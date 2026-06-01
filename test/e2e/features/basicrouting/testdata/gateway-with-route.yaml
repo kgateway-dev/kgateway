@@ -32,4 +32,5 @@ spec:
   rules:
     - backendRefs:
         - name: example-svc
+          namespace: nginx
           port: 8080

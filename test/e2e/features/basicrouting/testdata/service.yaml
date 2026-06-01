@@ -1,7 +1,11 @@
+# example-svc lives in the nginx namespace so it can select the shared nginx pod
+# (test/e2e/defaults/testdata/nginx_pod.yaml). The basicrouting HTTPRoutes reference
+# it cross-namespace, permitted by reference-grant.yaml.
 apiVersion: v1
 kind: Service
 metadata:
   name: example-svc
+  namespace: nginx
 spec:
   selector:
     app.kubernetes.io/name: nginx
@@ -9,17 +13,3 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: http-web-svc
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-  labels:
-    app.kubernetes.io/name: nginx
-spec:
-  containers:
-    - name: nginx
-      image: nginx:1.28.0
-      ports:
-        - containerPort: 80
-          name: http-web-svc

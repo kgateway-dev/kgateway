@@ -33,6 +33,9 @@ var (
 
 	// test cases
 	setup = base.TestCase{
+		// The shared nginx pod is deployed once at the base layer (common.SetupBaseConfig).
+		// The per-test example-svc Services (ns nginx) front it, and the default-ns routes
+		// reach it cross-namespace via the ReferenceGrant bundled with the shared nginx manifest.
 		Manifests: []string{
 			gatewayWithRouteManifest,
 		},
@@ -45,7 +48,7 @@ var (
 			Manifests: []string{headlessServiceManifest},
 		},
 		"TestLongHTTPRouteName": {
-			Manifests: []string{longHTTPRouteManifest},
+			Manifests: []string{testdefaults.HttpbinManifest, longHTTPRouteManifest},
 		},
 		"TestSamePrefixLongGatewayNameRouting": {
 			Manifests: []string{serviceManifest, samePrefixLongGatewayManifest},

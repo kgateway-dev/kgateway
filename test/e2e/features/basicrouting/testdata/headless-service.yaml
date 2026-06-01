@@ -1,7 +1,10 @@
+# Headless variant of example-svc (clusterIP: None) in the nginx namespace, selecting
+# the shared nginx pod. Used by TestHeadlessService to exercise headless-service routing.
 apiVersion: v1
 kind: Service
 metadata:
   name: example-svc
+  namespace: nginx
 spec:
   clusterIP: None
   selector:
@@ -10,17 +13,3 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: http-web-svc
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-  labels:
-    app.kubernetes.io/name: nginx
-spec:
-  containers:
-    - name: nginx
-      image: nginx:1.28.0
-      ports:
-        - containerPort: 80
-          name: http-web-svc
