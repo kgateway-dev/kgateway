@@ -18,6 +18,10 @@ var (
 	httpRouteTargetRefManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute-targetref.yaml")
 	singleRouteManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "single-route.yaml")
 	backendFilterManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backend-filter.yaml")
+	filterStageManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "filter-stage.yaml")
+	filterStageWeightManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "filter-stage-weight.yaml")
+	dualServersManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "extproc-dual-servers.yaml")
+	deepMergeManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "deep-merge.yaml")
 
 	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{
@@ -25,4 +29,10 @@ var (
 		Namespace: "default",
 	}
 	gatewayService = &corev1.Service{ObjectMeta: gatewayObjectMeta}
+
+	deepMergeGatewayObjectMeta = metav1.ObjectMeta{
+		Name:      "gw-deep-merge",
+		Namespace: "default",
+	}
+	deepMergeGatewayService = &corev1.Service{ObjectMeta: deepMergeGatewayObjectMeta}
 )

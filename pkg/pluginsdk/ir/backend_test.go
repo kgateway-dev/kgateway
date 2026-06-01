@@ -71,25 +71,23 @@ func TestParseAppProtocol(t *testing.T) {
 }
 
 func createTestBackendObjectIR(trafficDist wellknown.TrafficDistribution) BackendObjectIR {
-	return BackendObjectIR{
-		objectSource: ObjectSource{
-			Namespace: "default",
-			Name:      "test-service",
-			Group:     "",
-			Kind:      "Service",
+	backend := NewBackendObjectIR(ObjectSource{
+		Namespace: "default",
+		Name:      "test-service",
+		Group:     "",
+		Kind:      "Service",
+	}, 8080, "", "")
+	backend.Obj = &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "test-service",
+			Namespace:       "default",
+			UID:             "test-uid",
+			ResourceVersion: "1",
+			Generation:      1,
 		},
-		port: 8080,
-		Obj: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:            "test-service",
-				Namespace:       "default",
-				UID:             "test-uid",
-				ResourceVersion: "1",
-				Generation:      1,
-			},
-		},
-		TrafficDistribution: trafficDist,
 	}
+	backend.TrafficDistribution = trafficDist
+	return backend
 }
 
 func TestBackendObjectIREquals(t *testing.T) {
@@ -178,8 +176,6 @@ func TestBackendObjectIREquals(t *testing.T) {
 
 func TestBackendObjectIRClusterName(t *testing.T) {
 	base := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
-	base.objectSource.Kind = "Service"
-	base.resourceName = BackendResourceName(base.objectSource, base.port, base.extraKey)
 
 	t.Run("keeps the same name when BackendTLSPolicy is attached", func(t *testing.T) {
 		withPolicy := base
@@ -201,19 +197,25 @@ func TestBackendObjectIRClusterName(t *testing.T) {
 	})
 }
 
-func TestBackendObjectIRSetGvPrefixUpdatesClusterName(t *testing.T) {
+func TestBackendObjectIRConstructsClusterNameWithPrefix(t *testing.T) {
 	backend := NewBackendObjectIR(ObjectSource{
 		Namespace: "default",
 		Name:      "test-service",
 		Kind:      "Service",
-	}, 8080, "")
-
-	// Before SetGvPrefix the cached name uses the lowercased Kind as prefix.
-	assert.Equal(t, "service_default_test-service_8080", backend.ClusterName())
-
-	backend.SetGvPrefix("kube")
+	}, 8080, "", "kube")
 
 	assert.Equal(t, "kube_default_test-service_8080", backend.ClusterName())
+}
+
+func TestBackendObjectIRNormalizesEmptyPrefix(t *testing.T) {
+	backend := NewBackendObjectIR(ObjectSource{
+		Namespace: "default",
+		Name:      "test-service",
+		Kind:      "Service",
+	}, 8080, "", "")
+
+	assert.Equal(t, "service", backend.gvPrefix)
+	assert.Equal(t, "service_default_test-service_8080", backend.ClusterName())
 }
 
 func TestBackendObjectIRCloneRecomputesClusterName(t *testing.T) {
@@ -221,8 +223,7 @@ func TestBackendObjectIRCloneRecomputesClusterName(t *testing.T) {
 		Namespace: "ns",
 		Name:      "svc",
 		Kind:      "Service",
-	}, 80, "")
-	backend.SetGvPrefix("kube")
+	}, 80, "", "kube")
 
 	original := backend.ClusterName()
 	clone := backend.CloneForGatewayBackendClientCertificate(

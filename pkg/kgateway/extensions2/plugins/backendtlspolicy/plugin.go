@@ -8,6 +8,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -169,7 +170,46 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 	if tlsPol.transportSocket == nil {
 		return
 	}
+
+	// If BackendConfigPolicy already wrapped the cluster's transport socket in
+	// upstream proxy protocol, preserve that wrapper and replace the inner
+	// socket with our TLS one. Otherwise BTP "wins" for TLS and we configure the
+	// TLS socket directly.
+	if existing := out.TransportSocket; existing != nil && existing.GetName() == kgwellknown.TransportSocketUpstreamProxyProtocol {
+		if wrapped, ok := replaceInnerInProxyProtocol(existing, tlsPol.transportSocket); ok {
+			out.TransportSocket = wrapped
+			return
+		}
+	}
 	out.TransportSocket = tlsPol.transportSocket
+}
+
+// replaceInnerInProxyProtocol returns a new transport socket carrying the same
+// ProxyProtocolUpstreamTransport wrapper as wrapper but with its inner
+// TransportSocket replaced by inner. Returns false if wrapper isn't a
+// ProxyProtocolUpstreamTransport.
+func replaceInnerInProxyProtocol(wrapper, inner *envoycorev3.TransportSocket) (*envoycorev3.TransportSocket, bool) {
+	typed := wrapper.GetTypedConfig()
+	if typed == nil {
+		return nil, false
+	}
+	pp := &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{}
+	if err := typed.UnmarshalTo(pp); err != nil {
+		logger.Error("failed to unpack upstream proxy protocol transport for BackendTLSPolicy", "error", err)
+		return nil, false
+	}
+	pp.TransportSocket = inner
+	repacked, err := utils.MessageToAny(pp)
+	if err != nil {
+		logger.Error("failed to repack upstream proxy protocol transport for BackendTLSPolicy", "error", err)
+		return nil, false
+	}
+	return &envoycorev3.TransportSocket{
+		Name: wrapper.GetName(),
+		ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+			TypedConfig: repacked,
+		},
+	}, true
 }
 
 func buildTranslateFunc(

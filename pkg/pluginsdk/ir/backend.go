@@ -139,8 +139,9 @@ type BackendObjectIR struct {
 	AppProtocol AppProtocol
 
 	// prefix the cluster name with this string to distinguish it from other GVKs.
-	// here explicitly as it shows up in stats. each (group, kind) pair should have a unique prefix.
-	// +krtEqualsTodo incorporate prefix changes into equality or remove field
+	// kept private and immutable after construction. each (group, kind) pair
+	// should have a unique prefix because it shows up in stats.
+	// +noKrtEquals gvPrefix is compared in ClusterName()
 	gvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
 	// +krtEqualsTodo evaluate canonical hostname equality
@@ -180,10 +181,7 @@ type BackendObjectIR struct {
 	// resourceName is the pre-calculated resource name. used as the krt resource name.
 	resourceName string
 
-	// clusterName is the pre-calculated Envoy cluster name. Kept in sync by
-	// SetGvPrefix (the only setter that mutates a cluster-name-relevant field
-	// post-construction). ClusterName() falls back to recomputing if empty so
-	// struct-literal callers still work.
+	// clusterName is the pre-calculated Envoy cluster name.
 	// +noKrtEquals We compare the cached ClusterName in Equals()
 	clusterName string
 
@@ -200,22 +198,27 @@ type BackendObjectIR struct {
 }
 
 // NewBackendObjectIR creates a BackendObjectIR with pre-calculated resource and
-// cluster names. Callers that need a non-default cluster prefix should follow
-// up with SetGvPrefix, which keeps the cached cluster name in sync.
-func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey string) BackendObjectIR {
+// cluster names. Callers should pass the final cluster prefix up front; if
+// empty, the lower-cased backend kind is used and stored on the IR.
+func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey, gvPrefix string) BackendObjectIR {
+	if gvPrefix == "" {
+		gvPrefix = strings.ToLower(objSource.Kind)
+	}
+
 	return BackendObjectIR{
 		objectSource: objSource,
 		port:         port,
+		gvPrefix:     gvPrefix,
 		extraKey:     extraKey,
 		resourceName: BackendResourceName(objSource, port, extraKey),
-		clusterName:  buildClusterName("", objSource.Kind, objSource.Namespace, objSource.Name, extraKey, port),
+		clusterName:  buildClusterName(gvPrefix, objSource.Kind, objSource.Namespace, objSource.Name, extraKey, port),
 	}
 }
 
 func BackendResourceName(objSource ObjectSource, port int32, extraKey string) string {
 	var sb strings.Builder
 	sb.WriteString(objSource.ResourceName())
-	sb.WriteString(fmt.Sprintf(":%d", port))
+	fmt.Fprintf(&sb, ":%d", port)
 
 	if extraKey != "" {
 		sb.WriteRune('_')
@@ -281,18 +284,8 @@ func gatewayBackendClientCertificateExtraKey(baseExtraKey string, gateway Object
 	return baseExtraKey + "_" + suffix
 }
 
-// SetGvPrefix sets the cluster-name prefix and keeps the cached cluster name in
-// sync.
-func (c *BackendObjectIR) SetGvPrefix(prefix string) {
-	c.gvPrefix = prefix
-	c.clusterName = buildClusterName(prefix, c.objectSource.Kind, c.objectSource.Namespace, c.objectSource.Name, c.extraKey, c.port)
-}
-
 func (c BackendObjectIR) ClusterName() string {
-	if c.clusterName != "" {
-		return c.clusterName
-	}
-	return buildClusterName(c.gvPrefix, c.objectSource.Kind, c.objectSource.Namespace, c.objectSource.Name, c.extraKey, c.port)
+	return c.clusterName
 }
 
 func buildClusterName(gvPrefix, kind, namespace, name, extraKey string, port int32) string {

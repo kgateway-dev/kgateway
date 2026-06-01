@@ -633,8 +633,7 @@ func TestTranslateJwksRemote(t *testing.T) {
 			Kind:      "Service",
 			Namespace: "backend-ns",
 			Name:      "backend",
-		}, 8443, "")
-		backendVal.SetGvPrefix("svc")
+		}, 8443, "", "svc")
 		backend := &backendVal
 		resolver := &fakeBackendResolver{backend: backend}
 		out := &jwtauthnv3.JwtProvider{}

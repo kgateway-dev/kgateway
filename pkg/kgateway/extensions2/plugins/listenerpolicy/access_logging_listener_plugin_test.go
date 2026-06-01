@@ -1292,7 +1292,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 								Kind:      "Backend",
 								Name:      "test-service",
 								Namespace: "default",
-							}, 0, "")
+							}, 0, "", "")
 							return &backend
 						}(),
 						"otel-log-0": func() *ir.BackendObjectIR {
@@ -1300,7 +1300,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 								Kind:      "Backend",
 								Name:      "test-service",
 								Namespace: "default",
-							}, 0, "")
+							}, 0, "", "")
 							return &backend
 						}(),
 					},

@@ -1394,7 +1394,7 @@ func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Ba
 				Group:     SvcGk.Group,
 				Namespace: svc.Namespace,
 				Name:      svc.Name,
-			}, port.Port, "")
+			}, port.Port, "", "")
 			backend.Obj = svc
 			uss = append(uss, backend)
 		}

@@ -29,6 +29,7 @@ type backendObjectIRInput struct {
 	ObjectSource      ir.ObjectSource
 	Port              int32
 	ExtraKey          string
+	GvPrefix          string
 	Obj               metav1.Object
 	CanonicalHostname string
 	AppProtocol       ir.AppProtocol
@@ -38,7 +39,7 @@ type backendObjectIRInput struct {
 }
 
 func newBackendObjectIR(in backendObjectIRInput) ir.BackendObjectIR {
-	b := ir.NewBackendObjectIR(in.ObjectSource, in.Port, in.ExtraKey)
+	b := ir.NewBackendObjectIR(in.ObjectSource, in.Port, in.ExtraKey, in.GvPrefix)
 	b.Obj = in.Obj
 	b.CanonicalHostname = in.CanonicalHostname
 	b.AppProtocol = in.AppProtocol
@@ -464,7 +465,8 @@ func TestEndpointsForGatewayScopedBackendsWithSameEndpointsHaveDifferentHashes(t
 			Group:     "",
 			Kind:      "Service",
 		},
-		Port: 8080,
+		Port:     8080,
+		GvPrefix: "kube",
 		Obj: &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "svc",
@@ -472,8 +474,6 @@ func TestEndpointsForGatewayScopedBackendsWithSameEndpointsHaveDifferentHashes(t
 			},
 		},
 	})
-	baseBackend.SetGvPrefix("kube")
-
 	clientCertificate := &ir.GatewayBackendClientCertificateIR{}
 	gateway1 := ir.ObjectSource{
 		Group:     gwv1.GroupVersion.Group,

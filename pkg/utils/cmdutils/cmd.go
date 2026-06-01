@@ -35,6 +35,10 @@ type Cmd interface {
 	// WithStderr sets the io.Reader used for stderr
 	WithStderr(io.Writer) Cmd
 
+	// WithQuiet suppresses the "+ <command>" trace line that is otherwise
+	// printed to stderr when running under the e2e build tag.
+	WithQuiet() Cmd
+
 	PrettyCommand() string
 }
 

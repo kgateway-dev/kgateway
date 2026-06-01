@@ -120,7 +120,7 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 				Kind:      "Service",
 				Namespace: svc.Namespace,
 				Name:      svc.Name,
-			}, port.Port, "")
+			}, port.Port, "", "")
 			backend.Obj = svc
 			backend.PortName = port.Name
 			out = append(out, backend)

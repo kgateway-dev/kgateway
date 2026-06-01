@@ -307,23 +307,25 @@ func TestHTTPRouteIREquals(t *testing.T) {
 	}}
 
 	// Test data for testing backing destination object comparison
-	httpBackendObj := BackendObjectIR{
-		objectSource:     ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"},
-		port:             80,
-		Obj:              base,
-		resourceName:     "/Service/ns/svc:80",
-		AppProtocol:      DefaultAppProtocol,
-		AttachedPolicies: AttachedPolicies{},
-	}
+	httpBackendObj := NewBackendObjectIR(
+		ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"},
+		80,
+		"",
+		"",
+	)
+	httpBackendObj.Obj = base
+	httpBackendObj.AppProtocol = DefaultAppProtocol
+	httpBackendObj.AttachedPolicies = AttachedPolicies{}
 	// same as httpBackendObj but with WebSocket AppProtocol. Generated is 2 to simulate an update.
-	wsBackendObj := BackendObjectIR{
-		objectSource:     ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"},
-		port:             80,
-		Obj:              baseGen2,
-		resourceName:     "/Service/ns/svc:80",
-		AppProtocol:      WebSocketAppProtocol,
-		AttachedPolicies: AttachedPolicies{},
-	}
+	wsBackendObj := NewBackendObjectIR(
+		ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"},
+		80,
+		"",
+		"",
+	)
+	wsBackendObj.Obj = baseGen2
+	wsBackendObj.AppProtocol = WebSocketAppProtocol
+	wsBackendObj.AttachedPolicies = AttachedPolicies{}
 	ruleWithHttpBackend := []HttpRouteRuleIR{{
 		ExtensionRefs:    emptyPolicies,
 		AttachedPolicies: emptyPolicies,

@@ -210,7 +210,7 @@ func serviceBackends(services krt.Collection[*corev1.Service]) krt.Collection[ir
 				Kind:      "Service",
 				Namespace: svc.Namespace,
 				Name:      svc.Name,
-			}, port.Port, "")
+			}, port.Port, "", "")
 			backend.Obj = svc
 			backends = append(backends, backend)
 		}
