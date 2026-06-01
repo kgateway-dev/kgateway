@@ -1,0 +1,79 @@
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: ext-proc-early
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: ext-proc-grpc
+        port: 4444
+    filterStage:
+      stage: Fault
+      predicate: After
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-filter-stage
+spec:
+  parentRefs:
+    - name: gw
+  hostnames:
+    - "www.example.com"
+  rules:
+    - name: early-extproc
+      matches:
+        - path:
+            type: PathPrefix
+            value: /early-extproc
+      backendRefs:
+        - name: backend
+          port: 3000
+    - name: default-extproc
+      matches:
+        - path:
+            type: PathPrefix
+            value: /default-extproc
+      backendRefs:
+        - name: backend
+          port: 3000
+    - name: no-extproc
+      matches:
+        - path:
+            type: PathPrefix
+            value: /no-extproc
+      backendRefs:
+        - name: backend
+          port: 3000
+---
+# ExtProc at a custom early stage (After Fault)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-early-stage
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-filter-stage
+      sectionName: early-extproc
+  extProc:
+    extensionRef:
+      name: ext-proc-early
+---
+# ExtProc at the default stage (After AuthZ)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-default-stage
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-filter-stage
+      sectionName: default-extproc
+  extProc:
+    extensionRef:
+      name: ext-proc-extension

@@ -2,6 +2,7 @@ package backendconfigpolicy
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -26,6 +27,7 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -35,9 +37,6 @@ import (
 
 const (
 	PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
-	// TransportSocketUpstreamProxyProtocol is the name of the upstream proxy protocol
-	// transport socket. Not defined in go-control-plane wellknown package.
-	TransportSocketUpstreamProxyProtocol = "envoy.transport_sockets.upstream_proxy_protocol"
 )
 
 type BackendConfigPolicyIR struct {
@@ -205,11 +204,38 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				Policies:                        backendConfigPolicyCol,
 				ProcessPolicyStaleStatusMarkers: processMarkers,
 				ProcessBackend:                  processBackend,
-				GetPolicyStatus:                 getPolicyStatusFn(cli),
-				PatchPolicyStatus:               patchPolicyStatusFn(cli),
+				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
+					return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
+				},
+				GetPolicyStatus:   getPolicyStatusFn(cli),
+				PatchPolicyStatus: patchPolicyStatusFn(cli),
 			},
 		},
 	}
+}
+
+// sortForMerge sorts policies by precedence weight (desc), creation time
+// (asc), ref string. The ref string is the tie-breaker when two policies
+// share a creation timestamp.
+func sortForMerge(pols []ir.PolicyAtt) []ir.PolicyAtt {
+	out := slices.Clone(pols)
+	slices.SortStableFunc(out, func(a, b ir.PolicyAtt) int {
+		if a.PrecedenceWeight != b.PrecedenceWeight {
+			if a.PrecedenceWeight > b.PrecedenceWeight {
+				return -1
+			}
+			return 1
+		}
+		return ir.ComparePoliciesByCreationTimeAndRef(a, b)
+	})
+	return out
+}
+
+// hasBackendTLSPolicy reports whether the backend has a BackendTLSPolicy
+// attached. This is used to determine whether BCP's TLS config should be applied,
+// as BTP wins for TLS when both are attached to the same backend.
+func hasBackendTLSPolicy(backend ir.BackendObjectIR) bool {
+	return len(backend.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]) > 0
 }
 
 func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
@@ -232,7 +258,10 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	applyHttp1ProtocolOptions(pol.http1ProtocolOptions, backend, out)
 	applyHttp2ProtocolOptions(pol.http2ProtocolOptions, backend, out)
 
-	if pol.tlsConfig != nil {
+	// BackendTLSPolicy (standard Gateway API) wins for TLS when both are attached
+	// to the same backend. BCP's TLS config is only applied if there is no attached BackendTLSPolicy.
+	tlsAllowed := pol.tlsConfig != nil && !hasBackendTLSPolicy(backend)
+	if tlsAllowed {
 		typedConfig, err := utils.MessageToAny(pol.tlsConfig)
 		if err != nil {
 			logger.Error("failed to convert tls config to any", "error", err)
@@ -428,7 +457,7 @@ func applyUpstreamProxyProtocol(ppConfig *envoycorev3.ProxyProtocolConfig, out *
 		return
 	}
 	out.TransportSocket = &envoycorev3.TransportSocket{
-		Name: TransportSocketUpstreamProxyProtocol,
+		Name: wellknown.TransportSocketUpstreamProxyProtocol,
 		ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 			TypedConfig: typedConfig,
 		},

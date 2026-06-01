@@ -692,6 +692,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy ExtProc with configurable filter stage", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extproc-filter-stage.yaml"},
+			outputFile: "traffic-policy/extproc-filter-stage.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy Transformation deep merge", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/transformation-deep-merge.yaml"},
@@ -2331,6 +2342,39 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/upstream-proxy-protocol-v2.yaml"},
 			outputFile: "backendconfigpolicy/upstream-proxy-protocol-v2.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend Config Policy with upstream proxy protocol and BackendTLSPolicy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/upstream-proxy-protocol-with-backendtlspolicy.yaml"},
+			outputFile: "backendconfigpolicy/upstream-proxy-protocol-with-backendtlspolicy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend Config Policy TLS overridden by BackendTLSPolicy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/tls-overridden-by-backendtlspolicy.yaml"},
+			outputFile: "backendconfigpolicy/tls-overridden-by-backendtlspolicy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Multiple Backend Config Policies merged on same backend", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/merge-multiple-bcp.yaml"},
+			outputFile: "backendconfigpolicy/merge-multiple-bcp.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
