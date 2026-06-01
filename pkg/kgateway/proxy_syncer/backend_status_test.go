@@ -24,7 +24,7 @@ func backendSource(name string) ir.ObjectSource {
 
 func kgwBackend(name string, generation int64, errs ...error) ir.BackendObjectIR {
 	src := backendSource(name)
-	b := ir.NewBackendObjectIR(src, 0, "")
+	b := ir.NewBackendObjectIR(src, 0, "", "")
 	b.Obj = &metav1.ObjectMeta{Namespace: src.Namespace, Name: src.Name, Generation: generation}
 	b.Errors = errs
 	return b
