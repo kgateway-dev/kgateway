@@ -149,7 +149,7 @@ var _ = Describe("Deployer", func() {
 				Group:     kgateway.GroupName,
 				Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 				Name:      wellknown.DefaultGatewayParametersName,
-				Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
+				Namespace: new(gwv1.Namespace(defaultNamespace)),
 			}
 			return gwc
 		}
@@ -193,7 +193,7 @@ var _ = Describe("Deployer", func() {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Deployment: &kgateway.ProxyDeployment{
-							Replicas: ptr.To[int32](2),
+							Replicas: new(int32(2)),
 						},
 						EnvoyContainer: &kgateway.EnvoyContainer{
 							Bootstrap: &kgateway.EnvoyBootstrap{
@@ -207,7 +207,7 @@ var _ = Describe("Deployer", func() {
 								Registry:   new("scooby"),
 								Repository: new("dooby"),
 								Tag:        new("doo"),
-								PullPolicy: ptr.To(corev1.PullAlways),
+								PullPolicy: new(corev1.PullAlways),
 							},
 						},
 						PodTemplate: &kgateway.Pod{
@@ -220,7 +220,7 @@ var _ = Describe("Deployer", func() {
 							},
 						},
 						Service: &kgateway.Service{
-							Type:      ptr.To(corev1.ServiceTypeClusterIP),
+							Type:      new(corev1.ServiceTypeClusterIP),
 							ClusterIP: new("99.99.99.99"),
 							ExtraLabels: map[string]string{
 								"foo-label": "bar-label",
@@ -228,7 +228,7 @@ var _ = Describe("Deployer", func() {
 							ExtraAnnotations: map[string]string{
 								"foo": "bar",
 							},
-							ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
+							ExternalTrafficPolicy: new(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 						},
 						ServiceAccount: &kgateway.ServiceAccount{
 							ExtraLabels: map[string]string{
@@ -300,7 +300,7 @@ var _ = Describe("Deployer", func() {
 						Group:     kgateway.GroupName,
 						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      wellknown.DefaultGatewayParametersName,
-						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
+						Namespace: new(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
@@ -384,7 +384,7 @@ var _ = Describe("Deployer", func() {
 						Group:     kgateway.GroupName,
 						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      gwp.GetName(),
-						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
+						Namespace: new(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
@@ -460,7 +460,7 @@ var _ = Describe("Deployer", func() {
 						Group:     kgateway.GroupName,
 						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      gwp.GetName(),
-						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
+						Namespace: new(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
@@ -1168,7 +1168,7 @@ var _ = Describe("Deployer", func() {
 						Kube: &kgateway.KubernetesProxyConfig{
 							// Only override a few values, rest should be defaulted
 							Service: &kgateway.Service{
-								Type: ptr.To(corev1.ServiceTypeClusterIP),
+								Type: new(corev1.ServiceTypeClusterIP),
 							},
 							EnvoyContainer: &kgateway.EnvoyContainer{
 								Bootstrap: &kgateway.EnvoyBootstrap{
@@ -1298,7 +1298,7 @@ var _ = Describe("Deployer", func() {
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Deployment: &kgateway.ProxyDeployment{
-								Replicas: ptr.To[int32](3),
+								Replicas: new(int32(3)),
 							},
 							EnvoyContainer: &kgateway.EnvoyContainer{
 								Bootstrap: &kgateway.EnvoyBootstrap{
@@ -1312,7 +1312,7 @@ var _ = Describe("Deployer", func() {
 									Registry:   new("foo"),
 									Repository: new("bar"),
 									Tag:        new("quux"),
-									PullPolicy: ptr.To(corev1.PullAlways),
+									PullPolicy: new(corev1.PullAlways),
 								},
 							},
 							PodTemplate: &kgateway.Pod{
@@ -1325,7 +1325,7 @@ var _ = Describe("Deployer", func() {
 								},
 							},
 							Service: &kgateway.Service{
-								Type:      ptr.To(corev1.ServiceTypeClusterIP),
+								Type:      new(corev1.ServiceTypeClusterIP),
 								ClusterIP: new("99.99.99.99"),
 								ExtraLabels: map[string]string{
 									"override-foo-label": "override-bar-label",
@@ -1333,7 +1333,7 @@ var _ = Describe("Deployer", func() {
 								ExtraAnnotations: map[string]string{
 									"override-foo": "override-bar",
 								},
-								ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
+								ExternalTrafficPolicy: new(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 							},
 							ServiceAccount: &kgateway.ServiceAccount{
 								ExtraLabels: map[string]string{
@@ -1359,7 +1359,7 @@ var _ = Describe("Deployer", func() {
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Deployment: &kgateway.ProxyDeployment{
-								Replicas: ptr.To[int32](3),
+								Replicas: new(int32(3)),
 							},
 							EnvoyContainer: &kgateway.EnvoyContainer{
 								Bootstrap: &kgateway.EnvoyBootstrap{
@@ -1373,7 +1373,7 @@ var _ = Describe("Deployer", func() {
 									Registry:   new("foo"),
 									Repository: new("bar"),
 									Tag:        new("quux"),
-									PullPolicy: ptr.To(corev1.PullAlways),
+									PullPolicy: new(corev1.PullAlways),
 								},
 							},
 							PodTemplate: &kgateway.Pod{
@@ -1387,7 +1387,7 @@ var _ = Describe("Deployer", func() {
 								},
 							},
 							Service: &kgateway.Service{
-								Type:      ptr.To(corev1.ServiceTypeClusterIP),
+								Type:      new(corev1.ServiceTypeClusterIP),
 								ClusterIP: new("99.99.99.99"),
 								ExtraLabels: map[string]string{
 									"foo-label":          "bar-label",
@@ -1397,7 +1397,7 @@ var _ = Describe("Deployer", func() {
 									"foo":          "bar",
 									"override-foo": "override-bar",
 								},
-								ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
+								ExternalTrafficPolicy: new(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 							},
 							ServiceAccount: &kgateway.ServiceAccount{
 								ExtraLabels: map[string]string{
@@ -2002,11 +2002,11 @@ var _ = Describe("Deployer", func() {
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Service: &kgateway.Service{
-								Type: ptr.To(corev1.ServiceTypeNodePort),
+								Type: new(corev1.ServiceTypeNodePort),
 								Ports: []kgateway.Port{
 									{
 										Port:     80,
-										NodePort: ptr.To[int32](30000),
+										NodePort: new(int32(30000)),
 									},
 								},
 							},
@@ -2036,11 +2036,11 @@ var _ = Describe("Deployer", func() {
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Service: &kgateway.Service{
-								Type: ptr.To(corev1.ServiceTypeLoadBalancer),
+								Type: new(corev1.ServiceTypeLoadBalancer),
 								Ports: []kgateway.Port{
 									{
 										Port:     80,
-										NodePort: ptr.To[int32](30000),
+										NodePort: new(int32(30000)),
 									},
 								},
 							},
@@ -2250,7 +2250,7 @@ var _ = Describe("Deployer", func() {
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Deployment: &kgateway.ProxyDeployment{
-								Replicas: ptr.To[int32](3),
+								Replicas: new(int32(3)),
 							},
 						},
 					},
@@ -2373,7 +2373,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
 				Deployment: &kgateway.ProxyDeployment{
-					Replicas: ptr.To[int32](3),
+					Replicas: new(int32(3)),
 				},
 				EnvoyContainer: &kgateway.EnvoyContainer{
 					Bootstrap: &kgateway.EnvoyBootstrap{
@@ -2387,7 +2387,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 						Registry:   new("foo"),
 						Repository: new("bar"),
 						Tag:        new("bat"),
-						PullPolicy: ptr.To(corev1.PullAlways),
+						PullPolicy: new(corev1.PullAlways),
 					},
 					SecurityContext: &corev1.SecurityContext{
 						RunAsUser: new(int64(111)),
@@ -2403,7 +2403,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 						Repository: new("sds-repository"),
 						Tag:        nil,
 						Digest:     new("sds-digest"),
-						PullPolicy: ptr.To(corev1.PullAlways),
+						PullPolicy: new(corev1.PullAlways),
 					},
 					SecurityContext: &corev1.SecurityContext{
 						RunAsUser: new(int64(222)),
@@ -2465,7 +2465,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 					}},
 				},
 				Service: &kgateway.Service{
-					Type:      ptr.To(corev1.ServiceTypeClusterIP),
+					Type:      new(corev1.ServiceTypeClusterIP),
 					ClusterIP: new("99.99.99.99"),
 					ExtraAnnotations: map[string]string{
 						"service-anno": "foo",
@@ -2473,7 +2473,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 					ExtraLabels: map[string]string{
 						"service-label": "foo",
 					},
-					ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
+					ExternalTrafficPolicy: new(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 				},
 				ServiceAccount: &kgateway.ServiceAccount{
 					ExtraLabels: map[string]string{
@@ -2490,7 +2490,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 							Repository: new("istio-repository"),
 							Tag:        new(""),
 							Digest:     new("istio-digest"),
-							PullPolicy: ptr.To(corev1.PullAlways),
+							PullPolicy: new(corev1.PullAlways),
 						},
 						SecurityContext: &corev1.SecurityContext{
 							RunAsUser: new(int64(444)),
