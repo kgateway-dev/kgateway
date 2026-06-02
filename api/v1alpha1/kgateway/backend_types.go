@@ -179,9 +179,6 @@ type AwsAuth struct {
 
 // AwsAssumeRole configures assuming an IAM role via STS to obtain the credentials
 // used to interact with the backend (signing Lambda requests, or listing EC2 instances).
-//
-// Note: for EC2 discovery only RoleArn is honored; SessionName, ExternalId, and
-// SessionDuration apply to Lambda request signing.
 type AwsAssumeRole struct {
 	// RoleArn is the ARN of the IAM role to assume, e.g.
 	// "arn:aws:iam::123456789012:role/my-invoke-role".
