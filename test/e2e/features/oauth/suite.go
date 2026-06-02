@@ -40,6 +40,8 @@ const (
 	clientPassword                 = "kgateway"
 	nonOAuthBackendURL             = "https://test.com"
 	nonOAuthBackendHostPort        = "test.com:443"
+
+	backendURLSplit = "https://example.com/split/anything/split-test"
 )
 
 var (
@@ -50,6 +52,7 @@ var (
 			filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml"),
 			filepath.Join(fsutils.MustGetThisDir(), "testdata", "backend.yaml"),
 			filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-2.yaml"),
+			filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-split-jwks.yaml"),
 		},
 	}
 
@@ -195,6 +198,33 @@ func (s *tsuite) TestNonOAuthBackend() {
 		require.Equal(c, http.StatusOK, resp.StatusCode)
 		require.Contains(c, string(resp.Body), expectedHttpbinResponseSubstr)
 	}, 10*time.Second, 500*time.Millisecond, "accessing non-OAuth backend %s failed", nonOAuthBackendURL)
+}
+
+func (s *tsuite) TestOIDCWithSeparateJWKSBackend() {
+	ctx := s.T().Context()
+	r := s.Require()
+
+	client := newClient(map[string]string{
+		backendHostPort: s.gatewayAddr,
+		keycloakHost:    s.keycloakAddr,
+	})
+
+	r.EventuallyWithT(func(c *assert.CollectT) {
+		resp, err := client.Login(ctx, backendURLSplit,
+			map[string]string{"username": clientUsername, "password": clientPassword, "credentialId": ""})
+		require.NoError(c, err)
+		require.NotNil(c, resp)
+		require.Equal(c, http.StatusOK, resp.StatusCode)
+
+		var httpBinResponse map[string]any
+		err = json.Unmarshal(resp.Body, &httpBinResponse)
+		require.NoError(c, err)
+		httpBinRequestHeaders, ok := httpBinResponse["headers"].(map[string]any)
+		require.True(c, ok)
+		xOAuth2PreferredUsernameHeaders, ok := httpBinRequestHeaders["X-Oauth2-Preferred-Username"].([]any)
+		require.True(c, ok, "x-oauth2-preferred-username header not set")
+		require.Contains(c, xOAuth2PreferredUsernameHeaders, clientUsername)
+	}, 15*time.Second, 500*time.Millisecond, "OIDC flow with separate JWKS backend failed")
 }
 
 func (s *tsuite) getServiceExternalIP(ref types.NamespacedName) (string, error) {
