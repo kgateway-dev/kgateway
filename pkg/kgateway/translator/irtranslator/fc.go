@@ -7,6 +7,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
+	codecv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/upstream_codec/v3"
 	envoy_tls_inspector "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
@@ -345,7 +346,17 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(l ir.HttpFilterChainIR) 
 	routerV3 := routerv3.Router{}
 
 	// 5. Set the upstream http filters on the router
-	routerV3.UpstreamHttpFilters = envoyUpstreamHttpFilters
+	if len(upstreamHttpFilters) > 0 {
+		routerV3.UpstreamHttpFilters = envoyUpstreamHttpFilters
+
+		// Add the Upstream Codec filter at the end since it is a terminal filter
+		routerV3.UpstreamHttpFilters = append(routerV3.GetUpstreamHttpFilters(), &envoyhttp.HttpFilter{
+			Name: UpstreamCodeFilterName,
+			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+				TypedConfig: utils.MustMessageToAny(&codecv3.UpstreamCodec{}),
+			},
+		})
+	}
 
 	//	// TODO it would be ideal of SuppressEnvoyHeaders and DynamicStats could be moved out of here set
 	//	// in a separate router plugin
