@@ -425,10 +425,6 @@ func (s *testingSuite) TestExtProcWithFilterStageWeightOrdering() {
 // DeepMergePreferParent. Each filter uses a distinct ExtProc server that adds
 // its own identifying header, proving both filters ran.
 func (s *testingSuite) TestExtProcWithDeepMerge() {
-	// DELETEME: intentional failure to validate that PreFailHandler and
-	// PerTestPreFailHandler bug-report dumps coexist after the wipeOutDir fix.
-	s.T().Fatal("intentional failure for bug-report dump validation")
-
 	// /both - both gateway-level and route-level ExtProc should run
 	// Expect both x-extproc-server-a (gateway-level) and x-extproc-server-b (route-level) headers
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
