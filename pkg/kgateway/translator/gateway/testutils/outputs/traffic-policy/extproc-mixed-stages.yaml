@@ -139,6 +139,9 @@ Listeners:
                               filter: dev.kgateway.disable_ext_proc
                               path:
                               - key: disable
+            - name: envoy.filters.http.upstream_codec
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
         mergeSlashes: true
         normalizePath: true
         rds:
