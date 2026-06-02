@@ -178,8 +178,11 @@ func buildOAuth2ProviderConfig(
 	jwksBackend := backend
 	if in.JWT != nil && in.JWT.JWKSBackendRef != nil {
 		resolved, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, *in.JWT.JWKSBackendRef)
-		if err != nil || resolved == nil {
+		if err != nil {
 			return nil, fmt.Errorf("error resolving JWKS backend %v: %w", *in.JWT.JWKSBackendRef, err)
+		}
+		if resolved == nil {
+			return nil, fmt.Errorf("JWKS backend not found: %v", *in.JWT.JWKSBackendRef)
 		}
 		jwksBackend = resolved
 	}
