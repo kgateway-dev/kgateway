@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -67,18 +66,18 @@ func TestIsRouteStatusEqual(t *testing.T) {
 		Parents: []gwv1.RouteParentStatus{
 			{
 				ParentRef: gwv1.ParentReference{
-					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.HTTPRouteKind)),
+					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
 					Name:      "parent",
-					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("default")),
+					Namespace: new(gwv1.Namespace("default")),
 				},
 			},
 			{
 				ParentRef: gwv1.ParentReference{
-					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.TCPRouteKind)),
+					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      new(gwv1.Kind(wellknown.TCPRouteKind)),
 					Name:      "parent",
-					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("default")),
+					Namespace: new(gwv1.Namespace("default")),
 				},
 			},
 		},
@@ -88,18 +87,18 @@ func TestIsRouteStatusEqual(t *testing.T) {
 		Parents: []gwv1.RouteParentStatus{
 			{
 				ParentRef: gwv1.ParentReference{
-					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.HTTPRouteKind)),
+					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
 					Name:      "parent",
-					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("default")),
+					Namespace: new(gwv1.Namespace("default")),
 				},
 			},
 			{
 				ParentRef: gwv1.ParentReference{
-					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.TCPRouteKind)),
+					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      new(gwv1.Kind(wellknown.TCPRouteKind)),
 					Name:      "parent",
-					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("default")),
+					Namespace: new(gwv1.Namespace("default")),
 				},
 			},
 		},
@@ -109,18 +108,18 @@ func TestIsRouteStatusEqual(t *testing.T) {
 		Parents: []gwv1.RouteParentStatus{
 			{
 				ParentRef: gwv1.ParentReference{
-					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.HTTPRouteKind)),
+					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
 					Name:      "parent",
-					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("my-other-ns")),
+					Namespace: new(gwv1.Namespace("my-other-ns")),
 				},
 			},
 			{
 				ParentRef: gwv1.ParentReference{
-					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.TCPRouteKind)),
+					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      new(gwv1.Kind(wellknown.TCPRouteKind)),
 					Name:      "parent",
-					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("my-other-ns")),
+					Namespace: new(gwv1.Namespace("my-other-ns")),
 				},
 			},
 		},

@@ -7,7 +7,6 @@ import (
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -44,9 +43,9 @@ func TestConstructRouteTracing_SamplingRates(t *testing.T) {
 	out := &trafficPolicySpecIr{}
 	constructRouteTracing(kgateway.TrafficPolicySpec{
 		Tracing: &kgateway.RouteTracing{
-			ClientSampling:  ptr.To[int32](50),
-			RandomSampling:  ptr.To[int32](10),
-			OverallSampling: ptr.To[int32](100),
+			ClientSampling:  new(int32(50)),
+			RandomSampling:  new(int32(10)),
+			OverallSampling: new(int32(100)),
 		},
 	}, out)
 
@@ -67,7 +66,7 @@ func TestConstructRouteTracing_PartialSampling(t *testing.T) {
 	out := &trafficPolicySpecIr{}
 	constructRouteTracing(kgateway.TrafficPolicySpec{
 		Tracing: &kgateway.RouteTracing{
-			RandomSampling: ptr.To[int32](5),
+			RandomSampling: new(int32(5)),
 		},
 	}, out)
 
@@ -130,7 +129,7 @@ func TestConstructRouteTracing_SamplingWithAttributes(t *testing.T) {
 	out := &trafficPolicySpecIr{}
 	constructRouteTracing(kgateway.TrafficPolicySpec{
 		Tracing: &kgateway.RouteTracing{
-			RandomSampling: ptr.To[int32](25),
+			RandomSampling: new(int32(25)),
 			Attributes: []kgateway.CustomAttribute{
 				{
 					Name: "tag1",

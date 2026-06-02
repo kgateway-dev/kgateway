@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -62,9 +61,9 @@ func TestRouteStatusRefreshesObservedGenerationFromCurrentObject(t *testing.T) {
 				ParentRefs: []gwv1.ParentReference{
 					{
 						Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
-						Kind:      ptr.To(gwv1.Kind("Gateway")),
+						Kind:      new(gwv1.Kind("Gateway")),
 						Name:      "example-gateway",
-						Namespace: ptr.To(gwv1.Namespace("default")),
+						Namespace: new(gwv1.Namespace("default")),
 					},
 				},
 			},
@@ -95,9 +94,9 @@ func TestPolicyStatusRefreshesObservedGenerationOnReporterReuse(t *testing.T) {
 	}
 	ancestorRef := gwv1.ParentReference{
 		Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
-		Kind:      ptr.To(gwv1.Kind("Gateway")),
+		Kind:      new(gwv1.Kind("Gateway")),
 		Name:      "example-gateway",
-		Namespace: ptr.To(gwv1.Namespace("default")),
+		Namespace: new(gwv1.Namespace("default")),
 	}
 
 	statusReporter.Policy(key, 1).AncestorRef(ancestorRef)

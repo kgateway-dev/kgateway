@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -79,8 +78,8 @@ func TestGetRouteChain(t *testing.T) {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
 								{
-									Group: ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-									Kind:  ptr.To(gwv1.Kind("Gateway")),
+									Group: new(gwv1.Group("gateway.networking.k8s.io")),
+									Kind:  new(gwv1.Kind("Gateway")),
 									Name:  "gateway",
 								},
 							},
@@ -105,8 +104,8 @@ func TestGetRouteChain(t *testing.T) {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
 								{
-									Group: ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-									Kind:  ptr.To(gwv1.Kind("HTTPRoute")),
+									Group: new(gwv1.Group("gateway.networking.k8s.io")),
+									Kind:  new(gwv1.Kind("HTTPRoute")),
 									Name:  "parent",
 								},
 							},
@@ -122,8 +121,8 @@ func TestGetRouteChain(t *testing.T) {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
 								{
-									Group: ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-									Kind:  ptr.To(gwv1.Kind("HTTPRoute")),
+									Group: new(gwv1.Group("gateway.networking.k8s.io")),
+									Kind:  new(gwv1.Kind("HTTPRoute")),
 									Name:  "invalid", // invalid parent
 								},
 							},
@@ -139,8 +138,8 @@ func TestGetRouteChain(t *testing.T) {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
 								{
-									Group: ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-									Kind:  ptr.To(gwv1.Kind("Gateway")),
+									Group: new(gwv1.Group("gateway.networking.k8s.io")),
+									Kind:  new(gwv1.Kind("Gateway")),
 									Name:  "gateway", // invalid parent
 								},
 							},
@@ -199,8 +198,8 @@ func TestGetRouteChain(t *testing.T) {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
 								{
-									Group: ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-									Kind:  ptr.To(gwv1.Kind("HTTPRoute")),
+									Group: new(gwv1.Group("gateway.networking.k8s.io")),
+									Kind:  new(gwv1.Kind("HTTPRoute")),
 									Name:  "parent",
 								},
 							},
@@ -216,8 +215,8 @@ func TestGetRouteChain(t *testing.T) {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
 								{
-									Group: ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-									Kind:  ptr.To(gwv1.Kind("HTTPRoute")),
+									Group: new(gwv1.Group("gateway.networking.k8s.io")),
+									Kind:  new(gwv1.Kind("HTTPRoute")),
 									Name:  "invalid", // invalid parent
 								},
 							},
@@ -233,8 +232,8 @@ func TestGetRouteChain(t *testing.T) {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
 								{
-									Group: ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-									Kind:  ptr.To(gwv1.Kind("Gateway")),
+									Group: new(gwv1.Group("gateway.networking.k8s.io")),
+									Kind:  new(gwv1.Kind("Gateway")),
 									Name:  "gateway", // invalid parent
 								},
 							},

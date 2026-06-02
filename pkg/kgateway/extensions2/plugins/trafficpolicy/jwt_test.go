@@ -14,7 +14,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -119,7 +118,7 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 			providers: map[string]*jwtauthnv3.JwtProvider{
 				"provider1": {Issuer: "test-issuer"},
 			},
-			validationMode:  ptr.To(kgateway.ValidationModeAllowMissing),
+			validationMode:  new(kgateway.ValidationModeAllowMissing),
 			expectedType:    "requires_any",
 			expectedCount:   2, // provider requirement + allow missing
 			hasAllowMissing: true,
@@ -131,7 +130,7 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 				"provider1": {Issuer: "test-issuer-1"},
 				"provider2": {Issuer: "test-issuer-2"},
 			},
-			validationMode:  ptr.To(kgateway.ValidationModeAllowMissing),
+			validationMode:  new(kgateway.ValidationModeAllowMissing),
 			expectedType:    "requires_any",
 			expectedCount:   2, // requires_any with providers + allow missing
 			hasAllowMissing: true,
@@ -519,7 +518,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 		{
 			name: "allow missing mode",
 			jwt: &kgateway.JWT{
-				ValidationMode: ptr.To(kgateway.ValidationModeAllowMissing),
+				ValidationMode: new(kgateway.ValidationModeAllowMissing),
 				Providers: []kgateway.NamedJWTProvider{
 					{
 						Name: "test-provider",
@@ -539,7 +538,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 		{
 			name: "allow missing mode with multiple providers",
 			jwt: &kgateway.JWT{
-				ValidationMode: ptr.To(kgateway.ValidationModeAllowMissing),
+				ValidationMode: new(kgateway.ValidationModeAllowMissing),
 				Providers: []kgateway.NamedJWTProvider{
 					{
 						Name: "provider1",

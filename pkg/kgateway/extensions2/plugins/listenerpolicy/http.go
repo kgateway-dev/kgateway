@@ -325,15 +325,15 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		if fccd.Mode != nil {
 			switch *fccd.Mode {
 			case kgateway.ForwardClientCertModeSanitize:
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_SANITIZE)
 			case kgateway.ForwardClientCertModeForwardOnly:
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_FORWARD_ONLY)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_FORWARD_ONLY)
 			case kgateway.ForwardClientCertModeAppendForward:
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_APPEND_FORWARD)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_APPEND_FORWARD)
 			case kgateway.ForwardClientCertModeSanitizeSet:
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
 			case kgateway.ForwardClientCertModeAlwaysForwardOnly:
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_ALWAYS_FORWARD_ONLY)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_ALWAYS_FORWARD_ONLY)
 			}
 		}
 		if d := fccd.Details; d != nil {
@@ -349,7 +349,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 			// If Details is set but Mode is not, default to SANITIZE_SET so the
 			// configuration has effect (Envoy's default SANITIZE strips XFCC).
 			if forwardClientCertMode == nil {
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
 			}
 		}
 	}

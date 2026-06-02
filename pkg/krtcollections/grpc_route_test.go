@@ -11,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -54,7 +53,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 									Method: &gwv1.GRPCMethodMatch{
 										Service: new("TestService"),
 										Method:  new("TestMethod"),
-										Type:    ptr.To(gwv1.GRPCMethodMatchExact),
+										Type:    new(gwv1.GRPCMethodMatchExact),
 									},
 								},
 							},
@@ -63,7 +62,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name: "test-service",
-											Port: ptr.To(gwv1.PortNumber(8080)),
+											Port: new(gwv1.PortNumber(8080)),
 										},
 									},
 								},
@@ -147,7 +146,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 								{
 									Method: &gwv1.GRPCMethodMatch{
 										Service: new("TestService"),
-										Type:    ptr.To(gwv1.GRPCMethodMatchRegularExpression),
+										Type:    new(gwv1.GRPCMethodMatchRegularExpression),
 									},
 								},
 							},
@@ -156,7 +155,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name: "test-service",
-											Port: ptr.To(gwv1.PortNumber(8080)),
+											Port: new(gwv1.PortNumber(8080)),
 										},
 									},
 								},
@@ -227,7 +226,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 										{
 											Name:  "x-test-header",
 											Value: "test-value",
-											Type:  ptr.To(gwv1.GRPCHeaderMatchExact),
+											Type:  new(gwv1.GRPCHeaderMatchExact),
 										},
 									},
 								},
@@ -237,7 +236,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name: "test-service",
-											Port: ptr.To(gwv1.PortNumber(8080)),
+											Port: new(gwv1.PortNumber(8080)),
 										},
 									},
 								},
@@ -314,8 +313,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name:      "test-service",
-											Namespace: ptr.To(gwv1.Namespace("other")),
-											Port:      ptr.To(gwv1.PortNumber(8080)),
+											Namespace: new(gwv1.Namespace("other")),
+											Port:      new(gwv1.PortNumber(8080)),
 										},
 									},
 								},
@@ -406,7 +405,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
 											Name: "test-service",
-											Port: ptr.To(gwv1.PortNumber(8080)),
+											Port: new(gwv1.PortNumber(8080)),
 										},
 									},
 								},
