@@ -146,7 +146,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 			SelfManaged: nil,
 			Kube: &kgateway.KubernetesProxyConfig{
 				Service: &kgateway.Service{
-					Type: (*corev1.ServiceType)(new(string(corev1.ServiceTypeLoadBalancer))),
+					Type: new(corev1.ServiceTypeLoadBalancer),
 				},
 				PodTemplate: &kgateway.Pod{
 					TerminationGracePeriodSeconds: new(int64(60)),
