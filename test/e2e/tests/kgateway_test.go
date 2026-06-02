@@ -66,10 +66,10 @@ func TestKgateway(t *testing.T) {
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
-	// The base gateway has two variants: the ListenerSet-capable one sets
-	// spec.allowedListeners, which only exists once ListenerSets are available. On older
-	// Gateway API versions that field would be pruned, so pick the variant that matches the
-	// installed API version (mirrors the per-suite version gating in test/e2e/tests/base).
+	// The base gateway has two variants: one with "allowedListeners" to support ListenerSets to and one without.
+	// The gateway to apply is selected based on whether the installed Gateway API version supports ListenerSets.
+	// If the gateway with "allowedListeners"  is applied with a Gateway API version that doesn't support it, the resource will be rejected.
+
 	channel, version, err := base.DetectGwApiInfo(ctx, testInstallation.ClusterContext.Client)
 	if err != nil {
 		t.Fatalf("failed to detect Gateway API version: %v", err)
