@@ -64,10 +64,11 @@ spec:
     scopes: ["openid", "email"]
     jwt:
       jwksURI: https://keycloak/realms/master/protocol/openid-connect/certs
-      jwksBackendRef:
-        kind: Service
-        name: keycloak-jwks
-        port: 443
+      jwksBackend:
+        backendRef:
+          kind: Service
+          name: keycloak-jwks
+          port: 9443
       accessToken:
         audiences:
           - account

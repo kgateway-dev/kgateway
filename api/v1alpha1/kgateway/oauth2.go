@@ -192,6 +192,13 @@ type OAuth2CookieNames struct {
 	IDToken *string `json:"idToken,omitempty"`
 }
 
+// JWKSBackend configures the backend used to fetch the JWKS.
+type JWKSBackend struct {
+	// BackendRef is a reference to the backend serving the JWKS endpoint.
+	// +required
+	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
+}
+
 // OAuth2JWTConfig specifies how retrieved tokens are to be parsed and verified as JWT if at all.
 type OAuth2JWTConfig struct {
 	// JWKSURI specifies the URL that public keys for validating JWTs should be retrieved from.
@@ -202,10 +209,10 @@ type OAuth2JWTConfig struct {
 	// +optional
 	JWKSURI *HttpsUri `json:"jwksURI,omitempty"`
 
-	// JWKSBackendRef specifies the backend to use for fetching the JWKS.
+	// JWKSBackend configures the backend used to fetch the JWKS.
 	// If not set, the parent OAuth2Provider's BackendRef is used.
 	// +optional
-	JWKSBackendRef *gwv1.BackendObjectReference `json:"jwksBackendRef,omitempty"`
+	JWKSBackend *JWKSBackend `json:"jwksBackend,omitempty"`
 
 	// AccessToken specifies how to process the retrieved access token.
 	// This requires the access token cookie to be enabled. Requests missing the token will be rejected.
