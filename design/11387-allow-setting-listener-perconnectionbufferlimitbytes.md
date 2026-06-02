@@ -21,9 +21,9 @@ Allow setting the perConnectionBufferLimitBytes for each individual listener on 
 
 ## Implementation Details
 
-This capability is configured through `ListenerPolicy` using the `perConnectionBufferLimitBytes` field.
+This capability is configured through `ListenerPolicy` using the listener config under `spec.default`.
 
-The `perConnectionBufferLimitBytes` value is applied to all listeners on the targeted Gateway.
+The `spec.default.perConnectionBufferLimitBytes` value is applied to all listeners on the targeted Gateway.
 
 ```
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -35,7 +35,8 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  perConnectionBufferLimitBytes: 65536
+  default:
+    perConnectionBufferLimitBytes: 65536
 ```
 
 ### Test Plan
