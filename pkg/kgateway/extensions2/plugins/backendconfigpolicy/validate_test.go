@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -137,6 +138,46 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 						return fmt.Errorf("expected STRICT_DNS cluster type, got %v", cluster.GetType())
 					}
 					return nil // Validation passes
+				},
+			},
+			mode:    apisettings.ValidationStrict,
+			wantErr: false,
+		},
+		{
+			name: "policy with system CA adds validation secret to bootstrap",
+			policyIR: &BackendConfigPolicyIR{
+				ct: time.Now(),
+				tlsConfig: &envoytlsv3.UpstreamTlsContext{
+					CommonTlsContext: &envoytlsv3.CommonTlsContext{
+						ValidationContextType: &envoytlsv3.CommonTlsContext_CombinedValidationContext{
+							CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
+								DefaultValidationContext: &envoytlsv3.CertificateValidationContext{},
+								ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+									Name: eiutils.SystemCaSecretName,
+								},
+							},
+						},
+					},
+				},
+			},
+			validator: &mockValidator{
+				validateFunc: func(ctx context.Context, config string) error {
+					var bootstrap envoybootstrapv3.Bootstrap
+					if err := protojson.Unmarshal([]byte(config), &bootstrap); err != nil {
+						return fmt.Errorf("failed to unmarshal bootstrap config: %w", err)
+					}
+					secrets := bootstrap.GetStaticResources().GetSecrets()
+					if len(secrets) != 1 {
+						return fmt.Errorf("expected exactly one secret in bootstrap, got %d", len(secrets))
+					}
+					secret := secrets[0]
+					if secret.GetName() != eiutils.SystemCaSecretName {
+						return fmt.Errorf("expected secret name %q, got %q", eiutils.SystemCaSecretName, secret.GetName())
+					}
+					if secret.GetValidationContext().GetTrustedCa().GetInlineString() == "" {
+						return errors.New("expected placeholder CA cert in validation secret")
+					}
+					return nil
 				},
 			},
 			mode:    apisettings.ValidationStrict,

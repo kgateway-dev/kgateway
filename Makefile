@@ -103,8 +103,8 @@ BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
 
-# Base Alpine image used for all containers. Exported for use in goreleaser.yaml.
-export ALPINE_BASE_IMAGE ?= alpine:3.17.6
+# Base Alpine image used for SDS and dummy-idp containers. Exported for use in goreleaser.yaml.
+export ALPINE_BASE_IMAGE ?= alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
 
 GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
