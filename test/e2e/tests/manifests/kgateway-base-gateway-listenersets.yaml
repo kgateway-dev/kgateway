@@ -1,8 +1,5 @@
-# Base gateway variant applied when the installed Gateway API supports ListenerSets
-# (experimental >= 1.3, standard >= 1.5). It adds spec.allowedListeners so that
-# cross-namespace ListenerSets (e.g. the header_modifiers suite) can attach. On older
-# APIs this field is not in the CRD schema and would be pruned, so the default
-# kgateway-base-gateway.yaml is used instead.
+# Base gateway variant with spec.allowedListeners  applied when the installed Gateway API supports ListenerSets
+# (experimental >= 1.3, standard >= 1.5).
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
