@@ -19,7 +19,8 @@ metadata:
   name: route-filter-stage
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:
@@ -29,7 +30,7 @@ spec:
             type: PathPrefix
             value: /early-extproc
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
     - name: default-extproc
       matches:
@@ -37,7 +38,7 @@ spec:
             type: PathPrefix
             value: /default-extproc
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
     - name: no-extproc
       matches:
@@ -45,7 +46,7 @@ spec:
             type: PathPrefix
             value: /no-extproc
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
 ---
 # ExtProc at a custom early stage (After Fault)

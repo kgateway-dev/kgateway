@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -65,7 +66,23 @@ func TestKgateway(t *testing.T) {
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
-	common.SetupBaseConfig(ctx, t, testInstallation, filepath.Join("manifests", "kgateway-base.yaml"))
+	// The base gateway has two variants: one with "allowedListeners" to support ListenerSets to and one without.
+	// The gateway to apply is selected based on whether the installed Gateway API version supports ListenerSets.
+	// If the gateway with "allowedListeners"  is applied with a Gateway API version that doesn't support it, the resource will be rejected.
+
+	channel, version, err := base.DetectGwApiInfo(ctx, testInstallation.ClusterContext.Client)
+	if err != nil {
+		t.Fatalf("failed to detect Gateway API version: %v", err)
+	}
+	gatewayManifest := "kgateway-base-gateway.yaml"
+	if base.SupportsListenerSets(channel, version) {
+		gatewayManifest = "kgateway-base-gateway-listenersets.yaml"
+	}
+
+	common.SetupBaseConfig(ctx, t, testInstallation,
+		filepath.Join("manifests", "kgateway-base.yaml"),
+		filepath.Join("manifests", gatewayManifest),
+	)
 	common.SetupBaseGateway(ctx, t, testInstallation, types.NamespacedName{
 		Namespace: "kgateway-base",
 		Name:      "gateway",

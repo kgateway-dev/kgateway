@@ -1,13 +1,15 @@
+# Default base gateway, applied on Gateway API versions that do not support ListenerSets
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: gw
+  name: gateway
+  namespace: kgateway-base
 spec:
   gatewayClassName: kgateway
   listeners:
     - protocol: HTTP
-      port: 8080
+      port: 80
       name: http
       allowedRoutes:
         namespaces:
-          from: Same
+          from: All
