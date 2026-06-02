@@ -187,30 +187,6 @@ type AwsAssumeRole struct {
 	// +kubebuilder:validation:MaxLength=2048
 	// +kubebuilder:validation:Pattern="^arn:aws[a-z-]*:iam::[0-9]{12}:role/.+$"
 	RoleArn string `json:"roleArn"`
-	// SessionName is an identifier for the assumed role session, surfaced in
-	// AWS CloudTrail logs and usable in role trust/permission policies.
-	// When omitted, a default session name is generated.
-	// +optional
-	// +kubebuilder:validation:MinLength=2
-	// +kubebuilder:validation:MaxLength=64
-	// +kubebuilder:validation:Pattern="^[\\w+=,.@-]+$"
-	SessionName *string `json:"sessionName,omitempty"`
-	// ExternalId is a unique identifier that may be required by the target role's
-	// trust policy, commonly used in cross-account access to mitigate the
-	// "confused deputy" problem.
-	// +optional
-	// +kubebuilder:validation:MinLength=2
-	// +kubebuilder:validation:MaxLength=1224
-	// +kubebuilder:validation:Pattern="^[\\w+=,.@:/-]+$"
-	ExternalId *string `json:"externalId,omitempty"`
-	// SessionDuration is the duration of the assumed-role session, after which the
-	// temporary credentials expire and are refreshed. Must be between 15m (900s)
-	// and 12h (43200s), and may not exceed the target role's maximum session
-	// duration. When omitted, the AWS default (1h) is used.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('900s') && duration(self) <= duration('43200s')",message="sessionDuration must be between 900s (15m) and 43200s (12h)"
-	SessionDuration *metav1.Duration `json:"sessionDuration,omitempty"`
 }
 
 const (

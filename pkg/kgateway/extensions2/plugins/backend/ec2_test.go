@@ -263,7 +263,7 @@ func TestAwsEc2InstanceListerClientForDeduplicatesConcurrentMisses(t *testing.T)
 	}
 
 	const callers = 8
-	source := ec2CredentialSource{region: "us-east-1", assumeRole: ec2AssumeRole{roleArn: "arn:aws:iam::123456789012:role/shared"}}
+	source := ec2CredentialSource{region: "us-east-1", roleArn: "arn:aws:iam::123456789012:role/shared"}
 	clients := make(chan *awsec2.Client, callers)
 	errs := make(chan error, callers)
 
@@ -529,80 +529,6 @@ func newEc2Backend(name, roleArn string, filters []kgateway.AwsTagFilter) *kgate
 		}
 	}
 	return be
-}
-
-func TestAssumeRoleConfigMapsAllFields(t *testing.T) {
-	auth := &kgateway.AwsAuth{
-		Type: kgateway.AwsAuthTypeAssumeRole,
-		AssumeRole: &kgateway.AwsAssumeRole{
-			RoleArn:         "arn:aws:iam::123456789012:role/describe-ec2",
-			SessionName:     ptrTo("kgateway-discovery"),
-			ExternalId:      ptrTo("ext-abc"),
-			SessionDuration: &metav1.Duration{Duration: 30 * time.Minute},
-		},
-	}
-
-	got := assumeRoleConfig(auth)
-	want := ec2AssumeRole{
-		roleArn:         "arn:aws:iam::123456789012:role/describe-ec2",
-		sessionName:     "kgateway-discovery",
-		externalID:      "ext-abc",
-		sessionDuration: 30 * time.Minute,
-	}
-	if got != want {
-		t.Fatalf("assumeRoleConfig() = %+v, want %+v", got, want)
-	}
-}
-
-func TestAssumeRoleConfigEmptyWhenNotAssumeRole(t *testing.T) {
-	secretAuth := &kgateway.AwsAuth{Type: kgateway.AwsAuthTypeSecret}
-	if got := assumeRoleConfig(secretAuth); got != (ec2AssumeRole{}) {
-		t.Fatalf("assumeRoleConfig(Secret) = %+v, want zero value", got)
-	}
-	if got := assumeRoleConfig(nil); got != (ec2AssumeRole{}) {
-		t.Fatalf("assumeRoleConfig(nil) = %+v, want zero value", got)
-	}
-}
-
-// TestEC2IrEqualsDistinguishesSessionParams guards KRT correctness: a change to
-// any AssumeRole session parameter must produce a different IR so the cached EC2
-// client is rebuilt with the new credentials rather than serving stale ones.
-func TestEC2IrEqualsDistinguishesSessionParams(t *testing.T) {
-	base := &EC2Ir{
-		region:     "us-east-1",
-		assumeRole: ec2AssumeRole{roleArn: "arn:aws:iam::123456789012:role/r"},
-	}
-	cases := map[string]ec2AssumeRole{
-		"externalID":      {roleArn: "arn:aws:iam::123456789012:role/r", externalID: "ext"},
-		"sessionName":     {roleArn: "arn:aws:iam::123456789012:role/r", sessionName: "sess"},
-		"sessionDuration": {roleArn: "arn:aws:iam::123456789012:role/r", sessionDuration: time.Hour},
-		"roleArn":         {roleArn: "arn:aws:iam::123456789012:role/other"},
-	}
-	for name, ar := range cases {
-		t.Run(name, func(t *testing.T) {
-			other := &EC2Ir{region: "us-east-1", assumeRole: ar}
-			if base.Equals(other) {
-				t.Fatalf("EC2Ir.Equals returned true for differing %s; cached client would not rebuild", name)
-			}
-		})
-	}
-}
-
-// TestEc2ClientIdentityKeyDistinguishesSessionParams ensures the client cache key
-// separates clients whose AssumeRole session parameters differ.
-func TestEc2ClientIdentityKeyDistinguishesSessionParams(t *testing.T) {
-	base := ec2ClientIdentity{region: "us-east-1", assumeRole: ec2AssumeRole{roleArn: "arn:aws:iam::123456789012:role/r"}}
-	others := []ec2AssumeRole{
-		{roleArn: "arn:aws:iam::123456789012:role/r", externalID: "ext"},
-		{roleArn: "arn:aws:iam::123456789012:role/r", sessionName: "sess"},
-		{roleArn: "arn:aws:iam::123456789012:role/r", sessionDuration: time.Hour},
-	}
-	for _, ar := range others {
-		other := ec2ClientIdentity{region: "us-east-1", assumeRole: ar}
-		if base.singleflightKey("v1") == other.singleflightKey("v1") {
-			t.Fatalf("singleflightKey collided for differing session params: %+v", ar)
-		}
-	}
 }
 
 func backendObjectIR(be *kgateway.Backend, secret *ir.Secret) ir.BackendObjectIR {

@@ -91,15 +91,6 @@ spec:
                           granting the gateway/controller role direct access to every target.
                           Required when type is 'AssumeRole'.
                         properties:
-                          externalId:
-                            description: |-
-                              ExternalId is a unique identifier that may be required by the target role's
-                              trust policy, commonly used in cross-account access to mitigate the
-                              "confused deputy" problem.
-                            maxLength: 1224
-                            minLength: 2
-                            pattern: ^[\w+=,.@:/-]+$
-                            type: string
                           roleArn:
                             description: |-
                               RoleArn is the ARN of the IAM role to assume, e.g.
@@ -107,29 +98,6 @@ spec:
                             maxLength: 2048
                             minLength: 1
                             pattern: ^arn:aws[a-z-]*:iam::[0-9]{12}:role/.+$
-                            type: string
-                          sessionDuration:
-                            description: |-
-                              SessionDuration is the duration of the assumed-role session, after which the
-                              temporary credentials expire and are refreshed. Must be between 15m (900s)
-                              and 12h (43200s), and may not exceed the target role's maximum session
-                              duration. When omitted, the AWS default (1h) is used.
-                            type: string
-                            x-kubernetes-validations:
-                            - message: invalid duration value
-                              rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                            - message: sessionDuration must be between 900s (15m)
-                                and 43200s (12h)
-                              rule: duration(self) >= duration('900s') && duration(self)
-                                <= duration('43200s')
-                          sessionName:
-                            description: |-
-                              SessionName is an identifier for the assumed role session, surfaced in
-                              AWS CloudTrail logs and usable in role trust/permission policies.
-                              When omitted, a default session name is generated.
-                            maxLength: 64
-                            minLength: 2
-                            pattern: ^[\w+=,.@-]+$
                             type: string
                         required:
                         - roleArn

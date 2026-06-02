@@ -43,17 +43,6 @@ const (
 	ec2RefreshTimeout = 30 * time.Second
 )
 
-// ec2AssumeRole bundles the STS AssumeRole parameters used when the controller
-// assumes a role to list instances. It is a pure value type (all fields
-// comparable) so it can be compared with == and used as part of cache keys.
-// An empty roleArn means no role is assumed (use ambient credentials directly).
-type ec2AssumeRole struct {
-	roleArn         string
-	sessionName     string
-	externalID      string
-	sessionDuration time.Duration
-}
-
 // EC2Ir is the internal representation of an EC2 backend.
 //
 // Every field is compared in Equals below, but the krtequals analyzer can't
@@ -64,7 +53,7 @@ type EC2Ir struct {
 	region      string                  // +noKrtEquals
 	port        uint32                  // +noKrtEquals
 	addressType kgateway.AwsAddressType // +noKrtEquals
-	assumeRole  ec2AssumeRole           // +noKrtEquals
+	roleArn     string                  // +noKrtEquals
 	filters     []ec2TagFilter          // +noKrtEquals
 	secret      *ir.Secret              // +noKrtEquals
 }
@@ -74,7 +63,7 @@ func (u *EC2Ir) Equals(other *EC2Ir) bool {
 		return a.region == b.region &&
 			a.port == b.port &&
 			a.addressType == b.addressType &&
-			a.assumeRole == b.assumeRole &&
+			a.roleArn == b.roleArn &&
 			slices.Equal(a.filters, b.filters) &&
 			ec2SecretsEqual(a.secret, b.secret)
 	})
@@ -100,31 +89,20 @@ func buildEc2Ir(in *kgateway.AwsBackend, secret *ir.Secret) (*EC2Ir, error) {
 		region:      defaultAwsRegion(in.Region),
 		port:        defaultEc2PortValue(in.Ec2.Port),
 		addressType: defaultEc2AddressType(in.Ec2.AddressType),
-		assumeRole:  assumeRoleConfig(in.Auth),
+		roleArn:     assumeRoleArn(in.Auth),
 		filters:     normalizeEc2TagFilters(in.Ec2.Filters),
 		secret:      secret,
 	}, nil
 }
 
-// assumeRoleConfig returns the STS AssumeRole parameters for the backend, sourced
-// from the shared auth block. EC2 discovery uses the controller's ambient
-// credentials to assume this role when listing instances. Returns the zero value
-// (empty roleArn) when no AssumeRole auth is set.
-func assumeRoleConfig(auth *kgateway.AwsAuth) ec2AssumeRole {
-	if auth == nil || auth.Type != kgateway.AwsAuthTypeAssumeRole || auth.AssumeRole == nil {
-		return ec2AssumeRole{}
+// assumeRoleArn returns the role ARN to assume for the backend, sourced from the
+// shared auth block. EC2 discovery uses the controller's ambient credentials to
+// assume this role when listing instances. Returns "" when no AssumeRole auth is set.
+func assumeRoleArn(auth *kgateway.AwsAuth) string {
+	if auth != nil && auth.Type == kgateway.AwsAuthTypeAssumeRole && auth.AssumeRole != nil {
+		return auth.AssumeRole.RoleArn
 	}
-	out := ec2AssumeRole{roleArn: auth.AssumeRole.RoleArn}
-	if auth.AssumeRole.SessionName != nil {
-		out.sessionName = *auth.AssumeRole.SessionName
-	}
-	if auth.AssumeRole.ExternalId != nil {
-		out.externalID = *auth.AssumeRole.ExternalId
-	}
-	if auth.AssumeRole.SessionDuration != nil {
-		out.sessionDuration = auth.AssumeRole.SessionDuration.Duration
-	}
-	return out
+	return ""
 }
 
 func processEc2(_ *EC2Ir, out *envoyclusterv3.Cluster) error {
@@ -152,7 +130,7 @@ type ec2TagFilter struct {
 type ec2BackendConfig struct {
 	resourceName string
 	region       string
-	assumeRole   ec2AssumeRole
+	roleArn      string
 	port         uint32
 	addressType  kgateway.AwsAddressType
 	filters      []ec2TagFilter
@@ -161,15 +139,15 @@ type ec2BackendConfig struct {
 
 type ec2CredentialKey struct {
 	region                string
-	assumeRole            ec2AssumeRole
+	roleArn               string
 	secretResourceName    string
 	secretResourceVersion string
 }
 
 type ec2CredentialSource struct {
-	region     string
-	assumeRole ec2AssumeRole
-	secret     *ir.Secret
+	region  string
+	roleArn string
+	secret  *ir.Secret
 }
 
 type ec2DiscoveredInstance struct {
@@ -209,17 +187,14 @@ type ec2InstanceLister interface {
 // to scan the cache for superseded entries.
 type ec2ClientIdentity struct {
 	region             string
-	assumeRole         ec2AssumeRole
+	roleArn            string
 	secretResourceName string
 }
 
 func (k ec2ClientIdentity) singleflightKey(secretResourceVersion string) string {
 	return strings.Join([]string{
 		k.region,
-		k.assumeRole.roleArn,
-		k.assumeRole.sessionName,
-		k.assumeRole.externalID,
-		k.assumeRole.sessionDuration.String(),
+		k.roleArn,
 		k.secretResourceName,
 		secretResourceVersion,
 	}, "\x00")
@@ -234,7 +209,7 @@ type ec2CachedClient struct {
 
 type ec2BackendStateKey struct {
 	region                string
-	assumeRole            ec2AssumeRole
+	roleArn               string
 	port                  uint32
 	addressType           kgateway.AwsAddressType
 	filters               []ec2TagFilter
@@ -244,7 +219,7 @@ type ec2BackendStateKey struct {
 
 func (k ec2BackendStateKey) Equals(other ec2BackendStateKey) bool {
 	return k.region == other.region &&
-		k.assumeRole == other.assumeRole &&
+		k.roleArn == other.roleArn &&
 		k.port == other.port &&
 		k.addressType == other.addressType &&
 		slices.Equal(k.filters, other.filters) &&
@@ -268,8 +243,8 @@ var newEc2InstanceLister = func() ec2InstanceLister {
 
 func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
 	identity := ec2ClientIdentity{
-		region:     source.region,
-		assumeRole: source.assumeRole,
+		region:  source.region,
+		roleArn: source.roleArn,
 	}
 	version := ""
 	if source.secret != nil {
@@ -340,20 +315,9 @@ func newAwsEc2Client(ctx context.Context, source ec2CredentialSource) (*awsec2.C
 		return nil, fmt.Errorf("load aws config: %w", err)
 	}
 
-	if source.assumeRole.roleArn != "" {
-		ar := source.assumeRole
+	if source.roleArn != "" {
 		stsClient := sts.NewFromConfig(cfg)
-		cfg.Credentials = awssdk.NewCredentialsCache(stscreds.NewAssumeRoleProvider(stsClient, ar.roleArn, func(o *stscreds.AssumeRoleOptions) {
-			if ar.sessionName != "" {
-				o.RoleSessionName = ar.sessionName
-			}
-			if ar.externalID != "" {
-				o.ExternalID = awssdk.String(ar.externalID)
-			}
-			if ar.sessionDuration != 0 {
-				o.Duration = ar.sessionDuration
-			}
-		}))
+		cfg.Credentials = awssdk.NewCredentialsCache(stscreds.NewAssumeRoleProvider(stsClient, source.roleArn))
 	}
 
 	return awsec2.NewFromConfig(cfg), nil
@@ -391,7 +355,7 @@ func (l *awsEc2InstanceLister) ListInstances(ctx context.Context, source ec2Cred
 						"skipping EC2 instance with no IP address",
 						"instance_id", discovered.instanceID,
 						"region", source.region,
-						"role_arn", source.assumeRole.roleArn,
+						"role_arn", source.roleArn,
 						"secret", ec2SecretResourceName(source.secret),
 						"availability_zone", discovered.zone,
 					)
@@ -575,8 +539,8 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 	byCredential := make(map[ec2CredentialKey][]ec2BackendConfig)
 	for _, cfg := range configs {
 		key := ec2CredentialKey{
-			region:     cfg.region,
-			assumeRole: cfg.assumeRole,
+			region:  cfg.region,
+			roleArn: cfg.roleArn,
 		}
 		if cfg.secret != nil {
 			key.secretResourceName = cfg.secret.ResourceName()
@@ -603,8 +567,8 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 	for key, groupedBackends := range byCredential {
 		wg.Go(func() {
 			source := ec2CredentialSource{
-				region:     key.region,
-				assumeRole: key.assumeRole,
+				region:  key.region,
+				roleArn: key.roleArn,
 			}
 			if len(groupedBackends) > 0 {
 				source.secret = groupedBackends[0].secret
@@ -619,7 +583,7 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 			logger.Debug(
 				"listed EC2 instances for credential scope",
 				"region", key.region,
-				"role_arn", key.assumeRole.roleArn,
+				"role_arn", key.roleArn,
 				"secret", key.secretResourceName,
 				"instance_count", len(instances),
 				"backend_count", len(groupedBackends),
@@ -693,7 +657,7 @@ func ec2ConfigFromBackend(backend ir.BackendObjectIR) *ec2BackendConfig {
 	cfg := &ec2BackendConfig{
 		resourceName: backend.ResourceName(),
 		region:       ec2Ir.region,
-		assumeRole:   ec2Ir.assumeRole,
+		roleArn:      ec2Ir.roleArn,
 		port:         ec2Ir.port,
 		addressType:  ec2Ir.addressType,
 		filters:      ec2Ir.filters,
@@ -746,7 +710,7 @@ func selectResolvedEc2Backend(cfg ec2BackendConfig, instances []ec2DiscoveredIns
 			"no EC2 instances matched configured filters",
 			"backend", cfg.resourceName,
 			"region", cfg.region,
-			"role_arn", cfg.assumeRole.roleArn,
+			"role_arn", cfg.roleArn,
 			"address_type", cfg.addressType,
 			"filters", ec2FiltersForLog(cfg.filters),
 			"listed_instances", len(instances),
@@ -791,7 +755,7 @@ func normalizeEc2TagFilters(in []kgateway.AwsTagFilter) []ec2TagFilter {
 func (c ec2BackendConfig) stateKey() ec2BackendStateKey {
 	key := ec2BackendStateKey{
 		region:      c.region,
-		assumeRole:  c.assumeRole,
+		roleArn:     c.roleArn,
 		port:        c.port,
 		addressType: c.addressType,
 		filters:     slices.Clone(c.filters),
@@ -830,7 +794,7 @@ func logEc2AWSAPIError(source ec2CredentialSource, operation string, err error) 
 	attrs := []any{
 		"operation", operation,
 		"region", source.region,
-		"role_arn", source.assumeRole.roleArn,
+		"role_arn", source.roleArn,
 		"secret", ec2SecretResourceName(source.secret),
 		"error", err,
 	}

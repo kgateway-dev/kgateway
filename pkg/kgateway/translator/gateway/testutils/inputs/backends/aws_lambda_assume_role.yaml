@@ -29,43 +29,13 @@ spec:
         - name: lambda-assume-role
           kind: Backend
           group: gateway.kgateway.dev
-    - matches:
-      - path:
-          type: Exact
-          value: /lambda/minimal-assume-role
-      backendRefs:
-        - name: lambda-assume-role-minimal
-          kind: Backend
-          group: gateway.kgateway.dev
 ---
-# Full AssumeRole config: chains off the gateway's ambient credentials (IRSA) to
-# assume a per-target invoke role via STS.
+# AssumeRole auth: chains off the gateway's ambient credentials (IRSA) to assume a
+# per-target invoke role via STS, whose temporary credentials sign Lambda requests.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
   name: lambda-assume-role
-  namespace: default
-spec:
-  type: AWS
-  aws:
-    accountId: "000000000000"
-    region: us-east-1
-    auth:
-      type: AssumeRole
-      assumeRole:
-        roleArn: arn:aws:iam::311275790335:role/project-invoke-role
-        sessionName: kgateway-session
-        externalId: ext-12345
-        sessionDuration: 30m
-    lambda:
-      functionName: hello-function
-      qualifier: $LATEST
----
-# Minimal AssumeRole config: only roleArn is set; session name/duration default in Envoy.
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
-metadata:
-  name: lambda-assume-role-minimal
   namespace: default
 spec:
   type: AWS

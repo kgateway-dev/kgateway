@@ -195,20 +195,10 @@ func configureAWSAuth(auth *kgateway.AwsAuth, secret *ir.Secret, region string) 
 		if auth.AssumeRole == nil {
 			return nil, fmt.Errorf("assumeRole is required for %q auth", kgateway.AwsAuthTypeAssumeRole)
 		}
-		assumeRole := &envoy_aws_common_v3.AssumeRoleCredentialProvider{
-			RoleArn: auth.AssumeRole.RoleArn,
-		}
-		if auth.AssumeRole.SessionName != nil {
-			assumeRole.RoleSessionName = *auth.AssumeRole.SessionName
-		}
-		if auth.AssumeRole.ExternalId != nil {
-			assumeRole.ExternalId = *auth.AssumeRole.ExternalId
-		}
-		if auth.AssumeRole.SessionDuration != nil {
-			assumeRole.SessionDuration = durationpb.New(auth.AssumeRole.SessionDuration.Duration)
-		}
 		signing.CredentialProvider = &envoy_aws_common_v3.AwsCredentialProvider{
-			AssumeRoleCredentialProvider: assumeRole,
+			AssumeRoleCredentialProvider: &envoy_aws_common_v3.AssumeRoleCredentialProvider{
+				RoleArn: auth.AssumeRole.RoleArn,
+			},
 		}
 
 	default:

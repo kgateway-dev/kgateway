@@ -43,9 +43,6 @@ spec:
       type: AssumeRole
       assumeRole:
         roleArn: arn:aws:iam::123456789012:role/describe-ec2
-        sessionName: kgateway-discovery
-        externalId: ext-12345
-        sessionDuration: 30m
     ec2:
       port: 8080
       addressType: PrivateIP
