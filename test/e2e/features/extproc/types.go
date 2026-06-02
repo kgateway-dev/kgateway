@@ -22,6 +22,7 @@ var (
 	filterStageWeightManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "filter-stage-weight.yaml")
 	dualServersManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "extproc-dual-servers.yaml")
 	deepMergeManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "deep-merge.yaml")
+	mixedStagesManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "mixed-stages.yaml")
 
 	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{

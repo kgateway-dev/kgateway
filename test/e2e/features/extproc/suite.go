@@ -57,6 +57,10 @@ var (
 		"TestExtProcWithFilterStageWeightOrdering": {
 			Manifests: []string{dualServersManifest, filterStageWeightManifest},
 		},
+		// Requires KGW_POLICY_MERGE={"trafficPolicy":{"extProc":"DeepMerge"}}
+		"TestExtProcWithMixedStages": {
+			Manifests: []string{dualServersManifest, mixedStagesManifest},
+		},
 		"TestExtProcWithDeepMerge": {
 			Manifests: []string{dualServersManifest, deepMergeManifest},
 		},
@@ -365,8 +369,26 @@ func (s *testingSuite) TestExtProcWithFilterStage() {
 // Requires kgateway to be deployed with KGW_POLICY_MERGE={"trafficPolicy":{"extProc":"DeepMerge"}}
 // so that multiple ExtProc policies attached via extensionRef filters are both applied.
 func (s *testingSuite) TestExtProcWithFilterStageWeightOrdering() {
-	// Verify both filters execute: high-weight server-a (weight=10) and low-weight
-	// server-b (weight=-5) headers should both be present
+	s.assertDualExtProcOrdering()
+}
+
+// TestExtProcWithMixedStages tests that two ExtProc filters at different stages both
+// execute, with the before-AuthN filter (server-a, downstream httpFilter) running before
+// the after-route filter (server-b, upstreamHttpFilter).
+// Requires kgateway to be deployed with KGW_POLICY_MERGE={"trafficPolicy":{"extProc":"DeepMerge"}}
+// so that multiple ExtProc policies attached via extensionRef filters are both applied.
+func (s *testingSuite) TestExtProcWithMixedStages() {
+	s.assertDualExtProcOrdering()
+}
+
+// assertDualExtProcOrdering asserts that two ExtProc filters both run and that server-a
+// executes before server-b on the /both route. Two checks are performed:
+// 1. Both x-extproc-server-a and x-extproc-server-b headers are present.
+// 2. Ordering proof: instruct both servers to remove x-extproc-server-a, then verify it
+//    is absent while x-extproc-server-b is present. Server-a runs first and adds the
+//    header (Envoy applies removes before sets within a single response, so the add wins);
+//    server-b then removes it. Absence proves server-a preceded server-b.
+func (s *testingSuite) assertDualExtProcOrdering() {
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
@@ -387,14 +409,6 @@ func (s *testingSuite) TestExtProcWithFilterStageWeightOrdering() {
 			),
 		})
 
-	// Verify filter execution order: high-weight server-a (weight=10) runs before
-	// low-weight server-b (weight=-5). Both servers receive the instruction to remove
-	// x-extproc-server-a. Server A runs first: its --add-header sets x-extproc-server-a
-	// (Envoy applies removes before sets within a single response, so the header is
-	// present). Server B runs second: removes x-extproc-server-a (added by server A)
-	// and adds x-extproc-server-b.
-	// Result: x-extproc-server-a absent proves server A (high-weight) ran before
-	// server B (low-weight).
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
