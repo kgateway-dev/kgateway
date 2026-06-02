@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-ec2-creds
+  namespace: kgateway-base
+type: Opaque
+data:
+  accessKey: QUtJQUlPU0ZPRE5ON0VYQU1QTEU=
+  secretKey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ==

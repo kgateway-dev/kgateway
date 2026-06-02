@@ -7,8 +7,8 @@ on:
     - cron: "0 10 * * *"
 
 env:
-  DAYS_BEFORE_ISSUE_STALE: 180
-  DAYS_BEFORE_ISSUE_CLOSE: 180
+  DAYS_BEFORE_ISSUE_STALE: 90
+  DAYS_BEFORE_ISSUE_CLOSE: 30
   DAYS_BEFORE_PR_STALE: 30
   DAYS_BEFORE_PR_CLOSE: 5
 
@@ -19,7 +19,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
+      - uses: actions/stale@eb5cf3af3ac0a1aa4c9c45633dd1ae542a27a899 # v10.3.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           days-before-issue-stale: ${{ env.DAYS_BEFORE_ISSUE_STALE }}
@@ -27,7 +27,7 @@ jobs:
           stale-issue-message: >
             This issue has been marked as stale because of no activity in the last ${{ env.DAYS_BEFORE_ISSUE_STALE }} days. It will be closed in the next ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days unless it is tagged "no stalebot" or other activity occurs.
           close-issue-message: >
-            This issue has been closed due to no activity in the last 12 months.
+            This issue has been closed due to no activity in the last ${{ env.DAYS_BEFORE_ISSUE_STALE }} days.
           stale-issue-label: 'stale' # https://github.com/kgateway-dev/kgateway/labels/stale
           exempt-issue-labels: 'no stalebot' # https://github.com/kgateway-dev/kgateway/labels/no%20stalebot
           enable-statistics: true
@@ -40,7 +40,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
+      - uses: actions/stale@eb5cf3af3ac0a1aa4c9c45633dd1ae542a27a899 # v10.3.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           days-before-pr-stale: ${{ env.DAYS_BEFORE_PR_STALE }}

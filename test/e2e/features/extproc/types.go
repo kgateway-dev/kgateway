@@ -15,4 +15,8 @@ var (
 	httpRouteTargetRefManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute-targetref.yaml")
 	singleRouteManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "single-route.yaml")
 	backendFilterManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backend-filter.yaml")
+	filterStageManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "filter-stage.yaml")
+	filterStageWeightManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "filter-stage-weight.yaml")
+	dualServersManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "extproc-dual-servers.yaml")
+	deepMergeManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "deep-merge.yaml")
 )

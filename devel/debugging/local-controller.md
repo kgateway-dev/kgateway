@@ -75,8 +75,8 @@ kubectl -n kgateway-system apply -f examples/example-http-route.yaml
 ```
 
 Using a local web browser:
-- GET http://localhost:9097/snapshots/krt to inspect the KRT snapshot.
-- GET http://localhost:9097/snapshots/xds to inspect the XDS snapshot.
+- GET http://localhost:9095/snapshots/krt to inspect the KRT snapshot.
+- GET http://localhost:9095/snapshots/xds to inspect the XDS snapshot.
 
 When finished testing:
 

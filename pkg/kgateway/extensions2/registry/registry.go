@@ -80,7 +80,7 @@ func Plugins(
 ) []sdk.Plugin {
 	return []sdk.Plugin{
 		// Add plugins here
-		backend.NewPlugin(commoncol),
+		backend.NewPlugin(ctx, commoncol),
 		trafficpolicy.NewPlugin(ctx, commoncol, globalSettings.PolicyMerge, validator),
 		directresponse.NewPlugin(ctx, commoncol),
 		kubernetes.NewPlugin(ctx, commoncol),

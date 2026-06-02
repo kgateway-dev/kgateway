@@ -562,6 +562,44 @@ spec:
                       FailOpen determines if requests are allowed when the ext proc service is unavailable.
                       Defaults to true, meaning requests are allowed upstream even if the ext proc service is unavailable.
                     type: boolean
+                  filterStage:
+                    description: |-
+                      FilterStage specifies where in the HTTP filter chain the ExtProc filter
+                      should be placed. If not specified, the ExtProc filter defaults to running
+                      after the AuthZ stage.
+                    properties:
+                      predicate:
+                        default: During
+                        description: |-
+                          Predicate specifies placement relative to the stage: Before, During,
+                          or After.
+                        enum:
+                        - Before
+                        - During
+                        - After
+                        type: string
+                      stage:
+                        description: Stage selects the well-known position in the
+                          filter chain.
+                        enum:
+                        - Fault
+                        - AuthN
+                        - AuthZ
+                        - RateLimit
+                        - Route
+                        type: string
+                      weight:
+                        default: 0
+                        description: |-
+                          Weight controls ordering among multiple filters at the same
+                          stage and predicate. Higher weight places the filter earlier in the
+                          chain. Defaults to 0. Filters with the same stage, predicate, and
+                          weight are sorted alphabetically by filter name for consistency.
+                        format: int32
+                        type: integer
+                    required:
+                    - stage
+                    type: object
                   grpcService:
                     description: GrpcService is the GRPC service that will handle
                       the processing.
