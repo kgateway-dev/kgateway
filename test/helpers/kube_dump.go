@@ -35,7 +35,7 @@ func StandardKgatewayDumpOnFail(outLog io.Writer, kubectlCli *kubectl.Cli, outDi
 	defer cancel()
 
 	// only wipe at the start of the dump
-	wipeOutDir(outDir)
+	wipeOutDir(outDir, namespaces)
 
 	// Run all dump commands quietly so the cluster-state collection doesn't
 	// flood the test output with hundreds of "+ kubectl ..." trace lines.
@@ -439,10 +439,23 @@ func EnvoyDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, _ io.Writer, 
 	}
 }
 
-func wipeOutDir(outDir string) {
-	err := os.RemoveAll(outDir)
-	if err != nil {
-		fmt.Printf("error wiping out directory: %v\n", err)
+// wipeOutDir removes the files and namespace subdirectories that this dump
+// owns under outDir. It deliberately leaves any other entries intact so a
+// PreFailHandler running against a parent directory does not clobber the
+// per-test subdirectories written by PerTestPreFailHandler.
+func wipeOutDir(outDir string, namespaces []string) {
+	paths := []string{
+		filepath.Join(outDir, "docker-state.log"),
+		filepath.Join(outDir, "process-state.log"),
+		filepath.Join(outDir, "kube-state.log"),
+	}
+	for _, ns := range namespaces {
+		paths = append(paths, filepath.Join(outDir, ns))
+	}
+	for _, p := range paths {
+		if err := os.RemoveAll(p); err != nil {
+			fmt.Printf("error wiping %s: %v\n", p, err)
+		}
 	}
 }
 
