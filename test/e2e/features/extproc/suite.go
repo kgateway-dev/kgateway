@@ -383,11 +383,11 @@ func (s *testingSuite) TestExtProcWithMixedStages() {
 
 // assertDualExtProcOrdering asserts that two ExtProc filters both run and that server-a
 // executes before server-b on the /both route. Two checks are performed:
-// 1. Both x-extproc-server-a and x-extproc-server-b headers are present.
-// 2. Ordering proof: instruct both servers to remove x-extproc-server-a, then verify it
-//    is absent while x-extproc-server-b is present. Server-a runs first and adds the
-//    header (Envoy applies removes before sets within a single response, so the add wins);
-//    server-b then removes it. Absence proves server-a preceded server-b.
+//  1. Both x-extproc-server-a and x-extproc-server-b headers are present.
+//  2. Ordering proof: instruct both servers to remove x-extproc-server-a, then verify it
+//     is absent while x-extproc-server-b is present. Server-a runs first and adds the
+//     header (Envoy applies removes before sets within a single response, so the add wins);
+//     server-b then removes it. Absence proves server-a preceded server-b.
 func (s *testingSuite) assertDualExtProcOrdering() {
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
