@@ -6,7 +6,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -1001,10 +1000,10 @@ func delegateeRoute(conditions ...metav1.Condition) client.Object {
 
 func parentRouteRef() *gwv1.ParentReference {
 	return &gwv1.ParentReference{
-		Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-		Kind:      ptr.To(gwv1.Kind("HTTPRoute")),
+		Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+		Kind:      new(gwv1.Kind("HTTPRoute")),
 		Name:      "parent-route",
-		Namespace: ptr.To(gwv1.Namespace("default")),
+		Namespace: new(gwv1.Namespace("default")),
 	}
 }
 

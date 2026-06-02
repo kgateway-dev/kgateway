@@ -2,6 +2,8 @@ module github.com/kgateway-dev/kgateway/v2
 
 go 1.26.3
 
+godebug x509negativeserial=1
+
 require (
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2
