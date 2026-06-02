@@ -4,11 +4,16 @@ package tests_test
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -21,18 +26,26 @@ import (
 func TestKgateway(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
+	installContext := &install.Context{
+		InstallNamespace:          installNs,
+		ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
+		ValuesManifestFile:        e2e.EmptyValuesManifestPath,
+		ExtraHelmArgs: []string{
+			"--set", "controller.enableAwsEc2Discovery=true",
+			"--set", "controller.extraEnv.KGW_GLOBAL_POLICY_NAMESPACE=" + installNs,
+			"--set", "policyMerge.trafficPolicy.extProc=DeepMerge",
+		},
+	}
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		&install.Context{
-			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
-			ExtraHelmArgs: []string{
-				"--set", "controller.extraEnv.KGW_GLOBAL_POLICY_NAMESPACE=" + installNs,
-				"--set", "policyMerge.trafficPolicy.extProc=DeepMerge",
-			},
-		},
+		installContext,
 	)
+	if localstackEndpoint, ok := lookupLocalstackEndpoint(t, ctx, testInstallation); ok {
+		installContext.ExtraHelmArgs = append(
+			installContext.ExtraHelmArgs,
+			"--set-string", "controller.extraEnv.AWS_ENDPOINT_URL_EC2="+localstackEndpoint,
+		)
+	}
 
 	// Set the env to the install namespace if it is not already set
 	if !nsEnvPredefined {
@@ -59,4 +72,53 @@ func TestKgateway(t *testing.T) {
 	})
 
 	KubeGatewaySuiteRunner().Run(ctx, t, testInstallation)
+}
+
+func lookupLocalstackEndpoint(t *testing.T, ctx context.Context, testInstallation *e2e.TestInstallation) (string, bool) {
+	t.Helper()
+	localstackService := &corev1.Service{}
+	err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{
+		Namespace: "localstack",
+		Name:      "localstack",
+	}, localstackService)
+	if apierrors.IsNotFound(err) {
+		return "", false
+	}
+	if err != nil {
+		t.Fatalf("failed to get localstack service: %v", err)
+	}
+	if len(localstackService.Spec.Ports) == 0 || localstackService.Spec.Ports[0].NodePort == 0 {
+		t.Fatal("localstack service is missing a node port")
+	}
+
+	var nodes corev1.NodeList
+	if err := testInstallation.ClusterContext.Client.List(ctx, &nodes); err != nil {
+		t.Fatalf("failed to list cluster nodes: %v", err)
+	}
+	if len(nodes.Items) == 0 {
+		t.Fatal("cluster must have at least one node")
+	}
+
+	var nodeIP string
+	for _, node := range nodes.Items {
+		for _, addr := range node.Status.Addresses {
+			if addr.Type == corev1.NodeInternalIP {
+				nodeIP = addr.Address
+				break
+			}
+		}
+		if nodeIP != "" {
+			break
+		}
+	}
+	if nodeIP == "" {
+		t.Fatal("failed to determine localstack node internal IP")
+	}
+
+	localstackURL := fmt.Sprintf("http://%s:%d", nodeIP, localstackService.Spec.Ports[0].NodePort)
+	parsed, err := url.Parse(localstackURL)
+	if err != nil {
+		t.Fatalf("failed to parse localstack URL: %v", err)
+	}
+	return parsed.String(), true
 }

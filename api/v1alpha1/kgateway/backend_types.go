@@ -95,17 +95,25 @@ type DynamicForwardProxyBackend struct {
 }
 
 // AwsBackend is the AWS backend configuration.
+// +kubebuilder:validation:ExactlyOneOf=lambda;ec2
+// +kubebuilder:validation:XValidation:message="accountId must be specified on aws or aws.lambda for lambda backends",rule="!has(self.lambda) || has(self.accountId) || has(self.lambda.accountId)"
 type AwsBackend struct {
-	// Lambda configures the AWS lambda service.
-	// +required
-	Lambda AwsLambda `json:"lambda"`
+	// Lambda configures the AWS Lambda service.
+	// +optional
+	Lambda *AwsLambda `json:"lambda,omitempty"`
+
+	// Ec2 configures dynamic discovery of AWS EC2 instances.
+	// +optional
+	Ec2 *AwsEc2 `json:"ec2,omitempty"`
 
 	// AccountId is the AWS account ID to use for the backend.
-	// +required
+	// Deprecated: Set accountId on spec.aws.lambda instead. This field is kept for backward compatibility.
+	// When both fields are set, spec.aws.lambda.accountId takes precedence.
+	// +optional
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=12
 	// +kubebuilder:validation:Pattern="^[0-9]{12}$"
-	AccountId string `json:"accountId"`
+	AccountId string `json:"accountId,omitempty"`
 
 	// Auth specifies an explicit AWS authentication method for the backend.
 	// When omitted, the following credential providers are tried in order, stopping when one
@@ -157,30 +165,34 @@ type AwsAuth struct {
 	// Required when type is 'Secret'.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
-	// AssumeRole configures STS role chaining. The gateway's ambient credentials
-	// (e.g. the gateway ServiceAccount's IRSA identity, or any credential resolved
-	// by the default provider chain) are used to assume the target role, and the
-	// resulting temporary credentials sign requests to the backend. This enables
-	// per-backend, least-privilege invoke roles without granting the gateway role
-	// direct access to every target.
+	// AssumeRole configures STS role chaining. The backend's ambient credentials
+	// (the gateway ServiceAccount's IRSA identity for Lambda request signing, or the
+	// controller's identity for EC2 discovery; more generally any credential resolved
+	// by the default provider chain) are used to assume the target role. The resulting
+	// temporary credentials are then used to sign requests to the backend (Lambda) or
+	// to list instances (EC2). This enables per-backend, least-privilege roles without
+	// granting the gateway/controller role direct access to every target.
 	// Required when type is 'AssumeRole'.
 	// +optional
 	AssumeRole *AwsAssumeRole `json:"assumeRole,omitempty"`
 }
 
 // AwsAssumeRole configures assuming an IAM role via STS to obtain the credentials
-// used to sign requests to the backend.
+// used to interact with the backend (signing Lambda requests, or listing EC2 instances).
+//
+// Note: for EC2 discovery only RoleArn is honored; SessionName, ExternalId, and
+// SessionDuration apply to Lambda request signing.
 type AwsAssumeRole struct {
 	// RoleArn is the ARN of the IAM role to assume, e.g.
 	// "arn:aws:iam::123456789012:role/my-invoke-role".
 	// +required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
-	// +kubebuilder:validation:Pattern="^arn:(aws|aws-cn|aws-us-gov):iam::[0-9]{12}:role/.+$"
+	// +kubebuilder:validation:Pattern="^arn:aws[a-z-]*:iam::[0-9]{12}:role/.+$"
 	RoleArn string `json:"roleArn"`
 	// SessionName is an identifier for the assumed role session, surfaced in
 	// AWS CloudTrail logs and usable in role trust/permission policies.
-	// When omitted, Envoy defaults it to the current timestamp.
+	// When omitted, a default session name is generated.
 	// +optional
 	// +kubebuilder:validation:MinLength=2
 	// +kubebuilder:validation:MaxLength=64
@@ -211,8 +223,16 @@ const (
 	AwsLambdaInvocationModeAsynchronous = "Async"
 )
 
-// AwsLambda configures the AWS lambda service.
+// AwsLambda configures the AWS Lambda service.
 type AwsLambda struct {
+	// AccountId is the AWS account ID to use for the backend.
+	// This is the preferred location for Lambda backends.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=12
+	// +kubebuilder:validation:Pattern="^[0-9]{12}$"
+	AccountId string `json:"accountId,omitempty"`
+
 	// EndpointURL is the URL or domain for the Lambda service. This is primarily
 	// useful for testing and development purposes. When omitted, the default
 	// lambda hostname will be used.
@@ -242,6 +262,70 @@ type AwsLambda struct {
 	// +optional
 	// +kubebuilder:default=Envoy
 	PayloadTransformMode AWSLambdaPayloadTransformMode `json:"payloadTransformMode,omitempty"`
+}
+
+// AwsAddressType defines which EC2 IP address to route to.
+// +kubebuilder:validation:Enum=PrivateIP;PublicIP
+type AwsAddressType string
+
+const (
+	// AwsAddressTypePrivateIP routes to the instance private IP.
+	AwsAddressTypePrivateIP AwsAddressType = "PrivateIP"
+	// AwsAddressTypePublicIP routes to the instance public IP.
+	AwsAddressTypePublicIP AwsAddressType = "PublicIP"
+)
+
+// AwsEc2 configures dynamic discovery of EC2 instances.
+type AwsEc2 struct {
+	// Port is the port to use for discovered instances.
+	// Defaults to 80.
+	// +optional
+	// +kubebuilder:default=80
+	Port gwv1.PortNumber `json:"port,omitempty"`
+
+	// AddressType selects whether to route to the instance private or public IP.
+	// Defaults to PrivateIP.
+	// +optional
+	// +kubebuilder:default=PrivateIP
+	AddressType AwsAddressType `json:"addressType,omitempty"`
+
+	// Filters select which instances should be associated with this backend.
+	// When multiple filters are provided, an instance must match all of them.
+	// If this list is omitted or empty, all running instances in the configured
+	// region are selected. Be careful: an accidentally empty filter list broadens
+	// the backend to the whole regional fleet rather than matching nothing.
+	// +optional
+	// +kubebuilder:validation:MaxItems=16
+	Filters []AwsTagFilter `json:"filters,omitempty"`
+}
+
+// AwsTagFilter matches EC2 instances by tag.
+// +kubebuilder:validation:ExactlyOneOf=key;keyValue
+type AwsTagFilter struct {
+	// Key matches instances that contain the given tag key, regardless of value.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
+	Key *string `json:"key,omitempty"`
+
+	// KeyValue matches instances that contain the given tag key/value pair.
+	// +optional
+	KeyValue *AwsTagKeyValueFilter `json:"keyValue,omitempty"`
+}
+
+// AwsTagKeyValueFilter matches EC2 instances by a tag key/value pair.
+type AwsTagKeyValueFilter struct {
+	// Key is the tag key to match.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
+	Key string `json:"key"`
+
+	// Value is the tag value to match.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Value string `json:"value"`
 }
 
 // AWSLambdaPayloadTransformMode defines the transformation mode for the payload in the request

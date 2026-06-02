@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/deployer"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/dfp"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/directresponse"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/ec2"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extproc"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/faultinjection"
@@ -57,6 +58,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	// Slow tests not yet migrated to use the more modern testing approach
 	kubeGatewaySuiteRunner.Register("ListenerPolicy", listener_policy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("EC2", ec2.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("SessionPersistence", session_persistence.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TCPRouteServices", tcproute.NewTestingSuite)

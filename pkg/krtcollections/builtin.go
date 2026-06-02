@@ -354,6 +354,13 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *sta
 		cookie := &httpv3.Cookie{
 			Name: utils.SanitizeCookieName(ptr.Deref(sessionPersistence.SessionName, "sessionPersistence")),
 			Ttl:  ttl,
+			// Always set path to root to set cookie for all requests to hostname.
+			// Default browser behavior otherwise is to use the current "directory" of the request.
+			// When a request comes in without session cookie for a subpath, it would be limited to that subpath and
+			// requests to unrelated subpaths could get routed to a different upstream.
+			// Cf. https://httpwg.org/specs/rfc6265.html#sane-path
+			// This intentionally ignores the specification in GEP-1619 as computing the "correct" path can lead to unintended consequences.
+			Path: "/",
 		}
 		// Only set LifetimeType if present in CookieConfig
 		if sessionPersistence.CookieConfig != nil &&
