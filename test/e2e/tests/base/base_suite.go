@@ -748,8 +748,7 @@ func DetectGwApiInfo(ctx context.Context, c client.Client) (GwApiChannel, GwApiV
 	return GwApiChannel(channel), GwApiVersion{Version: *version}, nil
 }
 
-// SupportsListenerSets reports whether the given Gateway API channel/version exposes
-// ListenerSets (and the Gateway.spec.allowedListeners field). See GwApiRequireListenerSets.
+// SupportsListenerSets reports whether the given Gateway API channel/version implements ListenerSets
 func SupportsListenerSets(channel GwApiChannel, version GwApiVersion) bool {
 	return checkCompatibleWithApiVersion(GwApiRequireListenerSets, nil, channel, version)
 }
