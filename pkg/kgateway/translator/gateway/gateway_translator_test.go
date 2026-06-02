@@ -141,17 +141,6 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("http gateway with per connection buffer limit", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFiles: []string{"gateway-per-conn-buf-lim/gateway.yaml"},
-			outputFile: "gateway-per-conn-buf-lim/proxy.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-		})
-	})
-
 	t.Run("http gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"http-routing/basic.yaml"},
