@@ -1,6 +1,4 @@
-# example-svc lives in the nginx namespace so it can select the shared nginx pod
-# (test/e2e/defaults/testdata/nginx_pod.yaml). The basicrouting HTTPRoutes reference
-# it cross-namespace, permitted by reference-grant.yaml.
+# example-svc (ns nginx) selects the shared nginx pod; default-ns routes reach it cross-namespace.
 apiVersion: v1
 kind: Service
 metadata:

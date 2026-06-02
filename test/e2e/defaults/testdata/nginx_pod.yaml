@@ -133,10 +133,7 @@ spec:
       - key: localhost.key
         path: localhost.key
 ---
-# This manifest is applied once at the base layer (common.SetupBaseConfig), so the nginx
-# pod is deployed a single time for the whole e2e run and reused across suites. This grant
-# lets HTTPRoutes in the default namespace reference Services in the nginx namespace
-# (suites keep their routes/gateways in default and back them with this shared nginx).
+# Lets default-namespace HTTPRoutes reference the shared nginx Service cross-namespace.
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: ReferenceGrant
 metadata:

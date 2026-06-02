@@ -1,5 +1,4 @@
-# Headless variant of example-svc (clusterIP: None) in the nginx namespace, selecting
-# the shared nginx pod. Used by TestHeadlessService to exercise headless-service routing.
+# Headless example-svc (clusterIP: None, ns nginx) over the shared nginx pod, for TestHeadlessService.
 apiVersion: v1
 kind: Service
 metadata:

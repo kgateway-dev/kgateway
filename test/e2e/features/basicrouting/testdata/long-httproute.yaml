@@ -1,6 +1,4 @@
-# Verifies that a very long HTTPRoute name still routes. The backend is the canonical
-# httpbin (test/e2e/defaults/testdata/httpbin.yaml), applied via the test case; both this
-# route and httpbin live in the default namespace, so no ReferenceGrant is needed.
+# Checks a very long HTTPRoute name still routes; backed by default-ns httpbin (no ReferenceGrant needed).
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
