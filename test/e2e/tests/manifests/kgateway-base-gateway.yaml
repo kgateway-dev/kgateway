@@ -1,8 +1,4 @@
-# Default base gateway, applied on every Gateway API version.
-# The ListenerSet-capable variant (kgateway-base-gateway-listenersets.yaml) adds
-# spec.allowedListeners, which is only valid once ListenerSets are available
-# (experimental >= 1.3, standard >= 1.5). TestKgateway selects between them based
-# on the installed Gateway API version.
+# Default base gateway, applied on Gateway API versions that do not support ListenerSets
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
