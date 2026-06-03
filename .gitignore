@@ -63,3 +63,4 @@ dist/
 internal/envoyinit/rustformations/target/*
 extproc-server
 /internal/envoyinit/target/
+/test/e2e/features/agentgateway/extproc/example/basic-sink

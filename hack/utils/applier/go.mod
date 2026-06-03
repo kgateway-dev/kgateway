@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/hack/utils/applier
 
-go 1.26.3
+go 1.26.4
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.0
