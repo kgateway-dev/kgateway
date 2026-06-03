@@ -202,7 +202,7 @@ func fetchGithubRelease(ctx context.Context, opts ReleaseOptions, match func(tag
 		if !bool(query.Repository.Releases.PageInfo.HasNextPage) {
 			break
 		}
-		variables["cursor"] = githubv4.NewString(query.Repository.Releases.PageInfo.EndCursor)
+		variables["cursor"] = new(query.Repository.Releases.PageInfo.EndCursor)
 	}
 	return "", fmt.Errorf("no matching release found")
 }
