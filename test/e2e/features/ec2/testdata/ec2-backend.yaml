@@ -1,0 +1,43 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ec2-route
+  namespace: kgateway-base
+spec:
+  parentRefs:
+  - name: gateway
+  hostnames:
+  - ec2.example.com
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /ec2
+    backendRefs:
+    - name: ec2-backend
+      kind: Backend
+      group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: ec2-backend
+  namespace: kgateway-base
+spec:
+  type: AWS
+  aws:
+    region: us-east-1
+    auth:
+      type: Secret
+      secretRef:
+        name: aws-ec2-creds
+    ec2:
+      port: 8080
+      addressType: PrivateIP
+      filters:
+      - keyValue:
+          key: app
+          value: payments
+      - keyValue:
+          key: suite
+          value: kgateway-ec2-e2e

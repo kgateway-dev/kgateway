@@ -81,7 +81,7 @@ spec:
             type: PathPrefix
             value: /both
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
 ---
 # Route with only gateway-level ExtProc (no route-level policy)
@@ -100,5 +100,5 @@ spec:
             type: PathPrefix
             value: /gateway-only
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000

@@ -368,6 +368,8 @@ spec:
                   resource: limits.cpu
             - name: KGW_LOG_LEVEL
               value: "info"
+            - name: KGW_ADMIN_BIND_ADDRESS
+              value: "localhost"
             - name: KGW_XDS_SERVICE_NAME
               value: test-release-kgateway
             - name: KGW_XDS_SERVICE_PORT
@@ -384,6 +386,10 @@ spec:
               value: "{}"
             - name: KGW_VALIDATION_MODE
               value: "standard"
+            - name: KGW_ENABLE_AWS_EC2_DISCOVERY
+              value: "false"
+            - name: KGW_AWS_EC2_REFRESH_INTERVAL
+              value: "30s"
             - name: KGW_ENABLE_ENVOY
               value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS

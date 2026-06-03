@@ -58,8 +58,8 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     lambda:
+      accountId: "000000000000"
       functionName: hello-function
       qualifier: prod
 ---
@@ -71,8 +71,8 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     lambda:
+      accountId: "000000000000"
       functionName: hello-function
       qualifier: dev
 ---
@@ -84,6 +84,6 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     lambda:
+      accountId: "000000000000"
       functionName: hello-function

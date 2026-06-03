@@ -47,8 +47,11 @@ If the release branch **does not** exist, create one:
     git push ${REMOTE} v2.${MINOR}.x
     ```
 
-- Update the OSV security scan workflow branch allowlist in [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml) to include the new release branch.
+- On `main`, bump `ROLLING_MAIN_VERSION` in the [Makefile](../../Makefile) to the next minor's rolling tag via a PR (for example, after cutting `v2.3.x`, set it to `v2.4.0-main`), since `main` now tracks the next minor.
+
+- Update the OSV security scan workflow branch allowlist in [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml) to include the new release branch, and drop any branch that is no longer LTS.
   This workflow only scans an explicit set of branches, so each newly cut release branch must be added to both the scheduled scan matrix and the `workflow_dispatch` branch options.
+  This allowlist is the single source of truth for which branches get scanned: tooling such as [`hack/osvtool`](../../hack/osvtool) and the `cve-bump` skill reads it rather than hardcoding the branch list, so keeping it current is all that is needed.
 
 ### Patch Release
 

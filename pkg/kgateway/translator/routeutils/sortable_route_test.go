@@ -2,7 +2,6 @@ package routeutils
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -203,7 +202,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 			Route: ir.HttpRouteRuleMatchIR{
 				Match: gwv1.HTTPRouteMatch{
 					Path:   prefixMatch("/"),
-					Method: ptr.To(gwv1.HTTPMethod("GET")),
+					Method: new(gwv1.HTTPMethod("GET")),
 				},
 			},
 		},
@@ -335,7 +334,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 					Path: prefixMatch("/"),
 					QueryParams: []gwv1.HTTPQueryParamMatch{
 						{
-							Type:  ptr.To(gwv1.QueryParamMatchExact),
+							Type:  new(gwv1.QueryParamMatchExact),
 							Name:  "test",
 							Value: "hello",
 						},

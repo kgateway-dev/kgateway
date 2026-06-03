@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: osvtool [--branch <branch> ...] [--repo <owner/repo>] [--state <state>] [--target <target>] [--raw] [--worst]
+Usage: osvtool [--branch <branch> ...] [--repo <owner/repo>] [--state <state>] [--target <target>] [--raw] [--worst] [--table]
 
 Fetch OSV code-scanning alerts from GitHub.
 
@@ -33,6 +33,9 @@ Options:
                       found across the selected branches. Exits non-zero if the
                       latest OSV code scan on any selected branch is missing or
                       more than 72 hours old.
+  --table             Emit a compact markdown table (one row per branch) with
+                      severity counts, max alert age, last scan timestamp,
+                      and a link to the code-scanning UI.
   --workflow <path>   Workflow file used to discover default branches
                       (default: .github/workflows/osv-scanner.yaml)
   -h, --help          Show this help message
@@ -315,7 +318,8 @@ emit_summary() {
     local tmpdir="$1"
     local repo="$2"
     local target="$3"
-    shift 3
+    local state="$4"
+    shift 4
     local branches=("$@")
     local branch
     local file
@@ -334,7 +338,7 @@ emit_summary() {
         file="${tmpdir}/branch_${i}.json"
         source_scan_file="${tmpdir}/branch_${i}.source.scans.json"
         image_scan_file="${tmpdir}/branch_${i}.image.scans.json"
-        url="https://github.com/${repo}/security/code-scanning?query=is%3Aopen+branch%3A${branch}"
+        url="https://github.com/${repo}/security/code-scanning?query=is%3A${state}+branch%3A${branch}"
         source_url="${url}+tool%3Aosv-scanner"
         image_url="${url}+tool%3Aosv-image-scanner"
         parts="${parts}$(
@@ -430,6 +434,62 @@ emit_summary() {
     done
 
     printf '%s' "$parts" | jq -s 'add'
+}
+
+emit_table() {
+    local tmpdir="$1"
+    local repo="$2"
+    local target="$3"
+    local state="$4"
+    shift 4
+    local branches=("$@")
+    local branch
+    local file
+    local source_scan_file
+    local image_scan_file
+    local url
+    local now
+
+    now="$(date +%s)"
+
+    printf '| branch | C | H | M | L | max age | last scan | code-scanning |\n'
+    printf '|---|---|---|---|---|---|---|---|\n'
+
+    for i in "${!branches[@]}"; do
+        branch="${branches[$i]}"
+        file="${tmpdir}/branch_${i}.json"
+        source_scan_file="${tmpdir}/branch_${i}.source.scans.json"
+        image_scan_file="${tmpdir}/branch_${i}.image.scans.json"
+        url="https://github.com/${repo}/security/code-scanning?query=is%3A${state}+branch%3A${branch}"
+
+        jq -r \
+            --arg branch "$branch" \
+            --arg target "$target" \
+            --arg url "$url" \
+            --argjson now "$now" \
+            --slurpfile sourceScans "$source_scan_file" \
+            --slurpfile imageScans "$image_scan_file" \
+            '
+            def sev: (.rule.security_severity_level // "unknown" | ascii_downcase);
+            def age_days($now): (($now - ((.created_at | fromdateiso8601)? // $now)) / 86400 | floor);
+            def count_sev($s): [.[] | select(sev == $s)] | length;
+            def max_age($now):
+                if length == 0 then "-"
+                else "\([.[] | age_days($now)] | max)d"
+                end;
+            def source_scans: ($sourceScans[0] // []);
+            def image_scans: ($imageScans[0] // []);
+            def selected_scans:
+                if $target == "source" then source_scans
+                elif $target == "image" then image_scans
+                else source_scans + image_scans
+                end;
+            def latest_scan($scans):
+                (($scans | max_by(.created_at)?) // null | .created_at? // "-");
+            "| \($branch) | \(count_sev("critical")) | \(count_sev("high")) | \(count_sev("medium")) | \(count_sev("low")) | \(max_age($now)) | \(latest_scan(selected_scans)) | [view](\($url)) |"
+            ' \
+            "$file"
+    done
 }
 
 scan_staleness() {
@@ -602,6 +662,7 @@ main() {
     local target="all"
     local raw=0
     local worst=0
+    local table=0
     local workflow_path=".github/workflows/osv-scanner.yaml"
     local filter='.'
     local target_filter_expr
@@ -663,6 +724,10 @@ main() {
                 worst=1
                 shift
                 ;;
+            --table)
+                table=1
+                shift
+                ;;
             --workflow)
                 if [[ $# -lt 2 || -z "${2:-}" ]]; then
                     echo "error: --workflow requires a value" >&2
@@ -679,8 +744,8 @@ main() {
         esac
     done
 
-    if [[ "$raw" -eq 1 && "$worst" -eq 1 ]]; then
-        echo "error: --raw and --worst cannot be used together" >&2
+    if (( raw + worst + table > 1 )); then
+        echo "error: --raw, --worst, and --table are mutually exclusive" >&2
         exit 2
     fi
 
@@ -751,8 +816,10 @@ main() {
             done < <(workflow_image_platforms "$workflow_path")
         fi
         emit_worst "$tmpdir" "$target" "${#image_platforms[@]}" "${image_platforms[@]}" "${branches[@]}" | yq -p=json -o=yaml
+    elif [[ "$table" -eq 1 ]]; then
+        emit_table "$tmpdir" "$repo" "$target" "$api_state" "${branches[@]}"
     else
-        emit_summary "$tmpdir" "$repo" "$target" "${branches[@]}" | yq -p=json -o=yaml
+        emit_summary "$tmpdir" "$repo" "$target" "$api_state" "${branches[@]}" | yq -p=json -o=yaml
     fi
 }
 
