@@ -208,9 +208,11 @@ Routes:
             - requestHeaders:
                 descriptorKey: X-User-Type
                 headerName: X-User-Type
+          - actions:
             - requestHeaders:
                 descriptorKey: path
                 headerName: :path
+          - actions:
             - genericKey:
                 descriptorKey: rate_limit_bypass
                 descriptorValue: "false"
