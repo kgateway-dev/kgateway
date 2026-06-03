@@ -1481,6 +1481,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy retry targeting Gateway and listener on HTTP", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/http-retry-gateway-and-listener.yaml"},
+			outputFile: "traffic-policy/http-retry-gateway-and-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy timeout targeting Gateway", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/timeout-gateway.yaml"},

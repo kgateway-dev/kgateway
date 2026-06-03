@@ -372,13 +372,29 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 	p.applyGatewayLevelPerRouteSettings(policy.spec, out)
 }
 
+// applyGatewayLevelPerRouteSettings applies per-route settings from a policy attached at the
+// route-config scope, i.e. a Gateway-attached policy, or a Listener-attached policy on an HTTPS
+// filter chain (HTTPS chains do not carry vhost-attached policies, so their listener policies are
+// applied here via the merged route-config policy).
 func (p *trafficPolicyPluginGwPass) applyGatewayLevelPerRouteSettings(spec trafficPolicySpecIr, out *envoyroutev3.RouteConfiguration) {
 	for _, vh := range out.VirtualHosts {
+		// Apply the retry policy at the virtual-host scope rather than the route scope.
+		// Envoy resolves a route's retry policy with the route-level taking precedence over the
+		// vhost-level. A route-config policy is the least specific (Gateway < Listener < Route), so
+		// writing its retry onto the route would incorrectly override more specific retry policies:
+		//   - a route-attached retry policy (set on the route action via ApplyForRoute), and
+		//   - a Listener-attached retry policy applied at vhost scope for shared HTTP filter chains
+		//     (set via ApplyVhostPlugin -> handlePerVHostPolicies, which runs before this pass).
+		// Only set it when the vhost has none yet so those more specific policies win.
+		if vh.GetRetryPolicy() == nil && spec.retry != nil {
+			vh.RetryPolicy = spec.retry.policy
+		}
 		for _, route := range vh.Routes {
 			if route.GetRoute() == nil {
 				continue
 			}
-			p.handlePerRoutePolicies(spec, route)
+			// Retry is handled at the vhost scope above; everything else applies per route.
+			p.handlePerRoutePolicies(spec, route, false /* applyRetry */)
 		}
 	}
 }
@@ -403,7 +419,9 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 		return nil
 	}
 
-	p.handlePerRoutePolicies(policy.spec, outputRoute)
+	// A route-attached policy is the most specific scope, so its retry policy is applied
+	// directly on the route action (which takes precedence over any vhost-level retry).
+	p.handlePerRoutePolicies(policy.spec, outputRoute, true /* applyRetry */)
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 
 	return nil
@@ -705,10 +723,14 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleHttpACL(fcn, typedFilterConfig, spec.httpACL)
 }
 
-// handlePerRoutePolicies handles policies that are meant to be processed at the route level
+// handlePerRoutePolicies handles policies that are meant to be processed at the route level.
+// applyRetry controls whether the retry policy is written onto the route action: it should be true
+// only for the most specific (route-attached) scope. Less specific scopes apply retry at the vhost
+// level (see applyGatewayLevelPerRouteSettings) to preserve Envoy's route-over-vhost precedence.
 func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	spec trafficPolicySpecIr,
 	out *envoyroutev3.Route,
+	applyRetry bool,
 ) {
 	// A parent route rule with a delegated backend will not have RouteAction set.
 	// Routes with redirect/direct response also do not have RouteAction.
@@ -740,8 +762,9 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	}
 
 	// Only set the retry policy if it is not already set, which implies that it was
-	// set by the builtin HTTPRouteRetry policy
-	if action.GetRetryPolicy() == nil && spec.retry != nil {
+	// set by the builtin HTTPRouteRetry policy. applyRetry is false for less specific
+	// (gateway/HTTPS-listener) scopes, which apply retry at the vhost level instead.
+	if applyRetry && action.GetRetryPolicy() == nil && spec.retry != nil {
 		action.RetryPolicy = spec.retry.policy
 	}
 
