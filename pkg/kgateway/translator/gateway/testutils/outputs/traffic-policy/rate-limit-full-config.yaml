@@ -143,6 +143,14 @@ Routes:
             - requestHeaders:
                 descriptorKey: path
                 headerName: :path
+            - requestHeaders:
+                descriptorKey: x-header-1
+                headerName: x-header-1
+          - actions:
+            - remoteAddress: {}
+            - requestHeaders:
+                descriptorKey: x-header-2
+                headerName: x-header-2
         ratelimit/local:
           '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
           filterEnabled:
