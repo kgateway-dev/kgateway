@@ -31,7 +31,7 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: listener-attachment
+  name: oauth2-jwks-policy
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
@@ -40,12 +40,12 @@ spec:
     sectionName: http
   oauth2:
     extensionRef:
-      name: oauth-split-backends
+      name: oauth-jwks
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
-  name: oauth-split-backends
+  name: oauth-jwks
 spec:
   oauth2:
     backendRef:

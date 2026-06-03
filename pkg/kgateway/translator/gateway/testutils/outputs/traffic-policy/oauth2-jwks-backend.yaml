@@ -60,7 +60,7 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: envoy.filters.http.oauth2/default/oauth-split-backends
+          name: envoy.filters.http.oauth2/default/oauth-jwks
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.oauth2.v3.OAuth2
             config:
@@ -71,13 +71,13 @@ Listeners:
               credentials:
                 clientId: client-id
                 cookieNames:
-                  bearerToken: AccessToken-6cd5816a7a12ddf
-                  codeVerifier: OauthCodeVerifier-6cd5816a7a12ddf
-                  idToken: IdToken-6cd5816a7a12ddf
-                  oauthExpires: OauthExpires-6cd5816a7a12ddf
-                  oauthHmac: OauthHMAC-6cd5816a7a12ddf
-                  oauthNonce: OauthNonce-6cd5816a7a12ddf
-                  refreshToken: RefreshToken-6cd5816a7a12ddf
+                  bearerToken: AccessToken-8420aab23d054d0c
+                  codeVerifier: OauthCodeVerifier-8420aab23d054d0c
+                  idToken: IdToken-8420aab23d054d0c
+                  oauthExpires: OauthExpires-8420aab23d054d0c
+                  oauthHmac: OauthHMAC-8420aab23d054d0c
+                  oauthNonce: OauthNonce-8420aab23d054d0c
+                  refreshToken: RefreshToken-8420aab23d054d0c
                 hmacSecret:
                   name: oauth2/hmac_secret/kgateway-system/oauth2-hmac-secret
                   sdsConfig:
@@ -101,7 +101,7 @@ Listeners:
                 timeout: 15s
                 uri: https://auth.example.com/token
         - disabled: true
-          name: envoy.filters.http.oauth2/jwt/default/oauth-split-backends
+          name: envoy.filters.http.oauth2/jwt/default/oauth-jwks
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
             providers:
@@ -109,7 +109,7 @@ Listeners:
                 audiences:
                 - client-id
                 fromCookies:
-                - AccessToken-6cd5816a7a12ddf
+                - AccessToken-8420aab23d054d0c
                 payloadInMetadata: accessToken
                 remoteJwks:
                   httpUri:
@@ -153,7 +153,7 @@ Routes:
       filterMetadata:
         merge.TrafficPolicy.gateway.kgateway.dev:
           oidc:
-          - gateway.kgateway.dev/TrafficPolicy/default/listener-attachment
+          - gateway.kgateway.dev/TrafficPolicy/default/oauth2-jwks-policy
     name: listener~8080~test_com
     routes:
     - match:
@@ -163,10 +163,10 @@ Routes:
         cluster: kube_default_test_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     typedPerFilterConfig:
-      envoy.filters.http.oauth2/default/oauth-split-backends:
+      envoy.filters.http.oauth2/default/oauth-jwks:
         '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
         config: {}
-      envoy.filters.http.oauth2/jwt/default/oauth-split-backends:
+      envoy.filters.http.oauth2/jwt/default/oauth-jwks:
         '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
         requirementName: oauth2
       oauth2_enabled:
@@ -254,7 +254,7 @@ Statuses:
           kind: ""
           name: test
   policies:
-    TrafficPolicy/default/listener-attachment:
+    TrafficPolicy/default/oauth2-jwks-policy:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
