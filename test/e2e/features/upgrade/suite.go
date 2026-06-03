@@ -12,9 +12,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v67/github"
-	"github.com/shurcooL/githubv4"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
@@ -154,62 +152,63 @@ func (s *testingSuite) assertNoKgatewayPodErrors() {
 	}
 }
 
-func newGraphQLClient() *githubv4.Client {
+func newRestClient() *github.Client {
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
-		return githubv4.NewClient(http.DefaultClient)
+		return github.NewClient(nil)
 	}
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	return githubv4.NewClient(oauth2.NewClient(context.Background(), ts))
+	return github.NewClient(nil).WithAuthToken(token)
 }
 
-// fetchGithubRelease pages through kgateway releases ordered by creation date descending
-// (newest first, skipping drafts) using the GitHub GraphQL API, which
-// guarantees the ordering via orderBy. Returns the tag name of the first release for
-// which match returns true.
-func fetchGithubRelease(ctx context.Context, match func(tagName string) (bool, error)) (string, error) {
-	client := newGraphQLClient()
+// FetchReleaseOptions configures the GitHub owner and repo used by FetchLatestRelease
+// and FetchPreviousMinorRelease. Zero values default to "kgateway-dev"/"kgateway".
+type FetchReleaseOptions struct {
+	Owner string
+	Repo  string
+}
 
-	var query struct {
-		Repository struct {
-			Releases struct {
-				Nodes []struct {
-					TagName      githubv4.String
-					IsDraft      githubv4.Boolean
-					IsPrerelease githubv4.Boolean
-				}
-				PageInfo struct {
-					EndCursor   githubv4.String
-					HasNextPage githubv4.Boolean
-				}
-			} `graphql:"releases(first: 100, after: $cursor, orderBy: {field: CREATED_AT, direction: DESC})"`
-		} `graphql:"repository(owner: \"kgateway-dev\", name: \"kgateway\")"`
+func (o FetchReleaseOptions) owner() string {
+	if o.Owner != "" {
+		return o.Owner
 	}
+	return "kgateway-dev"
+}
 
-	variables := map[string]any{
-		"cursor": (*githubv4.String)(nil),
+func (o FetchReleaseOptions) repo() string {
+	if o.Repo != "" {
+		return o.Repo
 	}
+	return "kgateway"
+}
+
+// fetchGithubRelease pages through releases ordered by creation date descending
+// (newest first, skipping drafts) using the GitHub REST API. Returns the tag name of the
+// first release for which match returns true.
+func fetchGithubRelease(ctx context.Context, opts FetchReleaseOptions, match func(tagName string) (bool, error)) (string, error) {
+	client := newRestClient()
+	listOpts := &github.ListOptions{PerPage: 100}
 
 	for {
-		if err := client.Query(ctx, &query, variables); err != nil {
-			return "", fmt.Errorf("graphql query releases: %w", err)
+		releases, resp, err := client.Repositories.ListReleases(ctx, opts.owner(), opts.repo(), listOpts)
+		if err != nil {
+			return "", fmt.Errorf("list releases page %d: %w", listOpts.Page, err)
 		}
-		for _, r := range query.Repository.Releases.Nodes {
-			if bool(r.IsDraft) || string(r.TagName) == "" {
+		for _, r := range releases {
+			if r.GetDraft() || r.GetTagName() == "" {
 				continue
 			}
-			ok, err := match(string(r.TagName))
+			ok, err := match(r.GetTagName())
 			if err != nil {
 				return "", err
 			}
 			if ok {
-				return string(r.TagName), nil
+				return r.GetTagName(), nil
 			}
 		}
-		if !bool(query.Repository.Releases.PageInfo.HasNextPage) {
+		if resp.NextPage == 0 {
 			break
 		}
-		variables["cursor"] = githubv4.NewString(query.Repository.Releases.PageInfo.EndCursor)
+		listOpts.Page = resp.NextPage
 	}
 	return "", fmt.Errorf("no matching release found")
 }
@@ -217,7 +216,7 @@ func fetchGithubRelease(ctx context.Context, match func(tagName string) (bool, e
 // FetchLatestRelease returns the most recent release tag that is an ancestor of HEAD.
 // This mirrors `git describe --tags --abbrev=0` but works in shallow checkouts where
 // tags are not fetched, by resolving HEAD via git then checking ancestry via the GitHub API.
-func FetchLatestRelease(ctx context.Context) (string, error) {
+func FetchLatestRelease(ctx context.Context, opts FetchReleaseOptions) (string, error) {
 	var shaOut threadsafe.Buffer
 	if err := cmdutils.Command(ctx, "git", "rev-parse", "HEAD").
 		WithStdout(&shaOut).
@@ -227,15 +226,11 @@ func FetchLatestRelease(ctx context.Context) (string, error) {
 	}
 	headSHA := strings.TrimSpace(shaOut.String())
 
-	// Use REST client for CompareCommits — no GraphQL equivalent.
-	restClient := github.NewClient(nil)
-	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		restClient = github.NewClient(nil).WithAuthToken(token)
-	}
+	restClient := newRestClient()
 
-	return fetchGithubRelease(ctx, func(tagName string) (bool, error) {
+	return fetchGithubRelease(ctx, opts, func(tagName string) (bool, error) {
 		// Compare tag...HEAD: status=="ahead" means HEAD is ahead of the tag (tag is an ancestor).
-		comparison, _, err := restClient.Repositories.CompareCommits(ctx, "kgateway-dev", "kgateway", tagName, headSHA, nil)
+		comparison, _, err := restClient.Repositories.CompareCommits(ctx, opts.owner(), opts.repo(), tagName, headSHA, nil)
 		if err != nil {
 			return false, fmt.Errorf("compare %s...%s: %w", tagName, headSHA, err)
 		}
@@ -243,7 +238,7 @@ func FetchLatestRelease(ctx context.Context) (string, error) {
 	})
 }
 
-func FetchPreviousMinorRelease(ctx context.Context, latestRelease string) (string, error) {
+func FetchPreviousMinorRelease(ctx context.Context, latestRelease string, opts FetchReleaseOptions) (string, error) {
 	parts := strings.Split(latestRelease, ".")
 	if len(parts) < 2 {
 		return "", fmt.Errorf("unexpected tag format: %s", latestRelease)
@@ -256,7 +251,7 @@ func FetchPreviousMinorRelease(ctx context.Context, latestRelease string) (strin
 		return "", fmt.Errorf("no previous minor for release %q (minor is 0)", latestRelease)
 	}
 	previousMinorPrefix := fmt.Sprintf("%s.%d.", parts[0], minorInt-1)
-	return fetchGithubRelease(ctx, func(tagName string) (bool, error) {
+	return fetchGithubRelease(ctx, opts, func(tagName string) (bool, error) {
 		return strings.HasPrefix(tagName, previousMinorPrefix), nil
 	})
 }

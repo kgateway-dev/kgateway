@@ -17,7 +17,7 @@ import (
 )
 
 func TestUpgrade(t *testing.T) {
-	latestTag, err := upgrade.FetchLatestRelease(t.Context())
+	latestTag, err := upgrade.FetchLatestRelease(t.Context(), upgrade.FetchReleaseOptions{})
 	if err != nil {
 		t.Fatalf("failed to get latest patch version: %v", err)
 	}
@@ -25,7 +25,7 @@ func TestUpgrade(t *testing.T) {
 		testUpgrade(t, latestTag)
 	})
 
-	previousMinor, err1 := upgrade.FetchPreviousMinorRelease(t.Context(), latestTag)
+	previousMinor, err1 := upgrade.FetchPreviousMinorRelease(t.Context(), latestTag, upgrade.FetchReleaseOptions{})
 	if err1 != nil {
 		t.Fatalf("failed to get previous minor release: %v", err1)
 	}
