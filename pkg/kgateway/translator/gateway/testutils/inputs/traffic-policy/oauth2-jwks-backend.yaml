@@ -63,11 +63,10 @@ spec:
     scopes: ["openid", "email"]
     jwt:
       jwksURI: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_abc123/.well-known/jwks.json
-      jwksBackend:
-        backendRef:
-          kind: Backend
-          group: gateway.kgateway.dev
-          name: oauth-provider-jwks
+      jwksBackendRef:
+        kind: Backend
+        group: gateway.kgateway.dev
+        name: oauth-provider-jwks
       accessToken:
         audiences:
           - client-id

@@ -176,13 +176,13 @@ func buildOAuth2ProviderConfig(
 	// Use a dedicated backend to fetch JWKS if specified, otherwise fall back to the primary backend.
 	// This is needed when the JWKS endpoint is on a different domain than the token endpoint.
 	jwksBackend := backend
-	if in.JWT != nil && in.JWT.JWKSBackend != nil {
-		resolved, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, in.JWT.JWKSBackend.BackendRef)
+	if in.JWT != nil && in.JWT.JWKSBackendRef != nil {
+		resolved, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, *in.JWT.JWKSBackendRef)
 		if err != nil {
-			return nil, fmt.Errorf("error resolving JWKS backend %v: %w", in.JWT.JWKSBackend.BackendRef, err)
+			return nil, fmt.Errorf("error resolving JWKS backend %v: %w", *in.JWT.JWKSBackendRef, err)
 		}
 		if resolved == nil {
-			return nil, fmt.Errorf("JWKS backend not found: %v", in.JWT.JWKSBackend.BackendRef)
+			return nil, fmt.Errorf("JWKS backend not found: %v", *in.JWT.JWKSBackendRef)
 		}
 		jwksBackend = resolved
 	}
