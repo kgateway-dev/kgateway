@@ -4,6 +4,7 @@ package assertions
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"time"
 
@@ -63,7 +64,7 @@ func (p *Provider) EventuallyKgatewayUninstallSucceeded(ctx context.Context) {
 		})
 }
 
-func (p *Provider) EventuallyPodsHaveImageVersion(ctx context.Context, namespace string, labelSelector string, version string) {
+func (p *Provider) EventuallyPodsHaveImageVersion(ctx context.Context, namespace string, labelSelector string, version string, skipContainers ...string) {
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		pods, err := p.clusterContext.Clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: labelSelector,
@@ -72,6 +73,9 @@ func (p *Provider) EventuallyPodsHaveImageVersion(ctx context.Context, namespace
 		g.Expect(pods.Items).NotTo(gomega.BeEmpty(), "no %s pods found", labelSelector)
 		for _, pod := range pods.Items {
 			for _, container := range pod.Spec.Containers {
+				if slices.Contains(skipContainers, container.Name) {
+					continue
+				}
 				// Strip digest (e.g. @sha256:...) before extracting the tag.
 				image := container.Image
 				if idx := strings.Index(image, "@"); idx != -1 {
@@ -103,7 +107,7 @@ func (p *Provider) EventuallyKgatewayUpgradeSucceeded(ctx context.Context, versi
 		LabelSelector: KgatewayLabelSelector,
 	})
 	p.EventuallyDeploymentsRolledOut(ctx, ns, KgatewayLabelSelector)
-	p.EventuallyPodsHaveImageVersion(ctx, ns, KgatewayLabelSelector, nil, version)
+	p.EventuallyPodsHaveImageVersion(ctx, ns, KgatewayLabelSelector, version)
 }
 
 // EventuallyDeploymentsRolledOut waits until every Deployment matching labelSelector has

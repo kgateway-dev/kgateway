@@ -30,11 +30,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// proxyNamespace and sharedLabelSelector identify the data-plane proxy that the controller
+// proxyNamespace and proxyLabelSelector identify the data-plane proxy that the controller
 // provisions for the Gateway defined in testdata/setup.yaml.
 const (
-	proxyNamespace      = "default"
-	sharedLabelSelector = "gateway.networking.k8s.io/gateway-name=gateway"
+	proxyNamespace     = "default"
+	proxyLabelSelector = "gateway.networking.k8s.io/gateway-name=gateway"
 )
 
 var (
@@ -98,10 +98,9 @@ func (s *testingSuite) TestUpgrade() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyKgatewayUpgradeSucceeded(s.Ctx, version.Version)
 
 	// Ensure the proxy data plane was upgraded too: the Deployment must finish rolling out
-	// (old-revision proxy pods fully scaled down), every proxy pod must run the new image,
-	// and nothing may have crash-looped during the rollout.
-	s.TestInstallation.AssertionsT(s.T()).EventuallyDeploymentsRolledOut(s.Ctx, proxyNamespace, sharedLabelSelector)
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsHaveImageVersion(s.Ctx, proxyNamespace, sharedLabelSelector, version.Version)
+	// (old-revision proxy pods fully scaled down) and every proxy pod must run the new image
+	s.TestInstallation.AssertionsT(s.T()).EventuallyDeploymentsRolledOut(s.Ctx, proxyNamespace, proxyLabelSelector)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsHaveImageVersion(s.Ctx, proxyNamespace, proxyLabelSelector, version.Version)
 
 	// Ensure the same gateway works after the upgrade
 	common.BaseGateway.Send(
@@ -133,11 +132,34 @@ func newGraphQLClient() *githubv4.Client {
 	return githubv4.NewClient(oauth2.NewClient(context.Background(), ts))
 }
 
-// fetchGithubRelease pages through kgateway releases ordered by creation date descending
+const (
+	defaultGitHubOrg  = "kgateway-dev"
+	defaultGitHubRepo = "kgateway"
+)
+
+// ReleaseOptions configures which GitHub repository to query for releases.
+type ReleaseOptions struct {
+	// Org is the GitHub organization owning the repository. Defaults to "kgateway-dev".
+	Org string
+	// Repo is the GitHub repository name. Defaults to "kgateway".
+	Repo string
+}
+
+func (o *ReleaseOptions) applyDefaults() {
+	if o.Org == "" {
+		o.Org = defaultGitHubOrg
+	}
+	if o.Repo == "" {
+		o.Repo = defaultGitHubRepo
+	}
+}
+
+// fetchGithubRelease pages through releases ordered by creation date descending
 // (newest first, skipping drafts) using the GitHub GraphQL API, which
 // guarantees the ordering via orderBy. Returns the tag name of the first release for
 // which match returns true.
-func fetchGithubRelease(ctx context.Context, match func(tagName string) (bool, error)) (string, error) {
+func fetchGithubRelease(ctx context.Context, opts ReleaseOptions, match func(tagName string) (bool, error)) (string, error) {
+	opts.applyDefaults()
 	client := newGraphQLClient()
 
 	var query struct {
@@ -152,11 +174,13 @@ func fetchGithubRelease(ctx context.Context, match func(tagName string) (bool, e
 					HasNextPage githubv4.Boolean
 				}
 			} `graphql:"releases(first: 100, after: $cursor, orderBy: {field: CREATED_AT, direction: DESC})"`
-		} `graphql:"repository(owner: \"kgateway-dev\", name: \"kgateway\")"`
+		} `graphql:"repository(owner: $owner, name: $repo)"`
 	}
 
 	variables := map[string]any{
 		"cursor": (*githubv4.String)(nil),
+		"owner":  githubv4.String(opts.Org),
+		"repo":   githubv4.String(opts.Repo),
 	}
 
 	for {
@@ -186,7 +210,9 @@ func fetchGithubRelease(ctx context.Context, match func(tagName string) (bool, e
 // FetchLatestRelease returns the most recent release tag that is an ancestor of HEAD.
 // This mirrors `git describe --tags --abbrev=0` but works in shallow checkouts where
 // tags are not fetched, by resolving HEAD via git then checking ancestry via the GitHub API.
-func FetchLatestRelease(ctx context.Context) (string, error) {
+func FetchLatestRelease(ctx context.Context, opts ReleaseOptions) (string, error) {
+	opts.applyDefaults()
+
 	var shaOut threadsafe.Buffer
 	if err := cmdutils.Command(ctx, "git", "rev-parse", "HEAD").
 		WithStdout(&shaOut).
@@ -202,9 +228,9 @@ func FetchLatestRelease(ctx context.Context) (string, error) {
 		restClient = github.NewClient(nil).WithAuthToken(token)
 	}
 
-	return fetchGithubRelease(ctx, func(tagName string) (bool, error) {
+	return fetchGithubRelease(ctx, opts, func(tagName string) (bool, error) {
 		// Compare tag...HEAD: status=="ahead" means HEAD is ahead of the tag (tag is an ancestor).
-		comparison, _, err := restClient.Repositories.CompareCommits(ctx, "kgateway-dev", "kgateway", tagName, headSHA, nil)
+		comparison, _, err := restClient.Repositories.CompareCommits(ctx, opts.Org, opts.Repo, tagName, headSHA, nil)
 		if err != nil {
 			return false, fmt.Errorf("compare %s...%s: %w", tagName, headSHA, err)
 		}
@@ -212,7 +238,7 @@ func FetchLatestRelease(ctx context.Context) (string, error) {
 	})
 }
 
-func FetchPreviousMinorRelease(ctx context.Context, latestRelease string) (string, error) {
+func FetchPreviousMinorRelease(ctx context.Context, latestRelease string, opts ReleaseOptions) (string, error) {
 	parts := strings.Split(latestRelease, ".")
 	if len(parts) < 2 {
 		return "", fmt.Errorf("unexpected tag format: %s", latestRelease)
@@ -225,7 +251,7 @@ func FetchPreviousMinorRelease(ctx context.Context, latestRelease string) (strin
 		return "", fmt.Errorf("no previous minor for release %q (minor is 0)", latestRelease)
 	}
 	previousMinorPrefix := fmt.Sprintf("%s.%d.", parts[0], minorInt-1)
-	return fetchGithubRelease(ctx, func(tagName string) (bool, error) {
+	return fetchGithubRelease(ctx, opts, func(tagName string) (bool, error) {
 		return strings.HasPrefix(tagName, previousMinorPrefix), nil
 	})
 }
