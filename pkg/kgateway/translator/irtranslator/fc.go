@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	DefaultHttpStatPrefix  = "http"
+	DefaultHttpStatPrefix   = "http"
 	UpstreamCodecFilterName = "envoy.filters.http.upstream_codec"
 )
 
