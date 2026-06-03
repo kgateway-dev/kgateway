@@ -49,9 +49,10 @@ Listeners:
             - header:
                 key: X-Error-Type
                 value: NoHealthyUpstream
-            - header:
-                key: X-Error-Type
-                value: NoHealthyUpstream
+            - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+              header:
+                key: X-Error-Status
+                value: "503"
             statusCode: 503
         mergeSlashes: true
         normalizePath: true

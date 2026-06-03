@@ -355,6 +355,7 @@ type LocalReplyConfig struct {
 	DefaultBodyFormat *shared.BodyFormat `json:"defaultBodyFormat,omitempty"`
 	// A list of custom options to apply based on filters. This may override the DefaultBodyFormat.
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
 	// +optional
 	Mappers []LocalReplyMapper `json:"mappers,omitempty"`
 }

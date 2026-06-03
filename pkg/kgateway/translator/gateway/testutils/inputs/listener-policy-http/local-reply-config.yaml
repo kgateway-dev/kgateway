@@ -69,3 +69,6 @@ spec:
               add:
                 - name: X-Error-Type
                   value: NoHealthyUpstream
+              set:
+                - name: X-Error-Status
+                  value: "503"

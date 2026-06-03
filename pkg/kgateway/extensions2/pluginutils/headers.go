@@ -8,7 +8,6 @@ import (
 	mutation_rulesv3 "github.com/envoyproxy/go-control-plane/envoy/config/common/mutation_rules/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -86,7 +85,10 @@ func ConvertHeaderFilter(
 	for _, h := range filter.Add {
 		resolved, err := resolveHeader(krtctx, from, secrets, h)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve header '%s' %w", ptr.Deref(h.Name, "<noname>"), err)
+			if h.Name != nil {
+				return nil, fmt.Errorf("failed to resolve header '%s': %w", *h.Name, err)
+			}
+			return nil, fmt.Errorf("failed to resolve header value(s): %w", err)
 		}
 		for _, r := range resolved {
 			gwFilter.Add = append(gwFilter.Add, r)
@@ -96,31 +98,19 @@ func ConvertHeaderFilter(
 	for _, h := range filter.Set {
 		resolved, err := resolveHeader(krtctx, from, secrets, h)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve header '%s' %w", ptr.Deref(h.Name, "<noname>"), err)
+			if h.Name != nil {
+				return nil, fmt.Errorf("failed to resolve header '%s': %w", *h.Name, err)
+			}
+			return nil, fmt.Errorf("failed to resolve header value(s): %w", err)
 		}
 		for _, r := range resolved {
-			gwFilter.Add = append(gwFilter.Set, r)
+			gwFilter.Set = append(gwFilter.Set, r)
 		}
 	}
 
 	gwFilter.Remove = filter.Remove
 
 	return gwFilter, nil
-}
-
-func ConvertMutationsToOptions(mutations []*mutation_rulesv3.HeaderMutation) (options []*envoycorev3.HeaderValueOption, err error) {
-	for _, m := range mutations {
-		switch a := m.Action.(type) {
-		case *mutation_rulesv3.HeaderMutation_Append:
-			options = append(options, a.Append)
-		case *mutation_rulesv3.HeaderMutation_Remove:
-			return nil, ErrUnsupportedRemoveHeaderMutation
-		default:
-			return nil, ErrUnknownHeaderMutation
-		}
-	}
-
-	return options, nil
 }
 
 // resolveHeader resolves an HTTPHeader entry into one or more gwv1.HTTPHeader pairs.
@@ -180,4 +170,19 @@ func resolveHeader(
 		headerName = *h.Name
 	}
 	return []gwv1.HTTPHeader{{Name: headerName, Value: string(data)}}, nil
+}
+
+func ConvertMutationsToOptions(mutations []*mutation_rulesv3.HeaderMutation) (options []*envoycorev3.HeaderValueOption, err error) {
+	for _, m := range mutations {
+		switch a := m.Action.(type) {
+		case *mutation_rulesv3.HeaderMutation_Append:
+			options = append(options, a.Append)
+		case *mutation_rulesv3.HeaderMutation_Remove:
+			return nil, ErrUnsupportedRemoveHeaderMutation
+		default:
+			return nil, ErrUnknownHeaderMutation
+		}
+	}
+
+	return options, nil
 }

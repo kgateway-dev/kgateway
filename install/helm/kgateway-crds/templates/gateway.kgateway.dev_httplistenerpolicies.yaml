@@ -2582,6 +2582,7 @@ spec:
                           headers] must be set
                         rule: '[has(self.statusCode),has(self.body),has(self.bodyFormatOverride),has(self.headers)].filter(x,x==true).size()
                           >= 1'
+                    maxItems: 16
                     minItems: 1
                     type: array
                 type: object
