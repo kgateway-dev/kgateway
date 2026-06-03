@@ -185,10 +185,12 @@ Routes:
         - genericKey:
             descriptorKey: endpoint_type
             descriptorValue: api
+      - actions:
         - remoteAddress: {}
         - requestHeaders:
             descriptorKey: path
             headerName: :path
+      - actions:
         - requestHeaders:
             descriptorKey: X-Service-Auth
             headerName: X-Service-Auth

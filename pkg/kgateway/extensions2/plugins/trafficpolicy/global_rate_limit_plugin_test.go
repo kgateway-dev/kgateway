@@ -157,7 +157,7 @@ func TestCreateRateLimitActions(t *testing.T) {
 		name           string
 		descriptors    []kgateway.RateLimitDescriptor
 		expectedError  string
-		validateResult func(*testing.T, []*envoyroutev3.RateLimit_Action)
+		validateResult func(*testing.T, []*envoyroutev3.RateLimit)
 	}{
 		{
 			name: "with generic key descriptor",
@@ -174,9 +174,10 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
-				require.Len(t, actions, 1)
-				genericKey := actions[0].GetGenericKey()
+			validateResult: func(t *testing.T, rateLimits []*envoyroutev3.RateLimit) {
+				require.Len(t, rateLimits, 1)
+				require.Len(t, rateLimits[0].GetActions(), 1)
+				genericKey := rateLimits[0].GetActions()[0].GetGenericKey()
 				require.NotNil(t, genericKey)
 				assert.Equal(t, "service", genericKey.DescriptorKey)
 				assert.Equal(t, "api", genericKey.DescriptorValue)
@@ -194,9 +195,10 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
-				require.Len(t, actions, 1)
-				requestHeaders := actions[0].GetRequestHeaders()
+			validateResult: func(t *testing.T, rateLimits []*envoyroutev3.RateLimit) {
+				require.Len(t, rateLimits, 1)
+				require.Len(t, rateLimits[0].GetActions(), 1)
+				requestHeaders := rateLimits[0].GetActions()[0].GetRequestHeaders()
 				require.NotNil(t, requestHeaders)
 				assert.Equal(t, "X-User-ID", requestHeaders.HeaderName)
 				assert.Equal(t, "X-User-ID", requestHeaders.DescriptorKey)
@@ -213,9 +215,10 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
-				require.Len(t, actions, 1)
-				remoteAddress := actions[0].GetRemoteAddress()
+			validateResult: func(t *testing.T, rateLimits []*envoyroutev3.RateLimit) {
+				require.Len(t, rateLimits, 1)
+				require.Len(t, rateLimits[0].GetActions(), 1)
+				remoteAddress := rateLimits[0].GetActions()[0].GetRemoteAddress()
 				require.NotNil(t, remoteAddress)
 			},
 		},
@@ -230,9 +233,10 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
-				require.Len(t, actions, 1)
-				requestHeaders := actions[0].GetRequestHeaders()
+			validateResult: func(t *testing.T, rateLimits []*envoyroutev3.RateLimit) {
+				require.Len(t, rateLimits, 1)
+				require.Len(t, rateLimits[0].GetActions(), 1)
+				requestHeaders := rateLimits[0].GetActions()[0].GetRequestHeaders()
 				require.NotNil(t, requestHeaders)
 				assert.Equal(t, ":path", requestHeaders.HeaderName)
 				assert.Equal(t, "path", requestHeaders.DescriptorKey)
@@ -260,16 +264,18 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
-				require.Len(t, actions, 2)
-				// First action is generic key
-				genericKey := actions[0].GetGenericKey()
+			validateResult: func(t *testing.T, rateLimits []*envoyroutev3.RateLimit) {
+				require.Len(t, rateLimits, 2)
+				// First RateLimit has generic key action
+				require.Len(t, rateLimits[0].GetActions(), 1)
+				genericKey := rateLimits[0].GetActions()[0].GetGenericKey()
 				require.NotNil(t, genericKey)
 				assert.Equal(t, "service", genericKey.DescriptorKey)
 				assert.Equal(t, "api", genericKey.DescriptorValue)
 
-				// Second action is remote address
-				remoteAddress := actions[1].GetRemoteAddress()
+				// Second RateLimit has remote address action
+				require.Len(t, rateLimits[1].GetActions(), 1)
+				remoteAddress := rateLimits[1].GetActions()[0].GetRemoteAddress()
 				require.NotNil(t, remoteAddress)
 			},
 		},
@@ -292,16 +298,17 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 			},
-			validateResult: func(t *testing.T, actions []*envoyroutev3.RateLimit_Action) {
-				require.Len(t, actions, 2)
+			validateResult: func(t *testing.T, rateLimits []*envoyroutev3.RateLimit) {
+				require.Len(t, rateLimits, 1)
+				require.Len(t, rateLimits[0].GetActions(), 2)
 				// First action is generic key
-				genericKey := actions[0].GetGenericKey()
+				genericKey := rateLimits[0].GetActions()[0].GetGenericKey()
 				require.NotNil(t, genericKey)
 				assert.Equal(t, "service", genericKey.DescriptorKey)
 				assert.Equal(t, "api", genericKey.DescriptorValue)
 
 				// Second action is header
-				requestHeaders := actions[1].GetRequestHeaders()
+				requestHeaders := rateLimits[0].GetActions()[1].GetRequestHeaders()
 				require.NotNil(t, requestHeaders)
 				assert.Equal(t, "X-User-ID", requestHeaders.HeaderName)
 				assert.Equal(t, "X-User-ID", requestHeaders.DescriptorKey)
