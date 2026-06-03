@@ -489,7 +489,7 @@ var _ = Describe("Query", func() {
 					ParentRefs: []gwv1.ParentReference{
 						{
 							Name:      gwv1.ObjectName(gw.Name),
-							Namespace: ptr.To(gwv1.Namespace(gw.Namespace)),
+							Namespace: new(gwv1.Namespace(gw.Namespace)),
 						},
 					},
 				},
@@ -670,7 +670,7 @@ var _ = Describe("Query", func() {
 				ParentRefs: []gwv1.ParentReference{
 					{
 						Name:      gwv1.ObjectName(gw.Name),
-						Namespace: ptr.To(gwv1.Namespace(gw.Namespace)),
+						Namespace: new(gwv1.Namespace(gw.Namespace)),
 					},
 				},
 			},
@@ -841,7 +841,7 @@ var _ = Describe("Query", func() {
 				ParentRefs: []gwv1.ParentReference{
 					{
 						Name:      gwv1.ObjectName(gw.Name),
-						Namespace: ptr.To(gwv1.Namespace(gw.Namespace)),
+						Namespace: new(gwv1.Namespace(gw.Namespace)),
 					},
 				},
 			},

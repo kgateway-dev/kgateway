@@ -17,7 +17,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -37,23 +36,23 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			name: "full configuration",
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
-					ConnectTimeout:                ptr.To(metav1.Duration{Duration: 5 * time.Second}),
-					PerConnectionBufferLimitBytes: ptr.To(int32(1024)),
+					ConnectTimeout:                new(metav1.Duration{Duration: 5 * time.Second}),
+					PerConnectionBufferLimitBytes: new(int32(1024)),
 					TCPKeepalive: &kgateway.TCPKeepalive{
-						KeepAliveProbes:   ptr.To(int32(3)),
-						KeepAliveTime:     ptr.To(metav1.Duration{Duration: 30 * time.Second}),
-						KeepAliveInterval: ptr.To(metav1.Duration{Duration: 5 * time.Second}),
+						KeepAliveProbes:   new(int32(3)),
+						KeepAliveTime:     new(metav1.Duration{Duration: 30 * time.Second}),
+						KeepAliveInterval: new(metav1.Duration{Duration: 5 * time.Second}),
 					},
 					CommonHttpProtocolOptions: &kgateway.CommonHttpProtocolOptions{
-						IdleTimeout:              ptr.To(metav1.Duration{Duration: 60 * time.Second}),
-						MaxHeadersCount:          ptr.To(int32(100)),
-						MaxStreamDuration:        ptr.To(metav1.Duration{Duration: 30 * time.Second}),
-						MaxRequestsPerConnection: ptr.To(int32(100)),
+						IdleTimeout:              new(metav1.Duration{Duration: 60 * time.Second}),
+						MaxHeadersCount:          new(int32(100)),
+						MaxStreamDuration:        new(metav1.Duration{Duration: 30 * time.Second}),
+						MaxRequestsPerConnection: new(int32(100)),
 					},
 					Http1ProtocolOptions: &kgateway.Http1ProtocolOptions{
-						EnableTrailers:                          ptr.To(true),
-						PreserveHttp1HeaderCase:                 ptr.To(true),
-						OverrideStreamErrorOnInvalidHttpMessage: ptr.To(true),
+						EnableTrailers:                          new(true),
+						PreserveHttp1HeaderCase:                 new(true),
+						OverrideStreamErrorOnInvalidHttpMessage: new(true),
 					},
 				},
 			},
@@ -102,9 +101,9 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			name: "minimal configuration",
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
-					ConnectTimeout: ptr.To(metav1.Duration{Duration: 2 * time.Second}),
+					ConnectTimeout: new(metav1.Duration{Duration: 2 * time.Second}),
 					CommonHttpProtocolOptions: &kgateway.CommonHttpProtocolOptions{
-						MaxRequestsPerConnection: ptr.To(int32(50)),
+						MaxRequestsPerConnection: new(int32(50)),
 					},
 				},
 			},
@@ -138,7 +137,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
 					Http1ProtocolOptions: &kgateway.Http1ProtocolOptions{
-						EnableTrailers: ptr.To(true),
+						EnableTrailers: new(true),
 					},
 				},
 			},
@@ -178,10 +177,10 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
 					Http2ProtocolOptions: &kgateway.Http2ProtocolOptions{
-						InitialStreamWindowSize:                 ptr.To(resource.MustParse("64Ki")),
-						InitialConnectionWindowSize:             ptr.To(resource.MustParse("64Ki")),
-						MaxConcurrentStreams:                    ptr.To(int32(100)),
-						OverrideStreamErrorOnInvalidHttpMessage: ptr.To(true),
+						InitialStreamWindowSize:                 new(resource.MustParse("64Ki")),
+						InitialConnectionWindowSize:             new(resource.MustParse("64Ki")),
+						MaxConcurrentStreams:                    new(int32(100)),
+						OverrideStreamErrorOnInvalidHttpMessage: new(true),
 					},
 				},
 			},
@@ -226,7 +225,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
 					Http2ProtocolOptions: &kgateway.Http2ProtocolOptions{
-						MaxConcurrentStreams: ptr.To(int32(100)),
+						MaxConcurrentStreams: new(int32(100)),
 					},
 				},
 			},
@@ -240,7 +239,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
 					CircuitBreakers: &kgateway.CircuitBreakers{
-						MaxConnections: ptr.To(int32(100)),
+						MaxConnections: new(int32(100)),
 					},
 				},
 			},
@@ -260,10 +259,10 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
 					CircuitBreakers: &kgateway.CircuitBreakers{
-						MaxConnections:     ptr.To(int32(1000)),
-						MaxPendingRequests: ptr.To(int32(500)),
-						MaxRequests:        ptr.To(int32(2000)),
-						MaxRetries:         ptr.To(int32(10)),
+						MaxConnections:     new(int32(1000)),
+						MaxPendingRequests: new(int32(500)),
+						MaxRequests:        new(int32(2000)),
+						MaxRetries:         new(int32(10)),
 					},
 				},
 			},

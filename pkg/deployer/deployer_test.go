@@ -212,16 +212,16 @@ var _ = Describe("Deployer", func() {
 						},
 						EnvoyContainer: &kgateway.EnvoyContainer{
 							Bootstrap: &kgateway.EnvoyBootstrap{
-								LogLevel: ptr.To("debug"),
+								LogLevel: new("debug"),
 								ComponentLogLevels: map[string]string{
 									"router":   "info",
 									"listener": "warn",
 								},
 							},
 							Image: &kgateway.Image{
-								Registry:   ptr.To("scooby"),
-								Repository: ptr.To("dooby"),
-								Tag:        ptr.To("doo"),
+								Registry:   new("scooby"),
+								Repository: new("dooby"),
+								Tag:        new("doo"),
 								PullPolicy: ptr.To(corev1.PullAlways),
 							},
 						},
@@ -230,13 +230,13 @@ var _ = Describe("Deployer", func() {
 								"foo": "bar",
 							},
 							SecurityContext: &corev1.PodSecurityContext{
-								RunAsUser:  ptr.To(int64(1)),
-								RunAsGroup: ptr.To(int64(2)),
+								RunAsUser:  new(int64(1)),
+								RunAsGroup: new(int64(2)),
 							},
 						},
 						Service: &kgateway.Service{
 							Type:      ptr.To(corev1.ServiceTypeClusterIP),
-							ClusterIP: ptr.To("99.99.99.99"),
+							ClusterIP: new("99.99.99.99"),
 							ExtraLabels: map[string]string{
 								"foo-label": "bar-label",
 							},
@@ -254,10 +254,10 @@ var _ = Describe("Deployer", func() {
 							},
 						},
 						Stats: &kgateway.StatsConfig{
-							Enabled:                 ptr.To(true),
-							RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
-							EnableStatsRoute:        ptr.To(true),
-							StatsRoutePrefixRewrite: ptr.To("/stats"),
+							Enabled:                 new(true),
+							RoutePrefixRewrite:      new("/stats/prometheus?usedonly"),
+							EnableStatsRoute:        new(true),
+							StatsRoutePrefixRewrite: new("/stats"),
 						},
 					},
 				},
@@ -291,10 +291,10 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
-						OmitDefaultSecurityContext: ptr.To(true),
+						OmitDefaultSecurityContext: new(true),
 						EnvoyContainer: &kgateway.EnvoyContainer{
 							SecurityContext: &corev1.SecurityContext{
-								RunAsUser: ptr.To(int64(333)),
+								RunAsUser: new(int64(333)),
 							},
 						},
 					},
@@ -312,8 +312,8 @@ var _ = Describe("Deployer", func() {
 				Spec: agentgatewayv1alpha1.AgentgatewayParametersSpec{
 					AgentgatewayParametersConfigs: agentgatewayv1alpha1.AgentgatewayParametersConfigs{
 						Image: &agentgatewayv1alpha1.Image{
-							Repository: ptr.To("agentgateway"),
-							Tag:        ptr.To("0.4.0"),
+							Repository: new("agentgateway"),
+							Tag:        new("0.4.0"),
 						},
 						Resources: &corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{"cpu": resource.MustParse("101m")},
@@ -624,7 +624,7 @@ var _ = Describe("Deployer", func() {
 		})
 
 		It("omits our opinionated securityContexts for envoy when OmitDefaultSecurityContext=true and pod and container securityContexts are provided in GWP", func() {
-			gwp.Spec.Kube.OmitDefaultSecurityContext = ptr.To(true)
+			gwp.Spec.Kube.OmitDefaultSecurityContext = new(true)
 			// also set a PodSecurityContext and ensure it flows to the pod
 			uid := int64(*gwp.Spec.Kube.EnvoyContainer.SecurityContext.RunAsUser + 1)
 			containerRunAsUser := gwp.Spec.Kube.EnvoyContainer.SecurityContext.RunAsUser
@@ -707,7 +707,7 @@ var _ = Describe("Deployer", func() {
 		})
 
 		It("omits PodSecurityContext (corev1.PodSecurityContext) and ContainerSecurityContext (corev1.SecurityContext) for envoy when OmitDefaultSecurityContext=true when neither is provided in GWP", func() {
-			gwp.Spec.Kube.OmitDefaultSecurityContext = ptr.To(true)
+			gwp.Spec.Kube.OmitDefaultSecurityContext = new(true)
 			gwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
 			gwp.Spec.Kube.PodTemplate = &kgateway.Pod{}
 			gw := &gwv1.Gateway{
@@ -773,27 +773,27 @@ var _ = Describe("Deployer", func() {
 		It("renders inclusion stats_matcher in Envoy bootstrap when configured", func() {
 			// configure stats matcher with inclusion list
 			gwp.Spec.Kube.Stats = &kgateway.StatsConfig{
-				Enabled:                 ptr.To(true),
-				RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
-				EnableStatsRoute:        ptr.To(true),
-				StatsRoutePrefixRewrite: ptr.To("/stats"),
+				Enabled:                 new(true),
+				RoutePrefixRewrite:      new("/stats/prometheus?usedonly"),
+				EnableStatsRoute:        new(true),
+				StatsRoutePrefixRewrite: new("/stats"),
 				Matcher: &kgateway.StatsMatcher{
 					InclusionList: []shared.StringMatcher{
 						{
-							Exact: ptr.To("cluster.my_service.upstream_cx_total"),
+							Exact: new("cluster.my_service.upstream_cx_total"),
 						},
 						{
-							Prefix: ptr.To("http."),
+							Prefix: new("http."),
 						},
 						{
-							Suffix: ptr.To(".pending"),
+							Suffix: new(".pending"),
 						},
 						{
-							Contains:   ptr.To("CLUSTER"),
-							IgnoreCase: ptr.To(true),
+							Contains:   new("CLUSTER"),
+							IgnoreCase: new(true),
 						},
 						{
-							SafeRegex: ptr.To("cluster\\..*\\.upstream_cx.*"),
+							SafeRegex: new("cluster\\..*\\.upstream_cx.*"),
 						},
 					},
 				},
@@ -869,27 +869,27 @@ var _ = Describe("Deployer", func() {
 		It("renders exclusion stats_matcher in Envoy bootstrap when configured", func() {
 			// configure stats matcher with exclusion list
 			gwp.Spec.Kube.Stats = &kgateway.StatsConfig{
-				Enabled:                 ptr.To(true),
-				RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
-				EnableStatsRoute:        ptr.To(true),
-				StatsRoutePrefixRewrite: ptr.To("/stats"),
+				Enabled:                 new(true),
+				RoutePrefixRewrite:      new("/stats/prometheus?usedonly"),
+				EnableStatsRoute:        new(true),
+				StatsRoutePrefixRewrite: new("/stats"),
 				Matcher: &kgateway.StatsMatcher{
 					ExclusionList: []shared.StringMatcher{
 						{
-							Exact: ptr.To("cluster.my_service.upstream_cx_total"),
+							Exact: new("cluster.my_service.upstream_cx_total"),
 						},
 						{
-							Prefix: ptr.To("http."),
+							Prefix: new("http."),
 						},
 						{
-							Suffix: ptr.To(".pending"),
+							Suffix: new(".pending"),
 						},
 						{
-							Contains:   ptr.To("CLUSTER"),
-							IgnoreCase: ptr.To(true),
+							Contains:   new("CLUSTER"),
+							IgnoreCase: new(true),
 						},
 						{
-							SafeRegex: ptr.To("cluster\\..*\\.upstream_cx.*"),
+							SafeRegex: new("cluster\\..*\\.upstream_cx.*"),
 						}},
 				},
 			}
@@ -1275,8 +1275,8 @@ var _ = Describe("Deployer", func() {
 						Kube: &kgateway.KubernetesProxyConfig{
 							EnvoyContainer: &kgateway.EnvoyContainer{
 								Image: &kgateway.Image{
-									Registry: ptr.To("bar"),
-									Tag:      ptr.To("2.3.4"),
+									Registry: new("bar"),
+									Tag:      new("2.3.4"),
 								},
 							},
 						},
@@ -1370,7 +1370,7 @@ var _ = Describe("Deployer", func() {
 							},
 							EnvoyContainer: &kgateway.EnvoyContainer{
 								Bootstrap: &kgateway.EnvoyBootstrap{
-									LogLevel: ptr.To("debug"),
+									LogLevel: new("debug"),
 								},
 							},
 						},
@@ -1503,16 +1503,16 @@ var _ = Describe("Deployer", func() {
 							},
 							EnvoyContainer: &kgateway.EnvoyContainer{
 								Bootstrap: &kgateway.EnvoyBootstrap{
-									LogLevel: ptr.To("debug"),
+									LogLevel: new("debug"),
 									ComponentLogLevels: map[string]string{
 										"router":   "info",
 										"listener": "warn",
 									},
 								},
 								Image: &kgateway.Image{
-									Registry:   ptr.To("foo"),
-									Repository: ptr.To("bar"),
-									Tag:        ptr.To("quux"),
+									Registry:   new("foo"),
+									Repository: new("bar"),
+									Tag:        new("quux"),
 									PullPolicy: ptr.To(corev1.PullAlways),
 								},
 							},
@@ -1521,13 +1521,13 @@ var _ = Describe("Deployer", func() {
 									"override-foo": "override-bar",
 								},
 								SecurityContext: &corev1.PodSecurityContext{
-									RunAsUser:  ptr.To(int64(3)),
-									RunAsGroup: ptr.To(int64(4)),
+									RunAsUser:  new(int64(3)),
+									RunAsGroup: new(int64(4)),
 								},
 							},
 							Service: &kgateway.Service{
 								Type:      ptr.To(corev1.ServiceTypeClusterIP),
-								ClusterIP: ptr.To("99.99.99.99"),
+								ClusterIP: new("99.99.99.99"),
 								ExtraLabels: map[string]string{
 									"override-foo-label": "override-bar-label",
 								},
@@ -1564,16 +1564,16 @@ var _ = Describe("Deployer", func() {
 							},
 							EnvoyContainer: &kgateway.EnvoyContainer{
 								Bootstrap: &kgateway.EnvoyBootstrap{
-									LogLevel: ptr.To("debug"),
+									LogLevel: new("debug"),
 									ComponentLogLevels: map[string]string{
 										"router":   "info",
 										"listener": "warn",
 									},
 								},
 								Image: &kgateway.Image{
-									Registry:   ptr.To("foo"),
-									Repository: ptr.To("bar"),
-									Tag:        ptr.To("quux"),
+									Registry:   new("foo"),
+									Repository: new("bar"),
+									Tag:        new("quux"),
 									PullPolicy: ptr.To(corev1.PullAlways),
 								},
 							},
@@ -1583,13 +1583,13 @@ var _ = Describe("Deployer", func() {
 									"override-foo": "override-bar",
 								},
 								SecurityContext: &corev1.PodSecurityContext{
-									RunAsUser:  ptr.To(int64(3)),
-									RunAsGroup: ptr.To(int64(4)),
+									RunAsUser:  new(int64(3)),
+									RunAsGroup: new(int64(4)),
 								},
 							},
 							Service: &kgateway.Service{
 								Type:      ptr.To(corev1.ServiceTypeClusterIP),
-								ClusterIP: ptr.To("99.99.99.99"),
+								ClusterIP: new("99.99.99.99"),
 								ExtraLabels: map[string]string{
 									"foo-label":          "bar-label",
 									"override-foo-label": "override-bar-label",
@@ -1636,8 +1636,8 @@ var _ = Describe("Deployer", func() {
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Stats: &kgateway.StatsConfig{
-								Enabled:          ptr.To(false),
-								EnableStatsRoute: ptr.To(false),
+								Enabled:          new(false),
+								EnableStatsRoute: new(false),
 							},
 						},
 					},
@@ -1669,10 +1669,10 @@ var _ = Describe("Deployer", func() {
 				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
 				params.Spec.Kube.PodTemplate.ReadinessProbe = generateReadinessProbe()
 				params.Spec.Kube.PodTemplate.StartupProbe = generateStartupProbe()
-				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(int64(5))
+				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = new(int64(5))
 				params.Spec.Kube.PodTemplate.GracefulShutdown = &kgateway.GracefulShutdownSpec{
-					Enabled:          ptr.To(true),
-					SleepTimeSeconds: ptr.To(int64(7)),
+					Enabled:          new(true),
+					SleepTimeSeconds: new(int64(7)),
 				}
 				return params
 			}
@@ -2521,20 +2521,20 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 				},
 				EnvoyContainer: &kgateway.EnvoyContainer{
 					Bootstrap: &kgateway.EnvoyBootstrap{
-						LogLevel: ptr.To("debug"),
+						LogLevel: new("debug"),
 						ComponentLogLevels: map[string]string{
 							"router":   "info",
 							"listener": "warn",
 						},
 					},
 					Image: &kgateway.Image{
-						Registry:   ptr.To("foo"),
-						Repository: ptr.To("bar"),
-						Tag:        ptr.To("bat"),
+						Registry:   new("foo"),
+						Repository: new("bar"),
+						Tag:        new("bat"),
 						PullPolicy: ptr.To(corev1.PullAlways),
 					},
 					SecurityContext: &corev1.SecurityContext{
-						RunAsUser: ptr.To(int64(111)),
+						RunAsUser: new(int64(111)),
 					},
 					Resources: &corev1.ResourceRequirements{
 						Limits:   corev1.ResourceList{"cpu": resource.MustParse("101m")},
@@ -2543,21 +2543,21 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 				},
 				SdsContainer: &kgateway.SdsContainer{
 					Image: &kgateway.Image{
-						Registry:   ptr.To("sds-registry"),
-						Repository: ptr.To("sds-repository"),
+						Registry:   new("sds-registry"),
+						Repository: new("sds-repository"),
 						Tag:        nil,
-						Digest:     ptr.To("sds-digest"),
+						Digest:     new("sds-digest"),
 						PullPolicy: ptr.To(corev1.PullAlways),
 					},
 					SecurityContext: &corev1.SecurityContext{
-						RunAsUser: ptr.To(int64(222)),
+						RunAsUser: new(int64(222)),
 					},
 					Resources: &corev1.ResourceRequirements{
 						Limits:   corev1.ResourceList{"cpu": resource.MustParse("201m")},
 						Requests: corev1.ResourceList{"cpu": resource.MustParse("203m")},
 					},
 					Bootstrap: &kgateway.SdsBootstrap{
-						LogLevel: ptr.To("debug"),
+						LogLevel: new("debug"),
 					},
 				},
 				PodTemplate: &kgateway.Pod{
@@ -2568,7 +2568,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 						"pod-label": "foo",
 					},
 					SecurityContext: &corev1.PodSecurityContext{
-						RunAsUser: ptr.To(int64(333)),
+						RunAsUser: new(int64(333)),
 					},
 					ImagePullSecrets: []corev1.LocalObjectReference{{
 						Name: "pod-image-pull-secret",
@@ -2599,7 +2599,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 						Operator:          "pod-toleration-operator",
 						Value:             "pod-toleration-value",
 						Effect:            "pod-toleration-effect",
-						TolerationSeconds: ptr.To(int64(1)),
+						TolerationSeconds: new(int64(1)),
 					}},
 					TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
 						MaxSkew:           1,
@@ -2610,7 +2610,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 				},
 				Service: &kgateway.Service{
 					Type:      ptr.To(corev1.ServiceTypeClusterIP),
-					ClusterIP: ptr.To("99.99.99.99"),
+					ClusterIP: new("99.99.99.99"),
 					ExtraAnnotations: map[string]string{
 						"service-anno": "foo",
 					},
@@ -2630,23 +2630,23 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 				Istio: &kgateway.IstioIntegration{
 					IstioProxyContainer: &kgateway.IstioContainer{
 						Image: &kgateway.Image{
-							Registry:   ptr.To("istio-registry"),
-							Repository: ptr.To("istio-repository"),
-							Tag:        ptr.To(""),
-							Digest:     ptr.To("istio-digest"),
+							Registry:   new("istio-registry"),
+							Repository: new("istio-repository"),
+							Tag:        new(""),
+							Digest:     new("istio-digest"),
 							PullPolicy: ptr.To(corev1.PullAlways),
 						},
 						SecurityContext: &corev1.SecurityContext{
-							RunAsUser: ptr.To(int64(444)),
+							RunAsUser: new(int64(444)),
 						},
 						Resources: &corev1.ResourceRequirements{
 							Limits:   corev1.ResourceList{"cpu": resource.MustParse("301m")},
 							Requests: corev1.ResourceList{"cpu": resource.MustParse("303m")},
 						},
-						LogLevel:              ptr.To("debug"),
-						IstioDiscoveryAddress: ptr.To("istioDiscoveryAddress"),
-						IstioMetaMeshId:       ptr.To("istioMetaMeshId"),
-						IstioMetaClusterId:    ptr.To("istioMetaClusterId"),
+						LogLevel:              new("debug"),
+						IstioDiscoveryAddress: new("istioDiscoveryAddress"),
+						IstioMetaMeshId:       new("istioMetaMeshId"),
+						IstioMetaClusterId:    new("istioMetaClusterId"),
 					},
 				},
 			},

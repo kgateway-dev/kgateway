@@ -123,7 +123,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 						Matches: []gwv1.HTTPRouteMatch{
 							{Path: &gwv1.HTTPPathMatch{
 								Type:  ptr.To(gwv1.PathMatchPathPrefix),
-								Value: ptr.To("/"),
+								Value: new("/"),
 							}},
 						},
 						BackendRefs: []gwv1.HTTPBackendRef{
@@ -168,7 +168,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
 				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal(up.ClusterName()))
 				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(ptr.To(gwv1.PathMatchPathPrefix)))
-				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(ptr.To("/")))
+				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(new("/")))
 
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
@@ -205,7 +205,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 						Matches: []gwv1.HTTPRouteMatch{
 							{Path: &gwv1.HTTPPathMatch{
 								Type:  ptr.To(gwv1.PathMatchPathPrefix),
-								Value: ptr.To("/"),
+								Value: new("/"),
 							}},
 						},
 						BackendRefs: []gwv1.HTTPBackendRef{
@@ -248,7 +248,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
 				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("blackhole_cluster"))
 				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(ptr.To(gwv1.PathMatchPathPrefix)))
-				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(ptr.To("/")))
+				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(new("/")))
 
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())

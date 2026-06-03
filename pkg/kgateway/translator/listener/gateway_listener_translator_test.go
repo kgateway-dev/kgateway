@@ -153,7 +153,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 										Namespace: ptr.To(gwv1.Namespace("default")),
 										Port:      ptr.To(gwv1.PortNumber(8081)),
 									},
-									Weight: ptr.To(int32(50)),
+									Weight: new(int32(50)),
 								},
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
@@ -161,7 +161,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 										Namespace: ptr.To(gwv1.Namespace("default")),
 										Port:      ptr.To(gwv1.PortNumber(8082)),
 									},
-									Weight: ptr.To(int32(50)),
+									Weight: new(int32(50)),
 								},
 							},
 						},
@@ -327,7 +327,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 										Namespace: ptr.To(gwv1.Namespace("default")),
 										Port:      ptr.To(gwv1.PortNumber(8081)),
 									},
-									Weight: ptr.To(int32(100)),
+									Weight: new(int32(100)),
 								},
 							},
 						},
@@ -383,7 +383,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 										Namespace: ptr.To(gwv1.Namespace("default")),
 										Port:      ptr.To(gwv1.PortNumber(8081)),
 									},
-									Weight: ptr.To(int32(60)),
+									Weight: new(int32(60)),
 								},
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
@@ -391,7 +391,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 										Namespace: ptr.To(gwv1.Namespace("default")),
 										Port:      ptr.To(gwv1.PortNumber(8082)),
 									},
-									Weight: ptr.To(int32(40)),
+									Weight: new(int32(40)),
 								},
 							},
 						},
@@ -699,7 +699,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 										Namespace: ptr.To(gwv1.Namespace("default")),
 										Port:      ptr.To(gwv1.PortNumber(8081)),
 									},
-									Weight: ptr.To(int32(50)),
+									Weight: new(int32(50)),
 								},
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
@@ -707,7 +707,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 										Namespace: ptr.To(gwv1.Namespace("default")),
 										Port:      ptr.To(gwv1.PortNumber(8082)),
 									},
-									Weight: ptr.To(int32(50)),
+									Weight: new(int32(50)),
 								},
 							},
 						},
@@ -822,7 +822,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 										Namespace: ptr.To(gwv1.Namespace("default")),
 										Port:      ptr.To(gwv1.PortNumber(8081)),
 									},
-									Weight: ptr.To(int32(100)),
+									Weight: new(int32(100)),
 								},
 							},
 						},

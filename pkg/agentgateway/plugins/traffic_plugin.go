@@ -260,7 +260,7 @@ func TranslateAgentgatewayPolicy(
 			// no ancestor refs resolved due to attachment error, report status against a summary ref
 			logger.Warn("failed to resolve ancestor refs", "error", policyTarget.AttachmentError)
 			appendAncestor(gwv1.ParentReference{
-				Group: ptr.Of(gwv1.Group(wellknown.AgentgatewayPolicyGVK.Group)),
+				Group: new(gwv1.Group(wellknown.AgentgatewayPolicyGVK.Group)),
 				Name:  "StatusSummary",
 			})
 		}
@@ -309,9 +309,9 @@ func resolvePolicyAncestorRefs(
 	// Default: fall back to the original targetRef (for non-route targets)
 	fallback := []gwv1.ParentReference{{
 		Name:      targetName,
-		Namespace: ptr.Of(gwv1.Namespace(policyNamespace)),
-		Group:     ptr.Of(gwv1.Group(targetGK.Group)),
-		Kind:      ptr.Of(gwv1.Kind(targetGK.Kind)),
+		Namespace: new(gwv1.Namespace(policyNamespace)),
+		Group:     new(gwv1.Group(targetGK.Group)),
+		Kind:      new(gwv1.Kind(targetGK.Kind)),
 	}}
 
 	// If the policy is attached directly to a Gateway, that Gateway is the ancestor.
@@ -335,9 +335,9 @@ func resolvePolicyAncestorRefs(
 		}
 		return []gwv1.ParentReference{{
 			Name:      targetName,
-			Namespace: ptr.Of(gwv1.Namespace(policyNamespace)),
-			Group:     ptr.Of(gwv1.Group(wellknown.AgentgatewayBackendGVK.Group)),
-			Kind:      ptr.Of(gwv1.Kind(wellknown.AgentgatewayBackendGVK.Kind)),
+			Namespace: new(gwv1.Namespace(policyNamespace)),
+			Group:     new(gwv1.Group(wellknown.AgentgatewayBackendGVK.Group)),
+			Kind:      new(gwv1.Kind(wellknown.AgentgatewayBackendGVK.Kind)),
 		}}, ""
 	}
 
@@ -366,8 +366,8 @@ func resolvePolicyAncestorRefs(
 			seen[nn] = struct{}{}
 			refs = append(refs, gwv1.ParentReference{
 				Name:      pr.Name,
-				Namespace: ptr.Of(gwv1.Namespace(ns)),
-				Group:     ptr.Of(gwv1.Group(wellknown.GatewayGVK.Group)),
+				Namespace: new(gwv1.Namespace(ns)),
+				Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
 				Kind:      ptr.Of(gwv1.Kind(wellknown.GatewayKind)),
 				// NOTE: Intentionally omit SectionName; we report per Gateway, not per listener.
 			})
@@ -1091,7 +1091,7 @@ func castPtr[T ~string](item *T) *string {
 	if item == nil {
 		return nil
 	}
-	return ptr.Of(string(*item))
+	return new(string(*item))
 }
 
 // processAuthorizationPolicy processes Authorization configuration and creates corresponding Agw policies

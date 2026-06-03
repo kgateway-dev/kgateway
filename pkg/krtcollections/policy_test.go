@@ -398,7 +398,7 @@ func TestInferencePoolPortOverride(t *testing.T) {
 						BackendRefs: []gwv1.HTTPBackendRef{{
 							BackendRef: gwv1.BackendRef{
 								BackendObjectReference: gwv1.BackendObjectReference{
-									Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
+									Group:     new(gwv1.Group(inf.GroupVersion.Group)),
 									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
 									Name:      gwv1.ObjectName("foo"),
 									Namespace: ptrToNamespace(ns),
@@ -641,8 +641,8 @@ func httpRouteWithBackendRef(refN, refNs string, port *gwv1.PortNumber) *gwv1.HT
 						{
 							BackendRef: gwv1.BackendRef{
 								BackendObjectReference: gwv1.BackendObjectReference{
-									Group:     ptr.To(gwv1.Group(wellknown.BackendGVK.Group)),
-									Kind:      ptr.To(gwv1.Kind(wellknown.BackendGVK.Kind)),
+									Group:     new(gwv1.Group(wellknown.BackendGVK.Group)),
+									Kind:      new(gwv1.Kind(wellknown.BackendGVK.Kind)),
 									Name:      gwv1.ObjectName(refN),
 									Namespace: ns,
 									Port:      port,
@@ -761,7 +761,7 @@ func httpRouteWithInfPoolBackendRef(refNs string) *gwv1.HTTPRoute {
 						{
 							BackendRef: gwv1.BackendRef{
 								BackendObjectReference: gwv1.BackendObjectReference{
-									Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
+									Group:     new(gwv1.Group(inf.GroupVersion.Group)),
 									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
 									Name:      gwv1.ObjectName("foo"),
 									Namespace: ns,
@@ -823,7 +823,7 @@ func httpRouteWithInfPoolBackendRefWithPort(refNs string, port gwv1.PortNumber) 
 				BackendRefs: []gwv1.HTTPBackendRef{{
 					BackendRef: gwv1.BackendRef{
 						BackendObjectReference: gwv1.BackendObjectReference{
-							Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
+							Group:     new(gwv1.Group(inf.GroupVersion.Group)),
 							Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
 							Name:      gwv1.ObjectName("foo"),
 							Namespace: ns,

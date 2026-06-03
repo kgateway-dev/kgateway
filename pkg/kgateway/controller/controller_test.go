@@ -558,7 +558,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 		// Update it
 		original := gwc.DeepCopy()
 		updatedDesc := "updated description"
-		gwc.Spec.Description = ptr.To(updatedDesc)
+		gwc.Spec.Description = new(updatedDesc)
 		err := s.client.Patch(ctx, gwc, client.MergeFrom(original))
 		r.NoError(err)
 
@@ -711,7 +711,7 @@ func (s *ControllerSuite) startController(
 			// in short, our tests reuse the same name (reasonably so) and the controller-runtime
 			// package does not reset the stack of controller names between tests, so we disable
 			// the name validation here.
-			SkipNameValidation: ptr.To(true),
+			SkipNameValidation: new(true),
 		},
 		Metrics: metricsserver.Options{
 			BindAddress: "0",

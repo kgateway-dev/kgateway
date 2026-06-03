@@ -11,7 +11,6 @@ import (
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/protomarshal"
 	"istio.io/istio/pkg/util/sets"
@@ -363,7 +362,7 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable, ST any](
 			resourceTransformer,
 		)
 		status := rm.BuildRouteStatusWithParentRefDefaulting(context.Background(), obj, inputs.ControllerName, true)
-		return ptr.Of(buildStatus(*status)), resources
+		return new(buildStatus(*status)), resources
 	}, krtopts.ToOptions(collectionName)...)
 }
 
@@ -575,7 +574,7 @@ func gatewayRouteAttachmentCountCollection[T controllers.Object](
 			if e.ParentKey.Kind != wellknown.GatewayGVK {
 				return nil
 			}
-			return ptr.Of(&RouteAttachment{
+			return new(&RouteAttachment{
 				From: from,
 				To: types.NamespacedName{
 					Name:      e.ParentKey.Name,

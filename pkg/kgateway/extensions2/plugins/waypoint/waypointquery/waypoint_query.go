@@ -17,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
@@ -347,11 +346,11 @@ func getAliases(
 		Name:      se.GetName(),
 	}
 	be, _ := commonCols.BackendIndex.GetBackendFromRef(ctx, objSrc, gwv1.BackendObjectReference{
-		Group:     ptr.To(gwv1.Group(objSrc.Group)),
-		Kind:      ptr.To(gwv1.Kind(objSrc.Kind)),
+		Group:     new(gwv1.Group(objSrc.Group)),
+		Kind:      new(gwv1.Kind(objSrc.Kind)),
 		Name:      gwv1.ObjectName(objSrc.Name),
-		Namespace: ptr.To(gwv1.Namespace(objSrc.Namespace)),
-		Port:      ptr.To(gwv1.PortNumber(se.Spec.GetPorts()[0].GetNumber())), //nolint:gosec // G115: ServiceEntry port number is uint32, safe to convert to PortNumber (int32)
+		Namespace: new(gwv1.Namespace(objSrc.Namespace)),
+		Port:      new(gwv1.PortNumber(se.Spec.GetPorts()[0].GetNumber())), //nolint:gosec // G115: ServiceEntry port number is uint32, safe to convert to PortNumber (int32)
 	})
 	if be == nil {
 		return nil

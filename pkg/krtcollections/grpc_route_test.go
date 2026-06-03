@@ -52,8 +52,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 							Matches: []gwv1.GRPCRouteMatch{
 								{
 									Method: &gwv1.GRPCMethodMatch{
-										Service: ptr.To("TestService"),
-										Method:  ptr.To("TestMethod"),
+										Service: new("TestService"),
+										Method:  new("TestMethod"),
 										Type:    ptr.To(gwv1.GRPCMethodMatchExact),
 									},
 								},
@@ -146,7 +146,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 							Matches: []gwv1.GRPCRouteMatch{
 								{
 									Method: &gwv1.GRPCMethodMatch{
-										Service: ptr.To("TestService"),
+										Service: new("TestService"),
 										Type:    ptr.To(gwv1.GRPCMethodMatchRegularExpression),
 									},
 								},
@@ -220,8 +220,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 							Matches: []gwv1.GRPCRouteMatch{
 								{
 									Method: &gwv1.GRPCMethodMatch{
-										Service: ptr.To("TestService"),
-										Method:  ptr.To("TestMethod"),
+										Service: new("TestService"),
+										Method:  new("TestMethod"),
 									},
 									Headers: []gwv1.GRPCHeaderMatch{
 										{
@@ -305,7 +305,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 							Matches: []gwv1.GRPCRouteMatch{
 								{
 									Method: &gwv1.GRPCMethodMatch{
-										Service: ptr.To("TestService"),
+										Service: new("TestService"),
 									},
 								},
 							},

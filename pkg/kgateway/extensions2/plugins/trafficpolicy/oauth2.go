@@ -161,7 +161,7 @@ func buildOAuth2ProviderConfig(
 	credSecret, err := secrets.GetSecret(krtctx,
 		krtcollections.From{GroupKind: wellknown.GatewayExtensionGVK.GroupKind(), Namespace: ext.Namespace},
 		gwv1.SecretObjectReference{
-			Name: gwv1.ObjectName(in.Credentials.ClientSecretRef.Name), Namespace: ptr.To(gwv1.Namespace(ext.Namespace)),
+			Name: gwv1.ObjectName(in.Credentials.ClientSecretRef.Name), Namespace: new(gwv1.Namespace(ext.Namespace)),
 		},
 	)
 	if err != nil {

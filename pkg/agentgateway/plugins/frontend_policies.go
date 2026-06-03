@@ -104,12 +104,12 @@ func translateFrontendTracing(ctx PolicyCtx, policy *agentgateway.AgentgatewayPo
 
 	var randomSampling *string
 	if tracing.RandomSampling != nil {
-		randomSampling = ptr.Of(string(*tracing.RandomSampling))
+		randomSampling = new(string(*tracing.RandomSampling))
 	}
 
 	var clientSampling *string
 	if tracing.ClientSampling != nil {
-		clientSampling = ptr.Of(string(*tracing.ClientSampling))
+		clientSampling = new(string(*tracing.ClientSampling))
 	}
 
 	var protocol api.FrontendPolicySpec_Tracing_Protocol
@@ -228,7 +228,7 @@ func translateFrontendTCP(policy *agentgateway.AgentgatewayPolicy, name string, 
 }
 
 func castUint32[T ~int32](ka *T) *uint32 {
-	return ptr.Of((uint32)(*ka))
+	return new((uint32)(*ka))
 }
 
 func translateFrontendTLS(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {

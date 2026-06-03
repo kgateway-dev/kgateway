@@ -2,7 +2,6 @@ package proxy_syncer
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -43,9 +42,9 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 					Name:      polAtt.PolicyRef.Name,
 				}
 				ancestorRef := gwv1.ParentReference{
-					Group:     ptr.To(gwv1.Group(obj.GetObjectSource().Group)),
-					Kind:      ptr.To(gwv1.Kind(obj.GetObjectSource().Kind)),
-					Namespace: ptr.To(gwv1.Namespace(obj.GetObjectSource().Namespace)),
+					Group:     new(gwv1.Group(obj.GetObjectSource().Group)),
+					Kind:      new(gwv1.Kind(obj.GetObjectSource().Kind)),
+					Namespace: new(gwv1.Namespace(obj.GetObjectSource().Namespace)),
 					Name:      gwv1.ObjectName(obj.GetObjectSource().Name),
 				}
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)

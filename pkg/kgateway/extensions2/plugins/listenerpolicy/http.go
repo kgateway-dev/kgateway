@@ -15,7 +15,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -197,12 +196,12 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 	healthCheckPolicy := convertHealthCheckPolicy(h)
 	var xffNumTrustedHops *uint32
 	if h.XffNumTrustedHops != nil {
-		xffNumTrustedHops = ptr.To(uint32(*h.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		xffNumTrustedHops = new(uint32(*h.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
 	var maxRequestHeadersKb *uint32
 	if h.MaxRequestHeadersKb != nil {
-		maxRequestHeadersKb = ptr.To(uint32(*h.MaxRequestHeadersKb)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		maxRequestHeadersKb = new(uint32(*h.MaxRequestHeadersKb)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
 	return &HttpListenerPolicyIr{

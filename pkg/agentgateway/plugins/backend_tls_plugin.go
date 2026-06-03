@@ -98,7 +98,7 @@ func translatePoliciesForBackendTLS(
 							Cert: nil,
 							Key:  nil,
 							// Validation.Hostname is a required value and validated with CEL
-							Hostname: ptr.Of(string(btls.Spec.Validation.Hostname)),
+							Hostname: new(string(btls.Spec.Validation.Hostname)),
 						},
 					},
 				}},

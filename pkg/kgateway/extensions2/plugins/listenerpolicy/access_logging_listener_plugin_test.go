@@ -126,7 +126,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					{
 						FileSink: &kgateway.FileSink{
 							Path:         "/var/log/file-access.log",
-							StringFormat: ptr.To("[%START_TIME%] %RESPONSE_CODE%"),
+							StringFormat: new("[%START_TIME%] %RESPONSE_CODE%"),
 						},
 					},
 				},
@@ -189,7 +189,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					{
 						FileSink: &kgateway.FileSink{
 							Path:         "/var/log/access.log",
-							StringFormat: ptr.To("test log format"),
+							StringFormat: new("test log format"),
 						},
 					},
 				},
@@ -379,20 +379,20 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											Name: "test-service",
 										},
 									},
-									Authority:               ptr.To("www.example.com"),
-									MaxReceiveMessageLength: ptr.To(int32(127)),
-									SkipEnvoyHeaders:        ptr.To(true),
+									Authority:               new("www.example.com"),
+									MaxReceiveMessageLength: new(int32(127)),
+									SkipEnvoyHeaders:        new(true),
 									Timeout:                 &metav1.Duration{Duration: 10 * time.Second},
 									InitialMetadata: []kgateway.HeaderValue{{
 										Key:   "key",
-										Value: ptr.To("value"),
+										Value: new("value"),
 									}},
 									RetryPolicy: &kgateway.RetryPolicy{
 										RetryBackOff: &kgateway.BackoffStrategy{
 											BaseInterval: metav1.Duration{Duration: 5 * time.Second},
 											MaxInterval:  &metav1.Duration{Duration: 10 * time.Second},
 										},
-										NumRetries: ptr.To(int32(3)),
+										NumRetries: new(int32(3)),
 									},
 								},
 								LogName: "grpc-log",
@@ -442,7 +442,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					{
 						FileSink: &kgateway.FileSink{
 							Path:         "/var/log/access.log",
-							StringFormat: ptr.To("hello kgateway"),
+							StringFormat: new("hello kgateway"),
 						},
 						Filter: &kgateway.AccessLogFilter{
 							FilterType: &kgateway.FilterType{
@@ -594,7 +594,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 						Filter: &kgateway.AccessLogFilter{
 							FilterType: &kgateway.FilterType{
-								NotHealthCheckFilter: ptr.To(true),
+								NotHealthCheckFilter: new(true),
 							},
 						},
 					},
@@ -624,7 +624,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 						Filter: &kgateway.AccessLogFilter{
 							FilterType: &kgateway.FilterType{
-								TraceableFilter: ptr.To(true),
+								TraceableFilter: new(true),
 							},
 						},
 					},
@@ -822,20 +822,20 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 								},
 								LogName: "otel-log",
 							},
-							Body:                 ptr.To(`"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`),
-							DisableBuiltinLabels: ptr.To(true),
+							Body:                 new(`"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`),
+							DisableBuiltinLabels: new(true),
 							ResourceAttributes: &kgateway.KeyAnyValueList{
 								Values: []kgateway.KeyAnyValue{
 									{
 										Key: "ra-string-key-1",
 										Value: kgateway.AnyValue{
-											StringValue: ptr.To("ra-string-value-1"),
+											StringValue: new("ra-string-value-1"),
 										},
 									},
 									{
 										Key: "service.name",
 										Value: kgateway.AnyValue{
-											StringValue: ptr.To("my:service"),
+											StringValue: new("my:service"),
 										},
 									},
 									{
@@ -843,10 +843,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 										Value: kgateway.AnyValue{
 											ArrayValue: []kgateway.AnyValue{
 												{
-													StringValue: ptr.To("ra-1-string-value"),
+													StringValue: new("ra-1-string-value"),
 												},
 												{
-													StringValue: ptr.To("ra-2-string-value"),
+													StringValue: new("ra-2-string-value"),
 												},
 											},
 										},
@@ -859,7 +859,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 													{
 														Key: "ra-string-key-2",
 														Value: kgateway.AnyValue{
-															StringValue: ptr.To("ra-string-value-2"),
+															StringValue: new("ra-string-value-2"),
 														},
 													},
 													{
@@ -867,10 +867,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 														Value: kgateway.AnyValue{
 															ArrayValue: []kgateway.AnyValue{
 																{
-																	StringValue: ptr.To("ra-3-string-value"),
+																	StringValue: new("ra-3-string-value"),
 																},
 																{
-																	StringValue: ptr.To("ra-4-string-value"),
+																	StringValue: new("ra-4-string-value"),
 																},
 															},
 														},
@@ -883,13 +883,13 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 																	{
 																		Key: "ra-string-key-3",
 																		Value: kgateway.AnyValue{
-																			StringValue: ptr.To("ra-string-value-3"),
+																			StringValue: new("ra-string-value-3"),
 																		},
 																	},
 																	{
 																		Key: "ra-string-key-4",
 																		Value: kgateway.AnyValue{
-																			StringValue: ptr.To("ra-string-value-4"),
+																			StringValue: new("ra-string-value-4"),
 																		},
 																	},
 																},
@@ -907,7 +907,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									{
 										Key: "string-key-1",
 										Value: kgateway.AnyValue{
-											StringValue: ptr.To("string-value-1"),
+											StringValue: new("string-value-1"),
 										},
 									},
 									{
@@ -915,10 +915,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 										Value: kgateway.AnyValue{
 											ArrayValue: []kgateway.AnyValue{
 												{
-													StringValue: ptr.To("1-string-value"),
+													StringValue: new("1-string-value"),
 												},
 												{
-													StringValue: ptr.To("2-string-value"),
+													StringValue: new("2-string-value"),
 												},
 											},
 										},
@@ -931,7 +931,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 													{
 														Key: "string-key-2",
 														Value: kgateway.AnyValue{
-															StringValue: ptr.To("string-value-2"),
+															StringValue: new("string-value-2"),
 														},
 													},
 													{
@@ -939,10 +939,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 														Value: kgateway.AnyValue{
 															ArrayValue: []kgateway.AnyValue{
 																{
-																	StringValue: ptr.To("3-string-value"),
+																	StringValue: new("3-string-value"),
 																},
 																{
-																	StringValue: ptr.To("4-string-value"),
+																	StringValue: new("4-string-value"),
 																},
 															},
 														},
@@ -955,13 +955,13 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 																	{
 																		Key: "string-key-3",
 																		Value: kgateway.AnyValue{
-																			StringValue: ptr.To("string-value-3"),
+																			StringValue: new("string-value-3"),
 																		},
 																	},
 																	{
 																		Key: "string-key-4",
 																		Value: kgateway.AnyValue{
-																			StringValue: ptr.To("string-value-4"),
+																			StringValue: new("string-value-4"),
 																		},
 																	},
 																},
@@ -1321,7 +1321,7 @@ func TestAccessLogFilters(t *testing.T) {
 		{
 			name: "NotHealthCheck",
 			alFilter: &kgateway.AccessLogFilter{
-				FilterType: &kgateway.FilterType{NotHealthCheckFilter: ptr.To(true)},
+				FilterType: &kgateway.FilterType{NotHealthCheckFilter: new(true)},
 			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				require.NotNil(t, got.GetFilter().GetNotHealthCheckFilter())
@@ -1330,7 +1330,7 @@ func TestAccessLogFilters(t *testing.T) {
 		{
 			name: "Traceable",
 			alFilter: &kgateway.AccessLogFilter{
-				FilterType: &kgateway.FilterType{TraceableFilter: ptr.To(true)},
+				FilterType: &kgateway.FilterType{TraceableFilter: new(true)},
 			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				require.NotNil(t, got.GetFilter().GetTraceableFilter())
@@ -1400,7 +1400,7 @@ func TestAccessLogFilters(t *testing.T) {
 		{
 			name: "And NotHealthCheck && Traceable",
 			alFilter: &kgateway.AccessLogFilter{
-				AndFilter: []kgateway.FilterType{{NotHealthCheckFilter: ptr.To(true)}, {TraceableFilter: ptr.To(true)}},
+				AndFilter: []kgateway.FilterType{{NotHealthCheckFilter: new(true)}, {TraceableFilter: new(true)}},
 			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				and := got.GetFilter().GetAndFilter()

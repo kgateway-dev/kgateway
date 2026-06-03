@@ -5,7 +5,6 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -49,7 +48,7 @@ func translatePoliciesForService(svc *corev1.Service, clusterDomain string) []Ag
 				Target: &api.PolicyTarget{Kind: &api.PolicyTarget_Service{Service: &api.PolicyTarget_ServiceTarget{
 					Namespace: svc.Namespace,
 					Hostname:  hostname,
-					Port:      ptr.Of(uint32(port.Port)), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+					Port:      new(uint32(port.Port)), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 				}}},
 				Kind: &api.Policy_Backend{
 					Backend: &api.BackendPolicySpec{
