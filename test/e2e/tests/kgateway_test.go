@@ -92,7 +92,7 @@ func TestKgateway(t *testing.T) {
 	// Wait once for the shared nginx pod so suites don't race a cold image pull.
 	testInstallation.AssertionsT(t).EventuallyPodsRunning(ctx, "nginx", metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
-	}, time.Second*120)
+	}, 2*time.Minute)
 	common.SetupBaseGateway(ctx, t, testInstallation, types.NamespacedName{
 		Namespace: "kgateway-base",
 		Name:      "gateway",
