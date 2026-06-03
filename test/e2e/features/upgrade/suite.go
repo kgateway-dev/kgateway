@@ -144,9 +144,8 @@ func fetchGithubRelease(ctx context.Context, match func(tagName string) (bool, e
 		Repository struct {
 			Releases struct {
 				Nodes []struct {
-					TagName      githubv4.String
-					IsDraft      githubv4.Boolean
-					IsPrerelease githubv4.Boolean
+					TagName githubv4.String
+					IsDraft githubv4.Boolean
 				}
 				PageInfo struct {
 					EndCursor   githubv4.String
