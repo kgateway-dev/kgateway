@@ -48,29 +48,11 @@ var (
 //   - Uninstalling kgateway after this suite completes.
 type testingSuite struct {
 	*base.BaseTestingSuite
-	podSelectors   []string
-	skipContainers []string
-}
-
-type UpgradeTestConfig struct {
-	PodSelectors   []string
-	SkipContainers []string
-}
-
-func NewTestingSuiteWithConfig(ctx context.Context, testInst *e2e.TestInstallation, config UpgradeTestConfig) func(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return func(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-		return &testingSuite{
-			BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, nil),
-			podSelectors:     config.PodSelectors,
-			skipContainers:   config.SkipContainers,
-		}
-	}
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, nil),
-		podSelectors:     []string{sharedLabelSelector},
 	}
 }
 
@@ -118,10 +100,8 @@ func (s *testingSuite) TestUpgrade() {
 	// Ensure the proxy data plane was upgraded too: the Deployment must finish rolling out
 	// (old-revision proxy pods fully scaled down), every proxy pod must run the new image,
 	// and nothing may have crash-looped during the rollout.
-	for _, selector := range s.podSelectors {
-		s.TestInstallation.AssertionsT(s.T()).EventuallyDeploymentsRolledOut(s.Ctx, proxyNamespace, selector)
-		s.TestInstallation.AssertionsT(s.T()).EventuallyPodsHaveImageVersion(s.Ctx, proxyNamespace, selector, s.skipContainers, version.Version)
-	}
+	s.TestInstallation.AssertionsT(s.T()).EventuallyDeploymentsRolledOut(s.Ctx, proxyNamespace, sharedLabelSelector)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsHaveImageVersion(s.Ctx, proxyNamespace, sharedLabelSelector, version.Version)
 
 	// Ensure the same gateway works after the upgrade
 	common.BaseGateway.Send(
