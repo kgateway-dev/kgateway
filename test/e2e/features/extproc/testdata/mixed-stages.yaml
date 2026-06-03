@@ -53,7 +53,8 @@ metadata:
   name: route-mixed-stages
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:
@@ -62,7 +63,7 @@ spec:
             type: PathPrefix
             value: /both
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
       filters:
         - type: ExtensionRef
