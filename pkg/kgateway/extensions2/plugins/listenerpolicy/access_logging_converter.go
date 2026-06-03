@@ -11,7 +11,6 @@ import (
 	envoy_open_telemetry "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
 	envoy_metadata_formatter "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/metadata/v3"
 	envoy_req_without_query "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
-	envoytypev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	otelv1 "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
@@ -341,74 +340,6 @@ func newAccessLogWithConfig(name string, config proto.Message) *envoyaccesslogv3
 	}
 
 	return s
-}
-
-// String provides a string representation for the Op enum.
-func toEnvoyComparisonOpType(op kgateway.Op) (envoyaccesslogv3.ComparisonFilter_Op, error) {
-	switch op {
-	case kgateway.EQ:
-		return envoyaccesslogv3.ComparisonFilter_EQ, nil
-	case kgateway.GE:
-		return envoyaccesslogv3.ComparisonFilter_GE, nil
-	case kgateway.LE:
-		return envoyaccesslogv3.ComparisonFilter_LE, nil
-	default:
-		return 0, fmt.Errorf("unknown OP (%s)", op)
-	}
-}
-
-func toEnvoyDenominatorType(denominator kgateway.DenominatorType) (envoytypev3.FractionalPercent_DenominatorType, error) {
-	switch denominator {
-	case kgateway.HUNDRED:
-		return envoytypev3.FractionalPercent_HUNDRED, nil
-	case kgateway.TEN_THOUSAND:
-		return envoytypev3.FractionalPercent_TEN_THOUSAND, nil
-	case kgateway.MILLION:
-		return envoytypev3.FractionalPercent_MILLION, nil
-	default:
-		return 0, fmt.Errorf("unknown DenominatorType (%s)", denominator)
-	}
-}
-
-func toEnvoyGRPCStatusType(grpcStatus kgateway.GrpcStatus) (envoyaccesslogv3.GrpcStatusFilter_Status, error) {
-	switch grpcStatus {
-	case kgateway.OK:
-		return envoyaccesslogv3.GrpcStatusFilter_OK, nil
-	case kgateway.CANCELED:
-		return envoyaccesslogv3.GrpcStatusFilter_CANCELED, nil
-	case kgateway.UNKNOWN:
-		return envoyaccesslogv3.GrpcStatusFilter_UNKNOWN, nil
-	case kgateway.INVALID_ARGUMENT:
-		return envoyaccesslogv3.GrpcStatusFilter_INVALID_ARGUMENT, nil
-	case kgateway.DEADLINE_EXCEEDED:
-		return envoyaccesslogv3.GrpcStatusFilter_DEADLINE_EXCEEDED, nil
-	case kgateway.NOT_FOUND:
-		return envoyaccesslogv3.GrpcStatusFilter_NOT_FOUND, nil
-	case kgateway.ALREADY_EXISTS:
-		return envoyaccesslogv3.GrpcStatusFilter_ALREADY_EXISTS, nil
-	case kgateway.PERMISSION_DENIED:
-		return envoyaccesslogv3.GrpcStatusFilter_PERMISSION_DENIED, nil
-	case kgateway.RESOURCE_EXHAUSTED:
-		return envoyaccesslogv3.GrpcStatusFilter_RESOURCE_EXHAUSTED, nil
-	case kgateway.FAILED_PRECONDITION:
-		return envoyaccesslogv3.GrpcStatusFilter_FAILED_PRECONDITION, nil
-	case kgateway.ABORTED:
-		return envoyaccesslogv3.GrpcStatusFilter_ABORTED, nil
-	case kgateway.OUT_OF_RANGE:
-		return envoyaccesslogv3.GrpcStatusFilter_OUT_OF_RANGE, nil
-	case kgateway.UNIMPLEMENTED:
-		return envoyaccesslogv3.GrpcStatusFilter_UNIMPLEMENTED, nil
-	case kgateway.INTERNAL:
-		return envoyaccesslogv3.GrpcStatusFilter_INTERNAL, nil
-	case kgateway.UNAVAILABLE:
-		return envoyaccesslogv3.GrpcStatusFilter_UNAVAILABLE, nil
-	case kgateway.DATA_LOSS:
-		return envoyaccesslogv3.GrpcStatusFilter_DATA_LOSS, nil
-	case kgateway.UNAUTHENTICATED:
-		return envoyaccesslogv3.GrpcStatusFilter_UNAUTHENTICATED, nil
-	default:
-		return 0, fmt.Errorf("unknown GRPCStatus (%s)", grpcStatus)
-	}
 }
 
 func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog, configs []proto.Message) ([]*envoyaccesslogv3.AccessLog, error) {
