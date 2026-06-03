@@ -17,7 +17,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/threadsafe"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
@@ -26,14 +25,19 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
+// proxyNamespace and sharedLabelSelector identify the data-plane proxy that the controller
+// provisions for the Gateway defined in testdata/setup.yaml.
+const (
+	proxyNamespace      = "default"
+	sharedLabelSelector = "gateway.networking.k8s.io/gateway-name=gateway"
+)
+
 var (
-	_                        e2e.NewSuiteFunc = NewTestingSuite
-	setupManifest                             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	GatewayNameLabelSelector                  = "gateway.networking.k8s.io/gateway-name=gateway"
+	_             e2e.NewSuiteFunc = NewTestingSuite
+	setupManifest                  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 )
 
 // testingSuite validates that kgateway can be upgraded from a released version to the locally-built chart.
@@ -42,14 +46,21 @@ var (
 //   - Uninstalling kgateway after this suite completes.
 type testingSuite struct {
 	*base.BaseTestingSuite
-	podSelectors []string
+	podSelectors   []string
+	skipContainers []string
 }
 
-func NewTestingSuiteWithConfig(ctx context.Context, testInst *e2e.TestInstallation, podSelectors []string) func(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+type UpgradeTestConfig struct {
+	PodSelectors   []string
+	SkipContainers []string
+}
+
+func NewTestingSuiteWithConfig(ctx context.Context, testInst *e2e.TestInstallation, config UpgradeTestConfig) func(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return func(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 		return &testingSuite{
 			BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, nil),
-			podSelectors:     podSelectors,
+			podSelectors:     config.PodSelectors,
+			skipContainers:   config.SkipContainers,
 		}
 	}
 }
@@ -57,8 +68,7 @@ func NewTestingSuiteWithConfig(ctx context.Context, testInst *e2e.TestInstallati
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, nil),
-		// This should be updated to app.kubernetes.io/component=proxy. v2.2.x did not have this label
-		podSelectors: []string{GatewayNameLabelSelector},
+		podSelectors:     []string{sharedLabelSelector},
 	}
 }
 
@@ -102,11 +112,13 @@ func (s *testingSuite) TestUpgrade() {
 	s.TestInstallation.InstallKgatewayCRDsFromLocalChart(s.Ctx, s.T())
 	s.TestInstallation.InstallKgatewayCoreFromLocalChart(s.Ctx, s.T())
 	s.TestInstallation.AssertionsT(s.T()).EventuallyKgatewayUpgradeSucceeded(s.Ctx, version.Version)
-	s.assertNoKgatewayPodErrors()
 
-	// Ensure the proxy pod is also updated
+	// Ensure the proxy data plane was upgraded too: the Deployment must finish rolling out
+	// (old-revision proxy pods fully scaled down), every proxy pod must run the new image,
+	// and nothing may have crash-looped during the rollout.
 	for _, selector := range s.podSelectors {
-		s.TestInstallation.AssertionsT(s.T()).EventuallyPodHasImageVersion(s.Ctx, "default", selector, version.Version)
+		s.TestInstallation.AssertionsT(s.T()).EventuallyDeploymentsRolledOut(s.Ctx, proxyNamespace, selector)
+		s.TestInstallation.AssertionsT(s.T()).EventuallyPodsHaveImageVersion(s.Ctx, proxyNamespace, selector, s.skipContainers, version.Version)
 	}
 
 	// Ensure the same gateway works after the upgrade
@@ -128,28 +140,6 @@ func (s *testingSuite) TestUpgrade() {
 		curl.WithHostHeader("example.com"),
 		curl.WithPort(8080),
 	)
-}
-
-// assertNoKgatewayPodErrors fetches logs from all kgateway pods and fails if any error-level log lines are found.
-func (s *testingSuite) assertNoKgatewayPodErrors() {
-	ns := s.TestInstallation.Metadata.InstallNamespace
-	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(s.Ctx, ns, defaults.KGatewayPodLabel)
-	s.Require().NoError(err, "failed to list kgateway pods in namespace %s", ns)
-	s.Require().NotEmpty(pods, "no kgateway pods found in namespace %s", ns)
-
-	for _, pod := range pods {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, ns, pod,
-			kubectl.WithContainer(helpers.KgatewayContainerName))
-		s.Require().NoError(err, "failed to get logs for pod %s", pod)
-
-		for i, line := range strings.Split(logs, "\n") {
-			lower := strings.ToLower(line)
-			s.Assert().False(
-				strings.Contains(lower, `"level":"error"`) || strings.Contains(lower, `"level": "error"`),
-				"error log found in pod %s line %d: %s", pod, i+1, line,
-			)
-		}
-	}
 }
 
 func newRestClient() *github.Client {
