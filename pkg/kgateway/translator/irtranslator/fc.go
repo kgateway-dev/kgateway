@@ -28,7 +28,7 @@ import (
 
 const (
 	DefaultHttpStatPrefix  = "http"
-	UpstreamCodeFilterName = "envoy.filters.http.upstream_codec"
+	UpstreamCodecFilterName = "envoy.filters.http.upstream_codec"
 )
 
 var defaultDownstreamAlpnProtocols = []string{"h2", "http/1.1"}
@@ -352,7 +352,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(l ir.HttpFilterChainIR) 
 		// Add the Upstream Codec filter at the end since it is a terminal filter and must be added if any other upstream filters exist
 		// Ref: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/upstream_codec_filter
 		routerV3.UpstreamHttpFilters = append(routerV3.GetUpstreamHttpFilters(), &envoyhttp.HttpFilter{
-			Name: UpstreamCodeFilterName,
+			Name: UpstreamCodecFilterName,
 			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
 				TypedConfig: utils.MustMessageToAny(&codecv3.UpstreamCodec{}),
 			},

@@ -267,7 +267,7 @@ func NewStagedUpstreamFilter(name string, config proto.Message, stage FilterStag
 	return s, nil
 }
 
-// StagedFilterListContainsName checks for a given named filter.
+// StagedUpstreamFilterListContainsName checks for a given named filter.
 // This is not a check of the type url but rather the now mostly unused name
 func StagedUpstreamFilterListContainsName(filters StagedUpstreamHttpFilterList, filterName string) bool {
 	for _, filter := range filters {
