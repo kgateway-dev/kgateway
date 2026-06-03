@@ -25,11 +25,11 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     auth:
       type: Secret
       secretRef:
         name: lambda-secret
     lambda:
+      accountId: "000000000000"
       functionName: "example-function"
       qualifier: "$LATEST"

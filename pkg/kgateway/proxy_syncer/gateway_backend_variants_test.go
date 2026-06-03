@@ -16,7 +16,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -119,7 +118,7 @@ func TestGatewayBackendVariantBackendsRetainBackendPolicies(t *testing.T) {
 		},
 		gwv1.BackendObjectReference{
 			Name: "backend-svc",
-			Port: ptr.To(gwv1.PortNumber(443)),
+			Port: new(gwv1.PortNumber(443)),
 		},
 	)
 	require.NoError(t, err)

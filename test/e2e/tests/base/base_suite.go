@@ -284,7 +284,7 @@ func getChannelRequirements(requirements map[GwApiChannel]*GwApiVersion, channel
 }
 
 // checkCompatibleWithApiVersion checks if the requirements for a test are satisfied by the current channel/version.
-func (s *BaseTestingSuite) checkCompatibleWithApiVersion(minRequirements, maxRequirements map[GwApiChannel]*GwApiVersion, currentChannel GwApiChannel, currentVersion GwApiVersion) bool {
+func checkCompatibleWithApiVersion(minRequirements, maxRequirements map[GwApiChannel]*GwApiVersion, currentChannel GwApiChannel, currentVersion GwApiVersion) bool {
 	minChecker := func(current, required GwApiVersion) bool {
 		return current.GreaterThan(&required.Version) || current.Equal(&required.Version) // >=
 	}
@@ -720,25 +720,49 @@ func IsSelfManagedGateway(gw *gwv1.Gateway) bool {
 	return ok && strings.EqualFold(val, "true")
 }
 
+// DetectGwApiInfo reads the installed Gateway CRD annotations to determine the Gateway API
+// channel and version. It is the standalone form of the detection cached during suite setup,
+// so callers that run before any suite (e.g. base config setup in TestKgateway) can select
+// version-appropriate manifests.
+func DetectGwApiInfo(ctx context.Context, c client.Client) (GwApiChannel, GwApiVersion, error) {
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	if err := c.Get(ctx, client.ObjectKey{Name: "gateways.gateway.networking.k8s.io"}, crd); err != nil {
+		return "", GwApiVersion{}, fmt.Errorf("failed to get Gateway CRD to detect Gateway API version/channel: %w", err)
+	}
+
+	channel, hasChannel := crd.Annotations["gateway.networking.k8s.io/channel"]
+	if !hasChannel {
+		return "", GwApiVersion{}, fmt.Errorf("Gateway CRD missing 'gateway.networking.k8s.io/channel' annotation")
+	}
+
+	versionStr, hasVersion := crd.Annotations["gateway.networking.k8s.io/bundle-version"]
+	if !hasVersion {
+		return "", GwApiVersion{}, fmt.Errorf("Gateway CRD missing 'gateway.networking.k8s.io/bundle-version' annotation")
+	}
+
+	version, err := semver.NewVersion(versionStr)
+	if err != nil {
+		return "", GwApiVersion{}, fmt.Errorf("failed to parse Gateway API version %q: %w", versionStr, err)
+	}
+
+	return GwApiChannel(channel), GwApiVersion{Version: *version}, nil
+}
+
+// SupportsListenerSets reports whether the given Gateway API channel/version implements ListenerSets
+func SupportsListenerSets(channel GwApiChannel, version GwApiVersion) bool {
+	return checkCompatibleWithApiVersion(GwApiRequireListenerSets, nil, channel, version)
+}
+
 // detectAndCacheGwApiInfo detects the Gateway API version and channel from installed CRDs
 // and caches the results. This is called once during suite setup.
 func (s *BaseTestingSuite) detectAndCacheGwApiInfo() {
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{Name: "gateways.gateway.networking.k8s.io"}, crd)
-	s.Require().NoError(err, "failed to get Gateway CRD to detect Gateway API version/channel")
+	channel, version, err := DetectGwApiInfo(s.Ctx, s.TestInstallation.ClusterContext.Client)
+	s.Require().NoError(err)
 
-	channel, hasChannel := crd.Annotations["gateway.networking.k8s.io/channel"]
-	s.Require().True(hasChannel, "Gateway CRD missing 'gateway.networking.k8s.io/channel' annotation")
-	s.gwApiChannel = GwApiChannel(channel)
-
-	versionStr, hasVersion := crd.Annotations["gateway.networking.k8s.io/bundle-version"]
-	s.Require().True(hasVersion, "Gateway CRD missing 'gateway.networking.k8s.io/bundle-version' annotation")
-
-	version, err := semver.NewVersion(versionStr)
-	s.Require().NoError(err, "failed to parse Gateway API version '%s'", versionStr)
-	s.gwApiVersion = version
-	currentGwApiVersion = version
-	currentGwApiChannel = s.gwApiChannel
+	s.gwApiChannel = channel
+	s.gwApiVersion = &version.Version
+	currentGwApiVersion = &version.Version
+	currentGwApiChannel = channel
 }
 
 // getCurrentGwApiChannel returns the cached Gateway API channel
@@ -766,7 +790,7 @@ func (s *BaseTestingSuite) skipTest(testCase *TestCase) bool {
 	}
 
 	// Use checkCompatibleWithApiVersion and invert the result
-	return !s.checkCompatibleWithApiVersion(testCase.MinGwApiVersion, testCase.MaxGwApiVersion, currentChannel, currentVersion)
+	return !checkCompatibleWithApiVersion(testCase.MinGwApiVersion, testCase.MaxGwApiVersion, currentChannel, currentVersion)
 }
 
 // SkipSuite determines if the entire suite should be skipped based on suite-level minimum version requirements.
@@ -783,5 +807,5 @@ func (s *BaseTestingSuite) SkipSuite() bool {
 	}
 
 	// Use checkCompatibleWithApiVersion with empty max requirements (only check min)
-	return !s.checkCompatibleWithApiVersion(s.MinGwApiVersion, nil, currentChannel, currentVersion)
+	return !checkCompatibleWithApiVersion(s.MinGwApiVersion, nil, currentChannel, currentVersion)
 }

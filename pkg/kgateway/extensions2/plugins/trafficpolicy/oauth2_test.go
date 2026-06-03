@@ -9,9 +9,66 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
+
+func TestBuildOAuth2JWTConfig(t *testing.T) {
+	makeBackend := func(name string) *ir.BackendObjectIR {
+		b := ir.NewBackendObjectIR(ir.ObjectSource{
+			Namespace: "default",
+			Name:      name,
+			Kind:      "Backend",
+		}, 443, "", "")
+		return &b
+	}
+	cookieNames := &envoyoauth2v3.OAuth2Credentials_CookieNames{
+		BearerToken: "AccessToken-abc",
+		IdToken:     "IdToken-abc",
+	}
+
+	t.Run("uses provided jwksBackend cluster for RemoteJwks", func(t *testing.T) {
+		jwksBackend := makeBackend("jwks-backend")
+		ext := &ir.GatewayExtension{
+			OAuth2: &kgwv1a1.OAuth2Provider{
+				JWT: &kgwv1a1.OAuth2JWTConfig{
+					AccessToken: &kgwv1a1.OAuth2JWTProcessingConfig{},
+				},
+			},
+		}
+
+		jwtCfg, err := buildOAuth2JWTConfig(ext, "https://example.com/jwks.json", cookieNames, jwksBackend)
+
+		require.NoError(t, err)
+		require.NotNil(t, jwtCfg)
+		provider := jwtCfg.Providers[oauthJWTAccessTokenProvider]
+		require.NotNil(t, provider)
+		assert.Equal(t, jwksBackend.ClusterName(), provider.GetRemoteJwks().GetHttpUri().GetCluster())
+	})
+
+	t.Run("jwksBackend cluster is independent of primary backend", func(t *testing.T) {
+		primaryBackend := makeBackend("primary-backend")
+		jwksBackend := makeBackend("jwks-backend")
+		require.NotEqual(t, primaryBackend.ClusterName(), jwksBackend.ClusterName())
+
+		ext := &ir.GatewayExtension{
+			OAuth2: &kgwv1a1.OAuth2Provider{
+				JWT: &kgwv1a1.OAuth2JWTConfig{
+					AccessToken: &kgwv1a1.OAuth2JWTProcessingConfig{},
+				},
+			},
+		}
+
+		jwtCfg, err := buildOAuth2JWTConfig(ext, "https://example.com/jwks.json", cookieNames, jwksBackend)
+
+		require.NoError(t, err)
+		provider := jwtCfg.Providers[oauthJWTAccessTokenProvider]
+		cluster := provider.GetRemoteJwks().GetHttpUri().GetCluster()
+		assert.Equal(t, jwksBackend.ClusterName(), cluster)
+		assert.NotEqual(t, primaryBackend.ClusterName(), cluster)
+	})
+}
 
 func TestRedirectPath(t *testing.T) {
 	tests := []struct {

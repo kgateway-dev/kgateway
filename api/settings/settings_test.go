@@ -7,10 +7,10 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -42,6 +42,8 @@ func allEnvVarsSet() map[string]string {
 		"KGW_ENABLE_BUILTIN_DEFAULT_METRICS":           "true",
 		"KGW_GLOBAL_POLICY_NAMESPACE":                  "foo",
 		"KGW_DISABLE_LEADER_ELECTION":                  "true",
+		"KGW_ENABLE_AWS_EC2_DISCOVERY":                 "true",
+		"KGW_AWS_EC2_REFRESH_INTERVAL":                 "45s",
 		"KGW_POLICY_MERGE":                             `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 		"KGW_GATEWAY_CLASS_PARAMETERS_REFS":            `{"kgateway":{"name":"custom-gwp","namespace":"infra"}}`,
 		"KGW_ENABLE_WAYPOINT":                          "true",
@@ -95,6 +97,8 @@ func TestSettings(t *testing.T) {
 				EnableBuiltinDefaultMetrics:          false,
 				GlobalPolicyNamespace:                "",
 				DisableLeaderElection:                false,
+				EnableAwsEc2Discovery:                false,
+				AwsEc2RefreshInterval:                30 * time.Second,
 				PolicyMerge:                          "{}",
 				EnableWaypoint:                       false,
 				XdsAuth:                              true,
@@ -132,6 +136,8 @@ func TestSettings(t *testing.T) {
 				EnableBuiltinDefaultMetrics:          true,
 				GlobalPolicyNamespace:                "foo",
 				DisableLeaderElection:                true,
+				EnableAwsEc2Discovery:                true,
+				AwsEc2RefreshInterval:                45 * time.Second,
 				PolicyMerge:                          `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 				EnableWaypoint:                       true,
 				XdsAuth:                              false,
@@ -141,7 +147,7 @@ func TestSettings(t *testing.T) {
 				GatewayClassParametersRefs: GatewayClassParametersRefs{
 					"kgateway": {
 						Name:      "custom-gwp",
-						Namespace: ptr.To(gwv1.Namespace("infra")),
+						Namespace: new(gwv1.Namespace("infra")),
 					},
 				},
 				EnableAuthMetadata: true,
@@ -190,6 +196,13 @@ func TestSettings(t *testing.T) {
 			expectedErrorStr: `gateway class "kgateway" parametersRef.namespace must be set`,
 		},
 		{
+			name: "errors on invalid AWS EC2 refresh interval",
+			envVars: map[string]string{
+				"KGW_AWS_EC2_REFRESH_INTERVAL": "not-a-duration",
+			},
+			expectedErrorStr: `time: invalid duration "not-a-duration"`,
+		},
+		{
 			name: "ignores other env vars",
 			envVars: map[string]string{
 				"KGW_DOES_NOT_EXIST":         "true",
@@ -214,6 +227,8 @@ func TestSettings(t *testing.T) {
 				EnableEnvoy:                          true,
 				WeightedRoutePrecedence:              false,
 				ValidationMode:                       ValidationStandard,
+				EnableAwsEc2Discovery:                false,
+				AwsEc2RefreshInterval:                30 * time.Second,
 				PolicyMerge:                          "{}",
 				XdsAuth:                              true,
 				XdsTLS:                               false,

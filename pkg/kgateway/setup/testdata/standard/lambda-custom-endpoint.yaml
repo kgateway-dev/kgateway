@@ -52,11 +52,11 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     auth:
       type: Secret
       secretRef:
         name: localstack-creds
     lambda:
+      accountId: "000000000000"
       functionName: my-test-function
       endpointURL: "http://172.18.0.2:4566"

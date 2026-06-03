@@ -24,6 +24,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/request_id/uuid/v3"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	backendplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
@@ -133,17 +134,6 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"frontendtlsconfig/invalid-conditions.yaml"},
 			outputFile: "frontendtlsconfig/invalid-conditions.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-		})
-	})
-
-	t.Run("http gateway with per connection buffer limit", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFiles: []string{"gateway-per-conn-buf-lim/gateway.yaml"},
-			outputFile: "gateway-per-conn-buf-lim/proxy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1217,6 +1207,29 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		})
+	})
+
+	t.Run("AWS EC2 backend", func(t *testing.T) {
+		restore := backendplugin.SetEc2InstancesForTest([]backendplugin.TestEc2Instance{{
+			InstanceID: "i-1234567890",
+			PrivateIP:  "10.0.0.10",
+			Zone:       "us-east-1a",
+			Tags: map[string]string{
+				"app": "payments",
+			},
+		}})
+		defer restore()
+
+		test(t, translatorTestCase{
+			inputFiles: []string{"backends/aws_ec2.yaml"},
+			outputFile: "backends/aws_ec2.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.EnableAwsEc2Discovery = true
 		})
 	})
 
@@ -3046,6 +3059,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/oauth2.yaml"},
 			outputFile: "traffic-policy/oauth2.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("OAuth2 policy with separate JWKS backend", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/oauth2-jwks-backend.yaml"},
+			outputFile: "traffic-policy/oauth2-jwks-backend.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "test",

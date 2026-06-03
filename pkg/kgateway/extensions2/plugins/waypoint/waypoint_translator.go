@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -139,7 +138,7 @@ func (w *waypointTranslator) Translate(
 
 var waypointSupportedKinds = []gwv1.RouteGroupKind{
 	{
-		Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+		Group: new(gwv1.Group(gwv1.GroupName)),
 		Kind:  wellknown.HTTPRouteKind,
 	},
 }
@@ -448,7 +447,7 @@ func buildDefaultToPortVirtualHost(
 			MatchIndex: 0,
 			Match: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/"),
 				},
 			},

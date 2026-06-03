@@ -10,7 +10,6 @@ import (
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/smallset"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -476,18 +475,6 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			Listeners:           make([]ir.Listener, 0, len(gw.Spec.Listeners)),
 			DeniedListenerSets:  map[schema.GroupVersionKind]ir.ListenerSets{},
 			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{},
-		}
-
-		if gw.Annotations[string(apiannotations.PerConnectionBufferLimit)] != "" { //nolint:staticcheck // deprecated annotation
-			logger.Warn("per-connection-buffer-limit annotation is deprecated, use ListenerPolicy with perConnectionBufferLimitBytes instead",
-				"gateway", fmt.Sprintf("%s/%s", gw.Namespace, gw.Name),
-				"annotation", apiannotations.PerConnectionBufferLimit) //nolint:staticcheck // deprecated annotation
-			limit, err := resource.ParseQuantity(gw.Annotations[string(apiannotations.PerConnectionBufferLimit)]) //nolint:staticcheck // deprecated annotation
-			if err != nil {
-				logger.Error("failed to parse per connection buffer limit", "error", err)
-			} else {
-				gwIR.PerConnectionBufferLimitBytes = new(uint32(limit.Value())) //nolint:gosec // G115: Kubernetes resource quantities are always non-negative
-			}
 		}
 
 		// TODO: http polic

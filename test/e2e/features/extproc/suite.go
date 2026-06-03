@@ -9,10 +9,11 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -30,7 +31,6 @@ var (
 	setup = base.TestCase{
 		Manifests: []string{
 			setupManifest,
-			testdefaults.CurlPodManifest,
 			testdefaults.ExtProcManifest,
 		},
 	}
@@ -73,18 +73,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 	// Test that ExtProc is applied to all routes through the Gateway
 	// First route - should have ExtProc applied
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproctest": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -92,22 +82,17 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproctest": "true"},
+		})),
+	)
 
 	// Second route rule0 - should also have ExtProc applied
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/myapp"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproctest": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -115,22 +100,18 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/myapp"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproctest": "true"},
+		})),
+	)
 
 	// Second route rule1 - should not have ExtProc applied since it has a disable policy applied
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/extproc-disabled"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproctest": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -138,25 +119,21 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/extproc-disabled"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproctest": "true"},
+		})),
+	)
 }
 
 // TestExtProcWithHTTPRouteTargetRef tests ExtProc with targetRef to HTTPRoute
 func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 	// Test route with ExtProc - should have header modified
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/myapp"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproctest": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -164,21 +141,18 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/myapp"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproctest": "true"},
+		})),
+	)
 
 	// Test route without ExtProc - should not have header modified
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproctest": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -186,7 +160,13 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproctest": "true"},
+		})),
+	)
 }
 
 // TestExtProcWithSingleRoute tests ExtProc applied to a specific rule within a route
@@ -194,19 +174,8 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 	// TODO: Should header-based routing work?
 
 	// Test route with ExtProc and matching header - should have header modified
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/myapp"),
-			// curl.WithHeader("x-test", "true"),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproctest": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -214,21 +183,19 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/myapp"),
+		// curl.WithHeader("x-test", "true"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproctest": "true"},
+		})),
+	)
 
 	// Test second rule - should not have header modified
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproctest": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -236,24 +203,20 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproctest": "true"},
+		})),
+	)
 }
 
 // TestExtProcWithBackendFilter tests backend-level ExtProc filtering
 func (s *testingSuite) TestExtProcWithBackendFilter() {
 	// Test path with ExtProc enabled
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/with-extproc"),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproctest": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -261,21 +224,18 @@ func (s *testingSuite) TestExtProcWithBackendFilter() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproctest")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/with-extproc"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproctest": "true"},
+		})),
+	)
 
 	// Test path without ExtProc
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/without-extproc"),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproctest": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -283,26 +243,22 @@ func (s *testingSuite) TestExtProcWithBackendFilter() {
 					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproctest"))),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/without-extproc"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproctest": "true"},
+		})),
+	)
 }
 
 // TestExtProcWithFilterStage tests that ExtProc works correctly when configured
 // with a custom filter stage via filterStage on the GatewayExtension.
 func (s *testingSuite) TestExtProcWithFilterStage() {
 	// Route with ExtProc at early stage (After Fault) - should have header modified
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/early-extproc"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproc-early": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -310,22 +266,18 @@ func (s *testingSuite) TestExtProcWithFilterStage() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproc-Early")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/early-extproc"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproc-early": "true"},
+		})),
+	)
 
 	// Route with ExtProc at default stage (After AuthZ) - should also have header modified
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/default-extproc"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproc-default": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -333,22 +285,18 @@ func (s *testingSuite) TestExtProcWithFilterStage() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("Extproc-Default")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/default-extproc"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproc-default": "true"},
+		})),
+	)
 
 	// Route without ExtProc - should NOT have header modified
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/no-extproc"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				AddHeaders: map[string]string{"extproc-none": "true"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -356,7 +304,14 @@ func (s *testingSuite) TestExtProcWithFilterStage() {
 					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("Extproc-None"))),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/no-extproc"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			AddHeaders: map[string]string{"extproc-none": "true"},
+		})),
+	)
 }
 
 // TestExtProcWithFilterStageWeightOrdering tests that multiple ExtProc filters
@@ -367,16 +322,8 @@ func (s *testingSuite) TestExtProcWithFilterStage() {
 func (s *testingSuite) TestExtProcWithFilterStageWeightOrdering() {
 	// Verify both filters execute: high-weight server-a (weight=10) and low-weight
 	// server-b (weight=-5) headers should both be present
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/both"),
-			curl.WithPort(8080),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -385,7 +332,11 @@ func (s *testingSuite) TestExtProcWithFilterStageWeightOrdering() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("X-Extproc-Server-B")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/both"),
+	)
 
 	// Verify filter execution order: high-weight server-a (weight=10) runs before
 	// low-weight server-b (weight=-5). Both servers receive the instruction to remove
@@ -395,19 +346,8 @@ func (s *testingSuite) TestExtProcWithFilterStageWeightOrdering() {
 	// and adds x-extproc-server-b.
 	// Result: x-extproc-server-a absent proves server A (high-weight) ran before
 	// server B (low-weight).
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/both"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				RemoveHeaders: []string{"x-extproc-server-a"},
-			})),
-		},
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -416,7 +356,14 @@ func (s *testingSuite) TestExtProcWithFilterStageWeightOrdering() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("X-Extproc-Server-B")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/both"),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			RemoveHeaders: []string{"x-extproc-server-a"},
+		})),
+	)
 }
 
 // TestExtProcWithDeepMerge tests that two ExtProc filters from different
@@ -425,18 +372,21 @@ func (s *testingSuite) TestExtProcWithFilterStageWeightOrdering() {
 // DeepMergePreferParent. Each filter uses a distinct ExtProc server that adds
 // its own identifying header, proving both filters ran.
 func (s *testingSuite) TestExtProcWithDeepMerge() {
+	// Deep merge requires a Gateway-level TrafficPolicy plus the
+	// kgateway.dev/inherited-policy-priority=DeepMergePreferParent annotation on the
+	// Gateway, so this test keeps its own dedicated gateway rather than the shared base
+	// gateway (whose behavior must not change for other suites). It still runs off the
+	// curl pod by resolving the gateway address and sending through a common.Gateway.
+	deepMergeGateway := common.Gateway{
+		NamespacedName: types.NamespacedName{Name: "gw-deep-merge", Namespace: "default"},
+		Address: s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(
+			s.Ctx, "gw-deep-merge", "default"),
+	}
+
 	// /both - both gateway-level and route-level ExtProc should run
 	// Expect both x-extproc-server-a (gateway-level) and x-extproc-server-b (route-level) headers
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(deepMergeGatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/both"),
-			curl.WithPort(8080),
-		},
+	deepMergeGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -445,7 +395,12 @@ func (s *testingSuite) TestExtProcWithDeepMerge() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("X-Extproc-Server-B")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/both"),
+		curl.WithPort(8080),
+	)
 
 	// Verify filter execution order: Server A (ext-proc-a, gateway-level) runs before
 	// Server B (ext-proc-b, route-level) because filter names are sorted alphabetically
@@ -455,19 +410,8 @@ func (s *testingSuite) TestExtProcWithDeepMerge() {
 	// within a single response, so the header is present). Server B runs second: removes
 	// x-extproc-server-a (added by Server A) and adds x-extproc-server-b.
 	// Result: x-extproc-server-a absent proves Server A ran before Server B.
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(deepMergeGatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/both"),
-			curl.WithPort(8080),
-			curl.WithHeader("instructions", getInstructionsJson(instructions{
-				RemoveHeaders: []string{"x-extproc-server-a"},
-			})),
-		},
+	deepMergeGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -476,20 +420,20 @@ func (s *testingSuite) TestExtProcWithDeepMerge() {
 					gomega.HaveKeyWithValue("headers", gomega.HaveKey("X-Extproc-Server-B")),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/both"),
+		curl.WithPort(8080),
+		curl.WithHeader("instructions", getInstructionsJson(instructions{
+			RemoveHeaders: []string{"x-extproc-server-a"},
+		})),
+	)
 
 	// /gateway-only - only gateway-level ExtProc should run
 	// Expect x-extproc-server-a but NOT x-extproc-server-b
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(deepMergeGatewayService.ObjectMeta)),
-			curl.VerboseOutput(),
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/gateway-only"),
-			curl.WithPort(8080),
-		},
+	deepMergeGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.WithTransform(transforms.WithJsonBody(),
@@ -498,7 +442,12 @@ func (s *testingSuite) TestExtProcWithDeepMerge() {
 					gomega.HaveKeyWithValue("headers", gomega.Not(gomega.HaveKey("X-Extproc-Server-B"))),
 				),
 			),
-		})
+		},
+		curl.VerboseOutput(),
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPath("/gateway-only"),
+		curl.WithPort(8080),
+	)
 }
 
 // The instructions format that the example extproc service understands.

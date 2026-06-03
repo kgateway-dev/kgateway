@@ -1,0 +1,122 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "test.com"
+  rules:
+  - name: rule0
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: oauth2-jwks-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+    sectionName: http
+  oauth2:
+    extensionRef:
+      name: oauth-jwks
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: oauth-jwks
+spec:
+  oauth2:
+    backendRef:
+      kind: Backend
+      group: gateway.kgateway.dev
+      name: oauth-provider-token
+    tokenEndpoint: https://auth.example.com/token
+    authorizationEndpoint: https://auth.example.com/auth
+    credentials:
+      clientID: client-id
+      clientSecretRef:
+        name: oauth-client-secret
+    redirectURI: https://test.com/callback
+    logoutPath: /logout
+    scopes: ["openid", "email"]
+    jwt:
+      jwksURI: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_abc123/.well-known/jwks.json
+      jwksBackendRef:
+        kind: Backend
+        group: gateway.kgateway.dev
+        name: oauth-provider-jwks
+      accessToken:
+        audiences:
+          - client-id
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: oauth-provider-token
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: auth.example.com
+      port: 443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: oauth-provider-jwks
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: cognito-idp.us-east-1.amazonaws.com
+      port: 443
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth-client-secret
+data:
+  client-secret: Y2xpZW50LXNlY3JldA==
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  #must match wellknown.OAuth2HMACSecret
+  name: oauth2-hmac-secret
+  namespace: kgateway-system
+data:
+  hmac-secret: SE1BQyBzZWNyZXQ=
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test

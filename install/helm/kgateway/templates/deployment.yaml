@@ -126,6 +126,10 @@ spec:
               value: {{ .Values.policyMerge | toJson | quote }}
             - name: KGW_VALIDATION_MODE
               value: {{ include "kgateway.validationLevel" . | quote }}
+            - name: KGW_ENABLE_AWS_EC2_DISCOVERY
+              value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
+            - name: KGW_AWS_EC2_REFRESH_INTERVAL
+              value: {{ .Values.controller.awsEc2RefreshInterval | quote }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}
