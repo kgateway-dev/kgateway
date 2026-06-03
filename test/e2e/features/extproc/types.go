@@ -5,9 +5,6 @@ package extproc
 import (
 	"path/filepath"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
@@ -23,17 +20,4 @@ var (
 	dualServersManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "extproc-dual-servers.yaml")
 	deepMergeManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "deep-merge.yaml")
 	mixedStagesManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "mixed-stages.yaml")
-
-	// Core infrastructure objects that we need to track
-	gatewayObjectMeta = metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: "default",
-	}
-	gatewayService = &corev1.Service{ObjectMeta: gatewayObjectMeta}
-
-	deepMergeGatewayObjectMeta = metav1.ObjectMeta{
-		Name:      "gw-deep-merge",
-		Namespace: "default",
-	}
-	deepMergeGatewayService = &corev1.Service{ObjectMeta: deepMergeGatewayObjectMeta}
 )
