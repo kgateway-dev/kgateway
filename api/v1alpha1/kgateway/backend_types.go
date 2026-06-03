@@ -335,6 +335,25 @@ type Host struct {
 	Port gwv1.PortNumber `json:"port"`
 }
 
+// BackendConditionType is a type of condition for a Backend. This type should be
+// used with a Backend resource Status.Conditions field.
+type BackendConditionType string
+
+// BackendConditionReason is a reason for a Backend condition.
+type BackendConditionReason string
+
+const (
+	// BackendConditionAccepted indicates whether the Backend was accepted, or rejected
+	// because it failed to translate.
+	BackendConditionAccepted BackendConditionType = "Accepted"
+
+	// BackendReasonAccepted is used with Accepted=True when the Backend translated successfully.
+	BackendReasonAccepted BackendConditionReason = "Accepted"
+
+	// BackendReasonInvalid is used with Accepted=False when the Backend failed to translate.
+	BackendReasonInvalid BackendConditionReason = "Invalid"
+)
+
 // BackendStatus defines the observed state of Backend.
 type BackendStatus struct {
 	// Conditions is the list of conditions for the backend.

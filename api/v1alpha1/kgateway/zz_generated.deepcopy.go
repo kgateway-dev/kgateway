@@ -3993,6 +3993,11 @@ func (in *OAuth2JWTConfig) DeepCopyInto(out *OAuth2JWTConfig) {
 		*out = new(HttpsUri)
 		**out = **in
 	}
+	if in.JWKSBackendRef != nil {
+		in, out := &in.JWKSBackendRef, &out.JWKSBackendRef
+		*out = new(apisv1.BackendObjectReference)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.AccessToken != nil {
 		in, out := &in.AccessToken, &out.AccessToken
 		*out = new(OAuth2JWTProcessingConfig)

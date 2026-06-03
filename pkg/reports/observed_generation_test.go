@@ -3,15 +3,81 @@ package reports_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
+
+func TestBuildBackendStatusMergesAndPreservesConditions(t *testing.T) {
+	rm := reports.NewReportMap()
+	statusReporter := reports.NewReporter(&rm)
+
+	backend := &kgateway.Backend{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "example-backend",
+			Namespace:  "default",
+			Generation: 7,
+		},
+	}
+
+	statusReporter.Backend(backend).SetCondition(pluginreporter.BackendCondition{
+		Type:    string(kgateway.BackendConditionAccepted),
+		Status:  metav1.ConditionFalse,
+		Reason:  string(kgateway.BackendReasonInvalid),
+		Message: "translation failed",
+	})
+
+	// current status carries a condition owned by us (with an existing
+	// LastTransitionTime) and a condition owned by another controller.
+	existingTransition := metav1.NewTime(time.Now().Add(-time.Minute).Truncate(time.Second))
+	currentStatus := kgateway.BackendStatus{
+		Conditions: []metav1.Condition{
+			{
+				Type:               string(kgateway.BackendConditionAccepted),
+				Status:             metav1.ConditionFalse,
+				Reason:             string(kgateway.BackendReasonInvalid),
+				Message:            "translation failed",
+				LastTransitionTime: existingTransition,
+			},
+			{
+				Type:    "ForeignCondition",
+				Status:  metav1.ConditionTrue,
+				Reason:  "SomethingElse",
+				Message: "owned by another controller",
+			},
+		},
+	}
+
+	status := rm.BuildBackendStatus(context.Background(), backend, currentStatus)
+	require.NotNil(t, status)
+
+	accepted := requireConditionExists(t, status.Conditions, string(kgateway.BackendConditionAccepted))
+	require.Equal(t, metav1.ConditionFalse, accepted.Status)
+	require.Equal(t, int64(7), accepted.ObservedGeneration)
+	// unchanged condition should preserve its original LastTransitionTime
+	require.Equal(t, existingTransition, accepted.LastTransitionTime)
+
+	// foreign condition must be preserved
+	requireConditionExists(t, status.Conditions, "ForeignCondition")
+}
+
+func requireConditionExists(t *testing.T, conditions []metav1.Condition, condType string) metav1.Condition {
+	t.Helper()
+	for _, c := range conditions {
+		if c.Type == condType {
+			return c
+		}
+	}
+	t.Fatalf("expected condition %q to exist", condType)
+	return metav1.Condition{}
+}
 
 func TestGatewayStatusRefreshesObservedGenerationFromCurrentObject(t *testing.T) {
 	rm := reports.NewReportMap()

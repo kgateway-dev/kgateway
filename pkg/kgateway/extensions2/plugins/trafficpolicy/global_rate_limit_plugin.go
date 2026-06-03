@@ -99,23 +99,19 @@ func constructGlobalRateLimit(
 	}
 	// Create route rate limits and store in the RateLimitIR struct
 	out.globalRateLimit = &globalRateLimitIR{
-		provider: gwExtIR,
-		rateLimitActions: []*envoyroutev3.RateLimit{
-			{
-				Actions: actions,
-			},
-		},
+		provider:         gwExtIR,
+		rateLimitActions: actions,
 	}
 	return nil
 }
 
 // createRateLimitActions translates the API descriptors to Envoy route config rate limit actions
-func createRateLimitActions(descriptors []kgateway.RateLimitDescriptor) ([]*envoyroutev3.RateLimit_Action, error) {
+func createRateLimitActions(descriptors []kgateway.RateLimitDescriptor) ([]*envoyroutev3.RateLimit, error) {
 	if len(descriptors) == 0 {
 		return nil, errors.New("at least one descriptor is required for global rate limiting")
 	}
 
-	var result []*envoyroutev3.RateLimit_Action
+	var result []*envoyroutev3.RateLimit
 
 	// Process each descriptor
 	for _, descriptor := range descriptors {
@@ -174,7 +170,7 @@ func createRateLimitActions(descriptors []kgateway.RateLimitDescriptor) ([]*envo
 			}
 
 			// The final result is a slice of complete RateLimit objects
-			result = append(result, rateLimit.GetActions()...)
+			result = append(result, rateLimit)
 		}
 	}
 
