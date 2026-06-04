@@ -82,7 +82,13 @@ jobs:
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestAgentgatewayIntegration$$|^TestZeroDowntimeRolloutAgentgateway$$'
           agentgateway: 'true'
-
+        # May 29, 2026: ~6 minutes
+        # Do NOT add tests to this cluster as it runs an older version of GWAPI which should be bumped to n-1 on an upgrade
+        - cluster-name: 'cluster-upgrade'
+          go-test-args: '-timeout=10m'
+          go-test-run-regex: '^TestUpgrade'
+          localstack: 'false'
+          gateway-api-version: 'v1.3.0'
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://kgateway.dev/docs/reference/versions/
         version-files:
@@ -109,6 +115,7 @@ jobs:
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         localstack: ${{ matrix.test.localstack }}
         agentgateway: ${{ matrix.test.agentgateway }}
+        gateway-api-version: ${{ matrix.test.gateway-api-version }}
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
       with:
