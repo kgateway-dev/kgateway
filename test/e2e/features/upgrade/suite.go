@@ -21,7 +21,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/threadsafe"
-	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
@@ -40,7 +39,15 @@ const (
 var (
 	_             e2e.NewSuiteFunc = NewTestingSuite
 	setupManifest                  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	Version       string
 )
+
+func init() {
+	Version = os.Getenv("VERSION")
+	if Version == "" {
+		panic("received unknown version")
+	}
+}
 
 // testingSuite validates that kgateway can be upgraded from a released version to the locally-built chart.
 // The parent test function (TestUpgrade) is responsible for:
@@ -95,12 +102,12 @@ func (s *testingSuite) TestUpgrade() {
 
 	s.TestInstallation.InstallKgatewayCRDsFromLocalChart(s.Ctx, s.T())
 	s.TestInstallation.InstallKgatewayCoreFromLocalChart(s.Ctx, s.T())
-	s.TestInstallation.AssertionsT(s.T()).EventuallyKgatewayUpgradeSucceeded(s.Ctx, version.Version)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyKgatewayUpgradeSucceeded(s.Ctx, Version)
 
 	// Ensure the proxy data plane was upgraded too: the Deployment must finish rolling out
 	// (old-revision proxy pods fully scaled down) and every proxy pod must run the new image
 	s.TestInstallation.AssertionsT(s.T()).EventuallyDeploymentsRolledOut(s.Ctx, proxyNamespace, proxyLabelSelector)
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsHaveImageVersion(s.Ctx, proxyNamespace, proxyLabelSelector, version.Version)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsHaveImageVersion(s.Ctx, proxyNamespace, proxyLabelSelector, Version)
 
 	// Ensure the same gateway works after the upgrade
 	common.BaseGateway.Send(
