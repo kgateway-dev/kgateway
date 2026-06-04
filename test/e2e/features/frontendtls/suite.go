@@ -75,8 +75,8 @@ var (
 // Secrets must exist before the curl pod is scheduled, otherwise kubelet can
 // fail the volume mount and enter exponential backoff, leaving the pod stuck in
 // ContainerCreating past the base suite's 60s readiness timeout. SetupSuite
-// applies these (and waits for them) before the pod, and TearDownSuite removes
-// them; see those methods below.
+// applies these before the pod, and TearDownSuite removes them; see those
+// methods below.
 func prerequisiteManifests() []string {
 	return []string{
 		clientCertsSecret,
@@ -129,12 +129,24 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 //     applied first and on its own.
 //  2. The mounted Secrets/ConfigMaps must exist before the pod is scheduled,
 //     otherwise kubelet can fail the volume mount and back off past the 60s
-//     readiness timeout. ApplyManifests applies them and waits until they exist.
+//     readiness timeout.
+//
+// The prerequisites are applied with raw ApplyYAMLFiles rather than the base
+// ApplyManifests: they are Secrets/ConfigMaps that exist immediately after a
+// server-side apply returns (no readiness to wait on), and ApplyManifests parses
+// manifests using helpers the base SetupSuite has not initialized at this point.
+// They are gated behind the suite-level Gateway API compatibility check so an
+// unsupported cluster skips without leaving these resources behind (TearDownSuite
+// does not run after a SetupSuite skip). The base SetupSuite below repeats the
+// idempotent detection and emits the standard skip when applicable.
 func (s *testingSuite) SetupSuite() {
-	err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", curlNamespaceManifest)
-	s.Require().NoError(err, "failed to create curl namespace")
+	if !s.CheckSkipSuiteBeforeSetup() {
+		err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", curlNamespaceManifest)
+		s.Require().NoError(err, "failed to create curl namespace")
 
-	s.ApplyManifests(&s.prerequisites)
+		err = s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", s.prerequisites.Manifests...)
+		s.Require().NoError(err, "failed to apply frontendtls prerequisite manifests")
+	}
 
 	s.BaseTestingSuite.SetupSuite()
 }
