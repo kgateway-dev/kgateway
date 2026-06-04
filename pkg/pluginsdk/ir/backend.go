@@ -353,6 +353,46 @@ func (c BackendObjectIR) GetAttachedPolicies() AttachedPolicies {
 	return c.AttachedPolicies
 }
 
+// BackendObjectStatus carries additional status conditions that a backend plugin
+// contributes to a Backend resource beyond the Accepted condition (e.g. the EC2
+// EndpointsDiscovered condition produced by runtime endpoint discovery). Each entry
+// is keyed by the Backend it applies to via Source. LastTransitionTime and
+// ObservedGeneration are intentionally left unset here; they are assigned when the
+// final Backend status is built.
+type BackendObjectStatus struct {
+	// Source identifies the Backend these conditions apply to.
+	Source ObjectSource
+	// Conditions is the set of status conditions to merge onto the Backend.
+	Conditions []metav1.Condition
+}
+
+func (c BackendObjectStatus) ResourceName() string {
+	return c.Source.ResourceName()
+}
+
+func (c BackendObjectStatus) Equals(in BackendObjectStatus) bool {
+	if !c.Source.Equals(in.Source) {
+		return false
+	}
+	if len(c.Conditions) != len(in.Conditions) {
+		return false
+	}
+	// Compare by condition type rather than by position: conditions form a set keyed by
+	// Type, so a reordering of otherwise-identical conditions must not register as a
+	// change (which would trigger spurious recomputation and redundant status writes).
+	other := make(map[string]metav1.Condition, len(in.Conditions))
+	for _, cond := range in.Conditions {
+		other[cond.Type] = cond
+	}
+	for _, a := range c.Conditions {
+		b, ok := other[a.Type]
+		if !ok || a.Status != b.Status || a.Reason != b.Reason || a.Message != b.Message {
+			return false
+		}
+	}
+	return true
+}
+
 type Secret struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
 	// set them explicitly here, and pass this around as the reference.

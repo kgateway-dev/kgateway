@@ -68,6 +68,57 @@ func TestBuildBackendStatusMergesAndPreservesConditions(t *testing.T) {
 	requireConditionExists(t, status.Conditions, "ForeignCondition")
 }
 
+func TestBuildBackendStatusDropsStaleManagedCondition(t *testing.T) {
+	rm := reports.NewReportMap()
+	statusReporter := reports.NewReporter(&rm)
+
+	backend := &kgateway.Backend{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "example-backend",
+			Namespace:  "default",
+			Generation: 3,
+		},
+	}
+
+	// The fresh report only contains Accepted; the backend no longer contributes an
+	// EndpointsDiscovered condition (e.g. it stopped being an EC2 backend).
+	statusReporter.Backend(backend).SetCondition(pluginreporter.BackendCondition{
+		Type:    string(kgateway.BackendConditionAccepted),
+		Status:  metav1.ConditionTrue,
+		Reason:  string(kgateway.BackendReasonAccepted),
+		Message: "ok",
+	})
+
+	currentStatus := kgateway.BackendStatus{
+		Conditions: []metav1.Condition{
+			{
+				Type:    string(kgateway.BackendConditionEndpointsDiscovered),
+				Status:  metav1.ConditionTrue,
+				Reason:  string(kgateway.BackendReasonDiscovered),
+				Message: "3 endpoints active",
+			},
+			{
+				Type:    "ForeignCondition",
+				Status:  metav1.ConditionTrue,
+				Reason:  "SomethingElse",
+				Message: "owned by another controller",
+			},
+		},
+	}
+
+	status := rm.BuildBackendStatus(context.Background(), backend, currentStatus)
+	require.NotNil(t, status)
+
+	// A kgateway-managed condition absent from the fresh report must be dropped rather
+	// than carried forward forever.
+	for _, c := range status.Conditions {
+		require.NotEqual(t, string(kgateway.BackendConditionEndpointsDiscovered), c.Type,
+			"stale managed EndpointsDiscovered condition should have been dropped")
+	}
+	// Conditions owned by other controllers are still preserved.
+	requireConditionExists(t, status.Conditions, "ForeignCondition")
+}
+
 func requireConditionExists(t *testing.T, conditions []metav1.Condition, condType string) metav1.Condition {
 	t.Helper()
 	for _, c := range conditions {
