@@ -61,7 +61,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.1
 	github.com/aws/smithy-go v1.25.1
 	github.com/golang/protobuf v1.5.4
-	github.com/shurcooL/githubv4 v0.0.0-20191127044304-8f68eb5628d0
 	sigs.k8s.io/gateway-api/conformance v1.5.1
 )
 
@@ -126,7 +125,6 @@ require (
 	github.com/rhysd/actionlint v1.7.8 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rotisserie/eris v0.5.4 // indirect
-	github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f // indirect
 	github.com/solo-io/go-utils v0.20.2 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	go.augendre.info/arangolint v0.4.0 // indirect
@@ -408,7 +406,7 @@ require (
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20251125195548-87e1e737ad39 // indirect
 	golang.org/x/mod v0.35.0 // indirect
-	golang.org/x/oauth2 v0.36.0
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/term v0.43.0 // indirect

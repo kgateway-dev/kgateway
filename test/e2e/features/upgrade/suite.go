@@ -10,9 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/shurcooL/githubv4"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
@@ -126,41 +124,10 @@ func (s *testingSuite) TestUpgrade() {
 	)
 }
 
-func newGraphQLClient() *githubv4.Client {
-	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
-		return githubv4.NewClient(http.DefaultClient)
-	}
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	return githubv4.NewClient(oauth2.NewClient(context.Background(), ts))
-}
-
-const (
-	defaultGitHubOrg  = "kgateway-dev"
-	defaultGitHubRepo = "kgateway"
-)
-
-// ReleaseOptions configures which GitHub repository to query for releases.
-type ReleaseOptions struct {
-	// Org is the GitHub organization owning the repository. Defaults to "kgateway-dev".
-	Org string
-	// Repo is the GitHub repository name. Defaults to "kgateway".
-	Repo string
-}
-
-func (o *ReleaseOptions) applyDefaults() {
-	if o.Org == "" {
-		o.Org = defaultGitHubOrg
-	}
-	if o.Repo == "" {
-		o.Repo = defaultGitHubRepo
-	}
-}
-
 // FetchLatestRelease returns the most recent release tag that is an ancestor of HEAD.
 // This mirrors `git describe --tags --abbrev=0` but works in shallow checkouts where
 // tags are not fetched, by resolving HEAD via git then checking ancestry via the GitHub API.
-func FetchLatestRelease(ctx context.Context, opts ReleaseOptions) (string, error) {
+func FetchLatestRelease(ctx context.Context) (string, error) {
 	script := filepath.Join(fsutils.GetModuleRoot(), "hack", "get-release.sh")
 	var stdout bytes.Buffer
 	cmd := cmdutils.Command(ctx, script, "--latest").
@@ -172,7 +139,10 @@ func FetchLatestRelease(ctx context.Context, opts ReleaseOptions) (string, error
 	return strings.TrimSpace(stdout.String()), nil
 }
 
-func FetchPreviousMinorRelease(ctx context.Context, latestRelease string, opts ReleaseOptions) (string, error) {
+// FetchLatestRelease returns the most recent n-1 release tag that is an ancestor of HEAD.
+// This mirrors `git describe --tags --abbrev=0` but works in shallow checkouts where
+// tags are not fetched, by resolving HEAD via git then checking ancestry via the GitHub API.
+func FetchPreviousMinorRelease(ctx context.Context) (string, error) {
 	script := filepath.Join(fsutils.GetModuleRoot(), "hack", "get-release.sh")
 	var stdout bytes.Buffer
 	cmd := cmdutils.Command(ctx, script, "--previous").
