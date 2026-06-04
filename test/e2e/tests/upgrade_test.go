@@ -22,7 +22,7 @@ func TestUpgrade(t *testing.T) {
 		t.Fatalf("failed to get latest patch version: %v", err)
 	}
 	t.Run(fmt.Sprintf("TestUpgradeFromLatestRelease [%s]", latestTag), func(t *testing.T) {
-		// testUpgrade(t, latestTag)
+		testUpgrade(t, latestTag)
 	})
 
 	previousMinor, err1 := upgrade.FetchPreviousMinorRelease(t.Context())
@@ -30,7 +30,7 @@ func TestUpgrade(t *testing.T) {
 		t.Fatalf("failed to get previous minor release: %v", err1)
 	}
 	t.Run(fmt.Sprintf("TestUpgradeFromPreviousMinor[%s]", previousMinor), func(t *testing.T) {
-		// testUpgrade(t, previousMinor)
+		testUpgrade(t, previousMinor)
 	})
 }
 
