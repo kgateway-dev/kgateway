@@ -19,6 +19,7 @@ import (
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -29,6 +30,10 @@ var (
 	tlsSecretManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-secret.yaml")
 	clientCertsSecret = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "client-certs-8443-9443-secret.yaml")
 	curlPodWithCerts  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl-pod-with-certs.yaml")
+	// curlNamespaceManifest creates the 'curl' namespace. The curl pod and its
+	// mounted client-cert Secrets live in this namespace, so it must exist before
+	// either is applied. It is applied first (and sequentially) by SetupSuite.
+	curlNamespaceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl-namespace.yaml")
 
 	// client certificate paths inside the curl pod (for verify-certificate-hash tests)
 	clientCertPath8443   = "/etc/client-certs/client-8443.crt"
@@ -65,11 +70,13 @@ var (
 	}
 )
 
-// prerequisiteManifests contains the Secrets and ConfigMaps the curl pod mounts.
-// These must exist before the curl pod is scheduled, otherwise kubelet can
-// fail the volume mount and enter exponential backoff, leaving the pod stuck
-// in ContainerCreating past the base suite's 60s readiness timeout. See the
-// SetupSuite override below.
+// prerequisiteManifests contains the Secrets and ConfigMaps the curl pod mounts
+// (plus the CA ConfigMaps and server cert the Gateway references). The mounted
+// Secrets must exist before the curl pod is scheduled, otherwise kubelet can
+// fail the volume mount and enter exponential backoff, leaving the pod stuck in
+// ContainerCreating past the base suite's 60s readiness timeout. SetupSuite
+// applies these (and waits for them) before the pod, and TearDownSuite removes
+// them; see those methods below.
 func prerequisiteManifests() []string {
 	return []string{
 		clientCertsSecret,
@@ -85,19 +92,16 @@ func prerequisiteManifests() []string {
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	// The prerequisite manifests are intentionally duplicated in the base setup
-	// list so that TearDownSuite cleans them up via the standard flow. The
-	// duplicate ApplyYAMLFiles call during base SetupSuite is an idempotent
-	// server-side apply.
+	// The base setup holds only the Pod/Gateway/httpbin. The prerequisite Secrets
+	// and ConfigMaps are kept in a separate TestCase that SetupSuite applies (and
+	// TearDownSuite deletes) explicitly, so they are ordered before the pod
+	// without being applied twice.
 	setup := base.TestCase{
-		Manifests: append(
-			[]string{
-				curlPodWithCerts,
-				testdefaults.HttpbinManifest,
-				gatewayManifest,
-			},
-			prerequisiteManifests()...,
-		),
+		Manifests: []string{
+			curlPodWithCerts,
+			testdefaults.HttpbinManifest,
+			gatewayManifest,
+		},
 	}
 
 	testCases := map[string]*base.TestCase{
@@ -113,39 +117,41 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireFrontendTLSConfig)),
+		prerequisites:    base.TestCase{Manifests: prerequisiteManifests()},
 	}
 }
 
-// curlNamespaceManifest creates the 'curl' namespace that several prerequisite
-// Secrets (the client certs the curl pod mounts) are placed in. The base suite
-// only creates this namespace via curlPodWithCerts, which is applied after this
-// override runs, so the curl-namespaced Secrets below would otherwise fail with
-// `namespaces "curl" not found` on a cluster where a prior suite has not
-// already created it.
-const curlNamespaceManifest = `apiVersion: v1
-kind: Namespace
-metadata:
-  name: curl
-`
-
-// SetupSuite applies the Secrets and ConfigMaps that the curl pod mounts
-// BEFORE delegating to the base SetupSuite. The base suite's ApplyManifests
-// applies all manifest files in parallel via errgroup, which races the Pod
-// create against its dependent Secrets: if kubelet schedules the Pod before a
-// Secret is visible in the API, the mount fails and kubelet enters backoff,
-// leaving the Pod stuck in ContainerCreating past the 60s readiness timeout.
-// Applying prerequisites first eliminates that race.
+// SetupSuite establishes the ordered prerequisites the curl pod depends on, then
+// delegates to the base SetupSuite (which applies the Pod/Gateway/httpbin). The
+// base suite applies a TestCase's manifests in parallel via errgroup, so the
+// ordering below cannot be expressed as a single manifest list:
+//  1. The 'curl' namespace must exist before its namespaced Secrets, so it is
+//     applied first and on its own.
+//  2. The mounted Secrets/ConfigMaps must exist before the pod is scheduled,
+//     otherwise kubelet can fail the volume mount and back off past the 60s
+//     readiness timeout. ApplyManifests applies them and waits until they exist.
 func (s *testingSuite) SetupSuite() {
-	// The curl-namespaced prerequisite Secrets require the 'curl' namespace to
-	// exist first; create it before applying them so SetupSuite does not fail
-	// on a clean cluster.
-	err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLContents("", curlNamespaceManifest)
+	err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", curlNamespaceManifest)
 	s.Require().NoError(err, "failed to create curl namespace")
 
-	err = s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", prerequisiteManifests()...)
-	s.Require().NoError(err, "failed to apply frontendtls prerequisite manifests")
+	s.ApplyManifests(&s.prerequisites)
 
 	s.BaseTestingSuite.SetupSuite()
+}
+
+// TearDownSuite removes the Pod/Gateway/httpbin via the base teardown, then the
+// prerequisite Secrets/ConfigMaps. The prerequisites are not part of the base
+// setup TestCase, so they are deleted here explicitly. DeleteManifests strips
+// Namespace resources, so the 'ca-cert-2' namespace is preserved; the 'curl'
+// namespace is likewise never deleted, consistent with the framework's
+// avoid-deleting-namespaces rule.
+func (s *testingSuite) TearDownSuite() {
+	s.BaseTestingSuite.TearDownSuite()
+
+	if testutils.ShouldSkipCleanup(s.T()) || s.SkipSuite() {
+		return
+	}
+	s.DeleteManifests(&s.prerequisites)
 }
 
 // commonCurlOpts returns the common curl options used across all TLS tests for the default gateway
@@ -174,6 +180,10 @@ func commonCurlOptsForMTLS(hostname string, port int) []curl.Option {
 
 type testingSuite struct {
 	*base.BaseTestingSuite
+	// prerequisites are the Secrets/ConfigMaps the curl pod mounts and the Gateway
+	// references. They are applied (ordered, before the pod) by SetupSuite and
+	// deleted by TearDownSuite, kept separate from the base setup TestCase.
+	prerequisites base.TestCase
 }
 
 func (s *testingSuite) TestALPNProtocol() {
