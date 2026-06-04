@@ -3,15 +3,13 @@
 package upgrade
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
-	"github.com/google/go-github/v67/github"
 	"github.com/shurcooL/githubv4"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/oauth2"
@@ -21,7 +19,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/threadsafe"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
@@ -160,104 +157,29 @@ func (o *ReleaseOptions) applyDefaults() {
 	}
 }
 
-// fetchGithubRelease pages through releases ordered by creation date descending
-// (newest first, skipping drafts) using the GitHub GraphQL API, which
-// guarantees the ordering via orderBy. Returns the tag name of the first release for
-// which match returns true.
-func fetchGithubRelease(ctx context.Context, opts ReleaseOptions, match func(tagName string) (bool, error)) (string, error) {
-	opts.applyDefaults()
-	client := newGraphQLClient()
-
-	var query struct {
-		Repository struct {
-			Releases struct {
-				Nodes []struct {
-					TagName githubv4.String
-					IsDraft githubv4.Boolean
-				}
-				PageInfo struct {
-					EndCursor   githubv4.String
-					HasNextPage githubv4.Boolean
-				}
-			} `graphql:"releases(first: 100, after: $cursor, orderBy: {field: CREATED_AT, direction: DESC})"`
-		} `graphql:"repository(owner: $owner, name: $repo)"`
-	}
-
-	variables := map[string]any{
-		"cursor": (*githubv4.String)(nil),
-		"owner":  githubv4.String(opts.Org),
-		"repo":   githubv4.String(opts.Repo),
-	}
-
-	for {
-		if err := client.Query(ctx, &query, variables); err != nil {
-			return "", fmt.Errorf("graphql query releases: %w", err)
-		}
-		for _, r := range query.Repository.Releases.Nodes {
-			if bool(r.IsDraft) || string(r.TagName) == "" {
-				continue
-			}
-			ok, err := match(string(r.TagName))
-			if err != nil {
-				return "", err
-			}
-			if ok {
-				return string(r.TagName), nil
-			}
-		}
-		if !bool(query.Repository.Releases.PageInfo.HasNextPage) {
-			break
-		}
-		variables["cursor"] = new(query.Repository.Releases.PageInfo.EndCursor)
-	}
-	return "", fmt.Errorf("no matching release found")
-}
-
 // FetchLatestRelease returns the most recent release tag that is an ancestor of HEAD.
 // This mirrors `git describe --tags --abbrev=0` but works in shallow checkouts where
 // tags are not fetched, by resolving HEAD via git then checking ancestry via the GitHub API.
 func FetchLatestRelease(ctx context.Context, opts ReleaseOptions) (string, error) {
-	opts.applyDefaults()
-
-	var shaOut threadsafe.Buffer
-	if err := cmdutils.Command(ctx, "git", "rev-parse", "HEAD").
-		WithStdout(&shaOut).
-		WithStderr(&shaOut).
-		Run(); err != nil {
-		return "", fmt.Errorf("git rev-parse HEAD: %w", err)
+	script := filepath.Join(fsutils.GetModuleRoot(), "hack", "get-release.sh")
+	var stdout bytes.Buffer
+	cmd := cmdutils.Command(ctx, script, "--latest").
+		WithStdout(&stdout).
+		WithStderr(os.Stderr)
+	if err := cmd.Run(); err != nil {
+		return "", err
 	}
-	headSHA := strings.TrimSpace(shaOut.String())
-
-	// Use REST client for CompareCommits — no GraphQL equivalent.
-	restClient := github.NewClient(nil)
-	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		restClient = github.NewClient(nil).WithAuthToken(token)
-	}
-
-	return fetchGithubRelease(ctx, opts, func(tagName string) (bool, error) {
-		// Compare tag...HEAD: status=="ahead" means HEAD is ahead of the tag (tag is an ancestor).
-		comparison, _, err := restClient.Repositories.CompareCommits(ctx, opts.Org, opts.Repo, tagName, headSHA, nil)
-		if err != nil {
-			return false, fmt.Errorf("compare %s...%s: %w", tagName, headSHA, err)
-		}
-		return comparison.GetStatus() == "ahead" || comparison.GetStatus() == "identical", nil
-	})
+	return strings.TrimSpace(stdout.String()), nil
 }
 
 func FetchPreviousMinorRelease(ctx context.Context, latestRelease string, opts ReleaseOptions) (string, error) {
-	parts := strings.Split(latestRelease, ".")
-	if len(parts) < 2 {
-		return "", fmt.Errorf("unexpected tag format: %s", latestRelease)
+	script := filepath.Join(fsutils.GetModuleRoot(), "hack", "get-release.sh")
+	var stdout bytes.Buffer
+	cmd := cmdutils.Command(ctx, script, "--previous").
+		WithStdout(&stdout).
+		WithStderr(os.Stderr)
+	if err := cmd.Run(); err != nil {
+		return "", err
 	}
-	minorInt, convErr := strconv.Atoi(parts[1])
-	if convErr != nil {
-		return "", fmt.Errorf("failed to parse minor version from tag %q: %v", latestRelease, convErr)
-	}
-	if minorInt <= 0 {
-		return "", fmt.Errorf("no previous minor for release %q (minor is 0)", latestRelease)
-	}
-	previousMinorPrefix := fmt.Sprintf("%s.%d.", parts[0], minorInt-1)
-	return fetchGithubRelease(ctx, opts, func(tagName string) (bool, error) {
-		return strings.HasPrefix(tagName, previousMinorPrefix), nil
-	})
+	return strings.TrimSpace(stdout.String()), nil
 }

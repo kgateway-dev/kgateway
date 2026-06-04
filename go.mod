@@ -61,7 +61,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.1
 	github.com/aws/smithy-go v1.25.1
 	github.com/golang/protobuf v1.5.4
-	github.com/google/go-github/v67 v67.0.0
 	github.com/shurcooL/githubv4 v0.0.0-20191127044304-8f68eb5628d0
 	sigs.k8s.io/gateway-api/conformance v1.5.1
 )
@@ -110,7 +109,6 @@ require (
 	github.com/godoc-lint/godoc-lint v0.11.1 // indirect
 	github.com/golangci/asciicheck v0.5.0 // indirect
 	github.com/golangci/swaggoswag v0.0.0-20250504205917-77f2aca3143e // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gostaticanalysis/nilerr v0.1.2 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
