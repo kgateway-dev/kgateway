@@ -203,6 +203,12 @@ type Settings struct {
 	// E.g., [{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]
 	DiscoveryNamespaceSelectors string `split_words:"true" default:"[]"`
 
+	// ServiceLabelSelector is a Kubernetes label selector string used to filter which Services
+	// are included in discovery and sent to Envoy as clusters.
+	// Defaults to empty, which selects all services.
+	// Uses the same syntax as kubectl -l / --selector (e.g., "app=my-app,tier=frontend").
+	ServiceLabelSelector string `split_words:"true" default:""`
+
 	// EnableEnvoy enables kgateway to send config to Envoy
 	EnableEnvoy bool `split_words:"true" default:"true"`
 
