@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -183,8 +182,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 					TLSKey:         new(TLSKey),
 				},
 				Parameters: &kgateway.TLSParameters{
-					MinVersion:   ptr.To(kgateway.TLSVersion1_2),
-					MaxVersion:   ptr.To(kgateway.TLSVersion1_3),
+					MinVersion:   new(kgateway.TLSVersion1_2),
+					MaxVersion:   new(kgateway.TLSVersion1_3),
 					CipherSuites: []string{"TLS_AES_128_GCM_SHA256"},
 					EcdhCurves:   []string{"X25519"},
 				},
@@ -211,7 +210,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with only minVersion parameter",
 			tlsConfig: &kgateway.TLS{
 				Parameters: &kgateway.TLSParameters{
-					MinVersion: ptr.To(kgateway.TLSVersion1_2),
+					MinVersion: new(kgateway.TLSVersion1_2),
 				},
 			},
 			wantErr: false,
@@ -228,7 +227,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with only maxVersion parameter",
 			tlsConfig: &kgateway.TLS{
 				Parameters: &kgateway.TLSParameters{
-					MaxVersion: ptr.To(kgateway.TLSVersion1_3),
+					MaxVersion: new(kgateway.TLSVersion1_3),
 				},
 			},
 			wantErr: false,
@@ -409,7 +408,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "TLS config with system ca",
 			tlsConfig: &kgateway.TLS{
-				WellKnownCACertificates: ptr.To(gwv1.WellKnownCACertificatesSystem),
+				WellKnownCACertificates: new(gwv1.WellKnownCACertificatesSystem),
 			},
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
@@ -425,7 +424,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "TLS config with system ca and san",
 			tlsConfig: &kgateway.TLS{
-				WellKnownCACertificates: ptr.To(gwv1.WellKnownCACertificatesSystem),
+				WellKnownCACertificates: new(gwv1.WellKnownCACertificatesSystem),
 				VerifySubjectAltNames:   []string{"test.example.com", "api.example.com"},
 			},
 			expected: &envoytlsv3.UpstreamTlsContext{

@@ -4,6 +4,12 @@ Name|Version|License
 [semver/v3](https://github.com/Masterminds/semver)|v3.4.0|MIT License
 [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)|v1.10.1|BSD 3-clause "New" or "Revised" License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.7.0|MIT License
+[aws/aws-sdk-go-v2](https://github.com/aws/aws-sdk-go-v2)|v1.41.7|Apache License 2.0
+[aws-sdk-go-v2/config](https://github.com/aws/aws-sdk-go-v2)|v1.32.17|Apache License 2.0
+[aws-sdk-go-v2/credentials](https://github.com/aws/aws-sdk-go-v2)|v1.19.16|Apache License 2.0
+[service/ec2](https://github.com/aws/aws-sdk-go-v2)|v1.299.1|Apache License 2.0
+[service/sts](https://github.com/aws/aws-sdk-go-v2)|v1.42.1|Apache License 2.0
+[aws/smithy-go](https://github.com/aws/smithy-go)|v1.25.1|Apache License 2.0
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20260202195803-dba9d589def2|Apache License 2.0
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.14.0|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.36.1-0.20260418153000-ae8637bdda9d|Apache License 2.0
@@ -18,6 +24,7 @@ Name|Version|License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License
 [google/cel-go](https://github.com/google/cel-go)|v0.27.0|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
+[go-github/v67](https://github.com/google/go-github)|v67.0.0|BSD 3-clause "New" or "Revised" License
 [gorilla/websocket](https://github.com/gorilla/websocket)|v1.5.4-0.20250319132907-e064f32e3674|BSD 2-clause "Simplified" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
@@ -28,6 +35,7 @@ Name|Version|License
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
 [prometheus/common](https://github.com/prometheus/common)|v0.67.5|Apache License 2.0
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.4.0|MIT License
+[shurcooL/githubv4](https://github.com/shurcooL/githubv4)|v0.0.0-20191127044304-8f68eb5628d0|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.15.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.2|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
@@ -36,6 +44,7 @@ Name|Version|License
 [go.uber.org/mock](https://go.uber.org/mock)|v0.6.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.1|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20260112195511-716be5621a96|BSD 3-clause "New" or "Revised" License
+[x/oauth2](https://golang.org/x/oauth2)|v0.36.0|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.20.0|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.15.0|BSD 3-clause "New" or "Revised" License
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260401024825-9d38bb4040a9|Apache License 2.0

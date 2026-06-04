@@ -15,7 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -63,10 +62,10 @@ func TestGetBackendSameNamespace(t *testing.T) {
 			if backends[0].Err != nil {
 				t.Fatalf("backend has error %v", backends[0].Err)
 			}
-			if backends[0].BackendObject.Name != "foo" {
+			if backends[0].BackendObject.GetName() != "foo" {
 				t.Fatalf("backend incorrect name")
 			}
-			if backends[0].BackendObject.Namespace != "default" {
+			if backends[0].BackendObject.GetNamespace() != "default" {
 				t.Fatalf("backend incorrect ns")
 			}
 		})
@@ -90,10 +89,10 @@ func TestGetBackendDifNsWithRefGrant(t *testing.T) {
 			if backends[0].Err != nil {
 				t.Fatalf("backend has error %v", backends[0].Err)
 			}
-			if backends[0].BackendObject.Name != "foo" {
+			if backends[0].BackendObject.GetName() != "foo" {
 				t.Fatalf("backend incorrect name")
 			}
-			if backends[0].BackendObject.Namespace != "default2" {
+			if backends[0].BackendObject.GetNamespace() != "default2" {
 				t.Fatalf("backend incorrect ns")
 			}
 		})
@@ -344,7 +343,7 @@ func backend(ns string) *kgateway.Backend {
 			Namespace: ns,
 		},
 		Spec: kgateway.BackendSpec{
-			Type: ptr.To(kgateway.BackendTypeStatic),
+			Type: new(kgateway.BackendTypeStatic),
 			Static: &kgateway.StaticBackend{
 				Hosts: []kgateway.Host{
 					{
@@ -401,7 +400,7 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 				Group:     svcGk.Group,
 				Namespace: svc.Namespace,
 				Name:      svc.Name,
-			}, port.Port, "")
+			}, port.Port, "", "")
 			backend.Obj = svc
 			uss = append(uss, backend)
 		}
@@ -423,7 +422,7 @@ func backendUpstreams(backendCol krt.Collection[*kgateway.Backend]) krt.Collecti
 			Group:     backendGk.Group,
 			Namespace: backend.Namespace,
 			Name:      backend.Name,
-		}, port, "")
+		}, port, "", "")
 		backendIR.Obj = backend
 		return &backendIR
 	})
@@ -634,7 +633,7 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 										BackendRef: gwv1.BackendRef{
 											BackendObjectReference: gwv1.BackendObjectReference{
 												Name: gwv1.ObjectName("foo"),
-												Port: ptr.To(gwv1.PortNumber(8080)),
+												Port: new(gwv1.PortNumber(8080)),
 											},
 										},
 									},

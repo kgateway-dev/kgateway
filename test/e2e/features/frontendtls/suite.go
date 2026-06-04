@@ -116,6 +116,18 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
+// curlNamespaceManifest creates the 'curl' namespace that several prerequisite
+// Secrets (the client certs the curl pod mounts) are placed in. The base suite
+// only creates this namespace via curlPodWithCerts, which is applied after this
+// override runs, so the curl-namespaced Secrets below would otherwise fail with
+// `namespaces "curl" not found` on a cluster where a prior suite has not
+// already created it.
+const curlNamespaceManifest = `apiVersion: v1
+kind: Namespace
+metadata:
+  name: curl
+`
+
 // SetupSuite applies the Secrets and ConfigMaps that the curl pod mounts
 // BEFORE delegating to the base SetupSuite. The base suite's ApplyManifests
 // applies all manifest files in parallel via errgroup, which races the Pod
@@ -124,7 +136,13 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // leaving the Pod stuck in ContainerCreating past the 60s readiness timeout.
 // Applying prerequisites first eliminates that race.
 func (s *testingSuite) SetupSuite() {
-	err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", prerequisiteManifests()...)
+	// The curl-namespaced prerequisite Secrets require the 'curl' namespace to
+	// exist first; create it before applying them so SetupSuite does not fail
+	// on a clean cluster.
+	err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLContents("", curlNamespaceManifest)
+	s.Require().NoError(err, "failed to create curl namespace")
+
+	err = s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", prerequisiteManifests()...)
 	s.Require().NoError(err, "failed to apply frontendtls prerequisite manifests")
 
 	s.BaseTestingSuite.SetupSuite()

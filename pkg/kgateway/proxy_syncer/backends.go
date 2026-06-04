@@ -21,8 +21,14 @@ type uccWithCluster struct {
 	ClusterVersion uint64
 	// +krtEqualsTodo reconcile name-only equality semantics
 	Name string
-	// +krtEqualsTodo surface translation errors in equality or drop field
+	// Error is the translation error for this backend/client pair, if any. Compared by message
+	// in Equals because all errored clusters share one blackhole proto, so ClusterVersion can't
+	// tell error states apart.
 	Error error
+	// BackendSource identifies the Backend this cluster was translated from, for status attribution.
+	BackendSource ir.ObjectSource
+	// BackendGeneration is the observed generation of the source Backend.
+	BackendGeneration int64
 }
 
 func (c uccWithCluster) ResourceName() string {
@@ -30,7 +36,18 @@ func (c uccWithCluster) ResourceName() string {
 }
 
 func (c uccWithCluster) Equals(in uccWithCluster) bool {
-	return c.Client.Equals(in.Client) && c.ClusterVersion == in.ClusterVersion
+	return c.Client.Equals(in.Client) &&
+		c.ClusterVersion == in.ClusterVersion &&
+		c.BackendSource == in.BackendSource &&
+		c.BackendGeneration == in.BackendGeneration &&
+		errString(c.Error) == errString(in.Error)
+}
+
+func errString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 type PerClientEnvoyClusters struct {
@@ -61,13 +78,19 @@ func NewPerClientEnvoyClusters(
 			if c == nil {
 				continue
 			}
+			var backendGeneration int64
+			if backendObj.Obj != nil {
+				backendGeneration = backendObj.Obj.GetGeneration()
+			}
 			uccWithClusterRet = append(uccWithClusterRet, uccWithCluster{
 				Name:    c.GetName(),
 				Client:  ucc,
 				Cluster: c,
 				// pass along the error(s) indicating to consumers that this cluster is not usable
-				Error:          err,
-				ClusterVersion: utils.HashProto(c),
+				Error:             err,
+				ClusterVersion:    utils.HashProto(c),
+				BackendSource:     backendObj.GetObjectSource(),
+				BackendGeneration: backendGeneration,
 			})
 		}
 		return uccWithClusterRet

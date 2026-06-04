@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
@@ -172,6 +173,20 @@ func buildOAuth2ProviderConfig(
 		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
 	}
 
+	// Use a dedicated backend to fetch JWKS if specified, otherwise fall back to the primary backend.
+	// This is needed when the JWKS endpoint is on a different domain than the token endpoint.
+	jwksBackend := backend
+	if in.JWT != nil && in.JWT.JWKSBackendRef != nil {
+		resolved, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, *in.JWT.JWKSBackendRef)
+		if err != nil {
+			return nil, fmt.Errorf("error resolving JWKS backend %v: %w", *in.JWT.JWKSBackendRef, err)
+		}
+		if resolved == nil {
+			return nil, fmt.Errorf("JWKS backend not found: %v", *in.JWT.JWKSBackendRef)
+		}
+		jwksBackend = resolved
+	}
+
 	// Fetch the client credentials
 	credSecret, err := secrets.GetSecret(krtctx,
 		krtcollections.From{GroupKind: wellknown.GatewayExtensionGVK.GroupKind(), Namespace: ext.Namespace},
@@ -316,7 +331,7 @@ func buildOAuth2ProviderConfig(
 		cfg.Config.DenyRedirectMatcher = matcher
 	}
 
-	jwtCfg, err := buildOAuth2JWTConfig(ext, jwksURI, cookieNames, backend)
+	jwtCfg, err := buildOAuth2JWTConfig(ext, jwksURI, cookieNames, jwksBackend)
 	if err != nil {
 		return nil, err
 	}
@@ -357,7 +372,7 @@ func buildOAuth2JWTConfig(
 	ext *ir.GatewayExtension,
 	jwksURI string,
 	cookieNames *envoyoauth2v3.OAuth2Credentials_CookieNames,
-	backend *ir.BackendObjectIR,
+	jwksBackend *ir.BackendObjectIR,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
 	jwt := ext.OAuth2.JWT
 	if jwt == nil {
@@ -381,7 +396,7 @@ func buildOAuth2JWTConfig(
 				Timeout: &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs},
 				Uri:     jwksURI,
 				HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
-					Cluster: backend.ClusterName(),
+					Cluster: jwksBackend.ClusterName(),
 				},
 			},
 		},
@@ -487,7 +502,7 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 	}
 
 	// TODO: add disable capability when needed
-	p.oauth2PerProvider.Add(filterChain, in.source.Name, in.source)
+	p.oauth2PerProvider.Add(filterChain, in.source.Name, in.source, filters.BeforeStage(filters.AuthNStage))
 	perFilterConfig.AddTypedConfig(oauthFilterName(in.source.Name), EnableFilterPerRoute())
 	if in.jwtCfg != nil {
 		perFilterConfig.AddTypedConfig(oauthJWTFilterName(in.source.Name), &envoyjwtauthnv3.PerRouteConfig{

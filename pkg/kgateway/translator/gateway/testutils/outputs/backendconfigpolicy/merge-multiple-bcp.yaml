@@ -1,4 +1,28 @@
 Clusters:
+- circuitBreakers:
+    thresholds:
+    - maxConnections: 1024
+      maxPendingRequests: 1024
+      maxRequests: 1024
+      maxRetries: 3
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: kube_default_httpbin_8080
+  transportSocket:
+    name: envoy.transport_sockets.upstream_proxy_protocol
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport
+      config:
+        version: V2
+      transportSocket:
+        name: envoy.transport_sockets.raw_buffer
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: EDS
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
@@ -6,7 +30,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 3000
+      portValue: 8080
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -22,43 +46,25 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~3000
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: listener~3000
-  name: listener~3000
-  perConnectionBufferLimitBytes: 65536
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
-      portValue: 80
-  filterChains:
-  - filters:
-    - name: envoy.filters.network.http_connection_manager
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-        httpFilters:
-        - name: envoy.filters.http.router
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-        mergeSlashes: true
-        normalizePath: true
-        rds:
-          configSource:
-            ads: {}
-            resourceApiVersion: V3
-          routeConfigName: listener~80
-        statPrefix: http
-        useRemoteAddress: true
-    name: listener~80
-  name: listener~80
-  perConnectionBufferLimitBytes: 65536
+    name: listener~8080
+  name: listener~8080
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~3000
-- ignorePortInHostMatching: true
-  name: listener~80
+  name: listener~8080
+  virtualHosts:
+  - domains:
+    - '*'
+    name: listener~8080~*
+    routes:
+    - match:
+        prefix: /
+      name: listener~8080~*-route-0-httproute-httpbin-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_httpbin_8080
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:
     default/example-gateway:
@@ -79,7 +85,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 0
+      - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
@@ -107,31 +113,61 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-      - attachedRoutes: 0
-        conditions:
+  httpRoutes:
+    default/httpbin-route:
+      parents:
+      - conditions:
         - lastTransitionTime: null
-          message: Successfully accepted Listener
+          message: Successfully accepted Route
           reason: Accepted
           status: "True"
           type: Accepted
-        - lastTransitionTime: null
-          message: Successfully verified that Listener has no conflicts
-          reason: NoConflicts
-          status: "False"
-          type: Conflicted
         - lastTransitionTime: null
           message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+  policies:
+    BackendConfigPolicy/default/bcp-newer:
+      ancestors:
+      - ancestorRef:
+          group: ""
+          kind: Service
+          name: httpbin
+          namespace: default
+        conditions:
         - lastTransitionTime: null
-          message: Successfully programmed Listener
-          reason: Programmed
+          message: Policy accepted
+          reason: Valid
           status: "True"
-          type: Programmed
-        name: http2
-        supportedKinds:
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
-        - group: gateway.networking.k8s.io
-          kind: GRPCRoute
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    BackendConfigPolicy/default/bcp-older:
+      ancestors:
+      - ancestorRef:
+          group: ""
+          kind: Service
+          name: httpbin
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

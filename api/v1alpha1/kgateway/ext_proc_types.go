@@ -68,6 +68,12 @@ type ExtProcProvider struct {
 	// processing server.
 	// +optional
 	MetadataOptions *MetadataOptions `json:"metadataOptions,omitempty"`
+
+	// FilterStage specifies where in the HTTP filter chain the ExtProc filter
+	// should be placed. If not specified, the ExtProc filter defaults to running
+	// after the AuthZ stage.
+	// +optional
+	FilterStage *FilterStageSpec `json:"filterStage,omitempty"`
 }
 
 type ExtProcRouteCacheAction string

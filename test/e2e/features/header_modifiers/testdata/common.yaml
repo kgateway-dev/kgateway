@@ -5,8 +5,8 @@ metadata:
   name: svc-route-1
 spec:
   parentRefs:
-    - name: gw
-      namespace: default
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "example.com"
   rules:

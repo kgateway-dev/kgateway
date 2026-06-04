@@ -25,6 +25,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -318,7 +319,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			},
 			want: &envoyclusterv3.Cluster{
 				TransportSocket: &envoycorev3.TransportSocket{
-					Name: TransportSocketUpstreamProxyProtocol,
+					Name: wellknown.TransportSocketUpstreamProxyProtocol,
 					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
 							Config: &envoycorev3.ProxyProtocolConfig{
@@ -347,7 +348,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			},
 			want: &envoyclusterv3.Cluster{
 				TransportSocket: &envoycorev3.TransportSocket{
-					Name: TransportSocketUpstreamProxyProtocol,
+					Name: wellknown.TransportSocketUpstreamProxyProtocol,
 					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
 							Config: &envoycorev3.ProxyProtocolConfig{
@@ -386,7 +387,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			},
 			want: &envoyclusterv3.Cluster{
 				TransportSocket: &envoycorev3.TransportSocket{
-					Name: TransportSocketUpstreamProxyProtocol,
+					Name: wellknown.TransportSocketUpstreamProxyProtocol,
 					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
 							Config: &envoycorev3.ProxyProtocolConfig{

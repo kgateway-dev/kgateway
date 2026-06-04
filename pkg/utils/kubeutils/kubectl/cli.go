@@ -27,6 +27,10 @@ type Cli struct {
 	// kubeContext is the optional value of the context for a given kubernetes cluster
 	// If it is not supplied, no context will be included in the command
 	kubeContext string
+
+	// quiet suppresses the "+ <command>" trace line and the Cli's own status
+	// logging. Commands produced by a quiet Cli are run with WithQuiet().
+	quiet bool
 }
 
 // PodExecOptions describes the options used to execute a command in a pod
@@ -66,6 +70,15 @@ func (c *Cli) WithKubeContext(kubeContext string) *Cli {
 	return c
 }
 
+// WithQuiet returns a copy of the Cli that suppresses the "+ <command>" trace
+// line and the Cli's own status logging. It returns a copy rather than mutating
+// in place so callers can quiet a shared Cli without affecting other users of it.
+func (c *Cli) WithQuiet() *Cli {
+	clone := *c
+	clone.quiet = true
+	return &clone
+}
+
 // Command returns a Cmd that executes kubectl command, including the --context if it is defined
 // The Cmd sets the Stdout and Stderr to the receiver of the Cli
 func (c *Cli) Command(ctx context.Context, args ...string) cmdutils.Cmd {
@@ -73,11 +86,15 @@ func (c *Cli) Command(ctx context.Context, args ...string) cmdutils.Cmd {
 		args = append([]string{"--context", c.kubeContext}, args...)
 	}
 
-	return cmdutils.Command(ctx, "kubectl", args...).
+	cmd := cmdutils.Command(ctx, "kubectl", args...).
 		// For convenience, we set the stdout and stderr to the receiver
 		// This can still be overwritten by consumers who use the commands
 		WithStdout(c.receiver).
 		WithStderr(c.receiver)
+	if c.quiet {
+		cmd = cmd.WithQuiet()
+	}
+	return cmd
 }
 
 // RunCommand creates a Cmd and then runs it
@@ -280,11 +297,15 @@ func (c *Cli) DeploymentRolloutStatus(ctx context.Context, deployment string, ex
 // If an error was encountered while starting the PortForwarder, it is returned as well
 // NOTE: It is the callers responsibility to close this port-forward
 func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Option) (portforward.PortForwarder, error) {
-	options = append([]portforward.Option{
+	defaults := []portforward.Option{
 		// We define some default values, which users can then override
 		portforward.WithWriters(c.receiver, c.receiver),
 		portforward.WithKubeContext(c.kubeContext),
-	}, options...)
+	}
+	if c.quiet {
+		defaults = append(defaults, portforward.WithQuiet())
+	}
+	options = append(defaults, options...)
 
 	portForwarder := portforward.NewCliPortForwarder(options...)
 	err := portForwarder.Start(
@@ -435,7 +456,9 @@ func (c *Cli) GetPodsInNsWithLabel(ctx context.Context, namespace string, label 
 	// Clean up and check the output
 	podNamesString := strings.Trim(podStdOut.String(), "'")
 	if podNamesString == "" {
-		fmt.Printf("no %s pods found in namespace %s\n", label, namespace)
+		if !c.quiet {
+			fmt.Printf("no %s pods found in namespace %s\n", label, namespace)
+		}
 		return []string{}, nil
 	}
 
