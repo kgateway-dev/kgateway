@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Finds GitHub releases whose tag commit is an ancestor of a given commit.
-set -exuo pipefail
+set -euo pipefail
 
 usage() {
     echo "Usage: $(basename "$0") [-l|--latest [<commit>]] [-p|--previous [<commit>]]" >&2
@@ -62,7 +62,9 @@ find_release() {
         result=$(gh api graphql "${args[@]}")
 
         while IFS=$'\t' read -r tag sha; do
-            if git merge-base --is-ancestor "$sha" "$HEAD" 2>/dev/null; then
+            local cmp_status
+            cmp_status=$(gh api "repos/$OWNER/$REPO/compare/${sha}...${HEAD}" --jq '.status' 2>/dev/null) || true
+            if [[ "$cmp_status" == "ahead" || "$cmp_status" == "identical" ]]; then
                 echo "$tag"
                 return 0
             fi
