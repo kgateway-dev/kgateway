@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1000-SC9999
+
 # Finds GitHub releases whose tag commit is an ancestor of a given commit.
 set -euo pipefail
 
