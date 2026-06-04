@@ -128,7 +128,7 @@ func (s *testingSuite) TestUpgrade() {
 // This mirrors `git describe --tags --abbrev=0` but works in shallow checkouts where
 // tags are not fetched, by resolving HEAD via git then checking ancestry via the GitHub API.
 func FetchLatestRelease(ctx context.Context) (string, error) {
-	script := filepath.Join(fsutils.MustGetThisDir(), "../../../../hack", "get-release.sh")
+	script := filepath.Join(fsutils.GetModuleRoot(), "hack", "get-release.sh")
 	var stdout bytes.Buffer
 	cmd := cmdutils.Command(ctx, script, "--latest").
 		WithStdout(&stdout).
@@ -143,7 +143,7 @@ func FetchLatestRelease(ctx context.Context) (string, error) {
 // This mirrors `git describe --tags --abbrev=0` but works in shallow checkouts where
 // tags are not fetched, by resolving HEAD via git then checking ancestry via the GitHub API.
 func FetchPreviousMinorRelease(ctx context.Context) (string, error) {
-	script := filepath.Join(fsutils.MustGetThisDir(), "../../../../hack", "get-release.sh")
+	script := filepath.Join(fsutils.GetModuleRoot(), "hack", "get-release.sh")
 	var stdout bytes.Buffer
 	cmd := cmdutils.Command(ctx, script, "--previous").
 		WithStdout(&stdout).
