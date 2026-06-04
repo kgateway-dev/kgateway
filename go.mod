@@ -59,9 +59,6 @@ require (
 	github.com/PuerkitoBio/goquery v1.10.1
 	github.com/anthropics/anthropic-sdk-go v1.19.0
 	github.com/golang/protobuf v1.5.4
-	github.com/openai/openai-go v1.12.0
-	github.com/google/go-github/v67 v67.0.0
-	github.com/shurcooL/githubv4 v0.0.0-20191127044304-8f68eb5628d0
 	sigs.k8s.io/gateway-api/conformance v1.5.1
 )
 
@@ -119,7 +116,6 @@ require (
 	github.com/rhysd/actionlint v1.7.8 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rotisserie/eris v0.5.4 // indirect
-	github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f // indirect
 	github.com/solo-io/go-utils v0.20.2 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect

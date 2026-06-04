@@ -21,9 +21,12 @@ Name|Version|License
 [google/cel-go](https://github.com/google/cel-go)|v0.26.1|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
 <<<<<<< HEAD
+<<<<<<< HEAD
 [google/uuid](https://github.com/google/uuid)|v1.6.0|BSD 3-clause "New" or "Revised" License
 =======
 [go-github/v67](https://github.com/google/go-github)|v67.0.0|BSD 3-clause "New" or "Revised" License
+=======
+>>>>>>> aa072a876b (test: Upgrade test calls out to bash script to get releases (#14171))
 [gorilla/websocket](https://github.com/gorilla/websocket)|v1.5.4-0.20250319132907-e064f32e3674|BSD 2-clause "Simplified" License
 >>>>>>> 57324af0a2 (tests: Add upgrade tests (#14133))
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
@@ -40,8 +43,11 @@ Name|Version|License
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.3.2-0.20230802210424-5b0b94c5c0d3|MIT License
 =======
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.4.0|MIT License
+<<<<<<< HEAD
 [shurcooL/githubv4](https://github.com/shurcooL/githubv4)|v0.0.0-20191127044304-8f68eb5628d0|MIT License
 >>>>>>> 57324af0a2 (tests: Add upgrade tests (#14133))
+=======
+>>>>>>> aa072a876b (test: Upgrade test calls out to bash script to get releases (#14171))
 [spf13/afero](https://github.com/spf13/afero)|v1.15.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.2|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
@@ -55,7 +61,6 @@ Name|Version|License
 [x/time](https://golang.org/x/time)|v0.14.0|BSD 3-clause "New" or "Revised" License
 =======
 [x/exp](https://golang.org/x/exp)|v0.0.0-20260112195511-716be5621a96|BSD 3-clause "New" or "Revised" License
-[x/oauth2](https://golang.org/x/oauth2)|v0.36.0|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.20.0|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.15.0|BSD 3-clause "New" or "Revised" License
 >>>>>>> 57324af0a2 (tests: Add upgrade tests (#14133))
