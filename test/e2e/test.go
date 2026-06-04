@@ -218,12 +218,60 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 	i.AssertionsT(t).EventuallyGatewayInstallSucceeded(ctx)
 }
 
-// TODO implement this when we add upgrade tests
-// func (i *TestInstallation) InstallKgatewayFromRelease(ctx context.Context, version string) {
-// 	if testutils.ShouldSkipInstall() {
-// 		return
-// 	}
-// }
+// InstallKgatewayFromRelease installs the controller and CRD chart from the remote OCI registry.
+func (i *TestInstallation) InstallKgatewayFromRelease(ctx context.Context, t *testing.T, version string) {
+	i.InstallKgatewayCRDsFromRelease(ctx, t, version)
+	i.InstallKgatewayCoreFromRelease(ctx, t, version)
+}
+
+func (i *TestInstallation) InstallKgatewayCRDsFromRelease(ctx context.Context, t *testing.T, version string) {
+	if testutils.ShouldSkipInstallAndTeardown() {
+		return
+	}
+
+	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
+		if i.releaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
+			return
+		}
+	}
+
+	err := i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
+		ctx,
+		helmutils.InstallOpts{
+			CreateNamespace: true,
+			ReleaseName:     helmutils.CRDChartName,
+			Namespace:       i.Metadata.InstallNamespace,
+			ChartUri:        helmutils.DefaultCRDChartUri,
+			Version:         version,
+		})
+	i.AssertionsT(t).Require.NoError(err)
+}
+
+func (i *TestInstallation) InstallKgatewayCoreFromRelease(ctx context.Context, t *testing.T, version string) {
+	if testutils.ShouldSkipInstallAndTeardown() {
+		return
+	}
+
+	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
+		if i.releaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
+			return
+		}
+	}
+
+	err := i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
+		ctx,
+		helmutils.InstallOpts{
+			Namespace:       i.Metadata.InstallNamespace,
+			CreateNamespace: true,
+			ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
+			ReleaseName:     helmutils.ChartName,
+			ChartUri:        helmutils.DefaultChartUri,
+			Version:         version,
+			ExtraArgs:       i.Metadata.ExtraHelmArgs,
+		})
+	i.AssertionsT(t).Require.NoError(err)
+	i.AssertionsT(t).EventuallyGatewayInstallSucceeded(ctx)
+}
 
 func (i *TestInstallation) UninstallKgateway(ctx context.Context, t *testing.T) {
 	i.UninstallKgatewayCore(ctx, t)
