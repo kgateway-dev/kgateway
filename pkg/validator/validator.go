@@ -35,7 +35,7 @@ var (
 	//       fix the validation test. CI can override this with KGATEWAY_VALIDATOR_ENVOY_IMAGE to run
 	//       against an image built from the current branch instead of waiting for the published tag.
 	//       Also probably need to change this version when backporting or creating a new release
-	defaultEnvoyImage = "ghcr.io/kgateway-dev/envoy-wrapper:v2.3.0-main"
+	defaultEnvoyImage = "ghcr.io/kgateway-dev/envoy-wrapper:v2.3.1"
 	defaultDockerPull = "always"
 
 	validatorEnvoyImageEnvVar       = "KGATEWAY_VALIDATOR_ENVOY_IMAGE"
