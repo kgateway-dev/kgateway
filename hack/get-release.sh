@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Finds GitHub releases whose tag commit is an ancestor of a given commit.
-set -euo pipefail
+set -exuo pipefail
 
 usage() {
     echo "Usage: $(basename "$0") [-l|--latest [<commit>]] [-p|--previous [<commit>]]" >&2
