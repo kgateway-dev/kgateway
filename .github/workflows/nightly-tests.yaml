@@ -193,6 +193,8 @@ jobs:
           echo "Set controller.extraEnv.KGW_SKIP_GATEWAY_API_VERSION_CHECK=true in install/helm/kgateway/values.yaml"
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
+        with:
+          free-disk-space-aggressive: 'true'
       - name: Dotenv Action
         uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
         id: dotenv

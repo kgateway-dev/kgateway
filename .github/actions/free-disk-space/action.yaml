@@ -1,6 +1,34 @@
 name: Free Disk Space
 description: Free up disk space on GitHub Actions runners using customized settings
 
+inputs:
+  aggressive:
+    description: >-
+      Free up as much disk space as possible. This is slower (removes large
+      apt packages on top of the defaults) and is intended for jobs like the
+      nightly tests that need the extra headroom. Leave disabled for normal CI.
+    required: false
+    default: "false"
+  remove_dotnet:
+    description: "Remove .NET runtime/SDK"
+    required: false
+    default: "true"
+  remove_haskell:
+    description: "Remove Haskell (GHC) toolchain"
+    required: false
+    default: "true"
+  remove_android:
+    description: "Remove the Android SDK (~12.1GB)"
+    required: false
+    default: "true"
+  remove_packages:
+    description: >-
+      Space-separated list of apt packages to remove. Only used when not empty.
+      When 'aggressive' is true and this is left empty, a default large-package
+      list is removed (~7.5GB).
+    required: false
+    default: ""
+
 runs:
   using: composite
   steps:
@@ -10,11 +38,18 @@ runs:
       uses: endersonmenezes/free-disk-space@6c4664f43348c8c7011b53488d5ca65e9fc5cd1a
       with:
         rm_cmd: "rmz" # Faster rustacean deletion
-        remove_dotnet: true
-        remove_haskell: true
+        remove_dotnet: ${{ inputs.remove_dotnet }}
+        remove_haskell: ${{ inputs.remove_haskell }}
         # Is 12.1GB worth the time to you?
-        remove_android: true
+        remove_android: ${{ inputs.remove_android }}
 
-        # If 95s is worth it to you, you can free up 7.5GB with the following:
-        # remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*"
-        # remove_packages_one_command: true
+        # If 95s is worth it, free up ~7.5GB of apt packages. Enabled via the
+        # 'aggressive' input (e.g. nightly tests) or by passing an explicit
+        # 'remove_packages' list. An explicit list always wins over the default.
+        remove_packages: >-
+          ${{ inputs.remove_packages != ''
+              && inputs.remove_packages
+              || (inputs.aggressive == 'true'
+                  && 'azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*'
+                  || '') }}
+        remove_packages_one_command: true

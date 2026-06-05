@@ -7,6 +7,10 @@ inputs:
     description: 'directory to run setup steps in'
     required: false
     default: '.'
+  free-disk-space-aggressive:
+    description: 'free up as much disk space as possible (slower; for jobs like nightly tests that need extra headroom)'
+    required: false
+    default: 'false'
 
 outputs:
   go-build-cache-hit:
@@ -28,6 +32,8 @@ runs:
         access_token: ${{ github.token }}
     - name: Free disk space
       uses: ./.github/actions/free-disk-space
+      with:
+        aggressive: ${{ inputs.free-disk-space-aggressive }}
     - name: Set up Go
       id: setup-go
       uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
