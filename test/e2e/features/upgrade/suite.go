@@ -76,6 +76,22 @@ func (s *testingSuite) applyManifests() func() {
 	}
 }
 
+// verifyRequestWithTransformation verifies that the TrafficPolicy in setup.yaml is being applied:
+// the X-Upgrade-Test header must be set to "header-modified" on every response.
+func (s *testingSuite) verifyRequestWithTransformation() {
+	s.T().Helper()
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Headers:    map[string]any{"X-Upgrade-Test": "header-modified"},
+		},
+		curl.WithPath("/headers"),
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(8080),
+	)
+}
+
 // TestUpgrade upgrades both the CRD chart and the controller chart from the previously installed
 // remote release to the locally-built chart, then verifies the installation is healthy.
 func (s *testingSuite) TestUpgrade() {
@@ -88,13 +104,7 @@ func (s *testingSuite) TestUpgrade() {
 		Name:      "gateway",
 		Namespace: "default",
 	})
-	common.BaseGateway.Send(
-		s.T(),
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK},
-		curl.WithPath("/"),
-		curl.WithHostHeader("example.com"),
-		curl.WithPort(8080),
-	)
+	s.verifyRequestWithTransformation()
 	s.T().Logf(" ok")
 
 	s.TestInstallation.InstallKgatewayCRDsFromLocalChart(s.Ctx, s.T())
@@ -116,26 +126,14 @@ func (s *testingSuite) TestUpgrade() {
 
 	// Ensure the same gateway works after the upgrade.
 	s.T().Logf("checking connectivity with the gateway after the upgrade...")
-	common.BaseGateway.Send(
-		s.T(),
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK},
-		curl.WithPath("/"),
-		curl.WithHostHeader("example.com"),
-		curl.WithPort(8080),
-	)
+	s.verifyRequestWithTransformation()
 	s.T().Logf(" ok")
 
 	// Recreate the same gateway and ensure it works after the upgrade
 	cleanup()
 	s.applyManifests()
 	s.T().Logf("checking connectivity with the gateway after recreating it...")
-	common.BaseGateway.Send(
-		s.T(),
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK},
-		curl.WithPath("/"),
-		curl.WithHostHeader("example.com"),
-		curl.WithPort(8080),
-	)
+	s.verifyRequestWithTransformation()
 	s.T().Logf(" ok")
 }
 
