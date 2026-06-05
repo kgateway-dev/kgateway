@@ -307,7 +307,7 @@ func (i *TestInstallation) InstallKgatewayCRDsFromRelease(ctx context.Context, t
 			ChartUri:        helmutils.DefaultCRDChartUri,
 			Version:         version,
 		})
-	i.AssertionsT(t).Require.NoError(err)
+	i.Assertions.Require.NoError(err)
 }
 
 func (i *TestInstallation) InstallKgatewayCoreFromRelease(ctx context.Context, t *testing.T, version string) {
@@ -332,8 +332,8 @@ func (i *TestInstallation) InstallKgatewayCoreFromRelease(ctx context.Context, t
 			Version:         version,
 			ExtraArgs:       i.Metadata.ExtraHelmArgs,
 		})
-	i.AssertionsT(t).Require.NoError(err)
-	i.AssertionsT(t).EventuallyGatewayInstallSucceeded(ctx)
+	i.Assertions.Require.NoError(err)
+	i.Assertions.EventuallyGatewayInstallSucceeded(ctx)
 }
 
 func (i *TestInstallation) UninstallKgateway(ctx context.Context) {

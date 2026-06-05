@@ -57,9 +57,9 @@ func testUpgrade(t *testing.T, fromVersion string) {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {
-			testInstallation.PreFailHandler(ctx, t)
+			testInstallation.PreFailHandler(ctx)
 		}
-		testInstallation.UninstallKgateway(ctx, t)
+		testInstallation.UninstallKgateway(ctx)
 	})
 
 	// Install the released version from the remote OCI registry.
