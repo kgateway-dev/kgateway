@@ -423,6 +423,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	return nil
 }
 
+// runAsUpstreamFilter returns true if the filter stage is after route
 func runAsUpstreamFilter(filterStage filters.FilterStage[filters.WellKnownFilterStage]) bool {
 	return filterStage.RelativeTo > filters.RouteStage ||
 		(filterStage.RelativeTo == filters.RouteStage && filterStage.RelativeWeight > 0)
