@@ -40,7 +40,7 @@ spec:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       name: example-route
-  headerModifiers:
+  transformation:
     response:
       set:
         - name: X-Upgrade-Test
