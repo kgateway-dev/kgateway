@@ -423,6 +423,12 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	return nil
 }
 
+// runAsUpstreamFilter returns true if the filter stage is after route
+func runAsUpstreamFilter(filterStage filters.FilterStage[filters.WellKnownFilterStage]) bool {
+	return filterStage.RelativeTo > filters.RouteStage ||
+		(filterStage.RelativeTo == filters.RouteStage && filterStage.RelativeWeight > 0)
+}
+
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
@@ -460,6 +466,11 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 	// Add ExtProc filters for listener
 	for _, provider := range p.extProcPerProvider.Providers[fcc.FilterChainName] {
+		// Skip providers configured for after route — those are added as upstream http filters.
+		if runAsUpstreamFilter(provider.FilterStage) {
+			continue
+		}
+
 		extProcFilter := provider.Extension.ExtProc
 		if extProcFilter == nil {
 			continue
@@ -661,6 +672,44 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 	if len(stagedFilters) == 0 {
 		return nil, nil
+	}
+
+	return stagedFilters, nil
+}
+
+func (p *trafficPolicyPluginGwPass) UpstreamHttpFilters(_ ir.HttpFiltersContext, fcc ir.FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error) {
+	var stagedFilters []filters.StagedUpstreamHttpFilter
+
+	for _, provider := range p.extProcPerProvider.Providers[fcc.FilterChainName] {
+		// Only add extproc as upstream filter when stage is after route.
+		if !runAsUpstreamFilter(provider.FilterStage) {
+			continue
+		}
+
+		extProcFilter := provider.Extension.ExtProc
+		if extProcFilter == nil {
+			continue
+		}
+
+		// Use FilterStageSpec.Weight for filter chain ordering.
+		// PrecedenceWeight (from kgateway.dev/policy-weight annotation) is for
+		// policy merge ordering, not filter chain ordering, so it is not used here.
+		var weight int32
+		if provider.Extension.FilterStage != nil {
+			weight = provider.Extension.FilterStage.Weight
+		}
+
+		extProcName := extProcFilterName(provider.Name)
+		stagedExtProcFilter := filters.MustNewStagedUpstreamFilterWithWeight(
+			extProcName,
+			extProcFilter,
+			filters.UpstreamHTTPFilterStage{RelativeTo: filters.TransformationStage},
+			weight,
+		)
+
+		// handle the case where route level only should be fired
+		stagedExtProcFilter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, stagedExtProcFilter)
 	}
 
 	return stagedFilters, nil

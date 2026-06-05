@@ -693,6 +693,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy ExtProc with after-route stage becomes upstream http filter", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extproc-after-route-stage.yaml"},
+			outputFile: "traffic-policy/extproc-after-route-stage.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy ExtProc mixed stages before-AuthN in httpFilters and after-route in upstreamHttpFilters", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extproc-mixed-stages.yaml"},
+			outputFile: "traffic-policy/extproc-mixed-stages.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy Transformation deep merge", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/transformation-deep-merge.yaml"},
