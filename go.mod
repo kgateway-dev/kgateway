@@ -59,7 +59,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.10.1
 	github.com/anthropics/anthropic-sdk-go v1.19.0
 	github.com/golang/protobuf v1.5.4
-	github.com/kagent-dev/mockllm v0.0.5
+	github.com/kagent-dev/mockllm v0.0.2-0.20251008144831-c6105837f767
 	github.com/openai/openai-go v1.12.0
 )
 
@@ -112,7 +112,6 @@ require (
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/mattn/go-sqlite3 v1.14.28 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
-	github.com/openai/openai-go/v3 v3.15.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/redis/go-redis/v9 v9.14.1 // indirect

@@ -22,7 +22,7 @@ Name|Version|License
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
 [google/uuid](https://github.com/google/uuid)|v1.6.0|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
-[kagent-dev/mockllm](https://github.com/kagent-dev/mockllm)|v0.0.5|Apache License 2.0
+[kagent-dev/mockllm](https://github.com/kagent-dev/mockllm)|v0.0.2-0.20251008144831-c6105837f767|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.1.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.27.2|MIT License
