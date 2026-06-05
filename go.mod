@@ -59,7 +59,8 @@ require (
 	github.com/PuerkitoBio/goquery v1.10.1
 	github.com/anthropics/anthropic-sdk-go v1.19.0
 	github.com/golang/protobuf v1.5.4
-	sigs.k8s.io/gateway-api/conformance v1.5.1
+	github.com/kagent-dev/mockllm v0.0.5
+	github.com/openai/openai-go v1.12.0
 )
 
 require (
@@ -99,6 +100,7 @@ require (
 	github.com/godoc-lint/godoc-lint v0.11.1 // indirect
 	github.com/golangci/asciicheck v0.5.0 // indirect
 	github.com/golangci/swaggoswag v0.0.0-20250504205917-77f2aca3143e // indirect
+	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gostaticanalysis/nilerr v0.1.2 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
@@ -110,6 +112,7 @@ require (
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/mattn/go-sqlite3 v1.14.28 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
+	github.com/openai/openai-go/v3 v3.15.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/redis/go-redis/v9 v9.14.1 // indirect
@@ -135,6 +138,8 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
+	golang.org/x/oauth2 v0.35.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gotest.tools/gotestsum v1.13.0 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect

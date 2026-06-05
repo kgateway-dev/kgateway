@@ -20,17 +20,9 @@ Name|Version|License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License
 [google/cel-go](https://github.com/google/cel-go)|v0.26.1|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
-<<<<<<< HEAD
-<<<<<<< HEAD
 [google/uuid](https://github.com/google/uuid)|v1.6.0|BSD 3-clause "New" or "Revised" License
-=======
-[go-github/v67](https://github.com/google/go-github)|v67.0.0|BSD 3-clause "New" or "Revised" License
-=======
->>>>>>> aa072a876b (test: Upgrade test calls out to bash script to get releases (#14171))
-[gorilla/websocket](https://github.com/gorilla/websocket)|v1.5.4-0.20250319132907-e064f32e3674|BSD 2-clause "Simplified" License
->>>>>>> 57324af0a2 (tests: Add upgrade tests (#14133))
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
-[kagent-dev/mockllm](https://github.com/kagent-dev/mockllm)|v0.0.2-0.20251008144831-c6105837f767|Apache License 2.0
+[kagent-dev/mockllm](https://github.com/kagent-dev/mockllm)|v0.0.5|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.1.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.27.2|MIT License
@@ -39,15 +31,7 @@ Name|Version|License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.23.2|Apache License 2.0
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
 [prometheus/common](https://github.com/prometheus/common)|v0.67.5|Apache License 2.0
-<<<<<<< HEAD
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.3.2-0.20230802210424-5b0b94c5c0d3|MIT License
-=======
-[sergi/go-diff](https://github.com/sergi/go-diff)|v1.4.0|MIT License
-<<<<<<< HEAD
-[shurcooL/githubv4](https://github.com/shurcooL/githubv4)|v0.0.0-20191127044304-8f68eb5628d0|MIT License
->>>>>>> 57324af0a2 (tests: Add upgrade tests (#14133))
-=======
->>>>>>> aa072a876b (test: Upgrade test calls out to bash script to get releases (#14171))
 [spf13/afero](https://github.com/spf13/afero)|v1.15.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.2|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
@@ -56,14 +40,8 @@ Name|Version|License
 [go.uber.org/atomic](https://go.uber.org/atomic)|v1.11.0|MIT License
 [go.uber.org/mock](https://go.uber.org/mock)|v0.6.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.1|MIT License
-<<<<<<< HEAD
 [x/exp](https://golang.org/x/exp)|v0.0.0-20251209150349-8475f28825e9|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.14.0|BSD 3-clause "New" or "Revised" License
-=======
-[x/exp](https://golang.org/x/exp)|v0.0.0-20260112195511-716be5621a96|BSD 3-clause "New" or "Revised" License
-[x/sync](https://golang.org/x/sync)|v0.20.0|BSD 3-clause "New" or "Revised" License
-[x/time](https://golang.org/x/time)|v0.15.0|BSD 3-clause "New" or "Revised" License
->>>>>>> 57324af0a2 (tests: Add upgrade tests (#14133))
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260401024825-9d38bb4040a9|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.80.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.11|BSD 3-clause "New" or "Revised" License

@@ -61,7 +61,7 @@ func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 	// kgateway was installed from a released version by the parent test function.
 	// Verify it is healthy before attempting the upgrade.
-	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayInstallSucceeded(s.Ctx)
+	s.TestInstallation.Assertions.EventuallyGatewayInstallSucceeded(s.Ctx)
 }
 
 func (s *testingSuite) applyManifests() func() {
@@ -84,7 +84,7 @@ func (s *testingSuite) TestUpgrade() {
 	testutils.Cleanup(s.T(), cleanup)
 
 	s.T().Logf("checking connectivity with the gateway...")
-	common.SetupBaseGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+	common.SetupBaseGateway(s.Ctx, s.TestInstallation, types.NamespacedName{
 		Name:      "gateway",
 		Namespace: "default",
 	})
@@ -97,21 +97,21 @@ func (s *testingSuite) TestUpgrade() {
 	)
 	s.T().Logf(" ok")
 
-	s.TestInstallation.InstallKgatewayCRDsFromLocalChart(s.Ctx, s.T())
-	s.TestInstallation.InstallKgatewayCoreFromLocalChart(s.Ctx, s.T())
+	s.TestInstallation.InstallKgatewayCRDsFromLocalChart(s.Ctx)
+	s.TestInstallation.InstallKgatewayCoreFromLocalChart(s.Ctx)
 
 	// Verify kgateway control plane upgraded successfully.
 	s.T().Logf("checking the kgateway deployment && pod...")
-	s.TestInstallation.AssertionsT(s.T()).EventuallyKgatewayUpgradeSucceeded(s.Ctx, version)
+	s.TestInstallation.Assertions.EventuallyKgatewayUpgradeSucceeded(s.Ctx, version)
 	s.T().Logf(" ok")
 
 	// Ensure the proxy data plane was upgraded too: the Deployment must finish rolling out
 	// (old-revision proxy pods fully scaled down) and every proxy pod must run the new image
 	s.T().Logf("checking the proxy deployment...")
-	s.TestInstallation.AssertionsT(s.T()).EventuallyDeploymentsRolledOut(s.Ctx, proxyNamespace, proxyLabelSelector)
+	s.TestInstallation.Assertions.EventuallyDeploymentsRolledOut(s.Ctx, proxyNamespace, proxyLabelSelector)
 	s.T().Logf(" ok")
 	s.T().Logf("checking the proxy image tag...")
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsHaveImageVersion(s.Ctx, proxyNamespace, proxyLabelSelector, version)
+	s.TestInstallation.Assertions.EventuallyPodsHaveImageVersion(s.Ctx, proxyNamespace, proxyLabelSelector, version)
 	s.T().Logf(" ok")
 
 	// Ensure the same gateway works after the upgrade.
