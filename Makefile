@@ -769,9 +769,11 @@ EXTPROC_SERVER_VERSION=0.0.1
 EXTPROC_SERVER_SOURCES=$(shell find $(EXTPROC_SERVER_DIR) -name '*.go')
 
 $(EXTPROC_SERVER_OUTPUT_DIR)/extproc-server-linux-$(GOARCH): $(EXTPROC_SERVER_SOURCES)
+	@mkdir -p $(@D)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./$(EXTPROC_SERVER_DIR)
 
 $(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server: $(EXTPROC_SERVER_DIR)/Dockerfile
+	@mkdir -p $(@D)
 	cp $< $@
 
 $(EXTPROC_SERVER_OUTPUT_DIR)/.docker-stamp-$(EXTPROC_SERVER_VERSION)-$(GOARCH): $(EXTPROC_SERVER_OUTPUT_DIR)/extproc-server-linux-$(GOARCH) $(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server
