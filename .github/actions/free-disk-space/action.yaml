@@ -18,9 +18,11 @@ inputs:
     required: false
     default: "true"
   remove_android:
-    description: "Remove the Android SDK (~12.1GB)"
+    description: >-
+      Remove the Android SDK (~12.1GB). Leave empty to follow 'aggressive'
+      (removed only when aggressive is true); set "true"/"false" to force.
     required: false
-    default: "true"
+    default: ""
   remove_packages:
     description: >-
       Space-separated list of apt packages to remove. Only used when not empty.
@@ -35,13 +37,18 @@ runs:
     - name: Free Disk Space
       # Note: in the future if we use remote runners, we can conditionally run this step
       # based on CPU count.
-      uses: endersonmenezes/free-disk-space@6c4664f43348c8c7011b53488d5ca65e9fc5cd1a
+      uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3.2.2
       with:
         rm_cmd: "rmz" # Faster rustacean deletion
         remove_dotnet: ${{ inputs.remove_dotnet }}
         remove_haskell: ${{ inputs.remove_haskell }}
-        # Is 12.1GB worth the time to you?
-        remove_android: ${{ inputs.remove_android }}
+        # Is 12.1GB worth the time to you? Follow 'aggressive' unless the caller
+        # forces it with an explicit "true"/"false". Keeps normal CI fast and
+        # only pays the cost for jobs like nightly that opt into aggressive.
+        remove_android: >-
+          ${{ inputs.remove_android != ''
+              && inputs.remove_android
+              || (inputs.aggressive == 'true' && 'true' || 'false') }}
 
         # If 95s is worth it, free up ~7.5GB of apt packages. Enabled via the
         # 'aggressive' input (e.g. nightly tests) or by passing an explicit
