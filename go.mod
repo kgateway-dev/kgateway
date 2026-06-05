@@ -9,7 +9,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2
 	github.com/envoyproxy/go-control-plane v0.14.0
 	github.com/envoyproxy/go-control-plane/contrib v1.36.1-0.20260418153000-ae8637bdda9d
-	github.com/envoyproxy/go-control-plane/envoy v1.37.1-0.20260418153000-ae8637bdda9d
+	github.com/envoyproxy/go-control-plane/envoy v1.37.1-0.20260423144615-74587d6f5036
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
