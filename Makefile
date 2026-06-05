@@ -121,6 +121,13 @@ $(BUG_REPORT_DIR):
 # Base Alpine image used for SDS and dummy-idp containers. Exported for use in goreleaser.yaml.
 export ALPINE_BASE_IMAGE ?= alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
 
+# Distroless glibc base used for the kgateway controller container. Exported for use in goreleaser.yaml.
+# Tracked as :latest (unpinned) on purpose: this distroless image has no package manager, so the only way
+# to receive Chainguard's CVE fixes is to pull a newer build. A pinned digest would freeze CVEs in place and
+# may be garbage-collected on the free tier. Release builds set DOCKER_NO_CACHE=1, which adds --pull so each
+# release picks up the freshly patched image.
+export DISTROLESS_BASE_IMAGE ?= cgr.dev/chainguard/glibc-dynamic:latest
+
 GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
@@ -764,6 +771,7 @@ $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT
 	$(BUILDX_BUILD) --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
+		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		$(CONTROLLER_CACHE_FROM) \
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 	@touch $@

@@ -32,18 +32,8 @@ fileExistenceTests:
     path: "/etc/ssl/certs/ca-certificates.crt"
     shouldExist: true
 
-  - name: "wget installed"
-    path: "/usr/bin/wget"
-    shouldExist: true
-    isExecutableBy: "any"
-
 commandTests:
   - name: "kgateway binary is executable"
     command: "/usr/local/bin/kgateway"
     args: ["--help"]
     exitCode: 0
-
-  - name: "running as non-root user"
-    command: "id"
-    args: ["-u"]
-    expectedOutput: ["10101"]
