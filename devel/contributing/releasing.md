@@ -48,6 +48,7 @@ If the release branch **does not** exist, create one:
     ```
 
 - On `main`, bump `ROLLING_MAIN_VERSION` in the [Makefile](../../Makefile) to the next minor's rolling tag via a PR (for example, after cutting `v2.3.x`, set it to `v2.4.0-main`), since `main` now tracks the next minor.
+- On `main`, bump `gateway-api-version` in the [e2e test workflow](https://github.com/kgateway-dev/kgateway/blob/96403169afb6b0f4becb864b42d22fcf000033f7/.github/workflows/e2e.yaml#L129) to 1 version lower than what is used in go.mod (since this is an upgrade test)
 
 - Update the OSV security scan workflow branch allowlist in [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml) to include the new release branch, and drop any branch that is no longer LTS.
   This workflow only scans an explicit set of branches, so each newly cut release branch must be added to both the scheduled scan matrix and the `workflow_dispatch` branch options.
