@@ -423,6 +423,11 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	return nil
 }
 
+func runAsUpstreamFilter(filterStage filters.FilterStage[filters.WellKnownFilterStage]) bool {
+	return filterStage.RelativeTo > filters.RouteStage ||
+		(filterStage.RelativeTo == filters.RouteStage && filterStage.RelativeWeight > 0)
+}
+
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
@@ -461,8 +466,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	// Add ExtProc filters for listener
 	for _, provider := range p.extProcPerProvider.Providers[fcc.FilterChainName] {
 		// Skip providers configured for after route — those are added as upstream http filters.
-		if provider.FilterStage.RelativeTo > filters.RouteStage ||
-			(provider.FilterStage.RelativeTo == filters.RouteStage && provider.FilterStage.RelativeWeight > 0) {
+		if runAsUpstreamFilter(provider.FilterStage) {
 			continue
 		}
 
@@ -677,8 +681,7 @@ func (p *trafficPolicyPluginGwPass) UpstreamHttpFilters(_ ir.HttpFiltersContext,
 
 	for _, provider := range p.extProcPerProvider.Providers[fcc.FilterChainName] {
 		// Only add extproc as upstream filter when stage is after route.
-		if provider.FilterStage.RelativeTo < filters.RouteStage ||
-			(provider.FilterStage.RelativeTo == filters.RouteStage && provider.FilterStage.RelativeWeight <= 0) {
+		if !runAsUpstreamFilter(provider.FilterStage) {
 			continue
 		}
 
