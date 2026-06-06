@@ -18,15 +18,17 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-// These tests pin the contract of NewPerClientEnvoyClusters: the set of clusters
-// returned for a connected client must track (uccCol membership) x (finalBackends),
-// across any sequence of client/backend add/remove. They are the regression net for
-// the #14184 re-keying (per-client clusters are primary-keyed on the connected-client
-// collection). The concurrent-churn test additionally targets the stranding race: a
-// client that remains connected must never be left permanently without its clusters
-// while other clients churn.
+// Contract and concurrency coverage for NewPerClientEnvoyClusters (the per-client
+// CDS collection). These pin the invariant that the clusters returned for a
+// connected client track (connected-client set) x (finalBackends) across any
+// sequence of client/backend add/remove, plus that a client which stays connected
+// is never left permanently without its clusters while other clients churn.
+//
+// Added while investigating #14184 (proxies stranded with empty per-client config).
+// They document the behavior the collection must preserve and pass against the
+// current implementation; they are not a reproduction of that issue.
 
-func rekeyStubTranslator() *irtranslator.BackendTranslator {
+func clustersTestTranslator() *irtranslator.BackendTranslator {
 	return &irtranslator.BackendTranslator{
 		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
 			{Group: "", Kind: "Service"}: {
@@ -39,21 +41,21 @@ func rekeyStubTranslator() *irtranslator.BackendTranslator {
 	}
 }
 
-func rekeyBackend(name string) *ir.BackendObjectIR {
+func clustersTestBackend(name string) *ir.BackendObjectIR {
 	b := ir.NewBackendObjectIR(ir.ObjectSource{
 		Group:     "",
 		Kind:      "Service",
 		Namespace: "default",
 		Name:      name,
-	}, 443, "")
+	}, 443, "", "")
 	return &b
 }
 
-func rekeyClient(role string) ir.UniqlyConnectedClient {
-	return ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
+func clustersTestClient(role string) ir.UniquelyConnectedClient {
+	return ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
 }
 
-func clusterNamesForClient(c PerClientEnvoyClusters, ucc ir.UniqlyConnectedClient) []string {
+func clusterNamesForClient(c PerClientEnvoyClusters, ucc ir.UniquelyConnectedClient) []string {
 	fetched := c.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 	names := make([]string, 0, len(fetched))
 	for _, f := range fetched {
@@ -63,11 +65,11 @@ func clusterNamesForClient(c PerClientEnvoyClusters, ucc ir.UniqlyConnectedClien
 	return names
 }
 
-func newRekeyFixture(
+func newClustersTestFixture(
 	t *testing.T,
-	clients []ir.UniqlyConnectedClient,
+	clients []ir.UniquelyConnectedClient,
 	backends []*ir.BackendObjectIR,
-) (krt.StaticCollection[ir.UniqlyConnectedClient], krt.StaticCollection[*ir.BackendObjectIR], PerClientEnvoyClusters) {
+) (krt.StaticCollection[ir.UniquelyConnectedClient], krt.StaticCollection[*ir.BackendObjectIR], PerClientEnvoyClusters) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
@@ -75,11 +77,11 @@ func newRekeyFixture(
 
 	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
 	finalBackends := krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
-	clusters := NewPerClientEnvoyClusters(ctx, krtopts, rekeyStubTranslator(), finalBackends, uccs)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, clustersTestTranslator(), finalBackends, uccs)
 	return uccs, finalBackends, clusters
 }
 
-func eventuallyClusterCount(t *testing.T, c PerClientEnvoyClusters, ucc ir.UniqlyConnectedClient, want int) {
+func eventuallyClusterCount(t *testing.T, c PerClientEnvoyClusters, ucc ir.UniquelyConnectedClient, want int) {
 	t.Helper()
 	require.Eventuallyf(t, func() bool {
 		return len(clusterNamesForClient(c, ucc)) == want
@@ -88,26 +90,26 @@ func eventuallyClusterCount(t *testing.T, c PerClientEnvoyClusters, ucc ir.Uniql
 }
 
 // A single connected client receives a cluster for every backend.
-func TestRekeyClusters_ClientGetsAllBackends(t *testing.T) {
-	ucc := rekeyClient("role-a")
-	_, _, clusters := newRekeyFixture(t,
-		[]ir.UniqlyConnectedClient{ucc},
-		[]*ir.BackendObjectIR{rekeyBackend("b1"), rekeyBackend("b2")},
+func TestPerClientClusters_ClientGetsAllBackends(t *testing.T) {
+	ucc := clustersTestClient("role-a")
+	_, _, clusters := newClustersTestFixture(t,
+		[]ir.UniquelyConnectedClient{ucc},
+		[]*ir.BackendObjectIR{clustersTestBackend("b1"), clustersTestBackend("b2")},
 	)
 	eventuallyClusterCount(t, clusters, ucc, 2)
 }
 
-// The core #14184 property: a client that connects AFTER the collection is built
-// must still get clusters for every backend.
-func TestRekeyClusters_NewClientGetsClustersAfterConnect(t *testing.T) {
-	first := rekeyClient("role-first")
-	uccs, _, clusters := newRekeyFixture(t,
-		[]ir.UniqlyConnectedClient{first},
-		[]*ir.BackendObjectIR{rekeyBackend("b1"), rekeyBackend("b2"), rekeyBackend("b3")},
+// A client that connects AFTER the collection is built must still get clusters for
+// every backend.
+func TestPerClientClusters_NewClientGetsClustersAfterConnect(t *testing.T) {
+	first := clustersTestClient("role-first")
+	uccs, _, clusters := newClustersTestFixture(t,
+		[]ir.UniquelyConnectedClient{first},
+		[]*ir.BackendObjectIR{clustersTestBackend("b1"), clustersTestBackend("b2"), clustersTestBackend("b3")},
 	)
 	eventuallyClusterCount(t, clusters, first, 3)
 
-	late := rekeyClient("role-late")
+	late := clustersTestClient("role-late")
 	uccs.UpdateObject(late)
 	eventuallyClusterCount(t, clusters, late, 3)
 	// existing client unaffected
@@ -115,26 +117,26 @@ func TestRekeyClusters_NewClientGetsClustersAfterConnect(t *testing.T) {
 }
 
 // Adding a backend propagates to every connected client.
-func TestRekeyClusters_BackendAddedPropagatesToAllClients(t *testing.T) {
-	a, b := rekeyClient("role-a"), rekeyClient("role-b")
-	_, finalBackends, clusters := newRekeyFixture(t,
-		[]ir.UniqlyConnectedClient{a, b},
-		[]*ir.BackendObjectIR{rekeyBackend("b1")},
+func TestPerClientClusters_BackendAddedPropagatesToAllClients(t *testing.T) {
+	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
+	_, finalBackends, clusters := newClustersTestFixture(t,
+		[]ir.UniquelyConnectedClient{a, b},
+		[]*ir.BackendObjectIR{clustersTestBackend("b1")},
 	)
 	eventuallyClusterCount(t, clusters, a, 1)
 	eventuallyClusterCount(t, clusters, b, 1)
 
-	finalBackends.UpdateObject(rekeyBackend("b2"))
+	finalBackends.UpdateObject(clustersTestBackend("b2"))
 	eventuallyClusterCount(t, clusters, a, 2)
 	eventuallyClusterCount(t, clusters, b, 2)
 }
 
 // Removing a client clears its rows and leaves other clients untouched.
-func TestRekeyClusters_ClientRemovedClearsRowsOthersUnaffected(t *testing.T) {
-	a, b := rekeyClient("role-a"), rekeyClient("role-b")
-	uccs, _, clusters := newRekeyFixture(t,
-		[]ir.UniqlyConnectedClient{a, b},
-		[]*ir.BackendObjectIR{rekeyBackend("b1"), rekeyBackend("b2")},
+func TestPerClientClusters_ClientRemovedClearsRowsOthersUnaffected(t *testing.T) {
+	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
+	uccs, _, clusters := newClustersTestFixture(t,
+		[]ir.UniquelyConnectedClient{a, b},
+		[]*ir.BackendObjectIR{clustersTestBackend("b1"), clustersTestBackend("b2")},
 	)
 	eventuallyClusterCount(t, clusters, a, 2)
 	eventuallyClusterCount(t, clusters, b, 2)
@@ -145,11 +147,11 @@ func TestRekeyClusters_ClientRemovedClearsRowsOthersUnaffected(t *testing.T) {
 }
 
 // Each client's index entry returns only that client's clusters.
-func TestRekeyClusters_IndexIsolation(t *testing.T) {
-	a, b := rekeyClient("role-a"), rekeyClient("role-b")
-	_, _, clusters := newRekeyFixture(t,
-		[]ir.UniqlyConnectedClient{a, b},
-		[]*ir.BackendObjectIR{rekeyBackend("b1"), rekeyBackend("b2")},
+func TestPerClientClusters_IndexIsolation(t *testing.T) {
+	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
+	_, _, clusters := newClustersTestFixture(t,
+		[]ir.UniquelyConnectedClient{a, b},
+		[]*ir.BackendObjectIR{clustersTestBackend("b1"), clustersTestBackend("b2")},
 	)
 	eventuallyClusterCount(t, clusters, a, 2)
 	for _, fc := range clusters.FetchClustersForClient(krt.TestingDummyContext{}, a) {
@@ -161,11 +163,11 @@ func TestRekeyClusters_IndexIsolation(t *testing.T) {
 }
 
 // Removing then re-adding the same client restores its full cluster set.
-func TestRekeyClusters_ReAddClientRestoresRows(t *testing.T) {
-	a, b := rekeyClient("role-a"), rekeyClient("role-b")
-	uccs, _, clusters := newRekeyFixture(t,
-		[]ir.UniqlyConnectedClient{a, b},
-		[]*ir.BackendObjectIR{rekeyBackend("b1"), rekeyBackend("b2")},
+func TestPerClientClusters_ReAddClientRestoresRows(t *testing.T) {
+	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
+	uccs, _, clusters := newClustersTestFixture(t,
+		[]ir.UniquelyConnectedClient{a, b},
+		[]*ir.BackendObjectIR{clustersTestBackend("b1"), clustersTestBackend("b2")},
 	)
 	eventuallyClusterCount(t, clusters, b, 2)
 	uccs.DeleteObject(b.ResourceName())
@@ -174,28 +176,28 @@ func TestRekeyClusters_ReAddClientRestoresRows(t *testing.T) {
 	eventuallyClusterCount(t, clusters, b, 2)
 }
 
-// Stranding race: a client that stays connected must never be left permanently
-// without its clusters while other clients and backends churn. Run with -race.
-func TestRekeyClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T) {
-	stable := rekeyClient("role-stable")
+// A client that stays connected must never be left permanently without its clusters
+// while other clients and backends churn. Run with -race.
+func TestPerClientClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T) {
+	stable := clustersTestClient("role-stable")
 	backendNames := []string{"b1", "b2", "b3", "b4"}
 	backends := make([]*ir.BackendObjectIR, 0, len(backendNames))
 	for _, n := range backendNames {
-		backends = append(backends, rekeyBackend(n))
+		backends = append(backends, clustersTestBackend(n))
 	}
-	uccs, finalBackends, clusters := newRekeyFixture(t,
-		[]ir.UniqlyConnectedClient{stable}, backends)
+	uccs, finalBackends, clusters := newClustersTestFixture(t,
+		[]ir.UniquelyConnectedClient{stable}, backends)
 	eventuallyClusterCount(t, clusters, stable, len(backendNames))
 
 	stop := make(chan struct{})
 	var wg sync.WaitGroup
 
-	// Churn transient clients: rapid connect/disconnect of identical-then-gone clients.
+	// Churn transient clients: rapid connect/disconnect.
 	for g := 0; g < 6; g++ {
 		wg.Add(1)
 		go func(g int) {
 			defer wg.Done()
-			c := rekeyClient(fmt.Sprintf("role-churn-%d", g))
+			c := clustersTestClient(fmt.Sprintf("role-churn-%d", g))
 			for {
 				select {
 				case <-stop:
@@ -217,7 +219,7 @@ func TestRekeyClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T) {
 				return
 			default:
 			}
-			finalBackends.UpdateObject(rekeyBackend("b4"))
+			finalBackends.UpdateObject(clustersTestBackend("b4"))
 		}
 	}()
 
@@ -225,7 +227,6 @@ func TestRekeyClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T) {
 	close(stop)
 	wg.Wait()
 
-	// The stable client must have all its backends once churn settles. Permanent
-	// stranding (the #14184 failure) shows up here as a count that never recovers.
+	// The stable client must have all its backends once churn settles.
 	eventuallyClusterCount(t, clusters, stable, len(backendNames))
 }

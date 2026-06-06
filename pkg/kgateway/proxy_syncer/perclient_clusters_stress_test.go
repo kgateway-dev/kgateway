@@ -13,31 +13,32 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-// stressUccSource mirrors the production uccCol (krtcollections.callbacksCollection):
-// an in-memory map mutated from outside KRT (there: xDS stream callbacks) and surfaced
-// via NewManyFromNothing + a RecomputeTrigger. This is the collection shape the
-// per-client collections depend on, and where the #14184 stranding is hypothesized to
-// originate. We reproduce it faithfully here so the stress test exercises the real
-// propagation path, not a StaticCollection (which serializes events).
+// stressUccSource mirrors the production connected-client collection
+// (krtcollections.callbacksCollection): an in-memory map mutated from outside KRT
+// (there: xDS stream callbacks) and surfaced via NewManyFromNothing + a
+// RecomputeTrigger. The per-client collections depend on this collection shape, so
+// reproducing it faithfully here exercises the real propagation path rather than a
+// StaticCollection (which serializes events). This is the path along which #14184
+// (a connected client stranded with empty per-client config) would arise.
 type stressUccSource struct {
 	mu      sync.RWMutex
-	clients map[string]ir.UniqlyConnectedClient
+	clients map[string]ir.UniquelyConnectedClient
 	trigger *krt.RecomputeTrigger
 }
 
-func newStressUccSource(krtopts krtutil.KrtOptions, initial []ir.UniqlyConnectedClient) (*stressUccSource, krt.Collection[ir.UniqlyConnectedClient]) {
+func newStressUccSource(krtopts krtutil.KrtOptions, initial []ir.UniquelyConnectedClient) (*stressUccSource, krt.Collection[ir.UniquelyConnectedClient]) {
 	s := &stressUccSource{
-		clients: make(map[string]ir.UniqlyConnectedClient),
+		clients: make(map[string]ir.UniquelyConnectedClient),
 		trigger: krt.NewRecomputeTrigger(true),
 	}
 	for _, c := range initial {
 		s.clients[c.ResourceName()] = c
 	}
-	col := krt.NewManyFromNothing(func(ctx krt.HandlerContext) []ir.UniqlyConnectedClient {
+	col := krt.NewManyFromNothing(func(ctx krt.HandlerContext) []ir.UniquelyConnectedClient {
 		s.trigger.MarkDependant(ctx)
 		s.mu.RLock()
 		defer s.mu.RUnlock()
-		out := make([]ir.UniqlyConnectedClient, 0, len(s.clients))
+		out := make([]ir.UniquelyConnectedClient, 0, len(s.clients))
 		for _, c := range s.clients {
 			out = append(out, c)
 		}
@@ -46,7 +47,7 @@ func newStressUccSource(krtopts krtutil.KrtOptions, initial []ir.UniqlyConnected
 	return s, col
 }
 
-func (s *stressUccSource) add(c ir.UniqlyConnectedClient) {
+func (s *stressUccSource) add(c ir.UniquelyConnectedClient) {
 	s.mu.Lock()
 	s.clients[c.ResourceName()] = c
 	s.mu.Unlock()
@@ -60,34 +61,32 @@ func (s *stressUccSource) del(rn string) {
 	s.trigger.TriggerRecomputation()
 }
 
-// Faithful stranding repro: a stable client whose Envoy "blips" (del+re-add of the
-// SAME client) concurrently with other-client churn and backend churn, all driven
-// through the real trigger collection. After churn settles and the stable client is
-// present, it must have a cluster for every backend. Permanent stranding (#14184)
-// shows up as a stable client that is in uccCol yet has zero clusters that never
-// recover. Run with -race.
-func TestRekeyClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
+// A stable client whose Envoy "blips" (delete + re-add of the SAME client)
+// concurrently with other-client churn and backend churn, all driven through the
+// real trigger collection. After churn settles and the stable client is present, it
+// must have a cluster for every backend. Run with -race.
+func TestPerClientClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
-	stable := rekeyClient("role-stable")
-	src, uccs := newStressUccSource(krtopts, []ir.UniqlyConnectedClient{stable})
+	stable := clustersTestClient("role-stable")
+	src, uccs := newStressUccSource(krtopts, []ir.UniquelyConnectedClient{stable})
 
 	backendNames := []string{"b1", "b2", "b3", "b4", "b5"}
 	backends := make([]*ir.BackendObjectIR, 0, len(backendNames))
 	for _, n := range backendNames {
-		backends = append(backends, rekeyBackend(n))
+		backends = append(backends, clustersTestBackend(n))
 	}
 	finalBackends := krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
 
-	clusters := NewPerClientEnvoyClusters(ctx, krtopts, rekeyStubTranslator(), finalBackends, uccs)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, clustersTestTranslator(), finalBackends, uccs)
 	eventuallyClusterCount(t, clusters, stable, len(backendNames))
 
 	stop := make(chan struct{})
 	var wg sync.WaitGroup
 
-	// Blip the stable client: rapid del + re-add of the identical client.
+	// Blip the stable client: rapid delete + re-add of the identical client.
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -107,7 +106,7 @@ func TestRekeyClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 		wg.Add(1)
 		go func(g int) {
 			defer wg.Done()
-			c := rekeyClient(fmt.Sprintf("role-churn-%d", g))
+			c := clustersTestClient(fmt.Sprintf("role-churn-%d", g))
 			for {
 				select {
 				case <-stop:
@@ -130,7 +129,7 @@ func TestRekeyClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 				return
 			default:
 			}
-			finalBackends.UpdateObject(rekeyBackend("b5"))
+			finalBackends.UpdateObject(clustersTestBackend("b5"))
 		}
 	}()
 
