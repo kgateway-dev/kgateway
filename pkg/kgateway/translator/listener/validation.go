@@ -316,9 +316,10 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 			Message: "No valid listeners",
 		})
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   gwv1.GatewayConditionProgrammed,
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.GatewayReasonInvalid,
+			Type:    gwv1.GatewayConditionProgrammed,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.GatewayReasonInvalid,
+			Message: "No valid listeners",
 		})
 		return validListeners
 	}
@@ -482,9 +483,10 @@ func rejectInvalidListener(parentReporter reports.GatewayReporter, listener ir.L
 	// In case any listeners are invalid, this status should be set even if the gateway / listenerset is accepted
 	// https://github.com/kubernetes-sigs/gateway-api/blob/v1.5.1/apis/v1/listenerset_types.go#L370
 	parentReporter.SetCondition(reports.GatewayCondition{
-		Type:   gwv1.GatewayConditionAccepted,
-		Status: metav1.ConditionTrue,
-		Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonListenersNotValid),
+		Type:    gwv1.GatewayConditionAccepted,
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.GatewayConditionReason(gwv1.ListenerSetReasonListenersNotValid),
+		Message: "One or more listeners are invalid",
 	})
 }
 
@@ -512,9 +514,10 @@ func rejectConflictedListener(parentReporter reports.GatewayReporter, listener i
 	// In case any listeners are invalid, this status should be set even if the gateway / listenerset is accepted
 	// https://github.com/kubernetes-sigs/gateway-api/blob/v1.5.1/apis/v1/listenerset_types.go#L370
 	parentReporter.SetCondition(reports.GatewayCondition{
-		Type:   gwv1.GatewayConditionAccepted,
-		Status: metav1.ConditionTrue,
-		Reason: gwv1.GatewayConditionReason(gwv1.ListenerSetReasonListenersNotValid),
+		Type:    gwv1.GatewayConditionAccepted,
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.GatewayConditionReason(gwv1.ListenerSetReasonListenersNotValid),
+		Message: "One or more listeners are invalid",
 	})
 }
 
