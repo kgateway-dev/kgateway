@@ -196,11 +196,19 @@ type AuthorizationResponse struct {
 
 	// HeadersToClient specifies which headers from the authorization response
 	// should be forwarded back to the downstream client when the request is denied.
-	// This is required for redirect-based flows (e.g. oauth2-proxy returning 302 + Location)
-	// so that the redirect Location header reaches the browser.
+	// Maps to Envoy's allowed_client_headers. Required for redirect-based flows
+	// (e.g. oauth2-proxy returning 302 + Location) so that the redirect Location
+	// header reaches the browser on denial.
 	// Common examples: ["location", "set-cookie", "www-authenticate"]
 	// +optional
 	HeadersToClient []string `json:"headersToClient,omitempty"`
+
+	// HeadersToClientOnSuccess specifies which headers from the authorization response
+	// should be forwarded back to the downstream client when the request is allowed.
+	// Maps to Envoy's allowed_client_headers_on_success.
+	// Common examples: ["set-cookie", "x-auth-token"]
+	// +optional
+	HeadersToClientOnSuccess []string `json:"headersToClientOnSuccess,omitempty"`
 }
 
 type ExtSvcRetryPolicy struct {
