@@ -72,7 +72,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: unknown backend kind
+          message: unknown backend kind "unknown" in group "unknown"
           reason: InvalidKind
           status: "False"
           type: ResolvedRefs

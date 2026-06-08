@@ -59,6 +59,25 @@ func (e *BackendPortNotAllowedError) Error() string {
 	return fmt.Sprintf("BackendRef to \"%s\" includes a port. Do not specify a port when referencing a Backend resource, as it defines its own port configuration", e.BackendName)
 }
 
+// UnknownBackendKindError indicates that a backend reference used a Group/Kind
+// that is not a supported backend type. It reports errors.Is true against
+// ErrUnknownBackendKind so existing error classification keeps working, while
+// carrying the referenced Group/Kind for a more descriptive status message.
+type UnknownBackendKindError struct {
+	GroupKind schema.GroupKind
+}
+
+func (e *UnknownBackendKindError) Error() string {
+	if e.GroupKind.Group == "" {
+		return fmt.Sprintf("unknown backend kind %q", e.GroupKind.Kind)
+	}
+	return fmt.Sprintf("unknown backend kind %q in group %q", e.GroupKind.Kind, e.GroupKind.Group)
+}
+
+func (e *UnknownBackendKindError) Is(target error) bool {
+	return target == ErrUnknownBackendKind
+}
+
 // ListenerCollection defines an interface that returns the listeners belonging to the implementing struct
 type ListenerCollection interface {
 	GetListeners() []gwv1.Listener
@@ -331,7 +350,7 @@ func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.Gr
 	}
 
 	if !didFetch {
-		return nil, ErrUnknownBackendKind
+		return nil, &UnknownBackendKindError{GroupKind: gk}
 	}
 
 	var out *ir.BackendObjectIR

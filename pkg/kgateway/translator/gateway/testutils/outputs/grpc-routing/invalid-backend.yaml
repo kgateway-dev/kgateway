@@ -94,7 +94,7 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: unknown backend kind
+          message: unknown backend kind "ConfigMap"
           reason: InvalidKind
           status: "False"
           type: ResolvedRefs
