@@ -14,6 +14,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -660,6 +661,59 @@ func TestTranslateJwksRemote(t *testing.T) {
 		assert.Equal(t, backend.ClusterName(), remote.RemoteJwks.GetHttpUri().GetCluster())
 		require.NotNil(t, remote.RemoteJwks.GetCacheDuration())
 		assert.Equal(t, time.Minute, remote.RemoteJwks.GetCacheDuration().AsDuration())
+	})
+
+	t.Run("async fetch and retry policy", func(t *testing.T) {
+		t.Parallel()
+		backendVal := ir.NewBackendObjectIR(ir.ObjectSource{
+			Kind:      "Service",
+			Namespace: "backend-ns",
+			Name:      "backend",
+		}, 8443, "", "svc")
+		backend := &backendVal
+		resolver := &fakeBackendResolver{backend: backend}
+		out := &jwtauthnv3.JwtProvider{}
+
+		err := translateJwks(
+			nil,
+			kgateway.JWKS{
+				RemoteJWKS: &kgateway.RemoteJWKS{
+					URL:        "https://example.com/jwks",
+					BackendRef: makeBackendRef("backend", "backend-ns", 8443),
+					AsyncFetch: &kgateway.JWKSAsyncFetch{
+						FastListener:          ptr.To(true),
+						FailedRefetchDuration: &metav1.Duration{Duration: 10 * time.Second},
+					},
+					RetryPolicy: &kgateway.JWKSRetryPolicy{
+						NumRetries: ptr.To(int32(3)),
+						BackOff: &kgateway.JWKSRetryBackOff{
+							BaseInterval: metav1.Duration{Duration: time.Second},
+							MaxInterval:  &metav1.Duration{Duration: 30 * time.Second},
+						},
+					},
+				},
+			},
+			out,
+			nil,
+			resolver,
+			ir.ObjectSource{Namespace: "ext-ns"},
+		)
+		require.NoError(t, err)
+
+		remote, ok := out.JwksSourceSpecifier.(*jwtauthnv3.JwtProvider_RemoteJwks)
+		require.True(t, ok, "expected remote jwks config to be set")
+
+		asyncFetch := remote.RemoteJwks.GetAsyncFetch()
+		require.NotNil(t, asyncFetch, "expected async fetch to be set")
+		assert.True(t, asyncFetch.GetFastListener())
+		assert.Equal(t, 10*time.Second, asyncFetch.GetFailedRefetchDuration().AsDuration())
+
+		retryPolicy := remote.RemoteJwks.GetRetryPolicy()
+		require.NotNil(t, retryPolicy, "expected retry policy to be set")
+		assert.Equal(t, uint32(3), retryPolicy.GetNumRetries().GetValue())
+		require.NotNil(t, retryPolicy.GetRetryBackOff(), "expected retry backoff to be set")
+		assert.Equal(t, time.Second, retryPolicy.GetRetryBackOff().GetBaseInterval().AsDuration())
+		assert.Equal(t, 30*time.Second, retryPolicy.GetRetryBackOff().GetMaxInterval().AsDuration())
 	})
 
 	t.Run("missing backend ref errors", func(t *testing.T) {
