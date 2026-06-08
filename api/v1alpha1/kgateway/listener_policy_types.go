@@ -250,6 +250,14 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:Minimum=0
 	MaxRequestsPerConnection *int32 `json:"maxRequestsPerConnection,omitempty"`
 
+	// MaxHeadersCount sets the maximum number of headers allowed in a request.
+	// Downstream requests that exceed this limit will receive a 431 response for HTTP/1.x and a
+	// stream reset for HTTP/2. If unset, defaults to Envoy's built-in default of 100.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-headers-count
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxHeadersCount *int32 `json:"maxHeadersCount,omitempty"`
+
 	// Http2ProtocolOptions configures downstream HTTP/2 behavior on the listener's
 	// HttpConnectionManager.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions
