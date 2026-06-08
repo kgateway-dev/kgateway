@@ -1,9 +1,9 @@
-# example-svc (ns nginx) selects the shared nginx pod; default-ns routes reach it cross-namespace.
+# example-svc (ns nginx-shared) selects the shared nginx pod; default-ns routes reach it cross-namespace.
 apiVersion: v1
 kind: Service
 metadata:
   name: example-svc
-  namespace: nginx
+  namespace: nginx-shared
 spec:
   selector:
     app.kubernetes.io/name: nginx

@@ -82,15 +82,16 @@ func TestKgateway(t *testing.T) {
 		gatewayManifest = "kgateway-base-gateway-listenersets.yaml"
 	}
 
-	// Apply shared base config once: base gateway + the shared nginx pod (ns nginx,
-	// with a ReferenceGrant) that suites reference instead of each deploying their own.
+	// Apply shared base config once: base gateway + the shared nginx pod (ns nginx-shared)
+	// that suites reference as a backend instead of each deploying their own. Suites that
+	// need cross-namespace access apply their own ReferenceGrant.
 	common.SetupBaseConfig(ctx, t, testInstallation,
 		filepath.Join("manifests", "kgateway-base.yaml"),
 		filepath.Join("manifests", gatewayManifest),
 		testdefaults.NginxPodManifest,
 	)
 	// Wait once for the shared nginx pod so suites don't race a cold image pull.
-	testInstallation.AssertionsT(t).EventuallyPodsRunning(ctx, "nginx", metav1.ListOptions{
+	testInstallation.AssertionsT(t).EventuallyPodsRunning(ctx, "nginx-shared", metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	}, 2*time.Minute)
 	common.SetupBaseGateway(ctx, t, testInstallation, types.NamespacedName{

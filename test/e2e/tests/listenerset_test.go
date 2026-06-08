@@ -52,11 +52,12 @@ func TestListenerSet(t *testing.T) {
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
-	// Apply the shared nginx pod (ns nginx, with a ReferenceGrant for default-ns routes)
-	// that the suite references as a backend instead of deploying its own.
+	// Apply the shared nginx pod (ns nginx-shared) that the suite references as a backend
+	// instead of deploying its own. The suite applies its own ReferenceGrant for the
+	// cross-namespace route -> Service reference.
 	common.SetupBaseConfig(ctx, t, testInstallation, testdefaults.NginxPodManifest)
 	// Wait once for the shared nginx pod so the suite doesn't race a cold image pull.
-	testInstallation.AssertionsT(t).EventuallyPodsRunning(ctx, "nginx", metav1.ListOptions{
+	testInstallation.AssertionsT(t).EventuallyPodsRunning(ctx, "nginx-shared", metav1.ListOptions{
 		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	}, 2*time.Minute)
 

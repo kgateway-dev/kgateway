@@ -38,7 +38,7 @@ spec:
   rules:
     - backendRefs:
         - name: nginx
-          namespace: nginx
+          namespace: nginx-shared
           port: 8080
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -57,5 +57,5 @@ spec:
   rules:
     - backendRefs:
         - name: nginx
-          namespace: nginx
+          namespace: nginx-shared
           port: 8080

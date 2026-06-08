@@ -33,8 +33,6 @@ var (
 
 	// test cases
 	setup = base.TestCase{
-		// example-svc (ns nginx) fronts the shared nginx pod; default-ns routes reach it
-		// cross-namespace via the ReferenceGrant in the shared nginx manifest.
 		Manifests: []string{
 			gatewayWithRouteManifest,
 		},

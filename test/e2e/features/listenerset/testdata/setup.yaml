@@ -35,10 +35,9 @@ spec:
     - "example.com"
   rules:
     - backendRefs:
-        # references the shared nginx Service (ns nginx) cross-namespace;
-        # authorized by the ReferenceGrant in the shared nginx manifest.
+        # references the shared nginx Service (ns nginx-shared) cross-namespace;
         - name: nginx
-          namespace: nginx
+          namespace: nginx-shared
           port: 8080
 ---
 apiVersion: v1
@@ -47,3 +46,19 @@ metadata:
   name: allowed-ns
   labels:
     allowed: ns
+---
+# Authorizes the default-ns HTTPRoutes in this suite to reference the shared nginx
+# Service (ns nginx-shared) cross-namespace.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-default-httproutes
+  namespace: nginx-shared
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: default
+  to:
+    - group: ""
+      kind: Service
