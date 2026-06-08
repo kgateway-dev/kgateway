@@ -6,9 +6,14 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
+	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -49,6 +54,15 @@ func TestKgatewayMetrics(t *testing.T) {
 
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
+
+	// Apply the shared nginx pod (ns nginx-shared) that the suite references as a backend
+	// instead of deploying its own. The suite applies its own ReferenceGrant for the
+	// cross-namespace route -> Service reference.
+	common.SetupBaseConfig(ctx, t, testInstallation, testdefaults.NginxPodManifest)
+	// Wait once for the shared nginx pod so the suite doesn't race a cold image pull.
+	testInstallation.AssertionsT(t).EventuallyPodsRunning(ctx, "nginx-shared", metav1.ListOptions{
+		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
+	}, 2*time.Minute)
 
 	// Metrics tests are run on their own in order to avoid metrics values being affected by other tests.
 	KGatewayMetricsSuiteRunner().Run(ctx, t, testInstallation)
