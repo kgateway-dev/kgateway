@@ -473,7 +473,9 @@ golden-translator-%:
 # Env test
 #----------------------------------------------------------------------------------
 
-ENVTEST_K8S_VERSION = 1.31
+# Derived from the k8s.io/client-go version in go.mod (client-go v0.X.Y => K8s 1.X)
+# so the envtest binaries track the Kubernetes libraries instead of drifting.
+ENVTEST_K8S_VERSION ?= $(shell grep -E '^\s*k8s.io/client-go ' go.mod | awk '{print $$2}' | sed -E 's/v0\.([0-9]+)\..*/1.\1/')
 ENVTEST ?= go -C tools tool setup-envtest
 
 .PHONY: envtest-path
