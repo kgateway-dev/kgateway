@@ -505,7 +505,7 @@ E2E_GO_TEST_ARGS ?= -vet=off -timeout=35m -outputdir=$(OUTPUT_DIR)
 # upgraded setup-envtest so much slower?)
 GO_TEST_ARGS ?= -timeout=35m -outputdir=$(OUTPUT_DIR) -race
 GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=cover.out
-GO_TEST_COVERAGE ?= go tool github.com/vladopajic/go-test-coverage/v2
+GO_TEST_COVERAGE ?= go tool -modfile tools/go.mod github.com/vladopajic/go-test-coverage/v2
 
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
