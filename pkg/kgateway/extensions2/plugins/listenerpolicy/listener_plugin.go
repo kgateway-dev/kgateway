@@ -459,6 +459,13 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		out.GetCommonHttpProtocolOptions().IdleTimeout = durationpb.New(*policy.idleTimeout)
 	}
 
+	if policy.maxHeadersCount != nil {
+		if out.CommonHttpProtocolOptions == nil {
+			out.CommonHttpProtocolOptions = &envoycorev3.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().MaxHeadersCount = wrapperspb.UInt32(*policy.maxHeadersCount)
+	}
+
 	if policy.http2ProtocolOptions != nil {
 		out.Http2ProtocolOptions = policy.http2ProtocolOptions
 	}

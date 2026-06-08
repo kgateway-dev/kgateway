@@ -24,6 +24,7 @@ var (
 	earlyHeaderMutationManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-early-header-route-match.yaml")
 	http2ProtocolOptionsManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-http2-protocol-options.yaml")
 	proxyProtocolManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-proxy-protocol.yaml")
+	maxHeadersCountManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-max-headers-count.yaml")
 	stripHostPortAnyPortManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-strip-host-port-any-port.yaml")
 	stripHostPortMatchingPortManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-strip-host-port-matching-port.yaml")
 

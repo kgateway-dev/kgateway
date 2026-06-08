@@ -74,10 +74,11 @@ func (s *testingSuite) SetupSuite() {
 		"TestProxyProtocol":                      {gatewayManifest, httpRouteManifest, proxyProtocolManifest},
 		// RequestID configuration tests for the new RequestID feature
 		// These tests use an echo server to verify x-request-id header behavior
-		"TestListenerPolicyRequestId":     {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
-		"TestHTTPListenerPolicyRequestId": {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
-		"TestStripHostPortAnyPort":        {gatewayManifest, stripHostPortAnyPortManifest},
-		"TestStripHostPortMatchingPort":   {gatewayManifest, stripHostPortMatchingPortManifest},
+		"TestListenerPolicyRequestId":       {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
+		"TestHTTPListenerPolicyRequestId":   {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
+		"TestListenerPolicyMaxHeadersCount": {gatewayManifest, httpRouteManifest, maxHeadersCountManifest},
+		"TestStripHostPortAnyPort":          {gatewayManifest, stripHostPortAnyPortManifest},
+		"TestStripHostPortMatchingPort":     {gatewayManifest, stripHostPortMatchingPortManifest},
 	}
 }
 
@@ -464,6 +465,80 @@ func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
 			// Verify x-request-id header was generated with valid UUID format
 			Body: gomega.MatchRegexp(`(?i)x-request-id: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`),
 		})
+}
+
+// TestListenerPolicyMaxHeadersCount verifies that maxHeadersCount in a ListenerPolicy is
+// enforced by Envoy. The policy sets the limit to 5. A standard curl request sends 3 headers
+// (Host, User-Agent, Accept), which is under the limit and succeeds. Adding 3 more custom
+// headers brings the total to 6, exceeding the limit and triggering a 431.
+func (s *testingSuite) TestListenerPolicyMaxHeadersCount() {
+	// Verify the setting appears in the Envoy config dump via the admin API.
+	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.ctx,
+		proxyDeployment.ObjectMeta,
+		func(ctx context.Context, adminClient *admincli.Client) {
+			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
+				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get dynamic listener from config dump")
+				g.Expect(listener.GetFilterChains()).NotTo(gomega.BeEmpty(), "listener should have at least one filter chain")
+
+				var hcm *envoy_hcm.HttpConnectionManager
+				for _, chain := range listener.GetFilterChains() {
+					for _, f := range chain.GetFilters() {
+						candidate := &envoy_hcm.HttpConnectionManager{}
+						if err := f.GetTypedConfig().UnmarshalTo(candidate); err == nil {
+							hcm = candidate
+							break
+						}
+					}
+					if hcm != nil {
+						break
+					}
+				}
+				g.Expect(hcm).NotTo(gomega.BeNil(), "could not find an HCM filter in any filter chain")
+
+				g.Expect(hcm.GetCommonHttpProtocolOptions().GetMaxHeadersCount().GetValue()).
+					To(gomega.Equal(uint32(5)),
+						"max_headers_count should be 5 as set in the ListenerPolicy")
+			}).
+				WithContext(ctx).
+				WithTimeout(60 * time.Second).
+				WithPolling(2 * time.Second).
+				Should(gomega.Succeed())
+		},
+	)
+
+	// A standard curl request (Host, User-Agent, Accept = 3 headers) is under the limit of 5
+	// and should succeed. This also confirms the policy was accepted without a NACK.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("Welcome to nginx!"),
+		},
+	)
+
+	// Adding 3 extra headers brings the total to 6, which exceeds the limit of 5.
+	// Envoy should reject the request with 431 Request Header Fields Too Large.
+	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithHeader("x-custom-1", "a"),
+			curl.WithHeader("x-custom-2", "b"),
+			curl.WithHeader("x-custom-3", "c"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusRequestHeaderFieldsTooLarge,
+		},
+	)
 }
 
 // Verifies that AnyPort strips the port from the Host header regardless of its value.
