@@ -52,6 +52,7 @@ type HttpListenerPolicyIr struct {
 	defaultHostForHttp10          *string
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 	maxRequestHeadersKb           *uint32
+	maxHeadersCount               *uint32
 }
 
 func (d *HttpListenerPolicyIr) Equals(in any) bool {
@@ -157,6 +158,11 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	if !cmputils.PointerValsEqual(d.maxRequestHeadersKb, d2.maxRequestHeadersKb) {
 		return false
 	}
+
+	if !cmputils.PointerValsEqual(d.maxHeadersCount, d2.maxHeadersCount) {
+		return false
+	}
+
 	return true
 }
 
@@ -204,6 +210,11 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		maxRequestHeadersKb = new(uint32(*h.MaxRequestHeadersKb)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
+	var maxHeadersCount *uint32
+	if h.MaxHeadersCount != nil {
+		maxHeadersCount = new(uint32(*h.MaxHeadersCount)) // nolint:gosec // G115: kubebuilder validation ensures value >= 1, safe for uint32
+	}
+
 	return &HttpListenerPolicyIr{
 		accessLogConfig:               accessLog,
 		accessLogPolicies:             h.AccessLog,
@@ -223,6 +234,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		defaultHostForHttp10:          h.DefaultHostForHttp10,
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
 		maxRequestHeadersKb:           maxRequestHeadersKb,
+		maxHeadersCount:               maxHeadersCount,
 	}, errs
 }
 

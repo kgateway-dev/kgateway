@@ -2126,6 +2126,11 @@ func (in *HTTPSettings) DeepCopyInto(out *HTTPSettings) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.MaxHeadersCount != nil {
+		in, out := &in.MaxHeadersCount, &out.MaxHeadersCount
+		*out = new(int32)
+		**out = **in
+	}
 	if in.HealthCheck != nil {
 		in, out := &in.HealthCheck, &out.HealthCheck
 		*out = new(EnvoyHealthCheck)
