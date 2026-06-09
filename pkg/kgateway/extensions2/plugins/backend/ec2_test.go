@@ -594,7 +594,7 @@ func newSecretIndexForTest(t *testing.T, secrets ...*corev1.Secret) *krtcollecti
 	mock := krttest.NewMock(t, initObjs)
 	secretCol := krttest.GetMockCollection[*corev1.Secret](mock)
 	refGrantCol := krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock)
-	refgrants := krtcollections.NewRefGrantIndex(refGrantCol)
+	refgrants := krtcollections.NewRefGrantIndex(refGrantCol, apisettings.ReferenceGrantPermissive)
 	secretIndex := krtcollections.NewSecretIndex(map[schema.GroupKind]krt.Collection[ir.Secret]{
 		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(secretCol, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 			return &ir.Secret{
