@@ -201,6 +201,7 @@ type JWKSRetryPolicy struct {
 
 // JWKSRetryBackOff configures an exponential backoff strategy.
 // Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/backoff.proto#envoy-v3-api-msg-config-core-v3-backoffstrategy
+// +kubebuilder:validation:XValidation:rule="!has(self.maxInterval) || duration(self.maxInterval) >= duration(self.baseInterval)",message="maxInterval must be greater than or equal to baseInterval"
 type JWKSRetryBackOff struct {
 	// BaseInterval is the base interval for the exponential backoff computation.
 	// It must be greater than zero and less than or equal to MaxInterval.
@@ -213,5 +214,6 @@ type JWKSRetryBackOff struct {
 	// or equal to BaseInterval. Defaults to 10 times the BaseInterval.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="maxInterval must be at least 1ms."
 	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
 }

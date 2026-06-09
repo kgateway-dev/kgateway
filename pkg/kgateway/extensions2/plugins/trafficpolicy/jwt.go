@@ -337,7 +337,7 @@ func translateJwksAsyncFetch(in *kgateway.JWKSAsyncFetch) *jwtauthnv3.JwksAsyncF
 func translateJwksRetryPolicy(in *kgateway.JWKSRetryPolicy) *envoycorev3.RetryPolicy {
 	retryPolicy := &envoycorev3.RetryPolicy{}
 	if in.NumRetries != nil {
-		retryPolicy.NumRetries = wrapperspb.UInt32(uint32(*in.NumRetries)) //nolint:gosec // G115: kubebuilder validation ensures NumRetries is non-negative
+		retryPolicy.NumRetries = wrapperspb.UInt32(uint32(*in.NumRetries)) //nolint:gosec // G115: kubebuilder validation ensures NumRetries is >= 1
 	}
 	if in.BackOff != nil {
 		retryPolicy.RetryBackOff = &envoycorev3.BackoffStrategy{

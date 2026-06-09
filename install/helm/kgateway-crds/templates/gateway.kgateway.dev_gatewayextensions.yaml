@@ -1120,9 +1120,17 @@ spec:
                                           x-kubernetes-validations:
                                           - message: invalid duration value
                                             rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                          - message: maxInterval must be at least
+                                              1ms.
+                                            rule: duration(self) >= duration('1ms')
                                       required:
                                       - baseInterval
                                       type: object
+                                      x-kubernetes-validations:
+                                      - message: maxInterval must be greater than
+                                          or equal to baseInterval
+                                        rule: '!has(self.maxInterval) || duration(self.maxInterval)
+                                          >= duration(self.baseInterval)'
                                     numRetries:
                                       description: |-
                                         NumRetries is the allowed number of retries when fetching the JWKS fails.
