@@ -94,6 +94,12 @@ type backendKey struct {
 	port int32
 }
 
+// String must include the port; otherwise the embedded ir.ObjectSource.String()
+// is promoted and all ports of a multi-port host collapse into one index bucket.
+func (b backendKey) String() string {
+	return fmt.Sprintf("%s:%d", b.ObjectSource.String(), b.port)
+}
+
 func NewBackendIndex(
 	krtopts krtutil.KrtOptions,
 	policies *PolicyIndex,
