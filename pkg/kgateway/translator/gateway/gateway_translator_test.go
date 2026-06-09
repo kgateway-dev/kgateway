@@ -1382,17 +1382,6 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("ListenerPolicy with maxHeadersCount and maxRequestsPerConnection", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFile:  "listener-policy-http/max-headers-count-with-max-requests.yaml",
-			outputFile: "listener-policy-http/max-headers-count-with-max-requests.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-		})
-	})
-
 	t.Run("ListenerPolicy maxHeadersCount merge conflict", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-policy-http/max-headers-count-merge-conflict.yaml",

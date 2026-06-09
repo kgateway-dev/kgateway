@@ -385,11 +385,11 @@ func (s *testingSuite) TestProxyProtocol() {
 // headers brings the total to 6, exceeding the limit and triggering a 431.
 func (s *testingSuite) TestListenerPolicyMaxHeadersCount() {
 	// Verify the setting appears in the Envoy config dump via the admin API.
-	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+	s.testInstallation.Assertions.AssertEnvoyAdminApi(
 		s.ctx,
 		proxyDeployment.ObjectMeta,
 		func(ctx context.Context, adminClient *admincli.Client) {
-			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+			s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
 				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get dynamic listener from config dump")
 				g.Expect(listener.GetFilterChains()).NotTo(gomega.BeEmpty(), "listener should have at least one filter chain")
@@ -422,7 +422,7 @@ func (s *testingSuite) TestListenerPolicyMaxHeadersCount() {
 
 	// A standard curl request (Host, User-Agent, Accept = 3 headers) is under the limit of 5
 	// and should succeed. This also confirms the policy was accepted without a NACK.
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -437,7 +437,7 @@ func (s *testingSuite) TestListenerPolicyMaxHeadersCount() {
 
 	// Adding 3 extra headers brings the total to 6, which exceeds the limit of 5.
 	// Envoy should reject the request with 431 Request Header Fields Too Large.
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
