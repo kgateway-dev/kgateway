@@ -41,6 +41,7 @@ func MergeHttpPolicies(
 		mergeEarlyHeaderMutation,
 		mergeMaxRequestHeadersKb,
 		mergeMaxRequestsPerConnection,
+		mergeMaxHeadersCount,
 		mergeUuidRequestIdConfig,
 		mergeForwardClientCertDetails,
 		mergeStripHostPortMode,
@@ -393,6 +394,22 @@ func mergeMaxRequestsPerConnection(
 
 	p1.maxRequestsPerConnection = p2.maxRequestsPerConnection
 	mergeOrigins.SetOne(origin+"maxRequestsPerConnection", p2Ref, p2MergeOrigins)
+}
+
+func mergeMaxHeadersCount(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.maxHeadersCount, p2.maxHeadersCount, opts) {
+		return
+	}
+
+	p1.maxHeadersCount = p2.maxHeadersCount
+	mergeOrigins.SetOne(origin+"maxHeadersCount", p2Ref, p2MergeOrigins)
 }
 
 // mergeForwardClientCertDetails merges the mode and details sub fields
