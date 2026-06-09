@@ -3,6 +3,7 @@ package krtcollections
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/config/labels"
