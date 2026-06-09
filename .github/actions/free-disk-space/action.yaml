@@ -4,9 +4,7 @@ description: Free up disk space on GitHub Actions runners using customized setti
 inputs:
   aggressive:
     description: >-
-      Free up as much disk space as possible. This is slower (removes large
-      apt packages on top of the defaults) and is intended for jobs like the
-      nightly tests that need the extra headroom. Leave disabled for normal CI.
+      Free up as much disk space as possible. This is slower (removes large apt packages on top of the defaults) and is intended for jobs like the nightly tests that need the extra headroom. Leave disabled for normal CI.
     required: false
     default: "false"
   remove_dotnet:
@@ -19,15 +17,12 @@ inputs:
     default: "true"
   remove_android:
     description: >-
-      Remove the Android SDK (~12.1GB). Leave empty to follow 'aggressive'
-      (removed only when aggressive is true); set "true"/"false" to force.
+      Remove the Android SDK (~12.1GB). Leave empty to follow 'aggressive' (removed only when aggressive is true); set "true"/"false" to force.
     required: false
     default: ""
   remove_packages:
     description: >-
-      Space-separated list of apt packages to remove. Only used when not empty.
-      When 'aggressive' is true and this is left empty, a default large-package
-      list is removed (~7.5GB).
+      Space-separated list of apt packages to remove. Only used when not empty. When 'aggressive' is true and this is left empty, a default large-package list is removed (~7.5GB).
     required: false
     default: ""
 
