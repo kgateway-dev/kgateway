@@ -14,7 +14,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -681,11 +680,11 @@ func TestTranslateJwksRemote(t *testing.T) {
 					URL:        "https://example.com/jwks",
 					BackendRef: makeBackendRef("backend", "backend-ns", 8443),
 					AsyncFetch: &kgateway.JWKSAsyncFetch{
-						FastListener:          ptr.To(true),
+						FastListener:          new(true),
 						FailedRefetchDuration: &metav1.Duration{Duration: 10 * time.Second},
 					},
 					RetryPolicy: &kgateway.JWKSRetryPolicy{
-						NumRetries: ptr.To(int32(3)),
+						NumRetries: new(int32(3)),
 						BackOff: &kgateway.JWKSRetryBackOff{
 							BaseInterval: metav1.Duration{Duration: time.Second},
 							MaxInterval:  &metav1.Duration{Duration: 30 * time.Second},
