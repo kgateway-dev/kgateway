@@ -917,9 +917,9 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 		})
 	}
 
-	slices.SortFunc(ret, func(a, b ir.PolicyAtt) int {
+	slices.SortStableFunc(ret, func(a, b ir.PolicyAtt) int {
 		// Sort policies by their PrecedenceWeight for the same kind if the weights are different,
-		// otherwise sort by creation time
+		// then by creation time.
 		if a.GroupKind == b.GroupKind {
 			if a.PrecedenceWeight > b.PrecedenceWeight {
 				return -1
@@ -927,9 +927,26 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 				return 1
 			}
 		}
-		return a.PolicyIr.CreationTime().Compare(b.PolicyIr.CreationTime())
+		if c := a.PolicyIr.CreationTime().Compare(b.PolicyIr.CreationTime()); c != 0 {
+			return c
+		}
+		// Kubernetes creationTimestamp only has second granularity, so policies applied
+		// together (e.g. via a single `kubectl apply`) routinely tie on weight and creation
+		// time. Without a final deterministic tiebreaker the order would depend on upstream
+		// map iteration, which is randomized per process and produces nondeterministic merge
+		// results across control-plane restarts. Break ties on the policy identity.
+		return strings.Compare(policyAttSortKey(a), policyAttSortKey(b))
 	})
 	return ret
+}
+
+// policyAttSortKey returns a stable identity key for a PolicyAtt, used as the final
+// tiebreaker when ordering policies that are otherwise equal (same weight and creation time).
+func policyAttSortKey(a ir.PolicyAtt) string {
+	if a.PolicyRef != nil {
+		return a.PolicyRef.IDWithSectionName()
+	}
+	return a.GroupKind.String()
 }
 
 func (p *PolicyIndex) fetchPolicy(kctx krt.HandlerContext, policyRef ir.ObjectSource) *ir.PolicyWrapper {
