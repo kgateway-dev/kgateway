@@ -145,8 +145,10 @@ const (
 	// AwsAuthTypeSecret uses credentials stored in a Kubernetes Secret.
 	AwsAuthTypeSecret AwsAuthType = "Secret"
 	// AwsAuthTypeAssumeRole assumes an IAM role via STS, chaining off the
-	// gateway's ambient credentials (e.g. IRSA). The temporary credentials
-	// returned by STS are used to sign requests to the backend.
+	// backend's ambient credentials (the gateway ServiceAccount's IRSA identity
+	// for Lambda request signing, or the controller's identity for EC2
+	// discovery). The temporary credentials returned by STS are used to
+	// interact with the backend.
 	AwsAuthTypeAssumeRole AwsAuthType = "AssumeRole"
 )
 
