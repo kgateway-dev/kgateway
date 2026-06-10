@@ -60,3 +60,33 @@ func TestProcessStaticUsesCustomDnsCluster(t *testing.T) {
 	assert.Equal(t, "example.com", endpoint.GetAddress().GetSocketAddress().GetAddress())
 	assert.Equal(t, uint32(8080), endpoint.GetAddress().GetSocketAddress().GetPortValue())
 }
+
+// One StaticIr can be translated under multiple cluster names: gateway-scoped
+// backend variants (e.g. CloneForGatewayBackendClientCertificate) share the IR
+// but derive their own cluster name. Each name must get a load assignment with
+// the matching name, while repeated translations of the same name share one copy.
+func TestProcessStaticLoadAssignmentPerClusterName(t *testing.T) {
+	ir, err := buildStaticIr(&kgateway.StaticBackend{
+		Hosts: []kgateway.Host{{
+			Host: "example.com",
+			Port: 8080,
+		}},
+	})
+	require.NoError(t, err)
+
+	base := &envoyclusterv3.Cluster{Name: "base-cluster"}
+	processStatic(ir, base)
+	variant := &envoyclusterv3.Cluster{Name: "gateway-variant-cluster"}
+	processStatic(ir, variant)
+	baseAgain := &envoyclusterv3.Cluster{Name: "base-cluster"}
+	processStatic(ir, baseAgain)
+
+	assert.Equal(t, "base-cluster", base.GetLoadAssignment().GetClusterName())
+	assert.Equal(t, "gateway-variant-cluster", variant.GetLoadAssignment().GetClusterName())
+	assert.Same(t, base.GetLoadAssignment(), baseAgain.GetLoadAssignment(),
+		"clusters with the same name should share one load assignment")
+	assert.NotSame(t, base.GetLoadAssignment(), variant.GetLoadAssignment(),
+		"clusters with different names must not share a load assignment")
+	assert.Empty(t, ir.loadAssignment.GetClusterName(),
+		"the IR's original load assignment must not be mutated")
+}

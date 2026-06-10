@@ -28,22 +28,26 @@ type StaticIr struct {
 	// +noKrtEquals
 	loadAssignment *envoyendpointv3.ClusterLoadAssignment
 
-	// namedLAOnce/namedLA memoize loadAssignment with the cluster name applied.
-	// The name is backend-derived, so all per-client clusters translated from
-	// this backend share one copy instead of cloning per client.
-	namedLAOnce sync.Once
-	namedLA     *envoyendpointv3.ClusterLoadAssignment
+	// namedLAs memoizes loadAssignment clones with the cluster name applied,
+	// keyed by cluster name. This IR can be translated under multiple names —
+	// gateway-scoped backend variants (e.g. CloneForGatewayBackendClientCertificate)
+	// share the IR but derive their own cluster name — so each name gets its own
+	// clone, shared by every client of that variant instead of cloned per client.
+	// Bounded by the number of variants of this backend; lives as long as the IR.
+	namedLAs sync.Map // map[string]*envoyendpointv3.ClusterLoadAssignment
 }
 
 // namedLoadAssignment returns loadAssignment with the cluster name set, cloning
-// it once per backend rather than once per (client, backend) pair.
+// it once per (backend, cluster name) rather than once per (client, backend).
 func (u *StaticIr) namedLoadAssignment(clusterName string) *envoyendpointv3.ClusterLoadAssignment {
-	u.namedLAOnce.Do(func() {
-		la := proto.Clone(u.loadAssignment).(*envoyendpointv3.ClusterLoadAssignment)
-		la.ClusterName = clusterName
-		u.namedLA = la
-	})
-	return u.namedLA
+	if cached, ok := u.namedLAs.Load(clusterName); ok {
+		return cached.(*envoyendpointv3.ClusterLoadAssignment)
+	}
+	la := proto.Clone(u.loadAssignment).(*envoyendpointv3.ClusterLoadAssignment)
+	la.ClusterName = clusterName
+	// LoadOrStore keeps one canonical instance if two translations race.
+	actual, _ := u.namedLAs.LoadOrStore(clusterName, la)
+	return actual.(*envoyendpointv3.ClusterLoadAssignment)
 }
 
 // Equals checks if two StaticIr objects are equal.
