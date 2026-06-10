@@ -24,6 +24,50 @@ type EndpointsInputs struct {
 	PriorityInfo        *PriorityInfo
 }
 
+// ClaPerClient pairs a connected client with the ClusterLoadAssignment
+// translated for it. The Cla may be shared with other clients whose
+// load-balancing inputs are identical.
+type ClaPerClient struct {
+	Client ir.UniquelyConnectedClient
+	Cla    *envoyendpointv3.ClusterLoadAssignment
+	// AdditionalHash is the endpoint plugins' contribution to the CLA's
+	// equality hash for this client.
+	AdditionalHash uint64
+}
+
+// ClientLbInfoKey returns a key identifying the client attributes that influence
+// the ClusterLoadAssignment built by PrioritizeEndpoints: two clients with equal
+// keys receive identical CLAs for the same EndpointsInputs, so callers can share
+// one CLA among them instead of building one per client.
+func ClientLbInfoKey(ucc ir.UniquelyConnectedClient, inputs EndpointsInputs) string {
+	pi := inputs.PriorityInfo
+	if pi == nil {
+		pi = priorityInfoFromTrafficDistribution(inputs.EndpointsForBackend.TrafficDistribution)
+	}
+	if pi == nil {
+		// No priority or failover config: the CLA ignores client labels and locality.
+		return ""
+	}
+	if fp := pi.FailoverPriority; fp != nil {
+		// Endpoint priorities depend on the client's resolved values for the
+		// priority labels (see Prioritizer.GetPriority); locality failover is
+		// not applied in this mode.
+		var b strings.Builder
+		b.WriteString("labels:")
+		for _, priorityLabel := range fp.priorityLabels {
+			value, ok := fp.priorityLabelOverrides[priorityLabel]
+			if !ok {
+				value = ucc.Labels[priorityLabel]
+			}
+			b.WriteString(value)
+			b.WriteByte(0)
+		}
+		return b.String()
+	}
+	// Locality failover: priorities depend on the client's locality only.
+	return "locality:" + ucc.Locality.String()
+}
+
 // PrioritizeEndpoints converts EndpointsInputs into a ClusterLoadAssignment.
 func PrioritizeEndpoints(
 	logger *slog.Logger,

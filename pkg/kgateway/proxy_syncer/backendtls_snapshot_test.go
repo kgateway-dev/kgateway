@@ -161,7 +161,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		krtopts,
 		uccs,
 		newFinalBackendEndpoints(krtopts, finalBackends, commoncol.Endpoints),
-		translator.TranslateEndpoints,
+		translator.TranslateEndpointsForClients,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
@@ -400,7 +400,7 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 		krtopts,
 		uccs,
 		newFinalBackendEndpoints(krtopts, finalBackends, commoncol.Endpoints),
-		translator.TranslateEndpoints,
+		translator.TranslateEndpointsForClients,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,

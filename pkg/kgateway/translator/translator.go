@@ -156,3 +156,39 @@ func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.
 	}
 	return endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs), hash
 }
+
+// TranslateEndpointsForClients translates ep into a ClusterLoadAssignment for
+// each client in uccs. Clients that produce identical CLAs — same endpoint
+// plugin contribution (captured by the plugins' hash, which is already relied
+// on for change detection) and same load-balancing inputs (locality / priority
+// label values, see endpoints.ClientLbInfoKey) — share a single CLA instead of
+// each retaining its own copy.
+func (s *CombinedTranslator) TranslateEndpointsForClients(kctx krt.HandlerContext, uccs []ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) []endpoints.ClaPerClient {
+	out := make([]endpoints.ClaPerClient, 0, len(uccs))
+	type claKey struct {
+		pluginHash uint64
+		lbKey      string
+	}
+	shared := map[claKey]*envoyendpointv3.ClusterLoadAssignment{}
+	for _, ucc := range uccs {
+		epInputs := endpoints.EndpointsInputs{
+			EndpointsForBackend: ep,
+		}
+		var hash uint64
+		for _, processEndpoints := range s.endpointPlugins {
+			hash ^= processEndpoints(kctx, context.TODO(), ucc, &epInputs)
+		}
+		key := claKey{pluginHash: hash, lbKey: endpoints.ClientLbInfoKey(ucc, epInputs)}
+		cla, ok := shared[key]
+		if !ok {
+			cla = endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs)
+			shared[key] = cla
+		}
+		out = append(out, endpoints.ClaPerClient{
+			Client:         ucc,
+			Cla:            cla,
+			AdditionalHash: hash,
+		})
+	}
+	return out
+}

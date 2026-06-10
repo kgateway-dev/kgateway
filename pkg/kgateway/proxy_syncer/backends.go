@@ -2,7 +2,6 @@ package proxy_syncer
 
 import (
 	"context"
-	"fmt"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
@@ -29,10 +28,18 @@ type uccWithCluster struct {
 	BackendSource ir.ObjectSource
 	// BackendGeneration is the observed generation of the source Backend.
 	BackendGeneration int64
+	// resourceName is precomputed at construction: krt calls ResourceName
+	// repeatedly per object and these objects exist per (client, backend) pair.
+	// Derived from Client and Name, which are compared.
+	// +noKrtEquals
+	resourceName string
 }
 
 func (c uccWithCluster) ResourceName() string {
-	return fmt.Sprintf("%s/%s", c.Client.ResourceName(), c.Name)
+	if c.resourceName != "" {
+		return c.resourceName
+	}
+	return c.Client.ResourceName() + "/" + c.Name
 }
 
 func (c uccWithCluster) Equals(in uccWithCluster) bool {
@@ -91,6 +98,7 @@ func NewPerClientEnvoyClusters(
 				ClusterVersion:    utils.HashProto(c),
 				BackendSource:     backendObj.GetObjectSource(),
 				BackendGeneration: backendGeneration,
+				resourceName:      ucc.ResourceName() + "/" + c.GetName(),
 			})
 		}
 		return uccWithClusterRet
