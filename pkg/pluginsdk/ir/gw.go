@@ -6,6 +6,7 @@ import (
 	"maps"
 	"slices"
 	"strings"
+	"unique"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -49,7 +50,9 @@ type AttachedPolicyRef struct {
 }
 
 func (ref *AttachedPolicyRef) ID() string {
-	return ref.Group + delimiter + ref.Kind + delimiter + ref.Namespace + delimiter + ref.Name
+	// The ID is retained for every route a policy attaches to (e.g. in MergeOrigins),
+	// so intern it to share a single backing string across all copies.
+	return unique.Make(ref.Group + delimiter + ref.Kind + delimiter + ref.Namespace + delimiter + ref.Name).Value()
 }
 
 // IDWithSectionName returns ID() with SectionName appended when set.
