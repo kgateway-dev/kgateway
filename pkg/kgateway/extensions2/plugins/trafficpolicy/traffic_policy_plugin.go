@@ -53,16 +53,24 @@ const (
 
 var logger = logging.New("plugin/trafficpolicy")
 
+// Shared across all routes; callers must not mutate the returned messages.
+// Sharing one instance lets the translator's marshaling cache emit a single
+// *anypb.Any for every route that enables/disables a filter.
+var (
+	enableFilterPerRoute  = &envoyroutev3.FilterConfig{Config: &anypb.Any{}}
+	disableFilterPerRoute = &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true}
+)
+
 // from envoy code:
 // If the field `config` is configured but is empty, we treat the filter is enabled
 // explicitly.
 // see: https://github.com/envoyproxy/envoy/blob/8ed93ef372f788456b708fc93a7e54e17a013aa7/source/common/router/config_impl.cc#L2552
 func EnableFilterPerRoute() *envoyroutev3.FilterConfig {
-	return &envoyroutev3.FilterConfig{Config: &anypb.Any{}}
+	return enableFilterPerRoute
 }
 
 func DisableFilterPerRoute() *envoyroutev3.FilterConfig {
-	return &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true}
+	return disableFilterPerRoute
 }
 
 // PolicySubIR documents the expected interface that all policy sub-IRs should implement.

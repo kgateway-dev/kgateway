@@ -76,16 +76,36 @@ func (r *TypedFilterConfigMap) GetTypedConfig(key string) proto.Message {
 }
 
 func (r *TypedFilterConfigMap) ToAnyMap() map[string]*anypb.Any {
-	typedPerFilterConfigAny := map[string]*anypb.Any{}
+	return r.ToAnyMapCached(nil)
+}
+
+// ProtoAnyCache memoizes proto.Message to anypb.Any marshaling by message
+// identity. It allows a config shared across many routes (e.g. a proto held on
+// a PolicyIR) to be marshaled once, with all routes sharing one *anypb.Any in
+// the final config. It is not safe for concurrent use, so it must not be
+// shared across translations.
+type ProtoAnyCache map[proto.Message]*anypb.Any
+
+// ToAnyMapCached is ToAnyMap with memoization through cache (which may be nil).
+// Messages must not be mutated after being added to the config map.
+func (r *TypedFilterConfigMap) ToAnyMapCached(cache ProtoAnyCache) map[string]*anypb.Any {
+	typedPerFilterConfigAny := make(map[string]*anypb.Any, len(*r))
 	for k, v := range *r {
 		if anyMsg, ok := v.(*anypb.Any); ok {
 			typedPerFilterConfigAny[k] = anyMsg
+			continue
+		}
+		if config, ok := cache[v]; ok {
+			typedPerFilterConfigAny[k] = config
 			continue
 		}
 		config, err := utils.MessageToAny(v)
 		if err != nil {
 			logger.Error("unexpected marshalling error", "error", err)
 			continue
+		}
+		if cache != nil {
+			cache[v] = config
 		}
 		typedPerFilterConfigAny[k] = config
 	}

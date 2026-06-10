@@ -41,6 +41,11 @@ type httpRouteConfigurationTranslator struct {
 	logger                   *slog.Logger
 	validationLevel          apisettings.ValidationMode
 	validator                validator.Validator
+
+	// anyCache deduplicates typed filter config marshaling across the routes of
+	// this route configuration: routes sharing a policy IR proto share a single
+	// marshaled *anypb.Any in the output instead of one copy per route.
+	anyCache ir.ProtoAnyCache
 }
 
 const (
@@ -112,7 +117,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		cfg.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("default", "*")}
 		return cfg
 	}
-	cfg.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMap()
+	cfg.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMapCached(h.anyCache)
 
 	return cfg
 }
@@ -185,7 +190,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 		// replace the computed vhost with a fallback that preserves the original vhost identity
 		return setFallBackConfig(sanitizedName, domains[0])
 	}
-	out.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMap()
+	out.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMapCached(h.anyCache)
 
 	return out
 }
@@ -246,7 +251,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	routeProcessingErr := h.runRoutePlugins(in, out, backendConfigCtx.typedPerFilterConfigRoute)
 
 	// Apply typed per filter config from translating route action and route plugins
-	typedPerFilterConfig := backendConfigCtx.typedPerFilterConfigRoute.ToAnyMap()
+	typedPerFilterConfig := backendConfigCtx.typedPerFilterConfigRoute.ToAnyMapCached(h.anyCache)
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = typedPerFilterConfig
 	} else {
@@ -556,7 +561,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		backendConfigCtx.ResponseHeadersToRemove = pCtx.ResponseHeadersToRemove
 
 		// Translating weighted clusters needs the typed per filter config on each cluster
-		cw.TypedPerFilterConfig = backendConfigCtx.typedPerFilterConfigRoute.ToAnyMap()
+		cw.TypedPerFilterConfig = backendConfigCtx.typedPerFilterConfigRoute.ToAnyMapCached(h.anyCache)
 		cw.RequestHeadersToAdd = backendConfigCtx.RequestHeadersToAdd
 		cw.RequestHeadersToRemove = backendConfigCtx.RequestHeadersToRemove
 		cw.ResponseHeadersToAdd = backendConfigCtx.ResponseHeadersToAdd

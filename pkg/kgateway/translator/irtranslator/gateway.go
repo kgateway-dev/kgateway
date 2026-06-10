@@ -139,6 +139,7 @@ func (t *Translator) ComputeListener(
 			logger:                   logger.With("route_config_name", hfc.FilterChainName),
 			validationLevel:          t.ValidationLevel,
 			validator:                t.Validator,
+			anyCache:                 ir.ProtoAnyCache{},
 		}
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)
 		if rc != nil {
