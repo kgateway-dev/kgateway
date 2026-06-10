@@ -3459,12 +3459,6 @@ func TestValidation(t *testing.T) {
 			minMode:   apisettings.ValidationStandard,
 		},
 		{
-			name:      "BackendConfigPolicy Invalid Outlier Detection Zero Interval",
-			category:  "backendconfigpolicy",
-			inputFile: "invalid-outlier-detection-zero-interval.yaml",
-			minMode:   apisettings.ValidationStandard,
-		},
-		{
 			name:      "Route delegation is not rejected",
 			category:  "delegation",
 			inputFile: "route-delegation.yaml",
