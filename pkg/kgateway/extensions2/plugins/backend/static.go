@@ -3,6 +3,7 @@ package backend
 import (
 	"fmt"
 	"net/netip"
+	"sync"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -26,6 +27,23 @@ type StaticIr struct {
 	clusterTypeConfig *anypb.Any
 	// +noKrtEquals
 	loadAssignment *envoyendpointv3.ClusterLoadAssignment
+
+	// namedLAOnce/namedLA memoize loadAssignment with the cluster name applied.
+	// The name is backend-derived, so all per-client clusters translated from
+	// this backend share one copy instead of cloning per client.
+	namedLAOnce sync.Once
+	namedLA     *envoyendpointv3.ClusterLoadAssignment
+}
+
+// namedLoadAssignment returns loadAssignment with the cluster name set, cloning
+// it once per backend rather than once per (client, backend) pair.
+func (u *StaticIr) namedLoadAssignment(clusterName string) *envoyendpointv3.ClusterLoadAssignment {
+	u.namedLAOnce.Do(func() {
+		la := proto.Clone(u.loadAssignment).(*envoyendpointv3.ClusterLoadAssignment)
+		la.ClusterName = clusterName
+		u.namedLA = la
+	})
+	return u.namedLA
 }
 
 // Equals checks if two StaticIr objects are equal.
@@ -115,8 +133,11 @@ func processStatic(ir *StaticIr, out *envoyclusterv3.Cluster) {
 	if ir.clusterTypeConfig != nil {
 		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
 			ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
-				Name:        dnsClusterExtensionName,
-				TypedConfig: proto.Clone(ir.clusterTypeConfig).(*anypb.Any),
+				Name: dnsClusterExtensionName,
+				// Shared, not cloned: consumers that adjust the DNS config
+				// (processDnsLookupFamily, BackendConfigPolicy) replace the
+				// Any on the cluster rather than mutating it in place.
+				TypedConfig: ir.clusterTypeConfig,
 			},
 		}
 	} else {
@@ -126,8 +147,6 @@ func processStatic(ir *StaticIr, out *envoyclusterv3.Cluster) {
 	}
 
 	if ir.loadAssignment != nil {
-		// clone needed to avoid adding cluster name to original object in the IR.
-		out.LoadAssignment = proto.Clone(ir.loadAssignment).(*envoyendpointv3.ClusterLoadAssignment)
-		out.LoadAssignment.ClusterName = out.GetName()
+		out.LoadAssignment = ir.namedLoadAssignment(out.GetName())
 	}
 }
