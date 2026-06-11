@@ -230,10 +230,16 @@ func (a *AttachedPolicies) AppendWithPriority(HierarchicalPriority int, l ...Att
 	}
 	for _, l := range l {
 		for k, v := range l.Policies {
-			for j := range v {
-				v[j].HierarchicalPriority = HierarchicalPriority
+			// Copy before mutating: v aliases the source AttachedPolicies, which is
+			// KRT collection output shared across translations (e.g. a delegating parent
+			// route shared by all its delegatee children). Mutating it in place corrupts
+			// that shared state and races with other consumers.
+			cp := make([]PolicyAtt, len(v))
+			copy(cp, v)
+			for j := range cp {
+				cp[j].HierarchicalPriority = HierarchicalPriority
 			}
-			a.Policies[k] = append(a.Policies[k], v...)
+			a.Policies[k] = append(a.Policies[k], cp...)
 		}
 	}
 }
@@ -246,10 +252,14 @@ func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolici
 	// iterate in the reverse order so that the input order in l is preserved at the end
 	for i := len(l) - 1; i >= 0; i-- {
 		for k, v := range l[i].Policies {
-			for j := range v {
-				v[j].HierarchicalPriority = hierarchicalPriority
+			// Copy before mutating: see AppendWithPriority. v also backs the result, so
+			// without a copy the append below could write into the shared source's array.
+			cp := make([]PolicyAtt, len(v))
+			copy(cp, v)
+			for j := range cp {
+				cp[j].HierarchicalPriority = hierarchicalPriority
 			}
-			a.Policies[k] = append(v, a.Policies[k]...)
+			a.Policies[k] = append(cp, a.Policies[k]...)
 		}
 	}
 }
