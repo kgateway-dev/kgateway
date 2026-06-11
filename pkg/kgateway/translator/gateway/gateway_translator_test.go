@@ -141,6 +141,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("frontendtlsconfig with ListenerSet in different namespace", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/listenerset-cross-ns.yaml"},
+			outputFile: "frontendtlsconfig/listenerset-cross-ns.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "namespace-one",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("frontendtlsconfig with ListenerSet and cross-namespace ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/listenerset-cross-ns-refgrant.yaml"},
+			outputFile: "frontendtlsconfig/listenerset-cross-ns-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "namespace-one",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("http gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"http-routing/basic.yaml"},
