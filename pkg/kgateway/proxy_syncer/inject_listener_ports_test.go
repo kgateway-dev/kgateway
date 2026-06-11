@@ -15,7 +15,7 @@ func TestInjectListenerPorts(t *testing.T) {
 		wantPorts     map[string]int64 // listener name -> expected port
 	}{
 		{
-			name: "explicit port is preserved as-is",
+			name: "spec explicit port is injected as-is",
 			statusMap: map[string]any{
 				"listeners": []any{
 					map[string]any{"name": "http"},
@@ -51,16 +51,16 @@ func TestInjectListenerPorts(t *testing.T) {
 			wantPorts: map[string]int64{"https": 443},
 		},
 		{
-			name: "unknown protocol with zero port falls back to 65535",
+			name: "unknown protocol with zero port falls back to legacyPortFallback",
 			statusMap: map[string]any{
 				"listeners": []any{
-					map[string]any{"name": "tcp"},
+					map[string]any{"name": "unknown"},
 				},
 			},
 			specListeners: []gwv1.ListenerEntry{
-				{Name: "tcp", Protocol: gwv1.TCPProtocolType, Port: 0},
+				{Name: "unknown", Protocol: gwv1.ProtocolType("unknown"), Port: 0},
 			},
-			wantPorts: map[string]int64{"tcp": 65535},
+			wantPorts: map[string]int64{"unknown": legacyPortFallback},
 		},
 		{
 			name: "multiple listeners matched by name",
@@ -83,7 +83,7 @@ func TestInjectListenerPorts(t *testing.T) {
 			},
 		},
 		{
-			name: "status listener with no matching spec entry is left unchanged",
+			name: "status listener with no matching spec entry receives fallback port",
 			statusMap: map[string]any{
 				"listeners": []any{
 					map[string]any{"name": "orphan"},
@@ -92,7 +92,7 @@ func TestInjectListenerPorts(t *testing.T) {
 			specListeners: []gwv1.ListenerEntry{
 				{Name: "other", Protocol: gwv1.HTTPProtocolType, Port: 80},
 			},
-			wantPorts: map[string]int64{}, // no port injected
+			wantPorts: map[string]int64{"orphan": legacyPortFallback},
 		},
 		{
 			name: "missing listeners key in statusMap is a no-op",
