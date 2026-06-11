@@ -394,7 +394,7 @@ func (d *Deployer) hasMatchingGatewayServiceMetadata(existingObj, desiredObj cli
 	}
 
 	desiredGatewayLabel, desiredHasGatewayLabel := desiredLabels[wellknown.GatewayNameLabel]
-	return !desiredHasGatewayLabel && existingLabels[wellknown.GatewayNameLabel] == desiredGatewayLabel
+	return !desiredHasGatewayLabel || existingLabels[wellknown.GatewayNameLabel] == desiredGatewayLabel
 }
 
 func (d *Deployer) gvkToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
