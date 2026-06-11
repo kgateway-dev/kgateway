@@ -374,6 +374,7 @@ func hasControllerOwnerRef(obj client.Object, sourceObj client.Object) bool {
 		return false
 	}
 
+	// sourceObj should be the gateway - so if the owner name matches the gateway name, it should be updated
 	return controller.Name == sourceObj.GetName()
 }
 

@@ -2604,7 +2604,7 @@ var _ = Describe("DeployObjs", func() {
 				Name:      name,
 				Namespace: ns,
 				Labels: map[string]string{
-					"app.kubernetes.io/managed-by":  wellknown.DefaultGatewayControllerName,
+					"app.kubernetes.io/managed-by":  "kgateway",
 					wellknown.GatewayClassNameLabel: wellknown.DefaultGatewayClassName,
 					wellknown.GatewayNameLabel:      name,
 				},
