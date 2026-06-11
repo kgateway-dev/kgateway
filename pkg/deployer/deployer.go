@@ -33,7 +33,6 @@ var logger = logging.New("deployer")
 
 const (
 	appKubernetesManagedByLabel = "app.kubernetes.io/managed-by"
-	kgatewayManagedByValue      = "kgateway"
 )
 
 type ControlPlaneInfo struct {
@@ -55,6 +54,7 @@ type Patcher func(ctx context.Context, client apiclient.Client, fieldManager str
 // A Deployer is responsible for deploying proxies.
 type Deployer struct {
 	controllerName                       string
+	managedBy                            string
 	chart                                *chart.Chart
 	scheme                               *runtime.Scheme
 	client                               apiclient.Client
@@ -78,6 +78,12 @@ func WithGVKToGVRMapper(m map[schema.GroupVersionKind]schema.GroupVersionResourc
 	}
 }
 
+func WithManagedBy(managedBy string) Option {
+	return func(d *Deployer) {
+		d.managedBy = managedBy
+	}
+}
+
 // NewDeployer creates a new deployer for managed resources.
 func NewDeployer(
 	controllerName string,
@@ -90,6 +96,7 @@ func NewDeployer(
 ) *Deployer {
 	d := &Deployer{
 		controllerName:                       controllerName,
+		managedBy:                            controllerName,
 		scheme:                               scheme,
 		client:                               client,
 		chart:                                chart,
@@ -285,7 +292,7 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 		// If the object doesn't exist or there's an error other than "not found", proceed with patching
 		switch {
 		case err == nil:
-			if err := validateExistingServiceOwnership(sourceObj, obj, existing); err != nil {
+			if err := d.validateExistingServiceOwnership(sourceObj, obj, existing); err != nil {
 				return err
 			}
 			// zero out fields that api server changes
@@ -335,12 +342,12 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 	return nil
 }
 
-func validateExistingServiceOwnership(sourceObj, desiredObj client.Object, existingObj *unstructured.Unstructured) error {
+func (d *Deployer) validateExistingServiceOwnership(sourceObj, desiredObj client.Object, existingObj *unstructured.Unstructured) error {
 	if sourceObj == nil || desiredObj.GetObjectKind().GroupVersionKind() != wellknown.ServiceGVK {
 		return nil
 	}
 
-	if hasControllerOwnerRef(existingObj, sourceObj) || hasMatchingGatewayServiceMetadata(existingObj, desiredObj) {
+	if hasControllerOwnerRef(existingObj, sourceObj) || d.hasMatchingGatewayServiceMetadata(existingObj, desiredObj) {
 		return nil
 	}
 
@@ -370,12 +377,14 @@ func hasControllerOwnerRef(obj client.Object, sourceObj client.Object) bool {
 	return controller.Name == sourceObj.GetName()
 }
 
-func hasMatchingGatewayServiceMetadata(existingObj, desiredObj client.Object) bool {
+func (d *Deployer) hasMatchingGatewayServiceMetadata(existingObj, desiredObj client.Object) bool {
 	existingLabels := existingObj.GetLabels()
 	desiredLabels := desiredObj.GetLabels()
-	if existingLabels[appKubernetesManagedByLabel] != kgatewayManagedByValue ||
-		desiredLabels[appKubernetesManagedByLabel] != kgatewayManagedByValue {
-		return false
+	if existingManagedByLabel, existingHasManagedByLabel := existingLabels[appKubernetesManagedByLabel]; existingHasManagedByLabel {
+		if existingManagedByLabel != d.managedBy ||
+			desiredLabels[appKubernetesManagedByLabel] != d.managedBy {
+			return false
+		}
 	}
 
 	if desiredClassName, ok := desiredLabels[wellknown.GatewayClassNameLabel]; ok {
@@ -385,7 +394,7 @@ func hasMatchingGatewayServiceMetadata(existingObj, desiredObj client.Object) bo
 	}
 
 	desiredGatewayLabel, desiredHasGatewayLabel := desiredLabels[wellknown.GatewayNameLabel]
-	return desiredHasGatewayLabel && existingLabels[wellknown.GatewayNameLabel] == desiredGatewayLabel
+	return !desiredHasGatewayLabel && existingLabels[wellknown.GatewayNameLabel] == desiredGatewayLabel
 }
 
 func (d *Deployer) gvkToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
