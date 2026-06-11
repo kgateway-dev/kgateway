@@ -158,7 +158,7 @@ func TestSettings(t *testing.T) {
 					},
 				},
 				SkipGatewayAPIVersionCheck: true,
-				ReferenceGrantMode: ReferenceGrantStrict,
+				ReferenceGrantMode:         ReferenceGrantStrict,
 			},
 		},
 		{

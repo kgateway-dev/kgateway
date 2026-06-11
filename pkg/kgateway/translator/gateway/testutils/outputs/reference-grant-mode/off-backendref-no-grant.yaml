@@ -5,9 +5,11 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
+  metadata: {}
   name: kube_other_backend-svc_80
   type: EDS
 - connectTimeout: 5s
+  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -54,6 +56,11 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
         status: "True"
@@ -63,11 +70,6 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
-      - lastTransitionTime: null
-        message: Successfully resolved all Gateway references
-        reason: ResolvedRefs
-        status: "True"
-        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
