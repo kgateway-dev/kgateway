@@ -736,8 +736,8 @@ func listenerHostnamePrecedence(hostname *gwv1.Hostname) (int, int) {
 	}
 
 	hostnameString := string(*hostname)
-	if strings.HasPrefix(hostnameString, "*.") {
-		return 1, strings.Count(strings.TrimPrefix(hostnameString, "*."), ".")
+	if after, ok := strings.CutPrefix(hostnameString, "*."); ok {
+		return 1, strings.Count(after, ".")
 	}
 
 	return 2, 0
