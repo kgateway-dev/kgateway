@@ -31,6 +31,11 @@ import (
 
 var logger = logging.New("deployer")
 
+const (
+	appKubernetesManagedByLabel = "app.kubernetes.io/managed-by"
+	kgatewayManagedByValue      = "kgateway"
+)
+
 type ControlPlaneInfo struct {
 	XdsHost      string
 	XdsPort      uint32
@@ -280,6 +285,9 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 		// If the object doesn't exist or there's an error other than "not found", proceed with patching
 		switch {
 		case err == nil:
+			if err := validateExistingServiceOwnership(sourceObj, obj, existing); err != nil {
+				return err
+			}
 			// zero out fields that api server changes
 			existing.SetResourceVersion("")
 			existing.SetGeneration(0)
@@ -325,6 +333,59 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 		}
 	}
 	return nil
+}
+
+func validateExistingServiceOwnership(sourceObj, desiredObj client.Object, existingObj *unstructured.Unstructured) error {
+	if sourceObj == nil || desiredObj.GetObjectKind().GroupVersionKind() != wellknown.ServiceGVK {
+		return nil
+	}
+
+	if hasControllerOwnerRef(existingObj, sourceObj) || hasMatchingGatewayServiceMetadata(existingObj, desiredObj) {
+		return nil
+	}
+
+	return fmt.Errorf(
+		"refusing to apply Service %s/%s for source object %s/%s: existing Service is not owned by kgateway",
+		desiredObj.GetNamespace(),
+		desiredObj.GetName(),
+		sourceObj.GetNamespace(),
+		sourceObj.GetName(),
+	)
+}
+
+func hasControllerOwnerRef(obj client.Object, sourceObj client.Object) bool {
+	controller := metav1.GetControllerOf(obj)
+	if controller == nil || sourceObj.GetUID() == "" || controller.UID != sourceObj.GetUID() {
+		return false
+	}
+
+	sourceGVK := sourceObj.GetObjectKind().GroupVersionKind()
+	if sourceGVK.Kind != "" && controller.Kind != sourceGVK.Kind {
+		return false
+	}
+	if sourceGVK.GroupVersion().String() != "" && controller.APIVersion != sourceGVK.GroupVersion().String() {
+		return false
+	}
+
+	return controller.Name == sourceObj.GetName()
+}
+
+func hasMatchingGatewayServiceMetadata(existingObj, desiredObj client.Object) bool {
+	existingLabels := existingObj.GetLabels()
+	desiredLabels := desiredObj.GetLabels()
+	if existingLabels[appKubernetesManagedByLabel] != kgatewayManagedByValue ||
+		desiredLabels[appKubernetesManagedByLabel] != kgatewayManagedByValue {
+		return false
+	}
+
+	if desiredClassName, ok := desiredLabels[wellknown.GatewayClassNameLabel]; ok {
+		if existingLabels[wellknown.GatewayClassNameLabel] != desiredClassName {
+			return false
+		}
+	}
+
+	desiredGatewayLabel, desiredHasGatewayLabel := desiredLabels[wellknown.GatewayNameLabel]
+	return desiredHasGatewayLabel && existingLabels[wellknown.GatewayNameLabel] == desiredGatewayLabel
 }
 
 func (d *Deployer) gvkToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {

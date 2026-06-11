@@ -24,6 +24,7 @@ spec:
   rules:
     - backendRefs:
         - name: example-svc
+          namespace: nginx-shared
           port: 8080
 ---
 kind: Gateway
@@ -52,4 +53,5 @@ spec:
   rules:
     - backendRefs:
         - name: example-svc
+          namespace: nginx-shared
           port: 8080

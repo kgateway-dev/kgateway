@@ -2579,6 +2579,46 @@ var _ = Describe("DeployObjs", func() {
 		return d
 	}
 
+	newGatewaySource := func() *gwv1.Gateway {
+		gw := &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns,
+				UID:       "gateway-uid",
+			},
+			Spec: gwv1.GatewaySpec{
+				GatewayClassName: wellknown.DefaultGatewayClassName,
+			},
+		}
+		gw.SetGroupVersionKind(wellknown.GatewayGVK)
+		return gw
+	}
+
+	newGatewayService := func() *corev1.Service {
+		return &corev1.Service{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       wellknown.ServiceGVK.Kind,
+				APIVersion: wellknown.ServiceGVK.GroupVersion().String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns,
+				Labels: map[string]string{
+					"app.kubernetes.io/managed-by":  "kgateway",
+					wellknown.GatewayClassNameLabel: wellknown.DefaultGatewayClassName,
+					wellknown.GatewayNameLabel:      name,
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Type: corev1.ServiceTypeLoadBalancer,
+				Ports: []corev1.ServicePort{{
+					Name: "http",
+					Port: 80,
+				}},
+			},
+		}
+	}
+
 	It("skips patch if object is unchanged", func() {
 		cm := &corev1.ConfigMap{
 			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
@@ -2637,6 +2677,71 @@ var _ = Describe("DeployObjs", func() {
 		fc.RunAndWait(context.Background().Done())
 
 		err := d.DeployObjs(testCtx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeTrue())
+	})
+
+	It("refuses to patch an existing Service not owned by the source Gateway", func() {
+		gw := newGatewaySource()
+		existingSvc := newGatewayService()
+		existingSvc.Labels = nil
+		existingSvc.Annotations = nil
+		existingSvc.OwnerReferences = nil
+
+		fc := fake.NewClient(GinkgoT(), existingSvc)
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			Fail("Patch should not be called")
+			return errors.New("unexpected Patch call")
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		err := d.DeployObjsWithSource(ctx, []client.Object{newGatewayService()}, gw)
+		Expect(err).To(MatchError(ContainSubstring("existing Service is not owned by kgateway")))
+	})
+
+	It("patches an existing Service with matching Gateway labels", func() {
+		gw := newGatewaySource()
+		existingSvc := newGatewayService()
+		existingSvc.Annotations = nil
+		existingSvc.OwnerReferences = nil
+		existingSvc.Spec.Type = corev1.ServiceTypeClusterIP
+
+		fc := fake.NewClient(GinkgoT(), existingSvc)
+		patched := false
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			patched = true
+			return nil
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		err := d.DeployObjsWithSource(ctx, []client.Object{newGatewayService()}, gw)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeTrue())
+	})
+
+	It("patches an existing Service with a controller owner reference for the source Gateway", func() {
+		gw := newGatewaySource()
+		existingSvc := newGatewayService()
+		existingSvc.Labels = nil
+		existingSvc.Annotations = nil
+		existingSvc.OwnerReferences = []metav1.OwnerReference{{
+			APIVersion: wellknown.GatewayGVK.GroupVersion().String(),
+			Kind:       wellknown.GatewayGVK.Kind,
+			Name:       gw.GetName(),
+			UID:        gw.GetUID(),
+			Controller: new(true),
+		}}
+		existingSvc.Spec.Type = corev1.ServiceTypeClusterIP
+
+		fc := fake.NewClient(GinkgoT(), existingSvc)
+		patched := false
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			patched = true
+			return nil
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		err := d.DeployObjsWithSource(ctx, []client.Object{newGatewayService()}, gw)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
 	})

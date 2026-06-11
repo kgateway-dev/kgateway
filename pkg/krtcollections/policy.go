@@ -3,6 +3,7 @@ package krtcollections
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/config/labels"
@@ -92,6 +93,12 @@ type BackendIndex struct {
 type backendKey struct {
 	ir.ObjectSource
 	port int32
+}
+
+// String must include the port; otherwise the embedded ir.ObjectSource.String()
+// is promoted and all ports of a multi-port host collapse into one index bucket.
+func (b backendKey) String() string {
+	return b.ObjectSource.String() + ":" + strconv.Itoa(int(b.port))
 }
 
 func NewBackendIndex(
