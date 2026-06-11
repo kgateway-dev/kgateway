@@ -5,6 +5,7 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
+  metadata: {}
   name: kube_default_backend-svc_80
   type: EDS
 - connectTimeout: 5s
@@ -13,6 +14,7 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
+  metadata: {}
   name: kube_other-ns_extproc-svc_9091
   type: EDS
   typedExtensionProtocolOptions:
@@ -21,6 +23,7 @@ Clusters:
       explicitHttpConfig:
         http2ProtocolOptions: {}
 - connectTimeout: 5s
+  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
