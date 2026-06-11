@@ -505,7 +505,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 		},
 		apisettings.Settings{},
 	)
-	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
+	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock), apisettings.ReferenceGrantPermissive)
 	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	backends := krttest.GetMockCollection[*kgateway.Backend](mock)

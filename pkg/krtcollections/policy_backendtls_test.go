@@ -132,7 +132,7 @@ func TestGetBackendFromRefReturnsPolicyAttachedBackend(t *testing.T) {
 		},
 		apisettings.Settings{},
 	)
-	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
+	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock), apisettings.ReferenceGrantPermissive)
 	backends := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	serviceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		out := make([]ir.BackendObjectIR, 0, len(svc.Spec.Ports))
@@ -254,7 +254,7 @@ func TestBackendPoliciesUpdateWhenBackendTLSPolicyCreatedAfterService(t *testing
 		},
 		settings,
 	)
-	refgrants := NewRefGrantIndex(krt.NewStaticCollection[*gwv1b1.ReferenceGrant](nil, nil, krtopts.ToOptions("RefGrants")...))
+	refgrants := NewRefGrantIndex(krt.NewStaticCollection[*gwv1b1.ReferenceGrant](nil, nil, krtopts.ToOptions("RefGrants")...), apisettings.ReferenceGrantPermissive)
 	backends := NewBackendIndex(krtopts, policies, refgrants)
 	serviceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		out := make([]ir.BackendObjectIR, 0, len(svc.Spec.Ports))
