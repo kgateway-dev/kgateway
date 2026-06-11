@@ -19,6 +19,7 @@ import (
 const (
 	NormalizedHTTPSTLSType = "HTTPS/TLS"
 	DefaultHostname        = "*"
+	tcpUDPHostnameErr      = "Hostname must be unset for TCP and UDP listeners"
 )
 
 type portProtocol struct {
@@ -224,6 +225,12 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 			continue
 		}
 
+		if (protocol == gwv1.TCPProtocolType || protocol == gwv1.UDPProtocolType) && listener.Hostname != nil && *listener.Hostname != "" {
+			parentReporter := listener.GetParentReporter(reporter)
+			rejectInvalidListener(parentReporter, listener, tcpUDPHostnameErr)
+			continue
+		}
+
 		if protocol == gwv1.HTTPSProtocolType || protocol == gwv1.TLSProtocolType {
 			protocol = NormalizedHTTPSTLSType
 		}
@@ -232,7 +239,6 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 			existingListener.protocol[protocol] = true
 			existingListener.listeners = append(existingListener.listeners, listener)
 
-			// TODO(Law): handle validation that hostname empty for udp/tcp
 			hostname := getOrDefaultHostname(listener.Hostname)
 			if _, ok := existingListener.hostnames[hostname]; !ok {
 				existingListener.hostnames[hostname] = generateUniqueListenerName(listener)

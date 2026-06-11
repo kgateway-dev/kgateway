@@ -993,7 +993,8 @@ func TestTCPHostnameConflict(t *testing.T) {
 
 	validListeners := validateGateway(gwToIr(gateway, listenerSet, nil), reporter)
 	g := NewWithT(t)
-	g.Expect(validListeners).To(HaveLen(1))
+	// Both TCP listeners have non-empty hostnames, which is now rejected per Gateway API spec
+	g.Expect(validListeners).To(BeEmpty())
 
 	expectedGwStatuses := map[string]gwv1.ListenerStatus{
 		"tcp": {
@@ -1004,8 +1005,20 @@ func TestTCPHostnameConflict(t *testing.T) {
 					Kind:  "TCPRoute",
 				},
 			},
-			// The first conflicted listener should be accepted based on listener precedence
-			Conditions: []metav1.Condition{},
+			Conditions: []metav1.Condition{
+				{
+					Type:    string(gwv1.ListenerConditionAccepted),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerEntryReasonInvalid),
+					Message: tcpUDPHostnameErr,
+				},
+				{
+					Type:    string(gwv1.ListenerConditionProgrammed),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerEntryReasonInvalid),
+					Message: tcpUDPHostnameErr,
+				},
+			},
 		},
 	}
 	expectedLsStatuses := map[string]gwv1.ListenerStatus{
@@ -1019,19 +1032,16 @@ func TestTCPHostnameConflict(t *testing.T) {
 			},
 			Conditions: []metav1.Condition{
 				{
-					Type:   string(gwv1.ListenerConditionConflicted),
-					Status: metav1.ConditionTrue,
-					Reason: string(gwv1.ListenerReasonHostnameConflict),
+					Type:    string(gwv1.ListenerConditionAccepted),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerEntryReasonInvalid),
+					Message: tcpUDPHostnameErr,
 				},
 				{
-					Type:   string(gwv1.ListenerConditionAccepted),
-					Status: metav1.ConditionFalse,
-					Reason: string(gwv1.ListenerReasonHostnameConflict),
-				},
-				{
-					Type:   string(gwv1.ListenerConditionProgrammed),
-					Status: metav1.ConditionFalse,
-					Reason: string(gwv1.ListenerReasonHostnameConflict),
+					Type:    string(gwv1.ListenerConditionProgrammed),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(gwv1.ListenerEntryReasonInvalid),
+					Message: tcpUDPHostnameErr,
 				},
 			},
 		},
@@ -2522,4 +2532,118 @@ func hboneProtocolGw() *gwv1.Gateway {
 			},
 		},
 	}
+}
+
+func TestTCPListenerWithHostnameRejected(t *testing.T) {
+	tests := []struct {
+		name             string
+		protocol         gwv1.ProtocolType
+		hostname         *gwv1.Hostname
+		expectValidCount int
+		expectedStatuses map[string]gwv1.ListenerStatus
+	}{
+		{
+			name:             "tcp-with-hostname-rejected",
+			protocol:         gwv1.TCPProtocolType,
+			hostname:         hostnamePtr("example.com"),
+			expectValidCount: 0,
+			expectedStatuses: map[string]gwv1.ListenerStatus{
+				"tcp-with-hostname-rejected": {
+					Name: "tcp-with-hostname-rejected",
+					SupportedKinds: []gwv1.RouteGroupKind{
+						{
+							Group: GroupNameHelper(),
+							Kind:  "TCPRoute",
+						},
+					},
+					Conditions: []metav1.Condition{
+						{
+							Type:    string(gwv1.ListenerConditionAccepted),
+							Status:  metav1.ConditionFalse,
+							Reason:  string(gwv1.ListenerEntryReasonInvalid),
+							Message: tcpUDPHostnameErr,
+						},
+						{
+							Type:    string(gwv1.ListenerConditionProgrammed),
+							Status:  metav1.ConditionFalse,
+							Reason:  string(gwv1.ListenerEntryReasonInvalid),
+							Message: tcpUDPHostnameErr,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:             "tcp-nil-hostname-accepted",
+			protocol:         gwv1.TCPProtocolType,
+			hostname:         nil,
+			expectValidCount: 1,
+			expectedStatuses: map[string]gwv1.ListenerStatus{
+				"tcp-nil-hostname-accepted": {
+					Name: "tcp-nil-hostname-accepted",
+					SupportedKinds: []gwv1.RouteGroupKind{
+						{
+							Group: GroupNameHelper(),
+							Kind:  "TCPRoute",
+						},
+					},
+					Conditions: []metav1.Condition{},
+				},
+			},
+		},
+		{
+			name:             "tcp-empty-hostname-accepted",
+			protocol:         gwv1.TCPProtocolType,
+			hostname:         hostnamePtr(""),
+			expectValidCount: 1,
+			expectedStatuses: map[string]gwv1.ListenerStatus{
+				"tcp-empty-hostname-accepted": {
+					Name: "tcp-empty-hostname-accepted",
+					SupportedKinds: []gwv1.RouteGroupKind{
+						{
+							Group: GroupNameHelper(),
+							Kind:  "TCPRoute",
+						},
+					},
+					Conditions: []metav1.Condition{},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			gateway := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "test-gateway",
+				},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: "kgateway",
+					Listeners: []gwv1.Listener{
+						{
+							Name:     gwv1.SectionName(tc.name),
+							Port:     8080,
+							Protocol: tc.protocol,
+							Hostname: tc.hostname,
+						},
+					},
+				},
+			}
+
+			report := reports.NewReportMap()
+			reporter := reports.NewReporter(&report)
+
+			validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
+			g.Expect(validListeners).To(HaveLen(tc.expectValidCount))
+
+			assertExpectedListenerStatuses(t, g, report.Gateway(gateway), gateway.Spec.Listeners, tc.expectedStatuses)
+		})
+	}
+}
+
+func hostnamePtr(h gwv1.Hostname) *gwv1.Hostname {
+	return &h
 }
