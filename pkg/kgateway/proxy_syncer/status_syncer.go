@@ -30,6 +30,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -662,8 +663,41 @@ func (s *StatusSyncer) patchListenerSetStatus(
 	if err != nil {
 		return err
 	}
+	// Legacy XListenerSet CRDs require "port" in status.listeners[*],
+	// but the promoted gwv1.ListenerEntryStatus type no longer carries it.
+	// Inject the value from spec before patching.
+	injectListenerPorts(statusMap, ls.Spec.Listeners)
 	legacyListenerSet.Object["status"] = statusMap
 	return s.mgr.GetClient().Status().Patch(ctx, legacyListenerSet, client.Merge)
+}
+
+// injectListenerPorts adds the "port" field to each entry in statusMap["listeners"]
+// by looking up the matching listener in specListeners by name.
+// This is needed because gwv1.ListenerEntryStatus no longer carries Port, but the
+// legacy XListenerSet CRD schema still requires it.
+func injectListenerPorts(statusMap map[string]any, specListeners []gwv1.ListenerEntry) {
+	listeners, ok := statusMap["listeners"].([]any)
+	if !ok {
+		return
+	}
+	for i, entry := range listeners {
+		entryMap, ok := entry.(map[string]any)
+		if !ok {
+			continue
+		}
+		name, _ := entryMap["name"].(string)
+		for _, spec := range specListeners {
+			if string(spec.Name) == name {
+				port, err := kubeutils.DetectListenerPortNumber(spec.Protocol, spec.Port)
+				if err != nil {
+					port = 65535
+				}
+				entryMap["port"] = int64(port)
+				listeners[i] = entryMap
+				break
+			}
+		}
+	}
 }
 
 func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
