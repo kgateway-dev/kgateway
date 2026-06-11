@@ -129,7 +129,7 @@ func NewCommonCollections(
 		wellknown.ReferenceGrantGVR,
 		kclient.Filter{ObjectFilter: client.ObjectFilter()},
 	), krtOptions.ToOptions("RefGrants")...)
-	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
+	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol, settings.ReferenceGrantMode)
 
 	serviceClient := kclient.NewFiltered[*corev1.Service](
 		client,

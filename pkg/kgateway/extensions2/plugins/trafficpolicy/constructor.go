@@ -9,8 +9,11 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -132,6 +135,22 @@ func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerConte
 	namespace := ptr.Deref(extensionRef.Namespace, "")
 	if namespace == "" {
 		namespace = gwv1.Namespace(ns)
+	}
+
+	// In Strict mode, cross-namespace ExtensionRef requires a ReferenceGrant.
+	if c.commoncol.Settings.ReferenceGrantMode == apisettings.ReferenceGrantStrict {
+		if !c.commoncol.RefGrants.ReferenceAllowed(krtctx,
+			wellknown.TrafficPolicyGVK.GroupKind(),
+			ns,
+			ir.ObjectSource{
+				Group:     wellknown.GatewayExtensionGVK.Group,
+				Kind:      wellknown.GatewayExtensionGVK.Kind,
+				Namespace: string(namespace),
+				Name:      string(extensionRef.Name),
+			},
+		) {
+			return nil, krtcollections.ErrMissingReferenceGrant
+		}
 	}
 
 	gwExtNN := types.NamespacedName{Name: string(extensionRef.Name), Namespace: string(namespace)}

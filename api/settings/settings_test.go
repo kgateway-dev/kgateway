@@ -52,6 +52,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_XDS_TLS":                                  "true",
 		"KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES": "false",
 		"KGW_SKIP_GATEWAY_API_VERSION_CHECK":           "true",
+		"KGW_REFERENCE_GRANT_MODE":                     string(ReferenceGrantStrict),
 	}
 }
 
@@ -97,6 +98,7 @@ func TestSettings(t *testing.T) {
 				EnableEnvoy:                          true,
 				WeightedRoutePrecedence:              false,
 				ValidationMode:                       ValidationStandard,
+				ReferenceGrantMode:                   ReferenceGrantPermissive,
 				EnableBuiltinDefaultMetrics:          false,
 				GlobalPolicyNamespace:                "",
 				DisableLeaderElection:                false,
@@ -156,6 +158,7 @@ func TestSettings(t *testing.T) {
 					},
 				},
 				SkipGatewayAPIVersionCheck: true,
+				ReferenceGrantMode: ReferenceGrantStrict,
 			},
 		},
 		{
@@ -192,6 +195,13 @@ func TestSettings(t *testing.T) {
 				"KGW_VALIDATION_MODE": "invalid",
 			},
 			expectedErrorStr: `invalid validation mode: "invalid"`,
+		},
+		{
+			name: "errors on invalid reference grant mode",
+			envVars: map[string]string{
+				"KGW_REFERENCE_GRANT_MODE": "invalid",
+			},
+			expectedErrorStr: `invalid reference grant mode: "invalid"`,
 		},
 		{
 			name: "errors on invalid gatewayclass parameters refs: missing name",
@@ -234,6 +244,7 @@ func TestSettings(t *testing.T) {
 				EnableEnvoy:                          true,
 				WeightedRoutePrecedence:              false,
 				ValidationMode:                       ValidationStandard,
+				ReferenceGrantMode:                   ReferenceGrantPermissive,
 				PolicyMerge:                          "{}",
 				XdsAuth:                              true,
 				XdsTLS:                               false,

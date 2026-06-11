@@ -40,6 +40,39 @@ func (v *ValidationMode) Decode(value string) error {
 	}
 }
 
+// ReferenceGrantMode controls how strictly cross-namespace references are validated
+// via ReferenceGrant across the control plane.
+type ReferenceGrantMode string
+
+const (
+	// ReferenceGrantOff disables all ReferenceGrant validation. All cross-namespace
+	// references are permitted without any grant. Use only in environments where
+	// namespace isolation is enforced by other means.
+	ReferenceGrantOff ReferenceGrantMode = "OFF"
+
+	// ReferenceGrantPermissive enforces ReferenceGrant for cross-namespace
+	// BackendRef and SecretRef references (current default behavior). Cross-namespace
+	// ExtensionRef references are permitted without a grant.
+	ReferenceGrantPermissive ReferenceGrantMode = "PERMISSIVE"
+
+	// ReferenceGrantStrict enforces ReferenceGrant for all cross-namespace references,
+	// including ExtensionRef (e.g., TrafficPolicy referencing a GatewayExtension in
+	// another namespace).
+	ReferenceGrantStrict ReferenceGrantMode = "STRICT"
+)
+
+// Decode implements envconfig.Decoder.
+func (r *ReferenceGrantMode) Decode(value string) error {
+	mode := ReferenceGrantMode(strings.ToUpper(value))
+	switch mode {
+	case ReferenceGrantOff, ReferenceGrantPermissive, ReferenceGrantStrict:
+		*r = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid reference grant mode: %q", value)
+	}
+}
+
 // DnsLookupFamily controls the DNS lookup family for all static clusters created via Backend resources.
 type DnsLookupFamily string
 
@@ -253,6 +286,13 @@ type Settings struct {
 	// kgateway refuses to start against an unsupported Gateway API version
 	// and points the operator to the docs.
 	SkipGatewayAPIVersionCheck bool `split_words:"true" default:"false"`
+
+	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
+	// Supported values are:
+	// - "OFF": No ReferenceGrant validation. All cross-namespace references are permitted.
+	// - "PERMISSIVE": ReferenceGrant required for BackendRef and SecretRef (default behavior).
+	// - "STRICT": ReferenceGrant required for all cross-namespace references including ExtensionRef.
+	ReferenceGrantMode ReferenceGrantMode `split_words:"true" default:"PERMISSIVE"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
