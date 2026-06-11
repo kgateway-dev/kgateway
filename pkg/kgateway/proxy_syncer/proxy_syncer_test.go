@@ -103,6 +103,27 @@ func TestIsRouteStatusEqual(t *testing.T) {
 			},
 		},
 	}
+	// Same as status1, but with reversed parent order.
+	status2Reordered := &gwv1.RouteStatus{
+		Parents: []gwv1.RouteParentStatus{
+			{
+				ParentRef: gwv1.ParentReference{
+					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      new(gwv1.Kind(wellknown.TCPRouteKind)),
+					Name:      "parent",
+					Namespace: new(gwv1.Namespace("default")),
+				},
+			},
+			{
+				ParentRef: gwv1.ParentReference{
+					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
+					Name:      "parent",
+					Namespace: new(gwv1.Namespace("default")),
+				},
+			},
+		},
+	}
 	// Different from status1
 	status3 := &gwv1.RouteStatus{
 		Parents: []gwv1.RouteParentStatus{
@@ -132,6 +153,7 @@ func TestIsRouteStatusEqual(t *testing.T) {
 		want bool
 	}{
 		{"EqualStatus", status1, status2, true},
+		{"EqualStatusReorderedParents", status1, status2Reordered, true},
 		{"DifferentStatus", status1, status3, false},
 	}
 
