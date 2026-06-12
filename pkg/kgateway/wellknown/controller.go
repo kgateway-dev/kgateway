@@ -29,4 +29,7 @@ const (
 
 	// LeaderElectionID is the name of the lease that leader election will use for holding the leader lock.
 	LeaderElectionID = "kgateway-envoy"
+
+	// DefaultManagedByValue represents the default value of the app.kubernetes.io/managed-by label
+	DefaultManagedByValue = "kgateway"
 )

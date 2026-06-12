@@ -395,6 +395,8 @@ func (d *Deployer) hasMatchingGatewayServiceMetadata(existingObj, desiredObj cli
 	}
 
 	desiredGatewayLabel, desiredHasGatewayLabel := desiredLabels[wellknown.GatewayNameLabel]
+	// Down to the last option. If the GatewayNameLabel is missing, there's really no way to know for sure so return true
+	// This can happen if it is an upgrade from an older version
 	return !desiredHasGatewayLabel || existingLabels[wellknown.GatewayNameLabel] == desiredGatewayLabel
 }
 
