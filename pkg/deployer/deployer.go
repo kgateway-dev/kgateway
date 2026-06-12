@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strings"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -395,9 +396,18 @@ func (d *Deployer) hasMatchingGatewayServiceMetadata(existingObj, desiredObj cli
 	}
 
 	desiredGatewayLabel, desiredHasGatewayLabel := desiredLabels[wellknown.GatewayNameLabel]
-	// Down to the last option. If the GatewayNameLabel is missing, there's really no way to know for sure so return true
+	if desiredHasGatewayLabel {
+		return existingLabels[wellknown.GatewayNameLabel] == desiredGatewayLabel
+	}
+
+	// Down to the last option. Does any label contain `kgateway` ?
 	// This can happen if it is an upgrade from an older version
-	return !desiredHasGatewayLabel || existingLabels[wellknown.GatewayNameLabel] == desiredGatewayLabel
+	for _, v := range existingLabels {
+		if strings.Contains(v, d.managedBy) {
+			return true
+		}
+	}
+	return false
 }
 
 func (d *Deployer) gvkToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
