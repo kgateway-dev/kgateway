@@ -395,8 +395,7 @@ func (d *Deployer) hasMatchingGatewayServiceMetadata(existingObj, desiredObj cli
 		}
 	}
 
-	desiredGatewayLabel, desiredHasGatewayLabel := desiredLabels[wellknown.GatewayNameLabel]
-	if desiredHasGatewayLabel {
+	if desiredGatewayLabel, desiredHasGatewayLabel := desiredLabels[wellknown.GatewayNameLabel]; desiredHasGatewayLabel {
 		return existingLabels[wellknown.GatewayNameLabel] == desiredGatewayLabel
 	}
 
