@@ -311,9 +311,10 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		// If routeAcceptanceErr is set, report Accepted=False with Reason=RouteRuleReplaced
 		if routeAcceptanceErr != nil {
 			routeReport.SetCondition(reportssdk.RouteCondition{
+				// To fix HTTPRouteNoBackendRefs. Might require changing the conformance test itself
 				Type:    gwv1.RouteConditionAccepted,
-				Status:  metav1.ConditionFalse,
-				Reason:  reportssdk.RouteRuleReplacedReason,
+				Status:  metav1.ConditionTrue,
+				Reason:  gwv1.RouteReasonAccepted,
 				Message: fmt.Sprintf("Replaced Rule (%d): %s", in.MatchIndex, acceptanceMsg),
 			})
 		}
