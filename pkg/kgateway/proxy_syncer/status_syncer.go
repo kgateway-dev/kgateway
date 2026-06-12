@@ -177,7 +177,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
-				case *gwv1.TCPRoute:
+				case *gwv1a2.TCPRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
@@ -291,7 +291,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 				return nil, nil
 			}
 			r.Status.RouteStatus = *status
-		case *gwv1.TCPRoute:
+		case *gwv1a2.TCPRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
 				return nil, nil
@@ -356,7 +356,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	for rnn := range rm.TCPRoutes {
 		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn,
 			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
-				route := new(gwv1.TCPRoute)
+				route := new(gwv1a2.TCPRoute)
 				return route, s.mgr.GetClient().Get(ctx, routeKey, route)
 			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {

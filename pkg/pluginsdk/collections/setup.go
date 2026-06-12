@@ -106,17 +106,17 @@ func (c *CommonCollections) InitCollections(
 
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12879
-	var tcproutes krt.Collection[*gwv1.TCPRoute]
+	var tcproutes krt.Collection[*gwv1a2.TCPRoute]
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
 		tcproutes = krt.WrapClient(
-			newDelayedTypedInformer(c.Client, gvr.TCPRoute, func() kclient.Informer[*gwv1.TCPRoute] {
-				return kclient.NewFiltered[*gwv1.TCPRoute](c.Client, filter)
+			newDelayedTypedInformer(c.Client, gvr.TCPRoute, func() kclient.Informer[*gwv1a2.TCPRoute] {
+				return kclient.NewFiltered[*gwv1a2.TCPRoute](c.Client, filter)
 			}),
 			c.KrtOpts.ToOptions("TCPRoute")...,
 		)
 	} else {
 		// If disabled, still build a collection but make it always empty
-		tcproutes = krt.NewStaticCollection[*gwv1.TCPRoute](nil, nil, c.KrtOpts.ToOptions("disable/TCPRoute")...)
+		tcproutes = krt.NewStaticCollection[*gwv1a2.TCPRoute](nil, nil, c.KrtOpts.ToOptions("disable/TCPRoute")...)
 	}
 
 	// TLSRoute is standard as of Gateway API v1.5, so promoted v1 TLSRoutes
@@ -172,7 +172,7 @@ func (c *CommonCollections) InitCollections(
 	default:
 		tlsRoutes = krt.JoinCollection(tlsRouteCollections, c.KrtOpts.ToOptions("TLSRoute")...)
 	}
-	metrics.RegisterEvents(tcproutes, kmetrics.GetResourceMetricEventHandler[*gwv1.TCPRoute]())
+	metrics.RegisterEvents(tcproutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TCPRoute]())
 	metrics.RegisterEvents(tlsRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TLSRoute]())
 
 	grpcRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GRPCRoute](c.Client, wellknown.GRPCRouteGVR, filter), c.KrtOpts.ToOptions("GRPCRoute")...)

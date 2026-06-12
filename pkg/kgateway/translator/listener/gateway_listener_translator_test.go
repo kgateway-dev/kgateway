@@ -50,7 +50,7 @@ func lisToIr(l gwv1.Listener) ir.Listener {
 	}
 }
 
-func tcpToIr(tcpRoute *gwv1.TCPRoute) *ir.TcpRouteIR {
+func tcpToIr(tcpRoute *gwv1a2.TCPRoute) *ir.TcpRouteIR {
 	routeir := &ir.TcpRouteIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: tcpRoute.Namespace,
@@ -134,7 +134,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			It("should create a TCP listener with multiple backend references", func() {
 				By("Creating a TCPRoute with multiple backend references")
 				tcpRoute := tcpRoute("test-tcp-route")
-				tcpRoute.Spec = gwv1.TCPRouteSpec{
+				tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
 							{
@@ -144,7 +144,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 							},
 						},
 					},
-					Rules: []gwv1.TCPRouteRule{
+					Rules: []gwv1a2.TCPRouteRule{
 						{
 							BackendRefs: []gwv1.BackendRef{
 								{
@@ -193,7 +193,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			It("should handle TCPRoute with empty backend references", func() {
 				By("Creating a TCPRoute with an empty backend references")
 				tcpRoute := tcpRoute("test-empty-backend")
-				tcpRoute.Spec = gwv1.TCPRouteSpec{
+				tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
 							{
@@ -203,7 +203,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 							},
 						},
 					},
-					Rules: []gwv1.TCPRouteRule{
+					Rules: []gwv1a2.TCPRouteRule{
 						{BackendRefs: []gwv1.BackendRef{}}, // Empty BackendRefs
 					},
 				}
@@ -246,7 +246,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			It("should skip routes with invalid parent references and process valid ones", func() {
 				By("Creating a TCPRoute with a backend reference")
 				validRoute := tcpRoute("valid-tcp-route")
-				validRoute.Spec = gwv1.TCPRouteSpec{
+				validRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
 							{
@@ -256,7 +256,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 							},
 						},
 					},
-					Rules: []gwv1.TCPRouteRule{
+					Rules: []gwv1a2.TCPRouteRule{
 						{
 							BackendRefs: []gwv1.BackendRef{
 								{
@@ -273,7 +273,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 				By("Creating an invalid TCPRoute with no parent references")
 				invalidRoute := tcpRoute("invalid-tcp-route")
-				invalidRoute.Spec = gwv1.TCPRouteSpec{
+				invalidRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{}, // No parent reference provided
 					},
@@ -308,7 +308,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			It("should create a TCP listener with a single weighted backend reference", func() {
 				By("Creating a weighted TCPRoute with a single backend reference")
 				tcpRoute := tcpRoute("test-tcp-route")
-				tcpRoute.Spec = gwv1.TCPRouteSpec{
+				tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
 							{
@@ -318,7 +318,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 							},
 						},
 					},
-					Rules: []gwv1.TCPRouteRule{
+					Rules: []gwv1a2.TCPRouteRule{
 						{
 							BackendRefs: []gwv1.BackendRef{
 								{
@@ -364,7 +364,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			It("should create a TCP listener with multiple weighted backend references", func() {
 				By("Creating a TCPRoute with multiple weighted backend references")
 				tcpRoute := tcpRoute("test-multi-weighted-tcp-route")
-				tcpRoute.Spec = gwv1.TCPRouteSpec{
+				tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
 							{
@@ -374,7 +374,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 							},
 						},
 					},
-					Rules: []gwv1.TCPRouteRule{
+					Rules: []gwv1a2.TCPRouteRule{
 						{
 							BackendRefs: []gwv1.BackendRef{
 								{
@@ -440,7 +440,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 		It("should not create a DestinationSpec when backendRef refers to a service in a different namespace without a permitting ReferenceGrant", func() {
 			By("Creating a TCPRoute with a backendRef to a different namespace")
 			tcpRoute := tcpRoute("cross-namespace-tcp-route")
-			tcpRoute.Spec = gwv1.TCPRouteSpec{
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
 						{
@@ -450,7 +450,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						},
 					},
 				},
-				Rules: []gwv1.TCPRouteRule{
+				Rules: []gwv1a2.TCPRouteRule{
 					{
 						BackendRefs: []gwv1.BackendRef{
 							{
@@ -500,7 +500,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 		It("should create a TCP listener when backendRef refers to a service in a different namespace with a permitting ReferenceGrant", func() {
 			By("Creating a TCPRoute with a backendRef to a different namespace")
 			tcpRoute := tcpRoute("cross-namespace-tcp-route", "default")
-			tcpRoute.Spec = gwv1.TCPRouteSpec{
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
 						{
@@ -510,7 +510,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						},
 					},
 				},
-				Rules: []gwv1.TCPRouteRule{
+				Rules: []gwv1a2.TCPRouteRule{
 					{
 						BackendRefs: []gwv1.BackendRef{
 							{
@@ -572,7 +572,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 		It("should set listener condition when TCPRoute has empty backend references", func() {
 			By("Creating a TCPRoute with an empty backend references")
 			tcpRoute := tcpRoute("test-empty-backend")
-			tcpRoute.Spec = gwv1.TCPRouteSpec{
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
 						{
@@ -582,7 +582,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						},
 					},
 				},
-				Rules: []gwv1.TCPRouteRule{
+				Rules: []gwv1a2.TCPRouteRule{
 					{BackendRefs: []gwv1.BackendRef{}}, // Empty BackendRefs
 				},
 			}
@@ -665,16 +665,16 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 			olderRoute := tcpRoute("older-tcp-route")
 			olderRoute.CreationTimestamp = metav1.NewTime(time.Now().Add(-time.Hour))
-			olderRoute.Spec = gwv1.TCPRouteSpec{
+			olderRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: parentRefs},
-				Rules:           []gwv1.TCPRouteRule{{BackendRefs: backendRefs}},
+				Rules:           []gwv1a2.TCPRouteRule{{BackendRefs: backendRefs}},
 			}
 
 			newerRoute := tcpRoute("newer-tcp-route")
 			newerRoute.CreationTimestamp = metav1.Now()
-			newerRoute.Spec = gwv1.TCPRouteSpec{
+			newerRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: parentRefs},
-				Rules:           []gwv1.TCPRouteRule{{BackendRefs: backendRefs}},
+				Rules:           []gwv1a2.TCPRouteRule{{BackendRefs: backendRefs}},
 			}
 
 			By("Creating the RouteInfo slice with both routes")
@@ -1067,7 +1067,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 		It("should default to no ALPN for terminated TLS TCPRoutes", func() {
 			tcpRoute := tcpRoute("tls-terminated-tcproute")
-			tcpRoute.Spec = gwv1.TCPRouteSpec{
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
 						{
@@ -1077,7 +1077,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						},
 					},
 				},
-				Rules: []gwv1.TCPRouteRule{
+				Rules: []gwv1a2.TCPRouteRule{
 					{
 						BackendRefs: []gwv1.BackendRef{
 							{
@@ -1134,8 +1134,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 	})
 })
 
-func tcpRoute(name string) *gwv1.TCPRoute {
-	return &gwv1.TCPRoute{
+func tcpRoute(name string) *gwv1a2.TCPRoute {
+	return &gwv1a2.TCPRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.TCPRouteKind,
 			APIVersion: gwv1a2.GroupVersion.String(),

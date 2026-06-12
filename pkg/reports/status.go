@@ -417,7 +417,7 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 		if len(parentRefs) == 0 {
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
-	case *gwv1.TCPRoute:
+	case *gwv1a2.TCPRoute:
 		existingStatus = route.Status.RouteStatus
 		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
 		if len(parentRefs) == 0 {

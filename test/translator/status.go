@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -115,7 +116,7 @@ func buildStatusesFromReports(
 
 	// Build TCPRoute statuses
 	for routeNN := range reportsMap.TCPRoutes {
-		route := gwv1.TCPRoute{
+		route := gwv1a2.TCPRoute{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      routeNN.Name,
 				Namespace: routeNN.Namespace,

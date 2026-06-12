@@ -1145,7 +1145,7 @@ func NewRoutesIndex(
 	controllerName string,
 	httproutes krt.Collection[*gwv1.HTTPRoute],
 	grpcroutes krt.Collection[*gwv1.GRPCRoute],
-	tcproutes krt.Collection[*gwv1.TCPRoute],
+	tcproutes krt.Collection[*gwv1a2.TCPRoute],
 	tlsroutes krt.Collection[*gwv1a2.TLSRoute],
 	policies *PolicyIndex,
 	backends *BackendIndex,
@@ -1169,7 +1169,7 @@ func NewRoutesIndex(
 		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
 
-	tcpRoutesCollection := krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1.TCPRoute) *RouteWrapper {
+	tcpRoutesCollection := krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
 		t := h.transformTcpRoute(kctx, i)
 		return &RouteWrapper{Route: t}
 	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
@@ -1290,7 +1290,7 @@ func (h *RoutesIndex) Fetch(kctx krt.HandlerContext, gk schema.GroupKind, ns, n 
 	return krt.FetchOne(kctx, h.routes, krt.FilterKey(src.ResourceName()))
 }
 
-func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1.TCPRoute) *ir.TcpRouteIR {
+func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *ir.TcpRouteIR {
 	src := ir.ObjectSource{
 		Group:     gwv1a2.GroupVersion.Group,
 		Kind:      "TCPRoute",

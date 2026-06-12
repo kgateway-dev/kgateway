@@ -123,7 +123,7 @@ var _ Route = &HttpRouteIR{}
 
 type TcpRouteIR struct {
 	ObjectSource `json:",inline"`
-	SourceObject *gwv1.TCPRoute
+	SourceObject *gwv1a2.TCPRoute
 	// +krtEqualsTodo include parent references when computing equality
 	ParentRefs       []gwv1.ParentReference
 	AttachedPolicies AttachedPolicies

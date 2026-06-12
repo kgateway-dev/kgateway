@@ -10,12 +10,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // makeTCPRoute constructs a TCPRoute with specified metadata.
-func makeTCPRoute(name, namespace, rv string, gen int64, uid types.UID) *gwv1.TCPRoute {
-	return &gwv1.TCPRoute{
+func makeTCPRoute(name, namespace, rv string, gen int64, uid types.UID) *gwv1a2.TCPRoute {
+	return &gwv1a2.TCPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,

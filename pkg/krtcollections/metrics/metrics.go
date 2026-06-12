@@ -487,7 +487,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					namesOld = append(namesOld, string(pr.Name))
 				}
 			}
-		case *gwv1.TCPRoute:
+		case *gwv1a2.TCPRoute:
 			resourceType = "TCPRoute"
 			resourceName = obj.Name
 			namespace = obj.Namespace
@@ -497,7 +497,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			}
 
 			if clientObjectOld != nil {
-				oldObj := clientObjectOld.(*gwv1.TCPRoute)
+				oldObj := clientObjectOld.(*gwv1a2.TCPRoute)
 				namespaceOld = oldObj.Namespace
 				namesOld = make([]string, 0, len(oldObj.Spec.ParentRefs))
 				for _, pr := range oldObj.Spec.ParentRefs {
