@@ -372,7 +372,7 @@ error initializing configuration '/dev/fd/0': invalid named capture group: (?<=f
 		{
 			name: "docker pull logs with multi-line error",
 			input: `Unable to find image 'quay.io/solo-io/envoy-gloo:1.36.8-patch1' locally
-1.36.5-patch1: Pulling from solo-io/envoy-gloo
+1.36.8-patch1: Pulling from solo-io/envoy-gloo
 f90c8eb4724c: Pull complete
 Status: Downloaded newer image for quay.io/solo-io/envoy-gloo:1.36.8-patch1
 error initializing configuration '/dev/fd/0': missing ]:
