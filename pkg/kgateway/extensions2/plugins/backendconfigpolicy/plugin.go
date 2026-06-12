@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -306,6 +307,19 @@ func translate(
 	pol *kgateway.BackendConfigPolicy,
 ) (*BackendConfigPolicyIR, []error) {
 	var errs []error
+	finishMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
+		Name:       pol.Name,
+		Namespace:  pol.Namespace,
+		Translator: "BackendConfigPolicy",
+	})
+	defer func() {
+		var err error
+		if len(errs) > 0 {
+			err = errs[0]
+		}
+		finishMetrics(err)
+	}()
+
 	ir := BackendConfigPolicyIR{
 		ct: pol.CreationTimestamp.Time,
 	}

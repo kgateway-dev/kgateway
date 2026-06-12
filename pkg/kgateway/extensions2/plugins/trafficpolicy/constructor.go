@@ -13,6 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -48,12 +49,24 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	krtctx krt.HandlerContext,
 	policyCR *kgateway.TrafficPolicy,
 ) (*TrafficPolicy, []error) {
+	var errors []error
+	finishMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
+		Name:       policyCR.Name,
+		Namespace:  policyCR.Namespace,
+		Translator: "TrafficPolicy",
+	})
+	defer func() {
+		var err error
+		if len(errors) > 0 {
+			err = errors[0]
+		}
+		finishMetrics(err)
+	}()
+
 	policyIr := TrafficPolicy{
 		ct: policyCR.CreationTimestamp.Time,
 	}
 	outSpec := trafficPolicySpecIr{}
-
-	var errors []error
 
 	// Construct rustformation specific IR
 	if err := constructRustformation(policyCR, &outSpec); err != nil {
