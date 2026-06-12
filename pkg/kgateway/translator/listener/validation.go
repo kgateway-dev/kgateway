@@ -323,6 +323,14 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 		return validListeners
 	}
 
+	if len(validListeners) < len(gw.Listeners) {
+		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
+			Type:   gwv1.GatewayConditionAccepted,
+			Status: metav1.ConditionTrue,
+			Reason: gwv1.GatewayReasonListenersNotValid,
+		})
+	}
+
 	if len(attachedListenerSets) > 0 {
 		reporter.Gateway(gw.Obj).SetAttachedListenerSets(int32(len(attachedListenerSets))) //nolint:gosec // disable G115 directive.
 	}
