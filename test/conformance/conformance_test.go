@@ -54,13 +54,13 @@ func TestConformance(t *testing.T) {
 	if runTLSProfile {
 		profiles.Insert(suite.GatewayTLSConformanceProfileName)
 	}
-	options.ConformanceProfiles = profiles
+	options.ConformanceProfiles = profiles.UnsortedList()
 	sf, err := fetchGatewayClassSupportedFeatures(options.GatewayClassName)
 	if err != nil {
 		t.Fatalf("Failed to fetch GatewayClass supported features: %v", err)
 	}
 	// Gateway API has this detection, but if we exempt any features it turns it off. So copy it over so we can have more control.
-	options.SupportedFeatures = sf
+	options.SupportedFeatures = sf.UnsortedList()
 
 	if channel == features.FeatureChannelStandard {
 		exemptExperimentalFeatures(&options)
@@ -92,11 +92,11 @@ func TestConformance(t *testing.T) {
 
 func exemptExperimentalFeatures(options *suite.ConformanceOptions) {
 	if options.ExemptFeatures == nil {
-		options.ExemptFeatures = suite.FeaturesSet{}
+		options.ExemptFeatures = suite.FeaturesSet{}.UnsortedList()
 	}
 	for _, feature := range features.AllFeatures.UnsortedList() {
 		if feature.Channel == features.FeatureChannelExperimental {
-			options.ExemptFeatures.Insert(feature.Name)
+			options.ExemptFeatures = append(options.ExemptFeatures, feature.Name)
 		}
 	}
 }
