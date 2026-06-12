@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -542,7 +541,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, 
 	}
 
 	for nns := range reportsMap.TCPRoutes {
-		r := gwv1a2.TCPRoute{
+		r := gwv1.TCPRoute{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      nns.Name,
 				Namespace: nns.Namespace,

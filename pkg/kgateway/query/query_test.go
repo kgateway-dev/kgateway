@@ -455,7 +455,7 @@ var _ = Describe("Query", func() {
 			}
 
 			tcpRoute := tcpRoute(gw.Namespace)
-			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+			tcpRoute.Spec = gwv1.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
 						{
@@ -488,7 +488,7 @@ var _ = Describe("Query", func() {
 			}
 
 			tcpRoute := tcpRoute("other-ns")
-			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+			tcpRoute.Spec = gwv1.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
 						{
@@ -525,7 +525,7 @@ var _ = Describe("Query", func() {
 
 			tcpRoute := tcpRoute(gw.Namespace)
 			var badPort gwv1.PortNumber = 9999
-			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+			tcpRoute.Spec = gwv1.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
 						{
@@ -559,7 +559,7 @@ var _ = Describe("Query", func() {
 			}
 
 			tcpRoute := tcpRoute(gw.Namespace)
-			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+			tcpRoute.Spec = gwv1.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
 						{
@@ -597,7 +597,7 @@ var _ = Describe("Query", func() {
 			}
 
 			tcpRoute := tcpRoute(gw.Namespace)
-			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+			tcpRoute.Spec = gwv1.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
 						{
@@ -629,7 +629,7 @@ var _ = Describe("Query", func() {
 			}
 
 			tcpRoute := tcpRoute(gw.Namespace)
-			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+			tcpRoute.Spec = gwv1.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
 						{
@@ -848,7 +848,7 @@ var _ = Describe("Query", func() {
 		}
 
 		tcpRoute := tcpRoute(gw.Namespace)
-		tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+		tcpRoute.Spec = gwv1.TCPRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
 					{
@@ -883,7 +883,7 @@ var _ = Describe("Query", func() {
 		}
 
 		tcpRoute := tcpRoute(gw.Namespace)
-		tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+		tcpRoute.Spec = gwv1.TCPRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
 					{
@@ -1286,8 +1286,8 @@ func secret(ns string) *corev1.Secret {
 	}
 }
 
-func tcpRoute(ns string) *gwv1a2.TCPRoute {
-	return &gwv1a2.TCPRoute{
+func tcpRoute(ns string) *gwv1.TCPRoute {
+	return &gwv1.TCPRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.TCPRouteKind,
 			APIVersion: gwv1a2.GroupVersion.String(),
@@ -1349,7 +1349,7 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	upstreams.AddBackends(SvcGk, k8sUpstreams(services))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
-	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
+	tcpproutes := krttest.GetMockCollection[*gwv1.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
 	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, wellknown.DefaultGatewayControllerName, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, apisettings.Settings{})

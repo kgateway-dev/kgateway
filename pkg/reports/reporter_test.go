@@ -492,7 +492,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				switch route := obj.(type) {
 				case *gwv1.HTTPRoute:
 					route.Status.RouteStatus = *status
-				case *gwv1a2.TCPRoute:
+				case *gwv1.TCPRoute:
 					route.Status.RouteStatus = *status
 				case *gwv1.TLSRoute:
 					route.Status.RouteStatus = *status
@@ -530,7 +530,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
 						Name: "additional-gateway",
 					})
-				case *gwv1a2.TCPRoute:
+				case *gwv1.TCPRoute:
 					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
 						Name: "additional-gateway",
 					})
@@ -581,7 +581,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				switch r1 := route1.(type) {
 				case *gwv1.HTTPRoute:
 					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
-				case *gwv1a2.TCPRoute:
+				case *gwv1.TCPRoute:
 					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
 				case *gwv1.TLSRoute:
 					r1.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener1.Name))
@@ -595,7 +595,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				switch r2 := route2.(type) {
 				case *gwv1.HTTPRoute:
 					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
-				case *gwv1a2.TCPRoute:
+				case *gwv1.TCPRoute:
 					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
 				case *gwv1.TLSRoute:
 					r2.Spec.ParentRefs[0].SectionName = new(gwv1.SectionName(listener2.Name))
@@ -654,7 +654,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			switch r := route.(type) {
 			case *gwv1.HTTPRoute:
 				r.Spec.ParentRefs = nil
-			case *gwv1a2.TCPRoute:
+			case *gwv1.TCPRoute:
 				r.Spec.ParentRefs = nil
 			case *gwv1.TLSRoute:
 				r.Spec.ParentRefs = nil
@@ -855,7 +855,7 @@ func fakeTranslate(reporter reporter.Reporter, obj client.Object) {
 		for _, pr := range route.Spec.ParentRefs {
 			routeReporter.ParentRef(&pr)
 		}
-	case *gwv1a2.TCPRoute:
+	case *gwv1.TCPRoute:
 		routeReporter := reporter.Route(route)
 		for _, pr := range route.Spec.ParentRefs {
 			routeReporter.ParentRef(&pr)
@@ -897,7 +897,7 @@ func httpRoute(conditions ...metav1.Condition) client.Object {
 }
 
 func tcpRoute(conditions ...metav1.Condition) client.Object {
-	route := &gwv1a2.TCPRoute{
+	route := &gwv1.TCPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route",
 			Namespace: "default",

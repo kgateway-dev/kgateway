@@ -89,20 +89,20 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 			parent:    testGateway,
 			resource:  "TCPRoute",
 			inputs: []any{
-				&gwv1a2.TCPRoute{
+				&gwv1.TCPRoute{
 					TypeMeta: metav1.TypeMeta{},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      testName,
 						Namespace: testNamespace,
 					},
-					Spec: gwv1a2.TCPRouteSpec{
+					Spec: gwv1.TCPRouteSpec{
 						CommonRouteSpec: gwv1a2.CommonRouteSpec{
 							ParentRefs: []gwv1a2.ParentReference{{
 								Name: testGateway,
 								Kind: new(gwv1.Kind("Gateway")),
 							}},
 						},
-						Rules: []gwv1a2.TCPRouteRule{{
+						Rules: []gwv1.TCPRouteRule{{
 							Name: new(gwv1a2.SectionName("test-rule")),
 						}},
 					},

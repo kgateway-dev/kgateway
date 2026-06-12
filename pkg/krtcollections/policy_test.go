@@ -460,20 +460,20 @@ func httpRouteWithSvcBackendRef(refNs string) *gwv1.HTTPRoute {
 	}
 }
 
-func tcpRouteWithBackendRef(refNs string) *gwv1a2.TCPRoute {
+func tcpRouteWithBackendRef(refNs string) *gwv1.TCPRoute {
 	var ns *gwv1.Namespace
 	if refNs != "" {
 		n := gwv1.Namespace(refNs)
 		ns = &n
 	}
 	var port gwv1.PortNumber = 8080
-	return &gwv1a2.TCPRoute{
+	return &gwv1.TCPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tcproute",
 			Namespace: "default",
 		},
-		Spec: gwv1a2.TCPRouteSpec{
-			Rules: []gwv1a2.TCPRouteRule{
+		Spec: gwv1.TCPRouteSpec{
+			Rules: []gwv1.TCPRouteRule{
 				{
 					BackendRefs: []gwv1.BackendRef{
 						{
@@ -511,7 +511,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	upstreams.AddBackends(backendGk, backendUpstreams(backends))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
-	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
+	tcpproutes := krttest.GetMockCollection[*gwv1.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
 	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, wellknown.DefaultGatewayControllerName, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, apisettings.Settings{})

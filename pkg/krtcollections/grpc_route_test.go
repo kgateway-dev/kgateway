@@ -487,7 +487,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 				wellknown.DefaultGatewayControllerName,
 				krttest.GetMockCollection[*gwv1.HTTPRoute](mock),
 				grpcRoutes,
-				krttest.GetMockCollection[*gwv1a2.TCPRoute](mock),
+				krttest.GetMockCollection[*gwv1.TCPRoute](mock),
 				krttest.GetMockCollection[*gwv1a2.TLSRoute](mock),
 				policies,
 				backends,
