@@ -138,6 +138,10 @@ jobs:
           - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
             label: min
         gateway-api-version:
+          - version: 'v1.6.0-rc.1'
+            channel: experimental
+          - version: 'v1.6.0-rc.1'
+            channel: standard
           - version: 'v1.5.1'
             channel: experimental
           - version: 'v1.5.1'
@@ -157,7 +161,7 @@ jobs:
         with:
           ref: ${{ matrix.ref.checkout_ref }}
       # v2.2.x is built against Gateway API 1.4 and refuses to start on 1.5 (#13872), so the
-      # v2.2.x x v1.5.1 lanes need special handling: skip the standard channel entirely, and
+      # v2.2.x x v1.5+ lanes need special handling: skip the standard channel entirely, and
       # run the experimental channel with the version check bypassed to keep forward-compat
       # signal. This is done with step guards rather than a matrix `exclude:` because every
       # dimension here is object-valued and object-valued excludes are unreliable
@@ -172,6 +176,12 @@ jobs:
         run: |
           run=true
           bypass_version_check=false
+          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.6.0-rc.1" ]]; then
+            case "${GW_API_CHANNEL}" in
+              standard)     run=false ;;
+              experimental) bypass_version_check=true ;;
+            esac
+          fi
           if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.5.1" ]]; then
             case "${GW_API_CHANNEL}" in
               standard)     run=false ;;

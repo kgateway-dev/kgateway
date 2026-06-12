@@ -52,6 +52,10 @@ func (r delayedHandlerRegistration) HasSynced() bool {
 	return false
 }
 
+func (r delayedHandlerRegistration) HasSyncedChecker() cache.DoneChecker {
+	panic("not implemented; use HasSynced")
+}
+
 type delayedIndex[T controllers.ComparableObject] struct {
 	name    string
 	indexer *atomic.Pointer[kclient.RawIndexer]
