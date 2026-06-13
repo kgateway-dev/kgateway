@@ -72,19 +72,27 @@ func Run[T any](t *testing.T, base func() T, equals func(a, b T) bool, cases []C
 		t.Fatalf("equalstest.Run: type %s is not a struct", typ.Name())
 	}
 
-	var uncovered []string
-	for _, field := range exportedFields(typ) {
-		if !covered[field] && !exemptSet[field] {
-			uncovered = append(uncovered, field)
-		}
-	}
-	if len(uncovered) > 0 {
+	missing := uncoveredFields(typ, covered, exemptSet)
+	if len(missing) > 0 {
 		t.Errorf(
 			"completeness check failed for %s: exported field(s) %v are neither covered by a mutation Case nor listed as exempt — add a Case or add the field name to exempt",
 			typeName(typ),
-			uncovered,
+			missing,
 		)
 	}
+}
+
+// uncoveredFields returns the exported field names of typ that are not present
+// in covered or exempt. It flattens anonymous (embedded) struct fields one
+// level deep, matching the same logic used by Run's completeness check.
+func uncoveredFields(typ reflect.Type, covered map[string]bool, exempt map[string]bool) []string {
+	var missing []string
+	for _, field := range exportedFields(typ) {
+		if !covered[field] && !exempt[field] {
+			missing = append(missing, field)
+		}
+	}
+	return missing
 }
 
 // exportedFields returns all exported field names of a struct type, flattening
@@ -92,7 +100,6 @@ func Run[T any](t *testing.T, base func() T, equals func(a, b T) bool, cases []C
 func exportedFields(t reflect.Type) []string {
 	var names []string
 	for f := range t.Fields() {
-		f := f
 		if !f.IsExported() {
 			continue
 		}
@@ -100,7 +107,6 @@ func exportedFields(t reflect.Type) []string {
 			// Flatten embedded struct fields one level.
 			embedded := f.Type
 			for ef := range embedded.Fields() {
-				ef := ef
 				if ef.IsExported() {
 					names = append(names, ef.Name)
 				}
