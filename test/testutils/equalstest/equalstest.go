@@ -26,6 +26,9 @@ type Case[T any] struct {
 // It then reflects over T's exported fields (flattening embedded structs one
 // level) and fails if any field name is neither covered by a Case nor listed
 // in exempt — that is how "new field, forgot Equals" becomes a test failure.
+//
+// T must be a struct or a pointer to a struct; pointers are dereferenced one
+// level before field reflection.
 func Run[T any](t *testing.T, base func() T, equals func(a, b T) bool, cases []Case[T], exempt []string) {
 	t.Helper()
 
@@ -67,9 +70,12 @@ func Run[T any](t *testing.T, base func() T, equals func(a, b T) bool, cases []C
 		exemptSet[e] = true
 	}
 
-	typ := reflect.TypeOf(*new(T))
+	typ := reflect.TypeFor[T]()
+	if typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
 	if typ.Kind() != reflect.Struct {
-		t.Fatalf("equalstest.Run: type %s is not a struct", typ.Name())
+		t.Fatalf("equalstest.Run: type %s is not a struct or pointer to struct", typ)
 	}
 
 	missing := uncoveredFields(typ, covered, exemptSet)

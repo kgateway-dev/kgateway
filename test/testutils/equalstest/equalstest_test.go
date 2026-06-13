@@ -65,6 +65,31 @@ func TestHarnessSelfTest_ExemptField(t *testing.T) {
 	equalstest.Run(t, baseFixture, fixtureEqualsCorrect, cases, []string{"C"})
 }
 
+// TestHarnessSelfTest_PointerToStruct verifies the harness accepts a
+// pointer-to-struct type parameter, dereferencing it for the completeness check.
+func TestHarnessSelfTest_PointerToStruct(t *testing.T) {
+	base := func() *fixture {
+		f := baseFixture()
+		return &f
+	}
+	equals := func(a, b *fixture) bool { return fixtureEqualsCorrect(*a, *b) }
+	cases := []equalstest.Case[*fixture]{
+		{
+			Field:  "A",
+			Mutate: func(f **fixture) { (*f).A = "changed" },
+		},
+		{
+			Field:  "B",
+			Mutate: func(f **fixture) { (*f).B = 99 },
+		},
+		{
+			Field:  "C",
+			Mutate: func(f **fixture) { (*f).C = "changed" },
+		},
+	}
+	equalstest.Run(t, base, equals, cases, nil)
+}
+
 // TestHarnessSelfTest_FixtureSanity validates the fixture functions themselves
 // so that higher-level tests can rely on them. In particular it confirms that
 // fixtureEqualsMissingC genuinely misses field C (modelling the bug) and that
