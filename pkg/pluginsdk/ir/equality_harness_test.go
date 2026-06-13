@@ -6,8 +6,6 @@ package ir
 // config updates.
 //
 // See test/testutils/equalstest for the harness API.
-// Plan 003 must add Listener coverage using this harness once Listener.Equals
-// is rewritten (Listener is skipped here per plan 002 scope).
 
 import (
 	"errors"
@@ -224,7 +222,8 @@ func TestHarnessGatewayEquals(t *testing.T) {
 			},
 		},
 		{
-			// Listeners: length change (field mutations inside a Listener are plan 003's territory).
+			// Listeners: length change only; per-field Listener mutations are
+			// covered by TestHarnessListenerEquals.
 			Field: "Listeners",
 			Mutate: func(g *Gateway) {
 				g.Listeners = append(g.Listeners, baseHarnessListener())
@@ -312,7 +311,8 @@ func TestHarnessListenerSetEquals(t *testing.T) {
 			},
 		},
 		{
-			// Listeners: length change only (per plan 002 scope).
+			// Listeners: length change only; per-field Listener mutations are
+			// covered by TestHarnessListenerEquals.
 			Field: "Listeners",
 			Mutate: func(ls *ListenerSet) {
 				ls.Listeners = append(ls.Listeners, baseHarnessListener())
