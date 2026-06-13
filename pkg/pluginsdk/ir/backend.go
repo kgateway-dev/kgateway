@@ -426,11 +426,11 @@ func parentRefEquals(a, b client.Object) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	gvkA := a.GetObjectKind().GroupVersionKind()
-	gvkB := b.GetObjectKind().GroupVersionKind()
-	// Objects from informers often have an empty TypeMeta/GVK. When both are
-	// empty, fall back to the concrete Go type so that two same-kind parents
-	// from the same collection still compare correctly.
+	gvkA := parentGVK(a)
+	gvkB := parentGVK(b)
+	// Unknown parent kind with no TypeMeta on either side: fall back to the
+	// concrete Go type so that two same-kind parents from the same collection
+	// still compare correctly.
 	if gvkA.Empty() && gvkB.Empty() {
 		if reflect.TypeOf(a) != reflect.TypeOf(b) {
 			return false
@@ -440,6 +440,22 @@ func parentRefEquals(a, b client.Object) bool {
 	}
 	return a.GetNamespace() == b.GetNamespace() &&
 		a.GetName() == b.GetName()
+}
+
+// parentGVK returns the object's GVK, normalizing the empty TypeMeta that
+// typed informers leave behind for known parent kinds, so a parent built with
+// TypeMeta set compares equal to the same parent from an informer.
+// ListenerSet is deliberately not normalized: the same Go type serves both the
+// standard ListenerSetGVK and the legacy XListenerSetGVK, so its GVK cannot be
+// inferred from the type, and in practice it always arrives populated.
+func parentGVK(obj client.Object) schema.GroupVersionKind {
+	if gvk := obj.GetObjectKind().GroupVersionKind(); !gvk.Empty() {
+		return gvk
+	}
+	if _, ok := obj.(*gwv1.Gateway); ok {
+		return wellknown.GatewayGVK
+	}
+	return schema.GroupVersionKind{}
 }
 
 type GatewayForDeployer struct {

@@ -94,7 +94,8 @@ func TestHarnessPolicyAttEquals(t *testing.T) {
 			Mutate: func(p *PolicyAtt) { p.PrecedenceWeight = 99 },
 		},
 	}
-	equalstest.Run(t, baseHarnessPolicyAtt, func(a, b PolicyAtt) bool { return a.Equals(b) }, cases,
+	equalstest.Run(
+		t, baseHarnessPolicyAtt, func(a, b PolicyAtt) bool { return a.Equals(b) }, cases,
 		[]string{"MergeOrigins"}, // +noKrtEquals, gw.go:105
 	)
 }
@@ -607,6 +608,46 @@ func TestListenerEqualsIgnoresParentVersion(t *testing.T) {
 
 	if !base.Equals(other) {
 		t.Error("Listener.Equals returned false for parents that differ only in ResourceVersion; expected true (identity comparison only)")
+	}
+}
+
+// TestListenerEqualsNormalizesParentTypeMeta verifies that a Gateway parent
+// with TypeMeta populated compares equal to the same Gateway without it (as
+// typed informers leave TypeMeta empty), and that a populated TypeMeta still
+// distinguishes genuinely different GVKs.
+func TestListenerEqualsNormalizesParentTypeMeta(t *testing.T) {
+	base := baseHarnessFullListener()
+
+	withTypeMeta := baseHarnessFullListener()
+	withTypeMeta.Parent = &gwv1.Gateway{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: gwv1.GroupVersion.String(),
+			Kind:       "Gateway",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "my-gateway",
+			Namespace:       "default",
+			ResourceVersion: "1",
+		},
+	}
+	if !base.Equals(withTypeMeta) {
+		t.Error("Listener.Equals returned false for identical Gateway parents that differ only in TypeMeta presence; expected true")
+	}
+
+	wrongKind := baseHarnessFullListener()
+	wrongKind.Parent = &gwv1.Gateway{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: gwv1.GroupVersion.String(),
+			Kind:       "NotAGateway",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "my-gateway",
+			Namespace:       "default",
+			ResourceVersion: "1",
+		},
+	}
+	if base.Equals(wrongKind) {
+		t.Error("Listener.Equals returned true for parents with different GVKs; expected false")
 	}
 }
 
