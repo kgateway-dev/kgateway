@@ -24,8 +24,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils/equalstest"
 )
 
-// MARK: PolicyAtt
-
 // harnessTestPolicyIR is a minimal PolicyIR for harness tests.
 // (gw_test.go defines mockPolicyIR for its own tests; this is a separate type
 // to avoid confusion and allow independent evolution.)
@@ -101,8 +99,6 @@ func TestHarnessPolicyAttEquals(t *testing.T) {
 	)
 }
 
-// MARK: AttachedPolicies
-
 func baseHarnessAttachedPolicies() AttachedPolicies {
 	gk := schema.GroupKind{Group: "example.com", Kind: "MyPolicy"}
 	return AttachedPolicies{
@@ -146,8 +142,6 @@ func TestHarnessAttachedPoliciesEquals(t *testing.T) {
 	// All cases target it; no exempt fields needed.
 	equalstest.Run(t, baseHarnessAttachedPolicies, func(a, b AttachedPolicies) bool { return a.Equals(b) }, cases, nil)
 }
-
-// MARK: Gateway
 
 func baseGatewayObj() *gwv1.Gateway {
 	return &gwv1.Gateway{
@@ -307,8 +301,6 @@ func TestHarnessGatewayEquals(t *testing.T) {
 	)
 }
 
-// MARK: ListenerSet
-
 func TestHarnessListenerSetEquals(t *testing.T) {
 	cases := []equalstest.Case[ListenerSet]{
 		{
@@ -355,8 +347,6 @@ func TestHarnessListenerSetEquals(t *testing.T) {
 	)
 }
 
-// MARK: BackendRefIR
-
 func baseHarnessBackendRefIR() BackendRefIR {
 	backend := NewBackendObjectIR(ObjectSource{
 		Namespace: "default",
@@ -401,8 +391,6 @@ func TestHarnessBackendRefIREquals(t *testing.T) {
 
 	equalstest.Run(t, baseHarnessBackendRefIR, func(a, b BackendRefIR) bool { return a.Equals(b) }, cases, nil)
 }
-
-// MARK: GatewayExtension
 
 func baseHarnessGatewayExtension() GatewayExtension {
 	grpcSvcName := gwv1.ObjectName("ext-auth-svc")
@@ -498,8 +486,6 @@ func TestHarnessGatewayExtensionEquals(t *testing.T) {
 		[]string{"Group", "Kind", "Namespace", "Name"}, // embedded ObjectSource fields
 	)
 }
-
-// MARK: helpers
 
 //go:fix inline
 func uint32ptr(v uint32) *uint32 { return new(v) }
