@@ -487,5 +487,128 @@ func TestHarnessGatewayExtensionEquals(t *testing.T) {
 	)
 }
 
+// baseHarnessFullListener returns a fully-populated Listener for the
+// TestHarnessListenerEquals test. It is separate from baseHarnessListener (which
+// is minimal and used by Gateway/ListenerSet tests) so that adding fields here
+// does not break those tests.
+func baseHarnessFullListener() Listener {
+	hostname := gwv1.Hostname("example.com")
+	port := gwv1.PortNumber(443)
+	proto := gwv1.HTTPSProtocolType
+	gk := schema.GroupKind{Group: "example.com", Kind: "MyPolicy"}
+	return Listener{
+		Listener: gwv1.Listener{
+			Name:     "https",
+			Hostname: &hostname,
+			Port:     port,
+			Protocol: proto,
+		},
+		Parent: &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            "my-gateway",
+				Namespace:       "default",
+				ResourceVersion: "1",
+			},
+		},
+		AttachedPolicies: AttachedPolicies{
+			Policies: map[schema.GroupKind][]PolicyAtt{
+				gk: {baseHarnessPolicyAtt()},
+			},
+		},
+		PolicyAncestorRef: gwv1.ParentReference{
+			Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+			Kind:      new(gwv1.Kind("Gateway")),
+			Name:      gwv1.ObjectName("my-gateway"),
+			Namespace: new(gwv1.Namespace("default")),
+		},
+	}
+}
+
+func TestHarnessListenerEquals(t *testing.T) {
+	cases := []equalstest.Case[Listener]{
+		{
+			// The embedded gwv1.Listener contributes flattened field names (Name,
+			// Hostname, Port, Protocol, TLS, AllowedRoutes) plus the embedding name
+			// "Listener". Cover the embedding via a Port mutation; the flattened
+			// names are exempted below.
+			Field: "Listener",
+			Mutate: func(l *Listener) {
+				l.Listener.Port = gwv1.PortNumber(80)
+			},
+		},
+		{
+			// Replace parent with a Gateway of a different name → unequal.
+			Field: "Parent",
+			Mutate: func(l *Listener) {
+				l.Parent = &gwv1.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "other-gateway",
+						Namespace:       "default",
+						ResourceVersion: "1",
+					},
+				}
+			},
+		},
+		{
+			// Add a policy to AttachedPolicies → unequal.
+			Field: "AttachedPolicies",
+			Mutate: func(l *Listener) {
+				gk2 := schema.GroupKind{Group: "other.io", Kind: "OtherPolicy"}
+				l.AttachedPolicies.Policies[gk2] = []PolicyAtt{baseHarnessPolicyAtt()}
+			},
+		},
+		{
+			// Change PolicyAncestorRef.Name → unequal.
+			Field: "PolicyAncestorRef",
+			Mutate: func(l *Listener) {
+				l.PolicyAncestorRef = gwv1.ParentReference{
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("Gateway")),
+					Name:      gwv1.ObjectName("other-gateway"),
+					Namespace: new(gwv1.Namespace("default")),
+				}
+			},
+		},
+	}
+
+	// gwv1.Listener is embedded; the harness flattens its exported field names
+	// (Name, Hostname, Port, Protocol, TLS, AllowedRoutes) plus the embedding
+	// name "Listener". We cover the embedding via the "Listener" case above;
+	// exempt the individual flattened names to avoid requiring redundant cases.
+	equalstest.Run(
+		t,
+		baseHarnessFullListener,
+		func(a, b Listener) bool { return a.Equals(b) },
+		cases,
+		[]string{"Name", "Hostname", "Port", "Protocol", "TLS", "AllowedRoutes"}, // embedded gwv1.Listener fields covered by "Listener" case
+		// Suppress the gk field from the AttachedPolicies map closure; the
+		// "AttachedPolicies" case above exercises it at the struct level.
+	)
+}
+
+// TestListenerEqualsIgnoresParentVersion verifies that two Listeners whose
+// parents differ ONLY in ResourceVersion (i.e. same identity: name, namespace,
+// type) compare as EQUAL. This is the core semantic of the field-wise Equals:
+// parent content changes are detected by versionEquals on Gateway.Obj /
+// ListenerSet.Obj in the enclosing Equals; duplicating that check here would
+// only add spurious false-inequality from status writes.
+func TestListenerEqualsIgnoresParentVersion(t *testing.T) {
+	base := baseHarnessFullListener()
+
+	// Make a copy whose parent has a different ResourceVersion but same identity.
+	other := baseHarnessFullListener()
+	other.Parent = &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "my-gateway",
+			Namespace:       "default",
+			ResourceVersion: "999", // only difference
+		},
+	}
+
+	if !base.Equals(other) {
+		t.Error("Listener.Equals returned false for parents that differ only in ResourceVersion; expected true (identity comparison only)")
+	}
+}
+
 //go:fix inline
 func uint32ptr(v uint32) *uint32 { return new(v) }

@@ -20,7 +20,7 @@ type internalFixture struct {
 }
 
 func TestUncoveredFields_UncoveredFieldIsFlagged(t *testing.T) {
-	typ := reflect.TypeOf(internalFixture{})
+	typ := reflect.TypeFor[internalFixture]()
 	// Cover Plain and the embedding name EmbeddedBase, but not the flattened field Embedded.
 	covered := map[string]bool{"Plain": true, "EmbeddedBase": true}
 	exempt := map[string]bool{}
@@ -33,7 +33,7 @@ func TestUncoveredFields_UncoveredFieldIsFlagged(t *testing.T) {
 }
 
 func TestUncoveredFields_ExemptFieldIsNotFlagged(t *testing.T) {
-	typ := reflect.TypeOf(internalFixture{})
+	typ := reflect.TypeFor[internalFixture]()
 	covered := map[string]bool{"Plain": true, "EmbeddedBase": true}
 	exempt := map[string]bool{"Embedded": true}
 
@@ -44,7 +44,7 @@ func TestUncoveredFields_ExemptFieldIsNotFlagged(t *testing.T) {
 }
 
 func TestUncoveredFields_EmbeddedStructNameAlsoReturned(t *testing.T) {
-	typ := reflect.TypeOf(internalFixture{})
+	typ := reflect.TypeFor[internalFixture]()
 	// Cover the flattened field but leave the embedding name itself uncovered.
 	covered := map[string]bool{"Plain": true, "Embedded": true}
 	exempt := map[string]bool{}
@@ -59,7 +59,7 @@ func TestUncoveredFields_EmbeddedStructNameAlsoReturned(t *testing.T) {
 }
 
 func TestUncoveredFields_AllCoveredReturnsEmpty(t *testing.T) {
-	typ := reflect.TypeOf(internalFixture{})
+	typ := reflect.TypeFor[internalFixture]()
 	// Cover every name that exportedFields produces for internalFixture.
 	covered := map[string]bool{"Plain": true, "Embedded": true, "EmbeddedBase": true}
 	exempt := map[string]bool{}

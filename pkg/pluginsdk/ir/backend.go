@@ -397,11 +397,8 @@ func (l Secret) MarshalJSON() ([]byte, error) {
 // TODO: why is this in backend.go?
 type Listener struct {
 	gwv1.Listener
-	// +krtEqualsTodo compare parent reference in listener equality
-	Parent client.Object
-	// +krtEqualsTodo include attached listener policies in equality
-	AttachedPolicies AttachedPolicies
-	// +krtEqualsTodo include policy ancestor reference in equality
+	Parent            client.Object
+	AttachedPolicies  AttachedPolicies
 	PolicyAncestorRef gwv1.ParentReference
 }
 
@@ -414,9 +411,35 @@ func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.
 	}
 }
 
-// TODO: need to reevaluate DeepEqual usage
 func (c Listener) Equals(in Listener) bool {
-	return reflect.DeepEqual(c, in)
+	return reflect.DeepEqual(c.Listener, in.Listener) && // plain gwv1 API struct, no protos
+		parentRefEquals(c.Parent, in.Parent) &&
+		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
+		reflect.DeepEqual(c.PolicyAncestorRef, in.PolicyAncestorRef) // plain gwv1 API struct
+}
+
+// parentRefEquals compares the parent by identity (GVK + namespace/name).
+// Content changes to the parent are detected by versionEquals on Gateway.Obj /
+// ListenerSet.Obj in the enclosing Equals, so comparing content here would only
+// re-add spurious inequality (e.g. resourceVersion bumps from status writes).
+func parentRefEquals(a, b client.Object) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	gvkA := a.GetObjectKind().GroupVersionKind()
+	gvkB := b.GetObjectKind().GroupVersionKind()
+	// Objects from informers often have an empty TypeMeta/GVK. When both are
+	// empty, fall back to the concrete Go type so that two same-kind parents
+	// from the same collection still compare correctly.
+	if gvkA.Empty() && gvkB.Empty() {
+		if reflect.TypeOf(a) != reflect.TypeOf(b) {
+			return false
+		}
+	} else if gvkA != gvkB {
+		return false
+	}
+	return a.GetNamespace() == b.GetNamespace() &&
+		a.GetName() == b.GetName()
 }
 
 type GatewayForDeployer struct {
