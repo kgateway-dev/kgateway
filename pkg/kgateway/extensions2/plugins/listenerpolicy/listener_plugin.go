@@ -545,6 +545,11 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		}
 	}
 
+	// translate localReplyConfig
+	if policy.localReplyConfig != nil {
+		out.LocalReplyConfig = policy.localReplyConfig
+	}
+
 	return nil
 }
 

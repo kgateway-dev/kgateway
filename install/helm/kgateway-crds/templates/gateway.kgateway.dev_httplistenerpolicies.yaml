@@ -1560,6 +1560,80 @@ spec:
                 x-kubernetes-validations:
                 - message: invalid duration value
                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+              localReplyConfig:
+                description: |-
+                  LocalReplyConfig customizes the responses that Envoy itself generates (local replies),
+                  for example to rewrite the status code or body of error responses produced by the proxy
+                  (such as 503s when no healthy upstream is available) rather than responses proxied from a backend.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/local_reply
+                properties:
+                  mappers:
+                    description: |-
+                      Mappers configures how matching local replies are rewritten. Mappers are evaluated in
+                      order and the first mapper whose statusCodeMatch matches the local reply is applied;
+                      subsequent mappers are ignored. A local reply that does not match any mapper is returned unchanged.
+                    items:
+                      description: |-
+                        ResponseMapper rewrites a local reply whose StatusCodeMatch matches the response code.
+                        See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-msg-extensions-filters-network-http-connection-manager-v3-responsemapper
+                      properties:
+                        body:
+                          description: |-
+                            Body specifies a custom, static response body (e.g. an HTML or JSON document), provided as
+                            an inline string, for matching local replies. The body is returned verbatim. If unset, the
+                            original body is preserved.
+                          maxLength: 8192
+                          minLength: 1
+                          type: string
+                        contentType:
+                          description: |-
+                            ContentType overrides the Content-Type header returned with the local reply
+                            (e.g. "text/html; charset=utf-8" or "application/json"). If unset, Envoy returns the body
+                            with its default Content-Type (text/plain).
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                        statusCode:
+                          description: |-
+                            StatusCode overrides the HTTP status code returned to the client for matching local replies.
+                            If unset, the original status code is preserved.
+                          format: int32
+                          maximum: 599
+                          minimum: 200
+                          type: integer
+                        statusCodeMatch:
+                          description: |-
+                            StatusCodeMatch selects which local replies this mapper applies to, by comparing against
+                            the response status code (e.g. op=GE value=500 matches all 5xx responses).
+                          properties:
+                            op:
+                              description: Op is the comparison operator (EQ, GE or
+                                LE) applied between the response status code and Value.
+                              enum:
+                              - EQ
+                              - GE
+                              - LE
+                              type: string
+                            value:
+                              description: Value is the HTTP status code to compare
+                                against.
+                              format: int32
+                              maximum: 599
+                              minimum: 100
+                              type: integer
+                          required:
+                          - op
+                          - value
+                          type: object
+                      required:
+                      - statusCodeMatch
+                      type: object
+                    maxItems: 16
+                    minItems: 1
+                    type: array
+                required:
+                - mappers
+                type: object
               maxHeadersCount:
                 description: |-
                   MaxHeadersCount sets the maximum number of headers allowed in a request.

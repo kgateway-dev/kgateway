@@ -71,6 +71,7 @@ type HttpListenerPolicyIr struct {
 	forwardClientCertMode         *envoy_hcm.HttpConnectionManager_ForwardClientCertDetails
 	setCurrentClientCertDetails   *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
 	stripHostPortMode             *kgateway.StripHostPortMode
+	localReplyConfig              *envoy_hcm.LocalReplyConfig
 }
 
 func (d *HttpListenerPolicyIr) Equals(in any) bool {
@@ -212,6 +213,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	if !cmputils.PointerValsEqual(d.stripHostPortMode, d2.stripHostPortMode) {
+		return false
+	}
+
+	if !proto.Equal(d.localReplyConfig, d2.localReplyConfig) {
 		return false
 	}
 
@@ -364,6 +369,12 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		}
 	}
 
+	localReplyConfig, err := convertLocalReplyConfig(h.LocalReplyConfig)
+	if err != nil {
+		logger.Error("error translating localReplyConfig", "error", err)
+		errs = append(errs, err)
+	}
+
 	return &HttpListenerPolicyIr{
 		accessLogConfig:               accessLog,
 		accessLogPolicies:             h.AccessLog,
@@ -392,6 +403,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		forwardClientCertMode:         forwardClientCertMode,
 		setCurrentClientCertDetails:   setCurrentClientCertDetails,
 		stripHostPortMode:             h.StripHostPortMode,
+		localReplyConfig:              localReplyConfig,
 	}, errs
 }
 
