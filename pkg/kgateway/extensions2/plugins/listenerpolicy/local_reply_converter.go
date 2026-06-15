@@ -1,6 +1,8 @@
 package listenerpolicy
 
 import (
+	"fmt"
+
 	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -26,7 +28,7 @@ func convertLocalReplyConfig(cfg *kgateway.LocalReplyConfig) (*envoy_hcm.LocalRe
 
 		op, err := toEnvoyComparisonOpType(m.StatusCodeMatch.Op)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("localReplyConfig.mappers[%d].statusCodeMatch.op: %w", i, err)
 		}
 
 		mapper := &envoy_hcm.ResponseMapper{

@@ -100,14 +100,17 @@ func TestConvertLocalReplyConfig(t *testing.T) {
 		require.Equal(t, envoyaccesslogv3.ComparisonFilter_GE, out.GetMappers()[1].GetFilter().GetStatusCodeFilter().GetComparison().GetOp())
 	})
 
-	t.Run("invalid op returns error", func(t *testing.T) {
+	t.Run("invalid op returns error with mapper context", func(t *testing.T) {
 		out, err := convertLocalReplyConfig(&kgateway.LocalReplyConfig{
 			Mappers: []kgateway.ResponseMapper{
+				{StatusCodeMatch: kgateway.StatusCodeMatcher{Op: kgateway.EQ, Value: 503}},
 				{StatusCodeMatch: kgateway.StatusCodeMatcher{Op: kgateway.Op("BOGUS"), Value: 500}},
 			},
 		})
 		require.Error(t, err)
 		require.Nil(t, out)
+		// error identifies which mapper failed
+		require.ErrorContains(t, err, "localReplyConfig.mappers[1].statusCodeMatch.op")
 	})
 }
 
