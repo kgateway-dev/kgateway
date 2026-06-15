@@ -32,10 +32,6 @@ import (
 
 var logger = logging.New("deployer")
 
-const (
-	appKubernetesManagedByLabel = "app.kubernetes.io/managed-by"
-)
-
 type ControlPlaneInfo struct {
 	XdsHost      string
 	XdsPort      uint32
@@ -382,9 +378,9 @@ func hasControllerOwnerRef(obj client.Object, sourceObj client.Object) bool {
 func (d *Deployer) hasMatchingGatewayServiceMetadata(existingObj, desiredObj client.Object) bool {
 	existingLabels := existingObj.GetLabels()
 	desiredLabels := desiredObj.GetLabels()
-	if existingManagedByLabel, existingHasManagedByLabel := existingLabels[appKubernetesManagedByLabel]; existingHasManagedByLabel {
+	if existingManagedByLabel, existingHasManagedByLabel := existingLabels[wellknown.ManagedByLabel]; existingHasManagedByLabel {
 		if existingManagedByLabel != d.managedBy ||
-			desiredLabels[appKubernetesManagedByLabel] != d.managedBy {
+			desiredLabels[wellknown.ManagedByLabel] != d.managedBy {
 			return false
 		}
 	}
