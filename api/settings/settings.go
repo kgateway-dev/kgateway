@@ -70,6 +70,8 @@ func (r *ReferenceGrantMode) Decode(value string) error {
 		return nil
 	default:
 		return fmt.Errorf("invalid reference grant mode: %q", value)
+	}
+}
 
 // ValidatorMode selects the strict-validation execution strategy.
 type ValidatorMode string
