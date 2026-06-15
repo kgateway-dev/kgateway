@@ -37,7 +37,7 @@ func (c *compressionIR) Equals(other PolicySubIR) bool {
 	if !ok {
 		return false
 	}
-	if c == nil || other == nil {
+	if c == nil || oc == nil {
 		return c == nil && oc == nil
 	}
 	return c.enable == oc.enable
@@ -50,7 +50,7 @@ func (d *decompressionIR) Equals(other PolicySubIR) bool {
 	if !ok {
 		return false
 	}
-	if d == nil || other == nil {
+	if d == nil || od == nil {
 		return d == nil && od == nil
 	}
 	return d.enable == od.enable
