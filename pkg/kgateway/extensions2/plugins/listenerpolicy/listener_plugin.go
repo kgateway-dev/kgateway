@@ -26,6 +26,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
+	metrics "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -213,10 +214,23 @@ func NewListenerPolicyIR(
 	spec *kgateway.ListenerPolicySpec,
 	objSrc ir.ObjectSource,
 ) (*ListenerPolicyIR, []error) {
+	// A nil spec means no translation is requested; intentionally skip metrics.
 	if spec == nil {
 		return nil, nil
 	}
-	errs := []error{}
+	var errs []error
+	finishMetrics := metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
+		Name:       objSrc.Name,
+		Namespace:  objSrc.Namespace,
+		Translator: objSrc.Kind,
+	})
+	defer func() {
+		var err error
+		if len(errs) > 0 {
+			err = errs[0]
+		}
+		finishMetrics(err)
+	}()
 	perPort := map[uint32]listenerPolicy{}
 	for _, portConfig := range spec.PerPort {
 		pol, errs2 := newListenerPolicy(krtctx, commoncol, objSrc, &portConfig.Listener)
