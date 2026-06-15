@@ -13,6 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
@@ -122,6 +123,7 @@ func watchGw(
 		cfg.Mgr.GetScheme(),
 		cfg.Client,
 		gwParams,
+		deployer.WithManagedBy(wellknown.DefaultManagedByValue),
 	)
 	if err != nil {
 		return err
