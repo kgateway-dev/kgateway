@@ -13,7 +13,7 @@ import (
 )
 
 // DefaultIstioProxyImageTag is the default Istio proxyv2 image tag used for auto mTLS cert-agent sidecars.
-const DefaultIstioProxyImageTag = "1.29.2"
+const DefaultIstioProxyImageTag = "1.30.1"
 
 // Inputs is the set of options used to configure gateway/inference pool deployment.
 type Inputs struct {

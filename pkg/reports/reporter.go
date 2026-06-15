@@ -3,6 +3,8 @@ package reports
 import (
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -506,6 +508,9 @@ func (r *RouteReport) parentRefs() []gwv1.ParentReference {
 		}
 		refs = append(refs, parentRef)
 	}
+	slices.SortStableFunc(refs, func(a, b gwv1.ParentReference) int {
+		return strings.Compare(ParentString(a), ParentString(b))
+	})
 	return refs
 }
 

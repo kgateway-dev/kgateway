@@ -23,6 +23,8 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 			fmt.Sprintf("%s-endpoints-%d", se.Name, i), // synthetic name
 			se.Namespace, // inherit se namespace
 			nil,          // no metadata labels to inherit
+			nil,          // no metadata annotations to promote
+			nil,          // no annotation keys to promote
 			e,
 			nil, // not in krt, don't need selectedBy
 		)
@@ -37,6 +39,8 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 				fmt.Sprintf("%s-hosts-%d", se.Name, i), // synthetic name
 				se.Namespace,                           // inherit se namespace
 				nil,                                    // no metadata labels to inherit
+				nil,                                    // no metadata annotations to promote
+				nil,                                    // no annotation keys to promote
 				&networking.WorkloadEntry{Address: hostname},
 				nil, // not in krt, don't need selectedBy
 			)

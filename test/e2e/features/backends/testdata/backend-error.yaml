@@ -33,3 +33,4 @@ spec:
       accountId: "000000000000"
       functionName: "example-function"
       qualifier: "$LATEST"
+      

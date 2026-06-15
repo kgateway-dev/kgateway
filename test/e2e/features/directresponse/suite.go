@@ -168,9 +168,7 @@ func (s *testingSuite) TestBodyFormatJSON() {
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Headers: map[string]any{
-				// TODO: Switch to JSON once upstream fix for Content-Type is released
-				"Content-Type": "text/plain",
-				//"Content-Type": "application/json",
+				"Content-Type": "application/json",
 			},
 			Body: ContainSubstring(`{"path":"/data.json","preservedNull":null}`),
 		},
@@ -185,9 +183,7 @@ func (s *testingSuite) TestBodyFormatContentType() {
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Headers: map[string]any{
-				// TODO: Switch to HTML once upstream fix for Content-Type is released
-				"Content-Type": "text/plain",
-				//"Content-Type": "text/html",
+				"Content-Type": "text/html",
 			},
 			Body: ContainSubstring("<strong>Requested Path:</strong> /test.html"),
 		},

@@ -31,5 +31,6 @@ spec:
     - "listenerset-2.com"
   rules:
     - backendRefs:
-        - name: example-svc
+        - name: nginx
+          namespace: nginx-shared
           port: 8080
