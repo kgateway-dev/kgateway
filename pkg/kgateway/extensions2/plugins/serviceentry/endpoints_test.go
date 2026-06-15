@@ -15,8 +15,9 @@ import (
 // TestEndpointsFromWorkloads_SkipsNotReadyPods verifies that endpointsFromWorkloads
 // excludes pod-backed workloads that are NotReady (mirroring the EndpointSlice/Service
 // path) while keeping Ready pods and WorkloadEntry/inline endpoints (which are always
-// treated as Ready). This is the behavior that lets ingress traffic to a global service
-// fail over to a peer cluster when all local pods go NotReady.
+// treated as Ready). This is the behavior that lets traffic to a ServiceEntry cluster
+// with workloadSelector-backed pod endpoints fail over to a peer cluster when all
+// locally selected pods go NotReady.
 func TestEndpointsFromWorkloads_SkipsNotReadyPods(t *testing.T) {
 	se := &networkingclient.ServiceEntry{
 		ObjectMeta: metav1.ObjectMeta{Name: "autogen.server.server", Namespace: "istio-system"},
