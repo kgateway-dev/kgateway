@@ -396,10 +396,17 @@ func (d *Deployer) hasMatchingGatewayServiceMetadata(existingObj, desiredObj cli
 	}
 
 	if desiredGatewayLabel, desiredHasGatewayLabel := desiredLabels[wellknown.GatewayNameLabel]; desiredHasGatewayLabel {
-		return existingLabels[wellknown.GatewayNameLabel] == desiredGatewayLabel
+		existingGatewayLabel := existingLabels[wellknown.GatewayNameLabel]
+		if existingGatewayLabel == desiredGatewayLabel {
+			return true
+		}
+		// If the existing Service already has a gateway-name label (and it doesn't match), it likely belongs to a different Gateway.
+		if existingGatewayLabel != "" {
+			return false
+		}
 	}
 
-	// Down to the last option. Does any label contain `kgateway` ?
+	// Down to the last option. Does any label contain the managed-by value?
 	// This can happen if it is an upgrade from an older version
 	for _, v := range existingLabels {
 		if strings.Contains(v, d.managedBy) {
