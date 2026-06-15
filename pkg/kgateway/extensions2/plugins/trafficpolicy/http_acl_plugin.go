@@ -102,8 +102,8 @@ func constructHttpACL(in *kgateway.TrafficPolicy, out *trafficPolicySpecIr) erro
 			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 				Name: httpACLModuleName,
 			},
-			PerRouteConfigName: httpACLFilterName,
-			FilterConfig:       filterCfg,
+			FilterName:   httpACLFilterName,
+			FilterConfig: filterCfg,
 		},
 	}
 	return nil

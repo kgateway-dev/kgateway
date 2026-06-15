@@ -7,3 +7,4 @@ type: Opaque
 data:
   # purposefully use unsupported key to surface status update error
   token: c2stdGVzdC1zZWNyZXQK # Base64 encoded "sk-test-secret"
+  

@@ -16,7 +16,7 @@ fn test_envoy_buffers_reader_empty_buffers() {
 #[allow(static_mut_refs)]
 fn test_envoy_buffers_reader_single_chunk() {
     static mut CHUNK: [u8; 5] = *b"hello";
-    let buffers = vec![EnvoyMutBuffer::new(unsafe { &mut CHUNK })];
+    let buffers = vec![unsafe { EnvoyMutBuffer::new(&mut CHUNK) }];
     let mut reader = EnvoyBuffersReader::new(buffers);
     let mut out = Vec::new();
     reader.read_to_end(&mut out).unwrap();
@@ -29,11 +29,13 @@ fn test_envoy_buffers_reader_multiple_chunks() {
     static mut CHUNK_X: [u8; 3] = *b"foo";
     static mut CHUNK_Y: [u8; 1] = *b"-";
     static mut CHUNK_Z: [u8; 3] = *b"bar";
-    let buffers = vec![
-        EnvoyMutBuffer::new(unsafe { &mut CHUNK_X }),
-        EnvoyMutBuffer::new(unsafe { &mut CHUNK_Y }),
-        EnvoyMutBuffer::new(unsafe { &mut CHUNK_Z }),
-    ];
+    let buffers = unsafe {
+        vec![
+            EnvoyMutBuffer::new(&mut CHUNK_X),
+            EnvoyMutBuffer::new(&mut CHUNK_Y),
+            EnvoyMutBuffer::new(&mut CHUNK_Z),
+        ]
+    };
     let mut reader = EnvoyBuffersReader::new(buffers);
     let mut out = Vec::new();
     reader.read_to_end(&mut out).unwrap();
@@ -47,10 +49,12 @@ fn test_envoy_buffers_reader_small_read_buf() {
     // offset advancement within a chunk.
     static mut CHUNK_X: [u8; 6] = *b"abcdef";
     static mut CHUNK_Y: [u8; 5] = *b"ghijk";
-    let buffers = vec![
-        EnvoyMutBuffer::new(unsafe { &mut CHUNK_X }),
-        EnvoyMutBuffer::new(unsafe { &mut CHUNK_Y }),
-    ];
+    let buffers = unsafe {
+        vec![
+            EnvoyMutBuffer::new(&mut CHUNK_X),
+            EnvoyMutBuffer::new(&mut CHUNK_Y),
+        ]
+    };
     let mut reader = EnvoyBuffersReader::new(buffers);
 
     let mut tmp = [0u8; 4];
@@ -79,11 +83,13 @@ fn test_envoy_buffers_reader_empty_chunk_skipped() {
     static mut CHUNK_BEFORE: [u8; 3] = *b"abc";
     static mut CHUNK_EMPTY: [u8; 0] = [];
     static mut CHUNK_AFTER: [u8; 3] = *b"xyz";
-    let buffers = vec![
-        EnvoyMutBuffer::new(unsafe { &mut CHUNK_BEFORE }),
-        EnvoyMutBuffer::new(unsafe { &mut CHUNK_EMPTY }),
-        EnvoyMutBuffer::new(unsafe { &mut CHUNK_AFTER }),
-    ];
+    let buffers = unsafe {
+        vec![
+            EnvoyMutBuffer::new(&mut CHUNK_BEFORE),
+            EnvoyMutBuffer::new(&mut CHUNK_EMPTY),
+            EnvoyMutBuffer::new(&mut CHUNK_AFTER),
+        ]
+    };
     let mut reader = EnvoyBuffersReader::new(buffers);
     let mut out = Vec::new();
     reader.read_to_end(&mut out).unwrap();
