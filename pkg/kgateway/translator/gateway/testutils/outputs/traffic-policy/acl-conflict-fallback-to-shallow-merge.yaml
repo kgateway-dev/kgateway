@@ -68,7 +68,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["10.0.0.0/8"]},{"action":"allow","cidrs":["192.168.0.0/16"]}]}'
-      perRouteConfigName: http-acl
+      filterName: http-acl
   virtualHosts:
   - domains:
     - test.com
@@ -93,7 +93,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"allow","rules":[{"action":"deny","cidrs":["172.16.0.0/12"]}]}'
-          perRouteConfigName: http-acl
+          filterName: http-acl
     - match:
         pathSeparatedPrefix: /route-1
       metadata:
@@ -114,7 +114,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["138.16.0.0/12"]},{"action":"deny","cidrs":["11.11.0.0/16"]}]}'
-          perRouteConfigName: http-acl
+          filterName: http-acl
     - match:
         pathSeparatedPrefix: /route-2
       name: listener~8080~test_com-route-2-httproute-test-default-2-0-rule2-matcher-0
