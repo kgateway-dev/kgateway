@@ -2523,4 +2523,3 @@ func hboneProtocolGw() *gwv1.Gateway {
 		},
 	}
 }
-
