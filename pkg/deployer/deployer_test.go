@@ -2605,7 +2605,7 @@ var _ = Describe("DeployObjs", func() {
 				Name:      name,
 				Namespace: ns,
 				Labels: map[string]string{
-					wellknown.ManagedByLabel:  wellknown.DefaultManagedByValue,
+					wellknown.ManagedByLabel:        wellknown.DefaultManagedByValue,
 					wellknown.GatewayClassNameLabel: wellknown.DefaultGatewayClassName,
 					wellknown.GatewayNameLabel:      name,
 				},
