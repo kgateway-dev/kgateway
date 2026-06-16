@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -26,14 +25,14 @@ func TestInternalRedirectIREquals(t *testing.T) {
 		{
 			name: "same values are equal",
 			a: &kgateway.InternalRedirect{
-				RedirectResponseCodes:   []kgateway.InternalRedirectResponseCode{303},
-				AllowCrossSchemeRedirect: ptr.To(true),
-				MaxRedirects:            ptr.To[uint32](2),
+				RedirectResponseCodes:    []kgateway.InternalRedirectResponseCode{303},
+				AllowCrossSchemeRedirect: new(true),
+				MaxRedirects:             new(uint32(2)),
 			},
 			b: &kgateway.InternalRedirect{
-				RedirectResponseCodes:   []kgateway.InternalRedirectResponseCode{303},
-				AllowCrossSchemeRedirect: ptr.To(true),
-				MaxRedirects:            ptr.To[uint32](2),
+				RedirectResponseCodes:    []kgateway.InternalRedirectResponseCode{303},
+				AllowCrossSchemeRedirect: new(true),
+				MaxRedirects:             new(uint32(2)),
 			},
 			want: true,
 		},
@@ -50,20 +49,20 @@ func TestInternalRedirectIREquals(t *testing.T) {
 		{
 			name: "different cross scheme",
 			a: &kgateway.InternalRedirect{
-				AllowCrossSchemeRedirect: ptr.To(true),
+				AllowCrossSchemeRedirect: new(true),
 			},
 			b: &kgateway.InternalRedirect{
-				AllowCrossSchemeRedirect: ptr.To(false),
+				AllowCrossSchemeRedirect: new(false),
 			},
 			want: false,
 		},
 		{
 			name: "different max redirects",
 			a: &kgateway.InternalRedirect{
-				MaxRedirects: ptr.To[uint32](1),
+				MaxRedirects: new(uint32(1)),
 			},
 			b: &kgateway.InternalRedirect{
-				MaxRedirects: ptr.To[uint32](3),
+				MaxRedirects: new(uint32(3)),
 			},
 			want: false,
 		},
@@ -122,10 +121,10 @@ func TestConstructInternalRedirect(t *testing.T) {
 		out := &trafficPolicySpecIr{}
 		constructInternalRedirect(kgateway.TrafficPolicySpec{
 			InternalRedirect: &kgateway.InternalRedirect{
-				RedirectResponseCodes:   []kgateway.InternalRedirectResponseCode{301, 303, 307},
-				AllowCrossSchemeRedirect: ptr.To(true),
-				ResponseHeadersToCopy:   []gwv1.HTTPHeaderName{"Authorization", "X-Request-Id"},
-				MaxRedirects:            ptr.To[uint32](5),
+				RedirectResponseCodes:    []kgateway.InternalRedirectResponseCode{301, 303, 307},
+				AllowCrossSchemeRedirect: new(true),
+				ResponseHeadersToCopy:    []gwv1.HTTPHeaderName{"Authorization", "X-Request-Id"},
+				MaxRedirects:             new(uint32(5)),
 			},
 		}, out)
 		require.NotNil(t, out.internalRedirect)

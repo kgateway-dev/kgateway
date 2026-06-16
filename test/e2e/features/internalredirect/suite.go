@@ -23,7 +23,7 @@ type testingSuite struct {
 }
 
 var testCases = map[string]*base.TestCase{
-	"TestInternalRedirectFollowed":       {},
+	"TestInternalRedirectFollowed":           {},
 	"TestWithoutPolicyRedirectPassedThrough": {},
 }
 

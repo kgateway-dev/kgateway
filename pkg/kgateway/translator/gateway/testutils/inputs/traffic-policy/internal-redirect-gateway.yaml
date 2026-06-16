@@ -17,7 +17,7 @@ spec:
   selector:
     test: test
   ports:
-    - protocol: HTTP
+    - protocol: TCP
       port: 80
       targetPort: test
 ---

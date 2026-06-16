@@ -114,6 +114,3 @@ spec:
     sectionName: redirect-with-policy
   internalRedirect:
     redirectResponseCodes: [303]
-    allowCrossSchemeRedirect: true
-    responseHeadersToCopy: ["X-Custom-Header"]
-    maxRedirects: 2
