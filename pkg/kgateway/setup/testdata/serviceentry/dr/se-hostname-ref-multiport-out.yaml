@@ -39,6 +39,7 @@ clusters:
         region: r2
         subZone: r2z1s1
         zone: r2z1
+  metadata: {}
   name: istio-se_gwtest_example-se_se.example.com_443
   type: STATIC
 - connectTimeout: 5s
@@ -81,6 +82,7 @@ clusters:
         region: r2
         subZone: r2z1s1
         zone: r2z1
+  metadata: {}
   name: istio-se_gwtest_example-se_se.example.com_80
   type: STATIC
 - connectTimeout: 5s
@@ -89,6 +91,7 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
+  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
 listeners:
