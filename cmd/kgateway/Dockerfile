@@ -5,8 +5,12 @@ ARG BASE_IMAGE=cgr.dev/chainguard/glibc-dynamic:latest
 # (validator.NewBinary shells out to `envoy --mode validate`).
 FROM $ENVOY_IMAGE AS envoy
 
-# Stage 2: minimal distroless runtime. The Chainguard glibc base ships CA certs,
-# libgcc_s, and libstdc++, which the envoy binary and the rust dynamic module need.
+# Stage 2: minimal distroless runtime. We use the Chainguard glibc-dynamic base
+# because both the envoy binary and the Rust dynamic module are dynamically linked
+# against glibc (envoy needs libc, libm, libpthread, libdl, librt). The base also
+# ships CA certificates for the control plane's outbound TLS. envoy statically
+# links libc++ and libgcc, and the kgateway Go binary is built CGO_ENABLED=0
+# (fully static), so the runtime does not need libstdc++.
 FROM $BASE_IMAGE
 
 ARG GOARCH=amd64
