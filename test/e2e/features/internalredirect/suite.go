@@ -33,22 +33,20 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-// TestInternalRedirectFollowed verifies that when an upstream returns a 303
-// redirect and the TrafficPolicy has internalRedirect with 303 in
-// redirectResponseCodes, the gateway follows the redirect internally and
-// the client receives the final 200 response.
+// TestInternalRedirectFollowed verifies that when an upstream returns a 303,
+// the gateway follows the redirect internally and returns the redirected
+// endpoint's response.
 func (s *testingSuite) TestInternalRedirectFollowed() {
 	// httpbin's /redirect-to?url=<target>&status_code=303 returns a 303 with
-	// Location pointing at <target>. With internal redirect enabled for 303,
-	// the gateway should follow it and return the target's response (200).
+	// Location pointing at <target>. The /anything endpoint echoes its path.
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
-			Body:       gomega.ContainSubstring("go-httpbin"),
+			Body:       gomega.ContainSubstring("/anything/internal-redirect"),
 		},
 		curl.WithPort(80),
-		curl.WithPath("/redirect-to?url=http://www.example.com/status/200&status_code=303"),
+		curl.WithPath("/redirect-to?url=http://www.example.com/anything/internal-redirect&status_code=303"),
 		curl.WithHostHeader("www.example.com"),
 	)
 }

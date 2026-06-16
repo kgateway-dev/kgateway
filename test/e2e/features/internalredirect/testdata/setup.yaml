@@ -72,7 +72,7 @@ spec:
           value: /redirect-to
       - path:
           type: PathPrefix
-          value: /status
+          value: /anything
       backendRefs:
         - name: httpbin
           port: 8000
