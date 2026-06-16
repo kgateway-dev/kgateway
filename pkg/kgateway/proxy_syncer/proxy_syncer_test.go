@@ -328,7 +328,7 @@ func TestMergeProxyReports(t *testing.T) {
 					reports: reports.ReportMap{
 						ListenerSets: map[schema.GroupVersionKind]map[types.NamespacedName]*reports.ListenerSetReport{
 							wellknown.ListenerSetGVK: {
-								{Name: "ls-1", Namespace: "default"}: {},
+								{Name: "ls-1", Namespace: "default"}: &reports.ListenerSetReport{},
 							},
 						},
 					},
@@ -337,7 +337,7 @@ func TestMergeProxyReports(t *testing.T) {
 					reports: reports.ReportMap{
 						ListenerSets: map[schema.GroupVersionKind]map[types.NamespacedName]*reports.ListenerSetReport{
 							wellknown.ListenerSetGVK: {
-								{Name: "ls-2", Namespace: "default"}: {},
+								{Name: "ls-2", Namespace: "default"}: &reports.ListenerSetReport{},
 							},
 						},
 					},
@@ -346,8 +346,8 @@ func TestMergeProxyReports(t *testing.T) {
 			expected: reports.ReportMap{
 				ListenerSets: map[schema.GroupVersionKind]map[types.NamespacedName]*reports.ListenerSetReport{
 					wellknown.ListenerSetGVK: {
-						{Name: "ls-1", Namespace: "default"}: {},
-						{Name: "ls-2", Namespace: "default"}: {},
+						{Name: "ls-1", Namespace: "default"}: &reports.ListenerSetReport{},
+						{Name: "ls-2", Namespace: "default"}: &reports.ListenerSetReport{},
 					},
 				},
 			},

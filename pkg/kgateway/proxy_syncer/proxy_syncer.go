@@ -399,6 +399,9 @@ func mergeProxyReports(
 
 		// 2. merge LS Reports for all Proxies' status reports
 		for gvk, listenerSetsForGVK := range p.reports.ListenerSets {
+			if merged.ListenerSets == nil {
+				merged.ListenerSets = make(map[schema.GroupVersionKind]map[types.NamespacedName]*reports.ListenerSetReport)
+			}
 			if merged.ListenerSets[gvk] == nil {
 				merged.ListenerSets[gvk] = make(map[types.NamespacedName]*reports.ListenerSetReport)
 			}
