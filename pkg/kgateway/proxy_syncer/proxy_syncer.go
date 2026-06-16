@@ -398,7 +398,12 @@ func mergeProxyReports(
 		maps.Copy(merged.Gateways, p.reports.Gateways)
 
 		// 2. merge LS Reports for all Proxies' status reports
-		maps.Copy(merged.ListenerSets, p.reports.ListenerSets)
+		for gvk, listenerSetsForGVK := range p.reports.ListenerSets {
+			if merged.ListenerSets[gvk] == nil {
+				merged.ListenerSets[gvk] = make(map[types.NamespacedName]*reports.ListenerSetReport)
+			}
+			maps.Copy(merged.ListenerSets[gvk], listenerSetsForGVK)
+		}
 
 		// 3. merge httproute parentRefs into RouteReports
 		for rnn, rr := range p.reports.HTTPRoutes {

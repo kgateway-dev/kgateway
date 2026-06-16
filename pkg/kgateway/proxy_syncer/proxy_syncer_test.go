@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -320,6 +321,37 @@ func TestMergeProxyReports(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Merge ListenerSet reports for same GVK",
+			proxies: []GatewayXdsResources{
+				{
+					reports: reports.ReportMap{
+						ListenerSets: map[schema.GroupVersionKind]map[types.NamespacedName]*reports.ListenerSetReport{
+							wellknown.ListenerSetGVK: {
+								{Name: "ls-1", Namespace: "default"}: {},
+							},
+						},
+					},
+				},
+				{
+					reports: reports.ReportMap{
+						ListenerSets: map[schema.GroupVersionKind]map[types.NamespacedName]*reports.ListenerSetReport{
+							wellknown.ListenerSetGVK: {
+								{Name: "ls-2", Namespace: "default"}: {},
+							},
+						},
+					},
+				},
+			},
+			expected: reports.ReportMap{
+				ListenerSets: map[schema.GroupVersionKind]map[types.NamespacedName]*reports.ListenerSetReport{
+					wellknown.ListenerSetGVK: {
+						{Name: "ls-1", Namespace: "default"}: {},
+						{Name: "ls-2", Namespace: "default"}: {},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -338,6 +370,9 @@ func TestMergeProxyReports(t *testing.T) {
 			}
 			if tt.expected.Policies != nil {
 				a.Equal(tt.expected.Policies, actual.Policies)
+			}
+			if tt.expected.ListenerSets != nil {
+				a.Equal(tt.expected.ListenerSets, actual.ListenerSets)
 			}
 		})
 	}
