@@ -98,7 +98,7 @@ jobs:
           # May 29, 2026: ~10 minutes
           - cluster-name: 'cluster-five'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^HttpACL$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$|^TestKgateway$$/^WebSocket$$'
+            go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^InternalRedirect$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^HttpACL$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$|^TestKgateway$$/^WebSocket$$'
             localstack: 'false'
           # May 29, 2026: ~10 minutes
           - cluster-name: 'cluster-six'

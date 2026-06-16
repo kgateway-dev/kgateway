@@ -112,6 +112,11 @@ type TrafficPolicySpec struct {
 	// +optional
 	Retry *Retry `json:"retry,omitempty"`
 
+	// InternalRedirect handles upstream 3xx redirects inside the gateway.
+	// Applies only to routes that forward traffic to a backend.
+	// +optional
+	InternalRedirect *InternalRedirect `json:"internalRedirect,omitempty"`
+
 	// RBAC specifies the role-based access control configuration for the policy.
 	// This defines the rules for authorization based on roles and permissions.
 	// RBAC policies applied at different attachment points in the configuration
