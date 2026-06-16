@@ -118,6 +118,16 @@ func endpointsFromWorkloads(
 
 	eps := ir.NewEndpointsForBackend(be)
 	for _, workload := range workloads {
+		// Skip NotReady pod-backed workloads so that ingress (and any other
+		// ServiceEntry consumer) does not send traffic to pods that Kubernetes has
+		// marked NotReady. This mirrors the EndpointSlice-based Service path, which
+		// skips endpoints whose Ready condition is not true, and lets locality
+		// failover promote endpoints in a peer cluster when all local pods are
+		// NotReady. WorkloadEntry and inline endpoints set Ready=true.
+		if !workload.Ready {
+			continue
+		}
+
 		address := workload.Address()
 
 		// for static, it must be an IP
