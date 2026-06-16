@@ -15,6 +15,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -169,7 +170,7 @@ func TestConvertHeaderFilter(t *testing.T) {
 	// ReferenceGrants are not needed for same-namespace lookups, but we still need to create the index
 	// Import the correct type for ReferenceGrant
 	refGrantCol := krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock)
-	refgrants := krtcollections.NewRefGrantIndex(refGrantCol)
+	refgrants := krtcollections.NewRefGrantIndex(refGrantCol, apisettings.ReferenceGrantPermissive)
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
 		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(secretCol, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 			return &ir.Secret{
