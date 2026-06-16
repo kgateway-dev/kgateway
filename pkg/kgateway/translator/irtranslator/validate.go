@@ -49,18 +49,11 @@ var (
 // These include basic Envoy route property validation such as paths, prefixes, and weighted clusters,
 // along with quick checks for common issues that could cause problems.
 //
-// In strict mode, additional validation is performed. First, matcher-only validation determines
-// if the route should be dropped entirely due to invalid matcher configuration. Then, full route
-// validation determines if the route should be replaced with a direct response due to other
-// configuration issues.
-//
-// This two-tiered approach is necessary because Envoy validate mode output does not provide
-// enough information to determine if the error is due to an invalid matcher (drop route)
-// or other route configuration issues (replace with direct response).
-//
-// TODO(tim): optimize the calls made to envoy validate mode with this approach, or add better
-// regex validation throughout the route translator to handle the invalid matcher scenario w/o
-// shelling out to envoy validate mode.
+// In strict mode, the full route is validated against envoy in a single invocation. If that
+// invocation fails, a second matcher-only invocation disambiguates whether the failure
+// originates in the route's match block (drop the route) or in its action (replace with a
+// direct response). Valid routes, the common case, pay only one envoy invocation; invalid
+// routes pay two.
 func validateRoute(
 	ctx context.Context,
 	route *envoyroutev3.Route,
@@ -73,15 +66,19 @@ func validateRoute(
 	if err := validateEnvoyRoute(route); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidRoute, err)
 	}
-	if mode == apisettings.ValidationStrict {
-		if err := validateMatcherOnly(ctx, route, v); err != nil {
-			return fmt.Errorf("%w: %w", ErrInvalidMatcher, err)
-		}
-		if err := validateFullRoute(ctx, route, v); err != nil {
-			return fmt.Errorf("%w: %w", ErrInvalidRoute, err)
-		}
+	if mode != apisettings.ValidationStrict {
+		return nil
 	}
-	return nil
+	fullErr := validateFullRoute(ctx, route, v)
+	if fullErr == nil {
+		return nil
+	}
+	// Only run the matcher-only validation when the full route already failed,
+	// purely to attribute the failure to ErrInvalidMatcher vs ErrInvalidRoute.
+	if matcherErr := validateMatcherOnly(ctx, route, v); matcherErr != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidMatcher, matcherErr)
+	}
+	return fmt.Errorf("%w: %w", ErrInvalidRoute, fullErr)
 }
 
 // validateEnvoyRoute performs basic validation on Envoy route properties
