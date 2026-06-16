@@ -274,7 +274,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 	}
 
 	if s.validator == nil {
-		s.validator = validator.NewBinary()
+		s.validator = validator.New(*s.globalSettings)
 	}
 
 	return s, nil

@@ -40,6 +40,7 @@ func MergeHttpPolicies(
 		mergeDefaultHostForHttp10,
 		mergeEarlyHeaderMutation,
 		mergeMaxRequestHeadersKb,
+		mergeMaxHeadersCount,
 		mergeUuidRequestIdConfig,
 		mergeStripHostPortMode,
 	}
@@ -375,6 +376,22 @@ func mergeUuidRequestIdConfig(
 
 	p1.uuidRequestIdConfig = p2.uuidRequestIdConfig
 	mergeOrigins.SetOne(origin+"uuidRequestIdConfig", p2Ref, p2MergeOrigins)
+}
+
+func mergeMaxHeadersCount(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.maxHeadersCount, p2.maxHeadersCount, opts) {
+		return
+	}
+
+	p1.maxHeadersCount = p2.maxHeadersCount
+	mergeOrigins.SetOne(origin+"maxHeadersCount", p2Ref, p2MergeOrigins)
 }
 
 func mergeStripHostPortMode(

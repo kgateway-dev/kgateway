@@ -65,6 +65,7 @@ type HttpListenerPolicyIr struct {
 	defaultHostForHttp10          *string
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 	maxRequestHeadersKb           *uint32
+	maxHeadersCount               *uint32
 	uuidRequestIdConfig           *envoyuuidv3.UuidRequestIdConfig
 	stripHostPortMode             *kgateway.StripHostPortMode
 }
@@ -187,6 +188,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 
+	if !cmputils.PointerValsEqual(d.maxHeadersCount, d2.maxHeadersCount) {
+		return false
+	}
+
 	if !proto.Equal(d.uuidRequestIdConfig, d2.uuidRequestIdConfig) {
 		return false
 	}
@@ -291,6 +296,11 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		maxRequestHeadersKb = new(uint32(*h.MaxRequestHeadersKb)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
+	var maxHeadersCount *uint32
+	if h.MaxHeadersCount != nil {
+		maxHeadersCount = new(uint32(*h.MaxHeadersCount)) // nolint:gosec // G115: kubebuilder validation ensures value >= 1, safe for uint32
+	}
+
 	var uuidRequestIdConfig *envoyuuidv3.UuidRequestIdConfig
 	if h.UuidRequestIdConfig != nil {
 		uuidRequestIdConfig = &envoyuuidv3.UuidRequestIdConfig{
@@ -321,6 +331,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		defaultHostForHttp10:          h.DefaultHostForHttp10,
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
 		maxRequestHeadersKb:           maxRequestHeadersKb,
+		maxHeadersCount:               maxHeadersCount,
 		uuidRequestIdConfig:           uuidRequestIdConfig,
 		stripHostPortMode:             h.StripHostPortMode,
 	}, errs

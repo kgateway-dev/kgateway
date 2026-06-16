@@ -40,6 +40,28 @@ func (v *ValidationMode) Decode(value string) error {
 	}
 }
 
+// ValidatorMode selects the strict-validation execution strategy.
+type ValidatorMode string
+
+const (
+	// ValidatorBinary forks envoy --mode validate per call.
+	ValidatorBinary ValidatorMode = "BINARY"
+	// ValidatorCache wraps ValidatorBinary with an LRU result cache.
+	ValidatorCache ValidatorMode = "CACHE"
+)
+
+// Decode implements envconfig.Decoder.
+func (v *ValidatorMode) Decode(value string) error {
+	mode := ValidatorMode(strings.ToUpper(value))
+	switch mode {
+	case ValidatorBinary, ValidatorCache:
+		*v = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid validator mode: %q", value)
+	}
+}
+
 // DnsLookupFamily controls the DNS lookup family for all static clusters created via Backend resources.
 type DnsLookupFamily string
 
@@ -210,6 +232,19 @@ type Settings struct {
 	// - "STANDARD": Rewrites invalid routes to direct responses (typically HTTP 500)
 	// - "STRICT": Builds on STANDARD by running targeted validation
 	ValidationMode ValidationMode `split_words:"true" default:"STANDARD"`
+
+	// ValidatorMode selects the strict-validation execution strategy. Has no effect
+	// when ValidationMode is "STANDARD". Supported values:
+	// - "BINARY": fork envoy --mode validate per call (the pre-cache behavior).
+	// - "CACHE": wrap BINARY with an LRU result cache keyed on bootstrap content
+	//   hash (default). A validation verdict is a pure function of the config
+	//   bytes, so memoization cannot change outcomes — only skip redundant envoy
+	//   invocations; transient failures are never cached.
+	ValidatorMode ValidatorMode `split_words:"true" default:"CACHE"`
+
+	// ValidatorCacheSize is the LRU capacity used by the CACHE validator mode.
+	// Ignored when ValidatorMode is BINARY. A value <= 0 selects the implementation default.
+	ValidatorCacheSize int `split_words:"true" default:"4096"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
 	// Since these metrics can be numerous, it is disabled by default.
