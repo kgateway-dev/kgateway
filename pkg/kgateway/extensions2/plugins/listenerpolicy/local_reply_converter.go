@@ -74,6 +74,20 @@ func convertLocalReplyConfig(cfg *kgateway.LocalReplyConfig) (*envoy_hcm.LocalRe
 			}
 		}
 
+		for _, h := range m.Headers {
+			value := ""
+			if h.Value != nil {
+				value = *h.Value
+			}
+			mapper.HeadersToAdd = append(mapper.HeadersToAdd, &envoycorev3.HeaderValueOption{
+				Header: &envoycorev3.HeaderValue{
+					Key:   h.Key,
+					Value: value,
+				},
+				AppendAction: envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+			})
+		}
+
 		mappers = append(mappers, mapper)
 	}
 

@@ -1696,6 +1696,31 @@ spec:
                                   maxLength: 256
                                   minLength: 1
                                   type: string
+                                headers:
+                                  description: |-
+                                    Headers are additional response headers to set on matching local replies. Each entry
+                                    overwrites any existing header of the same name. This is useful for adding diagnostic or
+                                    cache-control headers to error responses. To set the Content-Type, prefer the ContentType
+                                    field above.
+                                  items:
+                                    description: |-
+                                      Header name/value pair.
+                                      Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalue
+                                    properties:
+                                      key:
+                                        description: Header name.
+                                        type: string
+                                      value:
+                                        description: Header value.
+                                        type: string
+                                    required:
+                                    - key
+                                    type: object
+                                  maxItems: 16
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                  - key
+                                  x-kubernetes-list-type: map
                                 statusCode:
                                   description: |-
                                     StatusCode overrides the HTTP status code returned to the client for matching local replies.
@@ -3938,6 +3963,31 @@ spec:
                                         maxLength: 256
                                         minLength: 1
                                         type: string
+                                      headers:
+                                        description: |-
+                                          Headers are additional response headers to set on matching local replies. Each entry
+                                          overwrites any existing header of the same name. This is useful for adding diagnostic or
+                                          cache-control headers to error responses. To set the Content-Type, prefer the ContentType
+                                          field above.
+                                        items:
+                                          description: |-
+                                            Header name/value pair.
+                                            Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalue
+                                          properties:
+                                            key:
+                                              description: Header name.
+                                              type: string
+                                            value:
+                                              description: Header value.
+                                              type: string
+                                          required:
+                                          - key
+                                          type: object
+                                        maxItems: 16
+                                        type: array
+                                        x-kubernetes-list-map-keys:
+                                        - key
+                                        x-kubernetes-list-type: map
                                       statusCode:
                                         description: |-
                                           StatusCode overrides the HTTP status code returned to the client for matching local replies.

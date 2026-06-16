@@ -372,6 +372,16 @@ type ResponseMapper struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=256
 	ContentType *string `json:"contentType,omitempty"`
+
+	// Headers are additional response headers to set on matching local replies. Each entry
+	// overwrites any existing header of the same name. This is useful for adding diagnostic or
+	// cache-control headers to error responses. To set the Content-Type, prefer the ContentType
+	// field above.
+	// +optional
+	// +listType=map
+	// +listMapKey=key
+	// +kubebuilder:validation:MaxItems=16
+	Headers []HeaderValue `json:"headers,omitempty"`
 }
 
 // StatusCodeMatcher matches a local reply by comparing the response status code against Value

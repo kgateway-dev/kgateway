@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/stretchr/testify/require"
 
@@ -84,6 +85,29 @@ func TestConvertLocalReplyConfig(t *testing.T) {
 		require.Equal(t, "text/html; charset=utf-8", bfo.GetContentType())
 		// body is rendered verbatim via the %LOCAL_REPLY_BODY% operator
 		require.Equal(t, localReplyBodyOperator, bfo.GetTextFormatSource().GetInlineString())
+	})
+
+	t.Run("headers are added as overwrite options", func(t *testing.T) {
+		out, err := convertLocalReplyConfig(&kgateway.LocalReplyConfig{
+			Mappers: []kgateway.ResponseMapper{
+				{
+					StatusCodeMatch: kgateway.StatusCodeMatcher{Op: kgateway.GE, Value: 500},
+					Headers: []kgateway.HeaderValue{
+						{Key: "X-Error-Source", Value: new("gateway")},
+						{Key: "X-Empty"},
+					},
+				},
+			},
+		})
+		require.NoError(t, err)
+		hdrs := out.GetMappers()[0].GetHeadersToAdd()
+		require.Len(t, hdrs, 2)
+		require.Equal(t, "X-Error-Source", hdrs[0].GetHeader().GetKey())
+		require.Equal(t, "gateway", hdrs[0].GetHeader().GetValue())
+		require.Equal(t, envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD, hdrs[0].GetAppendAction())
+		// nil value -> empty string
+		require.Equal(t, "X-Empty", hdrs[1].GetHeader().GetKey())
+		require.Equal(t, "", hdrs[1].GetHeader().GetValue())
 	})
 
 	t.Run("multiple mappers preserve order", func(t *testing.T) {
