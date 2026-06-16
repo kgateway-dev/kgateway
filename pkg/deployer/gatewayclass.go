@@ -37,10 +37,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 		// We do not yet implement the 421 misdirected-request behavior across HTTPS listeners
 		// sharing the same port.
 		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,
-		// TODO: Add support for these
-		features.HTTPRouteRetryFeature,
-		// - HTTPRouteRetryConnectionError
-		// - HTTPRouteRetryWithTimeouts
 	)
 	if !enableExperimentalGatewayAPIFeatures {
 		// TLSRoute and TLSRouteModeTerminate are standard as of Gateway API v1.5.
