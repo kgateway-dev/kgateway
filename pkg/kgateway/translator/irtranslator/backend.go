@@ -173,7 +173,7 @@ func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *
 	if err != nil {
 		return err
 	}
-	if err := t.Validator.Validate(ctx, bootstrap); err != nil {
+	if err := t.Validator.Validate(validator.WithValidationCaller(ctx, validator.CallerBackend), bootstrap); err != nil {
 		return err
 	}
 	return nil

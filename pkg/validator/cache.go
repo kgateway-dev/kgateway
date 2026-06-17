@@ -3,6 +3,7 @@ package validator
 import (
 	"context"
 	"errors"
+	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -66,6 +67,10 @@ func NewCaching(v Validator, size int) Validator {
 }
 
 func (c *cachingValidator) Validate(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) error {
+	start := time.Now()
+	caller := validationCaller(ctx)
+	recordValidationCall(caller)
+
 	// The key is an in-process cache key only: it hashes protojson output,
 	// which is deterministic for a given binary but deliberately unstable
 	// across builds (protojson varies whitespace via a seed derived from a
@@ -76,11 +81,18 @@ func (c *cachingValidator) Validate(ctx context.Context, bootstrap *envoybootstr
 	key, err := cacheKeyFor(bootstrap)
 	if err != nil {
 		// If we cannot compute a key, fall through to the inner validator.
-		return c.inner.Validate(ctx, bootstrap)
+		innerErr := c.inner.Validate(ctx, bootstrap)
+		recordValidationResult(caller, validationResultFromError(innerErr), start)
+		return innerErr
 	}
+
 	if hit, ok := c.cache.Get(key); ok {
+		recordValidationCacheHit(caller)
+		recordValidationResult(caller, validationResultFromError(hit.err()), start)
 		return hit.err()
 	}
+	recordValidationCacheMiss(caller)
+
 	// Collapse concurrent misses on the same content to one inner call. The
 	// shared call runs under the leader's context; if that call fails
 	// transiently (cancellation, exec error), every waiter sees the transient
@@ -100,7 +112,10 @@ func (c *cachingValidator) Validate(ctx context.Context, bootstrap *envoybootstr
 		return nil, innerErr
 	})
 	if sfErr != nil {
+		recordValidationResult(caller, validationResultFromError(sfErr), start)
 		return sfErr
 	}
-	return res.(cachedResult).err()
+	result := res.(cachedResult)
+	recordValidationResult(caller, validationResultFromError(result.err()), start)
+	return result.err()
 }
