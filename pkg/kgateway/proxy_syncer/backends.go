@@ -66,7 +66,7 @@ func NewPerClientEnvoyClusters(
 	finalBackends krt.Collection[*ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniquelyConnectedClient],
 ) PerClientEnvoyClusters {
-	clusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj *ir.BackendObjectIR) []uccWithCluster {
+	translatedClusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj *ir.BackendObjectIR) []uccWithCluster {
 		backendLogger := logger.With("backend", backendObj)
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithClusterRet := make([]uccWithCluster, 0, len(uccs))
@@ -94,6 +94,14 @@ func NewPerClientEnvoyClusters(
 			})
 		}
 		return uccWithClusterRet
+	}, krtopts.ToOptions("TranslatedPerClientEnvoyClusters")...)
+	translatedIdx := krtpkg.UnnamedIndex(translatedClusters, func(ucc uccWithCluster) []string {
+		return []string{ucc.Client.ResourceName()}
+	})
+
+	clusters := krt.NewManyCollection(uccs, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) []uccWithCluster {
+		translated := krt.Fetch(kctx, translatedClusters, krt.FilterIndex(translatedIdx, ucc.ResourceName()))
+		return validateTranslatedClusters(ctx, translator, translated)
 	}, krtopts.ToOptions("PerClientEnvoyClusters")...)
 	idx := krtpkg.UnnamedIndex(clusters, func(ucc uccWithCluster) []string {
 		return []string{ucc.Client.ResourceName()}
@@ -103,4 +111,59 @@ func NewPerClientEnvoyClusters(
 		clusters: clusters,
 		index:    idx,
 	}
+}
+
+func validateTranslatedClusters(
+	ctx context.Context,
+	translator *irtranslator.BackendTranslator,
+	clusters []uccWithCluster,
+) []uccWithCluster {
+	if translator == nil || !translator.StrictValidationEnabled() {
+		return clusters
+	}
+
+	candidates := make([]int, 0, len(clusters))
+	candidateClusters := make([]*envoyclusterv3.Cluster, 0, len(clusters))
+	for i, cluster := range clusters {
+		if cluster.Error != nil || cluster.Cluster == nil {
+			continue
+		}
+		candidates = append(candidates, i)
+		candidateClusters = append(candidateClusters, cluster.Cluster)
+	}
+	if len(candidateClusters) == 0 {
+		return clusters
+	}
+
+	if err := translator.ValidateClusterConfigs(ctx, candidateClusters); err == nil {
+		return clusters
+	} else {
+		logger.Debug("strict backend batch validation failed; isolating invalid clusters", "clusters", len(candidateClusters), "error", err)
+	}
+
+	survivingClusters := make([]*envoyclusterv3.Cluster, 0, len(candidateClusters))
+	survivingIndexes := make([]int, 0, len(candidateClusters))
+	for _, idx := range candidates {
+		if err := translator.ValidateClusterConfig(ctx, clusters[idx].Cluster); err != nil {
+			markClusterValidationError(&clusters[idx], err)
+			continue
+		}
+		survivingClusters = append(survivingClusters, clusters[idx].Cluster)
+		survivingIndexes = append(survivingIndexes, idx)
+	}
+
+	if err := translator.ValidateClusterConfigs(ctx, survivingClusters); err != nil {
+		logger.Error("strict backend batch validation failed after invalid cluster isolation", "clusters", len(survivingClusters), "error", err)
+		for _, idx := range survivingIndexes {
+			markClusterValidationError(&clusters[idx], err)
+		}
+	}
+	return clusters
+}
+
+func markClusterValidationError(cluster *uccWithCluster, err error) {
+	logger.Error("cluster failed xDS validation in strict mode", "cluster", cluster.Name, "error", err)
+	cluster.Error = err
+	cluster.Cluster = irtranslator.BlackholeClusterForName(cluster.Name)
+	cluster.ClusterVersion = utils.HashProto(cluster.Cluster)
 }

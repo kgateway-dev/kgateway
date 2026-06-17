@@ -1,0 +1,7 @@
+controller:
+  logLevel: debug
+  rollout:
+    strategy: Recreate
+
+validation:
+  level: strict

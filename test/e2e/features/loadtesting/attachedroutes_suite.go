@@ -188,7 +188,9 @@ func (s *AttachedRoutesSuite) runIncrementalRouteTestWithSimulation(config *Atta
 	results.Duration = results.EndTime.Sub(results.StartTime)
 
 	for _, watcher := range results.Watchers {
+		watcher.mu.RLock()
 		results.TotalWrites += len(watcher.Samples)
+		watcher.mu.RUnlock()
 	}
 
 	s.T().Logf("Final monitoring results: %d total status updates captured during incremental test", results.TotalWrites)
@@ -282,9 +284,12 @@ func (s *AttachedRoutesSuite) measureIncrementalRoutePerformance(config *Attache
 	err = s.deleteIncrementalRoute(incrementalRoute)
 	s.Require().NoError(err, "Should delete incremental route")
 
-	teardownTime, err := s.waitForRouteTeardown(config.Gateways, config.Routes, teardownStart)
+	teardownTime, err := s.waitForRouteTeardown(config.Gateways, config.Routes, teardownStart, results.Watchers)
 	s.Require().NoError(err, "Incremental route should detach")
 	results.TeardownTime = teardownTime
+	results.ValidationMetricsTeardown = s.collectValidationMetrics("after incremental route teardown")
+	results.ValidationTeardownDelta = results.ValidationMetricsTeardown.Delta(results.ValidationMetricsAfter)
+	s.logValidationMetrics("incremental route teardown", results.ValidationTeardownDelta)
 	s.T().Logf("=== TEARDOWN COMPLETE === Teardown Time: %v", results.TeardownTime)
 }
 
@@ -299,6 +304,7 @@ func (s *AttachedRoutesSuite) startAttachedRoutesWatchers(ctx context.Context, g
 			Name:    namespacedName,
 			Last:    0,
 			Samples: []Sample{},
+			events:  make(chan Sample, 64),
 		}
 		results.Watchers[namespacedName] = watcher
 		go s.watchAttachedRoutesWithEvents(ctx, namespacedName, watcher)
@@ -321,21 +327,30 @@ func (s *AttachedRoutesSuite) watchAttachedRoutesWithEvents(ctx context.Context,
 		}
 
 		attachedRoutes := int(gateway.Status.Listeners[0].AttachedRoutes)
+		sample := Sample{
+			Time:           time.Now(),
+			AttachedRoutes: attachedRoutes,
+		}
 		s.T().Logf("Gateway event #%d: %s AttachedRoutes=%d (ResourceVersion=%s)",
 			eventCount, gatewayName.String(), attachedRoutes, gateway.ResourceVersion)
 
+		watcher.mu.Lock()
 		watcher.Last = attachedRoutes
 		if watcher.Samples == nil {
 			watcher.Samples = []Sample{}
 		}
 
-		watcher.Samples = append(watcher.Samples, Sample{
-			Time:           time.Now(),
-			AttachedRoutes: attachedRoutes,
-		})
+		watcher.Samples = append(watcher.Samples, sample)
+		sampleCount := len(watcher.Samples)
+		watcher.mu.Unlock()
+
+		select {
+		case watcher.events <- sample:
+		default:
+		}
 
 		s.T().Logf("Status update recorded: AttachedRoutes=%d (total samples: %d)",
-			attachedRoutes, len(watcher.Samples))
+			attachedRoutes, sampleCount)
 	}
 
 	s.T().Logf("Registering event handler for gateway: %s", gatewayName.String())
@@ -343,8 +358,16 @@ func (s *AttachedRoutesSuite) watchAttachedRoutesWithEvents(ctx context.Context,
 
 	<-ctx.Done()
 
+	mu.Lock()
+	finalEventCount := eventCount
+	mu.Unlock()
+
+	watcher.mu.RLock()
+	sampleCount := len(watcher.Samples)
+	watcher.mu.RUnlock()
+
 	s.T().Logf("Event monitoring stopped for gateway: %s (total events: %d, recorded samples: %d)",
-		gatewayName.String(), eventCount, len(watcher.Samples))
+		gatewayName.String(), finalEventCount, sampleCount)
 
 	s.loadTestManager.DeregisterGatewayHandler(gatewayName, handler)
 }
@@ -471,9 +494,14 @@ func (s *AttachedRoutesSuite) curlGatewayUntilReady(gatewayName string, baseline
 	return s.waitForGatewayCondition(gatewayName, baselineRoutes+1, "ready")
 }
 
-func (s *AttachedRoutesSuite) waitForRouteTeardown(gateways []string, expectedCount int, teardownStart time.Time) (time.Duration, error) {
+func (s *AttachedRoutesSuite) waitForRouteTeardown(
+	gateways []string,
+	expectedCount int,
+	teardownStart time.Time,
+	watchers map[types.NamespacedName]*Watcher,
+) (time.Duration, error) {
 	s.T().Log("Waiting for incremental route teardown")
-	return s.waitForAllGatewaysCondition(gateways, expectedCount, teardownStart, "teardown")
+	return s.waitForAllGatewaysCondition(gateways, expectedCount, teardownStart, "teardown", watchers)
 }
 
 func (s *AttachedRoutesSuite) waitForGatewayCondition(gatewayName string, expectedCount int, conditionType string) (time.Duration, error) {
@@ -523,11 +551,53 @@ func (s *AttachedRoutesSuite) waitForGatewayCondition(gatewayName string, expect
 	}
 }
 
-func (s *AttachedRoutesSuite) waitForAllGatewaysCondition(gateways []string, expectedCount int, startTime time.Time, conditionType string) (time.Duration, error) {
+func (s *AttachedRoutesSuite) waitForAllGatewaysCondition(
+	gateways []string,
+	expectedCount int,
+	startTime time.Time,
+	conditionType string,
+	watchers map[types.NamespacedName]*Watcher,
+) (time.Duration, error) {
 	timeout := time.After(routeConditionTimeout)
 	ticker := time.NewTicker(teardownPollingInterval)
 	defer ticker.Stop()
 	lastObserved := "none"
+	type gatewaySample struct {
+		gatewayName string
+		sample      Sample
+	}
+	eventBuffer := len(gateways) * 4
+	if eventBuffer == 0 {
+		eventBuffer = 1
+	}
+	events := make(chan gatewaySample, eventBuffer)
+	eventCtx, cancelEvents := context.WithCancel(s.ctx)
+	defer cancelEvents()
+	eventReadyGateways := make(map[string]struct{}, len(gateways))
+
+	for _, gatewayName := range gateways {
+		namespacedName := types.NamespacedName{
+			Name:      gatewayName,
+			Namespace: s.loadTestManager.testNamespace,
+		}
+		watcher := watchers[namespacedName]
+		if watcher == nil || watcher.events == nil {
+			continue
+		}
+		go func(gatewayName string, watcher *Watcher) {
+			for {
+				select {
+				case sample := <-watcher.events:
+					select {
+					case events <- gatewaySample{gatewayName: gatewayName, sample: sample}:
+					case <-eventCtx.Done():
+					}
+				case <-eventCtx.Done():
+					return
+				}
+			}
+		}(gatewayName, watcher)
+	}
 
 	for {
 		select {
@@ -541,6 +611,17 @@ func (s *AttachedRoutesSuite) waitForAllGatewaysCondition(gateways []string, exp
 				expectedCount,
 				lastObserved,
 			)
+		case event := <-events:
+			attachedRoutes := event.sample.AttachedRoutes
+			lastObserved = fmt.Sprintf("%s: AttachedRoutes=%d", event.gatewayName, attachedRoutes)
+			if attachedRoutes <= expectedCount {
+				eventReadyGateways[event.gatewayName] = struct{}{}
+				if len(eventReadyGateways) == len(gateways) {
+					conditionTime := time.Since(startTime)
+					s.T().Logf("%s condition complete from gateway events: %v", conditionType, conditionTime)
+					return conditionTime, nil
+				}
+			}
 		case <-ticker.C:
 			allReady := true
 
@@ -703,6 +784,7 @@ func (s *AttachedRoutesSuite) reportIncrementalResults(results *TestResults) {
 	s.T().Logf("Post-Restart Translation Check Time: %v", results.PostRestartTranslationTime)
 	s.T().Logf("Total Writes: %d", results.TotalWrites)
 	s.logValidationMetrics("reported incremental route", results.ValidationMetricsDelta)
+	s.logValidationMetrics("reported incremental route teardown", results.ValidationTeardownDelta)
 
 	s.T().Log("=== DETAILED RESULTS ===")
 	s.T().Logf("Test Type: %s", results.TestType)

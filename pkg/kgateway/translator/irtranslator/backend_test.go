@@ -226,9 +226,9 @@ func TestBackendTranslatorPropagatesPolicyErrors(t *testing.T) {
 	assert.Empty(t, backend.Errors)
 }
 
-// TestBackendTranslatorHandlesXDSValidationErrors validates that when xDS validation fails
-// in strict mode, the translator returns a blackhole cluster and error.
-func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
+// TestBackendTranslatorExposesXDSValidationErrors validates that backend xDS validation
+// errors are still available to the per-client validation stage.
+func TestBackendTranslatorExposesXDSValidationErrors(t *testing.T) {
 	// Create a mock validator that always returns an error
 	mockValidator := &mockValidator{
 		validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
@@ -258,24 +258,20 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
-	// Set up strict mode and inject the mock validator
-	bt.Mode = apisettings.ValidationStrict
 	bt.Validator = mockValidator
 
 	var ucc ir.UniquelyConnectedClient
 	var kctx krt.TestingDummyContext
 	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	require.NoError(t, err)
+	require.NotNil(t, cluster)
 
-	// Should get an error because xDS validation failed
+	err = bt.ValidateClusterConfig(context.Background(), cluster)
+
+	// Should get an error because xDS validation failed.
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "envoy validation failed")
 	assert.Contains(t, err.Error(), "invalid cluster configuration")
-
-	// Should return a blackhole cluster when xDS validation fails
-	assert.NotNil(t, cluster)
-	assert.Equal(t, "service_test-ns_test-svc_80", cluster.GetName())
-	assert.Equal(t, envoyclusterv3.Cluster_STATIC, cluster.GetType())
-	assert.Empty(t, cluster.GetLoadAssignment().GetEndpoints())
 
 	// Backend IR should remain clean (xDS errors don't modify backend.errors)
 	assert.Empty(t, backend.Errors)

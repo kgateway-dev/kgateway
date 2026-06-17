@@ -37,6 +37,9 @@ func TestKgateway(t *testing.T) {
 			"--set", "policyMerge.trafficPolicy.extProc=DeepMerge",
 		},
 	}
+	if validationMode := os.Getenv("VALIDATION_MODE"); validationMode != "" {
+		installContext.ExtraHelmArgs = append(installContext.ExtraHelmArgs, "--set", "validation.level="+validationMode)
+	}
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		installContext,

@@ -4,6 +4,7 @@ package loadtesting
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/stretchr/testify/suite"
@@ -43,6 +44,9 @@ type Watcher struct {
 	Name    types.NamespacedName `json:"name"`
 	Last    int                  `json:"last"`
 	Samples []Sample             `json:"samples"`
+
+	mu     sync.RWMutex
+	events chan Sample
 }
 
 type TestResults struct {
@@ -64,6 +68,8 @@ type TestResults struct {
 	ValidationMetricsBefore    ValidationMetrics `json:"validationMetricsBefore"`
 	ValidationMetricsAfter     ValidationMetrics `json:"validationMetricsAfter"`
 	ValidationMetricsDelta     ValidationMetrics `json:"validationMetricsDelta"`
+	ValidationMetricsTeardown  ValidationMetrics `json:"validationMetricsTeardown"`
+	ValidationTeardownDelta    ValidationMetrics `json:"validationTeardownDelta"`
 	SimulatedCluster           VClusterMetrics   `json:"simulatedCluster"`
 }
 

@@ -90,14 +90,6 @@ func (t *BackendTranslator) TranslateBackend(
 		return buildBlackholeCluster(backend), err
 	}
 
-	// In strict mode, validate the final cluster configuration using Envoy
-	if t.Mode == apisettings.ValidationStrict && t.Validator != nil {
-		if err := t.validateClusterConfig(ctx, out); err != nil {
-			logger.Error("cluster failed xDS validation in strict mode", "cluster", out.GetName(), "error", err)
-			return buildBlackholeCluster(backend), err
-		}
-	}
-
 	return out, nil
 }
 
@@ -205,12 +197,27 @@ func (t *BackendTranslator) orderedEndpointPlugins() []sdk.EndpointPlugin {
 	return OrderedEndpointPlugins(t.ContributedPolicies)
 }
 
-// validateClusterConfig validates an individual cluster configuration using Envoy's
+// StrictValidationEnabled reports whether translated backend clusters need Envoy validation.
+func (t *BackendTranslator) StrictValidationEnabled() bool {
+	return t.Mode == apisettings.ValidationStrict && t.Validator != nil
+}
+
+// ValidateClusterConfig validates an individual cluster configuration using Envoy's
 // validation. This catches configuration errors that would cause Envoy data plane NACKs,
 // such as invalid cipher suites, invalid TLS parameters, etc.
-func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *envoyclusterv3.Cluster) error {
+func (t *BackendTranslator) ValidateClusterConfig(ctx context.Context, cluster *envoyclusterv3.Cluster) error {
+	return t.ValidateClusterConfigs(ctx, []*envoyclusterv3.Cluster{cluster})
+}
+
+// ValidateClusterConfigs validates multiple cluster configurations in one Envoy invocation.
+func (t *BackendTranslator) ValidateClusterConfigs(ctx context.Context, clusters []*envoyclusterv3.Cluster) error {
+	if len(clusters) == 0 {
+		return nil
+	}
 	builder := bootstrap.New()
-	builder.AddCluster(cluster)
+	for _, cluster := range clusters {
+		builder.AddCluster(cluster)
+	}
 	bootstrap, err := builder.Build()
 	if err != nil {
 		return err
@@ -352,14 +359,19 @@ func initializeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
 }
 
 func buildBlackholeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
+	return BlackholeClusterForName(b.ClusterName())
+}
+
+// BlackholeClusterForName returns an inert cluster with the given name for errored backend translations.
+func BlackholeClusterForName(name string) *envoyclusterv3.Cluster {
 	out := &envoyclusterv3.Cluster{
-		Name:     b.ClusterName(),
+		Name:     name,
 		Metadata: new(envoycorev3.Metadata),
 		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
 			Type: envoyclusterv3.Cluster_STATIC,
 		},
 		LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
-			ClusterName: b.ClusterName(),
+			ClusterName: name,
 			Endpoints:   []*envoyendpointv3.LocalityLbEndpoints{},
 		},
 	}
