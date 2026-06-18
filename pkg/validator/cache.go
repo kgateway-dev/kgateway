@@ -13,7 +13,7 @@ import (
 // single source of truth for the default: ValidatorCacheSize in api/settings
 // defaults to 0, which routes through NewCaching's size <= 0 fallback to this
 // value.
-const DefaultCacheSize = 256 * 1024
+const DefaultCacheSize = 65536
 
 // cachingValidator wraps an inner Validator with an LRU cache keyed on the
 // content hash of the marshalled bootstrap. Successful and ErrInvalidXDS
