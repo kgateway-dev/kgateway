@@ -1,5 +1,7 @@
 clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -7,7 +9,9 @@ clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_kubernetes_443
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -15,7 +19,9 @@ clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_gwtest_reviews-2_8080
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

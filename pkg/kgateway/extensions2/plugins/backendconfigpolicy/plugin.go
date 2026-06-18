@@ -2,6 +2,8 @@ package backendconfigpolicy
 
 import (
 	"context"
+	"fmt"
+	"hash/fnv"
 	"slices"
 	"time"
 
@@ -20,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -197,6 +200,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 			}
 		}
 	}
+
+	endpointPlugin := &backendConfigEndpointPlugin{}
+
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
@@ -204,6 +210,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				Policies:                        backendConfigPolicyCol,
 				ProcessPolicyStaleStatusMarkers: processMarkers,
 				ProcessBackend:                  processBackend,
+				PerClientProcessEndpoints:       endpointPlugin.processEndpoints,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
 				},
@@ -479,4 +486,42 @@ func TranslateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.Tcp
 		out.KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveInterval.Duration.Seconds())}
 	}
 	return out
+}
+
+// backendConfigEndpointPlugin provides per-client endpoint processing for
+// zone-aware routing using the backend's already resolved policy attachments.
+type backendConfigEndpointPlugin struct{}
+
+// processEndpoints implements sdk.EndpointPlugin for zone-aware routing.
+// BackendConfigPolicy takes precedence over Kubernetes Service traffic distribution.
+func (p *backendConfigEndpointPlugin) processEndpoints(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniquelyConnectedClient,
+	out *endpoints.EndpointsInputs,
+) uint64 {
+	pol, bcpIR := selectZoneAwareBackendConfigPolicy(out.EndpointsForBackend.AttachedPolicies)
+	if bcpIR == nil {
+		return 0
+	}
+	// BackendConfigPolicy zoneAware settings take precedence over Service trafficDistribution
+	// settings for the same backend.
+	out.EndpointsForBackend.TrafficDistribution = wellknown.TrafficDistributionAny
+
+	hasher := fnv.New64()
+	hasher.Write([]byte(ir.PolicyRefString(pol.PolicyRef)))
+	hasher.Write(fmt.Appendf(nil, "%v", pol.Generation))
+	return hasher.Sum64()
+}
+
+func selectZoneAwareBackendConfigPolicy(attachedPolicies ir.AttachedPolicies) (ir.PolicyAtt, *BackendConfigPolicyIR) {
+	policies := attachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()]
+	for _, pol := range policies {
+		bcpIR, ok := pol.PolicyIr.(*BackendConfigPolicyIR)
+		if !ok || len(pol.Errors) > 0 || bcpIR.loadBalancerConfig == nil || !bcpIR.loadBalancerConfig.hasZoneAware {
+			continue
+		}
+		return pol, bcpIR
+	}
+	return ir.PolicyAtt{}, nil
 }
