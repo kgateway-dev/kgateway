@@ -69,7 +69,7 @@ func TestGatewayBackendVariantBackendsRetainBackendPolicies(t *testing.T) {
 	mock := krttest.NewMock(t, []any{service, policyWrapper})
 	services := krttest.GetMockCollection[*corev1.Service](mock)
 	policyCol := krttest.GetMockCollection[ir.PolicyWrapper](mock)
-	refGrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
+	refGrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock), apisettings.ReferenceGrantPermissive)
 
 	policyGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{

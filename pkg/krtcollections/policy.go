@@ -3,6 +3,7 @@ package krtcollections
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/config/labels"
@@ -93,6 +94,12 @@ type BackendIndex struct {
 type backendKey struct {
 	ir.ObjectSource
 	port int32
+}
+
+// String must include the port; otherwise the embedded ir.ObjectSource.String()
+// is promoted and all ports of a multi-port host collapse into one index bucket.
+func (b backendKey) String() string {
+	return b.ObjectSource.String() + ":" + strconv.Itoa(int(b.port))
 }
 
 func NewBackendIndex(
@@ -983,13 +990,14 @@ func (k refGrantIndexKey) String() string {
 type RefGrantIndex struct {
 	refgrants     krt.Collection[*gwv1b1.ReferenceGrant]
 	refGrantIndex krt.Index[refGrantIndexKey, *gwv1b1.ReferenceGrant]
+	mode          apisettings.ReferenceGrantMode
 }
 
 func (h *RefGrantIndex) HasSynced() bool {
 	return h.refgrants.HasSynced()
 }
 
-func NewRefGrantIndex(refgrants krt.Collection[*gwv1b1.ReferenceGrant]) *RefGrantIndex {
+func NewRefGrantIndex(refgrants krt.Collection[*gwv1b1.ReferenceGrant], mode apisettings.ReferenceGrantMode) *RefGrantIndex {
 	refGrantIndex := krtpkg.UnnamedIndex(refgrants, func(p *gwv1b1.ReferenceGrant) []refGrantIndexKey {
 		ret := make([]refGrantIndexKey, 0, len(p.Spec.To)*len(p.Spec.From))
 		for _, from := range p.Spec.From {
@@ -1005,10 +1013,13 @@ func NewRefGrantIndex(refgrants krt.Collection[*gwv1b1.ReferenceGrant]) *RefGran
 		}
 		return ret
 	})
-	return &RefGrantIndex{refgrants: refgrants, refGrantIndex: refGrantIndex}
+	return &RefGrantIndex{refgrants: refgrants, refGrantIndex: refGrantIndex, mode: mode}
 }
 
 func (r *RefGrantIndex) ReferenceAllowed(kctx krt.HandlerContext, fromgk schema.GroupKind, fromns string, to ir.ObjectSource) bool {
+	if r.mode == apisettings.ReferenceGrantOff {
+		return true
+	}
 	if fromns == to.Namespace {
 		return true
 	}

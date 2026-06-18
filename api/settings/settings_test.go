@@ -51,6 +51,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES": "false",
 		"KGW_ENABLE_AUTH_METADATA":                     "true",
 		"KGW_WORKLOAD_ENTRIES_EXCLUSION_LABELS":        "example.io/managed-by,example.io/other-key",
+		"KGW_REFERENCE_GRANT_MODE":                     string(ReferenceGrantStrict),
 	}
 }
 
@@ -92,6 +93,7 @@ func TestSettings(t *testing.T) {
 				EnableEnvoy:                          true,
 				WeightedRoutePrecedence:              false,
 				ValidationMode:                       ValidationStandard,
+				ReferenceGrantMode:                   ReferenceGrantPermissive,
 				ValidatorMode:                        ValidatorCache,
 				ValidatorCacheSize:                   4096,
 				EnableBuiltinDefaultMetrics:          false,
@@ -148,6 +150,7 @@ func TestSettings(t *testing.T) {
 					},
 				},
 				EnableAuthMetadata: true,
+				ReferenceGrantMode: ReferenceGrantStrict,
 			},
 		},
 		{
@@ -177,6 +180,13 @@ func TestSettings(t *testing.T) {
 				"KGW_VALIDATION_MODE": "invalid",
 			},
 			expectedErrorStr: `invalid validation mode: "invalid"`,
+		},
+		{
+			name: "errors on invalid reference grant mode",
+			envVars: map[string]string{
+				"KGW_REFERENCE_GRANT_MODE": "invalid",
+			},
+			expectedErrorStr: `invalid reference grant mode: "invalid"`,
 		},
 		{
 			name: "errors on invalid gatewayclass parameters refs: missing name",
@@ -216,6 +226,7 @@ func TestSettings(t *testing.T) {
 				EnableEnvoy:                          true,
 				WeightedRoutePrecedence:              false,
 				ValidationMode:                       ValidationStandard,
+				ReferenceGrantMode:                   ReferenceGrantPermissive,
 				ValidatorMode:                        ValidatorCache,
 				ValidatorCacheSize:                   4096,
 				PolicyMerge:                          "{}",

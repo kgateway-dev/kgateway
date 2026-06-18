@@ -1343,7 +1343,7 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	}
 	mock := krttest.NewMock(t, anys)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
-	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
+	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock), apisettings.ReferenceGrantPermissive)
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, apisettings.Settings{})
 	upstreams := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)

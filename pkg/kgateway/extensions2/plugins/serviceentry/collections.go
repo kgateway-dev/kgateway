@@ -139,6 +139,7 @@ func initServiceEntryCollections(
 		commonCols.LocalityPods,
 		opts.Aliaser,
 		opts.WorkloadEntriesExclusionLabelKeys,
+		opts.PromoteWorkloadEntryAnnotations,
 	)
 
 	// init the outputs
@@ -182,6 +183,7 @@ func selectedWorkloads(
 	Pods krt.Collection[krtcollections.LocalityPod],
 	aliaser Aliaser,
 	weExclusionLabelKeys sets.Set[string],
+	promoteAnnotationKeys sets.Set[string],
 ) (
 	krt.Collection[selectedWorkload],
 	krt.Index[string, selectedWorkload],
@@ -222,6 +224,8 @@ func selectedWorkloads(
 		workload := selectedWorkloadFromEntry(
 			we.GetName(), we.GetNamespace(),
 			we.GetObjectMeta().GetLabels(),
+			we.GetObjectMeta().GetAnnotations(),
+			promoteAnnotationKeys,
 			&we.Spec,
 			selectedByServiceEntries,
 		)
@@ -262,6 +266,8 @@ func selectedWorkloads(
 func selectedWorkloadFromEntry(
 	name, namespace string,
 	metadataLabels map[string]string,
+	metadataAnnotations map[string]string,
+	promoteAnnotationKeys sets.Set[string],
 	weSpec *networking.WorkloadEntry,
 	selectedBy []seSelector,
 ) selectedWorkload {
@@ -273,6 +279,15 @@ func selectedWorkloadFromEntry(
 		// WorkloadEntry has two places to specify labels.
 		// Merge the spec labels on top of the metadata ones
 		labels = maps.MergeCopy(metadataLabels, labels)
+	}
+
+	// Promote configured WorkloadEntry metadata annotations into the labels so that
+	// endpoint plugins can observe them. This is an opaque string copy; kgateway is
+	// agnostic to what the keys mean or how their values are interpreted.
+	for key := range promoteAnnotationKeys {
+		if v, ok := metadataAnnotations[key]; ok {
+			labels[key] = v
+		}
 	}
 
 	// WorkloadEntry has a field for network, but we should also respect the label.

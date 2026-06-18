@@ -649,6 +649,62 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// ReferenceGrantMode: Off — BackendRef to another namespace allowed without ReferenceGrant
+	t.Run("ReferenceGrantMode Off allows BackendRef to another namespace without ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "reference-grant-mode/off-backendref-no-grant.yaml",
+			outputFile: "reference-grant-mode/off-backendref-no-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ReferenceGrantMode = apisettings.ReferenceGrantOff
+		})
+	})
+
+	// ReferenceGrantMode: Permissive — ExtensionRef to another namespace allowed without ReferenceGrant
+	t.Run("ReferenceGrantMode Permissive allows cross-namespace ExtensionRef without ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "reference-grant-mode/permissive-extensionref-no-grant.yaml",
+			outputFile: "reference-grant-mode/permissive-extensionref-no-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ReferenceGrantMode = apisettings.ReferenceGrantPermissive
+		})
+	})
+
+	// ReferenceGrantMode: Strict — ExtensionRef to another namespace rejected when ReferenceGrant is missing
+	t.Run("ReferenceGrantMode Strict rejects cross-namespace ExtensionRef without ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "reference-grant-mode/strict-extensionref-no-grant.yaml",
+			outputFile: "reference-grant-mode/strict-extensionref-no-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ReferenceGrantMode = apisettings.ReferenceGrantStrict
+		})
+	})
+
+	// ReferenceGrantMode: Strict — ExtensionRef to another namespace allowed when ReferenceGrant is present
+	t.Run("ReferenceGrantMode Strict allows cross-namespace ExtensionRef with ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "reference-grant-mode/strict-extensionref-with-grant.yaml",
+			outputFile: "reference-grant-mode/strict-extensionref-with-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ReferenceGrantMode = apisettings.ReferenceGrantStrict
+		})
+	})
+
 	t.Run("TrafficPolicy ExtAuth deep merge", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/extauth-deep-merge.yaml",
