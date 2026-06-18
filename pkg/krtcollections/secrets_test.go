@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -147,7 +148,7 @@ func TestSecretIndex_GetSecretWithoutRefGrant(t *testing.T) {
 			// ReferenceGrants are not needed for same-namespace lookups, but we still need to create the index
 			// Import the correct type for ReferenceGrant
 			refGrantCol := krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock)
-			refgrants := NewRefGrantIndex(refGrantCol)
+			refgrants := NewRefGrantIndex(refGrantCol, apisettings.ReferenceGrantPermissive)
 			secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
 				corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(secretCol, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 					return &ir.Secret{

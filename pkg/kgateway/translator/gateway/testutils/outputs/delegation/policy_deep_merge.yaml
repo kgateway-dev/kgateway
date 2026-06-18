@@ -89,7 +89,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"source","value":"a"},{"name":"source","value":"example"}]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
     - match:
         pathSeparatedPrefix: /a/2
       metadata:
@@ -109,7 +109,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"source","value":"example"}]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
   - domains:
     - foo.com
     name: listener~80~foo_com
@@ -134,7 +134,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"source","value":"foo"},{"name":"source","value":"b"}]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
     - match:
         pathSeparatedPrefix: /b/2
       metadata:
@@ -154,7 +154,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"source","value":"foo"}]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
 Statuses:
   gateways:
     infra/example-gateway:

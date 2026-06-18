@@ -274,7 +274,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 	}
 
 	if s.validator == nil {
-		s.validator = validator.NewBinary()
+		s.validator = validator.New(*s.globalSettings)
 	}
 
 	return s, nil
@@ -287,6 +287,7 @@ func (s *setup) Start(ctx context.Context) error {
 
 	metrics.SetRegistry(s.globalSettings.EnableBuiltinDefaultMetrics, nil)
 	metrics.SetActive(!(mgrOpts.Metrics.BindAddress == "" || mgrOpts.Metrics.BindAddress == "0"))
+	validator.RecordValidationMode(s.globalSettings.ValidationMode, s.globalSettings.ValidatorMode)
 
 	mgr, err := ctrl.NewManager(s.restConfig, *mgrOpts)
 	if err != nil {
