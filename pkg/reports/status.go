@@ -11,6 +11,7 @@ import (
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -41,10 +42,14 @@ const (
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
 
 func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
-	gwReport := r.Gateway(&gw)
+	gwReport := r.GatewayNamespaceName(types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name})
 	if gwReport == nil {
 		return nil
 	}
+
+	// Work on a clone to avoid mutating the shared report map entry while
+	// other goroutines may be reading it for KRT equality checks.
+	gwReport = cloneGatewayReport(gwReport)
 
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(gw.Spec.Listeners))
 	var invalidListeners []string
@@ -65,7 +70,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 			return l.Name == lis.Name
 		})
 		for _, lisCondition := range lisReport.Status.Conditions {
-			lisCondition.ObservedGeneration = gwReport.observedGeneration
+			lisCondition.ObservedGeneration = gw.Generation
 
 			// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
 			if oldLisStatusIndex != -1 {
@@ -106,11 +111,11 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	handleInvalidAddresses(gwReport, &gw)
 	handleInsecureFrontendValidationMode(gwReport, &gw)
 
-	addMissingGatewayConditions(r.Gateway(&gw), &gw)
+	addMissingGatewayConditions(gwReport, &gw)
 
 	finalConditions := make([]metav1.Condition, 0)
 	for _, gwCondition := range gwReport.GetConditions() {
-		gwCondition.ObservedGeneration = gwReport.observedGeneration
+		gwCondition.ObservedGeneration = gw.Generation
 
 		// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
 		if cond := meta.FindStatusCondition(gw.Status.Conditions, gwCondition.Type); cond != nil {
@@ -223,10 +228,22 @@ func shouldPreserveGatewayCondition(condition metav1.Condition, finalConditions 
 }
 
 func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
-	lsReport := r.ListenerSet(&ls)
+	gvk := ls.GroupVersionKind()
+	if gvk.Empty() {
+		gvk = wellknown.ListenerSetGVK
+	}
+	lsByGVK := r.ListenerSets[gvk]
+	var lsReport *ListenerSetReport
+	if lsByGVK != nil {
+		lsReport = lsByGVK[types.NamespacedName{Namespace: ls.Namespace, Name: ls.Name}]
+	}
 	if lsReport == nil {
 		return nil
 	}
+
+	// Work on a clone to avoid mutating the shared report map entry while
+	// other goroutines may be reading it for KRT equality checks.
+	lsReport = cloneListenerSetReport(lsReport)
 
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(ls.Spec.Listeners))
 	var invalidListeners []string
@@ -251,7 +268,7 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 				return l.Name == lis.Name
 			})
 			for _, lisCondition := range lisReport.Status.Conditions {
-				lisCondition.ObservedGeneration = lsReport.observedGeneration
+				lisCondition.ObservedGeneration = ls.Generation
 
 				// copy old condition from ls so LastTransitionTime is set correctly below by SetStatusCondition()
 				if oldLisStatusIndex != -1 {
@@ -307,11 +324,11 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 		}
 	}
 
-	AddMissingListenerSetConditions(r.ListenerSet(&ls))
+	AddMissingListenerSetConditions(lsReport)
 
 	finalConditions := make([]metav1.Condition, 0)
 	for _, lsCondition := range lsReport.GetConditions() {
-		lsCondition.ObservedGeneration = lsReport.observedGeneration
+		lsCondition.ObservedGeneration = ls.Generation
 
 		// copy old condition from ls so LastTransitionTime is set correctly below by SetStatusCondition()
 		if cond := meta.FindStatusCondition(ls.Status.Conditions, lsCondition.Type); cond != nil {
@@ -340,6 +357,55 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 	}
 	finalLsStatus.Listeners = fl
 	return &finalLsStatus
+}
+
+func cloneGatewayReport(in *GatewayReport) *GatewayReport {
+	if in == nil {
+		return nil
+	}
+	out := &GatewayReport{
+		conditions:           slices.Clone(in.conditions),
+		observedGeneration:   in.observedGeneration,
+		attachedListenerSets: in.attachedListenerSets,
+	}
+	if in.listeners != nil {
+		out.listeners = make(map[string]*ListenerReport, len(in.listeners))
+		for k, v := range in.listeners {
+			if v == nil {
+				out.listeners[k] = nil
+				continue
+			}
+			cloned := *v
+			cloned.Status.Conditions = slices.Clone(v.Status.Conditions)
+			cloned.Status.SupportedKinds = slices.Clone(v.Status.SupportedKinds)
+			out.listeners[k] = &cloned
+		}
+	}
+	return out
+}
+
+func cloneListenerSetReport(in *ListenerSetReport) *ListenerSetReport {
+	if in == nil {
+		return nil
+	}
+	out := &ListenerSetReport{
+		conditions:         slices.Clone(in.conditions),
+		observedGeneration: in.observedGeneration,
+	}
+	if in.listeners != nil {
+		out.listeners = make(map[string]*ListenerReport, len(in.listeners))
+		for k, v := range in.listeners {
+			if v == nil {
+				out.listeners[k] = nil
+				continue
+			}
+			cloned := *v
+			cloned.Status.Conditions = slices.Clone(v.Status.Conditions)
+			cloned.Status.SupportedKinds = slices.Clone(v.Status.SupportedKinds)
+			out.listeners[k] = &cloned
+		}
+	}
+	return out
 }
 
 // BuildBackendStatus builds the Backend's status from its report, preserving the
