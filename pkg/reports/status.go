@@ -458,6 +458,12 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 			// probably because it's a parent that we don't control (e.g. Gateway from diff. controller)
 			continue
 		}
+
+		// Work on a clone to avoid mutating the shared report map entry while
+		// other goroutines may be reading it for KRT equality checks.
+		parentStatusReport = &ParentRefReport{
+			Conditions: slices.Clone(parentStatusReport.Conditions),
+		}
 		addMissingParentRefConditions(parentStatusReport)
 
 		// Get the status of the current parentRef conditions if they exist

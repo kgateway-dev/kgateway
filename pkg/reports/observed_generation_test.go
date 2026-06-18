@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -148,6 +149,44 @@ func TestRouteStatusRefreshesObservedGenerationFromCurrentObject(t *testing.T) {
 	}
 }
 
+func TestBuildRouteStatusDoesNotMutateReportMapEntry(t *testing.T) {
+	rm := reports.NewReportMap()
+	statusReporter := reports.NewReporter(&rm)
+
+	parentRef := gwv1.ParentReference{
+		Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
+		Kind:      new(gwv1.Kind("Gateway")),
+		Name:      "example-gateway",
+		Namespace: new(gwv1.Namespace("default")),
+	}
+	route := &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "example-route",
+			Namespace:  "default",
+			Generation: 1,
+		},
+		Spec: gwv1.HTTPRouteSpec{
+			CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: []gwv1.ParentReference{parentRef}},
+		},
+	}
+
+	statusReporter.Route(route).ParentRef(&parentRef).SetCondition(pluginreporter.RouteCondition{
+		Type:   gwv1.RouteConditionAccepted,
+		Status: metav1.ConditionFalse,
+		Reason: gwv1.RouteReasonNoMatchingParent,
+	})
+
+	rr := rm.HTTPRoutes[types.NamespacedName{Namespace: route.Namespace, Name: route.Name}]
+	require.NotNil(t, rr)
+	before := cloneParentConditions(rr)
+
+	status := rm.BuildRouteStatus(context.Background(), route, "kgateway.dev/kgateway")
+	require.NotNil(t, status)
+
+	after := cloneParentConditions(rr)
+	require.Equal(t, before, after, "BuildRouteStatus must not mutate RouteReport condition slices")
+}
+
 func TestPolicyStatusRefreshesObservedGenerationOnReporterReuse(t *testing.T) {
 	rm := reports.NewReportMap()
 	statusReporter := reports.NewReporter(&rm)
@@ -180,6 +219,30 @@ func TestPolicyStatusRefreshesObservedGenerationOnReporterReuse(t *testing.T) {
 	requireCondition(t, status.Ancestors[0].Conditions, string(shared.PolicyConditionAttached), metav1.ConditionFalse, string(shared.PolicyReasonPending))
 }
 
+func TestBuildPolicyStatusDoesNotMutateReportMapEntry(t *testing.T) {
+	rm := reports.NewReportMap()
+	statusReporter := reports.NewReporter(&rm)
+
+	key := pluginreporter.PolicyKey{Group: "example.com", Kind: "Policy", Namespace: "default", Name: "example"}
+	ancestorRef := gwv1.ParentReference{
+		Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
+		Kind:      new(gwv1.Kind("Gateway")),
+		Name:      "example-gateway",
+		Namespace: new(gwv1.Namespace("default")),
+	}
+	statusReporter.Policy(key, 1).AncestorRef(ancestorRef)
+
+	pr := rm.Policies[key]
+	require.NotNil(t, pr)
+	before := cloneAncestorConditions(pr)
+
+	status := rm.BuildPolicyStatus(context.Background(), key, "kgateway.dev/kgateway", gwv1.PolicyStatus{})
+	require.NotNil(t, status)
+
+	after := cloneAncestorConditions(pr)
+	require.Equal(t, before, after, "BuildPolicyStatus must not mutate PolicyReport condition slices")
+}
+
 func requireCondition(
 	t *testing.T,
 	conditions []metav1.Condition,
@@ -202,4 +265,20 @@ func metaFindStatusCondition(conditions []metav1.Condition, conditionType string
 		}
 	}
 	return nil
+}
+
+func cloneParentConditions(rr *reports.RouteReport) map[string][]metav1.Condition {
+	out := map[string][]metav1.Condition{}
+	for k, p := range rr.Parents {
+		out[k.String()] = append([]metav1.Condition(nil), p.Conditions...)
+	}
+	return out
+}
+
+func cloneAncestorConditions(pr *reports.PolicyReport) map[string][]metav1.Condition {
+	out := map[string][]metav1.Condition{}
+	for k, a := range pr.Ancestors {
+		out[k.String()] = append([]metav1.Condition(nil), a.Conditions...)
+	}
+	return out
 }

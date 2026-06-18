@@ -133,6 +133,13 @@ func (r *ReportMap) BuildPolicyStatus(
 			// probably because it's a parent that we don't control (e.g. Gateway from diff. controller)
 			continue
 		}
+
+		// Work on a clone to avoid mutating the shared report map entry while
+		// other goroutines may be reading it for KRT equality checks.
+		parentStatusReport = &AncestorRefReport{
+			Conditions:      slices.Clone(parentStatusReport.Conditions),
+			AttachmentState: parentStatusReport.AttachmentState,
+		}
 		addMissingAncestorRefConditions(parentStatusReport)
 
 		// Get the status of the current parentRef conditions if they exist
