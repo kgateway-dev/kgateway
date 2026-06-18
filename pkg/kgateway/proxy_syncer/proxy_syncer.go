@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"reflect"
+	"slices"
 	"sync/atomic"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -20,6 +20,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
@@ -199,12 +200,12 @@ func (r report) ResourceName() string {
 
 // do we really need this for a singleton?
 func (r report) Equals(in report) bool {
-	if !maps.EqualFunc(r.reportMap.Gateways, in.reportMap.Gateways, reportValueEqual[reports.GatewayReport]) {
+	if !maps.EqualFunc(r.reportMap.Gateways, in.reportMap.Gateways, gatewayReportEqual) {
 		return false
 	}
 	if !maps.EqualFunc(r.reportMap.ListenerSets, in.reportMap.ListenerSets,
 		func(a, b map[types.NamespacedName]*reports.ListenerSetReport) bool {
-			return maps.EqualFunc(a, b, reportValueEqual[reports.ListenerSetReport])
+			return maps.EqualFunc(a, b, listenerSetReportEqual)
 		}) {
 		return false
 	}
@@ -229,13 +230,51 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
-// reportValueEqual compares two non-nil pointers by value (reflect.DeepEqual on the
-// dereferenced structs). Reports contain unexported fields so we must use reflect.
-func reportValueEqual[T any](a, b *T) bool {
+// gatewayReportEqual reports whether two GatewayReports hold the same listener
+// reports, observed generation, attached ListenerSet count, and semantic
+// conditions (ignoring LastTransitionTime).
+func gatewayReportEqual(a, b *reports.GatewayReport) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	return reflect.DeepEqual(*a, *b)
+	return a.GetObservedGeneration() == b.GetObservedGeneration() &&
+		a.GetAttachedListenerSets() == b.GetAttachedListenerSets() &&
+		conditionsEqual(a.GetConditions(), b.GetConditions()) &&
+		listenerStatusesEqual(a.GetListenerStatuses(), b.GetListenerStatuses())
+}
+
+// listenerSetReportEqual reports whether two ListenerSetReports hold the same
+// listener reports, observed generation, and semantic conditions (ignoring
+// LastTransitionTime).
+func listenerSetReportEqual(a, b *reports.ListenerSetReport) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.GetObservedGeneration() == b.GetObservedGeneration() &&
+		conditionsEqual(a.GetConditions(), b.GetConditions()) &&
+		listenerStatusesEqual(a.GetListenerStatuses(), b.GetListenerStatuses())
+}
+
+func listenerStatusesEqual(a, b map[string]gwv1.ListenerStatus) bool {
+	return maps.EqualFunc(a, b, listenerStatusEqual)
+}
+
+func listenerStatusEqual(a, b gwv1.ListenerStatus) bool {
+	return a.Name == b.Name &&
+		slices.EqualFunc(a.SupportedKinds, b.SupportedKinds, routeGroupKindEqual) &&
+		a.AttachedRoutes == b.AttachedRoutes &&
+		conditionsEqual(a.Conditions, b.Conditions)
+}
+
+func routeGroupKindEqual(a, b gwv1.RouteGroupKind) bool {
+	return ptrValueEqual(a.Group, b.Group) && a.Kind == b.Kind
+}
+
+func ptrValueEqual[T comparable](a, b *T) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
 }
 
 // backendReportEqual reports whether two BackendReports hold the same conditions and observed generation.

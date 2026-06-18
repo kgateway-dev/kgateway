@@ -174,14 +174,6 @@ func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSet
 	return lsr
 }
 
-// route returns a RouteReport for the provided route object, nil if a report is not present.
-// This is different than the Reporter.Route() method, as we need to understand when
-// reports are not generated for a route that has been translated. Supported object types are:
-//
-// * HTTPRoute
-// * TCPRoute
-// * TLSRoute
-// * GRPCRoute
 // route is a pure lookup that returns the RouteReport for the provided route object,
 // or nil if a report is not present. It must not mutate the report: the returned
 // pointer is shared with the KRT report singleton, which may be read concurrently by
@@ -299,6 +291,35 @@ func (g *GatewayReport) GetConditions() []metav1.Condition {
 	return g.conditions
 }
 
+func (g *GatewayReport) GetObservedGeneration() int64 {
+	if g == nil {
+		return 0
+	}
+	return g.observedGeneration
+}
+
+func (g *GatewayReport) GetAttachedListenerSets() int32 {
+	if g == nil {
+		return 0
+	}
+	return g.attachedListenerSets
+}
+
+func (g *GatewayReport) GetListenerStatuses() map[string]gwv1.ListenerStatus {
+	if g == nil || g.listeners == nil {
+		return nil
+	}
+	statuses := make(map[string]gwv1.ListenerStatus, len(g.listeners))
+	for name, listener := range g.listeners {
+		if listener == nil {
+			statuses[name] = gwv1.ListenerStatus{}
+			continue
+		}
+		statuses[name] = cloneListenerStatus(listener.Status)
+	}
+	return statuses
+}
+
 func (g *GatewayReport) SetCondition(gc reporter.GatewayCondition) {
 	condition := metav1.Condition{
 		Type:    string(gc.Type),
@@ -342,6 +363,21 @@ func (g *ListenerSetReport) GetConditions() []metav1.Condition {
 		return []metav1.Condition{}
 	}
 	return g.conditions
+}
+
+func (g *ListenerSetReport) GetListenerStatuses() map[string]gwv1.ListenerStatus {
+	if g == nil || g.listeners == nil {
+		return nil
+	}
+	statuses := make(map[string]gwv1.ListenerStatus, len(g.listeners))
+	for name, listener := range g.listeners {
+		if listener == nil {
+			statuses[name] = gwv1.ListenerStatus{}
+			continue
+		}
+		statuses[name] = cloneListenerStatus(listener.Status)
+	}
+	return statuses
 }
 
 func (g *ListenerSetReport) SetCondition(gc reporter.GatewayCondition) {
@@ -388,6 +424,12 @@ func (l *ListenerReport) SetSupportedKinds(rgks []gwv1.RouteGroupKind) {
 
 func (l *ListenerReport) SetAttachedRoutes(n uint) {
 	l.Status.AttachedRoutes = int32(n) //nolint:gosec // G115: route count is always non-negative
+}
+
+func cloneListenerStatus(status gwv1.ListenerStatus) gwv1.ListenerStatus {
+	status.SupportedKinds = append([]gwv1.RouteGroupKind(nil), status.SupportedKinds...)
+	status.Conditions = append([]metav1.Condition(nil), status.Conditions...)
+	return status
 }
 
 type statusReporter struct {

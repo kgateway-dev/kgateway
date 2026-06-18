@@ -9,9 +9,92 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
+
+func TestGatewayReportEqual(t *testing.T) {
+	t.Run("ignores LastTransitionTime", func(t *testing.T) {
+		a := makeGatewayReport(1, true)
+		b := makeGatewayReport(1, false)
+		if !gatewayReportEqual(a, b) {
+			t.Fatal("expected gateway reports to be equal when only LastTransitionTime differs")
+		}
+	})
+
+	t.Run("detects observed generation changes", func(t *testing.T) {
+		a := makeGatewayReport(1, false)
+		b := makeGatewayReport(2, false)
+		if gatewayReportEqual(a, b) {
+			t.Fatal("expected gateway reports to differ when observed generation differs")
+		}
+	})
+
+	t.Run("detects attached listener set changes", func(t *testing.T) {
+		a := makeGatewayReport(1, false)
+		b := makeGatewayReport(1, false)
+		b.SetAttachedListenerSets(2)
+		if gatewayReportEqual(a, b) {
+			t.Fatal("expected gateway reports to differ when attached ListenerSet count differs")
+		}
+	})
+
+	t.Run("detects listener status changes", func(t *testing.T) {
+		a := makeGatewayReport(1, false)
+		b := makeGatewayReport(1, false)
+		b.ListenerName("http").SetAttachedRoutes(3)
+		if gatewayReportEqual(a, b) {
+			t.Fatal("expected gateway reports to differ when listener status differs")
+		}
+	})
+}
+
+func TestListenerSetReportEqual(t *testing.T) {
+	t.Run("ignores LastTransitionTime", func(t *testing.T) {
+		a := makeListenerSetReport(1, true)
+		b := makeListenerSetReport(1, false)
+		if !listenerSetReportEqual(a, b) {
+			t.Fatal("expected ListenerSet reports to be equal when only LastTransitionTime differs")
+		}
+	})
+
+	t.Run("detects observed generation changes", func(t *testing.T) {
+		a := makeListenerSetReport(1, false)
+		b := makeListenerSetReport(2, false)
+		if listenerSetReportEqual(a, b) {
+			t.Fatal("expected ListenerSet reports to differ when observed generation differs")
+		}
+	})
+
+	t.Run("detects top-level condition changes", func(t *testing.T) {
+		a := makeListenerSetReport(1, false)
+		b := makeListenerSetReport(1, false)
+		b.SetCondition(reporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: "listener rejected",
+		})
+		if listenerSetReportEqual(a, b) {
+			t.Fatal("expected ListenerSet reports to differ when top-level condition differs")
+		}
+	})
+
+	t.Run("detects listener condition changes", func(t *testing.T) {
+		a := makeListenerSetReport(1, false)
+		b := makeListenerSetReport(1, false)
+		b.ListenerName("http").SetCondition(reporter.ListenerCondition{
+			Type:    gwv1.ListenerConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: "listener invalid",
+		})
+		if listenerSetReportEqual(a, b) {
+			t.Fatal("expected ListenerSet reports to differ when listener condition differs")
+		}
+	})
+}
 
 func TestBackendReportEqual(t *testing.T) {
 	mk := func(generation int64, conditionMsg string) *reports.BackendReport {
@@ -162,6 +245,118 @@ func setFirstParentConditionTime(r *reports.RouteReport, ts metav1.Time) {
 		}
 		return
 	}
+}
+
+func makeGatewayReport(generation int64, forceTransition bool) *reports.GatewayReport {
+	rm := reports.NewReportMap()
+	statusReporter := reports.NewReporter(&rm)
+	listener := gwv1.Listener{Name: "http"}
+	gateway := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:  "default",
+			Name:       "gw",
+			Generation: generation,
+		},
+		Spec: gwv1.GatewaySpec{
+			Listeners: []gwv1.Listener{listener},
+		},
+	}
+
+	gatewayReporter := statusReporter.Gateway(gateway)
+	if forceTransition {
+		gatewayReporter.SetCondition(reporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: "before",
+		})
+		time.Sleep(time.Millisecond)
+	}
+	gatewayReporter.SetCondition(reporter.GatewayCondition{
+		Type:    gwv1.GatewayConditionAccepted,
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.GatewayReasonAccepted,
+		Message: "accepted",
+	})
+	gatewayReporter.SetAttachedListenerSets(1)
+
+	listenerReporter := gatewayReporter.Listener(&listener)
+	if forceTransition {
+		listenerReporter.SetCondition(reporter.ListenerCondition{
+			Type:    gwv1.ListenerConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: "before",
+		})
+		time.Sleep(time.Millisecond)
+	}
+	listenerReporter.SetCondition(reporter.ListenerCondition{
+		Type:    gwv1.ListenerConditionAccepted,
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.ListenerReasonAccepted,
+		Message: "accepted",
+	})
+	listenerReporter.SetSupportedKinds([]gwv1.RouteGroupKind{{
+		Group: new(gwv1.Group(wellknown.HTTPRouteGVK.Group)),
+		Kind:  gwv1.Kind(wellknown.HTTPRouteGVK.Kind),
+	}})
+	listenerReporter.SetAttachedRoutes(2)
+
+	return rm.Gateways[types.NamespacedName{Namespace: "default", Name: "gw"}]
+}
+
+func makeListenerSetReport(generation int64, forceTransition bool) *reports.ListenerSetReport {
+	rm := reports.NewReportMap()
+	statusReporter := reports.NewReporter(&rm)
+	listener := gwv1.Listener{Name: "http"}
+	listenerSet := &gwv1.ListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:  "default",
+			Name:       "ls",
+			Generation: generation,
+		},
+	}
+
+	listenerSetReporter := statusReporter.ListenerSet(listenerSet)
+	if forceTransition {
+		listenerSetReporter.SetCondition(reporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: "before",
+		})
+		time.Sleep(time.Millisecond)
+	}
+	listenerSetReporter.SetCondition(reporter.GatewayCondition{
+		Type:    gwv1.GatewayConditionAccepted,
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.GatewayReasonAccepted,
+		Message: "accepted",
+	})
+
+	listenerReporter := listenerSetReporter.Listener(&listener)
+	if forceTransition {
+		listenerReporter.SetCondition(reporter.ListenerCondition{
+			Type:    gwv1.ListenerConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: "before",
+		})
+		time.Sleep(time.Millisecond)
+	}
+	listenerReporter.SetCondition(reporter.ListenerCondition{
+		Type:    gwv1.ListenerConditionAccepted,
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.ListenerReasonAccepted,
+		Message: "accepted",
+	})
+	listenerReporter.SetSupportedKinds([]gwv1.RouteGroupKind{{
+		Group: new(gwv1.Group(wellknown.HTTPRouteGVK.Group)),
+		Kind:  gwv1.Kind(wellknown.HTTPRouteGVK.Kind),
+	}})
+	listenerReporter.SetAttachedRoutes(2)
+
+	return rm.ListenerSet(listenerSet)
 }
 
 func setFirstAncestorConditionTime(r *reports.PolicyReport, ts metav1.Time) {
