@@ -1,7 +1,9 @@
+# Headless example-svc (clusterIP: None, ns nginx-shared) over the shared nginx pod, for TestHeadlessService.
 apiVersion: v1
 kind: Service
 metadata:
   name: example-svc
+  namespace: nginx-shared
 spec:
   clusterIP: None
   selector:
@@ -10,17 +12,3 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: http-web-svc
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-  labels:
-    app.kubernetes.io/name: nginx
-spec:
-  containers:
-    - name: nginx
-      image: nginx:1.28.0
-      ports:
-        - containerPort: 80
-          name: http-web-svc

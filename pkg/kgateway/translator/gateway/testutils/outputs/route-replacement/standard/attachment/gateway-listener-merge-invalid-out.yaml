@@ -98,7 +98,7 @@ Routes:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
             }"}}}'
-        perRouteConfigName: rustformation
+        filterName: rustformation
   - domains:
     - api.a.example.com
     metadata:
@@ -123,7 +123,7 @@ Routes:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
             }"}}}'
-        perRouteConfigName: rustformation
+        filterName: rustformation
   - domains:
     - backend.b.example.com
     name: listener~8080~backend_b_example_com
@@ -158,7 +158,7 @@ Routes:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
             }"}}}'
-        perRouteConfigName: rustformation
+        filterName: rustformation
   - domains:
     - www.b.example.com
     name: listener~8080~www_b_example_com

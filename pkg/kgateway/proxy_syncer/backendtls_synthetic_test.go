@@ -110,7 +110,7 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 		},
 		apisettings.Settings{},
 	)
-	refgrants := krtcollections.NewRefGrantIndex(krt.NewStaticCollection[*gwv1b1.ReferenceGrant](nil, nil, krtopts.ToOptions("RefGrants")...))
+	refgrants := krtcollections.NewRefGrantIndex(krt.NewStaticCollection[*gwv1b1.ReferenceGrant](nil, nil, krtopts.ToOptions("RefGrants")...), apisettings.ReferenceGrantPermissive)
 	backends := krtcollections.NewBackendIndex(krtopts, policies, refgrants)
 	serviceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		out := make([]ir.BackendObjectIR, 0, len(svc.Spec.Ports))

@@ -220,6 +220,65 @@ func StagedFilterListContainsName(filters StagedHttpFilterList, filterName strin
 	return false
 }
 
+// MustNewStagedUpstreamFilter creates an instance of the named filter with the desired stage.
+// Returns a filter even if an error occurred.
+// Should rarely be used as disregarding an error is bad practice but does make
+// appending easier.
+// If not directly appending consider using NewStagedUpstreamFilter instead of this function.
+func MustNewStagedUpstreamFilter(name string, config proto.Message, stage FilterStage[WellKnownUpstreamHTTPFilterStage]) StagedUpstreamHttpFilter {
+	s, _ := NewStagedUpstreamFilter(name, config, stage)
+	return s
+}
+
+// MustNewStagedUpstreamFilterWithWeight creates an instance of the named filter with the desired stage and weight.
+// The weight is used to order filters of the same type within the same stage based on their weights
+func MustNewStagedUpstreamFilterWithWeight(name string, config proto.Message, stage FilterStage[WellKnownUpstreamHTTPFilterStage], weight int32) StagedUpstreamHttpFilter {
+	s, _ := NewStagedUpstreamFilter(name, config, stage)
+	s.Weight = weight
+	return s
+}
+
+// NewStagedUpstreamFilter creates an instance of the named filter with the desired stage.
+// Errors if the config is nil or we cannot determine the type of the config.
+// Config type determination may fail if the config is both  unknown and has no fields.
+func NewStagedUpstreamFilter(name string, config proto.Message, stage FilterStage[WellKnownUpstreamHTTPFilterStage]) (StagedUpstreamHttpFilter, error) {
+	s := StagedUpstreamHttpFilter{
+		Filter: &envoyhttp.HttpFilter{
+			Name: name,
+		},
+		Stage: stage,
+	}
+
+	if config == nil {
+		return s, fmt.Errorf("filters must have a config specified to derive its type filtername:%s", name)
+	}
+
+	marshalledConf, err := utils.MessageToAny(config)
+	if err != nil {
+		// all config types should already be known
+		// therefore this should never happen
+		return StagedUpstreamHttpFilter{}, err
+	}
+
+	s.Filter.ConfigType = &envoyhttp.HttpFilter_TypedConfig{
+		TypedConfig: marshalledConf,
+	}
+
+	return s, nil
+}
+
+// StagedUpstreamFilterListContainsName checks for a given named filter.
+// This is not a check of the type url but rather the now mostly unused name
+func StagedUpstreamFilterListContainsName(filters StagedUpstreamHttpFilterList, filterName string) bool {
+	for _, filter := range filters {
+		if filter.Filter.GetName() == filterName {
+			return true
+		}
+	}
+
+	return false
+}
+
 // List of filter stages which can be selected for a HTTP filter.
 type FilterStage_Stage int32
 

@@ -90,4 +90,4 @@ routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"set":[{"name":"x-kgateway-response","value":"{{
               request_header(\"x-kgateway-request\") }}"}],"remove":["x-kgateway-request"]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
