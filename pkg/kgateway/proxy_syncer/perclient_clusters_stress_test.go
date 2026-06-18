@@ -87,9 +87,7 @@ func TestPerClientClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Blip the stable client: rapid delete + re-add of the identical client.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case <-stop:
@@ -99,10 +97,10 @@ func TestPerClientClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 			src.del(stable.ResourceName())
 			src.add(stable)
 		}
-	}()
+	})
 
 	// Churn other clients.
-	for g := 0; g < 6; g++ {
+	for g := range 6 {
 		wg.Add(1)
 		go func(g int) {
 			defer wg.Done()
@@ -120,9 +118,7 @@ func TestPerClientClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 	}
 
 	// Churn a backend so per-client rows recompute during client blips.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case <-stop:
@@ -131,7 +127,7 @@ func TestPerClientClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 			}
 			finalBackends.UpdateObject(clustersTestBackend("b5"))
 		}
-	}()
+	})
 
 	time.Sleep(2 * time.Second)
 	close(stop)

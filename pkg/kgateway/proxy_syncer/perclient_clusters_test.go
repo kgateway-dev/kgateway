@@ -193,7 +193,7 @@ func TestPerClientClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T)
 	var wg sync.WaitGroup
 
 	// Churn transient clients: rapid connect/disconnect.
-	for g := 0; g < 6; g++ {
+	for g := range 6 {
 		wg.Add(1)
 		go func(g int) {
 			defer wg.Done()
@@ -210,9 +210,7 @@ func TestPerClientClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T)
 		}(g)
 	}
 	// Churn a backend in parallel so per-client rows recompute under client churn.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case <-stop:
@@ -221,7 +219,7 @@ func TestPerClientClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T)
 			}
 			finalBackends.UpdateObject(clustersTestBackend("b4"))
 		}
-	}()
+	})
 
 	time.Sleep(750 * time.Millisecond)
 	close(stop)
