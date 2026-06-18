@@ -392,7 +392,22 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 		return
 	}
 
-	p.handlePerVHostPolicies(policy.spec, out)
+	// Apply the retry policy to each route rather than to the vhost. A route-level
+	// retry policy (set by a more specific TrafficPolicy or the builtin HTTPRouteRetry
+	// policy) fully overrides the vhost-level one in Envoy, so applying it per route
+	// keeps that precedence explicit and consistent with the other per-route settings.
+	if policy.spec.retry != nil {
+		for _, route := range out.Routes {
+			action := route.GetRoute()
+			if action == nil {
+				continue
+			}
+			if action.GetRetryPolicy() == nil {
+				action.RetryPolicy = policy.spec.retry.policy
+			}
+		}
+	}
+
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 }
 
@@ -799,16 +814,6 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 
 	// Apply route-level tracing overrides
 	p.handleRouteTracing(spec, out)
-}
-
-// handlePerVHostPolicies handles policies that are meant to be processed at the vhost level
-func (p *trafficPolicyPluginGwPass) handlePerVHostPolicies(
-	spec trafficPolicySpecIr,
-	out *envoyroutev3.VirtualHost,
-) {
-	if spec.retry != nil {
-		out.RetryPolicy = spec.retry.policy
-	}
 }
 
 func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {

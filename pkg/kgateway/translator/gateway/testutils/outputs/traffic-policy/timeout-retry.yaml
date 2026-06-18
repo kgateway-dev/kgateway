@@ -49,11 +49,6 @@ Routes:
           retry:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~builtin_com
-    retryPolicy:
-      numRetries: 3
-      retryBackOff:
-        baseInterval: 0.025s
-      retryOn: gateway-error
     routes:
     - match:
         prefix: /
@@ -86,11 +81,6 @@ Routes:
           retry:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~example-retry-and-timeouts_com
-    retryPolicy:
-      numRetries: 3
-      retryBackOff:
-        baseInterval: 0.025s
-      retryOn: gateway-error
     routes:
     - match:
         safeRegex:
@@ -146,11 +136,6 @@ Routes:
           retry:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~example-retry_com
-    retryPolicy:
-      numRetries: 3
-      retryBackOff:
-        baseInterval: 0.025s
-      retryOn: gateway-error
     routes:
     - match:
         prefix: /
@@ -180,11 +165,6 @@ Routes:
           retry:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~example_com
-    retryPolicy:
-      numRetries: 3
-      retryBackOff:
-        baseInterval: 0.025s
-      retryOn: gateway-error
     routes:
     - match:
         prefix: /
@@ -198,6 +178,11 @@ Routes:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
         idleTimeout: 5s
+        retryPolicy:
+          numRetries: 3
+          retryBackOff:
+            baseInterval: 0.025s
+          retryOn: gateway-error
         timeout: 9s
 Statuses:
   gateways:
