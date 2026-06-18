@@ -1616,10 +1616,10 @@ var _ = Describe("Deployer", func() {
 				Expect(sa.GetLabels()).ToNot(BeNil())
 				Expect(sa.GetLabels()).To(containMapElements(expectedGwp.ServiceAccount.ExtraLabels))
 
-				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
-				Expect(cm).ToNot(BeNil())
-				// This verifies that the cluster name provided to envoy matches the service name used when generating OTel stats
-				Expect(cm.Data[envoyDataKey]).To(ContainSubstring(fmt.Sprintf("cluster: %s", listenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
+				envoyBootstrap := objs.getEnvoyConfig(dep.Namespace, defaultConfigMapName)
+				expectedClusterName := listenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace)
+				Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal(expectedClusterName))
+				Expect(envoyBootstrap.GetClusterManager().GetLocalClusterName()).To(Equal(expectedClusterName))
 
 				logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 				levels := []types.GomegaMatcher{}

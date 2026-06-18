@@ -14,7 +14,9 @@ clusters:
           hostname: 1.2.3.4
   name: backend_gwtest_static_0
   type: STATIC
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

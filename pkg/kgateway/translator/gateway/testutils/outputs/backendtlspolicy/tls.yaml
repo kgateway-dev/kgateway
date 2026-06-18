@@ -83,7 +83,9 @@ Clusters:
           validationContextSdsSecretConfig:
             name: SYSTEM_CA_CERT
       sni: example2.com
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

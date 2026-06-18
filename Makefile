@@ -809,7 +809,8 @@ sds-docker: $(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
 #----------------------------------------------------------------------------------
 
 ENVOYINIT_DIR=cmd/envoyinit
-ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
+INTERNAL_ENVOYINIT_DIR=internal/envoyinit
+ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR) $(INTERNAL_ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 

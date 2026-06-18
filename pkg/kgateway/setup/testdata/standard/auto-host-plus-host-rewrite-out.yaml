@@ -18,7 +18,9 @@ clusters:
             hostname: httpbin.default.svc
           hostname: httpbin.default.svc
   name: backend_gwtest_httpbin-static_0
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -26,7 +28,9 @@ clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_kubernetes_443
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

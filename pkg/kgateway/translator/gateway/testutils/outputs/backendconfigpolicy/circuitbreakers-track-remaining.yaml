@@ -3,6 +3,8 @@ Clusters:
     thresholds:
     - maxConnections: 100
       trackRemaining: true
+  commonLbConfig:
+    localityWeightedLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
