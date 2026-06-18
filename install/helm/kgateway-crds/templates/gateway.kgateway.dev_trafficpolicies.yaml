@@ -445,7 +445,9 @@ spec:
                   responseCompression:
                     description: |-
                       ResponseCompression controls response compression to the downstream.
-                      If set, responses with the appropriate `Accept-Encoding` header with certain textual content types will be compressed using gzip.
+                      If set, responses with a matching `Accept-Encoding` header and certain textual content types will be compressed.
+                      The compression codecs default to gzip and can be selected via `responseCompression.libraries`,
+                      which Envoy negotiates against the request's `Accept-Encoding` header.
                       The content-types that will be compressed are:
                       - `application/javascript`
                       - `application/json`
@@ -459,6 +461,31 @@ spec:
                       disable:
                         description: Disables compression.
                         type: object
+                      libraries:
+                        default:
+                        - Gzip
+                        description: |-
+                          Libraries lists the compression codecs to offer for responses.
+                          Envoy negotiates the codec based on the downstream request's `Accept-Encoding` header,
+                          picking the highest-quality codec the client accepts. On equal quality the client's
+                          ordering decides. If the client accepts none of the offered codecs, the response is
+                          sent uncompressed.
+                          Defaults to [Gzip].
+                        items:
+                          description: CompressionLibrary identifies the codec used
+                            to compress responses.
+                          enum:
+                          - Gzip
+                          - Brotli
+                          - Zstd
+                          type: string
+                        maxItems: 3
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-type: atomic
+                        x-kubernetes-validations:
+                        - message: libraries must not contain duplicates
+                          rule: self.all(x, self.exists_one(y, y == x))
                     type: object
                 type: object
                 x-kubernetes-validations:
