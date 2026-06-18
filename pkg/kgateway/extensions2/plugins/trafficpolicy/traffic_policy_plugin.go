@@ -9,7 +9,6 @@ import (
 	envoy_api_key_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
-	compressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
@@ -63,6 +62,13 @@ func EnableFilterPerRoute() *envoyroutev3.FilterConfig {
 
 func DisableFilterPerRoute() *envoyroutev3.FilterConfig {
 	return &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true}
+}
+
+// DisableFilterPerRouteOptional disables a filter on a route, marking the config optional so
+// Envoy ignores it when the named filter is absent from the chain. Used when a route must
+// disable a set of filters that may not all be present (e.g. multiple compression codecs).
+func DisableFilterPerRouteOptional() *envoyroutev3.FilterConfig {
+	return &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true, IsOptional: true}
 }
 
 // PolicySubIR documents the expected interface that all policy sub-IRs should implement.
@@ -253,7 +259,7 @@ type trafficPolicyPluginGwPass struct {
 	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
 	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
 	bufferInChain            map[string]*bufferv3.Buffer
-	compressorInChain        map[string]*compressorv3.Compressor
+	compressorInChain        map[string][]compressorEntry
 	decompressorInChain      map[string]*decompressorv3.Decompressor
 	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
 	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
