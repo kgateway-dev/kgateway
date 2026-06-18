@@ -276,8 +276,9 @@ type Settings struct {
 	ValidatorMode ValidatorMode `split_words:"true" default:"CACHE"`
 
 	// ValidatorCacheSize is the LRU capacity used by the CACHE validator mode.
-	// Ignored when ValidatorMode is BINARY. A value <= 0 selects the implementation default.
-	ValidatorCacheSize int `split_words:"true" default:"4096"`
+	// Ignored when ValidatorMode is BINARY. A value <= 0 (the default) selects the
+	// implementation default, validator.DefaultCacheSize.
+	ValidatorCacheSize int `split_words:"true"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
 	// Since these metrics can be numerous, it is disabled by default.
