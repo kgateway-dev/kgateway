@@ -637,6 +637,12 @@ controller:
     failureThreshold: 60
 `,
 	},
+	{
+		name: "rbac-disabled",
+		valuesYAML: `rbac:
+  create: false
+`,
+	},
 }
 
 // TestHelmChartTemplate tests helm template output for the kgateway chart
