@@ -3025,7 +3025,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("ListenerPolicy with transport socket connect timeout", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "listener-policy/transport-socket-connect-timeout.yaml",
+			inputFiles: []string{"listener-policy/transport-socket-connect-timeout.yaml"},
 			outputFile: "listener-policy/transport-socket-connect-timeout.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -3036,7 +3036,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("ListenerPolicy with per-listener transport socket connect timeout override", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "listener-policy/transport-socket-connect-timeout-per-listener.yaml",
+			inputFiles: []string{"listener-policy/transport-socket-connect-timeout-per-listener.yaml"},
 			outputFile: "listener-policy/transport-socket-connect-timeout-per-listener.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
