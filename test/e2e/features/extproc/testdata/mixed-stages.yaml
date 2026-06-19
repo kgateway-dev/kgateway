@@ -1,0 +1,78 @@
+---
+# ExtProc before AuthN: server-a identifies itself via x-extproc-server-a header
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: ext-proc-before-authn
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: ext-proc-server-a
+        port: 4444
+    filterStage:
+      stage: AuthN
+      predicate: Before
+---
+# ExtProc after route: server-b identifies itself via x-extproc-server-b header
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: ext-proc-after-route
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: ext-proc-server-b
+        port: 4444
+    filterStage:
+      stage: Route
+      predicate: After
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-before-authn
+spec:
+  extProc:
+    extensionRef:
+      name: ext-proc-before-authn
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-after-route
+spec:
+  extProc:
+    extensionRef:
+      name: ext-proc-after-route
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-mixed-stages
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: kgateway-base
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /both
+      backendRefs:
+        - name: ext-proc-backend
+          port: 3000
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.kgateway.dev
+            kind: TrafficPolicy
+            name: extproc-before-authn
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.kgateway.dev
+            kind: TrafficPolicy
+            name: extproc-after-route

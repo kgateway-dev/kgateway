@@ -202,6 +202,11 @@ type OAuth2JWTConfig struct {
 	// +optional
 	JWKSURI *HttpsUri `json:"jwksURI,omitempty"`
 
+	// JWKSBackendRef specifies the backend to use for fetching the JWKS.
+	// If not set, the parent OAuth2Provider's BackendRef is used.
+	// +optional
+	JWKSBackendRef *gwv1.BackendObjectReference `json:"jwksBackendRef,omitempty"`
+
 	// AccessToken specifies how to process the retrieved access token.
 	// This requires the access token cookie to be enabled. Requests missing the token will be rejected.
 	// The token will be verified against the provided JWKS.

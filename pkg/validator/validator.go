@@ -3,6 +3,7 @@ package validator
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -263,4 +264,15 @@ func prepareBootstrapConfig(bootstrap *envoybootstrapv3.Bootstrap) ([]byte, erro
 	clone.ApplicationLogConfig = nil
 
 	return protojson.Marshal(clone)
+}
+
+// cacheKeyFor returns a stable content hash of the marshalled bootstrap config,
+// suitable as a cache key.
+func cacheKeyFor(bootstrap *envoybootstrapv3.Bootstrap) (string, error) {
+	marshalled, err := prepareBootstrapConfig(bootstrap)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(marshalled)
+	return string(sum[:]), nil
 }

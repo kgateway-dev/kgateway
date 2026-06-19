@@ -350,7 +350,7 @@ impl Filter {
                     envoy_log_error!("{:#}", err);
                     envoy_filter.send_response(
                         400,
-                        Vec::default(),
+                        &[],
                         None,
                         Some("undeclared json variables in transformation template"),
                     );
@@ -361,7 +361,7 @@ impl Filter {
             envoy_log_error!("json parsing error: {:#}", e);
             envoy_filter.send_response(
                 400,
-                Vec::default(),
+                &[],
                 None,
                 Some("json parsing error in transformation template"),
             );

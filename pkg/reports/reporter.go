@@ -3,6 +3,8 @@ package reports
 import (
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,6 +26,7 @@ type ReportMap struct {
 	TCPRoutes    map[types.NamespacedName]*RouteReport
 	TLSRoutes    map[types.NamespacedName]*RouteReport
 	Policies     map[reporter.PolicyKey]*PolicyReport
+	Backends     map[types.NamespacedName]*BackendReport
 }
 
 type GatewayReport struct {
@@ -53,6 +56,11 @@ type ParentRefReport struct {
 	Conditions []metav1.Condition
 }
 
+type BackendReport struct {
+	Conditions         []metav1.Condition
+	observedGeneration int64
+}
+
 type ParentRefKey struct {
 	Group string
 	Kind  string
@@ -76,6 +84,7 @@ func NewReportMap() ReportMap {
 		TCPRoutes:    make(map[types.NamespacedName]*RouteReport),
 		TLSRoutes:    make(map[types.NamespacedName]*RouteReport),
 		Policies:     make(map[reporter.PolicyKey]*PolicyReport),
+		Backends:     make(map[types.NamespacedName]*BackendReport),
 	}
 }
 
@@ -232,6 +241,40 @@ func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 	return rr
 }
 
+// backend returns a BackendReport for the provided backend object, nil if a report is not present.
+func (r *ReportMap) backend(obj metav1.Object) *BackendReport {
+	return r.Backends[key(obj)]
+}
+
+func (r *ReportMap) newBackendReport(obj metav1.Object) *BackendReport {
+	br := &BackendReport{
+		observedGeneration: obj.GetGeneration(),
+	}
+	r.Backends[key(obj)] = br
+	return br
+}
+
+func (b *BackendReport) GetConditions() []metav1.Condition {
+	if b == nil {
+		return []metav1.Condition{}
+	}
+	return b.Conditions
+}
+
+func (b *BackendReport) GetObservedGeneration() int64 {
+	return b.observedGeneration
+}
+
+func (b *BackendReport) SetCondition(bc reporter.BackendCondition) {
+	condition := metav1.Condition{
+		Type:    bc.Type,
+		Status:  bc.Status,
+		Reason:  bc.Reason,
+		Message: bc.Message,
+	}
+	meta.SetStatusCondition(&b.Conditions, condition)
+}
+
 func (g *GatewayReport) Listener(listener *gwv1.Listener) reporter.ListenerReporter {
 	return g.listener(string(listener.Name))
 }
@@ -382,6 +425,14 @@ func (r *statusReporter) Route(obj metav1.Object) reporter.RouteReporter {
 	return rr
 }
 
+func (r *statusReporter) Backend(obj metav1.Object) reporter.BackendReporter {
+	br := r.report.backend(obj)
+	if br == nil {
+		br = r.report.newBackendReport(obj)
+	}
+	return br
+}
+
 // TODO: flesh out
 func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 	var group string
@@ -457,6 +508,9 @@ func (r *RouteReport) parentRefs() []gwv1.ParentReference {
 		}
 		refs = append(refs, parentRef)
 	}
+	slices.SortStableFunc(refs, func(a, b gwv1.ParentReference) int {
+		return strings.Compare(ParentString(a), ParentString(b))
+	})
 	return refs
 }
 

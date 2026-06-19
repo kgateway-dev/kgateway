@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -74,18 +73,18 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 		{
 			name: "single valid IPv4 address with LoadBalancer service",
 			addresses: []gwv1.GatewaySpecAddress{
-				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+				{Type: new(gwv1.IPAddressType), Value: "203.0.113.10"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      new("203.0.113.10"),
 			wantErr:     nil,
 		},
 		{
 			name: "single valid IPv6 address with LoadBalancer service",
 			addresses: []gwv1.GatewaySpecAddress{
-				{Type: ptr.To(gwv1.IPAddressType), Value: "2001:db8::1"},
+				{Type: new(gwv1.IPAddressType), Value: "2001:db8::1"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      new("2001:db8::1"),
 			wantErr:     nil,
 		},
@@ -94,61 +93,61 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 			addresses: []gwv1.GatewaySpecAddress{
 				{Type: nil, Value: "192.0.2.1"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      new("192.0.2.1"),
 			wantErr:     nil,
 		},
 		{
 			name:        "empty addresses array with LoadBalancer service",
 			addresses:   []gwv1.GatewaySpecAddress{},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      nil,
 			wantErr:     nil,
 		},
 		{
 			name: "multiple valid IP addresses returns error",
 			addresses: []gwv1.GatewaySpecAddress{
-				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
-				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.11"},
+				{Type: new(gwv1.IPAddressType), Value: "203.0.113.10"},
+				{Type: new(gwv1.IPAddressType), Value: "203.0.113.11"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      nil,
 			wantErr:     ErrMultipleAddresses,
 		},
 		{
 			name: "multiple addresses with mixed types returns ip address",
 			addresses: []gwv1.GatewaySpecAddress{
-				{Type: ptr.To(gwv1.HostnameAddressType), Value: "example.com"},
-				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+				{Type: new(gwv1.HostnameAddressType), Value: "example.com"},
+				{Type: new(gwv1.IPAddressType), Value: "203.0.113.10"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      new("203.0.113.10"),
 			wantErr:     nil,
 		},
 		{
 			name: "single hostname address returns error",
 			addresses: []gwv1.GatewaySpecAddress{
-				{Type: ptr.To(gwv1.HostnameAddressType), Value: "example.com"},
+				{Type: new(gwv1.HostnameAddressType), Value: "example.com"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      nil,
 			wantErr:     ErrNoValidIPAddress,
 		},
 		{
 			name: "single invalid IP address returns error",
 			addresses: []gwv1.GatewaySpecAddress{
-				{Type: ptr.To(gwv1.IPAddressType), Value: "not-an-ip"},
+				{Type: new(gwv1.IPAddressType), Value: "not-an-ip"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      nil,
 			wantErr:     ErrNoValidIPAddress,
 		},
 		{
 			name: "single invalid IP address format returns error",
 			addresses: []gwv1.GatewaySpecAddress{
-				{Type: ptr.To(gwv1.IPAddressType), Value: "256.256.256.256"},
+				{Type: new(gwv1.IPAddressType), Value: "256.256.256.256"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      nil,
 			wantErr:     ErrNoValidIPAddress,
 		},
@@ -157,7 +156,7 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 			addresses: []gwv1.GatewaySpecAddress{
 				{Type: nil, Value: "203.0.113.10"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      new("203.0.113.10"),
 			wantErr:     nil,
 		},
@@ -166,34 +165,34 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 			addresses: []gwv1.GatewaySpecAddress{
 				{Type: nil, Value: "invalid"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      nil,
 			wantErr:     ErrNoValidIPAddress,
 		},
 		{
 			name: "three addresses returns error",
 			addresses: []gwv1.GatewaySpecAddress{
-				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
-				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.11"},
-				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.12"},
+				{Type: new(gwv1.IPAddressType), Value: "203.0.113.10"},
+				{Type: new(gwv1.IPAddressType), Value: "203.0.113.11"},
+				{Type: new(gwv1.IPAddressType), Value: "203.0.113.12"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+			serviceType: new(string(corev1.ServiceTypeLoadBalancer)),
 			wantIP:      nil,
 			wantErr:     ErrMultipleAddresses,
 		},
 		{
 			name: "valid IP with ClusterIP service does not set IP",
 			addresses: []gwv1.GatewaySpecAddress{
-				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+				{Type: new(gwv1.IPAddressType), Value: "203.0.113.10"},
 			},
-			serviceType: ptr.To(string(corev1.ServiceTypeClusterIP)),
+			serviceType: new(string(corev1.ServiceTypeClusterIP)),
 			wantIP:      nil,
 			wantErr:     nil,
 		},
 		{
 			name: "valid IP with nil service type does not set IP",
 			addresses: []gwv1.GatewaySpecAddress{
-				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+				{Type: new(gwv1.IPAddressType), Value: "203.0.113.10"},
 			},
 			serviceType: nil,
 			wantIP:      nil,

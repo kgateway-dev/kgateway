@@ -60,6 +60,14 @@ spec:
                   Rules are evaluated using longest-prefix matching on the effictive client IP
                   from envoy base on settings. See the UseRemoteAddress, XffTrustedCIDRs,
                   XffNumTrustedHops settings under ListenerPolicy -> HttpSettings for details.
+
+                  When multiple TrafficPolicy objects target the same route, their ACL fields are
+                  deep-merged by default: rules are unioned (higher-priority policy's rules first),
+                  and singleton fields (defaultAction, denyResponse) are taken from the higher-priority
+                  policy. If singleton fields conflict between policies, the merge falls back to
+                  shallow (higher-priority policy wins entirely). Gateway-level and route-level ACL
+                  policies are kept in separate merge groups and are never combined with each other;
+                  a route-level ACL completely replaces the gateway-level ACL for that route.
                 properties:
                   defaultAction:
                     description: DefaultAction is the action to take when no rule
@@ -1837,7 +1845,7 @@ spec:
                       rule: duration(self) >= duration('1ms')
                   perTryTimeout:
                     description: |-
-                      PerTryTimeout specifies the timeout per retry attempt (incliding the initial attempt).
+                      PerTryTimeout specifies the timeout per retry attempt (including the initial attempt).
                       If a global timeout is configured on a route, this timeout must be less than the global
                       route timeout.
                       It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".

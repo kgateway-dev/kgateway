@@ -5,12 +5,13 @@ metadata:
   name: route-1
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:
     - backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
       matches:
         - path:
@@ -23,7 +24,8 @@ metadata:
   name: route-2
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:
@@ -33,7 +35,7 @@ spec:
             type: PathPrefix
             value: /myapp
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
     - name: rule1
       matches:
@@ -41,21 +43,56 @@ spec:
             type: PathPrefix
             value: /extproc-disabled
       backendRefs:
-        - name: backend
-          port: 3000          
+        - name: ext-proc-backend
+          port: 3000
+---
+# Gateway-targeted policy must be co-located with the Gateway it targets
+# (policy targetRefs are namespace-local), so it lives in kgateway-base
+# alongside the shared base gateway.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: ext-proc-gateway-extension
+  namespace: kgateway-base
+spec:
+  type: ExtProc
+  extProc:
+    grpcService:
+      backendRef:
+        name: ext-proc-grpc
+        namespace: default
+        port: 4444
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: gateway-test
+  namespace: kgateway-base
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: gw
+      name: gateway
   extProc:
     extensionRef:
-      name: ext-proc-extension
+      name: ext-proc-gateway-extension
+---
+# Allow the kgateway-base GatewayExtension to reference the ext-proc gRPC
+# service that lives in the default namespace.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: extproc-grpc-from-kgateway-base
+  namespace: default
+spec:
+  from:
+    - group: gateway.kgateway.dev
+      kind: GatewayExtension
+      namespace: kgateway-base
+  to:
+    - group: ""
+      kind: Service
+      name: ext-proc-grpc
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy

@@ -1,6 +1,5 @@
 Clusters:
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -104,7 +103,6 @@ Routes:
       name: listener~80~redirect-multi_example_com-route-0-httproute-multi-listener-redirect-default-0-0-matcher-0
       redirect:
         pathRedirect: /somewhere/
-        portRedirect: 80
 - ignorePortInHostMatching: true
   name: listener~8080
   virtualHosts:

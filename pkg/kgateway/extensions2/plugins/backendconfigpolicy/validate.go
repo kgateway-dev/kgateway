@@ -45,15 +45,12 @@ func validateXDS(
 			},
 		}
 	}
-	dummyBackend := ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     "core",
-			Kind:      "Service",
-			Name:      "test-backend",
-			Namespace: "test",
-		},
-		Port: 80,
-	}
+	dummyBackend := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group:     "core",
+		Kind:      "Service",
+		Name:      "test-backend",
+		Namespace: "test",
+	}, 80, "", "")
 	processBackend(ctx, policyIR, dummyBackend, testCluster)
 
 	builder := bootstrap.New()
@@ -63,7 +60,7 @@ func validateXDS(
 		return err
 	}
 
-	return v.Validate(ctx, bootstrap)
+	return v.Validate(validator.WithValidationCaller(ctx, validator.CallerBackendConfigPolicy), bootstrap)
 }
 
 func requiresDnsClusterValidation(policyIR *BackendConfigPolicyIR) bool {

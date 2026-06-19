@@ -66,6 +66,12 @@ spec:
       descriptors:
       - entries:
         - type: Path
+        - type: Header
+          header: "x-header-1"
+      - entries:
+        - type: RemoteAddress
+        - type: Header
+          header: "x-header-2"
       extensionRef:
         name: default-ratelimit
 ---

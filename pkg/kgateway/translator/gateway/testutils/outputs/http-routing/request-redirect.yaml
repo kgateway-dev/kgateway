@@ -1,6 +1,5 @@
 Clusters:
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -41,6 +40,26 @@ Routes:
       name: listener~8080~gwapi_com-route-0-httproute-use-gwapi-default-0-0-matcher-0
       redirect:
         portRedirect: 8080
+        responseCode: FOUND
+  - domains:
+    - http-default-port.com
+    name: listener~8080~http-default-port_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /rule0
+      name: listener~8080~http-default-port_com-route-0-httproute-http-default-port-default-0-0-matcher-0
+      redirect:
+        responseCode: FOUND
+        schemeRedirect: http
+  - domains:
+    - https-default-port.com
+    name: listener~8080~https-default-port_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /rule0
+      name: listener~8080~https-default-port_com-route-0-httproute-https-default-port-default-0-0-matcher-0
+      redirect:
+        httpsRedirect: true
         responseCode: FOUND
   - domains:
     - invalid-code-char.com
@@ -124,7 +143,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 5
+      - attachedRoutes: 7
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
@@ -153,6 +172,42 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
+    default/http-default-port:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: test
+    default/https-default-port:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: test
     default/invalid-code-char:
       parents:
       - conditions:

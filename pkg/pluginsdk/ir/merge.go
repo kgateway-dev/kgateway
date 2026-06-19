@@ -74,9 +74,10 @@ func (m MergeOrigins) GetRefCount(
 		return MergeOriginsRefCountNone
 	}
 
+	id := policyRef.ID()
 	forRef := 0
 	for _, field := range m {
-		if field != nil && field.Has(policyRef.ID()) {
+		if field != nil && field.Has(id) {
 			forRef++
 		}
 	}

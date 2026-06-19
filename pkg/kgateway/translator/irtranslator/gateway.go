@@ -176,6 +176,7 @@ func (t *Translator) ComputeListener(
 	fct := filterChainTranslator{
 		listener:   lis,
 		gateway:    gw,
+		reporter:   reporter,
 		pluginPass: pass,
 	}
 

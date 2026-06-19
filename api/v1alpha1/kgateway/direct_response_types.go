@@ -1,9 +1,10 @@
 package kgateway
 
 import (
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=directresponses,verbs=get;list;watch
@@ -61,37 +62,7 @@ type DirectResponseSpec struct {
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-directresponseaction-body-format for details.
 	//
 	// +optional
-	BodyFormat *BodyFormat `json:"bodyFormat,omitempty"`
-}
-
-// BodyFormat configures an Envoy response body using formatting. Either JSON or Text must be specified.
-// +kubebuilder:validation:ExactlyOneOf=json;text
-type BodyFormat struct {
-	// ContentType defines the HTTP Content-Type header to be sent with the response.
-	// By default, `text/plain` is used for the Text format and `application/json` for the JSON format.
-	// Note: This setting does not currently take effect due to a bug in Envoy, a fix for which is pending release.
-	// The option is included for completeness and will become effective with a future version of Envoy.
-	// +optional
-	ContentType *string `json:"contentType,omitempty"`
-	// Text is a format string by which Envoy will format the response body.
-	// Mutually exclusive with JSON.
-	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-text-format for details.
-	// +optional
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=4096
-	Text *string `json:"text,omitempty"`
-	// JSON is a format object by which Envoy will produce a JSON response body.
-	// Mutually exclusive with Text.
-	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-json-format for details.
-	//
-	// Setting a field to `null` in the JSON object requires the use of
-	// `kubectl apply --server-side` or equivalent. With the default client-side
-	// `kubectl apply`, null values are stripped by kubectl before reaching
-	// the API server.
-	// +optional
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	JSON *apiextensionsv1.JSON `json:"json,omitempty"`
+	BodyFormat *shared.BodyFormat `json:"bodyFormat,omitempty"`
 }
 
 // GetStatus returns the HTTP status code to return for this route.

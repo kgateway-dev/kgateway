@@ -68,7 +68,7 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 	)
 
 	// Print command being executed when enabled
-	if printPortForwardCommands {
+	if printPortForwardCommands && !c.properties.quiet {
 		args := []string{
 			"port-forward",
 			"-n",

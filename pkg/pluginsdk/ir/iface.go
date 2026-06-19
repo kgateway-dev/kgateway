@@ -117,6 +117,10 @@ type RouteContext struct {
 	TypedFilterConfig TypedFilterConfigMap
 	// ListenerPort is the port of the Gateway listener that this route is attached to
 	ListenerPort uint32
+	// ListenerHasTLS reports whether the Gateway listener terminates TLS (i.e. is
+	// an HTTPS listener). Used by request-redirect post-processing to infer the
+	// effective scheme when the redirect filter doesn't set one.
+	ListenerHasTLS bool
 
 	InheritedPolicyPriority apiannotations.InheritedPolicyPriorityValue
 }
@@ -189,6 +193,11 @@ type ProxyTranslationPass interface {
 	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
 	HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error)
 
+	// called 1 time per filter-chain.
+	// If a plugin emits new filters, they must be with a plugin unique name.
+	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
+	UpstreamHttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error)
+
 	// called 1 time per filter chain after listeners and allows tweaking HCM settings.
 	ApplyHCM(
 		pCtx *HcmContext,
@@ -228,6 +237,10 @@ func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(pCtx *VirtualHostCon
 }
 
 func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
+}
+
+func (s UnimplementedProxyTranslationPass) UpstreamHttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error) {
+	return nil, nil
 }
 
 func (s UnimplementedProxyTranslationPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {

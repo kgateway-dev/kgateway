@@ -1,11 +1,12 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin-grpc_8080
   outlierDetection:
     baseEjectionTime: 30s
@@ -13,13 +14,14 @@ Clusters:
     interval: 10s
     maxEjectionPercent: 95
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin_8080
   outlierDetection:
     baseEjectionTime: 14400s
@@ -28,7 +30,6 @@ Clusters:
     maxEjectionPercent: 55
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

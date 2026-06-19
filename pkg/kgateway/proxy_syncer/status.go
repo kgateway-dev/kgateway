@@ -1,11 +1,18 @@
 package proxy_syncer
 
 import (
+	"errors"
+	"sort"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	backendconfigpolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -28,7 +35,9 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 	// we track each attachment point of the policy to be tracked as an
 	// ancestor for reporting status
 	for _, obj := range in {
-		for _, polAtts := range obj.GetAttachedPolicies().Policies {
+		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
+		bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
+		for gk, polAtts := range obj.GetAttachedPolicies().Policies {
 			for _, polAtt := range polAtts {
 				if _, excluded := excludedPolicyKinds[polAtt.GroupKind]; excluded {
 					continue
@@ -77,8 +86,111 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 					Reason:  string(shared.PolicyReasonAttached),
 					Message: reportssdk.PolicyAttachedMsg,
 				})
+
+				if gk == bcpGK {
+					if cond, ok := backendconfigpolicyplugin.BuildOverrideCondition(polAtt, conflictingBTP); ok {
+						r.SetCondition(cond)
+					}
+				}
 			}
 		}
+	}
+
+	return merged
+}
+
+// winningBackendTLSPolicyRef returns the ref of the BackendTLSPolicy whose TLS
+// config will apply to a backend, or nil if no BTP is attached or none of the policies
+// has a valid translation. Uses the same winner-by-creation-time-and-ref ordering used
+// inside the BTP plugin MergePolicies.
+func winningBackendTLSPolicyRef(attached ir.AttachedPolicies) *ir.AttachedPolicyRef {
+	btps := attached.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]
+	if len(btps) == 0 {
+		return nil
+	}
+	valid := make([]ir.PolicyAtt, 0, len(btps))
+	for _, p := range btps {
+		if len(p.Errors) > 0 {
+			continue
+		}
+		valid = append(valid, p)
+	}
+	if len(valid) == 0 {
+		return nil
+	}
+	winner := valid[ir.WinnerPolicyIndexByCreationTimeAndRef(valid)]
+	return winner.PolicyRef
+}
+
+// GenerateBackendStatusReport builds the Accepted condition for every kgateway Backend from
+// its IR-construction errors, falling back to the per-client translation errors (deduplicated
+// across connected clients) when there are none. IR errors take precedence because
+// TranslateBackend returns them and short-circuits before the per-client policy/validation runs.
+// Exported for testing.
+func GenerateBackendStatusReport(backends []ir.BackendObjectIR, clusters []uccWithCluster) reports.ReportMap {
+	merged := reports.NewReportMap()
+	reporter := reports.NewReporter(&merged)
+
+	backendGVK := wellknown.BackendGVK.GroupKind()
+
+	// aggregate per-client translation errors per Backend generation, deduplicated by message.
+	// Keying by generation ensures errors from a stale generation aren't attributed to a newer
+	// one while the per-client clusters are still being recomputed.
+	type backendGen struct {
+		nn  types.NamespacedName
+		gen int64
+	}
+	type errSet struct {
+		msgs []string
+		seen map[string]struct{}
+	}
+	translationErrs := make(map[backendGen]*errSet)
+	for _, c := range clusters {
+		if c.Error == nil || c.BackendSource.GetGroupKind() != backendGVK {
+			continue
+		}
+		k := backendGen{
+			nn:  types.NamespacedName{Namespace: c.BackendSource.Namespace, Name: c.BackendSource.Name},
+			gen: c.BackendGeneration,
+		}
+		es, ok := translationErrs[k]
+		if !ok {
+			es = &errSet{seen: make(map[string]struct{})}
+			translationErrs[k] = es
+		}
+		msg := c.Error.Error()
+		if _, dup := es.seen[msg]; !dup {
+			es.seen[msg] = struct{}{}
+			es.msgs = append(es.msgs, msg)
+		}
+	}
+
+	for i := range backends {
+		backend := backends[i]
+		if backend.Obj == nil {
+			continue
+		}
+		errs := make([]error, 0, len(backend.Errors))
+		errs = append(errs, backend.Errors...)
+		if len(errs) == 0 {
+			k := backendGen{
+				nn:  types.NamespacedName{Namespace: backend.GetNamespace(), Name: backend.GetName()},
+				gen: backend.Obj.GetGeneration(),
+			}
+			if es := translationErrs[k]; es != nil {
+				sort.Strings(es.msgs)
+				for _, m := range es.msgs {
+					errs = append(errs, errors.New(m))
+				}
+			}
+		}
+		cond := pluginutils.BuildCondition("Backend", errs)
+		reporter.Backend(backend.Obj).SetCondition(reportssdk.BackendCondition{
+			Type:    cond.Type,
+			Status:  cond.Status,
+			Reason:  cond.Reason,
+			Message: cond.Message,
+		})
 	}
 
 	return merged
