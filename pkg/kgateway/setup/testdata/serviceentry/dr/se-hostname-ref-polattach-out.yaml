@@ -11,7 +11,6 @@ clusters:
               portValue: 80
         loadBalancingWeight: 1
       loadBalancingWeight: 1
-  metadata: {}
   name: istio-se_gwtest_example-se_se.example.com_80
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -46,13 +45,14 @@ clusters:
               -----END CERTIFICATE-----
       sni: se.example.com
   type: STATIC
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
 listeners:

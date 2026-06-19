@@ -98,6 +98,13 @@ type RouteCondition struct {
 	Message string
 }
 
+type BackendCondition struct {
+	Type    string
+	Status  metav1.ConditionStatus
+	Reason  string
+	Message string
+}
+
 type AncestorRefReporter interface {
 	SetCondition(condition PolicyCondition)
 	SetAttachmentState(
@@ -114,6 +121,7 @@ type Reporter interface {
 	ListenerSet(listenerSet client.Object) ListenerSetReporter
 	Route(obj metav1.Object) RouteReporter
 	Policy(ref PolicyKey, observedGeneration int64) PolicyReporter
+	Backend(obj metav1.Object) BackendReporter
 }
 
 type GatewayReporter interface {
@@ -142,4 +150,8 @@ type RouteReporter interface {
 
 type ParentRefReporter interface {
 	SetCondition(condition RouteCondition)
+}
+
+type BackendReporter interface {
+	SetCondition(condition BackendCondition)
 }

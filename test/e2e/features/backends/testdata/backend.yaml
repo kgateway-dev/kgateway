@@ -8,5 +8,6 @@ spec:
   type: Static
   static:
     hosts:
-      - host: nginx.kgateway-base.svc # static reference to k8s service name
+      - host: nginx.nginx-shared.svc # static reference to the shared nginx Service (ns nginx-shared)
         port: 8080
+        

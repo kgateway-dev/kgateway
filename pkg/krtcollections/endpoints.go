@@ -101,10 +101,7 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 				logger.Warn(warn) //nolint:sloglint // ignore formatting
 			}
 		}()
-		key := types.NamespacedName{
-			Namespace: backend.Namespace,
-			Name:      backend.Name,
-		}
+		key := backend.NamespacedName()
 		kubeSvcLogger := logger.With("kubesvc", key)
 
 		kubeBackend, ok := backend.Obj.(*corev1.Service)
@@ -116,9 +113,9 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 
 		kubeSvcLogger.Debug("building endpoints")
 
-		kubeSvcPort, singlePortSvc := findPortForService(kubeBackend, uint32(backend.Port)) //nolint:gosec // G115: backend.Port is validated to be valid port range
+		kubeSvcPort, singlePortSvc := findPortForService(kubeBackend, uint32(backend.GetPort())) //nolint:gosec // G115: backend port is validated to be valid port range
 		if kubeSvcPort == nil {
-			kubeSvcLogger.Debug("port not found for service", "port", backend.Port)
+			kubeSvcLogger.Debug("port not found for service", "port", backend.GetPort())
 			return nil
 		}
 

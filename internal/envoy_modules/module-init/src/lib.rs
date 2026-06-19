@@ -1,4 +1,6 @@
 #![deny(clippy::unwrap_used, clippy::expect_used)]
+// This is to fix lint error that's caused by envoy upstream sdk from v1.38.0
+#![allow(unpredictable_function_pointer_comparisons)]
 
 use envoy_proxy_dynamic_modules_rust_sdk::*;
 use std::any::Any;

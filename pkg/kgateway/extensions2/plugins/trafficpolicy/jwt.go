@@ -27,6 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
@@ -93,7 +94,7 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 		providerName := providerName(cfg.provider)
 		jwtName := jwtFilterName(providerName)
 		pCtxTypedFilterConfig.AddTypedConfig(jwtName, cfg.perRouteConfig)
-		p.jwtPerProvider.Add(fcn, providerName, cfg.provider)
+		p.jwtPerProvider.Add(fcn, providerName, cfg.provider, filters.DuringStage(filters.AuthNStage))
 	}
 
 	if len(jwtIr.perProviderConfig) > 0 {

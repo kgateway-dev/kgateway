@@ -152,16 +152,16 @@ func TestConvertTLSRouteV1ToV1Alpha2(t *testing.T) {
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{
 					Name:        "gateway",
-					SectionName: ptr.To(gwv1.SectionName("listener-443")),
+					SectionName: new(gwv1.SectionName("listener-443")),
 				}},
 			},
 			Hostnames: []gwv1.Hostname{"example.com"},
 			Rules: []gwv1.TLSRouteRule{{
-				Name: ptr.To(gwv1.SectionName("rule-1")),
+				Name: new(gwv1.SectionName("rule-1")),
 				BackendRefs: []gwv1.BackendRef{{
 					BackendObjectReference: gwv1.BackendObjectReference{
 						Name: "backend",
-						Port: ptr.To(gwv1.PortNumber(443)),
+						Port: new(gwv1.PortNumber(443)),
 					},
 				}},
 			}},
@@ -194,16 +194,16 @@ func TestConvertTLSRouteV1Alpha3ToV1Alpha2(t *testing.T) {
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{
 					Name:        "gateway",
-					SectionName: ptr.To(gwv1.SectionName("listener-443")),
+					SectionName: new(gwv1.SectionName("listener-443")),
 				}},
 			},
 			Hostnames: []gwv1.Hostname{"example.com"},
 			Rules: []gwv1.TLSRouteRule{{
-				Name: ptr.To(gwv1.SectionName("rule-1")),
+				Name: new(gwv1.SectionName("rule-1")),
 				BackendRefs: []gwv1.BackendRef{{
 					BackendObjectReference: gwv1.BackendObjectReference{
 						Name: "backend",
-						Port: ptr.To(gwv1.PortNumber(443)),
+						Port: new(gwv1.PortNumber(443)),
 					},
 				}},
 			}},

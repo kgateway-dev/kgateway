@@ -85,8 +85,8 @@ func toRustFormationPerRouteConfig(t *kgateway.TransformationPolicy) (*dynamicmo
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 			Name: RustformationModuleName,
 		},
-		PerRouteConfigName: RustformationFilterName,
-		FilterConfig:       filterCfg,
+		FilterName:   RustformationFilterName,
+		FilterConfig: filterCfg,
 	}
 
 	return rustCfg, nil
@@ -119,7 +119,7 @@ func GenerateBlankTransformationConfigPerRoute() *dynamicmodulesv3.DynamicModule
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 			Name: RustformationModuleName,
 		},
-		PerRouteConfigName: RustformationFilterName,
+		FilterName: RustformationFilterName,
 		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
 			Value: "{}",
 		}),
@@ -162,7 +162,7 @@ func generateDynamicMetadata(ns string, kv map[string]kgateway.InjaTemplate) *dy
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 			Name: RustformationModuleName,
 		},
-		PerRouteConfigName: RustformationFilterName,
+		FilterName: RustformationFilterName,
 		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
 			Value: string(b),
 		}),

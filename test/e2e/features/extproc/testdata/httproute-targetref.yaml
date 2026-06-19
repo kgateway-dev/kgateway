@@ -5,7 +5,8 @@ metadata:
   name: route-with-extproc
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:
@@ -14,7 +15,7 @@ spec:
             type: PathPrefix
             value: /myapp
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -23,12 +24,13 @@ metadata:
   name: route-without-extproc
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:
     - backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
       matches:
         - path:

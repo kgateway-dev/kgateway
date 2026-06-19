@@ -23,7 +23,8 @@ metadata:
   namespace: infra
 spec:
   parentRefs:
-  - name: http-gateway
+  - name: gateway
+    namespace: kgateway-base
   hostnames:
   - "parent1.com"
   rules:
@@ -53,7 +54,8 @@ metadata:
   namespace: infra
 spec:
   parentRefs:
-  - name: http-gateway
+  - name: gateway
+    namespace: kgateway-base
   hostnames:
   - "parent2.com"
   rules:

@@ -25,6 +25,9 @@ type Installation interface {
 	InstallKgatewayCRDsFromLocalChart(ctx context.Context, t *testing.T)
 	InstallKgatewayCoreFromLocalChart(ctx context.Context, t *testing.T)
 	InstallKgatewayFromLocalChart(ctx context.Context, t *testing.T)
+	InstallKgatewayCRDsFromRelease(ctx context.Context, t *testing.T, version string)
+	InstallKgatewayCoreFromRelease(ctx context.Context, t *testing.T, version string)
+	InstallKgatewayFromRelease(ctx context.Context, t *testing.T, version string)
 	UninstallKgatewayCRDs(ctx context.Context, t *testing.T)
 	UninstallKgatewayCore(ctx context.Context, t *testing.T)
 	UninstallKgateway(ctx context.Context, t *testing.T)
@@ -92,6 +95,9 @@ func (i *TestInstallation) UpgradeKgatewayCore(
 	if err != nil {
 		t.Fatalf("failed to get chart path: %v", err)
 	}
+	// Mirror InstallKgatewayCoreFromLocalChart: pin image.tag to the locally-built
+	// chart so upgrade points at the same image that install did.
+	mergedExtraArgs := append(helper.LocalChartImageTagArgs(), extraArgs...)
 	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
 		helmutils.InstallOpts{
@@ -100,7 +106,7 @@ func (i *TestInstallation) UpgradeKgatewayCore(
 			ValuesFiles:     valuesFiles,
 			ReleaseName:     helmutils.ChartName,
 			ChartUri:        chartUri,
-			ExtraArgs:       extraArgs,
+			ExtraArgs:       mergedExtraArgs,
 		})
 	if err != nil {
 		t.Fatalf("failed to upgrade Helm: %v", err)

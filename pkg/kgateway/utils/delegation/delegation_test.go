@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -28,10 +27,10 @@ func TestChildRouteCanAttachToParentRef(t *testing.T) {
 			routeNamespace: "default",
 			routeParentRefs: []gwv1.ParentReference{
 				{
-					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-					Kind:      ptr.To(gwv1.Kind("HTTPRoute")),
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("HTTPRoute")),
 					Name:      "parent",
-					Namespace: ptr.To(gwv1.Namespace("default")),
+					Namespace: new(gwv1.Namespace("default")),
 				},
 			},
 			parentRef: types.NamespacedName{Name: "parent", Namespace: "default"},
@@ -42,10 +41,10 @@ func TestChildRouteCanAttachToParentRef(t *testing.T) {
 			routeNamespace: "default",
 			routeParentRefs: []gwv1.ParentReference{
 				{
-					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-					Kind:      ptr.To(gwv1.Kind("HTTPRoute")),
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("HTTPRoute")),
 					Name:      "invalid",
-					Namespace: ptr.To(gwv1.Namespace("default")),
+					Namespace: new(gwv1.Namespace("default")),
 				},
 			},
 			parentRef: types.NamespacedName{Name: "parent", Namespace: "default"},
@@ -56,10 +55,10 @@ func TestChildRouteCanAttachToParentRef(t *testing.T) {
 			routeNamespace: "default",
 			routeParentRefs: []gwv1.ParentReference{
 				{
-					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-					Kind:      ptr.To(gwv1.Kind("HTTPRoute")),
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("HTTPRoute")),
 					Name:      "parent",
-					Namespace: ptr.To(gwv1.Namespace("invalid")),
+					Namespace: new(gwv1.Namespace("invalid")),
 				},
 			},
 			parentRef: types.NamespacedName{Name: "parent", Namespace: "default"},
@@ -87,75 +86,75 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			name: "child route without parentRef matches parent",
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
 				},
-				Method: ptr.To[gwv1.HTTPMethod]("GET"),
+				Method: new(gwv1.HTTPMethod("GET")),
 			},
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header3"),
 						Value: "val3",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query3"),
 						Value: "val3.*foo",
 					},
 				},
-				Method: ptr.To[gwv1.HTTPMethod]("GET"),
+				Method: new(gwv1.HTTPMethod("GET")),
 			},
 			expected: true,
 		},
@@ -163,29 +162,29 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			name: "child route without parentRef doesn't match parent path",
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
@@ -193,39 +192,39 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			},
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/bar/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header3"),
 						Value: "val3",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query3"),
 						Value: "val3.*foo",
 					},
@@ -237,29 +236,29 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			name: "child route without parentRef doesn't match parent headers",
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
@@ -267,29 +266,29 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			},
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header3"),
 						Value: "val3",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query3"),
 						Value: "val3.*foo",
 					},
@@ -301,29 +300,29 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			name: "child route without parentRef doesn't parent query params",
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
@@ -331,29 +330,29 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			},
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header3"),
 						Value: "val3",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query3"),
 						Value: "val3.*foo",
 					},
@@ -365,75 +364,75 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			name: "child route without parentRef doesn't match parent method",
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
 				},
-				Method: ptr.To[gwv1.HTTPMethod]("GET"),
+				Method: new(gwv1.HTTPMethod("GET")),
 			},
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header3"),
 						Value: "val3",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query3"),
 						Value: "val3.*foo",
 					},
 				},
-				Method: ptr.To[gwv1.HTTPMethod]("PUT"),
+				Method: new(gwv1.HTTPMethod("PUT")),
 			},
 			expected: false,
 		},
@@ -441,29 +440,29 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			name: "child route with parentRef matches parent",
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
@@ -471,39 +470,39 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			},
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header3"),
 						Value: "val3",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query3"),
 						Value: "val3.*foo",
 					},
@@ -515,29 +514,29 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			name: "child route with parentRef matches parent without parentRef.Namespace set",
 			parent: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
@@ -545,39 +544,39 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			},
 			child: gwv1.HTTPRouteMatch{
 				Path: &gwv1.HTTPPathMatch{
-					Type:  ptr.To(gwv1.PathMatchPathPrefix),
+					Type:  new(gwv1.PathMatchPathPrefix),
 					Value: new("/foo/baz"),
 				},
 				Headers: []gwv1.HTTPHeaderMatch{
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchRegularExpression),
+						Type:  new(gwv1.HeaderMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("header2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.HeaderMatchExact),
+						Type:  new(gwv1.HeaderMatchExact),
 						Name:  gwv1.HTTPHeaderName("header3"),
 						Value: "val3",
 					},
 				},
 				QueryParams: []gwv1.HTTPQueryParamMatch{
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchExact),
+						Type:  new(gwv1.QueryParamMatchExact),
 						Name:  gwv1.HTTPHeaderName("query1"),
 						Value: "val1",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query2"),
 						Value: "val2.*foo",
 					},
 					{
-						Type:  ptr.To(gwv1.QueryParamMatchRegularExpression),
+						Type:  new(gwv1.QueryParamMatchRegularExpression),
 						Name:  gwv1.HTTPHeaderName("query3"),
 						Value: "val3.*foo",
 					},

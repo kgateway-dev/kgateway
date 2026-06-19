@@ -24,6 +24,10 @@ type workflowConfig struct {
 	} `json:"jobs"`
 }
 
+var e2eTestsNotRequiredInPRShards = map[string]string{
+	"TestKgateway/AttachedRoutes": "load tests run in the dedicated nightly load-test workflow",
+}
+
 // TestAllE2ETestsInShards verifies that every E2E test function and registered
 // suite in test/e2e/tests/ is covered by at least one regex in e2e.yaml.
 // This prevents new tests from being added without CI coverage.
@@ -33,6 +37,9 @@ func TestAllE2ETestsInShards(t *testing.T) {
 
 	var missing []string
 	for _, tp := range sourceTests {
+		if _, ok := e2eTestsNotRequiredInPRShards[tp]; ok {
+			continue
+		}
 		if !isCoveredByShardPaths(tp, shardPaths) {
 			missing = append(missing, tp)
 		}

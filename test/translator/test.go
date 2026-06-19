@@ -767,7 +767,7 @@ func (tc TestCase) Run(
 		Kind:      "test-backend-plugin",
 		Namespace: "default",
 		Name:      "example-svc",
-	}, 80, "")
+	}, 80, "", "")
 	extensions.ContributesBackends[gk] = pluginsdk.BackendPlugin{
 		Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
 			testBackend,

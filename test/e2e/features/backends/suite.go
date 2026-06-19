@@ -37,11 +37,6 @@ var (
 		Name:      "gateway",
 		Namespace: "kgateway-base",
 	}
-
-	nginxMeta = metav1.ObjectMeta{
-		Name:      "nginx",
-		Namespace: "kgateway-base",
-	}
 )
 
 type testingSuite struct {
@@ -81,9 +76,6 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 
 	// assert the expected resources are created and running before attempting to send traffic
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, backend)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
-	})
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=gateway",
 	})

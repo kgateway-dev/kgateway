@@ -1,27 +1,11 @@
-kind: Gateway
-apiVersion: gateway.networking.k8s.io/v1
-metadata:
-  name: gw
-spec:
-  gatewayClassName: kgateway
-  listeners:
-    - protocol: HTTP
-      port: 8080
-      name: http
-      allowedRoutes:
-        namespaces:
-          from: Same
-  allowedListeners:
-    namespaces:
-      from: All
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: ListenerSet
 metadata:
   name: ls
 spec:
   parentRef:
-    name: gw
+    name: gateway
+    namespace: kgateway-base
     kind: Gateway
     group: gateway.networking.k8s.io
   listeners:
