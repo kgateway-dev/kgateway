@@ -367,16 +367,21 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 }
 
 // ApplyPostListener runs after FilterChains have been built so the plugin can set
-// FilterChain level fields like transport_socket_connect_timeout.
+// FilterChain level fields like transport_socket_connect_timeout. It is invoked once per
+// FilterChain on the listener.
 func (p *listenerPolicyPluginGwPass) ApplyPostListener(
 	pCtx *ir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {
 	cfg := p.getPolicy(pCtx.Policy, pCtx.Port)
-	if cfg.transportSocketConnectTimeout != nil {
-		for _, fc := range out.GetFilterChains() {
-			fc.TransportSocketConnectTimeout = cfg.transportSocketConnectTimeout
+	if cfg.transportSocketConnectTimeout == nil {
+		return
+	}
+	for _, fc := range out.GetFilterChains() {
+		if pCtx.FilterChainName != "" && fc.GetName() != pCtx.FilterChainName {
+			continue
 		}
+		fc.TransportSocketConnectTimeout = cfg.transportSocketConnectTimeout
 	}
 }
 

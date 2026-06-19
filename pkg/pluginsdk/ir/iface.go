@@ -35,6 +35,10 @@ type ListenerContext struct {
 	Port              uint32
 	Policy            PolicyIR
 	PolicyAncestorRef gwv1.ParentReference
+	// FilterChainName identifies the FilterChain this hook is targeting.
+	// Empty when the hook is not scoped to a specific FilterChain (e.g. ApplyListenerPlugin).
+	// Plugins implementing ApplyPostListener should mutate only the FilterChain whose Name matches.
+	FilterChainName string
 }
 
 type HttpFiltersContext struct {
@@ -133,12 +137,6 @@ type ProxyTranslationPass interface {
 		out *envoylistenerv3.Listener,
 	)
 
-	// ApplyPostListener is called 1 time per listener, after FilterChains are built.
-	ApplyPostListener(
-		pCtx *ListenerContext,
-		out *envoylistenerv3.Listener,
-	)
-
 	// ApplyForBackend is called for every backend in a route. No policy is applied.
 	// For this to work the backend needs to register itself as a policy. TODO: rethink this.
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
@@ -196,6 +194,13 @@ type ProxyTranslationPass interface {
 		pCtx *HcmContext,
 		out *envoy_hcm.HttpConnectionManager) error
 
+	// ApplyPostListener is called 1 time per listener, after FilterChains are built.
+	// Use this to mutate FilterChain-level fields that depend on the assembled chains.
+	ApplyPostListener(
+		pCtx *ListenerContext,
+		out *envoylistenerv3.Listener,
+	)
+
 	// called 1 time (per envoy proxy). replaces GeneratedResources and allows adding clusters to the envoy.
 	ResourcesToAdd() Resources
 }
@@ -207,24 +212,7 @@ var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
 func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyPostListener(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
-}
-
-func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
-	return nil
-}
-
 func (s UnimplementedProxyTranslationPass) ApplyForBackend(pCtx *RouteBackendContext, in HttpBackend, out *envoyroutev3.Route) error {
-	return nil
-}
-
-func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
-}
-
-func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(pCtx *VirtualHostContext, out *envoyroutev3.VirtualHost) {
-}
-
-func (s UnimplementedProxyTranslationPass) ApplyForRoute(pCtx *RouteContext, out *envoyroutev3.Route) error {
 	return nil
 }
 
@@ -232,12 +220,29 @@ func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(policy PolicyIR,
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
-	return nil, nil
+func (s UnimplementedProxyTranslationPass) ApplyForRoute(pCtx *RouteContext, out *envoyroutev3.Route) error {
+	return nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(pCtx *VirtualHostContext, out *envoyroutev3.VirtualHost) {
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
 }
 
 func (s UnimplementedProxyTranslationPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
 	return nil, nil
+}
+
+func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+	return nil, nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
+	return nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyPostListener(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }
 
 func (s UnimplementedProxyTranslationPass) ResourcesToAdd() Resources {
