@@ -48,6 +48,10 @@ func (c *compressionIR) Equals(other PolicySubIR) bool {
 	if c.enable != oc.enable {
 		return false
 	}
+	// When disabled, all codecs are turned off regardless of libraries.
+	if !c.enable {
+		return true
+	}
 	if len(c.libraries) != len(oc.libraries) {
 		return false
 	}

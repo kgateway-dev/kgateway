@@ -53,6 +53,12 @@ func TestCompressionIREquals(t *testing.T) {
 			b:    &compressionIR{enable: false, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}},
 			want: false,
 		},
+		{
+			name: "disabled ignores libraries",
+			a:    &compressionIR{enable: false, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}},
+			b:    &compressionIR{enable: false, libraries: []kgateway.CompressionLibrary{kgateway.CompressionBrotli}},
+			want: true,
+		},
 	}
 
 	for _, tt := range tests {
