@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -138,8 +140,8 @@ func (s *AttachedRoutesSuite) runTestWithConfig(routeCount int) {
 	}
 
 	results := s.runIncrementalRouteTestWithSimulation(config)
-	s.validateIncrementalPerformanceThresholds(results)
 	s.reportIncrementalResults(results)
+	s.validateIncrementalPerformanceThresholds(results)
 }
 
 func (s *AttachedRoutesSuite) runIncrementalRouteTestWithSimulation(config *AttachedRoutesConfig) *TestResults {
@@ -157,8 +159,13 @@ func (s *AttachedRoutesSuite) runIncrementalRouteTestWithSimulation(config *Atta
 	s.setupInfrastructure()
 	s.createAndWaitForGateways(config)
 	s.createBaselineRoutes(config)
-	s.waitForTranslationCompletion(config.Gateways, config.Routes, translationCompletionTimeout)
-	s.verifyRouteValid(config.Gateways[0])
+	s.Require().True(
+		s.waitForTranslationCompletion(config.Gateways, config.Routes, translationCompletionTimeout),
+		"Baseline routes should attach before controller restart",
+	)
+	err := s.verifyRouteValid(config.Gateways[0])
+	s.Require().NoError(err, "Routes should be valid before controller restart")
+	s.restartControllerAfterBaselineResources(config, results)
 
 	// Monitoring and incremental test
 	monitorCtx, cancelMonitor := context.WithCancel(s.ctx)
@@ -186,6 +193,31 @@ func (s *AttachedRoutesSuite) runIncrementalRouteTestWithSimulation(config *Atta
 
 	s.T().Logf("Final monitoring results: %d total status updates captured during incremental test", results.TotalWrites)
 	return results
+}
+
+func (s *AttachedRoutesSuite) restartControllerAfterBaselineResources(config *AttachedRoutesConfig, results *TestResults) {
+	s.T().Log("Phase 8: Restarting controller after baseline resources are created")
+	restartResult, err := s.measureControllerRolloutStartup()
+	results.ControllerRestartTime = restartResult.Duration
+	s.logStartupBenchmarkResult(restartResult, err == nil)
+	s.Require().NoError(
+		err,
+		"Controller should restart after baseline resources are created: status=%s pods=%s events=%s",
+		restartResult.LastStatus,
+		restartResult.PodSnapshot,
+		restartResult.RecentEvents,
+	)
+
+	s.T().Log("Phase 8b: Waiting for baseline translation after controller restart")
+	translationStart := time.Now()
+	s.Require().True(
+		s.waitForTranslationCompletion(config.Gateways, config.Routes, translationCompletionTimeout),
+		"Baseline routes should remain attached after controller restart",
+	)
+	results.PostRestartTranslationTime = time.Since(translationStart)
+
+	err = s.verifyRouteValid(config.Gateways[0])
+	s.Require().NoError(err, "Routes should remain valid after controller restart")
 }
 
 func (s *AttachedRoutesSuite) setupSimulation(config *AttachedRoutesConfig) {
@@ -224,6 +256,7 @@ func (s *AttachedRoutesSuite) createBaselineRoutes(config *AttachedRoutesConfig)
 
 func (s *AttachedRoutesSuite) measureIncrementalRoutePerformance(config *AttachedRoutesConfig, results *TestResults) {
 	s.T().Log("Phase 9: === STARTING STOPWATCH === Creating 1 incremental HTTPRoute")
+	results.ValidationMetricsBefore = s.collectValidationMetrics("before incremental route")
 	stopwatchStart := time.Now()
 
 	incrementalRoute := s.createSingleIncrementalRoute(config.Gateways[0])
@@ -238,6 +271,9 @@ func (s *AttachedRoutesSuite) measureIncrementalRoutePerformance(config *Attache
 
 	results.SetupTime = userTime
 	results.RouteReadyTime = routeReadyTime
+	results.ValidationMetricsAfter = s.collectValidationMetrics("after incremental route ready")
+	results.ValidationMetricsDelta = results.ValidationMetricsAfter.Delta(results.ValidationMetricsBefore)
+	s.logValidationMetrics("incremental route", results.ValidationMetricsDelta)
 
 	// Measure teardown
 	s.T().Log("Phase 12: Measuring teardown time for incremental route")
@@ -537,6 +573,73 @@ func (s *AttachedRoutesSuite) deleteIncrementalRoute(route *gwv1.HTTPRoute) erro
 	return nil
 }
 
+func (s *AttachedRoutesSuite) collectValidationMetrics(label string) ValidationMetrics {
+	metrics, err := s.loadTestManager.CollectKGatewayValidationMetrics()
+	if err != nil {
+		s.T().Logf("Validation metrics unavailable %s: %v", label, err)
+		return metrics
+	}
+	s.T().Logf(
+		"Validation metrics %s: calls=%d cache_hits=%d cache_misses=%d valid=%d invalid_xds=%d invocation_errors=%d duration_seconds=%.3f by_caller=%s",
+		label,
+		metrics.Calls,
+		metrics.CacheHits,
+		metrics.CacheMisses,
+		metrics.Valid,
+		metrics.InvalidXDS,
+		metrics.InvocationErrors,
+		metrics.DurationSeconds,
+		formatValidationCallerMetrics(metrics.ByCaller),
+	)
+	return metrics
+}
+
+func (s *AttachedRoutesSuite) logValidationMetrics(label string, metrics ValidationMetrics) {
+	s.T().Logf(
+		"Validation metrics delta for %s: calls=%d cache_hits=%d cache_misses=%d valid=%d invalid_xds=%d invocation_errors=%d duration_count=%d duration_seconds=%.3f by_caller=%s",
+		label,
+		metrics.Calls,
+		metrics.CacheHits,
+		metrics.CacheMisses,
+		metrics.Valid,
+		metrics.InvalidXDS,
+		metrics.InvocationErrors,
+		metrics.DurationCount,
+		metrics.DurationSeconds,
+		formatValidationCallerMetrics(metrics.ByCaller),
+	)
+}
+
+func formatValidationCallerMetrics(byCaller map[string]ValidationCallerMetrics) string {
+	if len(byCaller) == 0 {
+		return "none"
+	}
+
+	callers := make([]string, 0, len(byCaller))
+	for caller := range byCaller {
+		callers = append(callers, caller)
+	}
+	sort.Strings(callers)
+
+	parts := make([]string, 0, len(callers))
+	for _, caller := range callers {
+		metrics := byCaller[caller]
+		parts = append(parts, fmt.Sprintf(
+			"%s{calls=%d hits=%d misses=%d valid=%d invalid_xds=%d invocation_errors=%d duration_count=%d duration_seconds=%.3f}",
+			caller,
+			metrics.Calls,
+			metrics.CacheHits,
+			metrics.CacheMisses,
+			metrics.Valid,
+			metrics.InvalidXDS,
+			metrics.InvocationErrors,
+			metrics.DurationCount,
+			metrics.DurationSeconds,
+		))
+	}
+	return strings.Join(parts, ",")
+}
+
 func (s *AttachedRoutesSuite) validateIncrementalPerformanceThresholds(results *TestResults) {
 	s.Require().Greater(len(results.Watchers), 0, "At least one watcher should have recorded data")
 
@@ -576,7 +679,10 @@ func (s *AttachedRoutesSuite) reportIncrementalResults(results *TestResults) {
 	s.T().Logf("Setup Time (Stopwatch): %v", results.SetupTime)
 	s.T().Logf("Route Ready Time: %v", results.RouteReadyTime)
 	s.T().Logf("Teardown Time: %v", results.TeardownTime)
+	s.T().Logf("Controller Restart Time: %v", results.ControllerRestartTime)
+	s.T().Logf("Post-Restart Translation Check Time: %v", results.PostRestartTranslationTime)
 	s.T().Logf("Total Writes: %d", results.TotalWrites)
+	s.logValidationMetrics("reported incremental route", results.ValidationMetricsDelta)
 
 	s.T().Log("=== DETAILED RESULTS ===")
 	s.T().Logf("Test Type: %s", results.TestType)

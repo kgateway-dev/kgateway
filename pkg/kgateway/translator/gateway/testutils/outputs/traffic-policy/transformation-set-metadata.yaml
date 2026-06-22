@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -76,7 +78,7 @@ Routes:
               header(\"x-user-id\") }}"}}]},"response":{"set":[{"name":"x-user-response","value":"{{
               header(\"x-user-id\") }}"}],"dynamicMetadata":[{"namespace":"com.example.auth","key":"user-id-response","value":{"stringValue":"{{
               header(\"x-user-id\") }}"}}]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
 Statuses:
   gateways:
     default/test:

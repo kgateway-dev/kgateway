@@ -310,6 +310,11 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		newFinalBackendEndpoints(krtopts, finalBackends, allEndpoints),
 		s.translator.TranslateEndpoints,
 	)
+	localClusterEpPerClient := NewPerClientLocalClusterEndpoints(
+		krtopts,
+		s.uniqueClients,
+		s.commonCols.LocalityPods,
+	)
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
 		krtopts,
@@ -324,6 +329,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		s.mostXdsSnapshots,
 		epPerClient,
 		clustersPerClient,
+		localClusterEpPerClient,
 	)
 
 	excludedPolicyKinds := make(map[schema.GroupKind]struct{})

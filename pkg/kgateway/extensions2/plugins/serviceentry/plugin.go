@@ -42,6 +42,13 @@ type Options struct {
 	// Settings.WorkloadEntriesExclusionLabels is used. Use an empty set to explicitly disable
 	// exclusions.
 	WorkloadEntriesExclusionLabelKeys sets.Set[string]
+
+	// PromoteWorkloadEntryAnnotations is the set of WorkloadEntry annotation keys that, if present
+	// on the WorkloadEntry's metadata, are copied verbatim into the workload's AugmentedLabels so
+	// that endpoint plugins can observe them. kgateway is agnostic to what the keys mean; it does
+	// an opaque string copy. Callers (e.g. downstream distributions) supply the keys they care
+	// about. When nil or empty, no annotations are promoted.
+	PromoteWorkloadEntryAnnotations sets.Set[string]
 }
 
 func NewPlugin(

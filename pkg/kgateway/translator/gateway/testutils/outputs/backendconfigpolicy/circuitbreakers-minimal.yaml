@@ -2,6 +2,8 @@ Clusters:
 - circuitBreakers:
     thresholds:
     - maxConnections: 100
+  commonLbConfig:
+    localityWeightedLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

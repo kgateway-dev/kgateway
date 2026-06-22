@@ -809,7 +809,8 @@ sds-docker: $(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
 #----------------------------------------------------------------------------------
 
 ENVOYINIT_DIR=cmd/envoyinit
-ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
+INTERNAL_ENVOYINIT_DIR=internal/envoyinit
+ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR) $(INTERNAL_ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
@@ -1193,19 +1194,24 @@ k3d-reload-%: k3d-build-and-load-% kind-set-image-% ; ## Use to build specified 
 #----------------------------------------------------------------------------------
 
 .PHONY: run-load-tests
+VALIDATION_MODE ?= standard
+LOAD_TEST_GO_ARGS ?= -timeout=60m
 run-load-tests: ## Run KGateway load testing suite (requires existing cluster and installation)
+	@echo "Running KGateway load tests with validation mode: $(VALIDATION_MODE)"
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
+	go test -tags=e2e $(LOAD_TEST_GO_ARGS) -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
 
 .PHONY: run-load-tests-baseline
 run-load-tests-baseline: ## Run baseline load tests (1000 routes)
+	@echo "Running KGateway baseline load tests with validation mode: $(VALIDATION_MODE)"
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
+	go test -tags=e2e $(LOAD_TEST_GO_ARGS) -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
 
 .PHONY: run-load-tests-production
 run-load-tests-production: ## Run production load tests (5000 routes)
+	@echo "Running KGateway production load tests with validation mode: $(VALIDATION_MODE)"
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
+	go test -tags=e2e $(LOAD_TEST_GO_ARGS) -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
 
 #----------------------------------------------------------------------------------
 # MARK: Conformance

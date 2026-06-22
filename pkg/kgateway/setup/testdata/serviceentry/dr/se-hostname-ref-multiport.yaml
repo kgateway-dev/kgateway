@@ -1,0 +1,65 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: route-to-upstream
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: http-gw-for-test
+  hostnames:
+  - "se.example.com"
+  rules:
+  - backendRefs:
+    - name: se.example.com
+      port: 80
+      kind: Hostname
+      group: networking.istio.io
+---
+# Multi-port ServiceEntry sharing one host. A Hostname backendRef with an
+# explicit port (80 above) must resolve to that exact port's cluster
+# (..._se.example.com_80) and not to any other port (e.g. ..._443) defined on
+# the same host.
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: example-se
+  namespace: gwtest
+spec:
+  hosts:
+  - se.example.com
+  ports:
+  - number: 80
+    name: http
+    protocol: HTTP
+    targetPort: 18080
+  - number: 443
+    name: https
+    protocol: HTTPS
+    targetPort: 18443
+  resolution: STATIC
+  location: MESH_INTERNAL
+  endpoints:
+
+  - address: 1.1.1.1
+    locality: r1/r1z2/r1z2s4
+
+  - address: 2.2.2.2
+    locality: r1/r1z3/r1z3s4
+
+  - address: 3.3.3.3
+    locality: r2/r2z1/r2z1s1
