@@ -32,6 +32,11 @@ const (
 	// Use in the TLS options field of a TLS listener.
 	EcdhCurves gwv1.AnnotationKey = "kgateway.dev/ecdh-curves"
 
+	// SignatureAlgorithms is the annotation key used to set the supported algorithms for a TLS listener.
+	// The value is a comma separated list of algorithms, e.g "ecdsa_secp256r1_sha256,rsa_pss_rsae_sha256".
+	// Use in the TLS options field of a TLS listener.
+	SignatureAlgorithms gwv1.AnnotationKey = "kgateway.dev/signature-algorithms"
+
 	// MinTLSVersion is the annotation key used to set the minimum TLS version for a TLS listener.
 	// The value is a string representing the version, e.g "1.2".
 	// Use in the TLS options field of a TLS listener.
