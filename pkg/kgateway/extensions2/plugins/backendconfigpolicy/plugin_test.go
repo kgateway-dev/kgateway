@@ -626,6 +626,7 @@ func TestBackendConfigPolicyHealthCheckHostnameOverride(t *testing.T) {
 		cluster := clusterWithEndpointHealthCheckHostname(dialHost)
 		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
 
+		assert.Equal(t, "app-host.example.com", cluster.GetHealthChecks()[0].GetGrpcHealthCheck().GetAuthority())
 		assert.Empty(t, endpointHealthCheckHostname(cluster), "endpoint hostname should be cleared so the configured authority wins")
 	})
 
