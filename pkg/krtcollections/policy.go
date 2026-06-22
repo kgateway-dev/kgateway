@@ -3,6 +3,7 @@ package krtcollections
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/config/labels"
@@ -10,7 +11,6 @@ import (
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/smallset"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -93,6 +93,12 @@ type BackendIndex struct {
 type backendKey struct {
 	ir.ObjectSource
 	port int32
+}
+
+// String must include the port; otherwise the embedded ir.ObjectSource.String()
+// is promoted and all ports of a multi-port host collapse into one index bucket.
+func (b backendKey) String() string {
+	return b.ObjectSource.String() + ":" + strconv.Itoa(int(b.port))
 }
 
 func NewBackendIndex(
@@ -476,18 +482,6 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			Listeners:           make([]ir.Listener, 0, len(gw.Spec.Listeners)),
 			DeniedListenerSets:  map[schema.GroupVersionKind]ir.ListenerSets{},
 			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{},
-		}
-
-		if gw.Annotations[string(apiannotations.PerConnectionBufferLimit)] != "" { //nolint:staticcheck // deprecated annotation
-			logger.Warn("per-connection-buffer-limit annotation is deprecated, use ListenerPolicy with perConnectionBufferLimitBytes instead",
-				"gateway", fmt.Sprintf("%s/%s", gw.Namespace, gw.Name),
-				"annotation", apiannotations.PerConnectionBufferLimit) //nolint:staticcheck // deprecated annotation
-			limit, err := resource.ParseQuantity(gw.Annotations[string(apiannotations.PerConnectionBufferLimit)]) //nolint:staticcheck // deprecated annotation
-			if err != nil {
-				logger.Error("failed to parse per connection buffer limit", "error", err)
-			} else {
-				gwIR.PerConnectionBufferLimitBytes = new(uint32(limit.Value())) //nolint:gosec // G115: Kubernetes resource quantities are always non-negative
-			}
 		}
 
 		// TODO: http polic
@@ -923,9 +917,9 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 		})
 	}
 
-	slices.SortFunc(ret, func(a, b ir.PolicyAtt) int {
+	slices.SortStableFunc(ret, func(a, b ir.PolicyAtt) int {
 		// Sort policies by their PrecedenceWeight for the same kind if the weights are different,
-		// otherwise sort by creation time
+		// then by creation time.
 		if a.GroupKind == b.GroupKind {
 			if a.PrecedenceWeight > b.PrecedenceWeight {
 				return -1
@@ -933,9 +927,26 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 				return 1
 			}
 		}
-		return a.PolicyIr.CreationTime().Compare(b.PolicyIr.CreationTime())
+		if c := a.PolicyIr.CreationTime().Compare(b.PolicyIr.CreationTime()); c != 0 {
+			return c
+		}
+		// Kubernetes creationTimestamp only has second granularity, so policies applied
+		// together (e.g. via a single `kubectl apply`) routinely tie on weight and creation
+		// time. Without a final deterministic tiebreaker the order would depend on upstream
+		// map iteration, which is randomized per process and produces nondeterministic merge
+		// results across control-plane restarts. Break ties on the policy identity.
+		return strings.Compare(policyAttSortKey(a), policyAttSortKey(b))
 	})
 	return ret
+}
+
+// policyAttSortKey returns a stable identity key for a PolicyAtt, used as the final
+// tiebreaker when ordering policies that are otherwise equal (same weight and creation time).
+func policyAttSortKey(a ir.PolicyAtt) string {
+	if a.PolicyRef != nil {
+		return a.PolicyRef.IDWithSectionName()
+	}
+	return a.GroupKind.String()
 }
 
 func (p *PolicyIndex) fetchPolicy(kctx krt.HandlerContext, policyRef ir.ObjectSource) *ir.PolicyWrapper {
@@ -983,13 +994,14 @@ func (k refGrantIndexKey) String() string {
 type RefGrantIndex struct {
 	refgrants     krt.Collection[*gwv1b1.ReferenceGrant]
 	refGrantIndex krt.Index[refGrantIndexKey, *gwv1b1.ReferenceGrant]
+	mode          apisettings.ReferenceGrantMode
 }
 
 func (h *RefGrantIndex) HasSynced() bool {
 	return h.refgrants.HasSynced()
 }
 
-func NewRefGrantIndex(refgrants krt.Collection[*gwv1b1.ReferenceGrant]) *RefGrantIndex {
+func NewRefGrantIndex(refgrants krt.Collection[*gwv1b1.ReferenceGrant], mode apisettings.ReferenceGrantMode) *RefGrantIndex {
 	refGrantIndex := krtpkg.UnnamedIndex(refgrants, func(p *gwv1b1.ReferenceGrant) []refGrantIndexKey {
 		ret := make([]refGrantIndexKey, 0, len(p.Spec.To)*len(p.Spec.From))
 		for _, from := range p.Spec.From {
@@ -1005,10 +1017,13 @@ func NewRefGrantIndex(refgrants krt.Collection[*gwv1b1.ReferenceGrant]) *RefGran
 		}
 		return ret
 	})
-	return &RefGrantIndex{refgrants: refgrants, refGrantIndex: refGrantIndex}
+	return &RefGrantIndex{refgrants: refgrants, refGrantIndex: refGrantIndex, mode: mode}
 }
 
 func (r *RefGrantIndex) ReferenceAllowed(kctx krt.HandlerContext, fromgk schema.GroupKind, fromns string, to ir.ObjectSource) bool {
+	if r.mode == apisettings.ReferenceGrantOff {
+		return true
+	}
 	if fromns == to.Namespace {
 		return true
 	}

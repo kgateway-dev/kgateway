@@ -1,33 +1,17 @@
 Clusters:
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: kube_default_backend-svc_80
+  type: EDS
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
-      portValue: 3000
-  filterChains:
-  - filters:
-    - name: envoy.filters.network.http_connection_manager
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-        httpFilters:
-        - name: envoy.filters.http.router
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-        mergeSlashes: true
-        normalizePath: true
-        rds:
-          configSource:
-            ads: {}
-            resourceApiVersion: V3
-          routeConfigName: listener~3000
-        statPrefix: http
-        useRemoteAddress: true
-    name: listener~3000
-  name: listener~3000
-  perConnectionBufferLimitBytes: 65536
 - address:
     socketAddress:
       address: '::'
@@ -53,12 +37,22 @@ Listeners:
         useRemoteAddress: true
     name: listener~80
   name: listener~80
-  perConnectionBufferLimitBytes: 65536
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~3000
-- ignorePortInHostMatching: true
   name: listener~80
+  virtualHosts:
+  - domains:
+    - example.com
+    name: listener~80~example_com
+    routes:
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
+        prefix: /
+      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
 Statuses:
   gateways:
     default/example-gateway:
@@ -79,7 +73,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 0
+      - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
@@ -107,31 +101,43 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-      - attachedRoutes: 0
-        conditions:
+  httpRoutes:
+    default/example-route:
+      parents:
+      - conditions:
         - lastTransitionTime: null
-          message: Successfully accepted Listener
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Successfully verified that Listener has no conflicts
-          reason: NoConflicts
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/jwt-policy:
+            jwt: missing reference grant'
+          reason: RouteRuleReplaced
           status: "False"
-          type: Conflicted
+          type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+  policies:
+    TrafficPolicy/default/jwt-policy:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
         - lastTransitionTime: null
-          message: Successfully programmed Listener
-          reason: Programmed
-          status: "True"
-          type: Programmed
-        name: http2
-        supportedKinds:
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
-        - group: gateway.networking.k8s.io
-          kind: GRPCRoute
+          message: 'jwt: missing reference grant'
+          reason: Invalid
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: ""
+          reason: Pending
+          status: "False"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

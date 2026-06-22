@@ -9,6 +9,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -46,6 +47,10 @@ func TestListenerSet(t *testing.T) {
 
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
+
+	// The suite references the shared nginx backend cross-namespace (with its own
+	// ReferenceGrant) instead of deploying its own.
+	common.SetupSharedNginxBackend(ctx, t, testInstallation)
 
 	ListenerSetSuiteRunner().Run(ctx, t, testInstallation)
 }

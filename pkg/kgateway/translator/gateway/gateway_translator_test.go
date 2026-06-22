@@ -141,17 +141,6 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("http gateway with per connection buffer limit", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFiles: []string{"gateway-per-conn-buf-lim/gateway.yaml"},
-			outputFile: "gateway-per-conn-buf-lim/proxy.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-		})
-	})
-
 	t.Run("http gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"http-routing/basic.yaml"},
@@ -654,6 +643,62 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// ReferenceGrantMode: Off — BackendRef to another namespace allowed without ReferenceGrant
+	t.Run("ReferenceGrantMode Off allows BackendRef to another namespace without ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"reference-grant-mode/off-backendref-no-grant.yaml"},
+			outputFile: "reference-grant-mode/off-backendref-no-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ReferenceGrantMode = apisettings.ReferenceGrantOff
+		})
+	})
+
+	// ReferenceGrantMode: Permissive — ExtensionRef to another namespace allowed without ReferenceGrant
+	t.Run("ReferenceGrantMode Permissive allows cross-namespace ExtensionRef without ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"reference-grant-mode/permissive-extensionref-no-grant.yaml"},
+			outputFile: "reference-grant-mode/permissive-extensionref-no-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ReferenceGrantMode = apisettings.ReferenceGrantPermissive
+		})
+	})
+
+	// ReferenceGrantMode: Strict — ExtensionRef to another namespace rejected when ReferenceGrant is missing
+	t.Run("ReferenceGrantMode Strict rejects cross-namespace ExtensionRef without ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"reference-grant-mode/strict-extensionref-no-grant.yaml"},
+			outputFile: "reference-grant-mode/strict-extensionref-no-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ReferenceGrantMode = apisettings.ReferenceGrantStrict
+		})
+	})
+
+	// ReferenceGrantMode: Strict — ExtensionRef to another namespace allowed when ReferenceGrant is present
+	t.Run("ReferenceGrantMode Strict allows cross-namespace ExtensionRef with ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"reference-grant-mode/strict-extensionref-with-grant.yaml"},
+			outputFile: "reference-grant-mode/strict-extensionref-with-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ReferenceGrantMode = apisettings.ReferenceGrantStrict
+		})
+	})
+
 	t.Run("TrafficPolicy ExtAuth deep merge", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/extauth-deep-merge.yaml"},
@@ -697,6 +742,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/extproc-filter-stage.yaml"},
 			outputFile: "traffic-policy/extproc-filter-stage.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy ExtProc with after-route stage becomes upstream http filter", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extproc-after-route-stage.yaml"},
+			outputFile: "traffic-policy/extproc-after-route-stage.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy ExtProc mixed stages before-AuthN in httpFilters and after-route in upstreamHttpFilters", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extproc-mixed-stages.yaml"},
+			outputFile: "traffic-policy/extproc-mixed-stages.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "test",
@@ -1678,6 +1745,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HTTPListenerPolicy with localReplies", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"httplistenerpolicy/local-reply-config.yaml"},
+			outputFile: "httplistenerpolicy/local-reply-config.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("HTTPListenerPolicy merging", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"httplistenerpolicy/merge.yaml"},
@@ -1953,6 +2031,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with localReplies", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/local-reply-config.yaml"},
+			outputFile: "listener-policy-http/local-reply-config.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy merging", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy-http/merge.yaml"},
@@ -2034,6 +2123,39 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy-http/max-requests-per-connection-merge-conflict.yaml"},
 			outputFile: "listener-policy-http/max-requests-per-connection-merge-conflict.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with maxHeadersCount", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/max-headers-count.yaml"},
+			outputFile: "listener-policy-http/max-headers-count.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with maxHeadersCount and maxRequestsPerConnection", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/max-headers-count-with-max-requests.yaml"},
+			outputFile: "listener-policy-http/max-headers-count-with-max-requests.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy maxHeadersCount merge conflict", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/max-headers-count-merge-conflict.yaml"},
+			outputFile: "listener-policy-http/max-headers-count-merge-conflict.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2384,10 +2506,32 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with zone-aware prefer local", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/zone-aware-prefer-local.yaml"},
+			outputFile: "backendconfigpolicy/zone-aware-prefer-local.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy with upstream proxy protocol and BackendTLSPolicy", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/upstream-proxy-protocol-with-backendtlspolicy.yaml"},
 			outputFile: "backendconfigpolicy/upstream-proxy-protocol-with-backendtlspolicy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend Config Policy with zone-aware force", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/zone-aware-force.yaml"},
+			outputFile: "backendconfigpolicy/zone-aware-force.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -3081,6 +3225,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/oauth2.yaml"},
 			outputFile: "traffic-policy/oauth2.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("OAuth2 policy with separate JWKS backend", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/oauth2-jwks-backend.yaml"},
+			outputFile: "traffic-policy/oauth2-jwks-backend.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "test",

@@ -13,6 +13,8 @@ Clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.least_request.v3.LeastRequest
           choiceCount: 3
+          localityLbConfig:
+            localityWeightedLbConfig: {}
   name: kube_default_httpbin-lr_8080
   type: EDS
 - commonLbConfig: {}
@@ -43,6 +45,8 @@ Clusters:
         name: envoy.load_balancing_policies.random
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.random.v3.Random
+          localityLbConfig:
+            localityWeightedLbConfig: {}
   name: kube_default_httpbin-random_8080
   type: EDS
 - commonLbConfig: {}
@@ -74,6 +78,8 @@ Clusters:
         name: envoy.load_balancing_policies.round_robin
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.round_robin.v3.RoundRobin
+          localityLbConfig:
+            localityWeightedLbConfig: {}
           slowStartConfig:
             aggression:
               defaultValue: 1.5

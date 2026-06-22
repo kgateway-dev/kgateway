@@ -137,9 +137,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				NewGatewayTranslationPass: newPlug,
 			},
 		},
-		ContributesLeaderAction: map[schema.GroupKind]func(){
-			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(cli, bcol),
-		},
 		ExtraHasSynced: ec2Endpoints.HasSynced,
 	}
 }

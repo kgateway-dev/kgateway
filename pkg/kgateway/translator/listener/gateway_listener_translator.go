@@ -683,6 +683,66 @@ type httpFilterChainParent struct {
 	listenerReporter    reports.ListenerReporter
 }
 
+func filterHTTPListenerIsolationHostnames(parent httpFilterChainParent, parents []httpFilterChainParent, hostnames []string) []string {
+	filteredHostnames := make([]string, 0, len(hostnames))
+	for _, hostname := range hostnames {
+		if hostnameOwnedByMoreSpecificHTTPListener(parent, parents, hostname) {
+			continue
+		}
+		filteredHostnames = append(filteredHostnames, hostname)
+	}
+	return filteredHostnames
+}
+
+func hostnameOwnedByMoreSpecificHTTPListener(parent httpFilterChainParent, parents []httpFilterChainParent, routeHostname string) bool {
+	for _, candidate := range parents {
+		if candidate.gatewayListenerName == parent.gatewayListenerName {
+			continue
+		}
+		if !listenerHostnameCoversRouteHostname(candidate.gatewayListener.Hostname, routeHostname) {
+			continue
+		}
+		if listenerHostnamePrecedes(parent.gatewayListener.Hostname, candidate.gatewayListener.Hostname) {
+			return true
+		}
+	}
+	return false
+}
+
+func listenerHostnameCoversRouteHostname(listenerHostname *gwv1.Hostname, routeHostname string) bool {
+	if listenerHostname == nil || *listenerHostname == "" {
+		return true
+	}
+	if routeHostname == "*" {
+		return false
+	}
+
+	intersection, ok := query.IntersectHostnames(string(*listenerHostname), routeHostname)
+	return ok && intersection == routeHostname
+}
+
+func listenerHostnamePrecedes(current, candidate *gwv1.Hostname) bool {
+	currentRank, currentSpecificity := listenerHostnamePrecedence(current)
+	candidateRank, candidateSpecificity := listenerHostnamePrecedence(candidate)
+	if currentRank != candidateRank {
+		return candidateRank > currentRank
+	}
+	return candidateSpecificity > currentSpecificity
+}
+
+func listenerHostnamePrecedence(hostname *gwv1.Hostname) (int, int) {
+	if hostname == nil || *hostname == "" {
+		return 0, 0
+	}
+
+	hostnameString := string(*hostname)
+	if after, ok := strings.CutPrefix(hostnameString, "*."); ok {
+		return 1, strings.Count(after, ".")
+	}
+
+	return 2, 0
+}
+
 func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	ctx context.Context,
 	parentName string,
@@ -690,11 +750,14 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 ) ir.HttpFilterChainIR {
 	routesByHost := map[string]routeutils.SortableRoutes{}
 	for _, parent := range httpFilterChain.parents {
-		buildRoutesPerHost(
+		buildRoutesPerHostWithHostnamesFilter(
 			ctx,
 			routesByHost,
 			parent.routesWithHosts,
 			reporter,
+			func(hostnames []string) []string {
+				return filterHTTPListenerIsolationHostnames(parent, httpFilterChain.parents, hostnames)
+			},
 		)
 	}
 
@@ -863,6 +926,18 @@ func buildRoutesPerHost(
 	routes []*query.RouteInfo,
 	reporter reports.Reporter,
 ) {
+	buildRoutesPerHostWithHostnamesFilter(ctx, routesByHost, routes, reporter, nil)
+}
+
+type routeHostnamesFilter func([]string) []string
+
+func buildRoutesPerHostWithHostnamesFilter(
+	ctx context.Context,
+	routesByHost map[string]routeutils.SortableRoutes,
+	routes []*query.RouteInfo,
+	reporter reports.Reporter,
+	filter routeHostnamesFilter,
+) {
 	for _, routeWithHosts := range routes {
 		parentRefReporter := reporter.Route(routeWithHosts.Object.GetSourceObject()).ParentRef(&routeWithHosts.ParentRef)
 		routes := route.TranslateGatewayHTTPRouteRules(
@@ -876,14 +951,25 @@ func buildRoutesPerHost(
 			continue
 		}
 
-		hostnames := routeWithHosts.Hostnames()
+		hostnames := routeHostnamesOrCatchAll(routeWithHosts)
+		if filter != nil {
+			hostnames = filter(hostnames)
+		}
 		if len(hostnames) == 0 {
-			hostnames = []string{"*"}
+			continue
 		}
 		for _, host := range hostnames {
 			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object.GetSourceObject(), routes)...)
 		}
 	}
+}
+
+func routeHostnamesOrCatchAll(routeWithHosts *query.RouteInfo) []string {
+	hostnames := routeWithHosts.Hostnames()
+	if len(hostnames) == 0 {
+		return []string{"*"}
+	}
+	return hostnames
 }
 
 // resolveFrontendTLSConfig resolves the FrontendTLSConfig for a specific port.

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
@@ -125,7 +124,7 @@ func mergeParentChildRouteMatch(
 
 	if child.Path == nil {
 		child.Path = &gwv1.HTTPPathMatch{
-			Type:  ptr.To(gwv1.PathMatchPathPrefix),
+			Type:  new(gwv1.PathMatchPathPrefix),
 			Value: new(""),
 		}
 	}

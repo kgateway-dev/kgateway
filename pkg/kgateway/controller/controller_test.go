@@ -23,7 +23,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
@@ -188,7 +187,7 @@ func (s *ControllerSuite) TestGatewayStatus() {
 				},
 				Spec: gwv1.GatewaySpec{
 					Addresses: []gwv1.GatewaySpecAddress{{
-						Type:  ptr.To(gwv1.IPAddressType),
+						Type:  new(gwv1.IPAddressType),
 						Value: localhost,
 					}},
 					GatewayClassName: gwv1.ObjectName(tc.gatewayClass),
@@ -197,7 +196,7 @@ func (s *ControllerSuite) TestGatewayStatus() {
 						Port:     80,
 						AllowedRoutes: &gwv1.AllowedRoutes{
 							Namespaces: &gwv1.RouteNamespaces{
-								From: ptr.To(gwv1.NamespacesFromSame),
+								From: new(gwv1.NamespacesFromSame),
 							},
 						},
 						Name: "listener",
@@ -261,7 +260,7 @@ func (s *ControllerSuite) TestInvalidGatewayParameters() {
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
 				Deployment: &kgateway.ProxyDeployment{
-					Replicas: ptr.To[int32](2),
+					Replicas: new(int32(2)),
 				},
 			},
 		},
@@ -345,7 +344,7 @@ func (s *ControllerSuite) TestMetrics() {
 					Port:     80,
 					AllowedRoutes: &gwv1.AllowedRoutes{
 						Namespaces: &gwv1.RouteNamespaces{
-							From: ptr.To(gwv1.NamespacesFromSame),
+							From: new(gwv1.NamespacesFromSame),
 						},
 					},
 					Name: "listener",
@@ -604,7 +603,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 			Group:     "different.group",
 			Kind:      "DifferentKind",
 			Name:      "different-params",
-			Namespace: ptr.To(gwv1.Namespace("different-namespace")),
+			Namespace: new(gwv1.Namespace("different-namespace")),
 		}
 		err := s.client.Patch(ctx, gwc, client.MergeFrom(original))
 		r.NoError(err)
@@ -762,7 +761,7 @@ func (s *ControllerSuite) startController(
 				Group:     gwv1.Group(wellknown.GatewayParametersGVK.Group),
 				Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 				Name:      selfManagedGatewayClassName,
-				Namespace: ptr.To(gwv1.Namespace("default")),
+				Namespace: new(gwv1.Namespace("default")),
 			},
 			SupportedFeatures: supportedFeatures,
 		},

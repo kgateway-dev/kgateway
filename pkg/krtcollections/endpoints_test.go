@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	. "github.com/onsi/gomega"
@@ -587,7 +586,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
@@ -709,7 +708,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("not-second-port"),
 							Port:     new(int32(3001)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
@@ -836,7 +835,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
@@ -987,7 +986,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
@@ -1107,7 +1106,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
@@ -1137,7 +1136,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
@@ -1257,7 +1256,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
@@ -1343,17 +1342,17 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("third-port"),
 							Port:     new(int32(3000)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 						{
 							Name:     new("first-port"),
 							Port:     new(int32(3000)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 						{
 							Name:     new("second-port"),
 							Port:     new(int32(3001)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},

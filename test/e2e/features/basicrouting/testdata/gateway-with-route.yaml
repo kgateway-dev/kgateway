@@ -32,4 +32,21 @@ spec:
   rules:
     - backendRefs:
         - name: example-svc
+          namespace: nginx-shared
           port: 8080
+---
+# Authorizes the default-ns HTTPRoutes in this suite to reference the shared nginx
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-default-httproutes
+  namespace: nginx-shared
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: default
+  to:
+    - group: ""
+      kind: Service
+      

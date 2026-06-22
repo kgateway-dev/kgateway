@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
@@ -81,8 +80,8 @@ func flattenDelegatedRoutes(
 
 		// Create a new reporter for the child route
 		reporter := baseReporter.Route(childRoute.GetSourceObject()).ParentRef(&gwv1.ParentReference{
-			Group:     ptr.To(gwv1.Group(wellknown.GatewayGroup)),
-			Kind:      ptr.To(gwv1.Kind(wellknown.HTTPRouteKind)),
+			Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+			Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
 			Name:      gwv1.ObjectName(parentRef.Name),
 			Namespace: new(gwv1.Namespace(parentRef.Namespace)),
 		})

@@ -19,8 +19,8 @@ func TestHttpACLIREquals(t *testing.T) {
 			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 				Name: httpACLModuleName,
 			},
-			PerRouteConfigName: httpACLFilterName,
-			FilterConfig:       filterCfg,
+			FilterName:   httpACLFilterName,
+			FilterConfig: filterCfg,
 		}
 	}
 

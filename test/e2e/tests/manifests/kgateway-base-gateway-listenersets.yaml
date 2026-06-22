@@ -1,0 +1,19 @@
+# Base gateway variant with spec.allowedListeners  applied when the installed Gateway API supports ListenerSets
+# (experimental >= 1.3, standard >= 1.5).
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gateway
+  namespace: kgateway-base
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 80
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+  allowedListeners:
+    namespaces:
+      from: All

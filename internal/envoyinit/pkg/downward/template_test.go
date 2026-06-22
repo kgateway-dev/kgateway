@@ -15,6 +15,9 @@ type mockDownward struct {
 	podUID         string
 	nodeName       string
 	nodeIp         string
+	nodeZone       string
+	nodeRegion     string
+	nodeSubzone    string
 	podLabels      map[string]string
 	podAnnotations map[string]string
 }
@@ -28,6 +31,9 @@ func (di *mockDownward) NodeName() string                  { return di.nodeName 
 func (di *mockDownward) NodeIp() string                    { return di.nodeIp }
 func (di *mockDownward) PodLabels() map[string]string      { return di.podLabels }
 func (di *mockDownward) PodAnnotations() map[string]string { return di.podAnnotations }
+func (di *mockDownward) NodeZone() string                  { return di.nodeZone }
+func (di *mockDownward) NodeRegion() string                { return di.nodeRegion }
+func (di *mockDownward) NodeSubzone() string               { return di.nodeSubzone }
 
 var _ = Describe("Template", func() {
 	var interpolator Interpolator

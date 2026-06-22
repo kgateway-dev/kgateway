@@ -10,7 +10,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -122,8 +121,8 @@ var _ = Describe("Query", func() {
 			hr.Spec.ParentRefs = []gwv1.ParentReference{
 				{
 					Name:  "test",
-					Group: ptr.To(gwv1.Group("")),
-					Kind:  ptr.To(gwv1.Kind("Service")),
+					Group: new(gwv1.Group("")),
+					Kind:  new(gwv1.Kind("Service")),
 				},
 			}
 
@@ -482,7 +481,7 @@ var _ = Describe("Query", func() {
 					Protocol: gwv1.TCPProtocolType,
 					AllowedRoutes: &gwv1.AllowedRoutes{
 						Namespaces: &gwv1.RouteNamespaces{
-							From: ptr.To(gwv1.NamespacesFromAll),
+							From: new(gwv1.NamespacesFromAll),
 						},
 					},
 				},
@@ -695,7 +694,7 @@ var _ = Describe("Query", func() {
 				Protocol: gwv1.TLSProtocolType,
 				AllowedRoutes: &gwv1.AllowedRoutes{
 					Namespaces: &gwv1.RouteNamespaces{
-						From: ptr.To(gwv1.NamespacesFromAll),
+						From: new(gwv1.NamespacesFromAll),
 					},
 				},
 			},
@@ -976,7 +975,7 @@ var _ = Describe("Query", func() {
 				Protocol: gwv1.HTTPProtocolType,
 				AllowedRoutes: &gwv1.AllowedRoutes{
 					Namespaces: &gwv1.RouteNamespaces{
-						From: ptr.To(gwv1.NamespacesFromAll),
+						From: new(gwv1.NamespacesFromAll),
 					},
 				},
 			},
@@ -1343,7 +1342,7 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	}
 	mock := krttest.NewMock(t, anys)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
-	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
+	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock), apisettings.ReferenceGrantPermissive)
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, apisettings.Settings{})
 	upstreams := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)

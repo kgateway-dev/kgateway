@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -132,7 +131,7 @@ func TestGetBackendFromRefReturnsPolicyAttachedBackend(t *testing.T) {
 		},
 		apisettings.Settings{},
 	)
-	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
+	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock), apisettings.ReferenceGrantPermissive)
 	backends := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	serviceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		out := make([]ir.BackendObjectIR, 0, len(svc.Spec.Ports))
@@ -166,7 +165,7 @@ func TestGetBackendFromRefReturnsPolicyAttachedBackend(t *testing.T) {
 
 	backend443, err := backends.GetBackendFromRef(krt.TestingDummyContext{}, src, gwv1.BackendObjectReference{
 		Name: "backend-service",
-		Port: ptr.To(gwv1.PortNumber(443)),
+		Port: new(gwv1.PortNumber(443)),
 	})
 	require.NoError(t, err)
 	require.Len(t, backend443.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()], 1)
@@ -175,7 +174,7 @@ func TestGetBackendFromRefReturnsPolicyAttachedBackend(t *testing.T) {
 
 	backend8443, err := backends.GetBackendFromRef(krt.TestingDummyContext{}, src, gwv1.BackendObjectReference{
 		Name: "backend-service",
-		Port: ptr.To(gwv1.PortNumber(8443)),
+		Port: new(gwv1.PortNumber(8443)),
 	})
 	require.NoError(t, err)
 	require.Len(t, backend8443.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()], 1)
@@ -254,7 +253,7 @@ func TestBackendPoliciesUpdateWhenBackendTLSPolicyCreatedAfterService(t *testing
 		},
 		settings,
 	)
-	refgrants := NewRefGrantIndex(krt.NewStaticCollection[*gwv1b1.ReferenceGrant](nil, nil, krtopts.ToOptions("RefGrants")...))
+	refgrants := NewRefGrantIndex(krt.NewStaticCollection[*gwv1b1.ReferenceGrant](nil, nil, krtopts.ToOptions("RefGrants")...), apisettings.ReferenceGrantPermissive)
 	backends := NewBackendIndex(krtopts, policies, refgrants)
 	serviceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		out := make([]ir.BackendObjectIR, 0, len(svc.Spec.Ports))
@@ -287,7 +286,7 @@ func TestBackendPoliciesUpdateWhenBackendTLSPolicyCreatedAfterService(t *testing
 
 	backend, err := backends.GetBackendFromRef(krt.TestingDummyContext{}, src, gwv1.BackendObjectReference{
 		Name: "backend-service",
-		Port: ptr.To(gwv1.PortNumber(443)),
+		Port: new(gwv1.PortNumber(443)),
 	})
 	require.NoError(t, err)
 	require.Empty(t, backend.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()])
@@ -330,7 +329,7 @@ func TestBackendPoliciesUpdateWhenBackendTLSPolicyCreatedAfterService(t *testing
 	require.Eventually(t, func() bool {
 		updatedBackend, err := backends.GetBackendFromRef(krt.TestingDummyContext{}, src, gwv1.BackendObjectReference{
 			Name: "backend-service",
-			Port: ptr.To(gwv1.PortNumber(443)),
+			Port: new(gwv1.PortNumber(443)),
 		})
 		if err != nil {
 			return false

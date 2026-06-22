@@ -274,7 +274,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 	}
 
 	if s.validator == nil {
-		s.validator = validator.NewBinary()
+		s.validator = validator.New(*s.globalSettings)
 	}
 
 	return s, nil
@@ -287,6 +287,7 @@ func (s *setup) Start(ctx context.Context) error {
 
 	metrics.SetRegistry(s.globalSettings.EnableBuiltinDefaultMetrics, nil)
 	metrics.SetActive(!(mgrOpts.Metrics.BindAddress == "" || mgrOpts.Metrics.BindAddress == "0"))
+	validator.RecordValidationMode(s.globalSettings.ValidationMode, s.globalSettings.ValidatorMode)
 
 	mgr, err := ctrl.NewManager(s.restConfig, *mgrOpts)
 	if err != nil {
@@ -305,7 +306,9 @@ func (s *setup) Start(ctx context.Context) error {
 	}
 
 	// Create shared certificate watcher if TLS is enabled. This watcher is used by both the xDS server
-	// and the Gateway controller to kick reconciliation on cert changes.
+	// and the Gateway controller to kick reconciliation on cert changes. New() synchronously loads
+	// the cert, so GetCertificate is usable immediately; the manager runs Start() to enable rotation
+	// and propagates any failure as a fatal manager error rather than swallowing it.
 	var certWatcher *certwatcher.CertWatcher
 	if s.globalSettings.XdsTLS {
 		var err error
@@ -313,12 +316,9 @@ func (s *setup) Start(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		go func() {
-			if err := certWatcher.Start(ctx); err != nil {
-				slog.Error("failed to start TLS certificate watcher", "error", err)
-			}
-			slog.Info("started TLS certificate watcher")
-		}()
+		if err := mgr.Add(certWatcher); err != nil {
+			return fmt.Errorf("failed to register TLS certificate watcher with manager: %w", err)
+		}
 	}
 
 	// Only create Envoy control plane if Envoy controller is enabled

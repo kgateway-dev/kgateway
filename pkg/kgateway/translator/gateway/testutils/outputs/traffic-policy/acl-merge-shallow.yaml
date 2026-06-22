@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -66,7 +68,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"defaultAction":"deny","rules":[{"cidrs":["192.168.0.0/16"],"action":"allow"}]}'
-      perRouteConfigName: http-acl
+      filterName: http-acl
   virtualHosts:
   - domains:
     - test.com
@@ -91,7 +93,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"allow","rules":[{"cidrs":["10.10.0.0/16"],"action":"deny"}]}'
-          perRouteConfigName: http-acl
+          filterName: http-acl
     - match:
         pathSeparatedPrefix: /route-1
       name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0

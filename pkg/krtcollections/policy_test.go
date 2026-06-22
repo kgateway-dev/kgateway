@@ -15,7 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -344,7 +343,7 @@ func backend(ns string) *kgateway.Backend {
 			Namespace: ns,
 		},
 		Spec: kgateway.BackendSpec{
-			Type: ptr.To(kgateway.BackendTypeStatic),
+			Type: new(kgateway.BackendTypeStatic),
 			Static: &kgateway.StaticBackend{
 				Hosts: []kgateway.Host{
 					{
@@ -505,7 +504,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 		},
 		apisettings.Settings{},
 	)
-	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
+	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock), apisettings.ReferenceGrantPermissive)
 	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	backends := krttest.GetMockCollection[*kgateway.Backend](mock)
@@ -634,7 +633,7 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 										BackendRef: gwv1.BackendRef{
 											BackendObjectReference: gwv1.BackendObjectReference{
 												Name: gwv1.ObjectName("foo"),
-												Port: ptr.To(gwv1.PortNumber(8080)),
+												Port: new(gwv1.PortNumber(8080)),
 											},
 										},
 									},
