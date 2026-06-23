@@ -50,56 +50,63 @@ const (
 
 var zoneAwareZones = []string{zoneA, zoneB, zoneC}
 
+// Zone-aware e2e tests require multi-node setup, thus not registered to e2e suite and should be run manually.
+// See the zone-aware-routing.md guide for details.
+
 func TestZoneAwareRouting(t *testing.T) {
 	ctx := context.Background()
-	ti := newZoneAwareTestInstallation(t)
+	testInstallation := newZoneAwareTestInstallation(t)
 
-	assertions := ti.AssertionsT(t)
+	testutils.Cleanup(t, func() {
+		cleanupCtx := context.Background()
+		if t.Failed() {
+			testInstallation.PreFailHandler(cleanupCtx, t)
+		}
+		_ = deleteZoneAwarePolicies(cleanupCtx, testInstallation)
+		_ = testInstallation.Actions.Kubectl().DeleteFileSafe(cleanupCtx, zoneAwareTestData("base.yaml"))
+	})
+
+	assertions := testInstallation.AssertionsT(t)
 	assertions.EventuallyReadyReplicas(ctx, metav1.ObjectMeta{
 		Name:      "kgateway",
 		Namespace: "kgateway-system",
 	}, gomega.BeNumerically(">=", 1), 2*time.Minute)
 
-	require.NoError(t, deleteZoneAwarePolicies(ctx, ti))
-	applyZoneAwareManifest(t, ctx, ti, zoneAwareTestData("base.yaml"))
-	testutils.Cleanup(t, func() {
-		cleanupCtx := context.Background()
-		_ = deleteZoneAwarePolicies(cleanupCtx, ti)
-		_ = ti.Actions.Kubectl().DeleteFileSafe(cleanupCtx, zoneAwareTestData("base.yaml"))
-	})
+	require.NoError(t, deleteZoneAwarePolicies(ctx, testInstallation))
+	applyZoneAwareManifest(t, ctx, testInstallation, zoneAwareTestData("base.yaml"))
 
-	waitForZoneAwareResources(t, ctx, ti)
-	waitForZoneAwareCluster(t, ctx, ti, false)
+	waitForZoneAwareResources(t, ctx, testInstallation)
+	waitForZoneAwareCluster(t, ctx, testInstallation, false)
 
 	t.Run("default routing is evenly distributed across zones", func(t *testing.T) {
-		counts := eventuallyDistribution(t, ctx, ti, 90, expectEvenDistribution)
+		counts := eventuallyDistribution(t, ctx, testInstallation, 90, expectEvenDistribution)
 		t.Logf("default distribution: %s", counts)
 	})
 
 	t.Run("prefer local routes all traffic to the local zone with enough capacity", func(t *testing.T) {
-		applyZoneAwareManifest(t, ctx, ti, zoneAwareTestData("prefer-local.yaml"))
-		waitForZoneAwareCluster(t, ctx, ti, true)
-		waitForEndpointCount(t, ctx, ti, 3)
+		applyZoneAwareManifest(t, ctx, testInstallation, zoneAwareTestData("prefer-local.yaml"))
+		waitForZoneAwareCluster(t, ctx, testInstallation, true)
+		waitForEndpointCount(t, ctx, testInstallation, 3)
 
-		counts := eventuallyDistribution(t, ctx, ti, 90, expectAllLocal)
+		counts := eventuallyDistribution(t, ctx, testInstallation, 90, expectAllLocal)
 		t.Logf("prefer-local distribution: %s", counts)
 	})
 
 	t.Run("prefer local spills over when local capacity is insufficient", func(t *testing.T) {
-		scaleZoneAwareDeployment(t, ctx, ti, "zone-backend-b", 3)
-		scaleZoneAwareDeployment(t, ctx, ti, "zone-backend-c", 2)
-		waitForEndpointCount(t, ctx, ti, 6)
+		scaleZoneAwareDeployment(t, ctx, testInstallation, "zone-backend-b", 3)
+		scaleZoneAwareDeployment(t, ctx, testInstallation, "zone-backend-c", 2)
+		waitForEndpointCount(t, ctx, testInstallation, 6)
 
-		counts := eventuallyDistribution(t, ctx, ti, 120, expectSomeCrossZone)
+		counts := eventuallyDistribution(t, ctx, testInstallation, 120, expectSomeCrossZone)
 		t.Logf("prefer-local insufficient-capacity distribution: %s", counts)
 	})
 
 	t.Run("force local keeps traffic local even when local capacity is insufficient", func(t *testing.T) {
-		applyZoneAwareManifest(t, ctx, ti, zoneAwareTestData("force-local.yaml"))
-		waitForZoneAwareCluster(t, ctx, ti, true)
-		waitForEndpointCount(t, ctx, ti, 6)
+		applyZoneAwareManifest(t, ctx, testInstallation, zoneAwareTestData("force-local.yaml"))
+		waitForZoneAwareCluster(t, ctx, testInstallation, true)
+		waitForEndpointCount(t, ctx, testInstallation, 6)
 
-		counts := eventuallyDistribution(t, ctx, ti, 120, expectAllLocal)
+		counts := eventuallyDistribution(t, ctx, testInstallation, 120, expectAllLocal)
 		t.Logf("force-local distribution: %s", counts)
 	})
 }
