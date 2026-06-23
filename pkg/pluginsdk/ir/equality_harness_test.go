@@ -15,6 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -538,14 +539,16 @@ func TestHarnessListenerEquals(t *testing.T) {
 			},
 		},
 		{
-			// Replace parent with a Gateway of a different name → unequal.
+			// Bump the parent's ResourceVersion → versionEquals detects a change
+			// (the base parent has Generation 0, so versionEquals falls back to
+			// ResourceVersion + UID).
 			Field: "Parent",
 			Mutate: func(l *Listener) {
 				l.Parent = &gwv1.Gateway{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "other-gateway",
+						Name:            "my-gateway",
 						Namespace:       "default",
-						ResourceVersion: "1",
+						ResourceVersion: "2",
 					},
 				}
 			},
@@ -587,67 +590,51 @@ func TestHarnessListenerEquals(t *testing.T) {
 	)
 }
 
-// TestListenerEqualsIgnoresParentVersion verifies that two Listeners whose
-// parents differ ONLY in ResourceVersion (i.e. same identity: name, namespace,
-// type) compare as EQUAL. This is the core semantic of the field-wise Equals:
-// parent content changes are detected by versionEquals on Gateway.Obj /
-// ListenerSet.Obj in the enclosing Equals; duplicating that check here would
-// only add spurious false-inequality from status writes.
-func TestListenerEqualsIgnoresParentVersion(t *testing.T) {
+// TestListenerEqualsIgnoresStatusOnlyParentUpdates verifies that a status-only
+// write to the parent (which bumps ResourceVersion but not Generation) does NOT
+// make two Listeners compare unequal, while a spec change (which bumps
+// Generation) does. This mirrors the versionEquals semantics used in
+// Listener.Equals to avoid spurious re-translations on status writes.
+func TestListenerEqualsIgnoresStatusOnlyParentUpdates(t *testing.T) {
 	base := baseHarnessFullListener()
-
-	// Make a copy whose parent has a different ResourceVersion but same identity.
-	other := baseHarnessFullListener()
-	other.Parent = &gwv1.Gateway{
+	base.Parent = &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "my-gateway",
 			Namespace:       "default",
-			ResourceVersion: "999", // only difference
-		},
-	}
-
-	if !base.Equals(other) {
-		t.Error("Listener.Equals returned false for parents that differ only in ResourceVersion; expected true (identity comparison only)")
-	}
-}
-
-// TestListenerEqualsNormalizesParentTypeMeta verifies that a Gateway parent
-// with TypeMeta populated compares equal to the same Gateway without it (as
-// typed informers leave TypeMeta empty), and that a populated TypeMeta still
-// distinguishes genuinely different GVKs.
-func TestListenerEqualsNormalizesParentTypeMeta(t *testing.T) {
-	base := baseHarnessFullListener()
-
-	withTypeMeta := baseHarnessFullListener()
-	withTypeMeta.Parent = &gwv1.Gateway{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       "Gateway",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "my-gateway",
-			Namespace:       "default",
+			UID:             types.UID("my-gateway-uid"),
 			ResourceVersion: "1",
+			Generation:      1,
 		},
-	}
-	if !base.Equals(withTypeMeta) {
-		t.Error("Listener.Equals returned false for identical Gateway parents that differ only in TypeMeta presence; expected true")
 	}
 
-	wrongKind := baseHarnessFullListener()
-	wrongKind.Parent = &gwv1.Gateway{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       "NotAGateway",
-		},
+	// Status-only write: ResourceVersion bumps, Generation does not → equal.
+	statusOnly := baseHarnessFullListener()
+	statusOnly.Parent = &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "my-gateway",
 			Namespace:       "default",
-			ResourceVersion: "1",
+			UID:             types.UID("my-gateway-uid"),
+			ResourceVersion: "2",
+			Generation:      1,
 		},
 	}
-	if base.Equals(wrongKind) {
-		t.Error("Listener.Equals returned true for parents with different GVKs; expected false")
+	if !base.Equals(statusOnly) {
+		t.Error("Listener.Equals returned false for a status-only parent update (ResourceVersion bumped, Generation unchanged); expected true")
+	}
+
+	// Spec change: Generation bumps → unequal.
+	specChange := baseHarnessFullListener()
+	specChange.Parent = &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "my-gateway",
+			Namespace:       "default",
+			UID:             types.UID("my-gateway-uid"),
+			ResourceVersion: "3",
+			Generation:      2,
+		},
+	}
+	if base.Equals(specChange) {
+		t.Error("Listener.Equals returned true for a parent spec change (Generation bumped); expected false")
 	}
 }
 

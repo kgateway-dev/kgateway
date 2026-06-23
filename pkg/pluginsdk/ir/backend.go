@@ -412,50 +412,22 @@ func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.
 }
 
 func (c Listener) Equals(in Listener) bool {
-	return reflect.DeepEqual(c.Listener, in.Listener) && // plain gwv1 API struct, no protos
-		parentRefEquals(c.Parent, in.Parent) &&
-		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
-		reflect.DeepEqual(c.PolicyAncestorRef, in.PolicyAncestorRef) // plain gwv1 API struct
-}
-
-// parentRefEquals compares the parent by identity (GVK + namespace/name).
-// Content changes to the parent are detected by versionEquals on Gateway.Obj /
-// ListenerSet.Obj in the enclosing Equals, so comparing content here would only
-// re-add spurious inequality (e.g. resourceVersion bumps from status writes).
-func parentRefEquals(a, b client.Object) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	gvkA := parentGVK(a)
-	gvkB := parentGVK(b)
-	// Unknown parent kind with no TypeMeta on either side: fall back to the
-	// concrete Go type so that two same-kind parents from the same collection
-	// still compare correctly.
-	if gvkA.Empty() && gvkB.Empty() {
-		if reflect.TypeOf(a) != reflect.TypeOf(b) {
-			return false
-		}
-	} else if gvkA != gvkB {
+	// Use versionEquals for Parent (raw *gwv1.Gateway or *gwv1.ListenerSet) so that
+	// status-only writes (which bump resourceVersion but not generation) do not cause
+	// reflect.DeepEqual to return false and trigger unnecessary re-translations.
+	if (c.Parent == nil) != (in.Parent == nil) {
 		return false
 	}
-	return a.GetNamespace() == b.GetNamespace() &&
-		a.GetName() == b.GetName()
-}
-
-// parentGVK returns the object's GVK, normalizing the empty TypeMeta that
-// typed informers leave behind for known parent kinds, so a parent built with
-// TypeMeta set compares equal to the same parent from an informer.
-// ListenerSet is deliberately not normalized: the same Go type serves both the
-// standard ListenerSetGVK and the legacy XListenerSetGVK, so its GVK cannot be
-// inferred from the type, and in practice it always arrives populated.
-func parentGVK(obj client.Object) schema.GroupVersionKind {
-	if gvk := obj.GetObjectKind().GroupVersionKind(); !gvk.Empty() {
-		return gvk
+	// Currently, only Gateway and ListenerSet's Equals() calls Listener.Equals(),
+	// and both of those check versionEquals on the Parent before calling Listener.Equals(),
+	// so, this versionEquals check is somewhat redundant, but it's safer to have it here in
+	// case Listener.Equals() is called directly in the future without a Parent version check.
+	if c.Parent != nil && !versionEquals(c.Parent, in.Parent) {
+		return false
 	}
-	if _, ok := obj.(*gwv1.Gateway); ok {
-		return wellknown.GatewayGVK
-	}
-	return schema.GroupVersionKind{}
+	return reflect.DeepEqual(c.Listener, in.Listener) &&
+		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
+		reflect.DeepEqual(c.PolicyAncestorRef, in.PolicyAncestorRef)
 }
 
 type GatewayForDeployer struct {
