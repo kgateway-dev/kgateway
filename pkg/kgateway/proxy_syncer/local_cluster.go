@@ -54,7 +54,7 @@ func NewPerClientLocalClusterEndpoints(
 			return nil
 		}
 
-		logger.Debug("building local cluster CLA", "localClusterName", localClusterName, "gateway", gatewayName, "namespace", gatewayNamespace)
+		logger.Debug("building local cluster CLA", "local_cluster_name", localClusterName, "gateway", gatewayName, "namespace", gatewayNamespace)
 		gwPods := krt.Fetch(kctx, localityPods, krt.FilterIndex(podsByGateway, gatewayPodIndexKey(gatewayNamespace, gatewayName)))
 		cla := buildLocalClusterLoadAssignment(localClusterName, gwPods)
 		return &UccWithEndpoints{

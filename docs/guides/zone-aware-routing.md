@@ -107,8 +107,7 @@ spec:
 - The `KGATEWAY_NODE_*` values must match the actual node locality of the proxy.
 - If you hardcode locality values, pin the proxy to the matching zone.
 - If you source the values from the Kubernetes Downward API, put the locality values on the proxy pod as labels or annotations first. Envoy cannot read Kubernetes node labels directly.
-- If a proxy pod is replaced (node failure, eviction, rollout), the replacement pod starts without labels. Its env vars resolve empty, the proxy advertises no locality, and zone-aware routing falls back to even distribution for that proxy.
-- If the proxy moves to another zone without the env vars changing, Envoy will advertise the wrong locality.
+- If you use the Downward API for env vars, ensure the locality labels/annotations are present at pod creation time. Environment variables are not updated if labels are added later, so a pod that starts without them will advertise no locality until it is restarted.- If the proxy moves to another zone without the env vars changing, Envoy will advertise the wrong locality.
 - Zone-aware routing also depends on upstream endpoint locality metadata being present.
 
 ## Current limitation
