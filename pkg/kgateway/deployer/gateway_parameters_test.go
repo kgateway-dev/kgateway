@@ -12,7 +12,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -122,7 +121,7 @@ func defaultGatewayClass() *gwv1.GatewayClass {
 				Group:     kgateway.GroupName,
 				Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 				Name:      wellknown.DefaultGatewayParametersName,
-				Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
+				Namespace: new(gwv1.Namespace(defaultNamespace)),
 			},
 		},
 	}

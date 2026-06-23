@@ -43,12 +43,12 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     auth:
       type: Secret
       secretRef:
         name: aws-creds
     lambda:
+      accountId: "000000000000"
       functionName: hello-function
       endpointURL: "http://172.18.0.2:31566"
       qualifier: prod
@@ -61,12 +61,12 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     auth:
       type: Secret
       secretRef:
         name: aws-creds
     lambda:
+      accountId: "000000000000"
       functionName: hello-function
       endpointURL: "http://172.18.0.2:31566"
       qualifier: dev
@@ -79,11 +79,11 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     auth:
       type: Secret
       secretRef:
         name: aws-creds
     lambda:
+      accountId: "000000000000"
       functionName: hello-function
       endpointURL: "http://172.18.0.2:31566"

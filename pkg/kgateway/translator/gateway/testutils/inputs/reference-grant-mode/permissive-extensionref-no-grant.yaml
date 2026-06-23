@@ -1,0 +1,96 @@
+# ReferenceGrantMode=Permissive: TrafficPolicy references an ExtProc GatewayExtension in another
+# namespace without a ReferenceGrant. With Permissive mode, ExtensionRef cross-namespace references
+# are NOT checked, so the policy is accepted and ExtProc is applied.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+  namespace: default
+spec:
+  selector:
+    app: backend-svc
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+# TrafficPolicy references GatewayExtension in "other-ns" — no ReferenceGrant for this hop.
+# In Permissive mode this is allowed; in Strict mode it would be rejected.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-policy
+  namespace: default
+spec:
+  targetRefs:
+    - kind: HTTPRoute
+      group: gateway.networking.k8s.io
+      name: example-route
+  extProc:
+    extensionRef:
+      name: extproc-ext
+      namespace: other-ns
+---
+# GatewayExtension (ExtProc) lives in "other-ns" and uses a Service in the same namespace.
+# The GatewayExtension → Service ref is same-namespace, so no ReferenceGrant is needed there.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-ext
+  namespace: other-ns
+spec:
+  type: ExtProc
+  extProc:
+    grpcService:
+      backendRef:
+        group: ""
+        kind: Service
+        name: extproc-svc
+        namespace: other-ns
+        port: 9091
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extproc-svc
+  namespace: other-ns
+spec:
+  selector:
+    app: extproc-svc
+  ports:
+    - protocol: TCP
+      port: 9091
+      targetPort: 9091
+      appProtocol: kubernetes.io/h2c

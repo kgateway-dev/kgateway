@@ -28,6 +28,7 @@ var (
 	largeRulesetManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "large-ruleset.yaml")
 	validACLOnlyManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-acl-only.yaml")
 	invalidACLPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-acl-policy.yaml")
+	aclMergeManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "acl-merge.yaml")
 
 	// proxyObjectMeta targets the shared gateway deployment for Envoy admin API access.
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -90,6 +91,9 @@ var (
 		// The invalid TrafficPolicy is applied mid-test and cleaned up via defer.
 		"TestHttpACLValidWithInvalidCIDRPolicy": {
 			Manifests: []string{validACLOnlyManifest},
+		},
+		"TestHttpACLMerge": {
+			Manifests: []string{aclMergeManifest},
 		},
 	}
 )

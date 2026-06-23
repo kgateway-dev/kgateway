@@ -4,10 +4,15 @@ package loadtesting
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
+	dto "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -22,7 +27,6 @@ type LoadTestManager struct {
 	ctx              context.Context
 	testInstallation *e2e.TestInstallation
 	testNamespace    string
-	createdResources []client.Object
 	createdGateways  []*gwv1.Gateway
 	createdRoutes    []*gwv1.HTTPRoute
 	simulator        *VClusterSimulator
@@ -35,7 +39,6 @@ func NewLoadTestManager(ctx context.Context, testInstallation *e2e.TestInstallat
 		ctx:              ctx,
 		testInstallation: testInstallation,
 		testNamespace:    namespace,
-		createdResources: []client.Object{},
 		createdGateways:  []*gwv1.Gateway{},
 		createdRoutes:    []*gwv1.HTTPRoute{},
 		gatewayHandlers:  make(map[types.NamespacedName][]func(*gwv1.Gateway)),
@@ -87,7 +90,6 @@ func (ltm *LoadTestManager) createResource(resource client.Object) error {
 	if err := client.IgnoreAlreadyExists(err); err != nil {
 		return err
 	}
-	ltm.createdResources = append(ltm.createdResources, resource)
 	return nil
 }
 
@@ -128,7 +130,6 @@ func (ltm *LoadTestManager) CreateGateways(gatewayNames []string) error {
 		}
 
 		ltm.createdGateways = append(ltm.createdGateways, gateway)
-		ltm.createdResources = append(ltm.createdResources, gateway)
 	}
 	return nil
 }
@@ -344,49 +345,103 @@ func (ltm *LoadTestManager) CollectKGatewayMetrics() KGatewayMetrics {
 	}
 }
 
-func (ltm *LoadTestManager) DeleteAllRoutes() error {
-	if len(ltm.createdRoutes) == 0 {
-		return nil
+func (ltm *LoadTestManager) CollectKGatewayValidationMetrics() (ValidationMetrics, error) {
+	out := ValidationMetrics{ByCaller: map[string]ValidationCallerMetrics{}}
+	rawMetrics, err := ltm.fetchKGatewayMetrics()
+	if err != nil {
+		return out, err
 	}
 
-	// Convert []*gwv1.HTTPRoute to []client.Object
-	resources := make([]client.Object, len(ltm.createdRoutes))
-	for i, route := range ltm.createdRoutes {
-		resources[i] = route
+	parser := expfmt.NewTextParser(model.LegacyValidation)
+	families, err := parser.TextToMetricFamilies(strings.NewReader(string(rawMetrics)))
+	if err != nil {
+		return out, fmt.Errorf("parse kgateway metrics: %w", err)
 	}
 
-	return ltm.deleteResourcesConcurrently(resources)
+	addCounterFamily(families["kgateway_validation_calls_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.Calls += value
+		out.Calls += value
+	})
+	addCounterFamily(families["kgateway_validation_cache_hits_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.CacheHits += value
+		out.CacheHits += value
+	})
+	addCounterFamily(families["kgateway_validation_cache_misses_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.CacheMisses += value
+		out.CacheMisses += value
+	})
+	addCounterFamily(families["kgateway_validation_valid_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.Valid += value
+		out.Valid += value
+	})
+	addCounterFamily(families["kgateway_validation_invalid_xds_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.InvalidXDS += value
+		out.InvalidXDS += value
+	})
+	addCounterFamily(families["kgateway_validation_invocation_errors_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.InvocationErrors += value
+		out.InvocationErrors += value
+	})
+	addDurationFamily(families["kgateway_validation_duration_seconds"], &out)
+
+	return out, nil
 }
 
-func (ltm *LoadTestManager) deleteResourcesConcurrently(resources []client.Object) error {
-	const maxConcurrency = 25
-	sem := make(chan struct{}, maxConcurrency)
-	errChan := make(chan error, len(resources))
-
-	deleteOptions := &client.DeleteOptions{
-		GracePeriodSeconds: func() *int64 { i := int64(0); return &i }(),
-		PropagationPolicy:  func() *metav1.DeletionPropagation { p := metav1.DeletePropagationBackground; return &p }(),
+func (ltm *LoadTestManager) fetchKGatewayMetrics() ([]byte, error) {
+	namespace := ltm.testInstallation.Metadata.InstallNamespace
+	raw, err := ltm.testInstallation.ClusterContext.Clientset.CoreV1().
+		Services(namespace).
+		ProxyGet("http", controllerDeploymentName, "metrics", "/metrics", nil).
+		DoRaw(ltm.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("fetch kgateway metrics from service %s/%s: %w", namespace, controllerDeploymentName, err)
 	}
+	return raw, nil
+}
 
-	for _, resource := range resources {
-		sem <- struct{}{}
-		go func(r client.Object) {
-			defer func() { <-sem }()
-			err := ltm.testInstallation.ClusterContext.Client.Delete(ltm.ctx, r, deleteOptions)
-			if err != nil && client.IgnoreNotFound(err) != nil {
-				errChan <- fmt.Errorf("failed to delete resource: %w", err)
-				return
-			}
-			errChan <- nil
-		}(resource)
+func addCounterFamily(
+	family *dto.MetricFamily,
+	out *ValidationMetrics,
+	add func(*ValidationCallerMetrics, int64),
+) {
+	if family == nil {
+		return
 	}
+	for _, metric := range family.GetMetric() {
+		value := int64(metric.GetCounter().GetValue())
+		caller := metricLabel(metric, "caller")
+		callerMetrics := out.ByCaller[caller]
+		add(&callerMetrics, value)
+		out.ByCaller[caller] = callerMetrics
+	}
+}
 
-	for range resources {
-		if err := <-errChan; err != nil {
-			return err
+func addDurationFamily(family *dto.MetricFamily, out *ValidationMetrics) {
+	if family == nil {
+		return
+	}
+	for _, metric := range family.GetMetric() {
+		histogram := metric.GetHistogram()
+		if histogram == nil {
+			continue
+		}
+		caller := metricLabel(metric, "caller")
+		callerMetrics := out.ByCaller[caller]
+		callerMetrics.DurationCount += histogram.GetSampleCount()
+		callerMetrics.DurationSeconds += histogram.GetSampleSum()
+		out.ByCaller[caller] = callerMetrics
+		out.DurationCount += histogram.GetSampleCount()
+		out.DurationSeconds += histogram.GetSampleSum()
+	}
+}
+
+func metricLabel(metric *dto.Metric, name string) string {
+	for _, label := range metric.GetLabel() {
+		if label.GetName() == name {
+			return label.GetValue()
 		}
 	}
-	return nil
+	return "unknown"
 }
 
 func (ltm *LoadTestManager) GetSimulationMetrics() VClusterMetrics {
@@ -410,22 +465,56 @@ func (ltm *LoadTestManager) GetSimulationMetrics() VClusterMetrics {
 }
 
 func (ltm *LoadTestManager) CleanupAll() error {
-	ltm.DeleteAllRoutes()
+	var errs []error
 
 	if ltm.simulator != nil {
-		ltm.simulator.Cleanup()
+		errs = append(errs, ltm.simulator.Cleanup())
 	}
 
-	for i := len(ltm.createdResources) - 1; i >= 0; i-- {
-		resource := ltm.createdResources[i]
-		deleteOptions := &client.DeleteOptions{
-			GracePeriodSeconds: func() *int64 { i := int64(0); return &i }(),
-			PropagationPolicy:  func() *metav1.DeletionPropagation { p := metav1.DeletePropagationBackground; return &p }(),
-		}
+	if ltm.testNamespace != "" {
+		errs = append(errs, ltm.deleteNamespace(ltm.testNamespace))
+	}
 
-		if err := ltm.testInstallation.ClusterContext.Client.Delete(ltm.ctx, resource, deleteOptions); err != nil && client.IgnoreNotFound(err) != nil {
-			fmt.Printf("Warning: failed to delete resource %v: %v\n", resource, err)
+	ltm.simulator = nil
+	ltm.createdGateways = nil
+	ltm.createdRoutes = nil
+
+	return errors.Join(errs...)
+}
+
+func (ltm *LoadTestManager) cleanupLoadTestNamespaces() error {
+	namespaceNames := map[string]struct{}{}
+
+	labelSets := []client.MatchingLabels{
+		{"loadtest": "true"},
+		{"vcluster-simulation": "true"},
+	}
+
+	for _, labels := range labelSets {
+		namespaceList := &corev1.NamespaceList{}
+		if err := ltm.testInstallation.ClusterContext.Client.List(ltm.ctx, namespaceList, labels); err != nil {
+			return fmt.Errorf("failed to list load test namespaces: %w", err)
 		}
+		for _, namespace := range namespaceList.Items {
+			namespaceNames[namespace.Name] = struct{}{}
+		}
+	}
+
+	namespaceNames[LoadTestNamespace] = struct{}{}
+
+	var errs []error
+	for namespaceName := range namespaceNames {
+		errs = append(errs, ltm.deleteNamespace(namespaceName))
+	}
+	return errors.Join(errs...)
+}
+
+func (ltm *LoadTestManager) deleteNamespace(name string) error {
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+	}
+	if err := ltm.testInstallation.ClusterContext.Client.Delete(ltm.ctx, namespace); err != nil && client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("failed to delete namespace %s: %w", name, err)
 	}
 	return nil
 }

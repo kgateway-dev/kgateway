@@ -8,7 +8,9 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"k8s.io/utils/ptr"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
@@ -55,4 +57,39 @@ func SetExtensionProtocolOptions(out *envoyclusterv3.Cluster, filterName string,
 
 	out.GetTypedExtensionProtocolOptions()[filterName] = protoextAny
 	return nil
+}
+
+func EnvoyBodyFormat(format *shared.BodyFormat) (result *envoycorev3.SubstitutionFormatString, err error) {
+	if format == nil {
+		return nil, nil
+	}
+
+	switch {
+	case format.Text != nil:
+		result = &envoycorev3.SubstitutionFormatString{
+			Format: &envoycorev3.SubstitutionFormatString_TextFormatSource{
+				TextFormatSource: &envoycorev3.DataSource{
+					Specifier: &envoycorev3.DataSource_InlineString{
+						InlineString: *format.Text,
+					},
+				},
+			},
+		}
+	case format.JSON != nil:
+		jsonStruct, err := utils.JSONToProtoStruct(format.JSON.Raw)
+		if err != nil {
+			return nil, fmt.Errorf("body format JSON is invalid: %w", err)
+		}
+		result = &envoycorev3.SubstitutionFormatString{
+			Format: &envoycorev3.SubstitutionFormatString_JsonFormat{
+				JsonFormat: jsonStruct,
+			},
+		}
+	}
+	if result == nil {
+		return nil, fmt.Errorf("body format must specify either text or json")
+	}
+	result.ContentType = ptr.Deref(format.ContentType, "")
+
+	return result, nil
 }

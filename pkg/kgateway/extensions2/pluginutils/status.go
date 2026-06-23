@@ -5,14 +5,18 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
+// BuildCondition builds a resource's "Accepted" condition from its errors: True/Accepted when
+// there are none, False/Invalid otherwise, with the errors aggregated into the message.
 func BuildCondition(resource string, errs []error) metav1.Condition {
 	if len(errs) == 0 {
 		return metav1.Condition{
-			Type:    "Accepted",
+			Type:    string(kgateway.BackendConditionAccepted),
 			Status:  metav1.ConditionTrue,
-			Reason:  "Accepted",
+			Reason:  string(kgateway.BackendReasonAccepted),
 			Message: fmt.Sprintf("%s accepted", resource),
 		}
 	}
@@ -30,9 +34,9 @@ func BuildCondition(resource string, errs []error) metav1.Condition {
 		aggErrs.Write([]byte(`"`))
 	}
 	return metav1.Condition{
-		Type:    "Accepted",
+		Type:    string(kgateway.BackendConditionAccepted),
 		Status:  metav1.ConditionFalse,
-		Reason:  "Invalid",
+		Reason:  string(kgateway.BackendReasonInvalid),
 		Message: aggErrs.String(),
 	}
 }

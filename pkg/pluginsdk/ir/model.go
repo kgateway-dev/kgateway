@@ -95,6 +95,12 @@ type EndpointsForBackend struct {
 	// +krtEqualsTodo include backend labels in equality or confirm omission
 	BackendLabels map[string]string
 
+	// AttachedPolicies carries the policy attachment view already resolved for
+	// the backend. LbEpsEqualityHash includes backend policy versioning, so this
+	// field does not need to participate in equality directly.
+	// +noKrtEquals
+	AttachedPolicies AttachedPolicies
+
 	// +krtEqualsTodo compare load-balanced endpoint map
 	LbEps                LocalityLbMap
 	ClusterName          string
@@ -123,17 +129,18 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	// to mitigate https://github.com/envoyproxy/envoy/issues/13070 / https://github.com/envoyproxy/envoy/issues/13009
 
 	h := fnv.New64a()
+	objSrc := us.GetObjectSource()
 	h.Write([]byte(us.ResourceName()))
 	h.Write([]byte{0})
 	h.Write([]byte(us.ClusterName()))
 	h.Write([]byte{0})
-	h.Write([]byte(us.Group))
+	h.Write([]byte(objSrc.Group))
 	h.Write([]byte{0})
-	h.Write([]byte(us.Kind))
+	h.Write([]byte(objSrc.Kind))
 	h.Write([]byte{0})
-	h.Write([]byte(us.Name))
+	h.Write([]byte(objSrc.Name))
 	h.Write([]byte{0})
-	h.Write([]byte(us.Namespace))
+	h.Write([]byte(objSrc.Namespace))
 	for k, v := range labels {
 		h.Write([]byte{0})
 		h.Write([]byte(k + "=" + v))
@@ -144,10 +151,11 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 
 	return &EndpointsForBackend{
 		BackendLabels:        labels,
+		AttachedPolicies:     us.AttachedPolicies,
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          us.ClusterName(),
 		UpstreamResourceName: us.ResourceName(),
-		Port:                 uint32(us.Port), //nolint:gosec // G115: upstream port is always valid port range
+		Port:                 uint32(us.GetPort()), //nolint:gosec // G115: upstream port is always valid port range
 		Hostname:             us.CanonicalHostname,
 		LbEpsEqualityHash:    upstreamHash,
 		upstreamHash:         upstreamHash,
@@ -160,6 +168,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
 	return EndpointsForBackend{
 		BackendLabels:        e.BackendLabels,
+		AttachedPolicies:     e.AttachedPolicies,
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          e.ClusterName,
 		UpstreamResourceName: e.UpstreamResourceName,

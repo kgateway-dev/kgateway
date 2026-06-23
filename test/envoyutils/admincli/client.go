@@ -71,13 +71,15 @@ func NewClient() *Client {
 //
 // Designed to be used by tests and CLI from outside of a cluster where `kubectl` is present.
 // In all other cases, `NewClient` is preferred
-func NewPortForwardedClient(ctx context.Context, proxySelector, namespace string) (*Client, func(), error) {
+func NewPortForwardedClient(ctx context.Context, proxySelector, namespace string, pfOpts ...portforward.Option) (*Client, func(), error) {
 	selector := portforward.WithResourceSelector(proxySelector, namespace)
 
 	// 1. Open a port-forward to the Kubernetes Deployment, so that we can query the Envoy Admin API directly
-	portForwarder, err := kubectl.NewCli().StartPortForward(ctx,
+	pfArgs := append([]portforward.Option{
 		selector,
-		portforward.WithRemotePort(int(wellknown.EnvoyAdminPort)))
+		portforward.WithRemotePort(int(wellknown.EnvoyAdminPort)),
+	}, pfOpts...)
+	portForwarder, err := kubectl.NewCli().StartPortForward(ctx, pfArgs...)
 	if err != nil {
 		return nil, nil, err
 	}

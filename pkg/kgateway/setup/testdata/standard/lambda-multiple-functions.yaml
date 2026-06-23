@@ -77,13 +77,13 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     region: us-west-2
     auth:
       type: Secret
       secretRef:
         name: aws-creds-multi
     lambda:
+      accountId: "000000000000"
       functionName: auth-service
       invocationMode: Sync
 ---
@@ -96,13 +96,13 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     region: us-east-1
     auth:
       type: Secret
       secretRef:
         name: aws-creds-multi
     lambda:
+      accountId: "000000000000"
       functionName: orders-service
       invocationMode: Sync
 ---
@@ -115,9 +115,9 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     region: us-east-1
     lambda:
+      accountId: "000000000000"
       functionName: products-service
       invocationMode: Async
 ---
@@ -130,13 +130,13 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     region: us-west-2
     auth:
       type: Secret
       secretRef:
         name: aws-creds-multi
     lambda:
+      accountId: "000000000000"
       functionName: integration-service
       invocationMode: Sync
       endpointURL: "http://staging.localstack.dev:4566"

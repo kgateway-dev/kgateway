@@ -5,7 +5,8 @@ metadata:
   name: multi-rule-route
 spec:
   parentRefs:
-    - name: gw
+    - name: gateway
+      namespace: kgateway-base
   hostnames:
     - "www.example.com"
   rules:
@@ -14,7 +15,7 @@ spec:
             type: PathPrefix
             value: /myapp
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
       filters:
         - type: ExtensionRef
@@ -27,7 +28,7 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: backend
+        - name: ext-proc-backend
           port: 3000
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1

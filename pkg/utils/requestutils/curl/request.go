@@ -1,6 +1,7 @@
 package curl
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 )
@@ -98,6 +99,10 @@ type requestConfig struct {
 	clientKey  string
 
 	additionalArgs []string
+
+	// ctx is used by ExecuteRequest to build the http.Request and aborts the
+	// in-flight call when ctx cancels. Set via WithContext.
+	ctx context.Context
 }
 
 func (c *requestConfig) generateArgs() []string {

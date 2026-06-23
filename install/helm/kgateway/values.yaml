@@ -183,11 +183,20 @@ controller:
   startupProbe: {}
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
+  admin:
+    # -- Bind host for the controller admin/debug server on port 9095.
+    # Set to `0.0.0.0` only in trusted environments where exposing pprof,
+    # logging controls, and config snapshots outside the pod is acceptable.
+    bindAddress: localhost
   # -- Configure TLS settings for the xDS gRPC servers.
   xds:
     tls:
       # -- Enable TLS encryption for xDS communication. When enabled, the xDS server (port 9977) uses TLS. You must create a Secret named 'kgateway-xds-cert' in the kgateway installation namespace. The Secret must be of type 'kubernetes.io/tls' with 'tls.crt', 'tls.key', and 'ca.crt' data fields present.
       enabled: false
+  # -- Enable dynamic discovery of AWS EC2 instances for `Backend` resources.
+  enableAwsEc2Discovery: false
+  # -- Set how often the controller refreshes discovered AWS EC2 instances for `Backend` resources.
+  awsEc2RefreshInterval: 30s
   # -- Change the rollout strategy from the Kubernetes default of a RollingUpdate with 25% maxUnavailable, 25% maxSurge.
   # E.g., to recreate pods, minimizing resources for the rollout but causing downtime:
   # strategy:

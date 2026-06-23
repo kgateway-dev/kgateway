@@ -1,0 +1,309 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+# ── Case 1: ShallowMergePreferChild ────────────────────────────────────────────
+# Parent annotation says: when child already has a value, do not overwrite it
+# (AugmentedShallowMerge). Both routes carry an ACL policy, so the child's
+# ACL wins entirely; the parent's ACL is not applied.
+# Expected: defaultAction=allow, deny 192.168.0.0/16 (child only).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: parent-shallow-child
+  annotations:
+    kgateway.dev/inherited-policy-priority: ShallowMergePreferChild
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "spc.test.com"
+  rules:
+  - backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: child-shallow-child
+    matches:
+    - path:
+        type: PathPrefix
+        value: /spc
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: child-shallow-child
+spec:
+  rules:
+  - backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /spc/v1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: parent-acl-spc
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: parent-shallow-child
+  acl:
+    defaultAction: deny
+    rules:
+    - cidrs:
+      - "10.0.0.0/8"
+      action: allow
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: child-acl-spc
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: child-shallow-child
+  acl:
+    defaultAction: allow
+    rules:
+    - cidrs:
+      - "192.168.0.0/16"
+      action: deny
+---
+# ── Case 2: ShallowMergePreferParent ───────────────────────────────────────────
+# Parent annotation says: parent always overrides child values
+# (OverridableShallowMerge). The parent's entire ACL replaces the child's.
+# Expected: defaultAction=deny, allow 10.0.0.0/8 (parent only).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: parent-shallow-parent
+  annotations:
+    kgateway.dev/inherited-policy-priority: ShallowMergePreferParent
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "spp.test.com"
+  rules:
+  - backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: child-shallow-parent
+    matches:
+    - path:
+        type: PathPrefix
+        value: /spp
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: child-shallow-parent
+spec:
+  rules:
+  - backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /spp/v1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: parent-acl-spp
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: parent-shallow-parent
+  acl:
+    defaultAction: deny
+    rules:
+    - cidrs:
+      - "10.0.0.0/8"
+      action: allow
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: child-acl-spp
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: child-shallow-parent
+  acl:
+    defaultAction: allow
+    rules:
+    - cidrs:
+      - "192.168.0.0/16"
+      action: deny
+---
+# ── Case 3: DeepMergePreferChild ───────────────────────────────────────────────
+# Parent annotation says: deep merge, but child wins on scalar conflicts
+# (AugmentedDeepMerge). Both routes share defaultAction=deny (no conflict),
+# so rules are unioned with child rules listed first.
+# Expected: defaultAction=deny, rules=[allow 192.168.0.0/16, allow 10.0.0.0/8].
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: parent-deep-child
+  annotations:
+    kgateway.dev/inherited-policy-priority: DeepMergePreferChild
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "dpc.test.com"
+  rules:
+  - backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: child-deep-child
+    matches:
+    - path:
+        type: PathPrefix
+        value: /dpc
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: child-deep-child
+spec:
+  rules:
+  - backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /dpc/v1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: parent-acl-dpc
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: parent-deep-child
+  acl:
+    defaultAction: deny
+    rules:
+    - cidrs:
+      - "10.0.0.0/8"
+      action: allow
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: child-acl-dpc
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: child-deep-child
+  acl:
+    defaultAction: deny
+    rules:
+    - cidrs:
+      - "192.168.0.0/16"
+      action: allow
+---
+# ── Case 4: DeepMergePreferParent ──────────────────────────────────────────────
+# Parent annotation says: deep merge, but parent wins on scalar conflicts
+# (OverridableDeepMerge). Both routes share defaultAction=deny (no conflict),
+# so rules are unioned with parent rules listed first.
+# Expected: defaultAction=deny, rules=[allow 10.0.0.0/8, allow 192.168.0.0/16].
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: parent-deep-parent
+  annotations:
+    kgateway.dev/inherited-policy-priority: DeepMergePreferParent
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "dpp.test.com"
+  rules:
+  - backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: child-deep-parent
+    matches:
+    - path:
+        type: PathPrefix
+        value: /dpp
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: child-deep-parent
+spec:
+  rules:
+  - backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /dpp/v1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: parent-acl-dpp
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: parent-deep-parent
+  acl:
+    defaultAction: deny
+    rules:
+    - cidrs:
+      - "10.0.0.0/8"
+      action: allow
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: child-acl-dpp
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: child-deep-parent
+  acl:
+    defaultAction: deny
+    rules:
+    - cidrs:
+      - "192.168.0.0/16"
+      action: allow
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test

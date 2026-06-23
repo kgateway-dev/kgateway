@@ -23,6 +23,8 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 			fmt.Sprintf("%s-endpoints-%d", se.Name, i), // synthetic name
 			se.Namespace, // inherit se namespace
 			nil,          // no metadata labels to inherit
+			nil,          // no metadata annotations to promote
+			nil,          // no annotation keys to promote
 			e,
 			nil, // not in krt, don't need selectedBy
 		)
@@ -37,6 +39,8 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 				fmt.Sprintf("%s-hosts-%d", se.Name, i), // synthetic name
 				se.Namespace,                           // inherit se namespace
 				nil,                                    // no metadata labels to inherit
+				nil,                                    // no metadata annotations to promote
+				nil,                                    // no annotation keys to promote
 				&networking.WorkloadEntry{Address: hostname},
 				nil, // not in krt, don't need selectedBy
 			)
@@ -99,20 +103,31 @@ func endpointsFromWorkloads(
 	// this should never miss, we only call buildInlineCLA using BackendObjectIR
 	// generated from the ServiceEntry iteself
 	var servicePort *networking.ServicePort
+	backendPort := be.GetPort()
 	for _, sp := range se.Spec.GetPorts() {
-		if int32(sp.GetNumber()) == be.Port { //nolint:gosec // G115: ServiceEntry port numbers are always valid port range (1-65535)
+		if int32(sp.GetNumber()) == backendPort { //nolint:gosec // G115: ServiceEntry port numbers are always valid port range (1-65535)
 			servicePort = sp
 			break
 		}
 	}
 
-	seTargetPort := be.Port
+	seTargetPort := backendPort
 	if sePortTargetPort := servicePort.GetTargetPort(); sePortTargetPort > 0 {
 		seTargetPort = int32(sePortTargetPort) //nolint:gosec // G115: ServiceEntry target port numbers are always valid port range (1-65535)
 	}
 
 	eps := ir.NewEndpointsForBackend(be)
 	for _, workload := range workloads {
+		// Skip NotReady pod-backed workloads so that ingress (and any other
+		// ServiceEntry consumer) does not send traffic to pods that Kubernetes has
+		// marked NotReady. This mirrors the EndpointSlice-based Service path, which
+		// skips endpoints whose Ready condition is not true, and lets locality
+		// failover promote endpoints in a peer cluster when all local pods are
+		// NotReady. WorkloadEntry and inline endpoints set Ready=true.
+		if !workload.Ready {
+			continue
+		}
+
 		address := workload.Address()
 
 		// for static, it must be an IP

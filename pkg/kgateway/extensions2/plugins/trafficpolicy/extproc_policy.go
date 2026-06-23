@@ -11,6 +11,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
@@ -38,6 +39,7 @@ type extprocIR struct {
 type perProviderExtProcConfig struct {
 	provider       *TrafficPolicyGatewayExtensionIR
 	perRouteConfig *envoy_ext_proc_v3.ExtProcPerRoute
+	filterStage    filters.FilterStage[filters.WellKnownFilterStage]
 }
 
 var _ PolicySubIR = &extprocIR{}
@@ -54,9 +56,8 @@ func (e *extprocIR) Equals(other PolicySubIR) bool {
 		return false
 	}
 	if !slices.EqualFunc(e.perProviderConfig, otherExtProc.perProviderConfig, func(a, b *perProviderExtProcConfig) bool {
-		// compare perRouteConfig
 		return proto.Equal(a.perRouteConfig, b.perRouteConfig) &&
-			// compare provider config
+			a.filterStage == b.filterStage &&
 			cmputils.CompareWithNils(a.provider, b.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
 				return a.Equals(*b)
 			})
@@ -119,6 +120,7 @@ func constructExtProc(
 			{
 				provider:       gatewayExtension,
 				perRouteConfig: translateExtProcPerFilterConfig(spec),
+				filterStage:    convertFilterStageSpec(gatewayExtension.FilterStage, defaultExtProcFilterStage),
 			},
 		},
 		providerNames: sets.New(providerName(gatewayExtension)),
@@ -205,7 +207,7 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(filterChain string, pCtxTypedF
 
 	for _, cfg := range in.perProviderConfig {
 		providerName := providerName(cfg.provider)
-		p.extProcPerProvider.Add(filterChain, providerName, cfg.provider)
+		p.extProcPerProvider.Add(filterChain, providerName, cfg.provider, cfg.filterStage)
 		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName), cfg.perRouteConfig)
 	}
 }
@@ -215,4 +217,42 @@ func providerName(provider *TrafficPolicyGatewayExtensionIR) string {
 		return ""
 	}
 	return provider.ResourceName()
+}
+
+var defaultExtProcFilterStage = filters.AfterStage(filters.WellKnownFilterStage(filters.AuthZStage))
+
+// convertFilterStageSpec converts a user-facing FilterStageSpec to an
+// internal filters.FilterStage. Returns the provided default if cfg is nil.
+func convertFilterStageSpec(
+	cfg *kgateway.FilterStageSpec,
+	defaultStage filters.FilterStage[filters.WellKnownFilterStage],
+) filters.FilterStage[filters.WellKnownFilterStage] {
+	if cfg == nil {
+		return defaultStage
+	}
+
+	var stage filters.WellKnownFilterStage
+	switch cfg.Stage {
+	case kgateway.FilterStageFault:
+		stage = filters.FaultStage
+	case kgateway.FilterStageAuthN:
+		stage = filters.AuthNStage
+	case kgateway.FilterStageAuthZ:
+		stage = filters.AuthZStage
+	case kgateway.FilterStageRateLimit:
+		stage = filters.RateLimitStage
+	case kgateway.FilterStageRoute:
+		stage = filters.RouteStage
+	default:
+		return defaultStage
+	}
+
+	switch cfg.Predicate {
+	case kgateway.FilterStagePredicateBefore:
+		return filters.BeforeStage(stage)
+	case kgateway.FilterStagePredicateAfter:
+		return filters.AfterStage(stage)
+	default:
+		return filters.DuringStage(stage)
+	}
 }

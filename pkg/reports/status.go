@@ -15,6 +15,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -339,6 +340,39 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 	}
 	finalLsStatus.Listeners = fl
 	return &finalLsStatus
+}
+
+// BuildBackendStatus builds the Backend's status from its report, preserving the
+// LastTransitionTime of unchanged conditions and any conditions we don't own. Returns nil
+// if the Backend has no report (i.e. it wasn't translated).
+func (r *ReportMap) BuildBackendStatus(
+	ctx context.Context,
+	obj metav1.Object,
+	currentStatus kgateway.BackendStatus,
+) *kgateway.BackendStatus {
+	report := r.backend(obj)
+	if report == nil {
+		return nil
+	}
+
+	observedGeneration := obj.GetGeneration()
+	finalConditions := make([]metav1.Condition, 0, len(report.Conditions))
+	for _, condition := range report.Conditions {
+		condition.ObservedGeneration = observedGeneration
+		// Copy old condition to preserve LastTransitionTime, if it exists.
+		if cond := meta.FindStatusCondition(currentStatus.Conditions, condition.Type); cond != nil {
+			finalConditions = append(finalConditions, *cond)
+		}
+		meta.SetStatusCondition(&finalConditions, condition)
+	}
+	// Preserve conditions on the current status whose type we do not own.
+	for _, condition := range currentStatus.Conditions {
+		if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
+			finalConditions = append(finalConditions, condition)
+		}
+	}
+
+	return &kgateway.BackendStatus{Conditions: finalConditions}
 }
 
 // BuildRouteStatus returns a newly constructed and fully defined RouteStatus for the supplied route object

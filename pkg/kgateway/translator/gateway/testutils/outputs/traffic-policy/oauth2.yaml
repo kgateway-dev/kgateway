@@ -17,7 +17,6 @@ Clusters:
           healthCheckConfig:
             hostname: provider-1.com
           hostname: provider-1.com
-  metadata: {}
   name: backend_default_oauth-provider-1_0
 - clusterType:
     name: envoy.clusters.dns
@@ -37,19 +36,18 @@ Clusters:
           healthCheckConfig:
             hostname: provider-2.com
           hostname: provider-2.com
-  metadata: {}
   name: backend_default_oauth-provider-2_0
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_test_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -355,7 +353,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-      perRouteConfigName: rustformation
+      filterName: rustformation
   virtualHosts:
   - domains:
     - test.com
@@ -388,7 +386,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
     - match:
         pathSeparatedPrefix: /route-1
       metadata:
@@ -414,7 +412,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
     - match:
         pathSeparatedPrefix: /route-2
       name: listener~8080~test_com-route-2-httproute-test-default-2-0-rule2-matcher-0
@@ -435,7 +433,7 @@ Routes:
         filterConfig:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
-        perRouteConfigName: rustformation
+        filterName: rustformation
 Secrets:
 - genericSecret:
     secret:

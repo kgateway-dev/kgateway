@@ -11,6 +11,7 @@ env:
   GITHUB_TOKEN: ${{ github.token }}
   GO_TEST_RETRIES: 2
   ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
+  CGO_ENABLED: '0'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -101,8 +102,19 @@ jobs:
           # to use it without re-pulling on every invocation.
           echo "KGATEWAY_VALIDATOR_ENVOY_IMAGE=${validator_image}" >> "$GITHUB_ENV"
           echo "KGATEWAY_VALIDATOR_DOCKER_PULL_POLICY=never" >> "$GITHUB_ENV"
+      - name: Package helm charts
+        # Produces the real release artifact (_test/kgateway-*.tgz) via the same
+        # `make package-kgateway-charts` target release.yaml runs, so the
+        # packaged-chart parity test in ./test/helm has something to render
+        # against. KGW_REQUIRE_PACKAGED_CHART below makes that test fail loudly
+        # if this step is ever dropped, instead of silently skipping.
+        shell: bash
+        run: make package-kgateway-charts
       - name: Run Tests
         shell: bash
+        env:
+          CGO_ENABLED: '1'
+          KGW_REQUIRE_PACKAGED_CHART: 'true'
         run: make unit-with-coverage
       - name: Validate Test Coverage
         shell: bash
