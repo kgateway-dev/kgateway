@@ -216,9 +216,9 @@ func (r *ReportMap) BuildPolicyStatus(
 // If no report is found, nil is returned, signaling this parentRef is unknown to the report
 func (r *PolicyReport) getAncestorRefOrNil(parentRef *gwv1.ParentReference) *AncestorRefReport {
 	key := getParentRefKey(parentRef)
-	if r.Ancestors == nil {
-		r.Ancestors = make(map[ParentRefKey]*AncestorRefReport)
-	}
+	// This is a pure read: indexing a nil map returns the zero value. Do not lazily
+	// initialize r.Ancestors here, as the report pointer is shared with the KRT report
+	// singleton and may be read concurrently for equality checks (see policyReportEqual).
 	return r.Ancestors[key]
 }
 

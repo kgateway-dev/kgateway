@@ -240,7 +240,7 @@ func gatewayReportEqual(a, b *reports.GatewayReport) bool {
 	return a.GetObservedGeneration() == b.GetObservedGeneration() &&
 		a.GetAttachedListenerSets() == b.GetAttachedListenerSets() &&
 		conditionsEqual(a.GetConditions(), b.GetConditions()) &&
-		listenerStatusesEqual(a.GetListenerStatuses(), b.GetListenerStatuses())
+		listenerReportsEqual(a.GetListenerReports(), b.GetListenerReports())
 }
 
 // listenerSetReportEqual reports whether two ListenerSetReports hold the same
@@ -252,11 +252,20 @@ func listenerSetReportEqual(a, b *reports.ListenerSetReport) bool {
 	}
 	return a.GetObservedGeneration() == b.GetObservedGeneration() &&
 		conditionsEqual(a.GetConditions(), b.GetConditions()) &&
-		listenerStatusesEqual(a.GetListenerStatuses(), b.GetListenerStatuses())
+		listenerReportsEqual(a.GetListenerReports(), b.GetListenerReports())
 }
 
-func listenerStatusesEqual(a, b map[string]gwv1.ListenerStatus) bool {
-	return maps.EqualFunc(a, b, listenerStatusEqual)
+// listenerReportsEqual compares listener reports in place (no cloning) for read-only
+// equality, since report.Equals is called frequently by KRT.
+func listenerReportsEqual(a, b map[string]*reports.ListenerReport) bool {
+	return maps.EqualFunc(a, b, listenerReportEqual)
+}
+
+func listenerReportEqual(a, b *reports.ListenerReport) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return listenerStatusEqual(a.Status, b.Status)
 }
 
 func listenerStatusEqual(a, b gwv1.ListenerStatus) bool {

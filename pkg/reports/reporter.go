@@ -305,19 +305,14 @@ func (g *GatewayReport) GetAttachedListenerSets() int32 {
 	return g.attachedListenerSets
 }
 
-func (g *GatewayReport) GetListenerStatuses() map[string]gwv1.ListenerStatus {
-	if g == nil || g.listeners == nil {
+// GetListenerReports returns the report's listener reports keyed by listener name.
+// The internal map is returned directly (not cloned) for read-only use such as
+// equality checks; callers must not mutate it.
+func (g *GatewayReport) GetListenerReports() map[string]*ListenerReport {
+	if g == nil {
 		return nil
 	}
-	statuses := make(map[string]gwv1.ListenerStatus, len(g.listeners))
-	for name, listener := range g.listeners {
-		if listener == nil {
-			statuses[name] = gwv1.ListenerStatus{}
-			continue
-		}
-		statuses[name] = cloneListenerStatus(listener.Status)
-	}
-	return statuses
+	return g.listeners
 }
 
 func (g *GatewayReport) SetCondition(gc reporter.GatewayCondition) {
@@ -365,19 +360,14 @@ func (g *ListenerSetReport) GetConditions() []metav1.Condition {
 	return g.conditions
 }
 
-func (g *ListenerSetReport) GetListenerStatuses() map[string]gwv1.ListenerStatus {
-	if g == nil || g.listeners == nil {
+// GetListenerReports returns the report's listener reports keyed by listener name.
+// The internal map is returned directly (not cloned) for read-only use such as
+// equality checks; callers must not mutate it.
+func (g *ListenerSetReport) GetListenerReports() map[string]*ListenerReport {
+	if g == nil {
 		return nil
 	}
-	statuses := make(map[string]gwv1.ListenerStatus, len(g.listeners))
-	for name, listener := range g.listeners {
-		if listener == nil {
-			statuses[name] = gwv1.ListenerStatus{}
-			continue
-		}
-		statuses[name] = cloneListenerStatus(listener.Status)
-	}
-	return statuses
+	return g.listeners
 }
 
 func (g *ListenerSetReport) SetCondition(gc reporter.GatewayCondition) {
@@ -424,12 +414,6 @@ func (l *ListenerReport) SetSupportedKinds(rgks []gwv1.RouteGroupKind) {
 
 func (l *ListenerReport) SetAttachedRoutes(n uint) {
 	l.Status.AttachedRoutes = int32(n) //nolint:gosec // G115: route count is always non-negative
-}
-
-func cloneListenerStatus(status gwv1.ListenerStatus) gwv1.ListenerStatus {
-	status.SupportedKinds = append([]gwv1.RouteGroupKind(nil), status.SupportedKinds...)
-	status.Conditions = append([]metav1.Condition(nil), status.Conditions...)
-	return status
 }
 
 type statusReporter struct {
