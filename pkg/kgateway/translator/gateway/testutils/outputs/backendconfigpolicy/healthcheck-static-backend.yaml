@@ -24,8 +24,10 @@ Clusters:
               portValue: 80
           healthCheckConfig: {}
           hostname: internal-my-internal-loadbalancer-1998974615.ap-south-1.elb.amazonaws.com
+  metadata: {}
   name: backend_default_static-dns-backend_0
 - connectTimeout: 5s
+  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
