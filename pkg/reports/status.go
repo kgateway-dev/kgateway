@@ -468,6 +468,11 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 		return nil
 	}
 
+	// Use the generation of the route object being status-updated rather than reading
+	// it off the shared RouteReport, which other goroutines may read concurrently for
+	// KRT equality checks. This mirrors BuildBackendStatus / BuildGWStatus.
+	observedGeneration := obj.GetGeneration()
+
 	slog.Debug("building status", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 
 	var existingStatus gwv1.RouteStatus
@@ -543,7 +548,7 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 
 		finalConditions := make([]metav1.Condition, 0, len(parentStatusReport.Conditions))
 		for _, pCondition := range parentStatusReport.Conditions {
-			pCondition.ObservedGeneration = routeReport.observedGeneration
+			pCondition.ObservedGeneration = observedGeneration
 
 			// Copy old condition to preserve LastTransitionTime, if it exists
 			if cond := meta.FindStatusCondition(currentParentRefConditions, pCondition.Type); cond != nil {

@@ -182,40 +182,26 @@ func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSet
 // * TCPRoute
 // * TLSRoute
 // * GRPCRoute
+// route is a pure lookup that returns the RouteReport for the provided route object,
+// or nil if a report is not present. It must not mutate the report: the returned
+// pointer is shared with the KRT report singleton, which may be read concurrently by
+// other goroutines for equality checks (see routeReportEqual). The observedGeneration
+// is set at report creation time (newRouteReport) and when the route is (re)translated
+// (statusReporter.Route).
 func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 	key := key(obj)
 
 	switch obj.(type) {
 	case *gwv1.HTTPRoute:
-		report := r.HTTPRoutes[key]
-		if report != nil {
-			report.observedGeneration = obj.GetGeneration()
-		}
-		return report
+		return r.HTTPRoutes[key]
 	case *gwv1a2.TCPRoute:
-		report := r.TCPRoutes[key]
-		if report != nil {
-			report.observedGeneration = obj.GetGeneration()
-		}
-		return report
+		return r.TCPRoutes[key]
 	case *gwv1.TLSRoute:
-		report := r.TLSRoutes[key]
-		if report != nil {
-			report.observedGeneration = obj.GetGeneration()
-		}
-		return report
+		return r.TLSRoutes[key]
 	case *gwv1a2.TLSRoute:
-		report := r.TLSRoutes[key]
-		if report != nil {
-			report.observedGeneration = obj.GetGeneration()
-		}
-		return report
+		return r.TLSRoutes[key]
 	case *gwv1.GRPCRoute:
-		report := r.GRPCRoutes[key]
-		if report != nil {
-			report.observedGeneration = obj.GetGeneration()
-		}
-		return report
+		return r.GRPCRoutes[key]
 	default:
 		slog.Warn("unsupported route type", "route_type", fmt.Sprintf("%T", obj))
 		return nil
@@ -428,6 +414,8 @@ func (r *statusReporter) Route(obj metav1.Object) reporter.RouteReporter {
 	rr := r.report.route(obj)
 	if rr == nil {
 		rr = r.report.newRouteReport(obj)
+	} else {
+		rr.observedGeneration = obj.GetGeneration()
 	}
 	return rr
 }
