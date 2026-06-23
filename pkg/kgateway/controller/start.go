@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
+	"strings"
 	"sync/atomic"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -230,10 +231,17 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 
 	xdsHost := globalSettings.XdsServiceHost
 	if xdsHost == "" {
-		xdsHost = kubeutils.ServiceFQDN(metav1.ObjectMeta{
+		// Ensure exactly one trailing dot so this is an absolute (rooted) DNS name.
+		// Without it, the in-cluster FQDN has 4 dots and is treated as relative under
+		// the default ndots:5 resolver config, so Envoy's strict_dns cluster expands
+		// every search domain on each re-resolution cycle, producing a burst of
+		// NXDOMAIN lookups. TrimSuffix keeps this idempotent in case the FQDN is
+		// already rooted (e.g. a CLUSTER_DOMAIN env var set with a trailing dot),
+		// avoiding a double dot that would itself break resolution.
+		xdsHost = strings.TrimSuffix(kubeutils.ServiceFQDN(metav1.ObjectMeta{
 			Name:      globalSettings.XdsServiceName,
 			Namespace: namespaces.GetPodNamespace(),
-		})
+		}), ".") + "."
 	}
 
 	xdsPort := globalSettings.XdsServicePort
