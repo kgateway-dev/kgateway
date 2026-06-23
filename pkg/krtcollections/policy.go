@@ -486,14 +486,17 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 
 		// TODO: http polic
 		//		panic("TODO: implement http policies not just listener")
-		gwIR.AttachedListenerPolicies = ToAttachedPolicies(
-			config.PolicyIndex.GetTargetingPolicies(kctx, gwIR.ObjectSource, "", gw.GetLabels()))
+		gatewayPolicies := config.PolicyIndex.GetTargetingPolicies(kctx, gwIR.ObjectSource, "", gw.GetLabels())
+		gwIR.AttachedListenerPolicies = ToAttachedPolicies(gatewayPolicies)
 		gwIR.AttachedHttpPolicies = gwIR.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
 		for _, l := range gw.Spec.Listeners {
+			listenerSpecificPolicies := config.PolicyIndex.GetTargetingPolicies(kctx, gwIR.ObjectSource, string(l.Name), gw.GetLabels())
+			listenerPolicies := append([]ir.PolicyAtt{}, listenerSpecificPolicies...)
+			listenerPolicies = append(listenerPolicies, gatewayPolicies...)
 			gwIR.Listeners = append(gwIR.Listeners, ir.Listener{
 				Listener:         l,
 				Parent:           gw,
-				AttachedPolicies: ToAttachedPolicies(config.PolicyIndex.GetTargetingPolicies(kctx, gwIR.ObjectSource, string(l.Name), gw.GetLabels())),
+				AttachedPolicies: ToAttachedPolicies(listenerPolicies),
 				PolicyAncestorRef: gwv1.ParentReference{
 					Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
 					Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
