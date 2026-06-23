@@ -398,13 +398,7 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 	// keeps that precedence explicit and consistent with the other per-route settings.
 	if policy.spec.retry != nil {
 		for _, route := range out.Routes {
-			action := route.GetRoute()
-			if action == nil {
-				continue
-			}
-			if action.GetRetryPolicy() == nil {
-				action.RetryPolicy = policy.spec.retry.policy
-			}
+			applyRetryPolicy(policy.spec.retry, route)
 		}
 	}
 
@@ -803,17 +797,30 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 		}
 	}
 
-	// Only set the retry policy if it is not already set, which implies that it was
-	// set by the builtin HTTPRouteRetry policy
-	if action.GetRetryPolicy() == nil && spec.retry != nil {
-		action.RetryPolicy = spec.retry.policy
-	}
+	applyRetryPolicy(spec.retry, out)
 
 	// Apply URL rewrite configuration
 	applyURLRewrite(spec.urlRewrite, out)
 
 	// Apply route-level tracing overrides
 	p.handleRouteTracing(spec, out)
+}
+
+func applyRetryPolicy(retry *retryIR, out *envoyroutev3.Route) {
+	if retry == nil || out == nil {
+		return
+	}
+
+	action := out.GetRoute()
+	if action == nil {
+		return
+	}
+
+	// Only set the retry policy if it is not already set, which implies that it was
+	// set by the builtin HTTPRouteRetry policy or a more specific TrafficPolicy.
+	if action.GetRetryPolicy() == nil {
+		action.RetryPolicy = retry.policy
+	}
 }
 
 func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
