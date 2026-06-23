@@ -504,9 +504,9 @@ func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 // If no report is found, nil is returned, signaling this parentRef is unknown to the report
 func (r *RouteReport) getParentRefOrNil(parentRef *gwv1.ParentReference) *ParentRefReport {
 	key := getParentRefKey(parentRef)
-	if r.Parents == nil {
-		r.Parents = make(map[ParentRefKey]*ParentRefReport)
-	}
+	// This is a pure read: indexing a nil map returns the zero value. Do not lazily
+	// initialize r.Parents here, as the report pointer is shared with the KRT report
+	// singleton and may be read concurrently for equality checks (see routeReportEqual).
 	return r.Parents[key]
 }
 
