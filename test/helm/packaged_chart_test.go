@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -142,7 +141,7 @@ func renderChartAtPath(t *testing.T, chartPath, valuesYAML string, apiVersions [
 		args = append(args, "-f", valuesFile.Name())
 	}
 
-	helmCmd := exec.Command("helm", args...)
+	helmCmd := helmCommand(args...)
 	var output, stderr bytes.Buffer
 	helmCmd.Stdout = &output
 	helmCmd.Stderr = &stderr
