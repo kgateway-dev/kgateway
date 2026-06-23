@@ -136,22 +136,25 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 }
 
 func listenerStatusFromGatewayReport(report *GatewayReport, listener gwv1.Listener) gwv1.ListenerStatus {
-	status := newListenerStatus(string(listener.Name))
-	if report != nil && report.listeners != nil {
-		if listenerReport := report.listeners[string(listener.Name)]; listenerReport != nil {
-			status = listenerReport.Status
-			status.Conditions = slices.Clone(listenerReport.Status.Conditions)
-			status.SupportedKinds = slices.Clone(listenerReport.Status.SupportedKinds)
-		}
+	var listeners map[string]*ListenerReport
+	if report != nil {
+		listeners = report.listeners
 	}
-	status.Conditions = listenerConditionsWithDefaults(status.Conditions)
-	return status
+	return listenerStatusFromReports(listeners, listener)
 }
 
 func listenerStatusFromListenerSetReport(report *ListenerSetReport, listener gwv1.Listener) gwv1.ListenerStatus {
+	var listeners map[string]*ListenerReport
+	if report != nil {
+		listeners = report.listeners
+	}
+	return listenerStatusFromReports(listeners, listener)
+}
+
+func listenerStatusFromReports(listeners map[string]*ListenerReport, listener gwv1.Listener) gwv1.ListenerStatus {
 	status := newListenerStatus(string(listener.Name))
-	if report != nil && report.listeners != nil {
-		if listenerReport := report.listeners[string(listener.Name)]; listenerReport != nil {
+	if listeners != nil {
+		if listenerReport := listeners[string(listener.Name)]; listenerReport != nil {
 			status = listenerReport.Status
 			status.Conditions = slices.Clone(listenerReport.Status.Conditions)
 			status.SupportedKinds = slices.Clone(listenerReport.Status.SupportedKinds)
@@ -257,7 +260,7 @@ func shouldPreserveGatewayCondition(condition metav1.Condition, finalConditions 
 }
 
 func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
-	lsReport := r.listenerSetReportForStatus(&ls)
+	lsReport := r.ListenerSet(&ls)
 	if lsReport == nil {
 		return nil
 	}
@@ -375,18 +378,6 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 	}
 	finalLsStatus.Listeners = fl
 	return &finalLsStatus
-}
-
-func (r *ReportMap) listenerSetReportForStatus(listenerSet client.Object) *ListenerSetReport {
-	gvk := listenerSet.GetObjectKind().GroupVersionKind()
-	if gvk.Empty() {
-		gvk = wellknown.ListenerSetGVK
-	}
-	lsByGVK := r.ListenerSets[gvk]
-	if lsByGVK == nil {
-		return nil
-	}
-	return lsByGVK[key(listenerSet)]
 }
 
 // BuildBackendStatus builds the Backend's status from its report, preserving the
@@ -595,13 +586,6 @@ func ParentString(ref gwv1.ParentReference) string {
 		ptr.OrEmpty(ref.Namespace))
 }
 
-// Reports will initially only contain negative conditions found during translation,
-// so all missing conditions are assumed to be positive. Here we will add all missing conditions
-// to a given report, i.e. set healthy conditions
-func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
-	gwReport.conditions = gatewayConditionsWithDefaults(gwReport.conditions, gw, listenerStatusesFromGatewayReport(gwReport))
-}
-
 func gatewayConditionsWithDefaults(conditions []metav1.Condition, gw *gwv1.Gateway, listeners []gwv1.ListenerStatus) []metav1.Condition {
 	out := slices.Clone(conditions)
 	// If the existing Gateway status contains an Accepted=False with Reason=InvalidParameters,
@@ -645,17 +629,6 @@ func gatewayConditionsWithDefaults(conditions []metav1.Condition, gw *gwv1.Gatew
 			Reason:  string(reason),
 			Message: message,
 		})
-	}
-	return out
-}
-
-func listenerStatusesFromGatewayReport(gwReport *GatewayReport) []gwv1.ListenerStatus {
-	if gwReport == nil || len(gwReport.listeners) == 0 {
-		return nil
-	}
-	out := make([]gwv1.ListenerStatus, 0, len(gwReport.listeners))
-	for name := range gwReport.listeners {
-		out = append(out, listenerStatusFromGatewayReport(gwReport, gwv1.Listener{Name: gwv1.SectionName(name)}))
 	}
 	return out
 }
@@ -731,13 +704,6 @@ func listenerConditionsWithDefaults(conditions []metav1.Condition) []metav1.Cond
 		})
 	}
 	return out
-}
-
-// Reports will initially only contain negative conditions found during translation,
-// so all missing conditions are assumed to be positive. Here we will add all missing conditions
-// to a given report, i.e. set healthy conditions
-func addMissingParentRefConditions(report *ParentRefReport) {
-	report.Conditions = parentRefConditionsWithDefaults(report.Conditions)
 }
 
 func parentRefConditionsWithDefaults(conditions []metav1.Condition) []metav1.Condition {

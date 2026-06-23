@@ -125,7 +125,9 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	return gr
 }
 
-// Returns a ListenerSetReport for the provided ListenerSet, nil if there is not a report present.
+// ListenerSet is a pure lookup that returns the ListenerSetReport for the provided
+// ListenerSet, or nil if a report is not present. It must not mutate the ReportMap:
+// lazily creating the per-GVK map here would change ReportMap equality on a read.
 // This is different than the Reporter.ListenerSet() method, as we need to understand when
 // reports are not generated for a ListenerSet that has been translated.
 //
@@ -135,11 +137,11 @@ func (r *ReportMap) ListenerSet(listenerSet client.Object) *ListenerSetReport {
 	if gvk.Empty() {
 		gvk = wellknown.ListenerSetGVK
 	}
-	if r.ListenerSets[gvk] == nil {
-		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)
+	lsByGVK := r.ListenerSets[gvk]
+	if lsByGVK == nil {
+		return nil
 	}
-	key := key(listenerSet)
-	return r.ListenerSets[gvk][key]
+	return lsByGVK[key(listenerSet)]
 }
 
 func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSetReport {

@@ -4,6 +4,7 @@ import (
 	"maps"
 	"slices"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -294,7 +295,7 @@ func conditionsEqual(a, b []metav1.Condition) bool {
 		return false
 	}
 	for _, condition := range a {
-		other := findCondition(b, condition.Type)
+		other := meta.FindStatusCondition(b, condition.Type)
 		if other == nil ||
 			condition.Status != other.Status ||
 			condition.Reason != other.Reason ||
@@ -304,13 +305,4 @@ func conditionsEqual(a, b []metav1.Condition) bool {
 		}
 	}
 	return true
-}
-
-func findCondition(conditions []metav1.Condition, conditionType string) *metav1.Condition {
-	for i := range conditions {
-		if conditions[i].Type == conditionType {
-			return &conditions[i]
-		}
-	}
-	return nil
 }

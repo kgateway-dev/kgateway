@@ -205,13 +205,6 @@ func (r *PolicyReport) getAncestorRefOrNil(parentRef *gwv1.ParentReference) *Anc
 	return r.Ancestors[key]
 }
 
-// addMissingAncestorRefConditions initializes the AncestorRefReport with a default Pending
-// condition reason for the Accepted and Attached conditions.
-// Positive conditions will be added when the policy is processed and attached to targeted resources.
-func addMissingAncestorRefConditions(report *AncestorRefReport) {
-	report.Conditions = ancestorRefConditionsWithDefaults(report.Conditions)
-}
-
 func ancestorRefConditionsWithDefaults(conditions []metav1.Condition) []metav1.Condition {
 	out := slices.Clone(conditions)
 	if cond := meta.FindStatusCondition(out, string(shared.PolicyConditionAccepted)); cond == nil {
