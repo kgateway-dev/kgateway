@@ -60,10 +60,10 @@ func TestRouteReportEqual(t *testing.T) {
 		r := reports.NewReporter(&rm)
 		route := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "route", Generation: generation}}
 		parent := gwv1.ParentReference{
-			Group:     localPtr(gwv1.Group("gateway.networking.k8s.io")),
-			Kind:      localPtr(gwv1.Kind("Gateway")),
+			Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+			Kind:      new(gwv1.Kind("Gateway")),
 			Name:      gwv1.ObjectName("gw"),
-			Namespace: localPtr(gwv1.Namespace("default")),
+			Namespace: new(gwv1.Namespace("default")),
 		}
 		r.Route(route).ParentRef(&parent).SetCondition(reporter.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
@@ -111,10 +111,10 @@ func TestPolicyReportEqual(t *testing.T) {
 		r := reports.NewReporter(&rm)
 		key := reporter.PolicyKey{Group: "g", Kind: "k", Namespace: "default", Name: "policy"}
 		ancestor := gwv1.ParentReference{
-			Group:     localPtr(gwv1.Group("gateway.networking.k8s.io")),
-			Kind:      localPtr(gwv1.Kind("Gateway")),
+			Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+			Kind:      new(gwv1.Kind("Gateway")),
 			Name:      gwv1.ObjectName("gw"),
-			Namespace: localPtr(gwv1.Namespace("default")),
+			Namespace: new(gwv1.Namespace("default")),
 		}
 		ar := r.Policy(key, generation).AncestorRef(ancestor)
 		ar.SetCondition(reporter.PolicyCondition{
@@ -153,11 +153,6 @@ func TestPolicyReportEqual(t *testing.T) {
 			t.Fatal("expected policy reports to differ when observed generation differs")
 		}
 	})
-}
-
-//go:fix inline
-func localPtr[T any](v T) *T {
-	return new(v)
 }
 
 func setFirstParentConditionTime(r *reports.RouteReport, ts metav1.Time) {

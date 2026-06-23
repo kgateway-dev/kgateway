@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -61,7 +62,11 @@ func TestBuildListenerSetStatusDoesNotMutateReportMapEntry(t *testing.T) {
 			}},
 		},
 	}
-	ls.SetGroupVersionKind(gwv1.SchemeGroupVersion.WithKind("ListenerSet"))
+	ls.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   gwv1.GroupVersion.Group,
+		Version: gwv1.GroupVersion.Version,
+		Kind:    "ListenerSet",
+	})
 
 	rep.ListenerSet(ls).ListenerName("http")
 	lsr := rm.ListenerSet(ls)
