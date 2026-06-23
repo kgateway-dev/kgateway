@@ -31,6 +31,24 @@ func (r *PolicyReport) GetObservedGeneration() int64 {
 	return r.observedGeneration
 }
 
+// Clone returns a copy of the PolicyReport with its own (non-nil) Ancestors map,
+// so that merging additional ancestors into the clone does not mutate the
+// original. The AncestorRefReport values are shared; they are treated as
+// read-only after translation (status building clones them before mutation).
+func (r *PolicyReport) Clone() *PolicyReport {
+	if r == nil {
+		return nil
+	}
+	ancestors := make(map[ParentRefKey]*AncestorRefReport, len(r.Ancestors))
+	for k, v := range r.Ancestors {
+		ancestors[k] = v
+	}
+	return &PolicyReport{
+		Ancestors:          ancestors,
+		observedGeneration: r.observedGeneration,
+	}
+}
+
 func (r *PolicyReport) AncestorRef(ref gwv1.ParentReference) reporter.AncestorRefReporter {
 	return r.ancestorRef(ref)
 }

@@ -512,10 +512,13 @@ func mergeProxyReports(
 
 		// 3. merge httproute parentRefs into RouteReports
 		for rnn, rr := range p.reports.HTTPRoutes {
-			// if we haven't encountered this route, just copy it over completely
+			// if we haven't encountered this route, clone it so the merged report owns
+			// its Parents map; subsequent merges must not mutate the per-proxy report,
+			// which is held by the mostXdsSnapshots collection and read concurrently
+			// for equality checks.
 			old := merged.HTTPRoutes[rnn]
 			if old == nil {
-				merged.HTTPRoutes[rnn] = rr
+				merged.HTTPRoutes[rnn] = rr.Clone()
 				continue
 			}
 			// else, this route has already been seen for a proxy, merge this proxy's parents
@@ -525,10 +528,10 @@ func mergeProxyReports(
 
 		// 4. merge tcproute parentRefs into RouteReports
 		for rnn, rr := range p.reports.TCPRoutes {
-			// if we haven't encountered this route, just copy it over completely
+			// if we haven't encountered this route, clone it (see HTTPRoutes above)
 			old := merged.TCPRoutes[rnn]
 			if old == nil {
-				merged.TCPRoutes[rnn] = rr
+				merged.TCPRoutes[rnn] = rr.Clone()
 				continue
 			}
 			// else, this route has already been seen for a proxy, merge this proxy's parents
@@ -537,10 +540,10 @@ func mergeProxyReports(
 		}
 
 		for rnn, rr := range p.reports.TLSRoutes {
-			// if we haven't encountered this route, just copy it over completely
+			// if we haven't encountered this route, clone it (see HTTPRoutes above)
 			old := merged.TLSRoutes[rnn]
 			if old == nil {
-				merged.TLSRoutes[rnn] = rr
+				merged.TLSRoutes[rnn] = rr.Clone()
 				continue
 			}
 			// else, this route has already been seen for a proxy, merge this proxy's parents
@@ -549,10 +552,10 @@ func mergeProxyReports(
 		}
 
 		for rnn, rr := range p.reports.GRPCRoutes {
-			// if we haven't encountered this route, just copy it over completely
+			// if we haven't encountered this route, clone it (see HTTPRoutes above)
 			old := merged.GRPCRoutes[rnn]
 			if old == nil {
-				merged.GRPCRoutes[rnn] = rr
+				merged.GRPCRoutes[rnn] = rr.Clone()
 				continue
 			}
 			// else, this route has already been seen for a proxy, merge this proxy's parents
@@ -561,10 +564,11 @@ func mergeProxyReports(
 		}
 
 		for key, report := range p.reports.Policies {
-			// if we haven't encountered this policy, just copy it over completely
+			// if we haven't encountered this policy, clone it so the merged report owns
+			// its Ancestors map (see HTTPRoutes above)
 			old := merged.Policies[key]
 			if old == nil {
-				merged.Policies[key] = report
+				merged.Policies[key] = report.Clone()
 				continue
 			}
 			// else, let's merge our parentRefs into the existing map

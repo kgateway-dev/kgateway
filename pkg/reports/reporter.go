@@ -58,6 +58,24 @@ func (r *RouteReport) GetObservedGeneration() int64 {
 	return r.observedGeneration
 }
 
+// Clone returns a copy of the RouteReport with its own (non-nil) Parents map, so
+// that merging additional parents into the clone does not mutate the original.
+// The ParentRefReport values are shared; they are treated as read-only after
+// translation (status building clones them before mutation).
+func (r *RouteReport) Clone() *RouteReport {
+	if r == nil {
+		return nil
+	}
+	parents := make(map[ParentRefKey]*ParentRefReport, len(r.Parents))
+	for k, v := range r.Parents {
+		parents[k] = v
+	}
+	return &RouteReport{
+		Parents:            parents,
+		observedGeneration: r.observedGeneration,
+	}
+}
+
 // TODO: rename to e.g. RouteParentRefReport
 type ParentRefReport struct {
 	Conditions []metav1.Condition
