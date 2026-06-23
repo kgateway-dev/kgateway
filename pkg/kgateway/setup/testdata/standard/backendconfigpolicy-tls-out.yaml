@@ -86,6 +86,9 @@ clusters:
           ecdhCurves:
           - X25519
           - P-256
+          signatureAlgorithms:
+          - ecdsa_secp256r1_sha256
+          - rsa_pss_rsae_sha256
           tlsMaximumProtocolVersion: TLSv1_3
           tlsMinimumProtocolVersion: TLSv1_2
       sni: test.example.com

@@ -993,6 +993,10 @@ spec:
                         - "1.2"
                         - "1.3"
                         type: string
+                      signatureAlgorithms:
+                        items:
+                          type: string
+                        type: array
                     type: object
                   secretRef:
                     description: Reference to the TLS secret containing the certificate,

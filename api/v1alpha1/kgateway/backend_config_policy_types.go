@@ -364,6 +364,9 @@ type TLSParameters struct {
 
 	// +optional
 	EcdhCurves []string `json:"ecdhCurves,omitempty"`
+
+	// +optional
+	SignatureAlgorithms []string `json:"signatureAlgorithms,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in TLSFiles"
