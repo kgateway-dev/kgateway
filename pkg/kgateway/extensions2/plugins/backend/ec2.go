@@ -89,10 +89,20 @@ func buildEc2Ir(in *kgateway.AwsBackend, secret *ir.Secret) (*EC2Ir, error) {
 		region:      defaultAwsRegion(in.Region),
 		port:        defaultEc2PortValue(in.Ec2.Port),
 		addressType: defaultEc2AddressType(in.Ec2.AddressType),
-		roleArn:     in.Ec2.RoleArn,
+		roleArn:     assumeRoleArn(in.Auth),
 		filters:     normalizeEc2TagFilters(in.Ec2.Filters),
 		secret:      secret,
 	}, nil
+}
+
+// assumeRoleArn returns the role ARN to assume for the backend, sourced from the
+// shared auth block. EC2 discovery uses the controller's ambient credentials to
+// assume this role when listing instances. Returns "" when no AssumeRole auth is set.
+func assumeRoleArn(auth *kgateway.AwsAuth) string {
+	if auth != nil && auth.Type == kgateway.AwsAuthTypeAssumeRole && auth.AssumeRole != nil {
+		return auth.AssumeRole.RoleArn
+	}
+	return ""
 }
 
 func processEc2(_ *EC2Ir, out *envoyclusterv3.Cluster) error {
