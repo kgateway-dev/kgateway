@@ -307,3 +307,34 @@ func TestEqualReportMaps_NilReportPointers(t *testing.T) {
 	d.Gateways[testGatewayKey] = nil
 	assert.False(t, EqualReportMaps(c, d), "nil vs populated report must not be equal")
 }
+
+// TestMergeReportMaps_ListenerSetsSameGVK is a regression test for a shallow-merge
+// bug where copying the per-GVK ListenerSet map by reference caused a second proxy's
+// reports under the same GVK to clobber the first proxy's reports. MergeReportMaps
+// must merge ListenerSet reports per GVK so reports from every proxy survive, and the
+// merged reports must be owned copies rather than aliases of the per-proxy reports.
+func TestMergeReportMaps_ListenerSetsSameGVK(t *testing.T) {
+	ls1 := types.NamespacedName{Namespace: "default", Name: "ls-1"}
+	ls2 := types.NamespacedName{Namespace: "default", Name: "ls-2"}
+
+	first := NewReportMap()
+	first.ListenerSets[wellknown.ListenerSetGVK] = map[types.NamespacedName]*ListenerSetReport{
+		ls1: {observedGeneration: 1},
+	}
+
+	second := NewReportMap()
+	second.ListenerSets[wellknown.ListenerSetGVK] = map[types.NamespacedName]*ListenerSetReport{
+		ls2: {observedGeneration: 2},
+	}
+
+	merged := MergeReportMaps(first, second)
+
+	gvkReports := merged.ListenerSets[wellknown.ListenerSetGVK]
+	assert.Len(t, gvkReports, 2, "both ListenerSet reports under the same GVK must survive the merge")
+	assert.Contains(t, gvkReports, ls1)
+	assert.Contains(t, gvkReports, ls2)
+
+	// The merged reports must be owned copies, not aliases of the per-proxy reports.
+	assert.NotSame(t, first.ListenerSets[wellknown.ListenerSetGVK][ls1], gvkReports[ls1])
+	assert.NotSame(t, second.ListenerSets[wellknown.ListenerSetGVK][ls2], gvkReports[ls2])
+}
