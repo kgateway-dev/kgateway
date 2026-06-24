@@ -275,3 +275,124 @@ func metaFindStatusCondition(conditions []metav1.Condition, conditionType string
 	}
 	return nil
 }
+
+// BuildBackendStatus must stamp the generation the report was built for, not
+// the live object's, for the same cross-cache reason as Gateway and Route
+// status.
+func TestBackendStatusStampsObservedGenerationFromReport(t *testing.T) {
+	newBackend := func(generation int64) *kgateway.Backend {
+		return &kgateway.Backend{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "example-backend",
+				Namespace:  "default",
+				Generation: generation,
+			},
+		}
+	}
+
+	reportBackend := func(statusReporter pluginreporter.Reporter, backend *kgateway.Backend) {
+		statusReporter.Backend(backend).SetCondition(pluginreporter.BackendCondition{
+			Type:    string(kgateway.BackendConditionAccepted),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(kgateway.BackendReasonInvalid),
+			Message: "translation failed",
+		})
+	}
+
+	requireObservedGeneration := func(t *testing.T, status *kgateway.BackendStatus, want int64) {
+		t.Helper()
+		require.NotNil(t, status)
+		require.NotEmpty(t, status.Conditions)
+		for _, condition := range status.Conditions {
+			require.Equal(t, want, condition.ObservedGeneration)
+		}
+	}
+
+	// Report ahead of a stale live read: the published status must reflect the
+	// report's generation (2), not the stale live read (1).
+	t.Run("report ahead of stale live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		backend := newBackend(2)
+		reportBackend(statusReporter, backend)
+
+		backend.Generation = 1
+		status := rm.BuildBackendStatus(context.Background(), backend, kgateway.BackendStatus{})
+		requireObservedGeneration(t, status, 2)
+	})
+
+	// Report behind the live read: observedGeneration must stay at the generation
+	// actually translated (1).
+	t.Run("report behind live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		backend := newBackend(1)
+		reportBackend(statusReporter, backend)
+
+		backend.Generation = 2
+		status := rm.BuildBackendStatus(context.Background(), backend, kgateway.BackendStatus{})
+		requireObservedGeneration(t, status, 1)
+	})
+}
+
+// BuildListenerSetStatus must stamp the generation the report was built for, not
+// the live object's, for the same cross-cache reason as Gateway and Route
+// status.
+func TestListenerSetStatusStampsObservedGenerationFromReport(t *testing.T) {
+	newListenerSet := func(generation int64) *gwv1.ListenerSet {
+		ls := &gwv1.ListenerSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "test",
+				Namespace:  "default",
+				Generation: generation,
+			},
+		}
+		ls.Spec.Listeners = []gwv1.ListenerEntry{
+			{Name: "http"},
+		}
+		return ls
+	}
+
+	requireAllObservedGenerations := func(t *testing.T, status *gwv1.ListenerSetStatus, want int64) {
+		t.Helper()
+		require.NotNil(t, status)
+		for _, condition := range status.Conditions {
+			require.Equal(t, want, condition.ObservedGeneration)
+		}
+		for _, listenerStatus := range status.Listeners {
+			for _, condition := range listenerStatus.Conditions {
+				require.Equal(t, want, condition.ObservedGeneration)
+			}
+		}
+	}
+
+	// Report ahead of a stale live read: the published status must reflect the
+	// report's generation (2), not the stale live read (1).
+	t.Run("report ahead of stale live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		ls := newListenerSet(2)
+		statusReporter.ListenerSet(ls)
+
+		ls.Generation = 1
+		status := rm.BuildListenerSetStatus(context.Background(), *ls)
+		requireAllObservedGenerations(t, status, 2)
+	})
+
+	// Report behind the live read: observedGeneration must stay at the generation
+	// actually translated (1).
+	t.Run("report behind live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		ls := newListenerSet(1)
+		statusReporter.ListenerSet(ls)
+
+		ls.Generation = 2
+		status := rm.BuildListenerSetStatus(context.Background(), *ls)
+		requireAllObservedGenerations(t, status, 1)
+	})
+}
