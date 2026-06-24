@@ -154,40 +154,70 @@ func requireAllObservedGenerations(t *testing.T, status *gwv1.GatewayStatus, wan
 	}
 }
 
-func TestRouteStatusRefreshesObservedGenerationFromCurrentObject(t *testing.T) {
-	rm := reports.NewReportMap()
-	statusReporter := reports.NewReporter(&rm)
-
-	route := &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "example-route",
-			Namespace:  "default",
-			Generation: 1,
-		},
-		Spec: gwv1.HTTPRouteSpec{
-			CommonRouteSpec: gwv1.CommonRouteSpec{
-				ParentRefs: []gwv1.ParentReference{
-					{
-						Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
-						Kind:      new(gwv1.Kind("Gateway")),
-						Name:      "example-gateway",
-						Namespace: new(gwv1.Namespace("default")),
+// BuildRouteStatus must stamp the generation the report was built for, not the
+// live object's generation, for the same cross-cache reason as Gateway status:
+// the route is re-read by the syncer from a separate cache than translation
+// used, and stamping the live read can freeze observedGeneration on a skew.
+func TestRouteStatusStampsObservedGenerationFromReport(t *testing.T) {
+	newRoute := func(generation int64) *gwv1.HTTPRoute {
+		return &gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "example-route",
+				Namespace:  "default",
+				Generation: generation,
+			},
+			Spec: gwv1.HTTPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
+						{
+							Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Name:      "example-gateway",
+							Namespace: new(gwv1.Namespace("default")),
+						},
 					},
 				},
 			},
-		},
+		}
 	}
 
-	statusReporter.Route(route).ParentRef(&route.Spec.ParentRefs[0])
-
-	route.Generation = 2
-	status := rm.BuildRouteStatus(context.Background(), route, "kgateway.dev/kgateway")
-	require.NotNil(t, status)
-	require.Len(t, status.Parents, 1)
-
-	for _, condition := range status.Parents[0].Conditions {
-		require.Equal(t, int64(2), condition.ObservedGeneration)
+	requireParentObservedGeneration := func(t *testing.T, status *gwv1.RouteStatus, want int64) {
+		t.Helper()
+		require.NotNil(t, status)
+		require.Len(t, status.Parents, 1)
+		for _, condition := range status.Parents[0].Conditions {
+			require.Equal(t, want, condition.ObservedGeneration)
+		}
 	}
+
+	// Report ahead of a stale live read: translation observed generation 2 but
+	// the syncer's cache still returns generation 1. The published status must
+	// reflect the report's generation (2).
+	t.Run("report ahead of stale live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		route := newRoute(2)
+		statusReporter.Route(route).ParentRef(&route.Spec.ParentRefs[0])
+
+		route.Generation = 1
+		status := rm.BuildRouteStatus(context.Background(), route, "kgateway.dev/kgateway")
+		requireParentObservedGeneration(t, status, 2)
+	})
+
+	// Report behind the live read: observedGeneration must stay at the generation
+	// actually translated (1) rather than prematurely claiming generation 2.
+	t.Run("report behind live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		route := newRoute(1)
+		statusReporter.Route(route).ParentRef(&route.Spec.ParentRefs[0])
+
+		route.Generation = 2
+		status := rm.BuildRouteStatus(context.Background(), route, "kgateway.dev/kgateway")
+		requireParentObservedGeneration(t, status, 1)
+	})
 }
 
 func TestPolicyStatusRefreshesObservedGenerationOnReporterReuse(t *testing.T) {

@@ -449,7 +449,12 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 		return nil
 	}
 
-	observedGeneration := obj.GetGeneration()
+	// Stamp the generation the report was built for, not the live object's. As
+	// with Gateway status, the route is re-read by the syncer from a separate
+	// cache than the one translation used; sourcing the generation from the
+	// report keeps the sync trigger and the published value consistent and
+	// avoids freezing observedGeneration on a cache skew.
+	observedGeneration := routeReport.observedGeneration
 
 	slog.Debug("building status", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 
