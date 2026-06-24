@@ -208,11 +208,11 @@ type ec2CachedClient struct {
 }
 
 type ec2BackendStateKey struct {
-	region                string
+	region                string // +noKrtEquals compared in endpointSemanticsEqual
 	roleArn               string
-	port                  uint32
-	addressType           kgateway.AwsAddressType
-	filters               []ec2TagFilter
+	port                  uint32                  // +noKrtEquals compared in endpointSemanticsEqual
+	addressType           kgateway.AwsAddressType // +noKrtEquals compared in endpointSemanticsEqual
+	filters               []ec2TagFilter          // +noKrtEquals compared in endpointSemanticsEqual
 	secretResourceName    string
 	secretResourceVersion string
 }
