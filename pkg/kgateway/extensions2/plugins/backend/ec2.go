@@ -607,10 +607,19 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 				// update is independent of whether endpoints are flushed.
 				for _, cfg := range groupedBackends {
 					backendState := nextState[cfg.resourceName]
+					carried := len(backendState.endpoints)
+					// A failed poll that still carries forward endpoints leaves the
+					// backend degraded-but-serving; report Degraded so operators can
+					// distinguish it from a hard-down backend (no endpoints), which
+					// keeps the specific failure reason. The cause stays in the message.
+					backendReason := reason
+					if carried > 0 {
+						backendReason = string(kgateway.BackendReasonDegraded)
+					}
 					backendState.status = ec2DiscoveryStatus{
 						status:  metav1.ConditionFalse,
-						reason:  reason,
-						message: message,
+						reason:  backendReason,
+						message: ec2DiscoveryFailureMessage(message, carried),
 					}
 					nextState[cfg.resourceName] = backendState
 				}
@@ -846,6 +855,20 @@ func selectResolvedEc2Backend(cfg ec2BackendConfig, instances []ec2DiscoveredIns
 	}
 
 	return selected
+}
+
+// ec2DiscoveryFailureMessage augments a discovery-failure cause with whether the
+// backend is still serving endpoints carried forward from the last successful poll.
+// A failed poll preserves the prior endpoints (NFR-3), so the EndpointsDiscovered
+// condition alone (False) cannot tell an operator whether the backend is degraded but
+// still serving traffic or has never resolved any endpoints; this distinction makes
+// that explicit. The carried-forward count is stable across consecutive failures (no
+// successful poll updates it), so embedding it here does not churn the condition.
+func ec2DiscoveryFailureMessage(cause string, carriedEndpoints int) string {
+	if carriedEndpoints > 0 {
+		return fmt.Sprintf("%s; serving %d endpoints from the last successful poll", cause, carriedEndpoints)
+	}
+	return fmt.Sprintf("%s; no endpoints available from a previous poll", cause)
 }
 
 // ec2NoMatchMessage builds an operator-facing message for a successful poll that

@@ -187,12 +187,100 @@ func TestComputeStateReflectsAuthorizationFailureInStatus(t *testing.T) {
 	if got.reason != string(kgateway.BackendReasonAuthorizationError) {
 		t.Fatalf("reason = %q, want AuthorizationError", got.reason)
 	}
+	// No prior successful poll, so the message must make clear no endpoints are served.
+	if !strings.Contains(got.message, "no endpoints available from a previous poll") {
+		t.Fatalf("message = %q, want it to note no endpoints are available", got.message)
+	}
+}
+
+func TestComputeStateReportsDegradedWhenFailureCarriesEndpoints(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	backend := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", nil)
+	backendIR := backendObjectIR(backend, secret)
+
+	c := &ec2EndpointsCollection{
+		backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{backendIR}),
+		lister: &fakeEc2InstanceLister{
+			instances: []ec2DiscoveredInstance{
+				{instanceID: "i-1", privateIP: "10.0.0.10"},
+			},
+		},
+	}
+
+	// First poll succeeds and resolves endpoints.
+	state, err := c.computeState(context.Background())
+	if err != nil {
+		t.Fatalf("computeState() error = %v", err)
+	}
+	if got := len(state[backendIR.ResourceName()].endpoints); got == 0 {
+		t.Fatal("expected endpoints from the initial successful poll")
+	}
+	c.state = state
+
+	// Second poll fails: endpoints are carried forward, so the backend is degraded
+	// rather than hard down, and must not keep the raw AuthorizationError reason.
+	c.lister = &fakeEc2InstanceLister{
+		err: fmt.Errorf("describe instances: %w", &smithy.GenericAPIError{Code: "AuthFailure", Message: "auth failed"}),
+	}
+	state, err = c.computeState(context.Background())
+	if err == nil {
+		t.Fatal("computeState() error = nil, want error")
+	}
+	got := state[backendIR.ResourceName()].status
+	if got.status != metav1.ConditionFalse {
+		t.Fatalf("status = %q, want False", got.status)
+	}
+	if got.reason != string(kgateway.BackendReasonDegraded) {
+		t.Fatalf("reason = %q, want Degraded", got.reason)
+	}
+	if got := len(state[backendIR.ResourceName()].endpoints); got == 0 {
+		t.Fatal("expected endpoints to be carried forward across the failed poll")
+	}
+	if !strings.Contains(got.message, "serving") {
+		t.Fatalf("message = %q, want it to note endpoints are still served", got.message)
+	}
+}
+
+func TestEc2DiscoveryFailureMessage(t *testing.T) {
+	const cause = "AuthFailure: auth failed"
+	tests := []struct {
+		name             string
+		carriedEndpoints int
+		wantSubstr       string
+	}{
+		{
+			name:             "no carried-forward endpoints",
+			carriedEndpoints: 0,
+			wantSubstr:       "no endpoints available from a previous poll",
+		},
+		{
+			name:             "serving carried-forward endpoints",
+			carriedEndpoints: 3,
+			wantSubstr:       "serving 3 endpoints from the last successful poll",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ec2DiscoveryFailureMessage(cause, tt.carriedEndpoints)
+			if !strings.HasPrefix(got, cause) {
+				t.Fatalf("message = %q, want it to start with the cause %q", got, cause)
+			}
+			if !strings.Contains(got, tt.wantSubstr) {
+				t.Fatalf("message = %q, want it to contain %q", got, tt.wantSubstr)
+			}
+		})
+	}
 }
 
 func TestDiscoveryStatusForBackendReportsCredentialErrorForUnresolvedSecret(t *testing.T) {
 	// A Secret-auth backend whose secret is unresolved (nil on the IR) is filtered
 	// out of the discovery loop, but must still surface a CredentialError.
-	backend := backendObjectIR(newEc2Backend("backend-a", "", nil), nil)
+	be := newEc2Backend("backend-a", "", nil)
+	be.Spec.Aws.Auth = &kgateway.AwsAuth{
+		Type:      kgateway.AwsAuthTypeSecret,
+		SecretRef: &corev1.LocalObjectReference{Name: "missing-secret"},
+	}
+	backend := backendObjectIR(be, nil)
 
 	c := &ec2EndpointsCollection{enabled: true}
 	got := c.discoveryStatusForBackend(krt.TestingDummyContext{}, backend)

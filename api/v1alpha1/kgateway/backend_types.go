@@ -407,6 +407,14 @@ const (
 	// BackendReasonDiscoveryError is used with EndpointsDiscovered=False when discovery
 	// failed for a transient or otherwise unclassified reason.
 	BackendReasonDiscoveryError BackendConditionReason = "DiscoveryError"
+
+	// BackendReasonDegraded is used with EndpointsDiscovered=False when the last discovery
+	// poll failed but the backend is still serving endpoints carried forward from a previous
+	// successful poll. It distinguishes a degraded-but-serving backend from one that is hard
+	// down (which keeps its specific failure reason, e.g. AuthorizationError, with no
+	// endpoints) so operators can alert on the two cases differently. The underlying failure
+	// cause is preserved in the condition message.
+	BackendReasonDegraded BackendConditionReason = "Degraded"
 )
 
 // BackendStatus defines the observed state of Backend.
