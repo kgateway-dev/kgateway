@@ -63,7 +63,13 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 			return l.Name == lis.Name
 		})
 		for _, lisCondition := range listenerStatus.Conditions {
-			lisCondition.ObservedGeneration = gw.Generation
+			// Stamp the generation the report was built for, not the live object's
+			// generation. The report is produced by translation (istio cache) while
+			// the syncer reads the Gateway from a separate controller-runtime cache;
+			// using the live generation here lets the two caches disagree and freeze
+			// observedGeneration when they skew. The report's generation is internally
+			// consistent with the conditions it carries.
+			lisCondition.ObservedGeneration = gwReport.observedGeneration
 
 			// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
 			if oldLisStatusIndex != -1 {
@@ -109,7 +115,10 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 
 	finalConditions := make([]metav1.Condition, 0)
 	for _, gwCondition := range gwConditions {
-		gwCondition.ObservedGeneration = gw.Generation
+		// See note above: stamp the report's generation, not the live object's, so a
+		// skew between the translation cache and the syncer's cache cannot freeze
+		// observedGeneration.
+		gwCondition.ObservedGeneration = gwReport.observedGeneration
 
 		// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
 		if cond := meta.FindStatusCondition(gw.Status.Conditions, gwCondition.Type); cond != nil {

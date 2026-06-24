@@ -79,35 +79,77 @@ func requireConditionExists(t *testing.T, conditions []metav1.Condition, condTyp
 	return metav1.Condition{}
 }
 
-func TestGatewayStatusRefreshesObservedGenerationFromCurrentObject(t *testing.T) {
-	rm := reports.NewReportMap()
-	statusReporter := reports.NewReporter(&rm)
-
-	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "example-gateway",
-			Namespace:  "default",
-			Generation: 1,
-		},
-		Spec: gwv1.GatewaySpec{
-			Listeners: []gwv1.Listener{
-				{Name: "http"},
+// BuildGWStatus must stamp the generation the report was built for, not the
+// live object's generation. The status syncer is triggered only by report
+// changes and reads the live Gateway from a separate (controller-runtime)
+// cache than the one translation uses (the istio KRT cache). If it stamped the
+// live generation, a skew between those two caches could freeze
+// observedGeneration: the report-change trigger fires once, the stale live read
+// stamps the wrong generation, and nothing re-triggers the sync. Sourcing the
+// generation from the report keeps the trigger and the stamp consistent.
+func TestGatewayStatusStampsObservedGenerationFromReport(t *testing.T) {
+	newGateway := func(generation int64) *gwv1.Gateway {
+		return &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "example-gateway",
+				Namespace:  "default",
+				Generation: generation,
 			},
-		},
+			Spec: gwv1.GatewaySpec{
+				Listeners: []gwv1.Listener{
+					{Name: "http"},
+				},
+			},
+		}
 	}
 
-	statusReporter.Gateway(gw)
+	// Report ahead of the live object: translation observed generation 2 but the
+	// syncer's cache still sees generation 1. This is the freeze case that
+	// regressed in #14295 - the published status must reflect the report's
+	// generation (2), not the stale live read (1).
+	t.Run("report ahead of stale live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
 
-	gw.Generation = 2
-	status := rm.BuildGWStatus(context.Background(), *gw, nil)
-	require.NotNil(t, status)
+		gw := newGateway(2)
+		statusReporter.Gateway(gw)
+
+		// Simulate the syncer's cache lagging behind translation's.
+		gw.Generation = 1
+		status := rm.BuildGWStatus(context.Background(), *gw, nil)
+		require.NotNil(t, status)
+
+		requireAllObservedGenerations(t, status, 2)
+	})
+
+	// Report behind the live object: the syncer's cache already sees generation
+	// 2, but translation has only processed generation 1. observedGeneration must
+	// stay at the generation actually translated (1) rather than prematurely
+	// claiming a generation whose status has not been computed yet.
+	t.Run("report behind live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		gw := newGateway(1)
+		statusReporter.Gateway(gw)
+
+		gw.Generation = 2
+		status := rm.BuildGWStatus(context.Background(), *gw, nil)
+		require.NotNil(t, status)
+
+		requireAllObservedGenerations(t, status, 1)
+	})
+}
+
+func requireAllObservedGenerations(t *testing.T, status *gwv1.GatewayStatus, want int64) {
+	t.Helper()
 
 	for _, condition := range status.Conditions {
-		require.Equal(t, int64(2), condition.ObservedGeneration)
+		require.Equal(t, want, condition.ObservedGeneration)
 	}
 	for _, listenerStatus := range status.Listeners {
 		for _, condition := range listenerStatus.Conditions {
-			require.Equal(t, int64(2), condition.ObservedGeneration)
+			require.Equal(t, want, condition.ObservedGeneration)
 		}
 	}
 }
