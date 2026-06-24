@@ -417,7 +417,12 @@ func TestBuildTranslateFuncRejectsEc2WhenDiscoveryDisabled(t *testing.T) {
 func TestBuildTranslateFuncFailsClosedForMissingEc2Secret(t *testing.T) {
 	translate := buildTranslateFunc(newSecretIndexForTest(t), true)
 
-	backendIR := translate(krt.TestingDummyContext{}, newEc2Backend("backend-a", "", nil))
+	backend := newEc2Backend("backend-a", "", nil)
+	backend.Spec.Aws.Auth = &kgateway.AwsAuth{
+		Type:      kgateway.AwsAuthTypeSecret,
+		SecretRef: &corev1.LocalObjectReference{Name: "aws-creds"},
+	}
+	backendIR := translate(krt.TestingDummyContext{}, backend)
 
 	if len(backendIR.errors) == 0 {
 		t.Fatal("translate() errors = 0, want at least 1")
@@ -501,7 +506,7 @@ func (f *fakeEc2InstanceLister) ListInstances(_ context.Context, source ec2Crede
 }
 
 func newEc2Backend(name, roleArn string, filters []kgateway.AwsTagFilter) *kgateway.Backend {
-	return &kgateway.Backend{
+	be := &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
@@ -509,21 +514,21 @@ func newEc2Backend(name, roleArn string, filters []kgateway.AwsTagFilter) *kgate
 		Spec: kgateway.BackendSpec{
 			Aws: &kgateway.AwsBackend{
 				Region: "us-east-1",
-				Auth: &kgateway.AwsAuth{
-					Type: kgateway.AwsAuthTypeSecret,
-					SecretRef: &corev1.LocalObjectReference{
-						Name: "aws-creds",
-					},
-				},
 				Ec2: &kgateway.AwsEc2{
 					Port:        8080,
 					AddressType: kgateway.AwsAddressTypePrivateIP,
-					RoleArn:     roleArn,
 					Filters:     filters,
 				},
 			},
 		},
 	}
+	if roleArn != "" {
+		be.Spec.Aws.Auth = &kgateway.AwsAuth{
+			Type:       kgateway.AwsAuthTypeAssumeRole,
+			AssumeRole: &kgateway.AwsAssumeRole{RoleArn: roleArn},
+		}
+	}
+	return be
 }
 
 func backendObjectIR(be *kgateway.Backend, secret *ir.Secret) ir.BackendObjectIR {

@@ -397,11 +397,8 @@ func (l Secret) MarshalJSON() ([]byte, error) {
 // TODO: why is this in backend.go?
 type Listener struct {
 	gwv1.Listener
-	// +krtEqualsTodo compare parent reference in listener equality
-	Parent client.Object
-	// +krtEqualsTodo include attached listener policies in equality
-	AttachedPolicies AttachedPolicies
-	// +krtEqualsTodo include policy ancestor reference in equality
+	Parent            client.Object
+	AttachedPolicies  AttachedPolicies
 	PolicyAncestorRef gwv1.ParentReference
 }
 
@@ -414,9 +411,23 @@ func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.
 	}
 }
 
-// TODO: need to reevaluate DeepEqual usage
 func (c Listener) Equals(in Listener) bool {
-	return reflect.DeepEqual(c, in)
+	// Use versionEquals for Parent (raw *gwv1.Gateway or *gwv1.ListenerSet) so that
+	// status-only writes (which bump resourceVersion but not generation) do not cause
+	// reflect.DeepEqual to return false and trigger unnecessary re-translations.
+	if (c.Parent == nil) != (in.Parent == nil) {
+		return false
+	}
+	// Currently, only Gateway and ListenerSet's Equals() calls Listener.Equals(),
+	// and both of those check versionEquals on the Parent before calling Listener.Equals(),
+	// so, this versionEquals check is somewhat redundant, but it's safer to have it here in
+	// case Listener.Equals() is called directly in the future without a Parent version check.
+	if c.Parent != nil && !versionEquals(c.Parent, in.Parent) {
+		return false
+	}
+	return reflect.DeepEqual(c.Listener, in.Listener) &&
+		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
+		reflect.DeepEqual(c.PolicyAncestorRef, in.PolicyAncestorRef)
 }
 
 type GatewayForDeployer struct {

@@ -54,12 +54,17 @@ type TestResults struct {
 	GatewayCount int                               `json:"gatewayCount"`
 	Watchers     map[types.NamespacedName]*Watcher `json:"watchers"`
 
-	SetupTime        time.Duration   `json:"setupTime"`
-	TeardownTime     time.Duration   `json:"teardownTime"`
-	RouteReadyTime   time.Duration   `json:"routeReadyTime"`
-	TotalWrites      int             `json:"totalWrites"`
-	KGatewayMetrics  KGatewayMetrics `json:"kgatewayMetrics"`
-	SimulatedCluster VClusterMetrics `json:"simulatedCluster"`
+	SetupTime                  time.Duration     `json:"setupTime"`
+	TeardownTime               time.Duration     `json:"teardownTime"`
+	RouteReadyTime             time.Duration     `json:"routeReadyTime"`
+	ControllerRestartTime      time.Duration     `json:"controllerRestartTime"`
+	PostRestartTranslationTime time.Duration     `json:"postRestartTranslationTime"`
+	TotalWrites                int               `json:"totalWrites"`
+	KGatewayMetrics            KGatewayMetrics   `json:"kgatewayMetrics"`
+	ValidationMetricsBefore    ValidationMetrics `json:"validationMetricsBefore"`
+	ValidationMetricsAfter     ValidationMetrics `json:"validationMetricsAfter"`
+	ValidationMetricsDelta     ValidationMetrics `json:"validationMetricsDelta"`
+	SimulatedCluster           VClusterMetrics   `json:"simulatedCluster"`
 }
 
 // BaseMetrics contains common metrics fields shared across different metric types
@@ -74,6 +79,88 @@ type KGatewayMetrics struct {
 	CollectionTransformDuration time.Duration `json:"collectionTransformDuration"`
 	CollectionResources         int64         `json:"collectionResources"`
 	StatusSyncerResources       int64         `json:"statusSyncerResources"`
+}
+
+type ValidationMetrics struct {
+	Calls            int64                              `json:"calls"`
+	CacheHits        int64                              `json:"cacheHits"`
+	CacheMisses      int64                              `json:"cacheMisses"`
+	Valid            int64                              `json:"valid"`
+	InvalidXDS       int64                              `json:"invalidXDS"`
+	InvocationErrors int64                              `json:"invocationErrors"`
+	DurationCount    uint64                             `json:"durationCount"`
+	DurationSeconds  float64                            `json:"durationSeconds"`
+	ByCaller         map[string]ValidationCallerMetrics `json:"byCaller,omitempty"`
+}
+
+type ValidationCallerMetrics struct {
+	Calls            int64   `json:"calls"`
+	CacheHits        int64   `json:"cacheHits"`
+	CacheMisses      int64   `json:"cacheMisses"`
+	Valid            int64   `json:"valid"`
+	InvalidXDS       int64   `json:"invalidXDS"`
+	InvocationErrors int64   `json:"invocationErrors"`
+	DurationCount    uint64  `json:"durationCount"`
+	DurationSeconds  float64 `json:"durationSeconds"`
+}
+
+func (m ValidationMetrics) Delta(base ValidationMetrics) ValidationMetrics {
+	out := ValidationMetrics{
+		Calls:            subtractInt64(m.Calls, base.Calls),
+		CacheHits:        subtractInt64(m.CacheHits, base.CacheHits),
+		CacheMisses:      subtractInt64(m.CacheMisses, base.CacheMisses),
+		Valid:            subtractInt64(m.Valid, base.Valid),
+		InvalidXDS:       subtractInt64(m.InvalidXDS, base.InvalidXDS),
+		InvocationErrors: subtractInt64(m.InvocationErrors, base.InvocationErrors),
+		DurationCount:    subtractUint64(m.DurationCount, base.DurationCount),
+		DurationSeconds:  subtractFloat64(m.DurationSeconds, base.DurationSeconds),
+		ByCaller:         map[string]ValidationCallerMetrics{},
+	}
+
+	for caller, after := range m.ByCaller {
+		out.ByCaller[caller] = after.delta(base.ByCaller[caller])
+	}
+	for caller, before := range base.ByCaller {
+		if _, ok := out.ByCaller[caller]; ok {
+			continue
+		}
+		out.ByCaller[caller] = ValidationCallerMetrics{}.delta(before)
+	}
+	return out
+}
+
+func (m ValidationCallerMetrics) delta(base ValidationCallerMetrics) ValidationCallerMetrics {
+	return ValidationCallerMetrics{
+		Calls:            subtractInt64(m.Calls, base.Calls),
+		CacheHits:        subtractInt64(m.CacheHits, base.CacheHits),
+		CacheMisses:      subtractInt64(m.CacheMisses, base.CacheMisses),
+		Valid:            subtractInt64(m.Valid, base.Valid),
+		InvalidXDS:       subtractInt64(m.InvalidXDS, base.InvalidXDS),
+		InvocationErrors: subtractInt64(m.InvocationErrors, base.InvocationErrors),
+		DurationCount:    subtractUint64(m.DurationCount, base.DurationCount),
+		DurationSeconds:  subtractFloat64(m.DurationSeconds, base.DurationSeconds),
+	}
+}
+
+func subtractInt64(after, before int64) int64 {
+	if after < before {
+		return 0
+	}
+	return after - before
+}
+
+func subtractUint64(after, before uint64) uint64 {
+	if after < before {
+		return 0
+	}
+	return after - before
+}
+
+func subtractFloat64(after, before float64) float64 {
+	if after < before {
+		return 0
+	}
+	return after - before
 }
 
 type VClusterMetrics struct {

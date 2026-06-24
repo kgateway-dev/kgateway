@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"sync/atomic"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -12,7 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -197,56 +195,7 @@ func (r report) ResourceName() string {
 
 // do we really need this for a singleton?
 func (r report) Equals(in report) bool {
-	if !maps.Equal(r.reportMap.Gateways, in.reportMap.Gateways) {
-		return false
-	}
-	if !maps.EqualFunc(r.reportMap.ListenerSets, in.reportMap.ListenerSets,
-		func(a, b map[types.NamespacedName]*reports.ListenerSetReport) bool {
-			return maps.Equal(a, b)
-		}) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.TCPRoutes, in.reportMap.TCPRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.TLSRoutes, in.reportMap.TLSRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.Policies, in.reportMap.Policies) {
-		return false
-	}
-	if !maps.EqualFunc(r.reportMap.Backends, in.reportMap.Backends, backendReportEqual) {
-		return false
-	}
-	return true
-}
-
-// backendReportEqual reports whether two BackendReports hold the same conditions and observed generation.
-func backendReportEqual(a, b *reports.BackendReport) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	if a.GetObservedGeneration() != b.GetObservedGeneration() {
-		return false
-	}
-	ac, bc := a.GetConditions(), b.GetConditions()
-	if len(ac) != len(bc) {
-		return false
-	}
-	for i := range ac {
-		other := meta.FindStatusCondition(bc, ac[i].Type)
-		if other == nil ||
-			ac[i].Status != other.Status ||
-			ac[i].Reason != other.Reason ||
-			ac[i].Message != other.Message ||
-			ac[i].ObservedGeneration != other.ObservedGeneration {
-			return false
-		}
-	}
-	return true
+	return reports.EqualReportMaps(r.reportMap, in.reportMap)
 }
 
 var logger = logging.New("proxy_syncer")
@@ -310,6 +259,11 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		newFinalBackendEndpoints(krtopts, finalBackends, allEndpoints),
 		s.translator.TranslateEndpoints,
 	)
+	localClusterEpPerClient := NewPerClientLocalClusterEndpoints(
+		krtopts,
+		s.uniqueClients,
+		s.commonCols.LocalityPods,
+	)
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
 		krtopts,
@@ -324,6 +278,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		s.mostXdsSnapshots,
 		epPerClient,
 		clustersPerClient,
+		localClusterEpPerClient,
 	)
 
 	excludedPolicyKinds := make(map[schema.GroupKind]struct{})
@@ -392,78 +347,11 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 func mergeProxyReports(
 	proxies []GatewayXdsResources,
 ) reports.ReportMap {
-	merged := reports.NewReportMap()
-	for _, p := range proxies {
-		// 1. merge GW Reports for all Proxies' status reports
-		maps.Copy(merged.Gateways, p.reports.Gateways)
-
-		// 2. merge LS Reports for all Proxies' status reports
-		maps.Copy(merged.ListenerSets, p.reports.ListenerSets)
-
-		// 3. merge httproute parentRefs into RouteReports
-		for rnn, rr := range p.reports.HTTPRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.HTTPRoutes[rnn]
-			if old == nil {
-				merged.HTTPRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.HTTPRoutes[rnn].Parents, rr.Parents)
-		}
-
-		// 4. merge tcproute parentRefs into RouteReports
-		for rnn, rr := range p.reports.TCPRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.TCPRoutes[rnn]
-			if old == nil {
-				merged.TCPRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.TCPRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for rnn, rr := range p.reports.TLSRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.TLSRoutes[rnn]
-			if old == nil {
-				merged.TLSRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.TLSRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for rnn, rr := range p.reports.GRPCRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.GRPCRoutes[rnn]
-			if old == nil {
-				merged.GRPCRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.GRPCRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for key, report := range p.reports.Policies {
-			// if we haven't encountered this policy, just copy it over completely
-			old := merged.Policies[key]
-			if old == nil {
-				merged.Policies[key] = report
-				continue
-			}
-			// else, let's merge our parentRefs into the existing map
-			// obsGen will stay as-is...
-			maps.Copy(merged.Policies[key].Ancestors, report.Ancestors)
-		}
+	inputs := make([]reports.ReportMap, 0, len(proxies))
+	for _, proxy := range proxies {
+		inputs = append(inputs, proxy.reports)
 	}
-
-	return merged
+	return reports.MergeReportMaps(inputs...)
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
