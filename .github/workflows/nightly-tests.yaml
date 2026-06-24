@@ -228,7 +228,7 @@ jobs:
         env:
           VERSION: 'v1.0.0-ci1'
           GITHUB_TOKEN: ${{ github.token }}
-          GO_TEST_RETRIES: '3' # Use a higher number of retries because there are so many tests and we don't want to rerun
+          GO_TEST_RETRIES: '2' # There are so many tests and we don't want to rerun, but some failures are persistent
           # A single test failure counts as a failure for each of its parent suites, and these tests run for a long time, so use a higher max failure count
           GOTESTSUM_ARGS: '--format=standard-verbose --rerun-fails-max-failures 25'
         with:

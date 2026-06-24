@@ -186,7 +186,7 @@ fn deny<EHF: EnvoyHttpFilter>(
     }
     envoy_filter.send_response(
         u32::from(resp.status_code),
-        headers,
+        &headers,
         None,
         Some("http-acl: denied by policy"),
     );

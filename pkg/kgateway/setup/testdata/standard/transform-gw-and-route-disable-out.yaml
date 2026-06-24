@@ -1,5 +1,7 @@
 clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -7,7 +9,9 @@ clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_kubernetes_443
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -88,7 +92,7 @@ routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"response":{"add":[{"name":"original-greatness","value":"{{request_headers(\"x-greatness\")}}"}],"body":{"parseAs":"AsJson","value":"{{
           body }}"}}}'
-      perRouteConfigName: rustformation
+      filterName: rustformation
   virtualHosts:
   - domains:
     - www.example-gateway-only.com
@@ -124,4 +128,4 @@ routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"add":[{"name":"x-greatness","value":"{{ length(headers(\":path\"))
               }}"}]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation

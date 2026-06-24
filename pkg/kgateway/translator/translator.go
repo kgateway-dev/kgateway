@@ -47,16 +47,10 @@ func NewCombinedTranslator(
 	commonCols *collections.CommonCollections,
 	validator validator.Validator,
 ) *CombinedTranslator {
-	var endpointPlugins []sdk.EndpointPlugin
-	for _, ext := range extensions.ContributesPolicies {
-		if ext.PerClientProcessEndpoints != nil {
-			endpointPlugins = append(endpointPlugins, ext.PerClientProcessEndpoints)
-		}
-	}
 	return &CombinedTranslator{
 		commonCols:      commonCols,
 		extensions:      extensions,
-		endpointPlugins: endpointPlugins,
+		endpointPlugins: irtranslator.OrderedEndpointPlugins(extensions.ContributesPolicies),
 		logger:          logger,
 		validator:       validator,
 		waitForSync:     []cache.InformerSynced{extensions.HasSynced},
@@ -82,6 +76,7 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 	s.backendTranslator = &irtranslator.BackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
 		ContributedPolicies: s.extensions.ContributesPolicies,
+		EndpointPlugins:     s.endpointPlugins,
 		CommonCols:          s.commonCols,
 		Validator:           s.validator,
 		Mode:                s.commonCols.Settings.ValidationMode,

@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utiljson "k8s.io/apimachinery/pkg/util/json"
 	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/yaml"
 
@@ -147,10 +148,16 @@ func ApplyDefaults(
 	objYAML []byte,
 	structuralSchema *apiserverschema.Structural,
 ) (*unstructured.Unstructured, []byte, error) {
-	// Convert YAML to map without losing any fields (using the Go type with omitempty will drop zero-value fields)
-	raw := make(map[string]any)
-	err := yaml.Unmarshal(objYAML, &raw)
+	// Convert YAML to map without losing any fields (using the Go type with omitempty will drop zero-value fields).
+	// Go through JSON and unmarshal with the k8s util json package so that whole numbers become int64 rather than
+	// float64. This matches how the apiserver builds unstructured content and is required for CEL validation, which
+	// strictly distinguishes int from float (e.g. a Service port stored as float64 fails integer-typed CEL rules).
+	jsonBytes, err := yaml.YAMLToJSON(objYAML)
 	if err != nil {
+		return nil, nil, err
+	}
+	raw := make(map[string]any)
+	if err := utiljson.Unmarshal(jsonBytes, &raw); err != nil {
 		return nil, nil, err
 	}
 	u := &unstructured.Unstructured{

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -819,6 +820,9 @@ var opts = cmp.Options{
 	cmpopts.IgnoreMapEntries(func(k string, _ any) bool {
 		return k == "lastTransitionTime"
 	}),
+	cmpopts.SortSlices(func(a, b gwv1.RouteParentStatus) bool {
+		return lessRouteParentStatus(a, b)
+	}),
 }
 
 func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
@@ -836,4 +840,11 @@ func isBackendStatusEqual(objA, objB *kgateway.BackendStatus) bool {
 // isRouteStatusEqual compares two RouteStatus objects directly
 func isRouteStatusEqual(objA, objB *gwv1.RouteStatus) bool {
 	return cmp.Equal(objA, objB, opts)
+}
+
+func lessRouteParentStatus(a, b gwv1.RouteParentStatus) bool {
+	if cmp := strings.Compare(reports.ParentString(a.ParentRef), reports.ParentString(b.ParentRef)); cmp != 0 {
+		return cmp < 0
+	}
+	return strings.Compare(string(a.ControllerName), string(b.ControllerName)) < 0
 }

@@ -45,7 +45,9 @@ clusters:
               -----END CERTIFICATE-----
       sni: se.example.com
   type: STATIC
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

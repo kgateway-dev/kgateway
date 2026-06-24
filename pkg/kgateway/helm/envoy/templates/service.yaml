@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "kgateway.gateway.fullname" . }}
-  {{- $annotations := merge ($gateway.gatewayAnnotations| default dict) ((($gateway.service).extraAnnotations) | default dict) }}
+  {{- $annotations := merge ($gateway.gatewayAnnotations | default dict) ((($gateway.service).extraAnnotations) | default dict) }}
   {{- if $annotations }}
   annotations:
     {{- toYaml $annotations | nindent 4 }}
