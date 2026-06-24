@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -85,7 +87,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"abc","value":"custom-value-abc"}]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
 Statuses:
   gateways:
     infra/example-gateway:

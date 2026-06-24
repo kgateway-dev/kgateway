@@ -21,7 +21,9 @@ clusters:
         maxRequestsPerConnection: 100
       explicitHttpConfig:
         httpProtocolOptions: {}
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

@@ -60,7 +60,7 @@ func validateXDS(
 		return err
 	}
 
-	return v.Validate(ctx, bootstrap)
+	return v.Validate(validator.WithValidationCaller(ctx, validator.CallerBackendConfigPolicy), bootstrap)
 }
 
 func requiresDnsClusterValidation(policyIR *BackendConfigPolicyIR) bool {

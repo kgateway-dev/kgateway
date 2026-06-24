@@ -33,7 +33,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 	exemptFeatures := GetCommonExemptFeatures()
 	// backfill individual features that we don't support yet.
 	exemptFeatures.Insert(
-		features.GatewayHTTPListenerIsolationFeature,
 		// We do not yet implement the 421 misdirected-request behavior across HTTPS listeners
 		// sharing the same port.
 		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,

@@ -54,6 +54,7 @@ Name|Version|License
 [k8s.io/api](https://k8s.io/api)|v0.35.3|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.35.3|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.35.3|Apache License 2.0
+[k8s.io/apiserver](https://k8s.io/apiserver)|v0.35.3|Apache License 2.0
 [k8s.io/cli-runtime](https://k8s.io/cli-runtime)|v0.35.3|Apache License 2.0
 [k8s.io/client-go](https://k8s.io/client-go)|v0.35.3|Apache License 2.0
 [klog/v2](https://k8s.io/klog/v2)|v2.140.0|Apache License 2.0

@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -12,7 +14,9 @@ Clusters:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       explicitHttpConfig:
         http2ProtocolOptions: {}
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -20,7 +24,9 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_a_svc-a_8080
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -28,7 +34,9 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_b_svc-b_8080
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -158,7 +166,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"abc","value":"custom-value-abc"}]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
         ext_proc/a/extproc-ext:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
           overrides: {}
@@ -196,7 +204,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"abc","value":"custom-value-abc"}]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
 Statuses:
   gateways:
     infra/example-gateway:

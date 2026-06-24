@@ -23,6 +23,7 @@ func MergeHttpPolicies(
 	mergeFuncs := []func(string, *HttpListenerPolicyIr, *HttpListenerPolicyIr, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
 		mergeAccessLog,
 		mergeTracing,
+		mergeLocalReplyConfig,
 		mergeUpgradeConfigs,
 		mergeUseRemoteAddress,
 		mergePreserveExternalRequestId,
@@ -90,6 +91,22 @@ func mergeTracing(
 	p1.tracingProvider = p2.tracingProvider
 	p1.tracingConfig = p2.tracingConfig
 	mergeOrigins.SetOne(origin+"tracing", p2Ref, p2MergeOrigins)
+}
+
+func mergeLocalReplyConfig(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.localReplyConfig, p2.localReplyConfig, opts) {
+		return
+	}
+
+	p1.localReplyConfig = p2.localReplyConfig
+	mergeOrigins.SetOne(origin+"localReplyConfig", p2Ref, p2MergeOrigins)
 }
 
 func mergeUpgradeConfigs(
