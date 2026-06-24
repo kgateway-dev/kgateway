@@ -134,7 +134,10 @@ func NewCommonCollections(
 
 	serviceClient := kclient.NewFiltered[*corev1.Service](
 		client,
-		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+		kclient.Filter{
+			ObjectFilter:  client.ObjectFilter(),
+			LabelSelector: settings.ServiceLabelSelector,
+		},
 	)
 	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
 
