@@ -459,6 +459,162 @@ func TestComputeStateClearsEndpointsOnRefreshFailureAfterConfigChange(t *testing
 	}
 }
 
+func TestComputeStatePreservesEndpointsOnRefreshFailureAfterCredentialOnlyChange(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	priorBackend := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", []kgateway.AwsTagFilter{tagKeyValue("app", "payments")})
+	currentBackend := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/updated", []kgateway.AwsTagFilter{tagKeyValue("app", "payments")})
+
+	priorBackendIR := backendObjectIR(priorBackend, secret)
+	currentBackendIR := backendObjectIR(currentBackend, secret)
+	priorCfg := ec2ConfigFromBackend(priorBackendIR)
+	currentCfg := ec2ConfigFromBackend(currentBackendIR)
+	if priorCfg == nil || currentCfg == nil {
+		t.Fatal("ec2ConfigFromBackend() returned nil")
+	}
+
+	c := &ec2EndpointsCollection{
+		backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{currentBackendIR}),
+		lister: &fakeEc2InstanceLister{
+			err: errors.New("boom"),
+		},
+		state: map[string]ec2ResolvedBackend{
+			priorBackendIR.ResourceName(): {
+				port:   priorCfg.port,
+				config: priorCfg.stateKey(),
+				endpoints: []ec2ResolvedEndpoint{{
+					address:    "10.0.0.10",
+					instanceID: "i-1",
+					region:     priorCfg.region,
+					zone:       "us-east-1a",
+				}},
+			},
+		},
+	}
+
+	state, err := c.computeState(context.Background())
+	if err == nil {
+		t.Fatal("computeState() error = nil, want error")
+	}
+
+	got := state[currentBackendIR.ResourceName()]
+	if len(got.endpoints) != 1 {
+		t.Fatalf("backend endpoints = %d, want 1 preserved after credential-only change", len(got.endpoints))
+	}
+	if got.endpoints[0].address != "10.0.0.10" {
+		t.Fatalf("backend endpoint address = %q, want 10.0.0.10", got.endpoints[0].address)
+	}
+	if !got.config.Equals(currentCfg.stateKey()) {
+		t.Fatal("backend config key did not update to the current config")
+	}
+}
+
+func TestEndpointsForBackendRequestsRefreshWhenStateIsMissing(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	backendIR := backendObjectIR(newEc2Backend("backend-a", "", nil), secret)
+	cfg := ec2ConfigFromBackend(backendIR)
+	if cfg == nil {
+		t.Fatal("ec2ConfigFromBackend() returned nil")
+	}
+
+	c := &ec2EndpointsCollection{
+		refreshCh: make(chan struct{}, 1),
+		state:     map[string]ec2ResolvedBackend{},
+	}
+
+	eps := c.endpointsForBackend(backendIR, cfg)
+	if got := countEndpoints(eps); got != 0 {
+		t.Fatalf("endpointsForBackend() endpoints = %d, want 0 before first discovery", got)
+	}
+	requireRefreshRequested(t, c)
+}
+
+func TestEndpointsForBackendDiscardsStaleStateAfterSemanticChange(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	priorBackendIR := backendObjectIR(newEc2Backend("backend-a", "", nil), secret)
+	priorCfg := ec2ConfigFromBackend(priorBackendIR)
+
+	currentBackend := newEc2Backend("backend-a", "", nil)
+	currentBackend.Spec.Aws.Ec2.Port = 9090
+	currentBackendIR := backendObjectIR(currentBackend, secret)
+	currentCfg := ec2ConfigFromBackend(currentBackendIR)
+	if priorCfg == nil || currentCfg == nil {
+		t.Fatal("ec2ConfigFromBackend() returned nil")
+	}
+
+	c := &ec2EndpointsCollection{
+		refreshCh: make(chan struct{}, 1),
+		state: map[string]ec2ResolvedBackend{
+			priorBackendIR.ResourceName(): {
+				port:   priorCfg.port,
+				config: priorCfg.stateKey(),
+				endpoints: []ec2ResolvedEndpoint{{
+					address:    "10.0.0.10",
+					instanceID: "i-1",
+					region:     priorCfg.region,
+					zone:       "us-east-1a",
+				}},
+			},
+		},
+	}
+
+	eps := c.endpointsForBackend(currentBackendIR, currentCfg)
+	if got := countEndpoints(eps); got != 0 {
+		t.Fatalf("endpointsForBackend() endpoints = %d, want 0 after the port changed", got)
+	}
+	requireRefreshRequested(t, c)
+}
+
+func TestEndpointsForBackendServesCachedEndpointsAfterCredentialOnlyChange(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	priorBackendIR := backendObjectIR(newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", nil), secret)
+	priorCfg := ec2ConfigFromBackend(priorBackendIR)
+
+	currentBackendIR := backendObjectIR(newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/updated", nil), secret)
+	currentCfg := ec2ConfigFromBackend(currentBackendIR)
+	if priorCfg == nil || currentCfg == nil {
+		t.Fatal("ec2ConfigFromBackend() returned nil")
+	}
+
+	c := &ec2EndpointsCollection{
+		refreshCh: make(chan struct{}, 1),
+		state: map[string]ec2ResolvedBackend{
+			priorBackendIR.ResourceName(): {
+				port:   priorCfg.port,
+				config: priorCfg.stateKey(),
+				endpoints: []ec2ResolvedEndpoint{{
+					address:    "10.0.0.10",
+					instanceID: "i-1",
+					region:     priorCfg.region,
+					zone:       "us-east-1a",
+				}},
+			},
+		},
+	}
+
+	eps := c.endpointsForBackend(currentBackendIR, currentCfg)
+	if got := countEndpoints(eps); got != 1 {
+		t.Fatalf("endpointsForBackend() endpoints = %d, want 1 served across a credential-only change", got)
+	}
+	requireRefreshRequested(t, c)
+}
+
+func countEndpoints(eps *ir.EndpointsForBackend) int {
+	total := 0
+	for _, lbEps := range eps.LbEps {
+		total += len(lbEps)
+	}
+	return total
+}
+
+func requireRefreshRequested(t *testing.T, c *ec2EndpointsCollection) {
+	t.Helper()
+	select {
+	case <-c.refreshCh:
+	default:
+		t.Fatal("expected an on-demand refresh request")
+	}
+}
+
 func TestSetEc2InstancesForTestPreservesTagKeyCase(t *testing.T) {
 	restore := SetEc2InstancesForTest([]TestEc2Instance{{
 		InstanceID: "i-1",

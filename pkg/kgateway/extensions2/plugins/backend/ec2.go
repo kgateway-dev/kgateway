@@ -220,23 +220,33 @@ type ec2CachedClient struct {
 }
 
 type ec2BackendStateKey struct {
-	region                string
+	region                string // +noKrtEquals compared in endpointSemanticsEqual
 	roleArn               string
-	port                  uint32
-	addressType           kgateway.AwsAddressType
-	filters               []ec2TagFilter
+	port                  uint32                  // +noKrtEquals compared in endpointSemanticsEqual
+	addressType           kgateway.AwsAddressType // +noKrtEquals compared in endpointSemanticsEqual
+	filters               []ec2TagFilter          // +noKrtEquals compared in endpointSemanticsEqual
 	secretResourceName    string
 	secretResourceVersion string
 }
 
 func (k ec2BackendStateKey) Equals(other ec2BackendStateKey) bool {
-	return k.region == other.region &&
+	return k.endpointSemanticsEqual(other) &&
 		k.roleArn == other.roleArn &&
-		k.port == other.port &&
-		k.addressType == other.addressType &&
-		slices.Equal(k.filters, other.filters) &&
 		k.secretResourceName == other.secretResourceName &&
 		k.secretResourceVersion == other.secretResourceVersion
+}
+
+// endpointSemanticsEqual reports whether two configs resolve to the same
+// endpoint set: same instance selection (region, filters) addressed the same
+// way (port, address type). Credential fields (roleArn, secret) are deliberately
+// excluded — they affect authorization to list instances, not which endpoints a
+// listing yields, so previously resolved endpoints remain valid across a
+// credential change.
+func (k ec2BackendStateKey) endpointSemanticsEqual(other ec2BackendStateKey) bool {
+	return k.region == other.region &&
+		k.port == other.port &&
+		k.addressType == other.addressType &&
+		slices.Equal(k.filters, other.filters)
 }
 
 type awsEc2InstanceLister struct {
@@ -393,6 +403,11 @@ type ec2EndpointsCollection struct {
 	trigger         *krt.RecomputeTrigger
 	refreshInterval time.Duration
 	lister          ec2InstanceLister
+	// refreshCh requests an immediate discovery pass (buffered, size 1, so
+	// concurrent requests coalesce). Used when a backend has no cached state
+	// yet (newly created) or its cached state was resolved under an outdated
+	// config, so reconciliation doesn't have to wait out the refresh interval.
+	refreshCh chan struct{}
 
 	stateMu sync.RWMutex
 	state   map[string]ec2ResolvedBackend
@@ -420,6 +435,7 @@ func newEc2EndpointsCollection(
 		trigger:         krt.NewRecomputeTrigger(false),
 		refreshInterval: configuredEc2RefreshInterval(commoncol.Settings),
 		lister:          newEc2InstanceLister(),
+		refreshCh:       make(chan struct{}, 1),
 		state:           map[string]ec2ResolvedBackend{},
 	}
 
@@ -435,7 +451,7 @@ func newEc2EndpointsCollection(
 			return nil
 		}
 		c.trigger.MarkDependant(kctx)
-		return c.endpointsForBackend(backend)
+		return c.endpointsForBackend(backend, cfg)
 	}, commoncol.KrtOpts.ToOptions("AwsEc2Endpoints")...)
 
 	c.DiscoveryStatus = krt.NewCollection(backends, func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.BackendObjectStatus {
@@ -476,6 +492,10 @@ func (c *ec2EndpointsCollection) run(ctx context.Context) {
 	}
 	logger.Debug("EC2 backend cache synced; running initial refresh")
 
+	// Drop any refresh request queued before this point: the initial refresh
+	// below covers every backend already in the (synced) collection. Requests
+	// arriving after the drain are kept and served by the loop.
+	c.drainRefreshRequest()
 	c.refreshOnce(ctx)
 	// Mark the trigger synced only after the initial refresh has populated
 	// c.state (and fired any resulting recomputation). This unblocks
@@ -493,7 +513,27 @@ func (c *ec2EndpointsCollection) run(ctx context.Context) {
 		case <-ticker.C:
 			logger.Debug("running scheduled EC2 endpoint refresh")
 			c.refreshOnce(ctx)
+		case <-c.refreshCh:
+			logger.Debug("running on-demand EC2 endpoint refresh")
+			c.refreshOnce(ctx)
 		}
+	}
+}
+
+// requestRefresh asks the run loop for an immediate discovery pass. The send is
+// non-blocking: pending requests coalesce in the single-slot buffer, and a nil
+// channel (as in unit tests that construct the collection directly) is a no-op.
+func (c *ec2EndpointsCollection) requestRefresh() {
+	select {
+	case c.refreshCh <- struct{}{}:
+	default:
+	}
+}
+
+func (c *ec2EndpointsCollection) drainRefreshRequest() {
+	select {
+	case <-c.refreshCh:
+	default:
 	}
 }
 
@@ -545,18 +585,21 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 	}
 
 	// Carry forward the prior resolution for every backend so a transient
-	// failure in one credential group doesn't wipe healthy endpoints.
+	// failure in one credential group doesn't wipe healthy endpoints. Prior
+	// endpoints are kept as long as the endpoint semantics are unchanged: a
+	// credential-only change (rotated secret, new role) doesn't invalidate the
+	// instances resolved under the old credentials, so they keep serving if the
+	// re-list under the new credentials fails.
 	c.stateMu.RLock()
 	for _, cfg := range configs {
 		nextBackendState := ec2ResolvedBackend{
 			port:   cfg.port,
 			config: cfg.stateKey(),
 		}
-		if prior, ok := c.state[cfg.resourceName]; ok && prior.config.Equals(nextBackendState.config) {
-			nextState[cfg.resourceName] = prior
-		} else {
-			nextState[cfg.resourceName] = nextBackendState
+		if prior, ok := c.state[cfg.resourceName]; ok && prior.config.endpointSemanticsEqual(nextBackendState.config) {
+			nextBackendState.endpoints = prior.endpoints
 		}
+		nextState[cfg.resourceName] = nextBackendState
 	}
 	c.stateMu.RUnlock()
 
@@ -656,15 +699,35 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 	return nextState, errors.Join(errs...)
 }
 
-func (c *ec2EndpointsCollection) endpointsForBackend(backend ir.BackendObjectIR) *ir.EndpointsForBackend {
+func (c *ec2EndpointsCollection) endpointsForBackend(backend ir.BackendObjectIR, cfg *ec2BackendConfig) *ir.EndpointsForBackend {
 	eps := ir.NewEndpointsForBackend(backend)
 
 	c.stateMu.RLock()
 	state, ok := c.state[backend.ResourceName()]
 	c.stateMu.RUnlock()
 	if !ok {
+		// Newly created backend that no discovery pass has covered yet; ask for
+		// an immediate refresh rather than waiting out the refresh interval.
 		logger.Debug("no cached EC2 endpoint state for backend", "backend", backend.ResourceName())
+		c.requestRefresh()
 		return eps
+	}
+	if current := cfg.stateKey(); !state.config.Equals(current) {
+		// The backend spec changed since the cached state was resolved; ask for
+		// an immediate refresh to reconcile.
+		c.requestRefresh()
+		if !state.config.endpointSemanticsEqual(current) {
+			// The cached endpoints were resolved under a different port, address
+			// type, filters, or region; serving them would route traffic to the
+			// wrong targets. Serve none until the refresh lands.
+			logger.Debug(
+				"discarding cached EC2 endpoint state resolved under an outdated config",
+				"backend", backend.ResourceName(),
+			)
+			return eps
+		}
+		// Only credentials changed; the cached endpoints are still the right
+		// targets, so keep serving them while the refresh re-lists.
 	}
 
 	for _, endpoint := range state.endpoints {
