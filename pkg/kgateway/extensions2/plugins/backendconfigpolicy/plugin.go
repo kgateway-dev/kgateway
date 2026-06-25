@@ -2,11 +2,14 @@ package backendconfigpolicy
 
 import (
 	"context"
+	"fmt"
+	"hash/fnv"
 	"slices"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoyrawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
@@ -20,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -197,6 +201,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 			}
 		}
 	}
+
+	endpointPlugin := &backendConfigEndpointPlugin{}
+
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
@@ -204,6 +211,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				Policies:                        backendConfigPolicyCol,
 				ProcessPolicyStaleStatusMarkers: processMarkers,
 				ProcessBackend:                  processBackend,
+				PerClientProcessEndpoints:       endpointPlugin.processEndpoints,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
 				},
@@ -287,6 +295,15 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 
 	if pol.healthCheck != nil {
 		out.HealthChecks = []*envoycorev3.HealthCheck{pol.healthCheck}
+		// Backend plugins (e.g. the static backend) stamp each endpoint's
+		// health_check_config.hostname with the backend's dial address. Per Envoy
+		// semantics that endpoint-level hostname overrides the cluster-level
+		// http_health_check host (and gRPC authority). When the BackendConfigPolicy
+		// explicitly configures a health check host, honor it by clearing the
+		// auto-stamped endpoint hostname so the configured value is used.
+		if healthCheckHasExplicitHost(pol.healthCheck) {
+			clearEndpointHealthCheckHostnames(out.GetLoadAssignment())
+		}
 	}
 
 	if pol.outlierDetection != nil {
@@ -298,6 +315,36 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	}
 
 	applyDnsClusterConfig(pol, out)
+}
+
+// healthCheckHasExplicitHost reports whether the health check configures a
+// cluster-level host (HTTP) or authority (gRPC) that the user expects to be
+// used for health check requests.
+func healthCheckHasExplicitHost(hc *envoycorev3.HealthCheck) bool {
+	if http := hc.GetHttpHealthCheck(); http != nil {
+		return http.GetHost() != ""
+	}
+	if grpc := hc.GetGrpcHealthCheck(); grpc != nil {
+		return grpc.GetAuthority() != ""
+	}
+	return false
+}
+
+// clearEndpointHealthCheckHostnames removes the per-endpoint
+// health_check_config.hostname override so the cluster-level health check host
+// takes effect. Envoy treats a non-empty endpoint hostname as an override of
+// the cluster-level configuration.
+func clearEndpointHealthCheckHostnames(cla *envoyendpointv3.ClusterLoadAssignment) {
+	if cla == nil {
+		return
+	}
+	for _, locality := range cla.GetEndpoints() {
+		for _, lbEndpoint := range locality.GetLbEndpoints() {
+			if cfg := lbEndpoint.GetEndpoint().GetHealthCheckConfig(); cfg != nil {
+				cfg.Hostname = ""
+			}
+		}
+	}
 }
 
 func translate(
@@ -479,4 +526,42 @@ func TranslateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.Tcp
 		out.KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveInterval.Duration.Seconds())}
 	}
 	return out
+}
+
+// backendConfigEndpointPlugin provides per-client endpoint processing for
+// zone-aware routing using the backend's already resolved policy attachments.
+type backendConfigEndpointPlugin struct{}
+
+// processEndpoints implements sdk.EndpointPlugin for zone-aware routing.
+// BackendConfigPolicy takes precedence over Kubernetes Service traffic distribution.
+func (p *backendConfigEndpointPlugin) processEndpoints(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniquelyConnectedClient,
+	out *endpoints.EndpointsInputs,
+) uint64 {
+	pol, bcpIR := selectZoneAwareBackendConfigPolicy(out.EndpointsForBackend.AttachedPolicies)
+	if bcpIR == nil {
+		return 0
+	}
+	// BackendConfigPolicy zoneAware settings take precedence over Service trafficDistribution
+	// settings for the same backend.
+	out.EndpointsForBackend.TrafficDistribution = wellknown.TrafficDistributionAny
+
+	hasher := fnv.New64()
+	hasher.Write([]byte(ir.PolicyRefString(pol.PolicyRef)))
+	hasher.Write(fmt.Appendf(nil, "%v", pol.Generation))
+	return hasher.Sum64()
+}
+
+func selectZoneAwareBackendConfigPolicy(attachedPolicies ir.AttachedPolicies) (ir.PolicyAtt, *BackendConfigPolicyIR) {
+	policies := attachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()]
+	for _, pol := range policies {
+		bcpIR, ok := pol.PolicyIr.(*BackendConfigPolicyIR)
+		if !ok || len(pol.Errors) > 0 || bcpIR.loadBalancerConfig == nil || !bcpIR.loadBalancerConfig.hasZoneAware {
+			continue
+		}
+		return pol, bcpIR
+	}
+	return ir.PolicyAtt{}, nil
 }

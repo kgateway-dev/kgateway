@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,10 +14,12 @@ import (
 
 	"github.com/ghodss/yaml"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema/cel"
 	apiextensionsvalidation "k8s.io/apiextensions-apiserver/pkg/apiserver/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	celconfig "k8s.io/apiserver/pkg/apis/cel"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -115,6 +118,7 @@ func parseFile(
 
 	// Create resources from YAML documents
 	var genericResources []runtime.Object
+	celValidators := map[schema.GroupVersionKind]*cel.Validator{}
 	for _, objYaml := range resourceYamlStrings {
 		// Skip empty documents
 		if len(bytes.TrimSpace(objYaml)) == 0 {
@@ -162,6 +166,18 @@ func parseFile(
 			if len(validationErrs) > 0 {
 				agg := validationErrs.ToAggregate()
 				return nil, fmt.Errorf("failed to validate %s: %w", gvk, agg)
+			}
+			celValidator, found := celValidators[gvk]
+			if !found {
+				celValidator = cel.NewValidator(structuralSchema, true, celconfig.PerCallLimit)
+				celValidators[gvk] = celValidator
+			}
+			if celValidator != nil {
+				celErrs, _ := celValidator.Validate(context.Background(), nil, structuralSchema, unstructuredObj.UnstructuredContent(), nil, celconfig.RuntimeCELCostBudget)
+				if len(celErrs) > 0 {
+					agg := celErrs.ToAggregate()
+					return nil, fmt.Errorf("failed to validate CEL rules for %s: %w", gvk, agg)
+				}
 			}
 			if err := yaml.Unmarshal(objYamlWithDefaults, obj); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal object with defaults for %s: %w", gvk, err)

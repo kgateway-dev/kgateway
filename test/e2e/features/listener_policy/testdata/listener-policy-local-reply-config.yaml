@@ -1,0 +1,26 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: http-listener-policy-local-reply-config
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  default:
+    httpSettings:
+      localReplies:
+        defaultBodyFormat:
+          contentType: "text/html"
+          text: <p>%LOCAL_REPLY_BODY%</p>
+        mappers:
+          - filter:
+              statusCodeFilter:
+                op: EQ
+                value: 404
+            statusCode: 200
+            bodyFormatOverride:
+              json:
+                customValue: 42
+                originalBody: "%LOCAL_REPLY_BODY%"

@@ -27,6 +27,7 @@ func newFinalBackendEndpoints(
 		}
 
 		final := raw.EmptyCopy()
+		final.AttachedPolicies = backend.AttachedPolicies
 		final.ClusterName = backend.ClusterName()
 		final.UpstreamResourceName = backend.ResourceName()
 		for locality, endpoints := range raw.LbEps {

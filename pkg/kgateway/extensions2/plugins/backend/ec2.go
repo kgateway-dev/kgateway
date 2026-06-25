@@ -23,6 +23,7 @@ import (
 	"golang.org/x/sync/singleflight"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -89,10 +90,20 @@ func buildEc2Ir(in *kgateway.AwsBackend, secret *ir.Secret) (*EC2Ir, error) {
 		region:      defaultAwsRegion(in.Region),
 		port:        defaultEc2PortValue(in.Ec2.Port),
 		addressType: defaultEc2AddressType(in.Ec2.AddressType),
-		roleArn:     in.Ec2.RoleArn,
+		roleArn:     assumeRoleArn(in.Auth),
 		filters:     normalizeEc2TagFilters(in.Ec2.Filters),
 		secret:      secret,
 	}, nil
+}
+
+// assumeRoleArn returns the role ARN to assume for the backend, sourced from the
+// shared auth block. EC2 discovery uses the controller's ambient credentials to
+// assume this role when listing instances. Returns "" when no AssumeRole auth is set.
+func assumeRoleArn(auth *kgateway.AwsAuth) string {
+	if auth != nil && auth.Type == kgateway.AwsAuthTypeAssumeRole && auth.AssumeRole != nil {
+		return auth.AssumeRole.RoleArn
+	}
+	return ""
 }
 
 func processEc2(_ *EC2Ir, out *envoyclusterv3.Cluster) error {
@@ -159,12 +170,23 @@ type ec2ResolvedBackend struct {
 	port      uint32
 	config    ec2BackendStateKey
 	endpoints []ec2ResolvedEndpoint
+	status    ec2DiscoveryStatus
 }
 
 func (b ec2ResolvedBackend) Equals(other ec2ResolvedBackend) bool {
 	return b.port == other.port &&
 		b.config.Equals(other.config) &&
-		slices.Equal(b.endpoints, other.endpoints)
+		slices.Equal(b.endpoints, other.endpoints) &&
+		b.status == other.status
+}
+
+// ec2DiscoveryStatus captures the outcome of the most recent discovery poll for a
+// backend, used to build the Backend's EndpointsDiscovered condition. The zero value
+// (empty reason) indicates discovery has not yet run for the backend.
+type ec2DiscoveryStatus struct {
+	status  metav1.ConditionStatus
+	reason  string
+	message string
 }
 
 type ec2InstanceLister interface {
@@ -293,7 +315,10 @@ func newAwsEc2Client(ctx context.Context, source ec2CredentialSource) (*awsec2.C
 	if source.secret != nil {
 		derived, err := deriveStaticSecret(source.secret)
 		if err != nil {
-			return nil, fmt.Errorf("invalid aws secret: %w", err)
+			// Malformed credential data is a credential problem, not an AWS-side
+			// rejection; classify it so the Backend reports CredentialError. The
+			// wrapped error never includes secret values (see deriveStaticSecret).
+			return nil, &ec2CredentialError{err: fmt.Errorf("invalid aws secret: %w", err)}
 		}
 		loadOptions = append(loadOptions, awsconfig.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(derived.access, derived.secret, derived.session),
@@ -373,6 +398,10 @@ type ec2EndpointsCollection struct {
 	state   map[string]ec2ResolvedBackend
 
 	Endpoints krt.Collection[ir.EndpointsForBackend]
+	// DiscoveryStatus contributes the EndpointsDiscovered condition for every EC2
+	// backend, derived from the latest discovery poll (or, for backends with
+	// unresolved secret credentials, synchronously from the backend IR).
+	DiscoveryStatus krt.Collection[ir.BackendObjectStatus]
 }
 
 func newEc2EndpointsCollection(
@@ -396,6 +425,7 @@ func newEc2EndpointsCollection(
 
 	if !c.enabled {
 		c.Endpoints = krt.NewStaticCollection[ir.EndpointsForBackend](nil, nil, commoncol.KrtOpts.ToOptions("disable/AwsEc2Endpoints")...)
+		c.DiscoveryStatus = krt.NewStaticCollection[ir.BackendObjectStatus](nil, nil, commoncol.KrtOpts.ToOptions("disable/AwsEc2DiscoveryStatus")...)
 		return c
 	}
 
@@ -407,6 +437,10 @@ func newEc2EndpointsCollection(
 		c.trigger.MarkDependant(kctx)
 		return c.endpointsForBackend(backend)
 	}, commoncol.KrtOpts.ToOptions("AwsEc2Endpoints")...)
+
+	c.DiscoveryStatus = krt.NewCollection(backends, func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.BackendObjectStatus {
+		return c.discoveryStatusForBackend(kctx, backend)
+	}, commoncol.KrtOpts.ToOptions("AwsEc2DiscoveryStatus")...)
 
 	go c.run(ctx)
 
@@ -565,8 +599,30 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 			}
 			instances, err := c.lister.ListInstances(ctx, source)
 			if err != nil {
+				reason, message := classifyEc2DiscoveryError(err)
 				nextStateMu.Lock()
 				errs = append(errs, fmt.Errorf("list ec2 instances for region %s: %w", key.region, err))
+				// Reflect the failure in each backend's discovery status while
+				// preserving its carried-forward endpoints (NFR-3): the status
+				// update is independent of whether endpoints are flushed.
+				for _, cfg := range groupedBackends {
+					backendState := nextState[cfg.resourceName]
+					carried := len(backendState.endpoints)
+					// A failed poll that still carries forward endpoints leaves the
+					// backend degraded-but-serving; report Degraded so operators can
+					// distinguish it from a hard-down backend (no endpoints), which
+					// keeps the specific failure reason. The cause stays in the message.
+					backendReason := reason
+					if carried > 0 {
+						backendReason = string(kgateway.BackendReasonDegraded)
+					}
+					backendState.status = ec2DiscoveryStatus{
+						status:  metav1.ConditionFalse,
+						reason:  backendReason,
+						message: ec2DiscoveryFailureMessage(message, carried),
+					}
+					nextState[cfg.resourceName] = backendState
+				}
 				nextStateMu.Unlock()
 				return
 			}
@@ -627,6 +683,83 @@ func (c *ec2EndpointsCollection) endpointsForBackend(backend ir.BackendObjectIR)
 		"endpoint_count", len(state.endpoints),
 	)
 	return eps
+}
+
+// discoveryStatusForBackend builds the EndpointsDiscovered condition for a single EC2
+// backend. Backends whose secret credentials are unresolved report CredentialError
+// synchronously (they never become pollable); pollable backends report the outcome of
+// the most recent poll, which is recomputed whenever the discovery state changes.
+func (c *ec2EndpointsCollection) discoveryStatusForBackend(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.BackendObjectStatus {
+	obj, ok := backend.Obj.(*kgateway.Backend)
+	if !ok || obj.Spec.Aws == nil || obj.Spec.Aws.Ec2 == nil {
+		return nil
+	}
+
+	// A Backend configured for secret-based auth whose secret cannot be resolved is
+	// filtered out before the discovery loop builds a pollable config. Surface a
+	// CredentialError here so the failure is never silent (FR-8, NFR-2).
+	if message, unresolved := ec2UnresolvedSecretCredential(backend, obj); unresolved {
+		return ec2DiscoveryStatusUpdate(backend, ec2DiscoveryStatus{
+			status:  metav1.ConditionFalse,
+			reason:  string(kgateway.BackendReasonCredentialError),
+			message: message,
+		})
+	}
+
+	cfg := ec2ConfigFromBackend(backend)
+	if cfg == nil {
+		return nil
+	}
+
+	// Depend on the recompute trigger so this status is recomputed after every
+	// poll, even when endpoints are unchanged (e.g. a transient failure that
+	// preserves carried-forward endpoints but flips the condition to False).
+	c.trigger.MarkDependant(kctx)
+
+	c.stateMu.RLock()
+	state, ok := c.state[backend.ResourceName()]
+	c.stateMu.RUnlock()
+	if !ok || state.status.reason == "" {
+		// Discovery has not completed a poll for this backend yet; the condition
+		// will appear after the next refresh cycle.
+		return nil
+	}
+	return ec2DiscoveryStatusUpdate(backend, state.status)
+}
+
+// ec2UnresolvedSecretCredential reports whether an EC2 backend is configured for
+// secret-based auth but its secret could not be resolved, returning an operator-facing
+// message that never includes secret values. obj must be the *kgateway.Backend already
+// asserted from backend.Obj by the caller.
+func ec2UnresolvedSecretCredential(backend ir.BackendObjectIR, obj *kgateway.Backend) (string, bool) {
+	auth := obj.Spec.Aws.Auth
+	if auth == nil || auth.Type != kgateway.AwsAuthTypeSecret {
+		return "", false
+	}
+	// The secret is considered resolved iff it made it onto the backend IR.
+	if beIr, ok := backend.ObjIr.(*backendIr); ok &&
+		beIr.awsIr != nil && beIr.awsIr.ec2Ir != nil && beIr.awsIr.ec2Ir.secret != nil {
+		return "", false
+	}
+	name := ""
+	if auth.SecretRef != nil {
+		name = auth.SecretRef.Name
+	}
+	return fmt.Sprintf("aws auth secret %q in namespace %q could not be resolved", name, obj.GetNamespace()), true
+}
+
+// ec2DiscoveryStatusUpdate wraps a discovery status as a BackendObjectStatus carrying
+// the EndpointsDiscovered condition for the given backend.
+func ec2DiscoveryStatusUpdate(backend ir.BackendObjectIR, status ec2DiscoveryStatus) *ir.BackendObjectStatus {
+	return &ir.BackendObjectStatus{
+		Source: backend.GetObjectSource(),
+		Conditions: []metav1.Condition{{
+			Type:    string(kgateway.BackendConditionEndpointsDiscovered),
+			Status:  status.status,
+			Reason:  status.reason,
+			Message: status.message,
+		}},
+	}
 }
 
 func ec2ConfigFromBackend(backend ir.BackendObjectIR) *ec2BackendConfig {
@@ -707,7 +840,58 @@ func selectResolvedEc2Backend(cfg ec2BackendConfig, instances []ec2DiscoveredIns
 		)
 	}
 
+	if len(selected.endpoints) > 0 {
+		selected.status = ec2DiscoveryStatus{
+			status:  metav1.ConditionTrue,
+			reason:  string(kgateway.BackendReasonDiscovered),
+			message: fmt.Sprintf("%d endpoints active", len(selected.endpoints)),
+		}
+	} else {
+		selected.status = ec2DiscoveryStatus{
+			status:  metav1.ConditionFalse,
+			reason:  string(kgateway.BackendReasonNoMatchingInstances),
+			message: ec2NoMatchMessage(cfg),
+		}
+	}
+
 	return selected
+}
+
+// ec2DiscoveryFailureMessage augments a discovery-failure cause with whether the
+// backend is still serving endpoints carried forward from the last successful poll.
+// A failed poll preserves the prior endpoints (NFR-3), so the EndpointsDiscovered
+// condition alone (False) cannot tell an operator whether the backend is degraded but
+// still serving traffic or has never resolved any endpoints; this distinction makes
+// that explicit. The carried-forward count is stable across consecutive failures (no
+// successful poll updates it), so embedding it here does not churn the condition.
+func ec2DiscoveryFailureMessage(cause string, carriedEndpoints int) string {
+	if carriedEndpoints > 0 {
+		return fmt.Sprintf("%s; serving %d endpoints from the last successful poll", cause, carriedEndpoints)
+	}
+	return fmt.Sprintf("%s; no endpoints available from a previous poll", cause)
+}
+
+// ec2NoMatchMessage builds an operator-facing message for a successful poll that
+// resolved no endpoints. It distinguishes "the filters matched nothing" from "the
+// account has no usable instances" so operators can tell a misconfiguration from
+// an empty fleet.
+//
+// The message is intentionally derived only from this backend's own configuration,
+// not from the region-wide running-instance count: that count fluctuates with
+// unrelated instances, and embedding it would change the message (and therefore the
+// EndpointsDiscovered condition) on every poll, churning the Backend status even
+// though nothing about this backend changed.
+func ec2NoMatchMessage(cfg ec2BackendConfig) string {
+	if len(cfg.filters) == 0 {
+		return fmt.Sprintf(
+			"last poll succeeded but no running instances in region %s had a usable %s address",
+			cfg.region, cfg.addressType,
+		)
+	}
+	return fmt.Sprintf(
+		"last poll succeeded but no running instances in region %s matched the configured tag filters [%s]",
+		cfg.region, strings.Join(ec2FiltersForLog(cfg.filters), ", "),
+	)
 }
 
 func matchesEc2Filters(instance ec2DiscoveredInstance, filters []ec2TagFilter) bool {
@@ -804,6 +988,57 @@ func awsAPIErrorDetails(err error) (string, string, bool) {
 		return "", "", false
 	}
 	return apiErr.ErrorCode(), apiErr.ErrorMessage(), true
+}
+
+// ec2CredentialError marks a discovery failure that originates from credential
+// construction (e.g. malformed secret data) rather than an AWS-side rejection, so
+// it can be classified as a CredentialError on the Backend status.
+type ec2CredentialError struct {
+	err error
+}
+
+func (e *ec2CredentialError) Error() string { return e.err.Error() }
+
+func (e *ec2CredentialError) Unwrap() error { return e.err }
+
+// ec2AuthErrorCodes are AWS API error codes that indicate the request was rejected
+// for authentication or authorization reasons, as opposed to a transient failure.
+var ec2AuthErrorCodes = map[string]struct{}{
+	"AuthFailure":                {},
+	"UnauthorizedOperation":      {},
+	"AccessDenied":               {},
+	"AccessDeniedException":      {},
+	"InvalidClientTokenId":       {},
+	"SignatureDoesNotMatch":      {},
+	"RequestExpired":             {},
+	"OptInRequired":              {},
+	"Blocked":                    {},
+	"MissingAuthenticationToken": {},
+}
+
+// classifyEc2DiscoveryError maps a discovery error to a Backend condition reason and
+// an operator-facing message. Locally-detected credential problems become
+// CredentialError; AWS auth/authz rejections become AuthorizationError; everything
+// else is treated as a transient DiscoveryError. The returned message never includes
+// secret values.
+func classifyEc2DiscoveryError(err error) (reason string, message string) {
+	var credErr *ec2CredentialError
+	if errors.As(err, &credErr) {
+		return string(kgateway.BackendReasonCredentialError), credErr.Error()
+	}
+	if code, awsMessage, ok := awsAPIErrorDetails(err); ok {
+		msg := awsMessage
+		if msg == "" {
+			msg = code
+		} else {
+			msg = fmt.Sprintf("%s: %s", code, awsMessage)
+		}
+		if _, isAuth := ec2AuthErrorCodes[code]; isAuth {
+			return string(kgateway.BackendReasonAuthorizationError), msg
+		}
+		return string(kgateway.BackendReasonDiscoveryError), msg
+	}
+	return string(kgateway.BackendReasonDiscoveryError), err.Error()
 }
 
 func ec2SecretResourceName(secret *ir.Secret) string {

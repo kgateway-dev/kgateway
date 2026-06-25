@@ -40,24 +40,13 @@ spec:
   aws:
     region: us-east-1
     auth:
-      type: Secret
-      secretRef:
-        name: aws-creds
+      type: AssumeRole
+      assumeRole:
+        roleArn: arn:aws:iam::123456789012:role/describe-ec2
     ec2:
       port: 8080
       addressType: PrivateIP
-      roleArn: arn:aws:iam::123456789012:role/describe-ec2
       filters:
       - keyValue:
           key: app
           value: payments
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: aws-creds
-  namespace: default
-type: Opaque
-data:
-  accessKey: QUtJQUlPU0ZPRE5ON0VYQU1QTEU=
-  secretKey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ==

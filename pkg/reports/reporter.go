@@ -99,11 +99,7 @@ func key(obj metav1.Object) types.NamespacedName {
 // NOTE: Exported for unit testing, validation_test.go should be refactored to reduce this visibility
 func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
 	key := key(gateway)
-	report := r.Gateways[key]
-	if report != nil {
-		report.observedGeneration = gateway.Generation
-	}
-	return report
+	return r.Gateways[key]
 }
 
 func (r *ReportMap) GatewayNamespaceName(key types.NamespacedName) *GatewayReport {
@@ -129,7 +125,9 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	return gr
 }
 
-// Returns a ListenerSetReport for the provided ListenerSet, nil if there is not a report present.
+// ListenerSet is a pure lookup that returns the ListenerSetReport for the provided
+// ListenerSet, or nil if a report is not present. It must not mutate the ReportMap:
+// lazily creating the per-GVK map here would change ReportMap equality on a read.
 // This is different than the Reporter.ListenerSet() method, as we need to understand when
 // reports are not generated for a ListenerSet that has been translated.
 //
@@ -139,15 +137,11 @@ func (r *ReportMap) ListenerSet(listenerSet client.Object) *ListenerSetReport {
 	if gvk.Empty() {
 		gvk = wellknown.ListenerSetGVK
 	}
-	if r.ListenerSets[gvk] == nil {
-		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)
+	lsByGVK := r.ListenerSets[gvk]
+	if lsByGVK == nil {
+		return nil
 	}
-	key := key(listenerSet)
-	report := r.ListenerSets[gvk][key]
-	if report != nil {
-		report.observedGeneration = listenerSet.GetGeneration()
-	}
-	return report
+	return lsByGVK[key(listenerSet)]
 }
 
 func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSetReport {
@@ -167,7 +161,10 @@ func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSet
 	return lsr
 }
 
-// route returns a RouteReport for the provided route object, nil if a report is not present.
+// route is a pure lookup that returns a RouteReport for the provided route object,
+// or nil if a report is not present. The observedGeneration is set at report
+// creation time (newRouteReport) and when the route is translated
+// (statusReporter.Route).
 // This is different than the Reporter.Route() method, as we need to understand when
 // reports are not generated for a route that has been translated. Supported object types are:
 //
@@ -180,35 +177,15 @@ func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 
 	switch obj.(type) {
 	case *gwv1.HTTPRoute:
-		report := r.HTTPRoutes[key]
-		if report != nil {
-			report.observedGeneration = obj.GetGeneration()
-		}
-		return report
+		return r.HTTPRoutes[key]
 	case *gwv1a2.TCPRoute:
-		report := r.TCPRoutes[key]
-		if report != nil {
-			report.observedGeneration = obj.GetGeneration()
-		}
-		return report
+		return r.TCPRoutes[key]
 	case *gwv1.TLSRoute:
-		report := r.TLSRoutes[key]
-		if report != nil {
-			report.observedGeneration = obj.GetGeneration()
-		}
-		return report
+		return r.TLSRoutes[key]
 	case *gwv1a2.TLSRoute:
-		report := r.TLSRoutes[key]
-		if report != nil {
-			report.observedGeneration = obj.GetGeneration()
-		}
-		return report
+		return r.TLSRoutes[key]
 	case *gwv1.GRPCRoute:
-		report := r.GRPCRoutes[key]
-		if report != nil {
-			report.observedGeneration = obj.GetGeneration()
-		}
-		return report
+		return r.GRPCRoutes[key]
 	default:
 		slog.Warn("unsupported route type", "route_type", fmt.Sprintf("%T", obj))
 		return nil
@@ -405,6 +382,8 @@ func (r *statusReporter) Gateway(gateway *gwv1.Gateway) reporter.GatewayReporter
 	gr := r.report.Gateway(gateway)
 	if gr == nil {
 		gr = r.report.newGatewayReport(gateway)
+	} else {
+		gr.observedGeneration = gateway.Generation
 	}
 	return gr
 }
@@ -413,6 +392,8 @@ func (r *statusReporter) ListenerSet(listenerSet client.Object) reporter.Listene
 	lsr := r.report.ListenerSet(listenerSet)
 	if lsr == nil {
 		lsr = r.report.newListenerSetReport(listenerSet)
+	} else {
+		lsr.observedGeneration = listenerSet.GetGeneration()
 	}
 	return lsr
 }
@@ -421,6 +402,8 @@ func (r *statusReporter) Route(obj metav1.Object) reporter.RouteReporter {
 	rr := r.report.route(obj)
 	if rr == nil {
 		rr = r.report.newRouteReport(obj)
+	} else {
+		rr.observedGeneration = obj.GetGeneration()
 	}
 	return rr
 }
@@ -467,9 +450,6 @@ func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 // If no report is found, nil is returned, signaling this parentRef is unknown to the report
 func (r *RouteReport) getParentRefOrNil(parentRef *gwv1.ParentReference) *ParentRefReport {
 	key := getParentRefKey(parentRef)
-	if r.Parents == nil {
-		r.Parents = make(map[ParentRefKey]*ParentRefReport)
-	}
 	return r.Parents[key]
 }
 

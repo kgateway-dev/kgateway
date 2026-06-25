@@ -296,8 +296,8 @@ func mergeRustformation(
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 					Name: RustformationModuleName,
 				},
-				PerRouteConfigName: RustformationFilterName,
-				FilterConfig:       filterCfg,
+				FilterName:   RustformationFilterName,
+				FilterConfig: filterCfg,
 			}}
 		}
 		p1Json, err := utils.AnyToJson(p1.spec.rustformation.config.FilterConfig)
@@ -744,8 +744,8 @@ func mergeHttpACL(
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 					Name: httpACLModuleName,
 				},
-				PerRouteConfigName: httpACLFilterName,
-				FilterConfig:       filterCfg,
+				FilterName:   httpACLFilterName,
+				FilterConfig: filterCfg,
 			}}
 		}
 

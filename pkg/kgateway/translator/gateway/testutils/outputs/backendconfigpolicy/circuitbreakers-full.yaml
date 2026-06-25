@@ -5,6 +5,8 @@ Clusters:
       maxPendingRequests: 500
       maxRequests: 2000
       maxRetries: 10
+  commonLbConfig:
+    localityWeightedLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
