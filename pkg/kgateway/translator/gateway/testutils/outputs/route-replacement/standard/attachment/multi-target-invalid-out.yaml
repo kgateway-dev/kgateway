@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -191,7 +193,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
           }"}}}'
-      perRouteConfigName: rustformation
+      filterName: rustformation
   virtualHosts:
   - domains:
     - www.example.com
@@ -219,7 +221,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
           }"}}}'
-      perRouteConfigName: rustformation
+      filterName: rustformation
   virtualHosts:
   - domains:
     - www.example.com
@@ -247,7 +249,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
           }"}}}'
-      perRouteConfigName: rustformation
+      filterName: rustformation
   virtualHosts:
   - domains:
     - www.example.com

@@ -24,7 +24,7 @@ Certificates are organized into subdirectories:
 
 **Note**: During certificate generation, intermediate files like `.csr` (Certificate Signing Request) and `.srl` (serial number) files may be created. These are temporary artifacts and are not committed to the repository - only the final certificates in the YAML manifests are required.
 
-**Note**: The server TLS certificate (`tls-secret.yaml`) is located at the testdata root level alongside other Kubernetes manifests like `gw.yaml` and `curl-pod-with-certs.yaml`.
+**Note**: The server TLS certificate (`tls-secret.yaml`) is located at the testdata root level alongside other Kubernetes manifests like `gw.yaml`, `curl-pod-with-certs.yaml`, and `curl-namespace.yaml` (which creates the `curl` namespace the curl pod and its mounted client-cert Secrets live in).
 
 These certificates are signed by the CA certificates in `certs/ca1/ca-cert-configmap.yaml` and `certs/ca2/ca-cert-2-configmap.yaml`, allowing them to work with both validation mechanisms:
 - `verify-certificate-hash`: Validates the specific certificate hash (certificate pinning)

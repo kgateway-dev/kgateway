@@ -55,7 +55,9 @@ clusters:
       resourceApiVersion: V3
   name: istio-se_gwtest_workloads-se_se-b.example.com_80
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

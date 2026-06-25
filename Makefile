@@ -92,8 +92,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-# Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.37.2
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.38.1
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -120,6 +119,13 @@ $(BUG_REPORT_DIR):
 
 # Base Alpine image used for SDS and dummy-idp containers. Exported for use in goreleaser.yaml.
 export ALPINE_BASE_IMAGE ?= alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
+
+# Distroless glibc base used for the kgateway controller container. Exported for use in goreleaser.yaml.
+# Tracked as :latest (unpinned) on purpose: this distroless image has no package manager, so the only way
+# to receive Chainguard's CVE fixes is to pull a newer build. A pinned digest would freeze CVEs in place and
+# may be garbage-collected on the free tier. Release builds set DOCKER_NO_CACHE=1, which adds --pull so each
+# release picks up the freshly patched image.
+export DISTROLESS_BASE_IMAGE ?= cgr.dev/chainguard/glibc-dynamic:latest
 
 GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
@@ -764,6 +770,7 @@ $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT
 	$(BUILDX_BUILD) --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
+		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		$(CONTROLLER_CACHE_FROM) \
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 	@touch $@
@@ -810,7 +817,8 @@ sds-docker: $(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
 #----------------------------------------------------------------------------------
 
 ENVOYINIT_DIR=cmd/envoyinit
-ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
+INTERNAL_ENVOYINIT_DIR=internal/envoyinit
+ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR) $(INTERNAL_ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
@@ -1194,19 +1202,24 @@ k3d-reload-%: k3d-build-and-load-% kind-set-image-% ; ## Use to build specified 
 #----------------------------------------------------------------------------------
 
 .PHONY: run-load-tests
+VALIDATION_MODE ?= standard
+LOAD_TEST_GO_ARGS ?= -timeout=60m
 run-load-tests: ## Run KGateway load testing suite (requires existing cluster and installation)
+	@echo "Running KGateway load tests with validation mode: $(VALIDATION_MODE)"
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
+	go test -tags=e2e $(LOAD_TEST_GO_ARGS) -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
 
 .PHONY: run-load-tests-baseline
 run-load-tests-baseline: ## Run baseline load tests (1000 routes)
+	@echo "Running KGateway baseline load tests with validation mode: $(VALIDATION_MODE)"
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
+	go test -tags=e2e $(LOAD_TEST_GO_ARGS) -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
 
 .PHONY: run-load-tests-production
 run-load-tests-production: ## Run production load tests (5000 routes)
+	@echo "Running KGateway production load tests with validation mode: $(VALIDATION_MODE)"
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
+	go test -tags=e2e $(LOAD_TEST_GO_ARGS) -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
 
 #----------------------------------------------------------------------------------
 # MARK: Conformance
@@ -1218,16 +1231,17 @@ CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSIO
 CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_REPORT_ARGS)
 
 CONFORMANCE_TEST_DIR ?= ./test/conformance/...
+CONFORMANCE_GO_TEST_ARGS ?= -timeout=20m
 
 .PHONY: conformance ## Run the conformance test suite
 conformance:  ## Run the Gateway API conformance suite
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS)
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance $(CONFORMANCE_GO_TEST_ARGS) -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api conformance tests.
 conformance-%:  ## Run only the specified Gateway API conformance test by ShortName
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS) \
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance $(CONFORMANCE_GO_TEST_ARGS) -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
 # An alias target for running all conformance test suites.

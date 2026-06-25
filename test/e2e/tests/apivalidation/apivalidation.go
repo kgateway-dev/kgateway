@@ -109,20 +109,23 @@ spec:
 			wantErrors: []string{`spec\.aws\.ec2\.addressType( in body should be one of|: Unsupported value: "InternalIP": supported values: "PrivateIP", "PublicIP")`},
 		},
 		{
-			name: "Backend: invalid EC2 role ARN",
+			name: "Backend: invalid AssumeRole role ARN",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
-  name: backend-ec2-role-arn
+  name: backend-assume-role-arn
 spec:
   type: AWS
   aws:
+    auth:
+      type: AssumeRole
+      assumeRole:
+        roleArn: not-an-arn
     ec2:
       port: 8080
-      roleArn: not-an-arn
 `,
-			wantErrors: []string{"spec.aws.ec2.roleArn in body should match"},
+			wantErrors: []string{"spec.aws.auth.assumeRole.roleArn in body should match"},
 		},
 		{
 			name: "Backend: EC2 tag filter requires exactly one branch",

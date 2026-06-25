@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -7,7 +9,9 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_a_svc-a_8080
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -15,7 +19,9 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_b_svc-b_8080
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -88,7 +94,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"x-foo-req","value":"abc"}]},"response":{"set":[{"name":"x-foo-resp","value":"xyz"}]}}'
-          perRouteConfigName: rustformation
+          filterName: rustformation
     - match:
         prefix: /
       name: listener~80~example_com-route-2-httproute-example-route-infra-0-0-matcher-0

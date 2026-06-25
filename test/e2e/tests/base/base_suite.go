@@ -809,3 +809,15 @@ func (s *BaseTestingSuite) SkipSuite() bool {
 	// Use checkCompatibleWithApiVersion with empty max requirements (only check min)
 	return !checkCompatibleWithApiVersion(s.MinGwApiVersion, nil, currentChannel, currentVersion)
 }
+
+// CheckSkipSuiteBeforeSetup detects and caches the Gateway API version/channel,
+// then reports whether the suite should be skipped due to unmet minimum-version
+// requirements. SetupSuite performs the same detection and skip check, but a
+// suite that overrides SetupSuite to apply resources before delegating must run
+// the check first: TearDownSuite does not run after a SetupSuite skip, so any
+// resources applied ahead of the skip would leak. Detection is idempotent, so
+// the subsequent base SetupSuite call repeats it harmlessly.
+func (s *BaseTestingSuite) CheckSkipSuiteBeforeSetup() bool {
+	s.detectAndCacheGwApiInfo()
+	return s.SkipSuite()
+}
