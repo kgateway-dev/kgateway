@@ -117,7 +117,7 @@ runs:
       run: |
         case "${{ inputs.test-type }}" in
           "gateway-api")
-            make conformance
+            make conformance CONFORMANCE_GO_TEST_ARGS='-timeout=20m'
             ;;
           *)
             echo "Unknown test type: ${{ inputs.test-type }}"
