@@ -1788,6 +1788,11 @@ func (in *ExtProcProvider) DeepCopyInto(out *ExtProcProvider) {
 		*out = new(MetadataOptions)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.RequestAttributes != nil {
+		in, out := &in.RequestAttributes, &out.RequestAttributes
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.FilterStage != nil {
 		in, out := &in.FilterStage, &out.FilterStage
 		*out = new(FilterStageSpec)

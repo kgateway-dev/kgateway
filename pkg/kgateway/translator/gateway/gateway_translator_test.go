@@ -3113,6 +3113,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with per-listener mTLS override and merging", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/per-listener-mtls-merge.yaml"},
+			outputFile: "listener-policy/per-listener-mtls-merge.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy merge happens in the default and perPort fields", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/deep-merge.yaml"},

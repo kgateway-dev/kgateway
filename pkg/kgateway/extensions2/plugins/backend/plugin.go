@@ -127,8 +127,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				BackendInit: ir.BackendInit{
 					InitEnvoyBackend: processBackendForEnvoy,
 				},
-				Backends:  bcol,
-				Endpoints: ec2Endpoints.Endpoints,
+				Backends:        bcol,
+				Endpoints:       ec2Endpoints.Endpoints,
+				ExtraConditions: ec2Endpoints.DiscoveryStatus,
 			},
 		},
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{

@@ -87,6 +87,10 @@ type BackendPlugin struct {
 	AliasKinds []schema.GroupKind
 	Backends   krt.Collection[ir.BackendObjectIR]
 	Endpoints  krt.Collection[ir.EndpointsForBackend]
+	// ExtraConditions, when set, contributes additional status conditions to the
+	// Backend resource beyond the Accepted condition (e.g. the EC2 EndpointsDiscovered
+	// condition produced by runtime endpoint discovery). May be nil.
+	ExtraConditions krt.Collection[ir.BackendObjectStatus]
 }
 
 type KGwTranslator interface {
@@ -139,6 +143,9 @@ func (p Plugin) HasSynced() bool {
 			return false
 		}
 		if up.Endpoints != nil && !up.Endpoints.HasSynced() {
+			return false
+		}
+		if up.ExtraConditions != nil && !up.ExtraConditions.HasSynced() {
 			return false
 		}
 	}

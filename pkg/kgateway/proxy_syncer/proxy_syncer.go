@@ -302,15 +302,23 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
 	// backendStatusReport is the sole writer of the Backend Accepted condition: it merges
-	// each Backend's IR errors with its per-client translation errors.
-	kgwBackendCol := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()].Backends
+	// each Backend's IR errors with its per-client translation errors. It also merges any
+	// plugin-contributed conditions (e.g. the EC2 EndpointsDiscovered condition) so all
+	// Backend conditions are written by a single owner.
+	kgwBackendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
+	kgwBackendCol := kgwBackendPlugin.Backends
+	kgwBackendExtraConditions := kgwBackendPlugin.ExtraConditions
 	s.backendStatusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		var kgwBackends []ir.BackendObjectIR
 		if kgwBackendCol != nil {
 			kgwBackends = krt.Fetch(kctx, kgwBackendCol)
 		}
 		clusters := krt.Fetch(kctx, clustersPerClient.clusters)
-		merged := GenerateBackendStatusReport(kgwBackends, clusters)
+		var extraConditions []ir.BackendObjectStatus
+		if kgwBackendExtraConditions != nil {
+			extraConditions = krt.Fetch(kctx, kgwBackendExtraConditions)
+		}
+		merged := GenerateBackendStatusReport(kgwBackends, clusters, extraConditions)
 		return &report{merged}
 	}, krtopts.ToOptions("BackendStatusReport")...)
 

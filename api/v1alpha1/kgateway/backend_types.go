@@ -378,6 +378,43 @@ const (
 
 	// BackendReasonInvalid is used with Accepted=False when the Backend failed to translate.
 	BackendReasonInvalid BackendConditionReason = "Invalid"
+
+	// BackendConditionEndpointsDiscovered indicates whether runtime endpoint discovery
+	// (e.g. AWS EC2 instance discovery) succeeded for backends that resolve their
+	// endpoints dynamically. It is only set on backends that perform such discovery.
+	BackendConditionEndpointsDiscovered BackendConditionType = "EndpointsDiscovered"
+
+	// BackendReasonDiscovered is used with EndpointsDiscovered=True when the last
+	// discovery poll succeeded and resolved at least one active endpoint.
+	BackendReasonDiscovered BackendConditionReason = "Discovered"
+
+	// BackendReasonNoMatchingInstances is used with EndpointsDiscovered=False when the
+	// last discovery poll succeeded but resolved no endpoints (e.g. no instances matched
+	// the configured filters).
+	BackendReasonNoMatchingInstances BackendConditionReason = "NoMatchingInstances"
+
+	// BackendReasonCredentialError is used with EndpointsDiscovered=False when discovery
+	// credentials are missing or cannot be resolved (e.g. an unresolved secret reference
+	// or malformed credential data).
+	//
+	//nolint:gosec // G101: this is a status condition reason, not a credential.
+	BackendReasonCredentialError BackendConditionReason = "CredentialError"
+
+	// BackendReasonAuthorizationError is used with EndpointsDiscovered=False when the
+	// discovery provider rejected the request for authentication or authorization reasons.
+	BackendReasonAuthorizationError BackendConditionReason = "AuthorizationError"
+
+	// BackendReasonDiscoveryError is used with EndpointsDiscovered=False when discovery
+	// failed for a transient or otherwise unclassified reason.
+	BackendReasonDiscoveryError BackendConditionReason = "DiscoveryError"
+
+	// BackendReasonDegraded is used with EndpointsDiscovered=False when the last discovery
+	// poll failed but the backend is still serving endpoints carried forward from a previous
+	// successful poll. It distinguishes a degraded-but-serving backend from one that is hard
+	// down (which keeps its specific failure reason, e.g. AuthorizationError, with no
+	// endpoints) so operators can alert on the two cases differently. The underlying failure
+	// cause is preserved in the condition message.
+	BackendReasonDegraded BackendConditionReason = "Degraded"
 )
 
 // BackendStatus defines the observed state of Backend.
