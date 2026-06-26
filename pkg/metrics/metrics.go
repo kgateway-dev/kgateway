@@ -47,6 +47,9 @@ type Counter interface {
 	Metric
 	Inc(...Label)
 	Add(float64, ...Label)
+	// DeletePartialMatch deletes all series whose labels contain all of the
+	// provided label name-value pairs, returning the number of series removed.
+	DeletePartialMatch(...Label) int
 	Reset()
 }
 
@@ -108,9 +111,25 @@ func validateLabels(metric Metric, labels []Label) []string {
 	return values
 }
 
+// toPrometheusLabels converts a slice of Label values to a prometheus.Labels map,
+// used for partial-match deletion where label order is irrelevant.
+func toPrometheusLabels(labels []Label) prometheus.Labels {
+	out := make(prometheus.Labels, len(labels))
+	for _, label := range labels {
+		out[label.Name] = label.Value
+	}
+	return out
+}
+
 // validateLabels validates a slice of Label values for the counter metric.
 func (c *prometheusCounter) validateLabels(labels []Label) []string {
 	return validateLabels(c, labels)
+}
+
+// DeletePartialMatch deletes all series whose labels contain all of the provided
+// label name-value pairs.
+func (c *prometheusCounter) DeletePartialMatch(labels ...Label) int {
+	return c.m.DeletePartialMatch(toPrometheusLabels(labels))
 }
 
 // Inc increments the counter by 1.
@@ -200,6 +219,9 @@ type Gauge interface {
 	Set(float64, ...Label)
 	Add(float64, ...Label)
 	Sub(float64, ...Label)
+	// DeletePartialMatch deletes all series whose labels contain all of the
+	// provided label name-value pairs, returning the number of series removed.
+	DeletePartialMatch(...Label) int
 	Reset()
 }
 
@@ -241,6 +263,12 @@ func (c *prometheusGauge) Labels() []string {
 // validateLabels validates a slice of Label values for the gauge metric.
 func (g *prometheusGauge) validateLabels(labels []Label) []string {
 	return validateLabels(g, labels)
+}
+
+// DeletePartialMatch deletes all series whose labels contain all of the provided
+// label name-value pairs.
+func (g *prometheusGauge) DeletePartialMatch(labels ...Label) int {
+	return g.m.DeletePartialMatch(toPrometheusLabels(labels))
 }
 
 // Set sets the gauge to a specific value.
