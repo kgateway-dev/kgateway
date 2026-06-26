@@ -214,6 +214,9 @@ func (t *BackendTranslator) ValidateClusterConfigs(ctx context.Context, clusters
 	if len(clusters) == 0 {
 		return nil
 	}
+	if t.Validator == nil {
+		return errors.New("strict validation requested but no validator configured")
+	}
 	builder := bootstrap.New()
 	for _, cluster := range clusters {
 		builder.AddCluster(cluster)
