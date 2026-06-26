@@ -417,14 +417,30 @@ func (r *ReportMap) BuildBackendStatus(
 		}
 		meta.SetStatusCondition(&finalConditions, condition)
 	}
-	// Preserve conditions on the current status whose type we do not own.
+	// Preserve conditions on the current status whose type we do not own. A condition
+	// type that kgateway manages (e.g. EndpointsDiscovered) but that the fresh report no
+	// longer contains must be dropped rather than carried forward: it means the backend
+	// stopped producing that condition (e.g. it is no longer an EC2 backend, or runtime
+	// discovery was disabled), so retaining it would advertise stale state forever.
 	for _, condition := range currentStatus.Conditions {
+		if _, owned := backendConditionTypesOwnedByKgateway[condition.Type]; owned {
+			continue
+		}
 		if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
 			finalConditions = append(finalConditions, condition)
 		}
 	}
 
 	return &kgateway.BackendStatus{Conditions: finalConditions}
+}
+
+// backendConditionTypesOwnedByKgateway is the set of Backend status condition types
+// that kgateway is the authoritative writer for. When such a type is absent from a
+// freshly built report it is dropped from the persisted status instead of being
+// preserved, so a backend that stops contributing it does not retain a stale condition.
+var backendConditionTypesOwnedByKgateway = map[string]struct{}{
+	string(kgateway.BackendConditionAccepted):            {},
+	string(kgateway.BackendConditionEndpointsDiscovered): {},
 }
 
 // BuildRouteStatus returns a newly constructed and fully defined RouteStatus for the supplied route object

@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	backendconfigpolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
@@ -126,12 +127,20 @@ func winningBackendTLSPolicyRef(attached ir.AttachedPolicies) *ir.AttachedPolicy
 // its IR-construction errors, falling back to the per-client translation errors (deduplicated
 // across connected clients) when there are none. IR errors take precedence because
 // TranslateBackend returns them and short-circuits before the per-client policy/validation runs.
+// Any plugin-contributed conditions in extraConditions (e.g. the EC2 EndpointsDiscovered
+// condition) are merged onto the same Backend so all conditions share a single writer.
 // Exported for testing.
-func GenerateBackendStatusReport(backends []ir.BackendObjectIR, clusters []uccWithCluster) reports.ReportMap {
+func GenerateBackendStatusReport(backends []ir.BackendObjectIR, clusters []uccWithCluster, extraConditions []ir.BackendObjectStatus) reports.ReportMap {
 	merged := reports.NewReportMap()
 	reporter := reports.NewReporter(&merged)
 
 	backendGVK := wellknown.BackendGVK.GroupKind()
+
+	// index plugin-contributed conditions by Backend resource name for merging below.
+	extraByBackend := make(map[string][]metav1.Condition, len(extraConditions))
+	for _, ec := range extraConditions {
+		extraByBackend[ec.Source.ResourceName()] = append(extraByBackend[ec.Source.ResourceName()], ec.Conditions...)
+	}
 
 	// aggregate per-client translation errors per Backend generation, deduplicated by message.
 	// Keying by generation ensures errors from a stale generation aren't attributed to a newer
@@ -185,12 +194,30 @@ func GenerateBackendStatusReport(backends []ir.BackendObjectIR, clusters []uccWi
 			}
 		}
 		cond := pluginutils.BuildCondition("Backend", errs)
-		reporter.Backend(backend.Obj).SetCondition(reportssdk.BackendCondition{
+		backendReporter := reporter.Backend(backend.Obj)
+		backendReporter.SetCondition(reportssdk.BackendCondition{
 			Type:    cond.Type,
 			Status:  cond.Status,
 			Reason:  cond.Reason,
 			Message: cond.Message,
 		})
+
+		for _, extra := range extraByBackend[backend.GetObjectSource().ResourceName()] {
+			// The Accepted condition is owned by the core translation status above;
+			// a plugin-contributed condition must never overwrite it (SetCondition is
+			// keyed by Type, so it would otherwise silently mask translation errors).
+			if extra.Type == string(kgateway.BackendConditionAccepted) {
+				logger.Warn("ignoring plugin-contributed condition that collides with the reserved Accepted type",
+					"backend", backend.GetObjectSource().ResourceName())
+				continue
+			}
+			backendReporter.SetCondition(reportssdk.BackendCondition{
+				Type:    extra.Type,
+				Status:  extra.Status,
+				Reason:  extra.Reason,
+				Message: extra.Message,
+			})
+		}
 	}
 
 	return merged
