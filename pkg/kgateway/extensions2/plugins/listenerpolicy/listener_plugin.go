@@ -442,6 +442,11 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 		out.ServerHeaderTransformation = *policy.serverHeaderTransformation
 	}
 
+	// translate serverName
+	if policy.serverName != nil {
+		out.ServerName = *policy.serverName
+	}
+
 	// translate streamIdleTimeout
 	if policy.streamIdleTimeout != nil {
 		out.StreamIdleTimeout = durationpb.New(*policy.streamIdleTimeout)

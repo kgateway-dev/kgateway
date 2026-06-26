@@ -2483,6 +2483,11 @@ func (in *HTTPSettings) DeepCopyInto(out *HTTPSettings) {
 		*out = new(ServerHeaderTransformation)
 		**out = **in
 	}
+	if in.ServerName != nil {
+		in, out := &in.ServerName, &out.ServerName
+		*out = new(string)
+		**out = **in
+	}
 	if in.StreamIdleTimeout != nil {
 		in, out := &in.StreamIdleTimeout, &out.StreamIdleTimeout
 		*out = new(v1.Duration)

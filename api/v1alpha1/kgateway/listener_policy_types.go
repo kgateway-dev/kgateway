@@ -228,6 +228,12 @@ type HTTPSettings struct {
 	// +optional
 	ServerHeaderTransformation *ServerHeaderTransformation `json:"serverHeaderTransformation,omitempty"`
 
+	// ServerName determines the value of the server header.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-name
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	ServerName *string `json:"serverName,omitempty"`
+
 	// StreamIdleTimeout is the idle timeout for HTTP streams.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-stream-idle-timeout
 	// +optional

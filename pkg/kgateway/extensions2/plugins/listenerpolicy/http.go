@@ -42,6 +42,7 @@ type HttpListenerPolicyIr struct {
 	xffConfig                  *envoyxffv3.XffConfig
 	skipXffAppend              *bool
 	serverHeaderTransformation *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation
+	serverName                 *string
 	streamIdleTimeout          *time.Duration
 	idleTimeout                *time.Duration
 	http2ProtocolOptions       *envoycorev3.Http2ProtocolOptions
@@ -135,6 +136,11 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 
 	// Check serverHeaderTransformation
 	if d.serverHeaderTransformation != d2.serverHeaderTransformation {
+		return false
+	}
+
+	// Check serverName
+	if !cmputils.PointerValsEqual(d.serverName, d2.serverName) {
 		return false
 	}
 
@@ -232,6 +238,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 
 	upgradeConfigs := convertUpgradeConfig(h)
 	serverHeaderTransformation := convertServerHeaderTransformation(h.ServerHeaderTransformation)
+	serverName := h.ServerName
 
 	// Convert streamIdleTimeout from metav1.Duration to time.Duration
 	var streamIdleTimeout *time.Duration
@@ -367,6 +374,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		xffConfig:                     xffConfig,
 		skipXffAppend:                 h.SkipXffAppend,
 		serverHeaderTransformation:    serverHeaderTransformation,
+		serverName:                    serverName,
 		streamIdleTimeout:             streamIdleTimeout,
 		idleTimeout:                   idleTimeout,
 		http2ProtocolOptions:          http2ProtocolOptions,
