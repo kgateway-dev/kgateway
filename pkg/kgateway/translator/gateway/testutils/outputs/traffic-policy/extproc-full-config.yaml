@@ -135,6 +135,9 @@ Listeners:
                               responseBodyMode: BUFFERED
                               responseHeaderMode: SKIP
                               responseTrailerMode: SEND
+                            requestAttributes:
+                            - source.address
+                            - connection.requested_server_name
                             routeCacheAction: CLEAR
                             statPrefix: my_extproc
                   predicate:

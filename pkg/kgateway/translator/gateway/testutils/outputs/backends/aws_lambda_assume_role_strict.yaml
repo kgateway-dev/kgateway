@@ -1,9 +1,49 @@
 Clusters:
-- loadAssignment:
-    clusterName: kube_gwtest_backend-service_80
-  metadata: {}
-  name: kube_gwtest_backend-service_80
-  type: STATIC
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      allAddressesInSingleEndpoint: true
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
+  loadAssignment:
+    clusterName: backend_default_lambda-assume-role_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: lambda.us-east-1.amazonaws.com
+              portValue: 443
+  name: backend_default_lambda-assume-role_0
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      sni: lambda.us-east-1.amazonaws.com
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      commonHttpProtocolOptions:
+        idleTimeout: 30s
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+      httpFilters:
+      - name: envoy.filters.http.aws_lambda
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.aws_lambda.v3.Config
+          arn: arn:aws:lambda:us-east-1:000000000000:function:hello-function:$LATEST
+      - name: envoy.filters.http.aws_request_signing
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.aws_request_signing.v3.AwsRequestSigning
+          credentialProvider:
+            assumeRoleCredentialProvider:
+              roleArn: arn:aws:iam::311275790335:role/project-invoke-role
+          region: us-east-1
+          serviceName: lambda
+      - name: envoy.filters.http.upstream_codec
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
@@ -11,7 +51,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8080
+      portValue: 80
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -27,28 +67,28 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~8080
+          routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: true
-    name: listener~8080
-  name: listener~8080
+    name: listener~80
+  name: listener~80
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~8080
+  name: listener~80
   virtualHosts:
   - domains:
-    - example.com
-    name: listener~8080~example_com
+    - www.example.com
+    name: listener~80~www_example_com
     routes:
     - match:
-        prefix: /
-      name: listener~8080~example_com-route-0-httproute-backend-route-gwtest-0-0-matcher-0
+        path: /lambda
+      name: listener~80~www_example_com-route-0-httproute-lambda-route-default-0-0-matcher-0
       route:
-        cluster: kube_gwtest_backend-service_80
+        cluster: backend_default_lambda-assume-role_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:
-    gwtest/example-gateway:
+    default/example-gateway:
       conditions:
       - lastTransitionTime: null
         message: Successfully accepted Gateway
@@ -95,7 +135,7 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
-    gwtest/backend-route:
+    default/lambda-route:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -113,38 +153,3 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
-  policies:
-    BackendConfigPolicy/gwtest/invalid-outlier-detection-policy:
-      ancestors:
-      - ancestorRef:
-          group: ""
-          kind: Service
-          name: backend-service
-          namespace: gwtest
-        conditions:
-        - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            node { id: "validation-node-id" cluster: "validation-cluster" } static_resources
-            { listeners { name: "placeholder_listener" address { socket_address {
-            address: "0.0.0.0" port_value: 8081 } } filter_chains { filters { name:
-            "envoy.filters.network.http_connection_manager" typed_config { [type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager]
-            { stat_prefix: "placeholder" route_config { virtual_hosts { name: "placeholder_vhost"
-            domains: "*" } } http_filters { name: "envoy.filters.http.router" typed_config
-            { [type.googleapis.com/envoy.extensions.filters.http.router.v3.Router]
-            { } } } } } } name: "placeholder_filter_chain" } } clusters { name: "test-cluster-for-validation"
-            type: STATIC connect_timeout { seconds: 5 } outlier_detection { consecutive_5xx
-            { value: 5 } interval { } base_ejection_time { seconds: 30 } max_ejection_percent
-            { value: 10 } } } } : Proto constraint validation failed (BootstrapValidationError.StaticResources:
-            embedded message failed validation | caused by StaticResourcesValidationError.Clusters[0]:
-            embedded message failed validation | caused by ClusterValidationError.OutlierDetection:
-            embedded message failed validation | caused by OutlierDetectionValidationError.Interval:
-            value must be greater than 0s)'
-          reason: Invalid
-          status: "False"
-          type: Accepted
-        - lastTransitionTime: null
-          message: ""
-          reason: Pending
-          status: "False"
-          type: Attached
-        controllerName: kgateway.dev/kgateway

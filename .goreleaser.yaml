@@ -68,6 +68,7 @@ dockers:
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - '--build-arg=BASE_IMAGE={{ envOrDefault "DISTROLESS_BASE_IMAGE" "cgr.dev/chainguard/glibc-dynamic:latest" }}'
       - "--build-arg=RUST_MODULE_DIR=_output/rust/arm64"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:arm64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:arm64,mode=max,ignore-error=true"
@@ -85,6 +86,7 @@ dockers:
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - '--build-arg=BASE_IMAGE={{ envOrDefault "DISTROLESS_BASE_IMAGE" "cgr.dev/chainguard/glibc-dynamic:latest" }}'
       - "--build-arg=RUST_MODULE_DIR=_output/rust/amd64"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:amd64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/kgateway-cache:amd64,mode=max,ignore-error=true"

@@ -7,6 +7,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
@@ -550,6 +551,105 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 
 		assert.Equal(t, "envoy.clusters.aggregate", cluster.GetClusterType().GetName())
 		assert.True(t, proto.Equal(mustMessageToAny(t, &wrapperspb.StringValue{Value: "unchanged"}), cluster.GetClusterType().GetTypedConfig()))
+	})
+}
+
+// clusterWithEndpointHealthCheckHostname builds a static-style cluster whose
+// single endpoint carries an auto-stamped health_check_config.hostname, mimicking
+// what the static backend plugin produces.
+func clusterWithEndpointHealthCheckHostname(hostname string) *envoyclusterv3.Cluster {
+	return &envoyclusterv3.Cluster{
+		LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
+			Endpoints: []*envoyendpointv3.LocalityLbEndpoints{{
+				LbEndpoints: []*envoyendpointv3.LbEndpoint{{
+					HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+						Endpoint: &envoyendpointv3.Endpoint{
+							Hostname: hostname,
+							HealthCheckConfig: &envoyendpointv3.Endpoint_HealthCheckConfig{
+								Hostname: hostname,
+							},
+						},
+					},
+				}},
+			}},
+		},
+	}
+}
+
+func endpointHealthCheckHostname(cluster *envoyclusterv3.Cluster) string {
+	return cluster.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetHealthCheckConfig().GetHostname()
+}
+
+func TestBackendConfigPolicyHealthCheckHostnameOverride(t *testing.T) {
+	const dialHost = "internal-lb.ap-south-1.elb.amazonaws.com"
+
+	t.Run("clears endpoint hostname when HTTP host is configured", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				HealthCheck: &kgateway.HealthCheck{
+					Timeout:            metav1.Duration{Duration: 5 * time.Second},
+					Interval:           metav1.Duration{Duration: 30 * time.Second},
+					UnhealthyThreshold: 2,
+					HealthyThreshold:   3,
+					Http: &kgateway.HealthCheckHttp{
+						Host: new("app-host.example.com"),
+						Path: "/ping",
+					},
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := clusterWithEndpointHealthCheckHostname(dialHost)
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		assert.Equal(t, "app-host.example.com", cluster.GetHealthChecks()[0].GetHttpHealthCheck().GetHost())
+		assert.Empty(t, endpointHealthCheckHostname(cluster), "endpoint hostname should be cleared so the configured host wins")
+	})
+
+	t.Run("clears endpoint hostname when gRPC authority is configured", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				HealthCheck: &kgateway.HealthCheck{
+					Timeout:            metav1.Duration{Duration: 5 * time.Second},
+					Interval:           metav1.Duration{Duration: 30 * time.Second},
+					UnhealthyThreshold: 2,
+					HealthyThreshold:   3,
+					Grpc: &kgateway.HealthCheckGrpc{
+						Authority: new("app-host.example.com"),
+					},
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := clusterWithEndpointHealthCheckHostname(dialHost)
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		assert.Equal(t, "app-host.example.com", cluster.GetHealthChecks()[0].GetGrpcHealthCheck().GetAuthority())
+		assert.Empty(t, endpointHealthCheckHostname(cluster), "endpoint hostname should be cleared so the configured authority wins")
+	})
+
+	t.Run("preserves endpoint hostname when no host is configured", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				HealthCheck: &kgateway.HealthCheck{
+					Timeout:            metav1.Duration{Duration: 5 * time.Second},
+					Interval:           metav1.Duration{Duration: 30 * time.Second},
+					UnhealthyThreshold: 2,
+					HealthyThreshold:   3,
+					Http: &kgateway.HealthCheckHttp{
+						Path: "/ping",
+					},
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := clusterWithEndpointHealthCheckHostname(dialHost)
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		assert.Equal(t, dialHost, endpointHealthCheckHostname(cluster), "endpoint hostname should be preserved as the default when no host is configured")
 	})
 }
 
