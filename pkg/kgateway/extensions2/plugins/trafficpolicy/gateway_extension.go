@@ -518,6 +518,9 @@ func buildCompositeExtProcFilter(in kgateway.ExtProcProvider, envoyGrpcService *
 			}
 		}
 	}
+	if len(in.RequestAttributes) > 0 {
+		filter.RequestAttributes = in.RequestAttributes
+	}
 	return buildCompositeFilter(
 		"composite_ext_proc",
 		extProcGlobalDisableFilterMetadataNamespace,

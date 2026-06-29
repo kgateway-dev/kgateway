@@ -42,7 +42,9 @@ clusters:
     baseEjectionTime: 900s
     consecutive5xx: 7
     interval: 300s
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

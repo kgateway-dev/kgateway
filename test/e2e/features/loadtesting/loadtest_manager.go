@@ -6,9 +6,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
+	dto "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -339,6 +343,145 @@ func (ltm *LoadTestManager) CollectKGatewayMetrics() KGatewayMetrics {
 		CollectionResources:         int64(len(ltm.createdRoutes)),
 		StatusSyncerResources:       int64(len(ltm.createdRoutes)),
 	}
+}
+
+func (ltm *LoadTestManager) CollectKGatewayValidationMetrics() (ValidationMetrics, error) {
+	out := ValidationMetrics{ByCaller: map[string]ValidationCallerMetrics{}}
+	rawMetrics, err := ltm.fetchKGatewayMetrics()
+	if err != nil {
+		return out, err
+	}
+
+	parser := expfmt.NewTextParser(model.LegacyValidation)
+	families, err := parser.TextToMetricFamilies(strings.NewReader(string(rawMetrics)))
+	if err != nil {
+		return out, fmt.Errorf("parse kgateway metrics: %w", err)
+	}
+
+	addCounterFamily(families["kgateway_validation_calls_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.Calls += value
+		out.Calls += value
+	})
+	addCounterFamily(families["kgateway_validation_cache_hits_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.CacheHits += value
+		out.CacheHits += value
+	})
+	addCounterFamily(families["kgateway_validation_cache_misses_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.CacheMisses += value
+		out.CacheMisses += value
+	})
+	addCounterFamily(families["kgateway_validation_valid_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.Valid += value
+		out.Valid += value
+	})
+	addCounterFamily(families["kgateway_validation_invalid_xds_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.InvalidXDS += value
+		out.InvalidXDS += value
+	})
+	addCounterFamily(families["kgateway_validation_invocation_errors_total"], &out, func(metrics *ValidationCallerMetrics, value int64) {
+		metrics.InvocationErrors += value
+		out.InvocationErrors += value
+	})
+	addDurationFamily(families["kgateway_validation_duration_seconds"], &out)
+
+	return out, nil
+}
+
+func (ltm *LoadTestManager) fetchKGatewayMetrics() ([]byte, error) {
+	namespace := ltm.testInstallation.Metadata.InstallNamespace
+	var lastErr error
+	timeout := time.After(60 * time.Second)
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		pods, err := ltm.testInstallation.ClusterContext.Clientset.CoreV1().
+			Pods(namespace).
+			List(ltm.ctx, metav1.ListOptions{
+				LabelSelector: "app.kubernetes.io/instance=kgateway,app.kubernetes.io/name=kgateway,kgateway=kgateway",
+			})
+		if err != nil {
+			lastErr = err
+		} else {
+			lastErr = fmt.Errorf("no ready kgateway controller pods found")
+			for _, pod := range pods.Items {
+				if !podReady(&pod) {
+					continue
+				}
+				raw, err := ltm.testInstallation.ClusterContext.Clientset.CoreV1().
+					Pods(namespace).
+					ProxyGet("http", pod.Name, "9092", "/metrics", nil).
+					DoRaw(ltm.ctx)
+				if err == nil {
+					return raw, nil
+				}
+				lastErr = err
+			}
+		}
+		select {
+		case <-ltm.ctx.Done():
+			return nil, fmt.Errorf("fetch kgateway metrics from service %s/%s: %w", namespace, controllerDeploymentName, ltm.ctx.Err())
+		case <-timeout:
+			return nil, fmt.Errorf("fetch kgateway metrics from namespace %s after retrying: %w", namespace, lastErr)
+		case <-ticker.C:
+		}
+	}
+}
+
+func podReady(pod *corev1.Pod) bool {
+	if pod == nil || pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+		return false
+	}
+	for _, condition := range pod.Status.Conditions {
+		if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func addCounterFamily(
+	family *dto.MetricFamily,
+	out *ValidationMetrics,
+	add func(*ValidationCallerMetrics, int64),
+) {
+	if family == nil {
+		return
+	}
+	for _, metric := range family.GetMetric() {
+		value := int64(metric.GetCounter().GetValue())
+		caller := metricLabel(metric, "caller")
+		callerMetrics := out.ByCaller[caller]
+		add(&callerMetrics, value)
+		out.ByCaller[caller] = callerMetrics
+	}
+}
+
+func addDurationFamily(family *dto.MetricFamily, out *ValidationMetrics) {
+	if family == nil {
+		return
+	}
+	for _, metric := range family.GetMetric() {
+		histogram := metric.GetHistogram()
+		if histogram == nil {
+			continue
+		}
+		caller := metricLabel(metric, "caller")
+		callerMetrics := out.ByCaller[caller]
+		callerMetrics.DurationCount += histogram.GetSampleCount()
+		callerMetrics.DurationSeconds += histogram.GetSampleSum()
+		out.ByCaller[caller] = callerMetrics
+		out.DurationCount += histogram.GetSampleCount()
+		out.DurationSeconds += histogram.GetSampleSum()
+	}
+}
+
+func metricLabel(metric *dto.Metric, name string) string {
+	for _, label := range metric.GetLabel() {
+		if label.GetName() == name {
+			return label.GetValue()
+		}
+	}
+	return "unknown"
 }
 
 func (ltm *LoadTestManager) GetSimulationMetrics() VClusterMetrics {

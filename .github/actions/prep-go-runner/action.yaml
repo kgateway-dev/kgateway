@@ -15,6 +15,9 @@ outputs:
   go-build-cache-key:
     description: 'primary key for the Go build cache'
     value: ${{ steps.go-cache-keys.outputs.go-build }}
+  go-build-cache-key-race:
+    description: 'primary key for the race-instrumented (CGO + -race) Go build cache used by the unit tests'
+    value: ${{ steps.go-cache-keys.outputs.go-build-race }}
   go-build-cache-path:
     description: 'path to the Go build cache directory'
     value: ${{ steps.go-cache-paths.outputs.go-build }}
@@ -87,6 +90,7 @@ runs:
       shell: bash
       run: |
         echo "go-build=${{ runner.os }}-go-build-v3-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}" >> $GITHUB_OUTPUT
+        echo "go-build-race=${{ runner.os }}-go-build-race-v3-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}" >> $GITHUB_OUTPUT
     - name: Restore Go Build Cache
       uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       id: go-build-cache

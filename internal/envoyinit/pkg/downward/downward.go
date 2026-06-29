@@ -31,8 +31,11 @@ type TestWhichIsNeedDownwardAPI struct {
 	IsPodSvcAccount bool
 	IsPodUID        bool
 
-	IsNodeName bool
-	IsNodeIp   bool
+	IsNodeName    bool
+	IsNodeIp      bool
+	IsNodeZone    bool
+	IsNodeRegion  bool
+	IsNodeSubzone bool
 
 	IsPodLabels      bool
 	IsPodAnnotations bool
@@ -73,6 +76,21 @@ func (td *TestWhichIsNeedDownwardAPI) NodeIp() string {
 	return ""
 }
 
+func (td *TestWhichIsNeedDownwardAPI) NodeZone() string {
+	td.IsNodeZone = true
+	return ""
+}
+
+func (td *TestWhichIsNeedDownwardAPI) NodeRegion() string {
+	td.IsNodeRegion = true
+	return ""
+}
+
+func (td *TestWhichIsNeedDownwardAPI) NodeSubzone() string {
+	td.IsNodeSubzone = true
+	return ""
+}
+
 func (td *TestWhichIsNeedDownwardAPI) PodLabels() map[string]string {
 	td.IsPodLabels = true
 	return map[string]string{}
@@ -100,6 +118,10 @@ func RetrieveDownwardAPIFrom(read func(string) ([]byte, error), getenv func(stri
 	ret.nodeName = getenv("NODE_NAME")
 	ret.nodeIp = getenv("NODE_IP")
 
+	ret.nodeZone = getenv("KGATEWAY_NODE_ZONE")
+	ret.nodeRegion = getenv("KGATEWAY_NODE_REGION")
+	ret.nodeSubzone = getenv("KGATEWAY_NODE_SUBZONE")
+
 	ret.podUID = getenv("POD_UID")
 	ret.podSvcAccount = getenv("POD_SVCACCNT")
 
@@ -114,6 +136,9 @@ type downwardInjectable struct {
 	podUID         string
 	nodeName       string
 	nodeIp         string
+	nodeZone       string
+	nodeRegion     string
+	nodeSubzone    string
 	podLabels      map[string]string
 	podAnnotations map[string]string
 }
@@ -125,6 +150,9 @@ func (di *downwardInjectable) PodSvcAccount() string             { return di.pod
 func (di *downwardInjectable) PodUID() string                    { return di.podUID }
 func (di *downwardInjectable) NodeName() string                  { return di.nodeName }
 func (di *downwardInjectable) NodeIp() string                    { return di.nodeIp }
+func (di *downwardInjectable) NodeZone() string                  { return di.nodeZone }
+func (di *downwardInjectable) NodeRegion() string                { return di.nodeRegion }
+func (di *downwardInjectable) NodeSubzone() string               { return di.nodeSubzone }
 func (di *downwardInjectable) PodLabels() map[string]string      { return di.podLabels }
 func (di *downwardInjectable) PodAnnotations() map[string]string { return di.podAnnotations }
 

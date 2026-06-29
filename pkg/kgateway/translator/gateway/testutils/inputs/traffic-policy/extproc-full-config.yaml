@@ -119,6 +119,9 @@ spec:
       forwarding:
         typed:
         - "io.transformation"
+    requestAttributes:
+      - "source.address"
+      - "connection.requested_server_name"
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension

@@ -397,6 +397,10 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	updateTracingConfig(pCtx, policy.tracingProvider, policy.tracingConfig)
 	out.Tracing = policy.tracingConfig
 
+	if policy.localReplyConfig != nil {
+		out.LocalReplyConfig = policy.localReplyConfig
+	}
+
 	// translate upgrade configuration
 	if policy.upgradeConfigs != nil {
 		out.UpgradeConfigs = append(out.GetUpgradeConfigs(), policy.upgradeConfigs...)

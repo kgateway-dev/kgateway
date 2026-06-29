@@ -1,16 +1,13 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  name: kube_gwtest_backend-service_80
-  outlierDetection:
-    baseEjectionTime: 30s
-    consecutive5xx: 5
-    interval: 0s
-    maxEjectionPercent: 10
+  name: kube_default_backend-svc_80
   type: EDS
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
@@ -19,7 +16,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8080
+      portValue: 80
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -35,28 +32,30 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~8080
+          routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: true
-    name: listener~8080
-  name: listener~8080
+    name: listener~80
+  name: listener~80
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~8080
+  name: listener~80
   virtualHosts:
   - domains:
     - example.com
-    name: listener~8080~example_com
+    name: listener~80~example_com
     routes:
-    - match:
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
         prefix: /
-      name: listener~8080~example_com-route-0-httproute-backend-route-gwtest-0-0-matcher-0
-      route:
-        cluster: kube_gwtest_backend-service_80
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
 Statuses:
   gateways:
-    gwtest/example-gateway:
+    default/example-gateway:
       conditions:
       - lastTransitionTime: null
         message: Successfully accepted Gateway
@@ -103,13 +102,14 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
-    gwtest/backend-route:
+    default/example-route:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Successfully accepted Route
-          reason: Accepted
-          status: "True"
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/jwt-policy:
+            jwt: missing reference grant'
+          reason: RouteRuleReplaced
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references
@@ -122,22 +122,22 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    BackendConfigPolicy/gwtest/invalid-outlier-detection-policy:
+    TrafficPolicy/default/jwt-policy:
       ancestors:
       - ancestorRef:
-          group: ""
-          kind: Service
-          name: backend-service
-          namespace: gwtest
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
         conditions:
         - lastTransitionTime: null
-          message: Policy accepted
-          reason: Valid
-          status: "True"
+          message: 'jwt: missing reference grant'
+          reason: Invalid
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
+          message: ""
+          reason: Pending
+          status: "False"
           type: Attached
         controllerName: kgateway.dev/kgateway

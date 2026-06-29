@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -78,7 +80,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"allow","rules":[{"action":"deny","cidrs":["192.168.0.0/16"]},{"action":"deny","cidrs":["2001:db8::/32"]},{"action":"deny","cidrs":["192.168.1.100"]},{"action":"deny","cidrs":["2001:db8::1"]}]}'
-          perRouteConfigName: http-acl
+          filterName: http-acl
 Statuses:
   gateways:
     default/example-gateway:
