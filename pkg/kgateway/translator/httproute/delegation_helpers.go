@@ -2,6 +2,7 @@ package httproute
 
 import (
 	"path"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/routeutils"
 	delegationutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -108,7 +110,10 @@ func filterDelegatedChildren(
 
 // mergeParentChildRouteMatch is called only when inherit-parent-matcher is set.
 // It merges the parent route match into the child as follows:
-//   - the resulting path consists of parent path + child path
+//   - the resulting path consists of parent path + child path. When the parent
+//     path matcher is a RegularExpression, the paths are merged into a regular
+//     expression (see mergeRegexParentPath) so the parent regex is preserved;
+//     otherwise the literal paths are joined.
 //   - the resulting headers consist of the combined headers from parent and child, with parent header taking
 //     precedence on any name conflicts
 //   - the resulting query parameters consist of the combined query parameters from parent and child, with parent
@@ -122,13 +127,26 @@ func mergeParentChildRouteMatch(
 		return
 	}
 
+	// Per the Gateway API spec a nil Path (or a nil Type/Value) defaults to a
+	// PathPrefix match on "/". routeutils.ParsePath applies those defaults so we
+	// never dereference a nil parent or child path below.
+	parentPathType, parentPathValue := routeutils.ParsePath(parent.Path)
+	childPathType, childPathValue := routeutils.ParsePath(child.Path)
+
 	if child.Path == nil {
 		child.Path = &gwv1.HTTPPathMatch{
-			Type:  new(gwv1.PathMatchPathPrefix),
-			Value: new(""),
+			Type:  new(childPathType),
+			Value: new(childPathValue),
 		}
 	}
-	child.Path.Value = new(path.Join(*parent.Path.Value, *child.Path.Value))
+	if parentPathType == gwv1.PathMatchRegularExpression {
+		// path.Join would mangle a regex (it normalizes slashes and strips
+		// anchors/groups), so build a regex that keeps the parent matcher intact.
+		child.Path.Value = new(mergeRegexParentPath(parentPathValue, childPathType, childPathValue))
+		child.Path.Type = new(gwv1.PathMatchRegularExpression)
+	} else {
+		child.Path.Value = new(path.Join(parentPathValue, childPathValue))
+	}
 
 	// Inherit parent and child headers and query parameters while augmenting the merge
 	// with additions specified on the child
@@ -139,6 +157,32 @@ func mergeParentChildRouteMatch(
 	if parent.Method != nil {
 		child.Method = new(*parent.Method)
 	}
+}
+
+// mergeRegexParentPath appends the child path onto a RegularExpression parent
+// path, producing a single regular expression. The parent's trailing "$" anchor
+// is dropped so the child can extend it, and re-added only when the parent regex
+// was already end-anchored so an unanchored parent (e.g. "/a/.*") keeps its
+// unanchored semantics. A non-regex child is matched literally via
+// regexp.QuoteMeta; a regex child is inlined without its own anchors. A
+// PathPrefix child stays open-ended so deeper paths still match.
+func mergeRegexParentPath(parentRegex string, childType gwv1.PathMatchType, childValue string) string {
+	parentEndAnchored := strings.HasSuffix(parentRegex, "$")
+	merged := strings.TrimSuffix(parentRegex, "$")
+	switch childType {
+	case gwv1.PathMatchRegularExpression:
+		merged += strings.TrimSuffix(strings.TrimPrefix(childValue, "^"), "$")
+	case gwv1.PathMatchExact:
+		merged += regexp.QuoteMeta(childValue)
+	default:
+		merged += regexp.QuoteMeta(childValue) + "(?:/.*)?"
+	}
+	// Preserve the parent's end-anchoring: only re-add "$" when the parent regex
+	// was already end-anchored, leaving unanchored parents unanchored.
+	if parentEndAnchored {
+		merged += "$"
+	}
+	return merged
 }
 
 // mergeHeaders merges parent and child header matches. If a header name is specified on both
