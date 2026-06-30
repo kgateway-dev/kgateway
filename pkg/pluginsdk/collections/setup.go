@@ -104,20 +104,13 @@ func (c *CommonCollections) InitCollections(
 	httpRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.HTTPRoute](c.Client, wellknown.HTTPRouteGVR, filter), c.KrtOpts.ToOptions("HTTPRoute")...)
 	metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
 
-	// ON_EXPERIMENTAL_PROMOTION : Remove this block
-	// Ref: https://github.com/kgateway-dev/kgateway/issues/12879
 	var tcproutes krt.Collection[*gwv1a2.TCPRoute]
-	if globalSettings.EnableExperimentalGatewayAPIFeatures {
-		tcproutes = krt.WrapClient(
-			newDelayedTypedInformer(c.Client, gvr.TCPRoute, func() kclient.Informer[*gwv1a2.TCPRoute] {
-				return kclient.NewFiltered[*gwv1a2.TCPRoute](c.Client, filter)
-			}),
-			c.KrtOpts.ToOptions("TCPRoute")...,
-		)
-	} else {
-		// If disabled, still build a collection but make it always empty
-		tcproutes = krt.NewStaticCollection[*gwv1a2.TCPRoute](nil, nil, c.KrtOpts.ToOptions("disable/TCPRoute")...)
-	}
+	tcproutes = krt.WrapClient(
+		newDelayedTypedInformer(c.Client, gvr.TCPRoute, func() kclient.Informer[*gwv1a2.TCPRoute] {
+			return kclient.NewFiltered[*gwv1a2.TCPRoute](c.Client, filter)
+		}),
+		c.KrtOpts.ToOptions("TCPRoute")...,
+	)
 
 	// TLSRoute is standard as of Gateway API v1.5, so promoted v1 TLSRoutes
 	// are always enabled. Keep pre-v1 TLSRoute watches under the experimental

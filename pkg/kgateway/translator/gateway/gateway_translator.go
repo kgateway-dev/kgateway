@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/gatewaytls"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
@@ -79,7 +80,7 @@ func (t *translator) Translate(
 
 	for _, rErr := range routesForGw.RouteErrors {
 		reporter.Route(rErr.Route.GetSourceObject()).ParentRef(&rErr.ParentRef).SetCondition(reports.RouteCondition{
-			Type:   gwv1.RouteConditionAccepted,
+			Type:   gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 			Status: metav1.ConditionFalse,
 			Reason: rErr.Error.Reason,
 			// TODO message

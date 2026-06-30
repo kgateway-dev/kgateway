@@ -25,6 +25,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -254,18 +255,16 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 								}
 							}
 
-							if cond.Type != string(gwv1.RouteConditionAccepted) {
+							if cond.Type != string(conditions.KgatewayConditionProgrammed) {
 								continue
 							}
 
-							if cond.Reason != string(gwv1.RouteReasonAccepted) &&
-								cond.Reason != string(gwv1.RouteReasonPending) {
+							if cond.Status == metav1.ConditionFalse {
 								if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
 									finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
 										finishFunc:  finish.finishFunc,
 										statusError: fmt.Errorf("invalid route condition"),
 									}
-
 									break
 								}
 							}

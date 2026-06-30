@@ -76,7 +76,7 @@ Routes:
           - 503
           retryBackOff:
             baseInterval: 5s
-          retryOn: cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable
+          retryOn: cancelled,connect-failure,refused-stream,reset,retriable-headers,retriable-status-codes,unavailable
         timeout: 5s
   - domains:
     - example-retry-and-timeouts.com

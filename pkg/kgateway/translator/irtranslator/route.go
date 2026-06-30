@@ -300,7 +300,7 @@ func (h *httpRouteConfigurationTranslator) finalizeRoute(
 	out *envoyroutev3.Route,
 	routeProcessingErr error,
 ) *envoyroutev3.Route {
-	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
+	// routeAcceptanceErr is used to set the kgateway.dev/Programmed=false,Reason=RouteRuleDropped condition on the route
 	routeAcceptanceErr := errors.Join(routeProcessingErr, in.RouteAcceptanceError)
 
 	// routeReplacementErr is used to replace the route with a direct response
@@ -318,7 +318,7 @@ func (h *httpRouteConfigurationTranslator) finalizeRoute(
 	if routeAcceptanceErr != nil && errors.Is(routeAcceptanceErr, ErrInvalidMatcher) {
 		h.logger.Info("invalid matcher", "error", routeAcceptanceErr)
 		routeReport.SetCondition(reportssdk.RouteCondition{
-			Type:    gwv1.RouteConditionAccepted,
+			Type:    gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 			Status:  metav1.ConditionFalse,
 			Reason:  reportssdk.RouteRuleDroppedReason,
 			Message: fmt.Sprintf("Dropped Rule (%d): %s", in.MatchIndex, acceptanceMsg),

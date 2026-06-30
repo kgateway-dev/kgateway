@@ -150,8 +150,8 @@ Statuses:
     default/foo-listenerset:
       conditions:
       - lastTransitionTime: null
-        message: Successfully accepted ListenerSet
-        reason: Accepted
+        message: ""
+        reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null

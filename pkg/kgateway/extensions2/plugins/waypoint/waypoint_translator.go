@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/sandwich"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/waypoint/waypointquery"
@@ -230,7 +231,7 @@ func (t *waypointTranslator) fetchGatewayRoutes(
 	}
 	for _, rErr := range gwRoutes.RouteErrors {
 		reporter.Route(rErr.Route.GetSourceObject()).ParentRef(&rErr.ParentRef).SetCondition(reports.RouteCondition{
-			Type:    gwv1.RouteConditionAccepted,
+			Type:    gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 			Status:  metav1.ConditionFalse,
 			Reason:  rErr.Error.Reason,
 			Message: rErr.Error.Error(),
