@@ -62,6 +62,8 @@ require (
 	github.com/aws/smithy-go v1.25.1
 	github.com/golang/protobuf v1.5.4
 	github.com/hashicorp/golang-lru/v2 v2.0.7
+	k8s.io/apiserver v0.36.1
+	k8s.io/cli-runtime v0.36.1
 	sigs.k8s.io/gateway-api/conformance v1.6.0
 )
 
@@ -145,6 +147,8 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gotest.tools/gotestsum v1.13.0 // indirect
+	k8s.io/code-generator v0.36.1 // indirect
+	k8s.io/component-base v0.36.1 // indirect
 	k8s.io/streaming v0.36.1 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0 // indirect
@@ -199,7 +203,7 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/ckaznocha/intrange v0.3.1 // indirect
-	github.com/containerd/containerd v1.7.32 // indirect
+	github.com/containerd/containerd v1.7.33 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
@@ -419,10 +423,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.6.1 // indirect
-	k8s.io/apiserver v0.36.1 // indirect
-	k8s.io/cli-runtime v0.36.1
-	k8s.io/code-generator v0.36.1 // indirect
-	k8s.io/component-base v0.36.1 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b // indirect
 	k8s.io/kubectl v0.36.1
 	mvdan.cc/gofumpt v0.9.2 // indirect

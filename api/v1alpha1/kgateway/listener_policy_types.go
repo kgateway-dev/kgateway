@@ -176,6 +176,10 @@ type HTTPSettings struct {
 	// +optional
 	Tracing *Tracing `json:"tracing,omitempty"`
 
+	// LocalReplies configures how Envoy's local replies are formatted etc.
+	// +optional
+	LocalReplies *LocalReplyConfig `json:"localReplies,omitempty"`
+
 	// UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
 	// +optional
@@ -340,6 +344,44 @@ type AccessLog struct {
 	// Filter access logs configuration
 	// +optional
 	Filter *AccessLogFilter `json:"filter,omitempty"`
+}
+
+// LocalReplyConfig represents the listener-wide options for local replies returned by Envoy (e.g. errors, direct responses)
+// +kubebuilder:validation:AtLeastOneOf=mappers;defaultBodyFormat
+type LocalReplyConfig struct {
+	// DefaultBodyFormat is the format to use for local reply bodies if it's not overridden by any mapper.
+	// You can use the `%LOCAL_REPLY_BODY%` substitution to insert the original reply such as an error message.
+	// +optional
+	DefaultBodyFormat *shared.BodyFormat `json:"defaultBodyFormat,omitempty"`
+	// A list of custom options to apply based on filters. This may override the DefaultBodyFormat.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	// +optional
+	Mappers []LocalReplyMapper `json:"mappers,omitempty"`
+}
+
+// LocalReplyMapper may customize the local reply based on stream, request, and response properties such as status code.
+// +kubebuilder:validation:AtLeastOneOf=statusCode;body;bodyFormatOverride;headers
+type LocalReplyMapper struct {
+	// A filter that determines if this mapper should apply.
+	// +required
+	Filter AccessLogFilter `json:"filter"`
+	// New response status code for the reply if specified.
+	// +kubebuilder:validation:Minimum=100
+	// +kubebuilder:validation:Maximum=599
+	// +optional
+	StatusCode *uint32 `json:"statusCode,omitempty"`
+	// New body text for the reply if specified.
+	// Available as `%LOCAL_REPLY_BODY%` in substitution strings.
+	// +optional
+	Body *string `json:"body,omitempty"`
+	// Alternative body format for the reply if specified. Takes precedence over default body format.
+	// +optional
+	BodyFormatOverride *shared.BodyFormat `json:"bodyFormatOverride,omitempty"`
+	// Headers to add or set for the reply if specified.
+	// +kubebuilder:validation:XValidation:message="Local reply mappers may only add or modify headers, not remove them",rule="!has(self.remove)"
+	// +optional
+	Headers *shared.HTTPHeaderFilter `json:"headers,omitempty"`
 }
 
 // ListenerHTTP2ProtocolOptions mirrors Http2ProtocolOptions for listener-facing
@@ -610,8 +652,9 @@ type ComparisonFilter struct {
 	// Value to compare against.
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:validation:Format=uint32
 	// +required
-	Value int32 `json:"value"`
+	Value uint32 `json:"value"`
 }
 
 // Op represents comparison operators.

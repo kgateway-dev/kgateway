@@ -1,6 +1,7 @@
 package shared
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -320,3 +321,33 @@ type CIDR string
 // Note: The regex for the IP validation patterns was taken from https://www.ditig.com/validating-ipv4-and-ipv6-addresses-with-regexp
 // +kubebuilder:validation:Pattern=`^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}(\/([0-9]|[1-2][0-9]|3[0-2]))?$|^((?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,7}:|:(?::[0-9A-Fa-f]{1,4}){1,7}|(?:[0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,5}(?::[0-9A-Fa-f]{1,4}){1,2}|(?:[0-9A-Fa-f]{1,4}:){1,4}(?::[0-9A-Fa-f]{1,4}){1,3}|(?:[0-9A-Fa-f]{1,4}:){1,3}(?::[0-9A-Fa-f]{1,4}){1,4}|(?:[0-9A-Fa-f]{1,4}:){1,2}(?::[0-9A-Fa-f]{1,4}){1,5}|[0-9A-Fa-f]{1,4}:(?:(?::[0-9A-Fa-f]{1,4}){1,6})|:(?:(?::[0-9A-Fa-f]{1,4}){1,6}))(\/(12[0-8]|1[0-1][0-9]|[1-9][0-9]|[0-9]))?$`
 type IPOrCIDR string
+
+// BodyFormat configures an Envoy response body using formatting. Either JSON or Text must be specified.
+// +kubebuilder:validation:ExactlyOneOf=json;text
+type BodyFormat struct {
+	// ContentType defines the HTTP Content-Type header to be sent with the response.
+	// By default, `text/plain` is used for the Text format and `application/json` for the JSON format.
+	// Note: This setting does not currently take effect due to a bug in Envoy, a fix for which is pending release.
+	// The option is included for completeness and will become effective with a future version of Envoy.
+	// +optional
+	ContentType *string `json:"contentType,omitempty"`
+	// Text is a format string by which Envoy will format the response body.
+	// Mutually exclusive with JSON.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-text-format for details.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=4096
+	Text *string `json:"text,omitempty"`
+	// JSON is a format object by which Envoy will produce a JSON response body.
+	// Mutually exclusive with Text.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-json-format for details.
+	//
+	// Setting a field to `null` in the JSON object requires the use of
+	// `kubectl apply --server-side` or equivalent. With the default client-side
+	// `kubectl apply`, null values are stripped by kubectl before reaching
+	// the API server.
+	// +optional
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	JSON *apiextensionsv1.JSON `json:"json,omitempty"`
+}

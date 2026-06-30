@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -101,6 +103,11 @@ Listeners:
   name: listener~8443
 Routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.clientCertificateValidation:
+        - gateway.kgateway.dev/ListenerPolicy/default/per-listener-mtls
   name: tenant-a-https
   virtualHosts:
   - domains:

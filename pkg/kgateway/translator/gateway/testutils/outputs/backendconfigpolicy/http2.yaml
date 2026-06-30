@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -16,7 +18,9 @@ Clusters:
           initialStreamWindowSize: 1048576
           maxConcurrentStreams: 101
           overrideStreamErrorOnInvalidHttpMessage: true
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -24,7 +28,9 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_httpbin2_8080
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
