@@ -41,13 +41,15 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: ListenerPolicy
 metadata:
-  name: server-name-section-name
+  name: server-name-per-port
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-    sectionName: http
-  default:
-    httpSettings:
-      serverName: listener-one-server
+  perPort: 
+    - port: 80
+      listener: 
+        httpSettings:
+          serverName: listener-eighty-server
+

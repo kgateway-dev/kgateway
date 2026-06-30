@@ -1797,21 +1797,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("ListenerPolicy with serverName set on specific listener via sectionName", func(t *testing.T) {
+	t.Run("ListenerPolicy with serverName set on specific port", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFiles: []string{"listener-policy-http/server-name-section-name.yaml"},
-			outputFile: "listener-policy-http/server-name-section-name.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "example-gateway",
-			},
-		})
-	})
-
-	t.Run("ListenerPolicy with serverName override via sectionName policy", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFiles: []string{"listener-policy-http/server-name-override.yaml"},
-			outputFile: "listener-policy-http/server-name-override.yaml",
+			inputFiles: []string{"listener-policy-http/server-name-per-port.yaml"},
+			outputFile: "listener-policy-http/server-name-per-port.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
