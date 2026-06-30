@@ -16,7 +16,7 @@ func ParseLabelSelectors(raw string) ([]labels.Selector, error) {
 
 	var labelSelectors []metav1.LabelSelector
 	if err := json.Unmarshal([]byte(raw), &labelSelectors); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing label selectors %q: %w", raw, err)
 	}
 	return ToSelectors(labelSelectors)
 }
@@ -39,10 +39,10 @@ func ParseExclusionLabelSelectors(raw string) ([]labels.Selector, error) {
 // ToSelectors converts Kubernetes LabelSelectors to executable selectors.
 func ToSelectors(labelSelectors []metav1.LabelSelector) ([]labels.Selector, error) {
 	out := make([]labels.Selector, 0, len(labelSelectors))
-	for _, labelSelector := range labelSelectors {
-		sel, err := metav1.LabelSelectorAsSelector(&labelSelector)
+	for i := range labelSelectors {
+		sel, err := metav1.LabelSelectorAsSelector(&labelSelectors[i])
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("label selector at index %d: %w", i, err)
 		}
 		out = append(out, sel)
 	}

@@ -55,7 +55,7 @@ func NewDiscoveryNamespacesFilter(
 
 	selectors, err := ParseLabelSelectors(cfgJSON)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing discovery selectors: %v; %w", cfgJSON, err)
+		return nil, fmt.Errorf("error parsing discovery selectors: %w", err)
 	}
 	f := &discoveryNamespacesFilter{
 		namespaces:          namespaces,
