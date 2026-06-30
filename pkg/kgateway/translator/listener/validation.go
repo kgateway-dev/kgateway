@@ -323,12 +323,29 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 		return validListeners
 	}
 
-	if len(validListeners) < len(gw.Listeners) {
+	validListenersPerParent := map[string]int{}
+	for _, l := range validListeners {
+		parentKey := fmt.Sprintf("%s/%s/%s", l.Parent.GetObjectKind().GroupVersionKind().Kind, l.Parent.GetNamespace(), l.Parent.GetName())
+		validListenersPerParent[parentKey]++
+	}
+	if validListenersPerParent[fmt.Sprintf("Gateway/%s/%s", gw.Obj.Namespace, gw.Obj.Name)] < len(gw.Obj.Spec.Listeners) {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
 			Type:   gwv1.GatewayConditionAccepted,
 			Status: metav1.ConditionTrue,
 			Reason: gwv1.GatewayReasonListenersNotValid,
 		})
+	}
+	for _, lsSets := range gw.AllowedListenerSets {
+		for _, lsIR := range lsSets {
+			key := fmt.Sprintf("%s/%s/%s", lsIR.Kind, lsIR.Namespace, lsIR.Name)
+			if validListenersPerParent[key] < len(lsIR.Listeners) {
+				reporter.ListenerSet(lsIR.Obj).SetCondition(reports.GatewayCondition{
+					Type:   gwv1.GatewayConditionAccepted,
+					Status: metav1.ConditionTrue,
+					Reason: gwv1.GatewayReasonListenersNotValid,
+				})
+			}
+		}
 	}
 
 	if len(attachedListenerSets) > 0 {

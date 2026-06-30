@@ -15,6 +15,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -35,6 +36,7 @@ const (
 	ValidRefsMessage               = "Successfully resolved all references"
 	ListenerProgrammedMessage      = "Successfully programmed Listener"
 	RouteAcceptedMessage           = "Successfully accepted Route"
+	RouteProgrammedMessage         = "Successfully programmed Route"
 	GatewayClassAcceptedMessage    = "GatewayClass accepted by kgateway controller"
 )
 
@@ -673,6 +675,14 @@ func addMissingParentRefConditions(report *ParentRefReport) {
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.RouteReasonResolvedRefs,
 			Message: ValidRefsMessage,
+		})
+	}
+	if cond := meta.FindStatusCondition(report.Conditions, conditions.KgatewayConditionProgrammed); cond == nil {
+		report.SetCondition(reporter.RouteCondition{
+			Type:    gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
+			Status:  metav1.ConditionTrue,
+			Reason:  conditions.KgatewayReasonProgrammed,
+			Message: RouteProgrammedMessage,
 		})
 	}
 }

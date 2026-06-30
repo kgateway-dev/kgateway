@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -308,13 +309,14 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	if routeReplacementErr != nil {
 		h.logger.Debug("invalid route", "error", routeReplacementErr)
 
-		// If routeAcceptanceErr is set, report Accepted=False with Reason=RouteRuleReplaced
+		// If routeAcceptanceErr is set, report the appropriate conditions
+		// Gateway API's Accepted condition only indicates the resource is valid not it has been successfully translated
+		// So a new condition is introduced
 		if routeAcceptanceErr != nil {
 			routeReport.SetCondition(reportssdk.RouteCondition{
-				// To fix HTTPRouteNoBackendRefs. Might require changing the conformance test itself
-				Type:    gwv1.RouteConditionAccepted,
-				Status:  metav1.ConditionTrue,
-				Reason:  gwv1.RouteReasonAccepted,
+				Type:    gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
+				Status:  metav1.ConditionFalse,
+				Reason:  reportssdk.RouteRuleReplacedReason,
 				Message: fmt.Sprintf("Replaced Rule (%d): %s", in.MatchIndex, acceptanceMsg),
 			})
 		}
