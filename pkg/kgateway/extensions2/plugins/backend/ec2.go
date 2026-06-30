@@ -866,11 +866,11 @@ func ec2ConfigFromBackend(backend ir.BackendObjectIR) *ec2BackendConfig {
 	if !ok || backendIR.awsIr == nil || backendIR.awsIr.ec2Ir == nil {
 		return nil
 	}
+	// An EC2 backend with a secret-auth credential that could not be resolved never
+	// builds an ec2Ir (translation records the error and leaves awsIr nil), so a
+	// non-nil ec2Ir here implies the secret resolved; no missing-secret guard is
+	// needed. Such backends are surfaced as CredentialError via discoveryStatusForBackend.
 	ec2Ir := backendIR.awsIr.ec2Ir
-	if obj.Spec.Aws.Auth != nil && obj.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret && ec2Ir.secret == nil {
-		logger.Debug("skipping EC2 backend discovery due to missing secret credentials", "backend", backend.ResourceName())
-		return nil
-	}
 
 	src := backend.GetObjectSource()
 	cfg := &ec2BackendConfig{
