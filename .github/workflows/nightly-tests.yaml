@@ -113,9 +113,9 @@ jobs:
           - node: 'v1.31.9@sha256:b94a3a6c06198d17f59cca8c6f486236fa05e2fb359cbd75dabbfc348a10b211'
             kubectl: v1.31.9
             kind: v0.29.0
-          - node: 'v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f'
-            kubectl: v1.35.0
-            kind: v0.31.0
+          - node: 'v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5'
+            kubectl: v1.36.1
+            kind: v0.32.0
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
