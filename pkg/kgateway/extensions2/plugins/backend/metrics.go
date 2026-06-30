@@ -142,6 +142,22 @@ func recordEc2PollDuration(namespace, name string, seconds float64) {
 	ec2DiscoveryPollDuration.Observe(seconds, ec2MetricIdentity(namespace, name)...)
 }
 
+// recordEc2CredentialErrorState marks a Backend as being in an error state because its
+// secret-auth credential could not be resolved. Such a Backend never enters the poll
+// loop, so this is the only place its error_state is set; endpoints_active is set to 0
+// because no endpoints are served while credentials are unresolved (and so a Backend
+// that was previously healthy doesn't leave a stale non-zero gauge after its secret is
+// removed). poll_total and poll_duration_seconds are intentionally left untouched: no
+// poll occurs, and incrementing a counter from a KRT recompute would double-count.
+func recordEc2CredentialErrorState(namespace, name string) {
+	if !metrics.Active() {
+		return
+	}
+	identity := ec2MetricIdentity(namespace, name)
+	ec2DiscoveryErrorState.Set(1, identity...)
+	ec2DiscoveryEndpointsActive.Set(0, identity...)
+}
+
 // deleteEc2DiscoveryMetrics removes every metric series for a Backend, called when the
 // Backend is deleted so stale per-Backend gauges do not remain visible indefinitely.
 func deleteEc2DiscoveryMetrics(namespace, name string) {

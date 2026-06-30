@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/smithy-go"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
@@ -168,6 +169,39 @@ func TestComputeStateRecordsErrorPollMetricsAndRetainsEndpointGauge(t *testing.T
 	// A failed poll still has a duration (it can be a slow timeout), so it is observed.
 	gathered.AssertMetricLabels(pollDurationMetric, backendIdentityLabels("default", "backend-a"))
 	gathered.AssertHistogramPopulated(pollDurationMetric)
+}
+
+func TestDiscoveryStatusForBackendRecordsErrorStateForUnresolvedSecret(t *testing.T) {
+	ResetEc2DiscoveryMetrics()
+
+	// A secret-auth backend whose secret cannot be resolved never enters the poll
+	// loop, but must still flip error_state so missing-secret misconfigurations are
+	// visible to alerting.
+	be := newEc2Backend("backend-a", "", nil)
+	be.Spec.Aws.Auth = &kgateway.AwsAuth{
+		Type:      kgateway.AwsAuthTypeSecret,
+		SecretRef: &corev1.LocalObjectReference{Name: "missing-secret"},
+	}
+	backend := backendObjectIR(be, nil)
+
+	c := &ec2EndpointsCollection{enabled: true}
+	if got := c.discoveryStatusForBackend(krt.TestingDummyContext{}, backend); got == nil {
+		t.Fatal("discoveryStatusForBackend() = nil, want a CredentialError status")
+	}
+
+	gathered := metricstest.MustGatherMetrics(t)
+	gathered.AssertMetric(errorStateMetric, &metricstest.ExpectedMetric{
+		Labels: backendIdentityLabels("default", "backend-a"),
+		Value:  1,
+	})
+	// No endpoints are served while credentials are unresolved.
+	gathered.AssertMetric(endpointsActiveMetric, &metricstest.ExpectedMetric{
+		Labels: backendIdentityLabels("default", "backend-a"),
+		Value:  0,
+	})
+	// poll_total / poll_duration_seconds stay poll-scoped: no poll occurred, so no
+	// per-backend series is recorded for this backend.
+	gathered.AssertMetricNotExists(pollDurationMetric)
 }
 
 func TestDeleteEc2DiscoveryMetricsRemovesBackendSeries(t *testing.T) {

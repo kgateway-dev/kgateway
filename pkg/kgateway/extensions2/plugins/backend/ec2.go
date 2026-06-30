@@ -794,6 +794,11 @@ func (c *ec2EndpointsCollection) discoveryStatusForBackend(kctx krt.HandlerConte
 	// filtered out before the discovery loop builds a pollable config. Surface a
 	// CredentialError here so the failure is never silent (FR-8, NFR-2).
 	if message, unresolved := ec2UnresolvedSecretCredential(backend, obj); unresolved {
+		// This backend never enters the poll loop, so reflect its error state in the
+		// metrics here; otherwise an unresolvable secret (the most common
+		// misconfiguration) would be invisible to error_state alerting.
+		src := backend.GetObjectSource()
+		recordEc2CredentialErrorState(src.Namespace, src.Name)
 		return ec2DiscoveryStatusUpdate(backend, ec2DiscoveryStatus{
 			status:  metav1.ConditionFalse,
 			reason:  string(kgateway.BackendReasonCredentialError),
