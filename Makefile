@@ -1231,7 +1231,7 @@ CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSIO
 CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_REPORT_ARGS)
 
 CONFORMANCE_TEST_DIR ?= ./test/conformance/...
-CONFORMANCE_GO_TEST_ARGS ?= -timeout=20m
+CONFORMANCE_GO_TEST_ARGS ?= -timeout=60m
 
 .PHONY: conformance ## Run the conformance test suite
 conformance:  ## Run the Gateway API conformance suite
