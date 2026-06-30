@@ -312,6 +312,12 @@ func selectedWorkloadFromEntry(
 			Locality:        locality,
 			AugmentedLabels: labels,
 			Addresses:       []string{weSpec.GetAddress()},
+			// WorkloadEntry / inline endpoints have no pod readiness or termination
+			// concept; their health is managed by the remote cluster (e.g. cross-network
+			// endpoints), so treat them as ready, never terminating, and never filter
+			// them on local pod readiness/termination.
+			Ready:       true,
+			Terminating: false,
 		},
 
 		weight:      weSpec.GetWeight(),
