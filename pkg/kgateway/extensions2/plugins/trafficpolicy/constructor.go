@@ -96,6 +96,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	}
 	// Construct timeout and retry specific IR
 	constructTimeoutRetry(policyCR.Spec, &outSpec)
+	// Construct internal redirect specific IR
+	constructInternalRedirect(policyCR.Spec, &outSpec)
 
 	// Construct rbac specific IR
 	if err := constructRBAC(policyCR, &outSpec); err != nil {
