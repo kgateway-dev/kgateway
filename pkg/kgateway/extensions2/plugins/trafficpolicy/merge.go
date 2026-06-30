@@ -56,6 +56,7 @@ func MergeTrafficPolicies(
 		mergeAutoHostRewrite,
 		mergeTimeouts,
 		mergeRetry,
+		mergeInternalRedirect,
 		mergeRBAC,
 		mergeJwt,
 		mergeCompression,
@@ -594,6 +595,21 @@ func mergeRetry(
 		Set: func(spec *trafficPolicySpecIr, val *retryIR) { spec.retry = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "retry")
+}
+
+func mergeInternalRedirect(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[internalRedirectIR]{
+		Get: func(spec *trafficPolicySpecIr) *internalRedirectIR { return spec.internalRedirect },
+		Set: func(spec *trafficPolicySpecIr, val *internalRedirectIR) { spec.internalRedirect = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "internalRedirect")
 }
 
 func mergeBasicAuth(

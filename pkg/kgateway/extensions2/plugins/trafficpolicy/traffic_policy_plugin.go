@@ -82,29 +82,30 @@ type TrafficPolicy struct {
 }
 
 type trafficPolicySpecIr struct {
-	buffer          *bufferIR
-	extProc         *extprocIR
-	rustformation   *rustformationIR
-	extAuth         *extAuthIR
-	localRateLimit  *localRateLimitIR
-	globalRateLimit *globalRateLimitIR
-	cors            *corsIR
-	csrf            *csrfIR
-	headerModifiers *headerModifiersIR
-	autoHostRewrite *autoHostRewriteIR
-	retry           *retryIR
-	timeouts        *timeoutsIR
-	rbac            *rbacIR
-	jwt             *jwtIr
-	compression     *compressionIR
-	decompression   *decompressionIR
-	basicAuth       *basicAuthIR
-	urlRewrite      *urlRewriteIR
-	apiKeyAuth      *apiKeyAuthIR
-	oauth2          *oauthIR
-	tracing         *routeTracingIR
-	faultInjection  *faultInjectionIR
-	httpACL         *httpACLIR
+	buffer           *bufferIR
+	extProc          *extprocIR
+	rustformation    *rustformationIR
+	extAuth          *extAuthIR
+	localRateLimit   *localRateLimitIR
+	globalRateLimit  *globalRateLimitIR
+	cors             *corsIR
+	csrf             *csrfIR
+	headerModifiers  *headerModifiersIR
+	autoHostRewrite  *autoHostRewriteIR
+	retry            *retryIR
+	timeouts         *timeoutsIR
+	internalRedirect *internalRedirectIR
+	rbac             *rbacIR
+	jwt              *jwtIr
+	compression      *compressionIR
+	decompression    *decompressionIR
+	basicAuth        *basicAuthIR
+	urlRewrite       *urlRewriteIR
+	apiKeyAuth       *apiKeyAuthIR
+	oauth2           *oauthIR
+	tracing          *routeTracingIR
+	faultInjection   *faultInjectionIR
+	httpACL          *httpACLIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -154,6 +155,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 	if !d.spec.timeouts.Equals(d2.spec.timeouts) {
+		return false
+	}
+	if !d.spec.internalRedirect.Equals(d2.spec.internalRedirect) {
 		return false
 	}
 	if !d.spec.rbac.Equals(d2.spec.rbac) {
@@ -220,6 +224,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.tracing.Validate)
 	validators = append(validators, p.spec.faultInjection.Validate)
 	validators = append(validators, p.spec.httpACL.Validate)
+	validators = append(validators, p.spec.internalRedirect.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -794,6 +799,10 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	// set by the builtin HTTPRouteRetry policy
 	if action.GetRetryPolicy() == nil && spec.retry != nil {
 		action.RetryPolicy = spec.retry.policy
+	}
+
+	if action.GetInternalRedirectPolicy() == nil && spec.internalRedirect != nil {
+		action.InternalRedirectPolicy = spec.internalRedirect.policy
 	}
 
 	// Apply URL rewrite configuration
