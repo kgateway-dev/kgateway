@@ -250,28 +250,37 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 										finishFunc:  finish.finishFunc,
 										statusError: fmt.Errorf("partially invalid route condition"),
 									}
-
 									break
 								}
 							}
 
-							if cond.Type != string(conditions.KgatewayConditionProgrammed) {
-								continue
+							if cond.Type == conditions.KgatewayConditionProgrammed {
+								if cond.Status != metav1.ConditionTrue {
+									if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
+										finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
+											finishFunc:  finish.finishFunc,
+											statusError: fmt.Errorf("invalid route condition"),
+										}
+										break
+									}
+								}
 							}
 
-							if cond.Status == metav1.ConditionFalse {
-								if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
-									finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
-										finishFunc:  finish.finishFunc,
-										statusError: fmt.Errorf("invalid route condition"),
+							if cond.Type == string(gwv1.RouteConditionAccepted) {
+								if cond.Reason != string(gwv1.RouteReasonAccepted) &&
+									cond.Reason != string(gwv1.RouteReasonPending) {
+									if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
+										finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
+											finishFunc:  finish.finishFunc,
+											statusError: fmt.Errorf("invalid route condition"),
+										}
+										break
 									}
-									break
 								}
 							}
 						}
 					}
 				}
-
 				return nil
 			},
 			retry.Attempts(5),
