@@ -993,6 +993,31 @@ spec:
                               description: RemoteJWKS configures getting the public
                                 keys to validate the JWT from a remote JWKS server.
                               properties:
+                                asyncFetch:
+                                  description: |-
+                                    AsyncFetch configures fetching the JWKS asynchronously and caching it on a timer,
+                                    instead of fetching it on demand during request handling.
+                                  properties:
+                                    failedRefetchDuration:
+                                      description: |-
+                                        FailedRefetchDuration is how long to wait before retrying the fetch after a failure.
+                                        If unspecified, Envoy default of 1 second is used.
+                                      type: string
+                                      x-kubernetes-validations:
+                                      - message: invalid duration value
+                                        rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                      - message: failedRefetchDuration must be at
+                                          least 1ms.
+                                        rule: duration(self) >= duration('1ms')
+                                    fastListener:
+                                      description: |-
+                                        FastListener controls when the listener is considered ready relative to the
+                                        initial JWKS fetch.
+                                        If false or unset, the listener waits for the first JWKS fetch to complete before
+                                        it starts serving traffic, so requests are never validated against an empty key set.
+                                        If true, the listener starts immediately and the first fetch happens in the background.
+                                      type: boolean
+                                  type: object
                                 backendRef:
                                   description: BackendRef is reference to the backend
                                     of the JWKS server.
@@ -1074,6 +1099,55 @@ spec:
                                     rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                   - message: cacheDuration must be at least 1ms.
                                     rule: duration(self) >= duration('1ms')
+                                retryPolicy:
+                                  description: |-
+                                    RetryPolicy configures how the JWKS fetch is retried (with exponential backoff)
+                                    when the remote JWKS server is unavailable.
+                                  properties:
+                                    backOff:
+                                      description: |-
+                                        BackOff configures the exponential backoff strategy between retries.
+                                        If unset, the default base interval is 1000ms and the default maximum interval is
+                                        10 times the base interval.
+                                      properties:
+                                        baseInterval:
+                                          description: |-
+                                            BaseInterval is the base interval for the exponential backoff computation.
+                                            It must be greater than zero and less than or equal to MaxInterval.
+                                          type: string
+                                          x-kubernetes-validations:
+                                          - message: invalid duration value
+                                            rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                          - message: baseInterval must be at least
+                                              1ms.
+                                            rule: duration(self) >= duration('1ms')
+                                        maxInterval:
+                                          description: |-
+                                            MaxInterval is the maximum interval between retries. If set, it must be greater than
+                                            or equal to BaseInterval. Defaults to 10 times the BaseInterval.
+                                          type: string
+                                          x-kubernetes-validations:
+                                          - message: invalid duration value
+                                            rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                          - message: maxInterval must be at least
+                                              1ms.
+                                            rule: duration(self) >= duration('1ms')
+                                      required:
+                                      - baseInterval
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: maxInterval must be greater than
+                                          or equal to baseInterval
+                                        rule: '!has(self.maxInterval) || duration(self.maxInterval)
+                                          >= duration(self.baseInterval)'
+                                    numRetries:
+                                      description: |-
+                                        NumRetries is the allowed number of retries when fetching the JWKS fails.
+                                        Defaults to 1 if unset.
+                                      format: int32
+                                      minimum: 1
+                                      type: integer
+                                  type: object
                                 url:
                                   description: |-
                                     URL is the URL of the remote JWKS server, it must be a full FQDN with protocol, host and path.
