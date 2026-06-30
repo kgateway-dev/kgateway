@@ -648,7 +648,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 func rejectConflictingRoute(ri *query.RouteInfo, reporter reports.Reporter) {
 	condition := reports.RouteCondition{
 		Type:   conditions.KgatewayConditionConflicted,
-		Status: metav1.ConditionFalse,
+		Status: metav1.ConditionTrue,
 		Reason: gwv1.RouteConditionReason("Conflicted"),
 	}
 	switch o := ri.Object.(type) {
