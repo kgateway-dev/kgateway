@@ -126,6 +126,21 @@ type LocalityPod struct {
 	Locality        ir.PodLocality
 	AugmentedLabels map[string]string
 	Addresses       []string
+	// Ready reflects the pod's Kubernetes readiness (the Ready condition is True).
+	// It is used to exclude NotReady pods from ServiceEntry-derived endpoints,
+	// mirroring the EndpointSlice-based Service path which skips NotReady endpoints.
+	// Synthetic LocalityPods built from WorkloadEntries / inline endpoints set this
+	// to true, since pod readiness does not apply to them.
+	Ready bool
+	// Terminating reflects whether the pod has begun terminating (a deletionTimestamp
+	// is set). A terminating pod keeps its Ready condition True for the duration of its
+	// grace period / preStop, so readiness alone does not exclude it; it is excluded
+	// separately so ServiceEntry-derived endpoints drain it, mirroring the EndpointSlice
+	// controller which marks terminating endpoints not-ready, and ztunnel which drains
+	// them. Synthetic LocalityPods built from WorkloadEntries / inline endpoints set
+	// this to false, since pod termination does not apply to them (their health is
+	// managed by the remote cluster).
+	Terminating bool
 }
 
 // Addresses returns the first address if there are any.
@@ -139,6 +154,8 @@ func (c LocalityPod) Address() string {
 func (c LocalityPod) Equals(in LocalityPod) bool {
 	return c.Named == in.Named &&
 		c.Locality == in.Locality &&
+		c.Ready == in.Ready &&
+		c.Terminating == in.Terminating &&
 		maps.Equal(c.AugmentedLabels, in.AugmentedLabels) &&
 		slices.Equal(c.Addresses, in.Addresses)
 }
@@ -287,6 +304,8 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 			AugmentedLabels: labels,
 			Locality:        l,
 			Addresses:       extractPodIPs(pod),
+			Ready:           isPodReadyConditionTrue(pod.Status),
+			Terminating:     pod.GetDeletionTimestamp() != nil,
 		}
 	}
 }
