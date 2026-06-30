@@ -353,6 +353,46 @@ func (c BackendObjectIR) GetAttachedPolicies() AttachedPolicies {
 	return c.AttachedPolicies
 }
 
+// BackendObjectStatus carries additional status conditions that a backend plugin
+// contributes to a Backend resource beyond the Accepted condition (e.g. the EC2
+// EndpointsDiscovered condition produced by runtime endpoint discovery). Each entry
+// is keyed by the Backend it applies to via Source. LastTransitionTime and
+// ObservedGeneration are intentionally left unset here; they are assigned when the
+// final Backend status is built.
+type BackendObjectStatus struct {
+	// Source identifies the Backend these conditions apply to.
+	Source ObjectSource
+	// Conditions is the set of status conditions to merge onto the Backend.
+	Conditions []metav1.Condition
+}
+
+func (c BackendObjectStatus) ResourceName() string {
+	return c.Source.ResourceName()
+}
+
+func (c BackendObjectStatus) Equals(in BackendObjectStatus) bool {
+	if !c.Source.Equals(in.Source) {
+		return false
+	}
+	if len(c.Conditions) != len(in.Conditions) {
+		return false
+	}
+	// Compare by condition type rather than by position: conditions form a set keyed by
+	// Type, so a reordering of otherwise-identical conditions must not register as a
+	// change (which would trigger spurious recomputation and redundant status writes).
+	other := make(map[string]metav1.Condition, len(in.Conditions))
+	for _, cond := range in.Conditions {
+		other[cond.Type] = cond
+	}
+	for _, a := range c.Conditions {
+		b, ok := other[a.Type]
+		if !ok || a.Status != b.Status || a.Reason != b.Reason || a.Message != b.Message {
+			return false
+		}
+	}
+	return true
+}
+
 type Secret struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
 	// set them explicitly here, and pass this around as the reference.
@@ -397,11 +437,8 @@ func (l Secret) MarshalJSON() ([]byte, error) {
 // TODO: why is this in backend.go?
 type Listener struct {
 	gwv1.Listener
-	// +krtEqualsTodo compare parent reference in listener equality
-	Parent client.Object
-	// +krtEqualsTodo include attached listener policies in equality
-	AttachedPolicies AttachedPolicies
-	// +krtEqualsTodo include policy ancestor reference in equality
+	Parent            client.Object
+	AttachedPolicies  AttachedPolicies
 	PolicyAncestorRef gwv1.ParentReference
 }
 
@@ -414,9 +451,23 @@ func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.
 	}
 }
 
-// TODO: need to reevaluate DeepEqual usage
 func (c Listener) Equals(in Listener) bool {
-	return reflect.DeepEqual(c, in)
+	// Use versionEquals for Parent (raw *gwv1.Gateway or *gwv1.ListenerSet) so that
+	// status-only writes (which bump resourceVersion but not generation) do not cause
+	// reflect.DeepEqual to return false and trigger unnecessary re-translations.
+	if (c.Parent == nil) != (in.Parent == nil) {
+		return false
+	}
+	// Currently, only Gateway and ListenerSet's Equals() calls Listener.Equals(),
+	// and both of those check versionEquals on the Parent before calling Listener.Equals(),
+	// so, this versionEquals check is somewhat redundant, but it's safer to have it here in
+	// case Listener.Equals() is called directly in the future without a Parent version check.
+	if c.Parent != nil && !versionEquals(c.Parent, in.Parent) {
+		return false
+	}
+	return reflect.DeepEqual(c.Listener, in.Listener) &&
+		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
+		reflect.DeepEqual(c.PolicyAncestorRef, in.PolicyAncestorRef)
 }
 
 type GatewayForDeployer struct {

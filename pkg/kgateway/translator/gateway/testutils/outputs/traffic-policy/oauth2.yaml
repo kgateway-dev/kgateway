@@ -37,7 +37,9 @@ Clusters:
             hostname: provider-2.com
           hostname: provider-2.com
   name: backend_default_oauth-provider-2_0
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

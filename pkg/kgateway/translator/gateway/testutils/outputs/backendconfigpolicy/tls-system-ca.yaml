@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -24,7 +26,9 @@ Clusters:
             name: SYSTEM_CA_CERT
       sni: test.example.com
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

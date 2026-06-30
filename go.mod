@@ -196,7 +196,7 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/ckaznocha/intrange v0.3.1 // indirect
-	github.com/containerd/containerd v1.7.32 // indirect
+	github.com/containerd/containerd v1.7.33 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
@@ -421,7 +421,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.6.1 // indirect
-	k8s.io/apiserver v0.35.3 // indirect
+	k8s.io/apiserver v0.35.3
 	k8s.io/cli-runtime v0.35.3
 	k8s.io/code-generator v0.35.3 // indirect
 	k8s.io/component-base v0.35.3 // indirect

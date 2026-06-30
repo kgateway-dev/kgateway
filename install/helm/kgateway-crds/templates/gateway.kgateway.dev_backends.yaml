@@ -80,10 +80,33 @@ spec:
                       See the Envoy docs for more info:
                       https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
                     properties:
+                      assumeRole:
+                        description: |-
+                          AssumeRole configures STS role chaining. The backend's ambient credentials
+                          (the gateway ServiceAccount's IRSA identity for Lambda request signing, or the
+                          controller's identity for EC2 discovery; more generally any credential resolved
+                          by the default provider chain) are used to assume the target role. The resulting
+                          temporary credentials are then used to sign requests to the backend (Lambda) or
+                          to list instances (EC2). This enables per-backend, least-privilege roles without
+                          granting the gateway/controller role direct access to every target.
+                          Required when type is 'AssumeRole'.
+                        properties:
+                          roleArn:
+                            description: |-
+                              RoleArn is the ARN of the IAM role to assume, e.g.
+                              "arn:aws:iam::123456789012:role/my-invoke-role".
+                            maxLength: 2048
+                            minLength: 1
+                            pattern: ^arn:aws[a-z-]*:iam::[0-9]{12}:role/.+$
+                            type: string
+                        required:
+                        - roleArn
+                        type: object
                       secretRef:
                         description: |-
                           SecretRef references a Kubernetes Secret containing the AWS credentials.
                           The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
+                          Required when type is 'Secret'.
                         properties:
                           name:
                             default: ""
@@ -101,6 +124,7 @@ spec:
                           for the backend.
                         enum:
                         - Secret
+                        - AssumeRole
                         type: string
                     required:
                     - type
@@ -110,6 +134,10 @@ spec:
                       rule: '!(has(self.secretRef) && self.type != ''Secret'')'
                     - message: secretRef must be specified when type is 'Secret'
                       rule: '!(!has(self.secretRef) && self.type == ''Secret'')'
+                    - message: assumeRole must be nil if the type is not 'AssumeRole'
+                      rule: '!(has(self.assumeRole) && self.type != ''AssumeRole'')'
+                    - message: assumeRole must be specified when type is 'AssumeRole'
+                      rule: '!(!has(self.assumeRole) && self.type == ''AssumeRole'')'
                   ec2:
                     description: Ec2 configures dynamic discovery of AWS EC2 instances.
                     properties:
@@ -171,11 +199,6 @@ spec:
                           Defaults to 80.
                         format: int32
                         type: integer
-                      roleArn:
-                        description: RoleArn is an optional IAM role to assume before
-                          listing instances.
-                        pattern: ^arn:aws[a-z-]*:iam::[0-9]{12}:role/.+$
-                        type: string
                     type: object
                   lambda:
                     description: Lambda configures the AWS Lambda service.

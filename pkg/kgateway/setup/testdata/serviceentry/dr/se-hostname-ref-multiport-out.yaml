@@ -83,7 +83,9 @@ clusters:
         zone: r2z1
   name: istio-se_gwtest_example-se_se.example.com_80
   type: STATIC
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

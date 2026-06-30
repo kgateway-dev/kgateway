@@ -144,20 +144,51 @@ type AwsAuthType string
 const (
 	// AwsAuthTypeSecret uses credentials stored in a Kubernetes Secret.
 	AwsAuthTypeSecret AwsAuthType = "Secret"
+	// AwsAuthTypeAssumeRole assumes an IAM role via STS, chaining off the
+	// backend's ambient credentials (the gateway ServiceAccount's IRSA identity
+	// for Lambda request signing, or the controller's identity for EC2
+	// discovery). The temporary credentials returned by STS are used to
+	// interact with the backend.
+	AwsAuthTypeAssumeRole AwsAuthType = "AssumeRole"
 )
 
 // AwsAuth specifies the authentication method to use for the backend.
 // +kubebuilder:validation:XValidation:message="secretRef must be nil if the type is not 'Secret'",rule="!(has(self.secretRef) && self.type != 'Secret')"
 // +kubebuilder:validation:XValidation:message="secretRef must be specified when type is 'Secret'",rule="!(!has(self.secretRef) && self.type == 'Secret')"
+// +kubebuilder:validation:XValidation:message="assumeRole must be nil if the type is not 'AssumeRole'",rule="!(has(self.assumeRole) && self.type != 'AssumeRole')"
+// +kubebuilder:validation:XValidation:message="assumeRole must be specified when type is 'AssumeRole'",rule="!(!has(self.assumeRole) && self.type == 'AssumeRole')"
 type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
 	// +required
-	// +kubebuilder:validation:Enum=Secret
+	// +kubebuilder:validation:Enum=Secret;AssumeRole
 	Type AwsAuthType `json:"type"`
 	// SecretRef references a Kubernetes Secret containing the AWS credentials.
 	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
+	// Required when type is 'Secret'.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+	// AssumeRole configures STS role chaining. The backend's ambient credentials
+	// (the gateway ServiceAccount's IRSA identity for Lambda request signing, or the
+	// controller's identity for EC2 discovery; more generally any credential resolved
+	// by the default provider chain) are used to assume the target role. The resulting
+	// temporary credentials are then used to sign requests to the backend (Lambda) or
+	// to list instances (EC2). This enables per-backend, least-privilege roles without
+	// granting the gateway/controller role direct access to every target.
+	// Required when type is 'AssumeRole'.
+	// +optional
+	AssumeRole *AwsAssumeRole `json:"assumeRole,omitempty"`
+}
+
+// AwsAssumeRole configures assuming an IAM role via STS to obtain the credentials
+// used to interact with the backend (signing Lambda requests, or listing EC2 instances).
+type AwsAssumeRole struct {
+	// RoleArn is the ARN of the IAM role to assume, e.g.
+	// "arn:aws:iam::123456789012:role/my-invoke-role".
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=2048
+	// +kubebuilder:validation:Pattern="^arn:aws[a-z-]*:iam::[0-9]{12}:role/.+$"
+	RoleArn string `json:"roleArn"`
 }
 
 const (
@@ -232,11 +263,6 @@ type AwsEc2 struct {
 	// +optional
 	// +kubebuilder:default=PrivateIP
 	AddressType AwsAddressType `json:"addressType,omitempty"`
-
-	// RoleArn is an optional IAM role to assume before listing instances.
-	// +optional
-	// +kubebuilder:validation:Pattern="^arn:aws[a-z-]*:iam::[0-9]{12}:role/.+$"
-	RoleArn string `json:"roleArn,omitempty"`
 
 	// Filters select which instances should be associated with this backend.
 	// When multiple filters are provided, an instance must match all of them.
@@ -352,6 +378,43 @@ const (
 
 	// BackendReasonInvalid is used with Accepted=False when the Backend failed to translate.
 	BackendReasonInvalid BackendConditionReason = "Invalid"
+
+	// BackendConditionEndpointsDiscovered indicates whether runtime endpoint discovery
+	// (e.g. AWS EC2 instance discovery) succeeded for backends that resolve their
+	// endpoints dynamically. It is only set on backends that perform such discovery.
+	BackendConditionEndpointsDiscovered BackendConditionType = "EndpointsDiscovered"
+
+	// BackendReasonDiscovered is used with EndpointsDiscovered=True when the last
+	// discovery poll succeeded and resolved at least one active endpoint.
+	BackendReasonDiscovered BackendConditionReason = "Discovered"
+
+	// BackendReasonNoMatchingInstances is used with EndpointsDiscovered=False when the
+	// last discovery poll succeeded but resolved no endpoints (e.g. no instances matched
+	// the configured filters).
+	BackendReasonNoMatchingInstances BackendConditionReason = "NoMatchingInstances"
+
+	// BackendReasonCredentialError is used with EndpointsDiscovered=False when discovery
+	// credentials are missing or cannot be resolved (e.g. an unresolved secret reference
+	// or malformed credential data).
+	//
+	//nolint:gosec // G101: this is a status condition reason, not a credential.
+	BackendReasonCredentialError BackendConditionReason = "CredentialError"
+
+	// BackendReasonAuthorizationError is used with EndpointsDiscovered=False when the
+	// discovery provider rejected the request for authentication or authorization reasons.
+	BackendReasonAuthorizationError BackendConditionReason = "AuthorizationError"
+
+	// BackendReasonDiscoveryError is used with EndpointsDiscovered=False when discovery
+	// failed for a transient or otherwise unclassified reason.
+	BackendReasonDiscoveryError BackendConditionReason = "DiscoveryError"
+
+	// BackendReasonDegraded is used with EndpointsDiscovered=False when the last discovery
+	// poll failed but the backend is still serving endpoints carried forward from a previous
+	// successful poll. It distinguishes a degraded-but-serving backend from one that is hard
+	// down (which keeps its specific failure reason, e.g. AuthorizationError, with no
+	// endpoints) so operators can alert on the two cases differently. The underlying failure
+	// cause is preserved in the condition message.
+	BackendReasonDegraded BackendConditionReason = "Degraded"
 )
 
 // BackendStatus defines the observed state of Backend.

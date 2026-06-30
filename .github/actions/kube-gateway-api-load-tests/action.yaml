@@ -17,27 +17,32 @@ runs:
       env:
         SKIP_DOCKER: "false"
 
-    - name: Install KGateway via Helm
+    - name: Install KGateway CRDs via Helm
       shell: bash
       run: |
-        # Install using local chart paths (development/testing scenario)
         go tool helm upgrade --install kgateway-crds ./install/helm/kgateway-crds/ \
           --namespace kgateway-system --create-namespace \
           --wait --timeout 5m
 
-        go tool helm upgrade --install kgateway ./install/helm/kgateway/ \
-          --namespace kgateway-system --create-namespace \
-          --set image.tag=${VERSION:-v1.0.0-ci1} \
-          --set image.registry=ghcr.io/kgateway-dev \
-          --wait --timeout 5m
-
-    - name: Wait for KGateway deployment to be ready
-      shell: bash
-      run: |
-        kubectl wait --for=condition=available --timeout=5m deployment/kgateway -n kgateway-system
-
-    - name: Run load tests
+    - name: Run load tests in each validation mode
       shell: bash
       env:
         KGATEWAY_RUN_LOAD_TESTS: "true"
-      run: make run-load-tests
+      run: |
+        set -euo pipefail
+
+        for validation_mode in standard strict; do
+          echo "::group::KGateway load tests validation.level=${validation_mode}"
+
+          go tool helm upgrade --install kgateway ./install/helm/kgateway/ \
+            --namespace kgateway-system --create-namespace \
+            --set image.tag=${VERSION:-v1.0.0-ci1} \
+            --set image.registry=ghcr.io/kgateway-dev \
+            --set validation.level="${validation_mode}" \
+            --wait --timeout 5m
+
+          kubectl wait --for=condition=available --timeout=5m deployment/kgateway -n kgateway-system
+          VALIDATION_MODE="${validation_mode}" make run-load-tests
+
+          echo "::endgroup::"
+        done
