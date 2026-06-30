@@ -258,6 +258,9 @@ image:
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/envoy/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
 
+# -- List of ServiceEntry exclusion label selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway ignores matching ServiceEntries when building ServiceEntry backends and endpoints. Empty selector entries are rejected because they would match every ServiceEntry.
+serviceEntriesExclusionLabelSelectors: []
+
 # -- Map of GatewayClass names to GatewayParameters references that will be set on
 #    the default GatewayClasses managed by kgateway. Each entry must define both the
 #    name and namespace of the GatewayParameters resource.
