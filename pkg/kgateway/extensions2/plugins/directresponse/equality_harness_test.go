@@ -10,8 +10,6 @@ package directresponse
 import (
 	"testing"
 
-	"k8s.io/utils/ptr"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils/equalstest"
@@ -21,10 +19,10 @@ func baseHarnessDirectResponse() *directResponse {
 	return &directResponse{
 		spec: kgateway.DirectResponseSpec{
 			StatusCode: 503,
-			Body:       ptr.To("service unavailable"),
+			Body:       new("service unavailable"),
 			BodyFormat: &shared.BodyFormat{
-				ContentType: ptr.To("text/plain"),
-				Text:        ptr.To("oops"),
+				ContentType: new("text/plain"),
+				Text:        new("oops"),
 			},
 		},
 	}
@@ -38,7 +36,7 @@ func TestHarnessDirectResponseEquals(t *testing.T) {
 		},
 		{
 			Field:  "spec",
-			Mutate: func(d **directResponse) { (*d).spec.Body = ptr.To("different body") },
+			Mutate: func(d **directResponse) { (*d).spec.Body = new("different body") },
 		},
 		{
 			Field:  "spec",
@@ -46,7 +44,7 @@ func TestHarnessDirectResponseEquals(t *testing.T) {
 		},
 		{
 			Field:  "spec",
-			Mutate: func(d **directResponse) { (*d).spec.BodyFormat.ContentType = ptr.To("application/json") },
+			Mutate: func(d **directResponse) { (*d).spec.BodyFormat.ContentType = new("application/json") },
 		},
 		{
 			Field:  "spec",
