@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -40,7 +41,13 @@ func (d *directResponse) Equals(in any) bool {
 	if !ok {
 		return false
 	}
-	return d.spec == d2.spec
+	// DirectResponseSpec contains pointer fields (Body, BodyFormat), so a struct
+	// `==` would compare those by pointer identity. Because the IR is rebuilt from
+	// a freshly decoded object on every recompute, equal specs get distinct
+	// pointers and `==` would spuriously report inequality, triggering needless
+	// re-translation. DirectResponseSpec is a plain (non-proto) API type, so a
+	// value-based DeepEqual is correct here.
+	return reflect.DeepEqual(d.spec, d2.spec)
 }
 
 type directResponsePluginGwPass struct {
