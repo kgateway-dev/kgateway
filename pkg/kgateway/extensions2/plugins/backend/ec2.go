@@ -471,12 +471,12 @@ func newEc2EndpointsCollection(
 		if o.Event != controllers.EventDelete {
 			return
 		}
-		deleted := o.Latest()
-		obj, ok := deleted.Obj.(*kgateway.Backend)
-		if !ok || obj.Spec.Aws == nil || obj.Spec.Aws.Ec2 == nil {
-			return
-		}
-		src := deleted.GetObjectSource()
+		// Delete by object-source identity rather than inspecting the deleted Obj:
+		// the identity is always populated, and deleteEc2DiscoveryMetrics is a no-op
+		// for non-EC2 backends (which never recorded any series). Every backend is
+		// uniquely keyed by namespace/name, so this only ever clears the series of
+		// the backend being removed.
+		src := o.Latest().GetObjectSource()
 		deleteEc2DiscoveryMetrics(src.Namespace, src.Name)
 	})
 
@@ -662,7 +662,9 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 			if len(groupedBackends) > 0 {
 				source.secret = groupedBackends[0].secret
 			}
+			start := time.Now()
 			instances, err := c.lister.ListInstances(ctx, source)
+			pollSeconds := time.Since(start).Seconds()
 			if err != nil {
 				reason, message := classifyEc2DiscoveryError(err)
 				nextStateMu.Lock()
@@ -691,6 +693,7 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 					// reason (not the Degraded override) so the counter always
 					// attributes a concrete failure cause.
 					recordEc2PollError(cfg.namespace, cfg.name, reason)
+					recordEc2PollDuration(cfg.namespace, cfg.name, pollSeconds)
 				}
 				nextStateMu.Unlock()
 				return
@@ -708,6 +711,7 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 				backendState := selectResolvedEc2Backend(cfg, instances)
 				resolved[cfg.resourceName] = backendState
 				recordEc2PollSuccess(cfg.namespace, cfg.name, len(backendState.endpoints))
+				recordEc2PollDuration(cfg.namespace, cfg.name, pollSeconds)
 				logger.Debug(
 					"resolved EC2 backend endpoints",
 					"backend", cfg.resourceName,

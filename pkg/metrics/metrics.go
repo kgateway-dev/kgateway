@@ -156,6 +156,9 @@ func (c *prometheusCounter) Reset() {
 type Histogram interface {
 	Metric
 	Observe(float64, ...Label)
+	// DeletePartialMatch deletes all series whose labels contain all of the
+	// provided label name-value pairs, returning the number of series removed.
+	DeletePartialMatch(...Label) int
 	Reset()
 }
 
@@ -201,6 +204,12 @@ func (c *prometheusHistogram) Labels() []string {
 // validateLabels validates a slice of Label values for the histogram metric.
 func (h *prometheusHistogram) validateLabels(labels []Label) []string {
 	return validateLabels(h, labels)
+}
+
+// DeletePartialMatch deletes all series whose labels contain all of the provided
+// label name-value pairs.
+func (h *prometheusHistogram) DeletePartialMatch(labels ...Label) int {
+	return h.m.DeletePartialMatch(toPrometheusLabels(labels))
 }
 
 // Observe records a value in the histogram.

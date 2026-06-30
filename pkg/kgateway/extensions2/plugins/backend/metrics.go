@@ -1,6 +1,8 @@
 package backend
 
 import (
+	"time"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
@@ -61,6 +63,27 @@ var (
 		},
 		[]string{ec2MetricNamespaceLabel, ec2MetricNameLabel},
 	)
+
+	// ec2DiscoveryPollDuration measures the wall-clock time of the AWS
+	// DescribeInstances round trip for a poll, attributed to each Backend in the
+	// credential scope. Both successful and failed polls are observed, so the
+	// distribution includes slow timeouts. Buckets span from a fast in-region
+	// listing up to ec2RefreshTimeout (30s).
+	ec2DiscoveryPollDuration = metrics.NewHistogram(
+		metrics.HistogramOpts{
+			Subsystem: ec2DiscoverySubsystem,
+			Name:      "poll_duration_seconds",
+			Help:      "Duration of EC2 endpoint discovery polls per Backend",
+			// Classic buckets are kept as a fallback for scrapers that do not
+			// support native histograms; they span a fast in-region listing up to
+			// the 30s refresh timeout.
+			Buckets:                         []float64{0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30},
+			NativeHistogramBucketFactor:     1.1,
+			NativeHistogramMaxBucketNumber:  100,
+			NativeHistogramMinResetDuration: time.Hour,
+		},
+		[]string{ec2MetricNamespaceLabel, ec2MetricNameLabel},
+	)
 )
 
 func ec2MetricIdentity(namespace, name string) []metrics.Label {
@@ -109,6 +132,16 @@ func recordEc2PollError(namespace, name, reason string) {
 	ec2DiscoveryErrorState.Set(1, identity...)
 }
 
+// recordEc2PollDuration observes how long a discovery poll took for a Backend. The
+// same duration is recorded for every Backend sharing a credential scope, since they
+// are resolved from a single AWS DescribeInstances call.
+func recordEc2PollDuration(namespace, name string, seconds float64) {
+	if !metrics.Active() {
+		return
+	}
+	ec2DiscoveryPollDuration.Observe(seconds, ec2MetricIdentity(namespace, name)...)
+}
+
 // deleteEc2DiscoveryMetrics removes every metric series for a Backend, called when the
 // Backend is deleted so stale per-Backend gauges do not remain visible indefinitely.
 func deleteEc2DiscoveryMetrics(namespace, name string) {
@@ -116,6 +149,7 @@ func deleteEc2DiscoveryMetrics(namespace, name string) {
 	ec2DiscoveryPollTotal.DeletePartialMatch(identity...)
 	ec2DiscoveryEndpointsActive.DeletePartialMatch(identity...)
 	ec2DiscoveryErrorState.DeletePartialMatch(identity...)
+	ec2DiscoveryPollDuration.DeletePartialMatch(identity...)
 }
 
 // ResetEc2DiscoveryMetrics resets the EC2 discovery metrics.
@@ -124,4 +158,5 @@ func ResetEc2DiscoveryMetrics() {
 	ec2DiscoveryPollTotal.Reset()
 	ec2DiscoveryEndpointsActive.Reset()
 	ec2DiscoveryErrorState.Reset()
+	ec2DiscoveryPollDuration.Reset()
 }

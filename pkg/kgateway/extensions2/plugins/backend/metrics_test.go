@@ -18,6 +18,7 @@ const (
 	pollTotalMetric       = "kgateway_ec2_discovery_poll_total"
 	endpointsActiveMetric = "kgateway_ec2_discovery_endpoints_active"
 	errorStateMetric      = "kgateway_ec2_discovery_error_state"
+	pollDurationMetric    = "kgateway_ec2_discovery_poll_duration_seconds"
 )
 
 func backendIdentityLabels(namespace, name string) []metrics.Label {
@@ -67,6 +68,8 @@ func TestComputeStateRecordsSuccessfulPollMetrics(t *testing.T) {
 		Labels: backendIdentityLabels("default", "backend-a"),
 		Value:  0,
 	})
+	gathered.AssertMetricLabels(pollDurationMetric, backendIdentityLabels("default", "backend-a"))
+	gathered.AssertHistogramPopulated(pollDurationMetric)
 }
 
 func TestComputeStateRecordsNoMatchingInstancesMetrics(t *testing.T) {
@@ -162,23 +165,31 @@ func TestComputeStateRecordsErrorPollMetricsAndRetainsEndpointGauge(t *testing.T
 		Labels: backendIdentityLabels("default", "backend-a"),
 		Value:  1,
 	})
+	// A failed poll still has a duration (it can be a slow timeout), so it is observed.
+	gathered.AssertMetricLabels(pollDurationMetric, backendIdentityLabels("default", "backend-a"))
+	gathered.AssertHistogramPopulated(pollDurationMetric)
 }
 
 func TestDeleteEc2DiscoveryMetricsRemovesBackendSeries(t *testing.T) {
 	ResetEc2DiscoveryMetrics()
 
 	recordEc2PollSuccess("default", "backend-a", 3)
+	recordEc2PollDuration("default", "backend-a", 0.2)
 	recordEc2PollSuccess("default", "backend-b", 5)
+	recordEc2PollDuration("default", "backend-b", 0.3)
 
 	deleteEc2DiscoveryMetrics("default", "backend-a")
 
 	gathered := metricstest.MustGatherMetrics(t)
-	// Only the surviving Backend's gauge series remain; the deleted Backend leaves
-	// no stale per-Backend gauge behind.
+	// Only the surviving Backend's series remain; the deleted Backend leaves no
+	// stale per-Backend gauge or histogram behind.
 	gathered.AssertMetricsLabels(endpointsActiveMetric, [][]metrics.Label{
 		backendIdentityLabels("default", "backend-b"),
 	})
 	gathered.AssertMetricsLabels(errorStateMetric, [][]metrics.Label{
+		backendIdentityLabels("default", "backend-b"),
+	})
+	gathered.AssertMetricsLabels(pollDurationMetric, [][]metrics.Label{
 		backendIdentityLabels("default", "backend-b"),
 	})
 }
