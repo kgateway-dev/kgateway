@@ -20,7 +20,6 @@ import (
 	envoyuuidv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/request_id/uuid/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils/equalstest"
@@ -33,20 +32,20 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		upgradeConfigs: []*envoy_hcm.HttpConnectionManager_UpgradeConfig{
 			{UpgradeType: "websocket"},
 		},
-		useRemoteAddress:           ptr.To(true),
-		xffNumTrustedHops:          ptr.To(uint32(2)),
+		useRemoteAddress:           new(true),
+		xffNumTrustedHops:          new(uint32(2)),
 		xffConfig:                  &envoyxffv3.XffConfig{XffNumTrustedHops: 1},
-		skipXffAppend:              ptr.To(true),
-		serverHeaderTransformation: ptr.To(envoy_hcm.HttpConnectionManager_OVERWRITE),
-		streamIdleTimeout:          ptr.To(5 * time.Second),
-		idleTimeout:                ptr.To(30 * time.Second),
+		skipXffAppend:              new(true),
+		serverHeaderTransformation: new(envoy_hcm.HttpConnectionManager_OVERWRITE),
+		streamIdleTimeout:          new(5 * time.Second),
+		idleTimeout:                new(30 * time.Second),
 		http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{
 			MaxConcurrentStreams: wrapperspb.UInt32(100),
 		},
 		healthCheckPolicy:         &healthcheckv3.HealthCheck{PassThroughMode: wrapperspb.Bool(false)},
-		preserveHttp1HeaderCase:   ptr.To(true),
-		preserveExternalRequestId: ptr.To(true),
-		generateRequestId:         ptr.To(true),
+		preserveHttp1HeaderCase:   new(true),
+		preserveExternalRequestId: new(true),
+		generateRequestId:         new(true),
 		accessLogConfig:           []proto.Message{wrapperspb.String("access-log")},
 		accessLogPolicies: []kgateway.AccessLog{
 			{FileSink: &kgateway.FileSink{Path: "/dev/stdout"}},
@@ -54,20 +53,20 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		tracingProvider:      &envoytracev3.OpenTelemetryConfig{ServiceName: "svc"},
 		tracingConfig:        &envoy_hcm.HttpConnectionManager_Tracing{MaxPathTagLength: wrapperspb.UInt32(256)},
 		localReplyConfig:     &envoy_hcm.LocalReplyConfig{},
-		acceptHttp10:         ptr.To(true),
-		defaultHostForHttp10: ptr.To("example.com"),
+		acceptHttp10:         new(true),
+		defaultHostForHttp10: new("example.com"),
 		earlyHeaderMutationExtensions: []*envoycorev3.TypedExtensionConfig{
 			{Name: "ext"},
 		},
-		maxRequestHeadersKb:      ptr.To(uint32(96)),
-		maxRequestsPerConnection: ptr.To(uint32(100)),
-		maxHeadersCount:          ptr.To(uint32(100)),
+		maxRequestHeadersKb:      new(uint32(96)),
+		maxRequestsPerConnection: new(uint32(100)),
+		maxHeadersCount:          new(uint32(100)),
 		uuidRequestIdConfig:      &envoyuuidv3.UuidRequestIdConfig{PackTraceReason: wrapperspb.Bool(true)},
-		forwardClientCertMode:    ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE_SET),
+		forwardClientCertMode:    new(envoy_hcm.HttpConnectionManager_SANITIZE_SET),
 		setCurrentClientCertDetails: &envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails{
 			Subject: wrapperspb.Bool(true),
 		},
-		stripHostPortMode: ptr.To(kgateway.StripMatchingHostPortMode),
+		stripHostPortMode: new(kgateway.StripMatchingHostPortMode),
 	}
 }
 
@@ -85,11 +84,11 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		},
 		{
 			Field:  "useRemoteAddress",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).useRemoteAddress = ptr.To(false) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).useRemoteAddress = new(false) },
 		},
 		{
 			Field:  "xffNumTrustedHops",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).xffNumTrustedHops = ptr.To(uint32(5)) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).xffNumTrustedHops = new(uint32(5)) },
 		},
 		{
 			Field:  "xffConfig",
@@ -97,21 +96,21 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		},
 		{
 			Field:  "skipXffAppend",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).skipXffAppend = ptr.To(false) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).skipXffAppend = new(false) },
 		},
 		{
 			Field: "serverHeaderTransformation",
 			Mutate: func(d **HttpListenerPolicyIr) {
-				(*d).serverHeaderTransformation = ptr.To(envoy_hcm.HttpConnectionManager_APPEND_IF_ABSENT)
+				(*d).serverHeaderTransformation = new(envoy_hcm.HttpConnectionManager_APPEND_IF_ABSENT)
 			},
 		},
 		{
 			Field:  "streamIdleTimeout",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).streamIdleTimeout = ptr.To(10 * time.Second) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).streamIdleTimeout = new(10 * time.Second) },
 		},
 		{
 			Field:  "idleTimeout",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).idleTimeout = ptr.To(60 * time.Second) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).idleTimeout = new(60 * time.Second) },
 		},
 		{
 			Field: "http2ProtocolOptions",
@@ -127,15 +126,15 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		},
 		{
 			Field:  "preserveHttp1HeaderCase",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).preserveHttp1HeaderCase = ptr.To(false) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).preserveHttp1HeaderCase = new(false) },
 		},
 		{
 			Field:  "preserveExternalRequestId",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).preserveExternalRequestId = ptr.To(false) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).preserveExternalRequestId = new(false) },
 		},
 		{
 			Field:  "generateRequestId",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).generateRequestId = ptr.To(false) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).generateRequestId = new(false) },
 		},
 		{
 			Field: "accessLogConfig",
@@ -167,11 +166,11 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		},
 		{
 			Field:  "acceptHttp10",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).acceptHttp10 = ptr.To(false) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).acceptHttp10 = new(false) },
 		},
 		{
 			Field:  "defaultHostForHttp10",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).defaultHostForHttp10 = ptr.To("other.com") },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).defaultHostForHttp10 = new("other.com") },
 		},
 		{
 			Field: "earlyHeaderMutationExtensions",
@@ -181,15 +180,15 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		},
 		{
 			Field:  "maxRequestHeadersKb",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).maxRequestHeadersKb = ptr.To(uint32(128)) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).maxRequestHeadersKb = new(uint32(128)) },
 		},
 		{
 			Field:  "maxRequestsPerConnection",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).maxRequestsPerConnection = ptr.To(uint32(200)) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).maxRequestsPerConnection = new(uint32(200)) },
 		},
 		{
 			Field:  "maxHeadersCount",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).maxHeadersCount = ptr.To(uint32(200)) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).maxHeadersCount = new(uint32(200)) },
 		},
 		{
 			Field: "uuidRequestIdConfig",
@@ -200,7 +199,7 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		{
 			Field: "forwardClientCertMode",
 			Mutate: func(d **HttpListenerPolicyIr) {
-				(*d).forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_FORWARD_ONLY)
+				(*d).forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_FORWARD_ONLY)
 			},
 		},
 		{
@@ -211,7 +210,7 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		},
 		{
 			Field:  "stripHostPortMode",
-			Mutate: func(d **HttpListenerPolicyIr) { (*d).stripHostPortMode = ptr.To(kgateway.StripAnyHostPortMode) },
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).stripHostPortMode = new(kgateway.StripAnyHostPortMode) },
 		},
 	}
 
