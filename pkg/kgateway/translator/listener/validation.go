@@ -325,7 +325,12 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 
 	validListenersPerParent := map[string]int{}
 	for _, l := range validListeners {
-		parentKey := fmt.Sprintf("%s/%s/%s", l.Parent.GetObjectKind().GroupVersionKind().Kind, l.Parent.GetNamespace(), l.Parent.GetName())
+		// If the kind is missing, assume it is a gateway
+		kind := l.Parent.GetObjectKind().GroupVersionKind().Kind
+		if kind == "" {
+			kind = "Gateway"
+		}
+		parentKey := fmt.Sprintf("%s/%s/%s", kind, l.Parent.GetNamespace(), l.Parent.GetName())
 		validListenersPerParent[parentKey]++
 	}
 	if validListenersPerParent[fmt.Sprintf("Gateway/%s/%s", gw.Obj.Namespace, gw.Obj.Name)] < len(gw.Obj.Spec.Listeners) {
