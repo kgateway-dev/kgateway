@@ -4,6 +4,7 @@ Status: Proposed
 
 - Issue: [#13586](https://github.com/kgateway-dev/kgateway/issues/13586)
 - Related: [#10639](https://github.com/kgateway-dev/kgateway/issues/10639) (duplicate ask), [#14184](https://github.com/kgateway-dev/kgateway/issues/14184) (the per-client xDS coherence work this builds on)
+- Depends on PRs: [#14237](https://github.com/kgateway-dev/kgateway/pull/14237) (bounded publish + carry-forward + warm preservation), [#14257](https://github.com/kgateway-dev/kgateway/pull/14257) (EDS/CDS alignment + usable-endpoint) — the latter is folded into the former. Enabled by merged [#14242](https://github.com/kgateway-dev/kgateway/pull/14242) / [#14253](https://github.com/kgateway-dev/kgateway/pull/14253) (validator cache).
 
 ## Background
 
@@ -28,18 +29,23 @@ This is deliberate, not accidental. The maintainer rationale (issue thread): the
 
 Pre-creating a cluster for every Service guarantees the destination always exists, so route changes never reference a missing cluster. **Emit-all is a make-before-break workaround for not having safe cluster/route transitions.**
 
-### Why this is now solvable
+### Why this is now solvable: the #14184 machinery, concretely
 
-[#14184](https://github.com/kgateway-dev/kgateway/issues/14184) introduced **coherence-by-construction** for the per-client xDS snapshot. The publish invariant changed from "publish only when complete" to "always publish a snapshot that is internally consistent by construction — referenced-but-absent clusters are carried forward from the last published snapshot, and no route is ever published pointing at a missing cluster." The supporting machinery (publish-time merge from the prior snapshot, version recomputation, all under a single gate lock) is the safe-transition primitive that was previously missing.
+The #14184 work (PR #14237, building on the merged validator cache #14242/#14253) replaced the "publish only when complete" gate with **coherence-by-construction** in the per-client publish path. The relevant, already-implemented pieces this EP reuses (paths relative to `pkg/kgateway/proxy_syncer/`):
 
-Once cluster/route transitions are drop-free, the justification for emit-all disappears. The emitted cluster set can be sized to exactly what the configuration references, with transitions handled by the #14184 primitive. That is what this EP proposes.
+- `collectReferencedClusters(routes, listeners envoycache.Resources)` (`perclient.go`) walks the **generated** RDS/LDS protos and returns the set of cluster names the dataplane references. Its output is already stored on `GatewayXdsResources.ReferencedClusters` (`proxy_syncer.go`, set in `toResources`) and carried on deferred wrappers as `XdsSnapWrapper.referencedClusters` (`xdswrapper.go`).
+- `mergeCarryForward(wrap *XdsSnapWrapper, published envoycache.ResourceSnapshot)` (`kube_gw_translator_syncer.go`) produces a snapshot in which any referenced cluster (and its EDS) missing from the current build is carried forward from the previously published snapshot. This is the make-before-break primitive: a route is never published pointing at a cluster that is not in the snapshot.
+- `publishBudgetGate` / `clientPublishState` / `syncXds` / `offerBudgetedPublish` / `publishPendingBudgeted` (`kube_gw_translator_syncer.go`) serialize all publication decisions under one lock, so a transitional merge can never race a coherent publish, and `clientDeparted` cleans up on disconnect.
+- `filterEndpointResourcesForClusters(clusters, endpoints envoycache.Resources)` and `clusterLoadAssignmentHasUsableEndpoint(...)` (`perclient.go`, from #14257) already positively align the emitted EDS set to the emitted CDS set and treat empty CLAs correctly.
+
+Together these mean cluster/route transitions are already drop-free **for the clusters the snapshot chooses to emit**. #14184 sized that emitted set to "all backends"; this EP sizes it to "referenced clusters" and lets the same machinery carry the transitions. The justification for emit-all disappears.
 
 ## Motivation
 
 ### Goals
 
 - Emit CDS/EDS only for clusters the generated Envoy configuration actually references, eliminating the unreferenced-cluster bloat in `config_dump` and `/stats`.
-- Preserve make-before-break across route destination changes (no `503 NC`, no endpoint drops) using the #14184 coherence machinery rather than emit-all.
+- Preserve make-before-break across route destination changes (no `503 NC`, no endpoint drops) by reusing the #14184 `mergeCarryForward` primitive rather than emit-all.
 - Make the behavior opt-in via a setting, so the default is unchanged until the feature is proven.
 
 ### Non-Goals
@@ -52,58 +58,60 @@ Once cluster/route transitions are drop-free, the justification for emit-all dis
 
 ```mermaid
 flowchart LR
-    A["Why emit-all exists:\nroute dest change drops traffic\nif the new cluster isn't already present"] --> B["#14184 coherence-by-construction:\nnever publish route -> missing cluster;\ncarry-forward transitional clusters"]
+    A["Why emit-all exists:\nroute dest change drops traffic\nif the new cluster isn't already present"] --> B["#14184 mergeCarryForward:\nnever publish route -> missing cluster;\ncarry transitional clusters from prior snapshot"]
     B --> C["Transitions are drop-free\n=> emit-all no longer needed"]
     C --> D["Emit only referenced clusters\n=> #13586 solved"]
 ```
 
-A cluster set that is coherent-by-construction with the routes **is** the referenced-only set. #13586 reduces to "assemble the emitted set from the configuration's references, and use the #14184 primitive to transition that set safely."
+A cluster set that is coherent-by-construction with the routes **is** the referenced-only set. #13586 reduces to "assemble the emitted set from `collectReferencedClusters`, and let `mergeCarryForward` plus a de-reference grace transition that set safely."
 
 ## Design
 
 ### Defining the referenced set
 
-The emitted cluster set for a gateway is the **transitive closure of cluster names referenced by that gateway's generated Envoy configuration** — not merely the set of route `backendRefs`.
+The emitted cluster set for a gateway is the **transitive closure of cluster names referenced by that gateway's generated Envoy configuration** — the output of a `collectReferencedClusters`-style walk over the produced RDS/LDS/filter protos, not the set of route `backendRefs`.
 
-This distinction is load-bearing. A correct referenced set must include every cluster Envoy can route to or call, including:
+This distinction is load-bearing. A correct referenced set must include every cluster Envoy can route to or call:
 
 - route targets: `RouteAction.Cluster`, `WeightedCluster` entries, `TcpProxy.Cluster` (HTTP/GRPC/TCP/TLS routes, including delegated routes);
 - request-mirror / shadow backends;
 - ancillary clusters referenced by filter configs: `ext_authz`, `ext_proc`, rate-limit service, access-log gRPC sinks, JWKS, etc.
 
-This is the same shape as the existing `collectReferencedClusters` walk in `pkg/kgateway/proxy_syncer/perclient.go` (and the shared `walkProtoMessages` helper), but with two differences:
+The existing `collectReferencedClusters` (`perclient.go`) intentionally **excludes** ancillary references (logging, jwks, ext_authz) because it feeds the readiness/carry-forward decision, where those are not part of the route-reachability contract. For **emission** they are real clusters Envoy needs. This EP therefore adds an emission variant — `collectReferencedClustersForEmission` — that reuses the same `walkProtoMessages` traversal but does not drop ancillary references, and stores it alongside the existing field as `GatewayXdsResources.ReferencedClustersForEmission`.
 
-1. It must **not** exclude ancillary references. `collectReferencedClusters` today intentionally omits logging/jwks/ext_authz clusters because it feeds the readiness *gate*; for *emission* those clusters are real and must be kept.
-2. Its output is used to *filter emission*, not to decide whether to publish.
-
-Computing the set by walking the produced listener/route/filter protos (rather than re-deriving intent from `backendRefs`) is correct by construction: we emit exactly the clusters the config names, so we can never emit an unreferenced cluster nor drop a referenced one.
-
-The referenced set is computed per gateway and already has a natural home: `GatewayXdsResources` (`proxy_syncer.go`) already carries a `ReferencedClusters map[string]struct{}` for the gate. This EP promotes a (non-ancillary-excluding) variant of it to drive emission.
+Deriving the set from the produced protos (rather than re-resolving `backendRefs`) is correct by construction: we emit exactly the clusters the config names, so we never emit an unreferenced cluster nor drop a referenced one, and delegation / non-HTTP routes / mirrors are covered for free because they already appear in the generated protos.
 
 ### Emission filter
 
-Cluster and endpoint generation is per connected client (UCC). Today the transform iterates every backend in `finalBackends`:
+Cluster and endpoint generation is per connected client (UCC). Today the transforms iterate every backend in `finalBackends`:
 
-- `NewPerClientEnvoyClusters` (`pkg/kgateway/proxy_syncer/backends.go`) — one cluster per backend per UCC.
-- the EDS counterpart for `ClusterLoadAssignment`s.
+- `NewPerClientEnvoyClusters(... finalBackends krt.Collection[*ir.BackendObjectIR] ...)` (`backends.go`) — `krt.NewManyCollection(finalBackends, ...)` emits one cluster per backend per UCC.
+- the per-client EDS counterpart for `ClusterLoadAssignment`s.
 
-The filter applies the gateway's referenced set to these transforms: a backend whose cluster name is not in the referenced set (and not within a de-reference grace window, below) is skipped. The referenced set is threaded in from the gateway snapshot via the same `krt.FetchOne` pattern the per-client transforms already use for other gateway-scoped inputs.
+The filter applies the gateway's `ReferencedClustersForEmission` set inside these transforms: a backend whose Envoy cluster name is not in the set (and not within a de-reference grace window, below) is skipped. The set is threaded in from the gateway snapshot with the same `krt.FetchOne` pattern the per-client transforms already use for gateway-scoped inputs. EDS is kept aligned automatically because `filterEndpointResourcesForClusters` (#14257) already restricts the emitted EDS to the emitted CDS set.
 
-### Safe transitions (the #14184 dependency)
+Cluster-name mapping: the filter compares against the backend's Envoy cluster name (the same `endpointResourceNameForCluster` / cluster-name derivation the snapshot already uses), so a referenced name and an emitted name are compared on the identical key.
+
+### Safe transitions (reusing the #14184 primitive)
 
 The referenced set changes as routes change. Both directions must be drop-free.
 
 Addition (a route starts referencing `service-b`):
 
-- `service-b` enters the referenced set, so the per-client transform now emits its cluster in the same coherent snapshot as the new route.
-- go-control-plane ADS delivers CDS/EDS before LDS/RDS, so `service-b` exists in Envoy before `/foo` is flipped to it. No `503 NC`. This is exactly the "referenced cluster present before the route" guarantee #14184 already enforces via carry-forward of referenced-but-absent clusters.
+- `service-b` enters `ReferencedClustersForEmission`, so the per-client transform emits its cluster in the same coherent snapshot as the new route.
+- If per-client cluster translation for `service-b` lags the route change within a build, `mergeCarryForward` already covers it: `service-b` is in `referencedClusters` but absent from the build, so it is carried forward (or the publish is withheld on cold start), exactly as #14184 does today. go-control-plane ADS then delivers CDS/EDS before LDS/RDS, so `service-b` exists before `/foo` is flipped to it. No `503 NC`.
 
 Removal (a route stops referencing `service-a`):
 
-- `service-a` leaves the referenced set. Removing it immediately is unsafe: ADS may remove the cluster before the old route is replaced on Envoy, dropping in-flight `/foo` traffic.
-- Instead, a **de-reference grace window** retains the cluster for a bounded period after it leaves the referenced set, then prunes it. The emitted set is `referenced-now ∪ recently-de-referenced(within grace)`.
+- `service-a` leaves `ReferencedClustersForEmission`. Removing it immediately is unsafe: ADS may remove the cluster before the old route is replaced on Envoy, dropping in-flight `/foo` traffic.
+- A **de-reference grace window** retains the cluster for a bounded period after it leaves the set, then prunes it. The emitted set is `referenced-now ∪ recently-de-referenced(within grace)`.
 
-The grace mechanism is the #14184 carry-forward primitive with a broadened policy: #14184 retains clusters that are *referenced but absent*; this EP additionally retains clusters that are *recently de-referenced but still present*. Same publish-time merge-from-prior machinery, same gate lock; the only new state is a per-cluster "de-referenced at" timestamp and a grace duration. The level-triggered reconcile foundation from the #14184 work provides the periodic wake-up needed to prune after the grace expires (otherwise a steady state with no further events would never re-evaluate).
+The grace mechanism extends the existing state, it does not add a new subsystem:
+
+- `clientPublishState` (`kube_gw_translator_syncer.go`) gains a `dereferencedAt map[string]time.Time` (cluster name -> time it left the referenced set).
+- The emission filter admits a cluster if it is referenced now, or was de-referenced within the grace window.
+- Pruning after the window relies on the level-triggered reconcile tick already present from the #14184 work (the `PerClientHeartbeat` input to the per-client collections) so a steady state with no further events still re-evaluates and drops expired clusters.
+- Flap handling: re-referencing a cluster clears its `dereferencedAt` entry, so a flapping route keeps the cluster present rather than oscillating.
 
 ### Worked example
 
@@ -114,12 +122,12 @@ sequenceDiagram
     participant E as Envoy (ADS)
     Note over R: /foo: service-a -> service-b
     R->>T: route now references b, not a
-    T->>T: referenced set = {..., b}; a marked de-referenced@now
+    T->>T: ReferencedForEmission = {..., b}; dereferencedAt[a]=now
     T->>T: emit set = referenced ∪ grace = {..., a, b}
     T->>E: snapshot {CDS: a,b ; RDS: /foo->b}
     E->>E: apply CDS (b present) then RDS (/foo->b)
     Note over E: no 503 NC; a still present for in-flight
-    Note over T: grace expires
+    Note over T: PerClientHeartbeat tick after grace expires
     T->>E: snapshot {CDS: b (a pruned)}
     E->>E: apply CDS (a removed); no route uses a
 ```
@@ -128,42 +136,74 @@ sequenceDiagram
 
 A new setting gates the behavior, defaulting to today's emit-all so nothing changes implicitly:
 
-- `KGW_CLUSTER_DISCOVERY_MODE` (`Settings.ClusterDiscoveryMode`), enum `All` (default) | `Referenced`.
-- `Referenced` mode activates the emission filter and the de-reference grace.
-- The grace duration is a second setting (for example `KGW_CLUSTER_DEREFERENCE_GRACE`, default a few seconds) so it can be tuned to the deployment's RDS propagation latency.
+- `KGW_CLUSTER_DISCOVERY_MODE` (`Settings.ClusterDiscoveryMode`, `api/settings/settings.go`), enum `All` (default) | `Referenced`, following the existing typed-enum + `Decode` pattern used by `ValidationMode` / `PodLocalityXDS`.
+- `Referenced` activates the emission filter and the de-reference grace.
+- `KGW_CLUSTER_DEREFERENCE_GRACE` (`Settings.ClusterDereferenceGrace`, `metav1.Duration`, default a few seconds) tunes the grace to the deployment's RDS propagation latency; `0` disables grace (only safe when the operator accepts the removal race).
 
-## What #14184 provides versus what this EP adds
+## What #14184 already provides versus what this EP adds
 
-| Concern | Provided by #14184 | Added by this EP |
+| Concern | Already implemented (symbol / PR) | Added by this EP |
 |---|---|---|
-| Never publish route -> missing cluster | Yes (coherence-by-construction) | Reused |
-| Carry-forward referenced-but-absent clusters (safe addition) | Yes | Reused |
-| Publish-time merge-from-prior primitive, gate lock, versioning | Yes | Reused |
-| Level-triggered reconcile (periodic re-evaluation) | Yes | Reused for grace expiry |
-| Compute the referenced-set closure for emission (incl. ancillary) | Gate-only, ancillary-excluded | Promote to emission filter |
-| Filter per-client cluster/EDS generation to the referenced set | No | New (small) |
-| De-reference grace (retain recently-unreferenced, then prune) | No (only referenced-but-absent) | New policy on the same primitive |
-| Opt-in setting | No | New |
+| Compute referenced-cluster set from generated protos | `collectReferencedClusters` + `GatewayXdsResources.ReferencedClusters` + `XdsSnapWrapper.referencedClusters` (#14237) | `collectReferencedClustersForEmission` (include ancillary) + `ReferencedClustersForEmission` |
+| Never publish route -> missing cluster; carry transitional clusters | `mergeCarryForward`, `publishPendingBudgeted`, `publishBudgetGate` (#14237) | Reused unchanged for the addition side |
+| EDS aligned to emitted CDS; empty-CLA handling | `filterEndpointResourcesForClusters`, `clusterLoadAssignmentHasUsableEndpoint` (#14257) | Reused; EDS follows the filtered CDS automatically |
+| Level-triggered re-evaluation | `PerClientHeartbeat` reconcile tick (#14237 lineage) | Reused to prune after grace expiry |
+| Deferrals stay short (so transitions are quick) | validator cache (#14242 / #14253, merged) | Reused |
+| Filter per-client CDS/EDS to the referenced set | none (emits all `finalBackends`) | New filter in `NewPerClientEnvoyClusters` + EDS transform |
+| De-reference grace (retain recently-unreferenced, then prune) | none (#14184 only carries referenced-but-absent) | New `dereferencedAt` state + grace policy on `clientPublishState` |
+| Opt-in setting | none | `ClusterDiscoveryMode`, `ClusterDereferenceGrace` |
 
-The infrastructure is the #14184 carry-forward machinery; this EP is the referenced-set assembly plus the grace policy on top of it.
+The heavy lifting (coherent publish, carry-forward, EDS alignment, reconcile tick) is done. This EP is a referenced-set filter plus a grace policy on top of `clientPublishState`.
+
+## Implementation and rollout
+
+Phased so each step is independently reviewable and revertible, and nothing user-visible ships before the #14184 foundation is merged.
+
+### Phase 0: foundation (prerequisite, in flight)
+
+- Merge #14237 (bounded publish + `mergeCarryForward` + warm preservation) and its folded-in #14257 (EDS/CDS alignment). These provide every reused symbol above; the merged validator cache (#14242/#14253) keeps deferral windows short.
+- Exit criterion: #14237 merged to `main`; `mergeCarryForward` and `filterEndpointResourcesForClusters` present.
+
+### Phase 1: emission-scoped referenced set
+
+- Add `collectReferencedClustersForEmission` in `perclient.go` reusing `walkProtoMessages`, without the ancillary exclusion; unit-test that its closure includes route targets, weighted clusters, TCP/TLS targets, mirror backends, and ancillary filter clusters (ext_authz/ext_proc/ratelimit/access-log/jwks).
+- Store it as `GatewayXdsResources.ReferencedClustersForEmission` in `toResources` (`proxy_syncer.go`), next to the existing `ReferencedClusters`.
+- No behavior change yet (nothing consumes it). Ships dark.
+
+### Phase 2: emission filter behind the setting
+
+- Add `ClusterDiscoveryMode` (`All` default) to `api/settings/settings.go` with `Decode`; regenerate settings artifacts.
+- Thread `ReferencedClustersForEmission` into `NewPerClientEnvoyClusters` (`backends.go`) and the per-client EDS transform via `krt.FetchOne` on the gateway snapshot; when mode is `Referenced`, skip backends whose cluster name is not in the set. EDS follows via `filterEndpointResourcesForClusters`.
+- Tests: with mode `Referenced`, an unreferenced backend yields no cluster/CLA; `All` is byte-identical to today. Integration (envtest + ADS): a route add produces the new cluster before the route (no `503 NC`).
+- At this point removals are not yet safe, so document `Referenced` as experimental until Phase 3.
+
+### Phase 3: de-reference grace
+
+- Add `dereferencedAt map[string]time.Time` to `clientPublishState`; update it when a cluster leaves `ReferencedClustersForEmission`; clear on re-reference.
+- Admit graced clusters in the emission filter; prune on the `PerClientHeartbeat` tick once the window elapses.
+- Add `ClusterDereferenceGrace` setting.
+- Tests: route flip `a -> b` yields a snapshot with both `a` (grace) and `b`, then a later snapshot with `a` pruned; a flapping route does not oscillate; integration confirms no endpoint gap on the stable path through churn across HTTP/GRPC/TCP/TLS.
+
+### Phase 4: observability, docs, default
+
+- Add counters: emitted-cluster count per gateway, and graced/pruned cluster events, so operators can see the reduction and the grace activity.
+- Document the make-before-break guarantee, the grace setting, and the behavior change (unreferenced Services no longer appear as clusters).
+- Keep `All` as the default. Consider flipping the default to `Referenced` only after a soak with the load matrix below green.
 
 ## Alternatives
 
 ### Option B: Service label selector (complementary, ship independently)
 
-Extend discovery scoping with a Service label selector (sibling to `discoveryNamespaceSelectors`), wired into the kube backend plugin so unmatched Services never become a backend and therefore never a cluster. This is the ask in #13586 from the reporter with the 93k-metric environment.
+Extend discovery scoping with a Service label selector (sibling to `discoveryNamespaceSelectors`), wired into the kube backend plugin (`pkg/kgateway/extensions2/plugins/kubernetes/k8s.go`) so unmatched Services never become a backend and therefore never a cluster. This is the ask from the reporter with the 93k-metric environment.
 
-- Pros: small, no coherence dependency (the operator controls the set explicitly, so there is no transition to make drop-free); finer than namespace scoping; ships now.
-- Cons: operator must label workloads and keep labels current; it is opt-in scoping, not automatic.
+- Pros: small, no coherence dependency (the operator controls the set explicitly, so there is no transition to make drop-free); finer than namespace scoping; ships now, independent of #14184.
+- Cons: operator must label workloads and keep labels current; opt-in scoping, not automatic.
 
-This EP and Option B are not mutually exclusive. Option B is the quick standalone win; referenced-only is the automatic model. A reasonable sequence is to ship Option B first and referenced-only when the #14184 work has landed.
+This EP and Option B are not mutually exclusive. Option B is the quick standalone win; referenced-only is the automatic model. A reasonable sequence is Option B now, referenced-only once Phase 0 lands.
 
 ### Option C: explicit `Backend` kube type plus disable-discovery
 
-Add a kube-type `Backend` resource so users declare which Services become clusters, plus a setting to disable auto-discovery entirely (maintainer suggestion in the issue thread).
-
-- Pros: maximal control; predictable config.
-- Cons: largest UX change; every routed Service needs an explicit resource.
+Add a kube-type `Backend` resource so users declare which Services become clusters, plus a setting to disable auto-discovery entirely (maintainer suggestion in the issue thread). Maximal control, largest UX change.
 
 ### Status quo mitigations
 
@@ -171,31 +211,23 @@ Add a kube-type `Backend` resource so users declare which Services become cluste
 
 ## Risks and trade-offs
 
-- **ADS ordering on removal.** Correctness on removal depends on the grace window, not on Envoy's removal ordering. The grace must exceed worst-case RDS propagation; it is configurable for this reason.
-- **Referenced-set completeness.** Missing an ancillary cluster reference (a new filter type that names a cluster) would drop a cluster Envoy needs. The set must be derived from the produced protos (closure), and any new cluster-referencing filter must be covered by the proto walk. This is the principal correctness risk and warrants a focused test matrix.
-- **Status and observability.** Backends that are discovered but unreferenced currently still appear as clusters; consumers that rely on their presence (dashboards, scripts) will see them disappear. This is the intended effect but is a behavior change, hence opt-in.
-- **Backends needing policy status.** A backend that has a policy attached but is unreferenced by routes still needs its status reconciled; status computation must not be gated by the emission filter (status is independent of whether a cluster is emitted).
-- **Delegation and non-HTTP routes.** The referenced-set walk must cover delegated `HTTPRoute` chains, `GRPCRoute`, `TCPRoute`, and `TLSRoute` backendRefs, and mirror/shadow backends.
-- **Grace churn.** A flapping route could repeatedly add/remove a cluster within the grace window; the grace timestamp should be refreshed (not reset to absent) so flapping keeps the cluster present rather than oscillating.
+- **Referenced-set completeness is the principal correctness risk.** Missing an ancillary cluster reference (a new filter type that names a cluster) would drop a cluster Envoy needs. `collectReferencedClustersForEmission` must be derived from the produced protos and kept in step with any new cluster-referencing filter; this warrants a dedicated closure-completeness test that fails when a filter introduces an uncovered reference.
+- **Removal correctness depends on the grace window, not on Envoy ordering.** The grace must exceed worst-case RDS propagation; it is configurable for this reason.
+- **Backends needing policy status.** A backend with an attached policy but no route reference still needs its status reconciled; status computation must remain independent of the emission filter.
+- **Behavior change.** Unreferenced Services disappear from `config_dump` and `/stats`; dashboards or scripts relying on their presence will notice. Intended, hence opt-in.
+- **Grace churn.** Flapping routes are handled by clearing `dereferencedAt` on re-reference (present, not oscillating).
 
 ## Test plan
 
-- Unit: referenced-set closure includes route targets, weighted clusters, TCP/TLS targets, mirror backends, and ancillary filter clusters (ext_authz/ext_proc/ratelimit/access-log/jwks); excludes nothing referenced.
-- Unit: emission filter skips unreferenced backends; retains de-referenced backends within grace; prunes after grace via the reconcile tick.
-- Unit: route flip `a -> b` produces a snapshot containing both `a` (grace) and `b`, then a later snapshot with `a` pruned.
-- Integration (envtest + ADS): a route destination change produces no `503 NC` and no endpoint gap on the stable path, in `Referenced` mode, across HTTP/GRPC/TCP/TLS.
-- Integration: a flapping route does not oscillate the cluster set.
-- e2e/load: the #13586 shape — hundreds of Services, a handful routed — yields a cluster/metric count proportional to referenced Services, with stable traffic through route churn.
-- Regression: `All` mode (default) is byte-identical to today.
-
-## Rollout
-
-- Land behind `KGW_CLUSTER_DISCOVERY_MODE=All` default; no change for existing users.
-- Document the make-before-break guarantee and the grace setting.
-- Promote to default only after the #14184 coherence work is merged and the integration/load matrix is green.
+- Unit: `collectReferencedClustersForEmission` closure completeness (route targets, weighted, TCP/TLS, mirror, ancillary filters).
+- Unit: emission filter skips unreferenced backends in `Referenced`, no-ops in `All`; retains graced backends; prunes after grace via the reconcile tick.
+- Unit: route flip `a -> b` snapshot sequence (both, then pruned); flap does not oscillate.
+- Integration (envtest + ADS): route destination change produces no `503 NC` and no endpoint gap in `Referenced`, across HTTP/GRPC/TCP/TLS and delegated routes.
+- e2e/load: the #13586 shape (hundreds of Services, a handful routed) yields cluster/metric counts proportional to referenced Services, with stable traffic through route churn.
+- Regression: `All` mode byte-identical to today.
 
 ## Open questions
 
-- **Prune versus carry-forward as the permanent invariant** for de-referenced clusters. This EP uses time-bounded grace-then-prune. The alternative (carry-forward indefinitely until a positive signal) is the open decision from the #14184 design notes and should be settled here, since it shapes the removal semantics.
-- **Default grace duration**, and whether it should be derived from observed RDS ACK latency rather than a static value.
+- **Prune versus indefinite carry-forward** for de-referenced clusters. This EP uses time-bounded grace-then-prune; the alternative (retain until a positive signal) is the open decision from the #14184 design notes and should be settled here, since it shapes removal semantics.
+- **Default grace duration**, and whether to derive it from observed RDS ACK latency rather than a static value.
 - **Whether to ship Option B (Service label selector) first** as the immediate mitigation while this lands.
