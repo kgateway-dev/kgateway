@@ -28,8 +28,12 @@ var testCases = map[string]*base.TestCase{
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	// The setup HTTPRoutes use named rules (spec.rules[].name) so that the
+	// TrafficPolicy can target a specific rule via sectionName. That field is
+	// only available in experimental >= 1.2.0 and standard >= 1.4.0, so skip the
+	// suite on older standard channels where applying the setup would fail.
 	return &testingSuite{
-		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireRouteNames)),
 	}
 }
 
