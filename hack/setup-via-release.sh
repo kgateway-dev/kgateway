@@ -76,7 +76,7 @@ Examples:
   ./hack/setup-via-release.sh -k v1.31.12 --metallb
 
   # k3d with specific k8s version
-  ./hack/setup-via-release.sh --k3d -k v1.36.1
+  ./hack/setup-via-release.sh --k3d -k v1.35.0
 
   # With cloud-provider-kind for LoadBalancer IP assignment
   ./hack/setup-via-release.sh --cloud-provider-kind

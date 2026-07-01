@@ -7,16 +7,11 @@ set -ex
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 # The name of the k3d cluster to deploy to
 CLUSTER_NAME="${CLUSTER_NAME:-k3d}"
-# The Kubernetes node version (e.g. v1.36.1@sha256:...).
-# Strip any @sha256 suffix to get the semver, then build the pinned k3s image tag.
-NODE_VERSION="${NODE_VERSION:-v1.36.1@sha256:97ee2717a5421dd314fe96825fd7b64b59cce6271f0ddce01466e8778bc223bd}"
+# The Kubernetes node version (e.g. v1.36.1 or v1.36.1@sha256:...).
+# Strip any @sha256 suffix to get the semver, then build the k3s image tag.
+NODE_VERSION="${NODE_VERSION:-v1.36.1}"
 K3S_SEMVER="${NODE_VERSION%%@*}"
-if [[ "$NODE_VERSION" == *@* ]]; then
-  K3S_DIGEST="${NODE_VERSION#*@}"
-else
-  K3S_DIGEST="sha256:97ee2717a5421dd314fe96825fd7b64b59cce6271f0ddce01466e8778bc223bd"
-fi
-K3D_NODE_IMAGE="${K3D_NODE_IMAGE:-rancher/k3s:${K3S_SEMVER}-k3s1@${K3S_DIGEST}}"
+K3D_NODE_IMAGE="${K3D_NODE_IMAGE:-rancher/k3s:${K3S_SEMVER}-k3s1}"
 # The version used to tag images
 VERSION="${VERSION:-v1.0.0-ci1}"
 # Skip building docker images if we are testing a released version
