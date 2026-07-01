@@ -480,7 +480,9 @@ golden-translator-%:
 # Env test
 #----------------------------------------------------------------------------------
 
-ENVTEST_K8S_VERSION = 1.31
+# Gateway API v1.6 experimental CRDs (xbackends) use the CEL format library,
+# which requires a kube-apiserver newer than 1.31.
+ENVTEST_K8S_VERSION = 1.33
 ENVTEST ?= go -C tools tool setup-envtest
 
 .PHONY: envtest-path
