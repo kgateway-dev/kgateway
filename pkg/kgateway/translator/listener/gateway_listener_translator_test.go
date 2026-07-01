@@ -18,6 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query/mocks"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
@@ -712,6 +713,15 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				return nil
 			}
 
+			findProgrammed := func(conds []metav1.Condition) *metav1.Condition {
+				for i := range conds {
+					if conds[i].Type == conditions.KgatewayConditionProgrammed {
+						return &conds[i]
+					}
+				}
+				return nil
+			}
+
 			By("Validating that the older TCPRoute is Accepted")
 			olderStatus := rm.BuildRouteStatus(ctx, olderRoute, wellknown.DefaultGatewayControllerName)
 			Expect(olderStatus).NotTo(BeNil())
@@ -725,8 +735,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			newerStatus := rm.BuildRouteStatus(ctx, newerRoute, wellknown.DefaultGatewayControllerName)
 			Expect(newerStatus).NotTo(BeNil())
 			Expect(newerStatus.Parents).To(HaveLen(1))
-			newerAccepted := findAccepted(newerStatus.Parents[0].Conditions)
-			Expect(newerAccepted).NotTo(BeNil(), "Expected Accepted condition on newer route")
+			newerAccepted := findProgrammed(newerStatus.Parents[0].Conditions)
+			Expect(newerAccepted).NotTo(BeNil(), "Expected Programmed condition on newer route")
 			Expect(newerAccepted.Status).To(Equal(metav1.ConditionFalse))
 			Expect(newerAccepted.Reason).To(Equal("Conflicted"))
 		})
