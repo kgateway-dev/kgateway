@@ -210,6 +210,12 @@ type Settings struct {
 	// any of these label keys will be excluded from kgateway's endpoint discovery.
 	WorkloadEntriesExclusionLabels string `split_words:"true"`
 
+	// ServiceEntriesExclusionLabelSelectors is a JSON representation of a list of metav1.LabelSelector.
+	// ServiceEntries matching any of these selectors will be excluded from kgateway's ServiceEntry backend
+	// and endpoint discovery. Unlike WorkloadEntriesExclusionLabels, this uses full selectors so exclusions
+	// can match specific label values.
+	ServiceEntriesExclusionLabelSelectors string `split_words:"true" default:"[]"`
+
 	// XdsServiceHost is the host that serves xDS config.
 	// It overrides xdsServiceName if set.
 	XdsServiceHost string `split_words:"true"`
