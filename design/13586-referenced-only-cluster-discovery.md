@@ -96,15 +96,18 @@ Cluster-name mapping: the filter compares against the backend's Envoy cluster na
 
 The referenced set changes as routes change. Both directions must be drop-free.
 
+A coherent snapshot is necessary but **not sufficient**. Snapshot coherence is a property of *content*; drop-free transitions also require *delivery order*, which is a separate concern (see the Delivery ordering section below). Both directions below assume ordered delivery is addressed; without it, transitions have a bounded transient blip rather than being drop-free.
+
 Addition (a route starts referencing `service-b`):
 
 - `service-b` enters `ReferencedClustersForEmission`, so the per-client transform emits its cluster in the same coherent snapshot as the new route.
-- If per-client cluster translation for `service-b` lags the route change within a build, `mergeCarryForward` already covers it: `service-b` is in `referencedClusters` but absent from the build, so it is carried forward (or the publish is withheld on cold start), exactly as #14184 does today. go-control-plane ADS then delivers CDS/EDS before LDS/RDS, so `service-b` exists before `/foo` is flipped to it. No `503 NC`.
+- If per-client cluster translation for `service-b` lags the route change within a build, `mergeCarryForward` already covers it: `service-b` is in `referencedClusters` but absent from the build, so it is carried forward (or the publish is withheld on cold start), exactly as #14184 does today.
+- Provided CDS/EDS reach Envoy before LDS/RDS, `service-b` exists before `/foo` is flipped to it and there is no `503 NC`. That ordering is **not** automatic (see below).
 
 Removal (a route stops referencing `service-a`):
 
-- `service-a` leaves `ReferencedClustersForEmission`. Removing it immediately is unsafe: ADS may remove the cluster before the old route is replaced on Envoy, dropping in-flight `/foo` traffic.
-- A **de-reference grace window** retains the cluster for a bounded period after it leaves the set, then prunes it. The emitted set is `referenced-now ∪ recently-de-referenced(within grace)`.
+- `service-a` leaves `ReferencedClustersForEmission`. Removing it immediately is unsafe: even under ordered delivery the fixed type order sends CDS before RDS, so the cluster can be removed before the old route stops using it, dropping in-flight `/foo` traffic.
+- A **de-reference grace window** retains the cluster for a bounded period after it leaves the set, then prunes it. The emitted set is `referenced-now ∪ recently-de-referenced(within grace)`. This is the removal-side fix regardless of delivery ordering.
 
 The grace mechanism extends the existing state, it does not add a new subsystem:
 
@@ -112,6 +115,20 @@ The grace mechanism extends the existing state, it does not add a new subsystem:
 - The emission filter admits a cluster if it is referenced now, or was de-referenced within the grace window.
 - Pruning after the window relies on the level-triggered reconcile tick already present from the #14184 work (the `PerClientHeartbeat` input to the per-client collections) so a steady state with no further events still re-evaluates and drops expired clusters.
 - Flap handling: re-referencing a cluster clears its `dereferencedAt` entry, so a flapping route keeps the cluster present rather than oscillating.
+
+### Delivery ordering (the real correctness dependency)
+
+Putting CDS and RDS in one coherent snapshot does not make Envoy apply CDS first. With the current xDS stack, it does not:
+
+- kgateway builds the server with `xdsserver.NewServer(ctx, snapshotCache, allCallbacks)` and does **not** pass `WithOrderedADS()` (`pkg/kgateway/setup/controlplane.go`). The `ads=true` `SnapshotCache` orders the responses it *pushes*, but in the non-ordered server each type has its own size-1 buffered response channel and the stream drains them with `reflect.Select`, which chooses among ready channels **uniformly at random** (`go-control-plane/pkg/server/sotw/v3/xds.go`). So the per-type responses from one `SetSnapshot` reach Envoy in nondeterministic order.
+- Consequence: on a route addition, Envoy can receive RDS (`/foo -> service-b`) before CDS (`service-b`) and return `503 NC` for the gap; cluster warming (EDS) can extend it. This is why emit-all is drop-free today — the destination cluster is always already present, so intra-batch order never matters. Referenced-only removes that immunity.
+
+Two ways to handle it:
+
+1. **Accept a bounded transition blip (opt-in).** Steady state is unaffected; only a route edit that introduces a not-yet-present cluster blips, bounded by CDS/RDS delivery skew plus warming. This is the pragmatic default for users who value lean config over zero-blip route edits.
+2. **Enable ordered ADS** by constructing the server with `WithOrderedADS()`. Its `processADS` path routes all types through a single FIFO channel, so the cache's ordered sends reach the wire in order and CDS precedes RDS. This makes additions drop-free. Costs: it changes delivery for all clients, adds latency (serialized, ACK-gated delivery), and the ordered path is less exercised. It uses a fixed type order and is not add/remove-aware, so it does **not** reverse for removals — removals still need the grace window above.
+
+The robust, drop-free configuration is therefore **ordered ADS (addition ordering) plus the de-reference grace (removal safety)**. Shipping referenced-only without ordered ADS is viable as the opt-in trade-off but must be documented as having a transient transition blip, not as make-before-break.
 
 ### Worked example
 
@@ -125,11 +142,10 @@ sequenceDiagram
     T->>T: ReferencedForEmission = {..., b}; dereferencedAt[a]=now
     T->>T: emit set = referenced ∪ grace = {..., a, b}
     T->>E: snapshot {CDS: a,b ; RDS: /foo->b}
-    E->>E: apply CDS (b present) then RDS (/foo->b)
-    Note over E: no 503 NC; a still present for in-flight
+    Note over E: with ordered ADS: CDS(b) before RDS -> no 503 NC.\nwithout it: order is random -> possible transient NC on b.\na is present either way (grace), so in-flight to a is safe
     Note over T: PerClientHeartbeat tick after grace expires
     T->>E: snapshot {CDS: b (a pruned)}
-    E->>E: apply CDS (a removed); no route uses a
+    E->>E: a removed only after no route uses it
 ```
 
 ### Configuration
@@ -212,7 +228,8 @@ Add a kube-type `Backend` resource so users declare which Services become cluste
 ## Risks and trade-offs
 
 - **Referenced-set completeness is the principal correctness risk.** Missing an ancillary cluster reference (a new filter type that names a cluster) would drop a cluster Envoy needs. `collectReferencedClustersForEmission` must be derived from the produced protos and kept in step with any new cluster-referencing filter; this warrants a dedicated closure-completeness test that fails when a filter introduces an uncovered reference.
-- **Removal correctness depends on the grace window, not on Envoy ordering.** The grace must exceed worst-case RDS propagation; it is configurable for this reason.
+- **Delivery ordering is the sharpest risk (see Delivery ordering).** A coherent snapshot does not guarantee Envoy applies CDS before RDS; kgateway's non-ordered ADS server delivers per-type responses in random order, so a route addition can transiently `503 NC` until CDS arrives. Emit-all is immune (cluster always pre-present); referenced-only is not. Mitigated by ordered ADS (`WithOrderedADS`) or accepted as a bounded opt-in blip.
+- **Removal correctness depends on the grace window, not on delivery ordering.** Even ordered ADS uses a fixed CDS-before-RDS order, which is wrong for removals; the grace window is the removal-side fix and must exceed worst-case RDS propagation. It is configurable for this reason.
 - **Backends needing policy status.** A backend with an attached policy but no route reference still needs its status reconciled; status computation must remain independent of the emission filter.
 - **Behavior change.** Unreferenced Services disappear from `config_dump` and `/stats`; dashboards or scripts relying on their presence will notice. Intended, hence opt-in.
 - **Grace churn.** Flapping routes are handled by clearing `dereferencedAt` on re-reference (present, not oscillating).
@@ -231,3 +248,4 @@ Add a kube-type `Backend` resource so users declare which Services become cluste
 - **Prune versus indefinite carry-forward** for de-referenced clusters. This EP uses time-bounded grace-then-prune; the alternative (retain until a positive signal) is the open decision from the #14184 design notes and should be settled here, since it shapes removal semantics.
 - **Default grace duration**, and whether to derive it from observed RDS ACK latency rather than a static value.
 - **Whether to ship Option B (Service label selector) first** as the immediate mitigation while this lands.
+- **Whether to enable ordered ADS (`WithOrderedADS`)** to make additions drop-free, and whether its latency/behavior change is acceptable for all clients, or whether the opt-in transient blip is preferred. This is the decision the "acceptable trade-off" framing turns on.
