@@ -3,7 +3,6 @@ package collections
 import (
 	"context"
 
-	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
@@ -104,13 +103,45 @@ func (c *CommonCollections) InitCollections(
 	httpRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.HTTPRoute](c.Client, wellknown.HTTPRouteGVR, filter), c.KrtOpts.ToOptions("HTTPRoute")...)
 	metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
 
-	var tcproutes krt.Collection[*gwv1a2.TCPRoute]
-	tcproutes = krt.WrapClient(
-		newDelayedTypedInformer(c.Client, gvr.TCPRoute, func() kclient.Informer[*gwv1a2.TCPRoute] {
-			return kclient.NewFiltered[*gwv1a2.TCPRoute](c.Client, filter)
+	// TCPRoute is standard as of Gateway API v1.6, so promoted v1 TCPRoutes
+	// are always enabled. Keep the pre-v1 TCPRoute watch under the experimental
+	// feature flag for compatibility with older Gateway API channels.
+	servedTCPRouteVersions := getServedTCPRouteVersions(c.Client.Ext())
+	tcpRoutesV1 := krt.WrapClient(
+		newDelayedTypedInformer(c.Client, promotedTCPRouteGVR, func() kclient.Informer[*gwv1.TCPRoute] {
+			return kclient.NewFiltered[*gwv1.TCPRoute](c.Client, filter)
 		}),
-		c.KrtOpts.ToOptions("TCPRoute")...,
+		c.KrtOpts.ToOptions("TCPRouteV1")...,
 	)
+	tcpRouteCollections := []krt.Collection[*gwv1a2.TCPRoute]{
+		krt.NewManyCollection(tcpRoutesV1, func(kctx krt.HandlerContext, i *gwv1.TCPRoute) []*gwv1a2.TCPRoute {
+			if converted := convertTCPRouteV1ToV1Alpha2(i); converted != nil {
+				return []*gwv1a2.TCPRoute{converted}
+			}
+			return nil
+		}, c.KrtOpts.ToOptions("TCPRouteV1ToV1Alpha2")...),
+	}
+	if globalSettings.EnableExperimentalGatewayAPIFeatures {
+		for _, preV1TCPRouteGVR := range preV1TCPRouteWatchGVRs(servedTCPRouteVersions) {
+			preV1TCPRoutes := krt.WrapClient(
+				newDelayedTypedInformer(c.Client, preV1TCPRouteGVR, func() kclient.Informer[*gwv1a2.TCPRoute] {
+					return kclient.NewFiltered[*gwv1a2.TCPRoute](c.Client, filter)
+				}),
+				c.KrtOpts.ToOptions("TCPRoutePreV1Alpha2")...,
+			)
+			tcpRouteCollections = append(tcpRouteCollections, preV1TCPRoutes)
+		}
+	}
+
+	var tcproutes krt.Collection[*gwv1a2.TCPRoute]
+	switch len(tcpRouteCollections) {
+	case 0:
+		tcproutes = krt.NewStaticCollection[*gwv1a2.TCPRoute](nil, nil, c.KrtOpts.ToOptions("disable/TCPRoute")...)
+	case 1:
+		tcproutes = tcpRouteCollections[0]
+	default:
+		tcproutes = krt.JoinCollection(tcpRouteCollections, c.KrtOpts.ToOptions("TCPRoute")...)
+	}
 
 	// TLSRoute is standard as of Gateway API v1.5, so promoted v1 TLSRoutes
 	// are always enabled. Keep pre-v1 TLSRoute watches under the experimental

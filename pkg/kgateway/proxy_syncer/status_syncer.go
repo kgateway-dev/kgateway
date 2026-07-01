@@ -178,6 +178,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
+				case *gwv1.TCPRoute:
+					for _, parentRef := range r.Spec.ParentRefs {
+						gatewayNames = append(gatewayNames, string(parentRef.Name))
+					}
 				case *gwv1a2.TCPRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
@@ -299,6 +303,12 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 				return nil, nil
 			}
 			r.Status.RouteStatus = *status
+		case *gwv1.TCPRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil, nil
+			}
+			r.Status.RouteStatus = *status
 		case *gwv1a2.TCPRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
@@ -364,8 +374,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	for rnn := range rm.TCPRoutes {
 		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn,
 			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
-				route := new(gwv1a2.TCPRoute)
-				return route, s.mgr.GetClient().Get(ctx, routeKey, route)
+				return getTCPRouteForStatus(ctx, s.mgr.GetClient(), routeKey)
 			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
@@ -417,7 +426,7 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 	promotedTLSRoute := &gwv1.TLSRoute{}
 	if err := kubeClient.Get(ctx, key, promotedTLSRoute); err == nil {
 		return promotedTLSRoute, nil
-	} else if !shouldFallbackTLSRouteLookup(err) {
+	} else if !shouldFallbackRouteLookup(err) {
 		return nil, err
 	}
 
@@ -425,7 +434,7 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 	v1alpha3TLSRouteRaw.SetGroupVersionKind(wellknown.TLSRouteV1Alpha3GVK)
 	if err := kubeClient.Get(ctx, key, v1alpha3TLSRouteRaw); err == nil {
 		return v1alpha3TLSRouteRaw, nil
-	} else if !shouldFallbackTLSRouteLookup(err) {
+	} else if !shouldFallbackRouteLookup(err) {
 		return nil, err
 	}
 
@@ -436,7 +445,22 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 	return v1alpha2TLSRoute, nil
 }
 
-func shouldFallbackTLSRouteLookup(err error) bool {
+func getTCPRouteForStatus(ctx context.Context, kubeClient objectGetter, key client.ObjectKey) (client.Object, error) {
+	promotedTCPRoute := &gwv1.TCPRoute{}
+	if err := kubeClient.Get(ctx, key, promotedTCPRoute); err == nil {
+		return promotedTCPRoute, nil
+	} else if !shouldFallbackRouteLookup(err) {
+		return nil, err
+	}
+
+	v1alpha2TCPRoute := &gwv1a2.TCPRoute{}
+	if err := kubeClient.Get(ctx, key, v1alpha2TCPRoute); err != nil {
+		return nil, err
+	}
+	return v1alpha2TCPRoute, nil
+}
+
+func shouldFallbackRouteLookup(err error) bool {
 	return apimeta.IsNoMatchError(err)
 }
 
