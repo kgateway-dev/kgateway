@@ -648,8 +648,8 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 // attachment of a route that lost the oldest-wins selection.
 func rejectConflictingRoute(ri *query.RouteInfo, reporter reports.Reporter) {
 	condition := reports.RouteCondition{
-		Type:   conditions.KgatewayConditionConflicted,
-		Status: metav1.ConditionTrue,
+		Type:   conditions.KgatewayConditionProgrammed,
+		Status: metav1.ConditionFalse,
 		Reason: gwv1.RouteConditionReason("Conflicted"),
 	}
 	switch o := ri.Object.(type) {
