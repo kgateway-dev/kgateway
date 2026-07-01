@@ -379,6 +379,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -397,6 +402,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -415,6 +425,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -457,6 +472,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -475,6 +495,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

@@ -15,6 +15,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -760,13 +761,13 @@ func parentRefConditionsWithDefaults(conds []metav1.Condition) []metav1.Conditio
 			Message: ValidRefsMessage,
 		})
 	}
-	// if cond := meta.FindStatusCondition(out, conditions.KgatewayConditionProgrammed); cond == nil {
-	// 	meta.SetStatusCondition(&out, metav1.Condition{
-	// 		Type:    conditions.KgatewayConditionProgrammed,
-	// 		Status:  metav1.ConditionTrue,
-	// 		Reason:  conditions.KgatewayReasonProgrammed,
-	// 		Message: RouteProgrammedMessage,
-	// 	})
-	// }
+	if cond := meta.FindStatusCondition(out, conditions.KgatewayConditionProgrammed); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    conditions.KgatewayConditionProgrammed,
+			Status:  metav1.ConditionTrue,
+			Reason:  conditions.KgatewayReasonProgrammed,
+			Message: RouteProgrammedMessage,
+		})
+	}
 	return out
 }
