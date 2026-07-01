@@ -8,7 +8,7 @@ inputs:
     description: The name of the k3d cluster
   node-version:
     required: true
-    description: The k8s node version (semver, optionally with a kindest @sha256 suffix that k3d ignores)
+    description: The k8s node version (kindest/node ref; semver is used for k3d, digest is pinned in setup-k3d.sh)
   kubectl-version:
     required: true
     description: The version of Kubectl
@@ -47,10 +47,13 @@ runs:
       shell: bash
       env:
         CLUSTER_NAME: ${{ inputs.cluster-name }}
-        NODE_VERSION: ${{ inputs.node-version }}
         ISTIO_VERSION: ${{ inputs.istio-version }}
         CONFORMANCE_VERSION: ${{ inputs.gateway-api-version }}
         CONFORMANCE_CHANNEL: ${{ inputs.gateway-api-channel }}
         LOCALSTACK: ${{ inputs.localstack }}
       run: |
+        # node_version is a kindest/node ref; k3d uses rancher/k3s with its own digest pin.
+        export NODE_VERSION="${{ inputs.node-version }}"
+        NODE_VERSION="${NODE_VERSION%%@*}"
+        export NODE_VERSION
         ./hack/k3d/setup-k3d.sh

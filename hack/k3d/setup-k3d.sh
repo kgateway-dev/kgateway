@@ -7,13 +7,16 @@ set -ex
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 # The name of the k3d cluster to deploy to
 CLUSTER_NAME="${CLUSTER_NAME:-k3d}"
-# The Kubernetes node version (e.g. v1.36.1). CI may pass a kindest/node version with its
-# own @sha256 suffix; for k3d we extract semver only and pin the rancher/k3s image digest below.
-NODE_VERSION="${NODE_VERSION:-v1.36.1}"
+# The Kubernetes node version (e.g. v1.36.1@sha256:...).
+# Strip any @sha256 suffix to get the semver, then build the pinned k3s image tag.
+NODE_VERSION="${NODE_VERSION:-v1.36.1@sha256:97ee2717a5421dd314fe96825fd7b64b59cce6271f0ddce01466e8778bc223bd}"
 K3S_SEMVER="${NODE_VERSION%%@*}"
-# Digest for rancher/k3s:${K3S_SEMVER}-k3s1 — keep in sync when bumping k8s versions.
-K3S_IMAGE_DIGEST="${K3S_IMAGE_DIGEST:-sha256:97ee2717a5421dd314fe96825fd7b64b59cce6271f0ddce01466e8778bc223bd}"
-K3D_NODE_IMAGE="${K3D_NODE_IMAGE:-rancher/k3s:${K3S_SEMVER}-k3s1@${K3S_IMAGE_DIGEST}}"
+if [[ "$NODE_VERSION" == *@* ]]; then
+  K3S_DIGEST="${NODE_VERSION#*@}"
+else
+  K3S_DIGEST="sha256:97ee2717a5421dd314fe96825fd7b64b59cce6271f0ddce01466e8778bc223bd"
+fi
+K3D_NODE_IMAGE="${K3D_NODE_IMAGE:-rancher/k3s:${K3S_SEMVER}-k3s1@${K3S_DIGEST}}"
 # The version used to tag images
 VERSION="${VERSION:-v1.0.0-ci1}"
 # Skip building docker images if we are testing a released version
