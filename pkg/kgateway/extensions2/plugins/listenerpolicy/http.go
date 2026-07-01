@@ -132,7 +132,7 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	// Check serverHeaderTransformation
-	if d.serverHeaderTransformation != d2.serverHeaderTransformation {
+	if !cmputils.PointerValsEqual(d.serverHeaderTransformation, d2.serverHeaderTransformation) {
 		return false
 	}
 
