@@ -8,7 +8,7 @@ inputs:
     description: The name of the k3d cluster
   node-version:
     required: true
-    description: The k8s node version with optional '@.*' suffix that we ignore as we extract the semver to build the k3d image tag
+    description: The k8s node version (semver, optionally with a kindest @sha256 suffix that k3d ignores)
   kubectl-version:
     required: true
     description: The version of Kubectl
