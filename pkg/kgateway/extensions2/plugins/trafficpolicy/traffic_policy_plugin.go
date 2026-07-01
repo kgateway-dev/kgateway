@@ -206,6 +206,8 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.cors.Validate)
 	validators = append(validators, p.spec.headerModifiers.Validate)
 	validators = append(validators, p.spec.buffer.Validate)
+	validators = append(validators, p.spec.retry.Validate)
+	validators = append(validators, p.spec.timeouts.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	validators = append(validators, p.spec.rbac.Validate)
 	validators = append(validators, p.spec.jwt.Validate)
