@@ -48,6 +48,11 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 	for _, feature := range features.UDPRouteFeatures.UnsortedList() {
 		exemptFeatures.Insert(feature)
 	}
+	// for _, feature := range features.TCPRouteExtendedFeatures.UnsortedList() {
+	// 	// TCPRouteWeightedRouting intermittently fails
+	// 	exemptFeatures.Insert(feature)
+	// }
+
 	return getSupportedFeatures(exemptFeatures)
 }
 

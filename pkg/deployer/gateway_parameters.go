@@ -81,7 +81,7 @@ type InMemoryGatewayParametersConfig struct {
 	ImageInfo                  *ImageInfo
 	WaypointClassName          string
 	OmitDefaultSecurityContext bool
-	DisableStatsOnProxy        bool
+	DisableStatsOnProxy             bool
 }
 
 // GetInMemoryGatewayParameters returns an in-memory GatewayParameters for envoy-based gateways.
