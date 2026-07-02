@@ -508,6 +508,7 @@ type Gateway struct {
 	PerConnectionBufferLimitBytes *uint32
 	FrontendTLSConfig             *FrontendTLSConfigIR
 	BackendTLSConfig              *GatewayBackendTLSConfigIR
+	GatewayParameters             *kgateway.GatewayParameters
 }
 
 // FrontendTLSConfigIR represents the Gateway-level frontend TLS configuration
@@ -572,6 +573,7 @@ func (c Gateway) Equals(in Gateway) bool {
 	return c.ObjectSource.Equals(in.ObjectSource) &&
 		ptrEquals(c.PerConnectionBufferLimitBytes, in.PerConnectionBufferLimitBytes) &&
 		versionEquals(c.Obj, in.Obj) &&
+		equalsGatewayParameters(c.GatewayParameters, in.GatewayParameters) &&
 		c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) &&
 		c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies) &&
 		c.Listeners.Equals(in.Listeners) &&
@@ -579,6 +581,13 @@ func (c Gateway) Equals(in Gateway) bool {
 		c.DeniedListenerSets.Equals(in.DeniedListenerSets) &&
 		equalsFrontendTLSConfig(c.FrontendTLSConfig, in.FrontendTLSConfig) &&
 		equalsGatewayBackendTLSConfig(c.BackendTLSConfig, in.BackendTLSConfig)
+}
+
+func equalsGatewayParameters(a, b *kgateway.GatewayParameters) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return versionEquals(a, b)
 }
 
 func equalsFrontendTLSConfig(a, b *FrontendTLSConfigIR) bool {

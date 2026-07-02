@@ -22,6 +22,7 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	kgatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/backendref"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
@@ -400,6 +401,7 @@ type GatewayIndexConfig struct {
 	ListenerSets        krt.Collection[*gwv1.ListenerSet]
 	GatewayClasses      krt.Collection[*gwv1.GatewayClass]
 	Namespaces          krt.Collection[NamespaceMetadata]
+	GatewayParameters   krt.Collection[*kgatewayv1alpha1.GatewayParameters]
 
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
 	gatewaysForEnvoyTransformationFunc    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
@@ -607,6 +609,33 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		}
 		if gw.Spec.TLS != nil && gw.Spec.TLS.Backend != nil {
 			gwIR.BackendTLSConfig = getGatewayBackendTLSConfig(gw.Spec.TLS.Backend)
+		}
+
+		// Resolve GatewayParameters: gateway-specific ref takes priority over GatewayClass ref.
+		if config.GatewayParameters != nil {
+			if infra := gw.Spec.Infrastructure; infra != nil && infra.ParametersRef != nil {
+				ref := infra.ParametersRef
+				if string(ref.Group) == kgatewayv1alpha1.GroupName && string(ref.Kind) == wellknown.GatewayParametersGVK.Kind {
+					gwIR.GatewayParameters = ptr.Flatten(krt.FetchOne(kctx, config.GatewayParameters, krt.FilterObjectName(types.NamespacedName{
+						Name:      ref.Name,
+						Namespace: gw.Namespace,
+					})))
+				}
+			}
+			if gwIR.GatewayParameters == nil && gwClass.Spec.ParametersRef != nil {
+				ref := gwClass.Spec.ParametersRef
+				if string(ref.Group) == kgatewayv1alpha1.GroupName &&
+					string(ref.Kind) == wellknown.GatewayParametersGVK.Kind {
+					ns := gw.Namespace
+					if ref.Namespace != nil {
+						ns = string(*ref.Namespace)
+					}
+					gwIR.GatewayParameters = ptr.Flatten(krt.FetchOne(kctx, config.GatewayParameters, krt.FilterObjectName(types.NamespacedName{
+						Name:      string(ref.Name),
+						Namespace: ns,
+					})))
+				}
+			}
 		}
 
 		return gwIR
