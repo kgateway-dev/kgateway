@@ -97,7 +97,8 @@ var (
 	}
 
 	GwApiRequireTcpRoutes = map[GwApiChannel]*GwApiVersion{
-		GwApiChannelStandard: &GwApiV1_6_0,
+		GwApiChannelExperimental: &GwApiV0_3_0,
+		GwApiChannelStandard:     &GwApiV1_6_0,
 	}
 
 	GwApiRequireSessionPersistence = map[GwApiChannel]*GwApiVersion{
