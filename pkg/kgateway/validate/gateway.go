@@ -18,11 +18,7 @@ var reservedPorts = sets.New[int32](
 )
 
 // ListenerPort validates that the given listener port does not conflict with reserved ports.
-// When disableStatsOnProxy is true, port 9091 (the metrics port) is not considered reserved.
-func ListenerPort(listener ir.Listener, port gwv1.PortNumber, disableStatsOnProxy bool) error {
-	if disableStatsOnProxy && port == 9091 {
-		return nil
-	}
+func ListenerPort(listener ir.Listener, port gwv1.PortNumber) error {
 	if reservedPorts.Has(port) {
 		return fmt.Errorf("invalid port %d in listener: %w",
 			port, ErrListenerPortReserved)
