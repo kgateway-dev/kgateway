@@ -272,7 +272,6 @@ func (k *kgatewayParameters) getDefaultGatewayParametersWithFlag(gw *gwv1.Gatewa
 			ImageInfo:                  k.inputs.ImageInfo,
 			WaypointClassName:          k.inputs.WaypointGatewayClassName,
 			OmitDefaultSecurityContext: omitDefaultSecurityContext,
-			DisableStatsOnProxy:        k.inputs.CommonCollections.Settings.DisableStatsOnProxy,
 		})
 	}
 

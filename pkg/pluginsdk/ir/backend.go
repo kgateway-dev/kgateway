@@ -508,6 +508,11 @@ type Gateway struct {
 	PerConnectionBufferLimitBytes *uint32
 	FrontendTLSConfig             *FrontendTLSConfigIR
 	BackendTLSConfig              *GatewayBackendTLSConfigIR
+
+	// ProxyStatsDisabled reflects whether the Envoy proxy stats server is disabled
+	// for this Gateway (resolved from its GatewayParameters). When true, the metrics
+	// port (9091) is no longer reserved and may be used by a listener.
+	ProxyStatsDisabled bool
 }
 
 // FrontendTLSConfigIR represents the Gateway-level frontend TLS configuration
@@ -577,6 +582,7 @@ func (c Gateway) Equals(in Gateway) bool {
 		c.Listeners.Equals(in.Listeners) &&
 		c.AllowedListenerSets.Equals(in.AllowedListenerSets) &&
 		c.DeniedListenerSets.Equals(in.DeniedListenerSets) &&
+		c.ProxyStatsDisabled == in.ProxyStatsDisabled &&
 		equalsFrontendTLSConfig(c.FrontendTLSConfig, in.FrontendTLSConfig) &&
 		equalsGatewayBackendTLSConfig(c.BackendTLSConfig, in.BackendTLSConfig)
 }

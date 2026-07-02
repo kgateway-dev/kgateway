@@ -114,6 +114,16 @@ runs:
             ${ADDITIONAL_VALUES}
         fi
 
+    - name: Apply conformance GatewayParameters
+      shell: bash
+      run: |
+        # Disable the Envoy proxy stats server for conformance proxies by
+        # pointing the built-in kgateway GatewayClass (via values.yaml) at this
+        # GatewayParameters object.
+        kubectl wait --for=condition=established --timeout=60s \
+          crd/gatewayparameters.gateway.kgateway.dev
+        kubectl apply -f test/conformance/gatewayparameters.yaml
+
     - name: Run tests
       shell: bash
       run: |

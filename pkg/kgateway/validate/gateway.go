@@ -11,17 +11,23 @@ import (
 
 var ErrListenerPortReserved = fmt.Errorf("port is reserved")
 
+// MetricsPort is the port used by the Envoy proxy stats/metrics server. It is
+// only occupied when the proxy stats server is enabled (the default), which is
+// configured per-Gateway via GatewayParameters.
+const MetricsPort int32 = 9091
+
 var reservedPorts = sets.New[int32](
-	9091,  // Metrics port
 	8082,  // Readiness port
 	19000, // Envoy admin port
 )
 
 // ListenerPort validates that the given listener port does not conflict with reserved ports.
-// When disableStatsOnProxy is true, port 9091 (the metrics port) is not considered reserved.
-func ListenerPort(listener ir.Listener, port gwv1.PortNumber, disableStatsOnProxy bool) error {
-	if disableStatsOnProxy && port == 9091 {
-		return nil
+// The metrics port (9091) is only reserved when the proxy stats server is enabled; pass
+// statsDisabled=true (derived from the Gateway's GatewayParameters) to allow it.
+func ListenerPort(listener ir.Listener, port gwv1.PortNumber, statsDisabled bool) error {
+	if !statsDisabled && int32(port) == MetricsPort {
+		return fmt.Errorf("invalid port %d in listener: %w",
+			port, ErrListenerPortReserved)
 	}
 	if reservedPorts.Has(port) {
 		return fmt.Errorf("invalid port %d in listener: %w",

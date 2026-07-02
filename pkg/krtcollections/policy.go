@@ -22,6 +22,7 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	kgwv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/backendref"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
@@ -399,7 +400,10 @@ type GatewayIndexConfig struct {
 	Gateways            krt.Collection[*gwv1.Gateway]
 	ListenerSets        krt.Collection[*gwv1.ListenerSet]
 	GatewayClasses      krt.Collection[*gwv1.GatewayClass]
-	Namespaces          krt.Collection[NamespaceMetadata]
+	// GatewayParameters is optional; when set, it is used to resolve per-Gateway
+	// settings such as whether the proxy stats server is disabled.
+	GatewayParameters krt.Collection[*kgwv1alpha1.GatewayParameters]
+	Namespaces        krt.Collection[NamespaceMetadata]
 
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
 	gatewaysForEnvoyTransformationFunc    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
@@ -463,6 +467,54 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 	}
 }
 
+// resolveProxyStatsDisabled reports whether the Envoy proxy stats server is
+// disabled for the given Gateway. Stats are enabled by default; an explicit
+// stats.enabled=false in the effective GatewayParameters disables them. The
+// effective value is the GatewayClass-level GatewayParameters overridden by the
+// Gateway-level (infrastructure) GatewayParameters, matching the deployer's
+// merge order.
+func resolveProxyStatsDisabled(kctx krt.HandlerContext, config *GatewayIndexConfig, gw *gwv1.Gateway, gwClass *gwv1.GatewayClass) bool {
+	if config.GatewayParameters == nil {
+		return false
+	}
+
+	enabled := true
+	// GatewayClass-level parameters (namespaced reference).
+	if ref := gwClass.Spec.ParametersRef; ref != nil && isGatewayParametersRef(ref.Group, ref.Kind) && ref.Namespace != nil {
+		if e := statsEnabledFromGatewayParameters(kctx, config, string(ref.Name), string(*ref.Namespace)); e != nil {
+			enabled = *e
+		}
+	}
+	// Gateway-level parameters (local to the Gateway namespace) override the class.
+	if gw.Spec.Infrastructure != nil {
+		if ref := gw.Spec.Infrastructure.ParametersRef; ref != nil && isGatewayParametersRef(ref.Group, ref.Kind) {
+			if e := statsEnabledFromGatewayParameters(kctx, config, ref.Name, gw.Namespace); e != nil {
+				enabled = *e
+			}
+		}
+	}
+	return !enabled
+}
+
+func isGatewayParametersRef(group gwv1.Group, kind gwv1.Kind) bool {
+	return string(group) == wellknown.GatewayParametersGVK.Group &&
+		string(kind) == wellknown.GatewayParametersGVK.Kind
+}
+
+// statsEnabledFromGatewayParameters returns the stats.enabled value set on the
+// referenced GatewayParameters, or nil if the object is missing or does not set it.
+func statsEnabledFromGatewayParameters(kctx krt.HandlerContext, config *GatewayIndexConfig, name, namespace string) *bool {
+	if name == "" || namespace == "" {
+		return nil
+	}
+	gwp := ptr.Flatten(krt.FetchOne(kctx, config.GatewayParameters,
+		krt.FilterObjectName(types.NamespacedName{Name: name, Namespace: namespace})))
+	if gwp == nil {
+		return nil
+	}
+	return gwp.Spec.GetKube().GetStats().GetEnabled()
+}
+
 func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
 		// only care about gateways use a class controlled by envoy
@@ -482,6 +534,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			Listeners:           make([]ir.Listener, 0, len(gw.Spec.Listeners)),
 			DeniedListenerSets:  map[schema.GroupVersionKind]ir.ListenerSets{},
 			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{},
+			ProxyStatsDisabled:  resolveProxyStatsDisabled(kctx, config, gw, gwClass),
 		}
 
 		// TODO: http polic

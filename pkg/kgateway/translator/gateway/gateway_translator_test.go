@@ -3025,16 +3025,14 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("Gateway with metrics port 9091 allowed when DisableStatsOnProxy", func(t *testing.T) {
+	t.Run("Gateway with metrics port 9091 allowed when proxy stats disabled via GatewayParameters", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFiles: []string{"validation/gateway-reserved-port.yaml"},
-			outputFile: "validation/gateway-proxy-stats-disabled.yaml",
+			inputFiles: []string{"validation/gateway-stats-disabled-metrics-port.yaml"},
+			outputFile: "validation/gateway-stats-disabled-metrics-port.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "test",
 			},
-		}, func(s *apisettings.Settings) {
-			s.DisableStatsOnProxy = true
 		})
 	})
 

@@ -1,0 +1,15 @@
+# GatewayParameters used by the conformance test run to disable the Envoy proxy
+# stats/metrics server (which otherwise reserves port 9091 on every proxy).
+# The built-in "kgateway" GatewayClass is pointed at this object via the
+# controller's gatewayClassParametersRefs setting (see values.yaml), and the
+# controller merges it over the in-memory default GatewayParameters, so only
+# the stats override needs to be specified here.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: kgateway-conformance
+  namespace: kgateway-system
+spec:
+  kube:
+    stats:
+      enabled: false
