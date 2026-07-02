@@ -232,7 +232,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 			existingListener.protocol[protocol] = true
 			existingListener.listeners = append(existingListener.listeners, listener)
 
-			// TODO(Law): handle validation that hostname empty for udp/tcp
+			// CRD validation handles hostnames on TCP and UDP listeners so it is not required during validation
 			hostname := getOrDefaultHostname(listener.Hostname)
 			if _, ok := existingListener.hostnames[hostname]; !ok {
 				existingListener.hostnames[hostname] = generateUniqueListenerName(listener)

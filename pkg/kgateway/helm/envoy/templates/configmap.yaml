@@ -1,5 +1,6 @@
 {{- $gateway := .Values.gateway }}
 {{- $statsConfig := $gateway.stats }}
+{{- $localClusterName := printf "%s.%s" (include "kgateway.gateway.fullname" .) .Release.Namespace }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -43,9 +44,11 @@ data:
       - name: admin_layer
         admin_layer: {}
     node:
-      cluster: {{ include "kgateway.gateway.fullname" . }}.{{ .Release.Namespace }}
+      cluster: {{ $localClusterName | quote }}
       metadata:
         role: kgateway-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}
+    cluster_manager:
+      local_cluster_name: {{ $localClusterName | quote }}
     {{- if $statsConfig.matcher }}
     {{- $inclusionList := (default (list) $statsConfig.matcher.inclusionList ) -}}
     {{- $exclusionList := (default (list) $statsConfig.matcher.exclusionList ) -}}
@@ -193,6 +196,14 @@ data:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 {{- end }}{{/* if $gateway.stats.enabled */}}
       clusters:
+        - name: {{ $localClusterName | quote }}
+          connect_timeout: 0.250s
+          type: EDS
+          lb_policy: ROUND_ROBIN
+          eds_cluster_config:
+            eds_config:
+              ads: {}
+              resource_api_version: V3
         - name: xds_cluster
           alt_stat_name: xds_cluster
           connect_timeout: 5.000s

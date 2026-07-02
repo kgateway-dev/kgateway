@@ -13,7 +13,7 @@ import (
 )
 
 // DefaultIstioProxyImageTag is the default Istio proxyv2 image tag used for auto mTLS cert-agent sidecars.
-const DefaultIstioProxyImageTag = "1.29.2"
+const DefaultIstioProxyImageTag = "1.30.1"
 
 // Inputs is the set of options used to configure gateway/inference pool deployment.
 type Inputs struct {
@@ -108,7 +108,7 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityC
 		gwp.Spec.Kube.Service = &kgateway.Service{}
 	}
 
-	gwp.Spec.Kube.Service.Type = ptr.To(corev1.ServiceTypeClusterIP)
+	gwp.Spec.Kube.Service.Type = new(corev1.ServiceTypeClusterIP)
 
 	if gwp.Spec.Kube.Service.Ports == nil {
 		gwp.Spec.Kube.Service.Ports = []kgateway.Port{}
@@ -146,7 +146,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 			SelfManaged: nil,
 			Kube: &kgateway.KubernetesProxyConfig{
 				Service: &kgateway.Service{
-					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
+					Type: new(corev1.ServiceTypeLoadBalancer),
 				},
 				PodTemplate: &kgateway.Pod{
 					TerminationGracePeriodSeconds: new(int64(60)),
@@ -195,7 +195,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						AllowPrivilegeEscalation: new(false),
 						ReadOnlyRootFilesystem:   new(true),
 						RunAsNonRoot:             new(true),
-						RunAsUser:                ptr.To[int64](10101),
+						RunAsUser:                new(int64(10101)),
 						Capabilities: &corev1.Capabilities{
 							Drop: []corev1.Capability{"ALL"},
 						},

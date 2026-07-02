@@ -1,12 +1,16 @@
+# Gateway-targeted policy must be co-located with the Gateway it targets
+# (policy targetRefs are namespace-local), so it lives in kgateway-base
+# alongside the shared base gateway.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: header-modifiers-gw-policy
+  namespace: kgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
-    name: gw
+    name: gateway
   headerModifiers:
     request:
       add:

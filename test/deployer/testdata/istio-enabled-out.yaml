@@ -27,9 +27,11 @@ data:
       - name: admin_layer
         admin_layer: {}
     node:
-      cluster: gw.default
+      cluster: "gw.default"
       metadata:
         role: kgateway-kube-gateway-api~default~gw
+    cluster_manager:
+      local_cluster_name: "gw.default"
     static_resources:
       listeners:
       - name: readiness_listener
@@ -122,6 +124,14 @@ data:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       clusters:
+        - name: "gw.default"
+          connect_timeout: 0.250s
+          type: EDS
+          lb_policy: ROUND_ROBIN
+          eds_cluster_config:
+            eds_config:
+              ads: {}
+              resource_api_version: V3
         - name: xds_cluster
           alt_stat_name: xds_cluster
           connect_timeout: 5.000s
@@ -481,7 +491,7 @@ spec:
               fieldPath: metadata.namespace
         - name: DISABLE_ENVOY
           value: "true"
-        image: docker.io/istio/proxyv2:1.29.2
+        image: docker.io/istio/proxyv2:1.30.1
         name: istio-proxy
         resources: {}
         volumeMounts:

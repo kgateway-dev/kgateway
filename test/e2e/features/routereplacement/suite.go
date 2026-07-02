@@ -13,11 +13,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
@@ -386,20 +388,29 @@ func (s *testingSuite) TestListenerSpecificIsolation() {
 }
 
 const (
-	routeReplacementMetric = "kgateway_routing_replacements_total"
-	metricsPort            = 9092
-	metricsPollTimeout     = 20 * time.Second
-	metricsPollInterval    = time.Second
+	routeReplacementMetric      = "kgateway_routing_replacements_total"
+	validationModeMetric        = "kgateway_validation_mode"
+	validationCallsMetric       = "kgateway_validation_calls_total"
+	validationCacheMissesMetric = "kgateway_validation_cache_misses_total"
+	validationInvalidXDSMetric  = "kgateway_validation_invalid_xds_total"
+	validationDurationMetric    = "kgateway_validation_duration_seconds"
+	validationResultInvalidXDS  = "invalid_xds"
+	metricsPort                 = 9092
+	metricsPollTimeout          = 20 * time.Second
+	metricsPollInterval         = time.Second
 )
 
 // TestRouteReplacementMetric verifies that the route replacement counter
 // increments and that the error_type label classifies correctly.
 func (s *testingSuite) TestRouteReplacementMetric() {
+	s.assertValidationModeMetric()
+
 	s.Run("invalid_config", func() {
 		s.assertReplacementMetricIncrements(
 			invalidPolicyRoute, invalidPolicy, irtranslator.ErrTypeInvalidCfg,
 			`{"spec":{"transformation":{"request":{"body":{"value":"{{ invalid_template_v2 "}}}}}`,
 		)
+		s.assertTrafficPolicyValidationMetrics()
 	})
 
 	s.Run("ref_not_found", func() {
@@ -477,6 +488,36 @@ func (s *testingSuite) patchPolicy(policy metav1.ObjectMeta, patchJSON string) {
 
 func (s *testingSuite) scrapeReplacementCounter(labels []metrics.Label) float64 {
 	return s.scrapeMetrics().MustGetMetricValueByLabels(routeReplacementMetric, labels)
+}
+
+func (s *testingSuite) assertValidationModeMetric() {
+	value := s.scrapeMetrics().MustGetMetricValueByLabels(validationModeMetric, []metrics.Label{
+		{Name: "mode", Value: string(apisettings.ValidationStrict)},
+		{Name: "validator_mode", Value: string(apisettings.ValidatorCache)},
+	})
+	s.Require().Equal(float64(1), value)
+}
+
+func (s *testingSuite) assertTrafficPolicyValidationMetrics() {
+	gathered := s.scrapeMetrics()
+	callerLabels := []metrics.Label{{Name: "caller", Value: string(validator.CallerTrafficPolicy)}}
+
+	s.Require().GreaterOrEqual(
+		gathered.MustGetMetricValueByLabels(validationCallsMetric, callerLabels),
+		float64(1),
+	)
+	s.Require().GreaterOrEqual(
+		gathered.MustGetMetricValueByLabels(validationCacheMissesMetric, callerLabels),
+		float64(1),
+	)
+	s.Require().GreaterOrEqual(
+		gathered.MustGetMetricValueByLabels(validationInvalidXDSMetric, callerLabels),
+		float64(1),
+	)
+	gathered.AssertMetricsLabelsInclude(validationDurationMetric, [][]metrics.Label{{
+		{Name: "caller", Value: string(validator.CallerTrafficPolicy)},
+		{Name: "result", Value: validationResultInvalidXDS},
+	}})
 }
 
 func (s *testingSuite) scrapeMetrics() metricstest.GatheredMetrics {

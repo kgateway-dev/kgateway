@@ -11,6 +11,7 @@ env:
   GITHUB_TOKEN: ${{ github.token }}
   GO_TEST_RETRIES: 2
   ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
+  CGO_ENABLED: '0'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -26,12 +27,18 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
-      - name: Setup Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+      - name: Prep Go Runner
+        id: prep-go-runner
+        uses: ./.github/actions/prep-go-runner
+      - name: Restore Race Go Build Cache
+        # The tests below run with `CGO_ENABLED=1 -race`, which compiles a
+        # distinct set of GOCACHE entries from the CGO-disabled cache that
+        # prep-go-runner restores. This race-instrumented cache is seeded by
+        # the Cache Setup workflow on main; restore it so unit runs start warm.
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          go-version-file: go.mod
-      - name: Install dependencies
-        run: make mod-download
+          path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
+          key: ${{ steps.prep-go-runner.outputs.go-build-cache-key-race }}
       - name: Detect validator image rebuild
         id: validator-image
         shell: bash
@@ -101,8 +108,19 @@ jobs:
           # to use it without re-pulling on every invocation.
           echo "KGATEWAY_VALIDATOR_ENVOY_IMAGE=${validator_image}" >> "$GITHUB_ENV"
           echo "KGATEWAY_VALIDATOR_DOCKER_PULL_POLICY=never" >> "$GITHUB_ENV"
+      - name: Package helm charts
+        # Produces the real release artifact (_test/kgateway-*.tgz) via the same
+        # `make package-kgateway-charts` target release.yaml runs, so the
+        # packaged-chart parity test in ./test/helm has something to render
+        # against. KGW_REQUIRE_PACKAGED_CHART below makes that test fail loudly
+        # if this step is ever dropped, instead of silently skipping.
+        shell: bash
+        run: make package-kgateway-charts
       - name: Run Tests
         shell: bash
+        env:
+          CGO_ENABLED: '1'
+          KGW_REQUIRE_PACKAGED_CHART: 'true'
         run: make unit-with-coverage
       - name: Validate Test Coverage
         shell: bash

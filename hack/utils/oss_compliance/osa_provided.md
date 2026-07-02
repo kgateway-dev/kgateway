@@ -4,10 +4,16 @@ Name|Version|License
 [semver/v3](https://github.com/Masterminds/semver)|v3.4.0|MIT License
 [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)|v1.10.1|BSD 3-clause "New" or "Revised" License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.7.0|MIT License
+[aws/aws-sdk-go-v2](https://github.com/aws/aws-sdk-go-v2)|v1.41.7|Apache License 2.0
+[aws-sdk-go-v2/config](https://github.com/aws/aws-sdk-go-v2)|v1.32.17|Apache License 2.0
+[aws-sdk-go-v2/credentials](https://github.com/aws/aws-sdk-go-v2)|v1.19.16|Apache License 2.0
+[service/ec2](https://github.com/aws/aws-sdk-go-v2)|v1.299.1|Apache License 2.0
+[service/sts](https://github.com/aws/aws-sdk-go-v2)|v1.42.1|Apache License 2.0
+[aws/smithy-go](https://github.com/aws/smithy-go)|v1.25.1|Apache License 2.0
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20260202195803-dba9d589def2|Apache License 2.0
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.14.0|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.36.1-0.20260418153000-ae8637bdda9d|Apache License 2.0
-[go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.37.1-0.20260418153000-ae8637bdda9d|Apache License 2.0
+[go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.37.1-0.20260423144615-74587d6f5036|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.9.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
@@ -48,6 +54,7 @@ Name|Version|License
 [k8s.io/api](https://k8s.io/api)|v0.35.3|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.35.3|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.35.3|Apache License 2.0
+[k8s.io/apiserver](https://k8s.io/apiserver)|v0.35.3|Apache License 2.0
 [k8s.io/cli-runtime](https://k8s.io/cli-runtime)|v0.35.3|Apache License 2.0
 [k8s.io/client-go](https://k8s.io/client-go)|v0.35.3|Apache License 2.0
 [klog/v2](https://k8s.io/klog/v2)|v2.140.0|Apache License 2.0

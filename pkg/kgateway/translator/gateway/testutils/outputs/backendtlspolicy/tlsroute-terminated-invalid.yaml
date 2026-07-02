@@ -5,7 +5,6 @@ Clusters:
   name: kube_default_example-tls-svc_443
   type: STATIC
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:

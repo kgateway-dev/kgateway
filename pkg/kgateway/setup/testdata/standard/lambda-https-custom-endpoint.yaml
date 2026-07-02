@@ -52,7 +52,7 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     lambda:
+      accountId: "000000000000"
       functionName: my-test-function
       endpointURL: "https://172.18.0.2:4566"

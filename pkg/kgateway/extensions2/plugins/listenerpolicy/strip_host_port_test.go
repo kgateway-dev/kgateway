@@ -5,7 +5,6 @@ import (
 
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/stretchr/testify/require"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -27,7 +26,7 @@ func TestHttpListenerPolicyIrEqualsStripHostPort(t *testing.T) {
 		{
 			name: "one set one unset",
 			ir1: &HttpListenerPolicyIr{
-				stripHostPortMode: ptr.To(kgateway.StripAnyHostPortMode),
+				stripHostPortMode: new(kgateway.StripAnyHostPortMode),
 			},
 			ir2:      &HttpListenerPolicyIr{},
 			expected: false,
@@ -35,30 +34,30 @@ func TestHttpListenerPolicyIrEqualsStripHostPort(t *testing.T) {
 		{
 			name: "both MatchingPort",
 			ir1: &HttpListenerPolicyIr{
-				stripHostPortMode: ptr.To(kgateway.StripMatchingHostPortMode),
+				stripHostPortMode: new(kgateway.StripMatchingHostPortMode),
 			},
 			ir2: &HttpListenerPolicyIr{
-				stripHostPortMode: ptr.To(kgateway.StripMatchingHostPortMode),
+				stripHostPortMode: new(kgateway.StripMatchingHostPortMode),
 			},
 			expected: true,
 		},
 		{
 			name: "both AnyPort",
 			ir1: &HttpListenerPolicyIr{
-				stripHostPortMode: ptr.To(kgateway.StripAnyHostPortMode),
+				stripHostPortMode: new(kgateway.StripAnyHostPortMode),
 			},
 			ir2: &HttpListenerPolicyIr{
-				stripHostPortMode: ptr.To(kgateway.StripAnyHostPortMode),
+				stripHostPortMode: new(kgateway.StripAnyHostPortMode),
 			},
 			expected: true,
 		},
 		{
 			name: "MatchingPort vs AnyPort",
 			ir1: &HttpListenerPolicyIr{
-				stripHostPortMode: ptr.To(kgateway.StripMatchingHostPortMode),
+				stripHostPortMode: new(kgateway.StripMatchingHostPortMode),
 			},
 			ir2: &HttpListenerPolicyIr{
-				stripHostPortMode: ptr.To(kgateway.StripAnyHostPortMode),
+				stripHostPortMode: new(kgateway.StripAnyHostPortMode),
 			},
 			expected: false,
 		},
@@ -87,13 +86,13 @@ func TestApplyHCMStripHostPortMode(t *testing.T) {
 		},
 		{
 			name:                   "MatchingPort",
-			mode:                   ptr.To(kgateway.StripMatchingHostPortMode),
+			mode:                   new(kgateway.StripMatchingHostPortMode),
 			expectMatchingHostPort: true,
 			expectAnyHostPort:      false,
 		},
 		{
 			name:                   "AnyPort",
-			mode:                   ptr.To(kgateway.StripAnyHostPortMode),
+			mode:                   new(kgateway.StripAnyHostPortMode),
 			expectMatchingHostPort: false,
 			expectAnyHostPort:      true,
 		},

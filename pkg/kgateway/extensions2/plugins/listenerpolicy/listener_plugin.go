@@ -397,6 +397,10 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	updateTracingConfig(pCtx, policy.tracingProvider, policy.tracingConfig)
 	out.Tracing = policy.tracingConfig
 
+	if policy.localReplyConfig != nil {
+		out.LocalReplyConfig = policy.localReplyConfig
+	}
+
 	// translate upgrade configuration
 	if policy.upgradeConfigs != nil {
 		out.UpgradeConfigs = append(out.GetUpgradeConfigs(), policy.upgradeConfigs...)
@@ -464,6 +468,13 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 			out.CommonHttpProtocolOptions = &envoycorev3.HttpProtocolOptions{}
 		}
 		out.GetCommonHttpProtocolOptions().MaxRequestsPerConnection = wrapperspb.UInt32(*policy.maxRequestsPerConnection)
+	}
+
+	if policy.maxHeadersCount != nil {
+		if out.CommonHttpProtocolOptions == nil {
+			out.CommonHttpProtocolOptions = &envoycorev3.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().MaxHeadersCount = wrapperspb.UInt32(*policy.maxHeadersCount)
 	}
 
 	if policy.http2ProtocolOptions != nil {

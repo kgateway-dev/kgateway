@@ -60,6 +60,14 @@ spec:
                   Rules are evaluated using longest-prefix matching on the effictive client IP
                   from envoy base on settings. See the UseRemoteAddress, XffTrustedCIDRs,
                   XffNumTrustedHops settings under ListenerPolicy -> HttpSettings for details.
+
+                  When multiple TrafficPolicy objects target the same route, their ACL fields are
+                  deep-merged by default: rules are unioned (higher-priority policy's rules first),
+                  and singleton fields (defaultAction, denyResponse) are taken from the higher-priority
+                  policy. If singleton fields conflict between policies, the merge falls back to
+                  shallow (higher-priority policy wins entirely). Gateway-level and route-level ACL
+                  policies are kept in separate merge groups and are never combined with each other;
+                  a route-level ACL completely replaces the gateway-level ACL for that route.
                 properties:
                   defaultAction:
                     description: DefaultAction is the action to take when no rule
@@ -327,7 +335,7 @@ spec:
                 description: |-
                   AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
                   NOTE: This field is only honored for HTTPRoute targets.
-                  NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
+                  NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/api-spec/main/spec/#httpurlrewritefilter)
                   configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
                 type: boolean
               basicAuth:
@@ -1538,6 +1546,73 @@ spec:
                     set
                   rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
+              internalRedirect:
+                description: |-
+                  InternalRedirect handles upstream 3xx redirects inside the gateway.
+                  Applies only to routes that forward traffic to a backend.
+                properties:
+                  allowCrossSchemeRedirect:
+                    description: |-
+                      AllowCrossSchemeRedirect permits redirects across http/https schemes.
+                      Defaults to false.
+                    type: boolean
+                  maxRedirects:
+                    description: |-
+                      MaxRedirects caps followed redirects for a single downstream request.
+                      Defaults to 1.
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  redirectResponseCodes:
+                    description: |-
+                      RedirectResponseCodes are upstream status codes that trigger internal redirects.
+                      If unset, only 302 redirects are followed.
+                    items:
+                      description: InternalRedirectResponseCode is a 3xx response
+                        code supported for internal redirects.
+                      enum:
+                      - 301
+                      - 302
+                      - 303
+                      - 307
+                      - 308
+                      format: int32
+                      type: integer
+                    maxItems: 5
+                    minItems: 1
+                    type: array
+                    x-kubernetes-validations:
+                    - message: redirectResponseCodes must not contain duplicates
+                      rule: self.all(c, self.exists_one(c2, c2 == c))
+                  responseHeadersToCopy:
+                    description: |-
+                      ResponseHeadersToCopy are copied from the redirect response to the
+                      internally redirected request.
+                    items:
+                      description: |-
+                        HTTPHeaderName is the name of an HTTP header.
+
+                        Valid values include:
+
+                        * "Authorization"
+                        * "Set-Cookie"
+
+                        Invalid values include:
+
+                          - ":method" - ":" is an invalid character. This means that HTTP/2 pseudo
+                            headers are not currently supported by this type.
+                          - "/invalid" - "/ " is an invalid character
+                      maxLength: 256
+                      minLength: 1
+                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                      type: string
+                    maxItems: 16
+                    minItems: 1
+                    type: array
+                    x-kubernetes-validations:
+                    - message: responseHeadersToCopy must not contain duplicates
+                      rule: self.all(h, self.exists_one(h2, h2 == h))
+                type: object
               jwtAuth:
                 description: |-
                   JWT specifies the JWT authentication configuration for the policy.

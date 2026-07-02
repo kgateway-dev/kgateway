@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2/tools
 
-go 1.26.3
+go 1.26.4
 
 tool (
 	github.com/google/yamlfmt/cmd/yamlfmt
@@ -381,7 +381,7 @@ require (
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20260209172322-2053ba3d414e // indirect
 	sigs.k8s.io/gateway-api v1.4.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
-	sigs.k8s.io/kind v0.31.0 // indirect
+	sigs.k8s.io/kind v0.32.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.1 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect

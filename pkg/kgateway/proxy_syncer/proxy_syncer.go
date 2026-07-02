@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"sync/atomic"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -58,6 +57,7 @@ type ProxySyncer struct {
 
 	statusReport            krt.Singleton[report]
 	backendPolicyReport     krt.Singleton[report]
+	backendStatusReport     krt.Singleton[report]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
@@ -66,6 +66,7 @@ type ProxySyncer struct {
 
 	reportQueue              utils.AsyncQueue[reports.ReportMap]
 	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
+	backendStatusReportQueue utils.AsyncQueue[reports.ReportMap]
 }
 
 type GatewayXdsResources struct {
@@ -169,6 +170,7 @@ func NewProxySyncer(
 		plugins:                  mergedPlugins,
 		reportQueue:              utils.NewAsyncQueue[reports.ReportMap](),
 		backendPolicyReportQueue: utils.NewAsyncQueue[reports.ReportMap](),
+		backendStatusReportQueue: utils.NewAsyncQueue[reports.ReportMap](),
 	}
 }
 
@@ -193,28 +195,7 @@ func (r report) ResourceName() string {
 
 // do we really need this for a singleton?
 func (r report) Equals(in report) bool {
-	if !maps.Equal(r.reportMap.Gateways, in.reportMap.Gateways) {
-		return false
-	}
-	if !maps.EqualFunc(r.reportMap.ListenerSets, in.reportMap.ListenerSets,
-		func(a, b map[types.NamespacedName]*reports.ListenerSetReport) bool {
-			return maps.Equal(a, b)
-		}) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.TCPRoutes, in.reportMap.TCPRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.TLSRoutes, in.reportMap.TLSRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.Policies, in.reportMap.Policies) {
-		return false
-	}
-	return true
+	return reports.EqualReportMaps(r.reportMap, in.reportMap)
 }
 
 var logger = logging.New("proxy_syncer")
@@ -278,6 +259,11 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		newFinalBackendEndpoints(krtopts, finalBackends, allEndpoints),
 		s.translator.TranslateEndpoints,
 	)
+	localClusterEpPerClient := NewPerClientLocalClusterEndpoints(
+		krtopts,
+		s.uniqueClients,
+		s.commonCols.LocalityPods,
+	)
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
 		krtopts,
@@ -292,6 +278,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		s.mostXdsSnapshots,
 		epPerClient,
 		clustersPerClient,
+		localClusterEpPerClient,
 	)
 
 	excludedPolicyKinds := make(map[schema.GroupKind]struct{})
@@ -313,6 +300,27 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
+
+	// backendStatusReport is the sole writer of the Backend Accepted condition: it merges
+	// each Backend's IR errors with its per-client translation errors. It also merges any
+	// plugin-contributed conditions (e.g. the EC2 EndpointsDiscovered condition) so all
+	// Backend conditions are written by a single owner.
+	kgwBackendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
+	kgwBackendCol := kgwBackendPlugin.Backends
+	kgwBackendExtraConditions := kgwBackendPlugin.ExtraConditions
+	s.backendStatusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
+		var kgwBackends []ir.BackendObjectIR
+		if kgwBackendCol != nil {
+			kgwBackends = krt.Fetch(kctx, kgwBackendCol)
+		}
+		clusters := krt.Fetch(kctx, clustersPerClient.clusters)
+		var extraConditions []ir.BackendObjectStatus
+		if kgwBackendExtraConditions != nil {
+			extraConditions = krt.Fetch(kctx, kgwBackendExtraConditions)
+		}
+		merged := GenerateBackendStatusReport(kgwBackends, clusters, extraConditions)
+		return &report{merged}
+	}, krtopts.ToOptions("BackendStatusReport")...)
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
@@ -347,78 +355,11 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 func mergeProxyReports(
 	proxies []GatewayXdsResources,
 ) reports.ReportMap {
-	merged := reports.NewReportMap()
-	for _, p := range proxies {
-		// 1. merge GW Reports for all Proxies' status reports
-		maps.Copy(merged.Gateways, p.reports.Gateways)
-
-		// 2. merge LS Reports for all Proxies' status reports
-		maps.Copy(merged.ListenerSets, p.reports.ListenerSets)
-
-		// 3. merge httproute parentRefs into RouteReports
-		for rnn, rr := range p.reports.HTTPRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.HTTPRoutes[rnn]
-			if old == nil {
-				merged.HTTPRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.HTTPRoutes[rnn].Parents, rr.Parents)
-		}
-
-		// 4. merge tcproute parentRefs into RouteReports
-		for rnn, rr := range p.reports.TCPRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.TCPRoutes[rnn]
-			if old == nil {
-				merged.TCPRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.TCPRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for rnn, rr := range p.reports.TLSRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.TLSRoutes[rnn]
-			if old == nil {
-				merged.TLSRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.TLSRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for rnn, rr := range p.reports.GRPCRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.GRPCRoutes[rnn]
-			if old == nil {
-				merged.GRPCRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.GRPCRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for key, report := range p.reports.Policies {
-			// if we haven't encountered this policy, just copy it over completely
-			old := merged.Policies[key]
-			if old == nil {
-				merged.Policies[key] = report
-				continue
-			}
-			// else, let's merge our parentRefs into the existing map
-			// obsGen will stay as-is...
-			maps.Copy(merged.Policies[key].Ancestors, report.Ancestors)
-		}
+	inputs := make([]reports.ReportMap, 0, len(proxies))
+	for _, proxy := range proxies {
+		inputs = append(inputs, proxy.reports)
 	}
-
-	return merged
+	return reports.MergeReportMaps(inputs...)
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
@@ -455,6 +396,13 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			return
 		}
 		s.backendPolicyReportQueue.Enqueue(o.Latest().reportMap)
+	})
+
+	s.backendStatusReport.Register(func(o krt.Event[report]) {
+		if o.Event == controllers.EventDelete {
+			return
+		}
+		s.backendStatusReportQueue.Enqueue(o.Latest().reportMap)
 	})
 
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper]) {
@@ -518,6 +466,12 @@ func (s *ProxySyncer) ReportQueue() utils.AsyncQueue[reports.ReportMap] {
 // It will be constantly updated to contain the merged status report for backend policies.
 func (s *ProxySyncer) BackendPolicyReportQueue() utils.AsyncQueue[reports.ReportMap] {
 	return s.backendPolicyReportQueue
+}
+
+// BackendStatusReportQueue returns the queue that contains the latest status reports for Backends.
+// It will be constantly updated to contain the merged Accepted status report for Backends.
+func (s *ProxySyncer) BackendStatusReportQueue() utils.AsyncQueue[reports.ReportMap] {
+	return s.backendStatusReportQueue
 }
 
 // WaitForSync returns a list of functions that can be used to determine if all its informers have synced.

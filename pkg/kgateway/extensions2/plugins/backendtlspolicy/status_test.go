@@ -96,8 +96,8 @@ func TestBuildPolicyStatusFn(t *testing.T) {
 	}
 	ancestorRef := gwv1.ParentReference{
 		Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
-		Kind:      ptrTo(gwv1.Kind("Gateway")),
-		Namespace: ptrTo(gwv1.Namespace("default")),
+		Kind:      new(gwv1.Kind("Gateway")),
+		Namespace: new(gwv1.Namespace("default")),
 		Name:      gwv1.ObjectName("gw"),
 	}
 	rm := reports.NewReportMap()
@@ -166,9 +166,9 @@ func TestBuildPolicyStatusFnCapsAncestorsAtAPILimit(t *testing.T) {
 	policyReporter := reporter.Policy(key, 1)
 	for i := range reports.MaxPolicyStatusAncestors + 1 {
 		ancestorRef := gwv1.ParentReference{
-			Group:     ptrTo(gwv1.Group(gwv1.GroupVersion.Group)),
-			Kind:      ptrTo(gwv1.Kind("Gateway")),
-			Namespace: ptrTo(gwv1.Namespace("default")),
+			Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
+			Kind:      new(gwv1.Kind("Gateway")),
+			Namespace: new(gwv1.Namespace("default")),
 			Name:      gwv1.ObjectName("gw-" + string(rune('a'+i))),
 		}
 
@@ -228,9 +228,4 @@ func findCondition(conditions []metav1.Condition, conditionType string) *metav1.
 		}
 	}
 	return nil
-}
-
-//go:fix inline
-func ptrTo[T any](v T) *T {
-	return new(v)
 }

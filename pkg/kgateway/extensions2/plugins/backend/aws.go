@@ -42,32 +42,45 @@ const (
 )
 
 // AwsIr is the internal representation of an AWS backend.
+//
+// Both fields are compared in Equals below, but the krtequals analyzer can't
+// trace fields through the CompareWithNils closure, so each is marked
+// +noKrtEquals to suppress it. When adding a field here, remember to also
+// compare it in Equals — the analyzer will not flag an omission.
 type AwsIr struct {
-	lambdaFilters         *lambdaFilters
-	lambdaEndpoint        *lambdaEndpointConfig
+	// +noKrtEquals
+	lambdaIr *LambdaIr
+	// +noKrtEquals
+	ec2Ir *EC2Ir
+}
+
+// LambdaIr is the internal representation of a Lambda backend.
+//
+// Every field is compared in Equals below; the +noKrtEquals markers suppress
+// the analyzer, which can't trace fields through the CompareWithNils closure.
+type LambdaIr struct {
+	// +noKrtEquals
+	lambdaFilters *lambdaFilters
+	// +noKrtEquals
+	lambdaEndpoint *lambdaEndpointConfig
+	// +noKrtEquals
 	lambdaTransportSocket *envoycorev3.TransportSocket
 }
 
 // Equals checks if two AwsIr objects are equal.
 func (u *AwsIr) Equals(other *AwsIr) bool {
-	if u == nil && other != nil {
-		return false
-	}
-	if u != nil {
-		if other == nil {
-			return false
-		}
-		if !u.lambdaEndpoint.Equals(other.lambdaEndpoint) {
-			return false
-		}
-		if !u.lambdaFilters.Equals(other.lambdaFilters) {
-			return false
-		}
-		if !proto.Equal(u.lambdaTransportSocket, other.lambdaTransportSocket) {
-			return false
-		}
-	}
-	return true
+	return cmputils.CompareWithNils(u, other, func(a, b *AwsIr) bool {
+		return a.lambdaIr.Equals(b.lambdaIr) && a.ec2Ir.Equals(b.ec2Ir)
+	})
+}
+
+// Equals checks if two LambdaIr objects are equal.
+func (u *LambdaIr) Equals(other *LambdaIr) bool {
+	return cmputils.CompareWithNils(u, other, func(a, b *LambdaIr) bool {
+		return a.lambdaEndpoint.Equals(b.lambdaEndpoint) &&
+			a.lambdaFilters.Equals(b.lambdaFilters) &&
+			proto.Equal(a.lambdaTransportSocket, b.lambdaTransportSocket)
+	})
 }
 
 // processAws processes an AWS backend and returns an envoy cluster.
@@ -76,7 +89,17 @@ func processAws(ir *AwsIr, out *envoyclusterv3.Cluster) error {
 	if ir == nil {
 		return fmt.Errorf("aws ir is nil")
 	}
+	switch {
+	case ir.lambdaIr != nil:
+		return processLambda(ir.lambdaIr, out)
+	case ir.ec2Ir != nil:
+		return processEc2(ir.ec2Ir, out)
+	default:
+		return fmt.Errorf("aws ir is empty")
+	}
+}
 
+func processLambda(ir *LambdaIr, out *envoyclusterv3.Cluster) error {
 	dnsClusterConfig, err := utils.MessageToAny(&envoydnsv3.DnsCluster{
 		AllAddressesInSingleEndpoint: true, // follows logical dns semantics
 	})
@@ -133,32 +156,56 @@ func processAws(ir *AwsIr, out *envoyclusterv3.Cluster) error {
 }
 
 // configureAWSAuth configures AWS authentication for the given backend.
-func configureAWSAuth(secret *ir.Secret, region string) (*envoy_request_signing_v3.AwsRequestSigning, error) {
-	// when no auth is specified, use the default aws auth provider documented by the lambda filter:
-	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#credentials.
-	if secret == nil || secret.Data == nil {
-		return &envoy_request_signing_v3.AwsRequestSigning{
-			ServiceName: lambdaServiceName,
-			Region:      region,
-		}, nil
-	}
-	// handle secret-based auth. configure inline credentials.
-	derived, err := deriveStaticSecret(secret)
-	if err != nil {
-		return nil, fmt.Errorf("failed to derive static secret: %v", err)
-	}
-
-	return &envoy_request_signing_v3.AwsRequestSigning{
+func configureAWSAuth(auth *kgateway.AwsAuth, secret *ir.Secret, region string) (*envoy_request_signing_v3.AwsRequestSigning, error) {
+	signing := &envoy_request_signing_v3.AwsRequestSigning{
 		ServiceName: lambdaServiceName,
 		Region:      region,
-		CredentialProvider: &envoy_aws_common_v3.AwsCredentialProvider{
+	}
+
+	// When no explicit auth is specified, use the default aws auth provider chain documented
+	// by the lambda filter:
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#credentials.
+	if auth == nil {
+		return signing, nil
+	}
+
+	switch auth.Type {
+	case kgateway.AwsAuthTypeSecret:
+		// handle secret-based auth. configure inline credentials.
+		if secret == nil || secret.Data == nil {
+			return nil, fmt.Errorf("secret is required for %q auth", kgateway.AwsAuthTypeSecret)
+		}
+		derived, err := deriveStaticSecret(secret)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive static secret: %v", err)
+		}
+		signing.CredentialProvider = &envoy_aws_common_v3.AwsCredentialProvider{
 			InlineCredential: &envoy_aws_common_v3.InlineCredentialProvider{
 				AccessKeyId:     derived.access,
 				SecretAccessKey: derived.secret,
 				SessionToken:    derived.session,
 			},
-		},
-	}, nil
+		}
+
+	case kgateway.AwsAuthTypeAssumeRole:
+		// handle STS role chaining. The base credentials that sign the AssumeRole request are
+		// left unset so Envoy resolves them from the default provider chain (e.g. the gateway
+		// ServiceAccount's IRSA identity). The temporary credentials returned by STS are then
+		// used to sign requests to the backend.
+		if auth.AssumeRole == nil {
+			return nil, fmt.Errorf("assumeRole is required for %q auth", kgateway.AwsAuthTypeAssumeRole)
+		}
+		signing.CredentialProvider = &envoy_aws_common_v3.AwsCredentialProvider{
+			AssumeRoleCredentialProvider: &envoy_aws_common_v3.AssumeRoleCredentialProvider{
+				RoleArn: auth.AssumeRole.RoleArn,
+			},
+		}
+
+	default:
+		return nil, fmt.Errorf("unsupported aws auth type: %q", auth.Type)
+	}
+
+	return signing, nil
 }
 
 // lambdaFilters is a helper struct to store the lambda filters for the given backend.
@@ -184,6 +231,7 @@ func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
 func buildLambdaFilters(
 	arn string,
 	region string,
+	auth *kgateway.AwsAuth,
 	secret *ir.Secret,
 	invokeMode envoy_lambda_v3.Config_InvocationMode,
 	payloadTransformMode kgateway.AWSLambdaPayloadTransformMode,
@@ -205,7 +253,7 @@ func buildLambdaFilters(
 		return nil, fmt.Errorf("failed to create lambda config: %v", err)
 	}
 
-	awsRequestSigning, err := configureAWSAuth(secret, region)
+	awsRequestSigning, err := configureAWSAuth(auth, secret, region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create aws request signing config: %v", err)
 	}
@@ -232,7 +280,7 @@ func getLambdaHostname(in *kgateway.AwsBackend) string {
 	if in.Lambda.EndpointURL != nil {
 		return *in.Lambda.EndpointURL
 	}
-	return fmt.Sprintf("lambda.%s.amazonaws.com", in.Region)
+	return fmt.Sprintf("lambda.%s.amazonaws.com", defaultAwsRegion(in.Region))
 }
 
 // getLambdaInvocationMode returns the Lambda invocation mode. Default is synchronous.
@@ -244,13 +292,24 @@ func getLambdaInvocationMode(in *kgateway.AwsBackend) envoy_lambda_v3.Config_Inv
 	return invokeMode
 }
 
+func getLambdaAccountID(in *kgateway.AwsBackend) string {
+	if in.Lambda.AccountId != "" {
+		return in.Lambda.AccountId
+	}
+	return in.AccountId
+}
+
 // buildLambdaARN attempts to build a fully qualified lambda arn from the given backend configuration.
-// CEL validation should reject invalid `qualifier` values and handle defaulting, so we can assume
-// the qualifier passed here is valid.
+// CEL validation rejects invalid `qualifier` values, so we can assume the qualifier passed here is
+// valid; an unset qualifier defaults to "$LATEST".
 // An error is returned if the arn is not a valid lambda arn.
 func buildLambdaARN(in *kgateway.AwsBackend, region string) (string, error) {
+	qualifier := in.Lambda.Qualifier
+	if qualifier == "" {
+		qualifier = "$LATEST"
+	}
 	// TODO(tim): url.QueryEscape(...)?
-	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, in.AccountId, in.Lambda.FunctionName, in.Lambda.Qualifier)
+	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, getLambdaAccountID(in), in.Lambda.FunctionName, qualifier)
 	parsedARN, err := arnutils.Parse(arnStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse lambda arn: %v", err)

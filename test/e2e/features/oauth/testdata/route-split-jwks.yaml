@@ -1,0 +1,80 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: oauth-split
+spec:
+  parentRefs:
+  - name: oauth-gateway
+  hostnames:
+  - example.com
+  rules:
+  - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /split
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        set:
+          - name: x-oauth2-token-types
+            value: "%DYNAMIC_METADATA(envoy.filters.http.jwt_authn:accessToken:typ)%, %DYNAMIC_METADATA(envoy.filters.http.jwt_authn:idToken:typ)%"
+    backendRefs:
+    - name: httpbin
+      port: 8443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: oauth-route-split
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: oauth-split
+  oauth2:
+    extensionRef:
+      name: keycloak-oauth-split
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: keycloak-oauth-split
+spec:
+  oauth2:
+    backendRef:
+      kind: Service
+      name: keycloak
+      port: 443
+    tokenEndpoint: https://keycloak/realms/master/protocol/openid-connect/token
+    authorizationEndpoint: https://keycloak/realms/master/protocol/openid-connect/auth
+    endSessionEndpoint: https://keycloak/realms/master/protocol/openid-connect/logout
+    credentials:
+      clientID: kgateway-client-id
+      clientSecretRef:
+        name: oauth-client-secret
+    redirectURI: https://example.com/split/oauth2/redirect
+    logoutPath: /logout
+    forwardAccessToken: true
+    scopes: ["openid", "email"]
+    jwt:
+      jwksURI: https://keycloak/realms/master/protocol/openid-connect/certs
+      jwksBackendRef:
+        kind: Service
+        name: keycloak-jwks
+        port: 9443
+      accessToken:
+        audiences:
+          - account
+        claimsToHeaders:
+          - name: preferred_username
+            header: x-oauth2-preferred-username
+      idToken:
+        claimsToHeaders:
+          - name: email
+            header: x-oauth2-email

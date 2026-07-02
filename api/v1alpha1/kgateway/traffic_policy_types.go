@@ -92,7 +92,7 @@ type TrafficPolicySpec struct {
 
 	// AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
 	// NOTE: This field is only honored for HTTPRoute targets.
-	// NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
+	// NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/api-spec/main/spec/#httpurlrewritefilter)
 	// configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
 	// +optional
 	AutoHostRewrite *bool `json:"autoHostRewrite,omitempty"`
@@ -111,6 +111,11 @@ type TrafficPolicySpec struct {
 	// It is applicable to HTTPRoutes, Gateway listeners and ListenerSets, and ignored for other targeted kinds.
 	// +optional
 	Retry *Retry `json:"retry,omitempty"`
+
+	// InternalRedirect handles upstream 3xx redirects inside the gateway.
+	// Applies only to routes that forward traffic to a backend.
+	// +optional
+	InternalRedirect *InternalRedirect `json:"internalRedirect,omitempty"`
 
 	// RBAC specifies the role-based access control configuration for the policy.
 	// This defines the rules for authorization based on roles and permissions.
@@ -172,6 +177,14 @@ type TrafficPolicySpec struct {
 	// Rules are evaluated using longest-prefix matching on the effictive client IP
 	// from envoy base on settings. See the UseRemoteAddress, XffTrustedCIDRs,
 	// XffNumTrustedHops settings under ListenerPolicy -> HttpSettings for details.
+	//
+	// When multiple TrafficPolicy objects target the same route, their ACL fields are
+	// deep-merged by default: rules are unioned (higher-priority policy's rules first),
+	// and singleton fields (defaultAction, denyResponse) are taken from the higher-priority
+	// policy. If singleton fields conflict between policies, the merge falls back to
+	// shallow (higher-priority policy wins entirely). Gateway-level and route-level ACL
+	// policies are kept in separate merge groups and are never combined with each other;
+	// a route-level ACL completely replaces the gateway-level ACL for that route.
 	// +optional
 	ACL *shared.ACLPolicy `json:"acl,omitempty"`
 }

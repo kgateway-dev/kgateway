@@ -5,15 +5,14 @@ package header_modifiers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -41,29 +40,29 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
+// checkPodsRunning waits for the httpbin backend to be ready. The gateway proxy is the
+// shared base gateway (gateway/kgateway-base), already brought up and address-resolved by
+// the test runner, so we only need to gate on the backend here.
 func (s *testingSuite) checkPodsRunning() {
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
-		testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-			LabelSelector: testdefaults.CurlPodLabelSelector,
-		})
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
 		testdefaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
 			LabelSelector: testdefaults.HttpbinLabelSelector,
 		})
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx,
-		proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
-		})
 }
+
+// baseGatewayPort is the sentinel passed to assertHeaders for traffic that should hit the
+// shared base gateway's default listener (:80). Passing 0 omits curl.WithPort so the address
+// (and any GATEWAY_ADDRESS_OVERRIDE) is honored. ListenerSet tests pass the explicit LS port.
+const baseGatewayPort = 0
 
 func (s *testingSuite) TestRouteLevelHeaderModifiers() {
 	s.checkPodsRunning()
-	s.assertHeaders(8080, expectedRequestHeaders("route"), expectedResponseHeaders("route"))
+	s.assertHeaders(baseGatewayPort, expectedRequestHeaders("route"), expectedResponseHeaders("route"))
 }
 
 func (s *testingSuite) TestGatewayLevelHeaderModifiers() {
 	s.checkPodsRunning()
-	s.assertHeaders(8080, expectedRequestHeaders("gw"), expectedResponseHeaders("gw"))
+	s.assertHeaders(baseGatewayPort, expectedRequestHeaders("gw"), expectedResponseHeaders("gw"))
 }
 
 func (s *testingSuite) TestListenerSetLevelHeaderModifiers() {
@@ -74,7 +73,7 @@ func (s *testingSuite) TestListenerSetLevelHeaderModifiers() {
 func (s *testingSuite) TestHeaderModifiersFromSecret() {
 	s.checkPodsRunning()
 	// The TrafficPolicy injects X-Api-Key and X-Tenant-Id from the backend-creds Secret.
-	s.assertHeaders(8080, map[string][]any{
+	s.assertHeaders(baseGatewayPort, map[string][]any{
 		"X-Api-Key":   {"my-secret-api-key"},
 		"X-Tenant-Id": {"tenant-abc"},
 	}, nil)
@@ -82,12 +81,12 @@ func (s *testingSuite) TestHeaderModifiersFromSecret() {
 
 func (s *testingSuite) TestMultiLevelHeaderModifiers() {
 	s.checkPodsRunning()
-	s.assertHeaders(8080, expectedRequestHeaders("route", "gw"), nil)
+	s.assertHeaders(baseGatewayPort, expectedRequestHeaders("route", "gw"), nil)
 }
 
 func (s *testingSuite) TestMultiLevelHeaderModifiersWithListenerSet() {
 	s.checkPodsRunning()
-	s.assertHeaders(8080, expectedRequestHeaders("route", "gw"), nil)
+	s.assertHeaders(baseGatewayPort, expectedRequestHeaders("route", "gw"), nil)
 	s.assertHeaders(8081, expectedRequestHeaders("route", "ls", "gw"), nil)
 }
 
@@ -119,25 +118,25 @@ func (s *testingSuite) assertHeaders(port int,
 	requestHeaders map[string][]any,
 	responseHeaders map[string]any,
 ) {
-	allOptions := []curl.Option{
-		curl.WithPath("/headers"),
-		curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-		curl.WithHostHeader("example.com"),
-		curl.WithPort(port),
-	}
-
 	requestHeadersJSON, err := json.Marshal(map[string]any{"headers": requestHeaders})
 	s.Require().NoError(err, "unable to marshal request headers to JSON")
 
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		allOptions,
+	opts := []curl.Option{
+		curl.WithPath("/headers"),
+		curl.WithHostHeader("example.com"),
+	}
+	if port != baseGatewayPort {
+		opts = append(opts, curl.WithPort(port))
+	}
+
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Headers:    responseHeaders,
 			NotHeaders: []string{"X-Request-Id", "X-Envoy-Upstream-Service-Time"},
 			Body:       testmatchers.JSONContains(requestHeadersJSON),
 		},
+		opts...,
 	)
 }

@@ -6,6 +6,7 @@ import (
 
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/slices"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -42,6 +43,20 @@ type Options struct {
 	// Settings.WorkloadEntriesExclusionLabels is used. Use an empty set to explicitly disable
 	// exclusions.
 	WorkloadEntriesExclusionLabelKeys sets.Set[string]
+
+	// ServiceEntriesExclusionLabelSelectors is the set of label selectors that, if any match a
+	// ServiceEntry, cause it to be excluded from ServiceEntry backend and endpoint discovery. Unlike
+	// WorkloadEntriesExclusionLabelKeys, this uses full selectors so exclusions can match specific label
+	// values. When nil, the default from Settings.ServiceEntriesExclusionLabelSelectors is used. Use an
+	// empty slice to explicitly disable exclusions.
+	ServiceEntriesExclusionLabelSelectors []labels.Selector
+
+	// PromoteWorkloadEntryAnnotations is the set of WorkloadEntry annotation keys that, if present
+	// on the WorkloadEntry's metadata, are copied verbatim into the workload's AugmentedLabels so
+	// that endpoint plugins can observe them. kgateway is agnostic to what the keys mean; it does
+	// an opaque string copy. Callers (e.g. downstream distributions) supply the keys they care
+	// about. When nil or empty, no annotations are promoted.
+	PromoteWorkloadEntryAnnotations sets.Set[string]
 }
 
 func NewPlugin(
@@ -83,6 +98,19 @@ func NewPluginWithOpts(
 	// from settings (KGW_WORKLOAD_ENTRIES_EXCLUSION_LABELS env var).
 	if opts.WorkloadEntriesExclusionLabelKeys == nil {
 		opts.WorkloadEntriesExclusionLabelKeys = ParseExclusionLabels(commonCols.Settings.WorkloadEntriesExclusionLabels)
+	}
+	if opts.ServiceEntriesExclusionLabelSelectors == nil {
+		// NewCommonCollections parses and validates this setting before plugins are initialized.
+		// The parse fallback is only for tests or manually constructed CommonCollections.
+		opts.ServiceEntriesExclusionLabelSelectors = commonCols.ServiceEntriesExclusionLabelSelectors
+		if opts.ServiceEntriesExclusionLabelSelectors == nil {
+			selectors, err := collections.ParseExclusionLabelSelectors(commonCols.Settings.ServiceEntriesExclusionLabelSelectors)
+			if err != nil {
+				logger.Error("error parsing ServiceEntry exclusion label selectors; ServiceEntries will not be excluded", "error", err)
+			} else {
+				opts.ServiceEntriesExclusionLabelSelectors = selectors
+			}
+		}
 	}
 	seCollections := initServiceEntryCollections(commonCols, opts)
 	return sdk.Plugin{

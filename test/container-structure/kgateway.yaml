@@ -8,6 +8,9 @@ schemaVersion: 2.0.0
 metadataTest:
   user: "10101"
   entrypoint: ["/usr/local/bin/kgateway"]
+  envVars:
+    - key: "ENVOY_DYNAMIC_MODULES_SEARCH_PATH"
+      value: "/usr/local/lib"
 
 fileExistenceTests:
   - name: "kgateway binary exists"
@@ -16,14 +19,18 @@ fileExistenceTests:
     permissions: "-rwxr-xr-x"
     isExecutableBy: "owner"
 
+  - name: "envoy binary exists"
+    path: "/usr/local/bin/envoy"
+    shouldExist: true
+    isExecutableBy: "any"
+
+  - name: "Rust dynamic module exists"
+    path: "/usr/local/lib/librust_module.so"
+    shouldExist: true
+
   - name: "ca-certificates installed"
     path: "/etc/ssl/certs/ca-certificates.crt"
     shouldExist: true
-
-  - name: "wget installed"
-    path: "/usr/bin/wget"
-    shouldExist: true
-    isExecutableBy: "any"
 
 commandTests:
   - name: "kgateway binary is executable"
@@ -31,7 +38,9 @@ commandTests:
     args: ["--help"]
     exitCode: 0
 
-  - name: "running as non-root user"
-    command: "id"
-    args: ["-u"]
-    expectedOutput: ["10101"]
+  # Runs the copied envoy binary so a missing dynamic dependency (glibc,
+  # libstdc++, libgcc_s) on the new base image fails the test early.
+  - name: "envoy binary is a valid executable"
+    command: "/usr/local/bin/envoy"
+    args: ["--version"]
+    exitCode: 0

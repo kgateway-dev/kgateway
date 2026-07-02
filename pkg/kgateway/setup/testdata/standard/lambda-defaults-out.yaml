@@ -15,7 +15,6 @@ clusters:
             socketAddress:
               address: lambda.us-east-1.amazonaws.com
               portValue: 443
-  metadata: {}
   name: backend_gwtest_lambda-backend_0
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -42,13 +41,14 @@ clusters:
       - name: envoy.filters.http.upstream_codec
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
 listeners:
