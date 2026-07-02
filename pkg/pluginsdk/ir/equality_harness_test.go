@@ -287,6 +287,15 @@ func TestHarnessGatewayEquals(t *testing.T) {
 				}
 			},
 		},
+		{
+			// GatewayParameters uses versionEquals; mutate ResourceVersion to trigger detection.
+			Field: "GatewayParameters",
+			Mutate: func(g *Gateway) {
+				g.GatewayParameters = &kgateway.GatewayParameters{
+					ObjectMeta: metav1.ObjectMeta{ResourceVersion: "1"},
+				}
+			},
+		},
 	}
 
 	// ObjectSource is an embedded struct; the harness flattens its exported
