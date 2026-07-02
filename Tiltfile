@@ -237,16 +237,34 @@ def enable_providers():
     for provider in settings["enabled_providers"] :
         enable_provider(settings["providers"][provider])
 
+def write_helm_flags_values_file():
+    """Convert the dotted helm_flags keys into a nested values file, since the
+    conformance install script only accepts values files, not --set flags."""
+    values = {}
+    for key, value in settings["helm_flags"].items():
+        node = values
+        parts = key.split(".")
+        for part in parts[:-1]:
+            node = node.setdefault(part, {})
+        node[parts[-1]] = value
+
+    values_file = "_output/tilt-helm-flags-values.yaml"
+    local("mkdir -p _output && cat > " + values_file + " << 'TILT_EOF'\n" + str(encode_yaml(values)) + "TILT_EOF\n", quiet = True)
+    return values_file
+
 def install_kgateway():
     if not kgateway_installed :
+        # Install via the conformance script, which installs the CRD and kgateway
+        # charts and creates a GatewayParameters that disables stats on the proxy.
+        script_args = " --image-registry " + settings["helm_flags"].get("image.registry", "ghcr.io/kgateway-dev")
+        for values_file in settings.get("helm_values_files") + [write_helm_flags_values_file()]:
+            script_args = script_args + " --additional-helm-values " + values_file
+
         install_helm_cmd = """
             kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || {{ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml; }} ;
-            {0} upgrade --install -n {1} --create-namespace kgateway-crds install/helm/kgateway-crds ;
-            {0} upgrade --install -n {1} --create-namespace {2} install/helm/kgateway/ {3}""".format(
-                helm_cmd,
-                settings.get("helm_installation_namespace"),
-                settings.get("helm_installation_name"),
-                helm_args
+            VERSION={0} ./hack/install-kgateway-conformance.sh{1}""".format(
+                image_tag,
+                script_args
             )
         local_resource(
             name = settings.get("helm_installation_name") + "_helm",

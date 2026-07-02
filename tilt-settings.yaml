@@ -7,7 +7,9 @@ helm_values_files:
 helm_installation_namespace: kgateway-system
 
 # Inline Helm --set flags (key: value format)
-helm_flags: {}
+helm_flags:
+  "gatewayClassParametersRefs.kgateway.name": "kgateway-no-stats"
+  "gatewayClassParametersRefs.kgateway.namespace": "kgateway-system"
 # Example: controller.extraEnv.KGW_VALIDATION_MODE: "strict"
 
 enabled_providers:

@@ -10,7 +10,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 VERSION="${VERSION:-}"
 VERSION_EXPLICIT=false
 API_CHANNEL="experimental"
-ADDITIONAL_HELM_VALUES=""
+ADDITIONAL_HELM_VALUES=()
 IMAGE_REGISTRY="${IMAGE_REGISTRY:-ghcr.io/kgateway-dev}"
 
 GWP_NAME="kgateway-no-stats"
@@ -25,7 +25,7 @@ Options:
                                   If omitted, uses local charts with VERSION from 'make print-VERSION'.
   --api-channel CHANNEL           Gateway API channel: 'experimental' (default) or 'standard'.
                                   'standard' disables experimental Gateway API features.
-  --additional-helm-values PATH   Path to an additional Helm values file.
+  --additional-helm-values PATH   Path to an additional Helm values file. May be repeated.
   --image-registry REGISTRY       Image registry (default: ghcr.io/kgateway-dev).
   -h, --help                      Show this help.
 EOF
@@ -38,7 +38,7 @@ while [[ $# -gt 0 ]]; do
     --api-channel)
       API_CHANNEL="$2"; shift 2 ;;
     --additional-helm-values)
-      ADDITIONAL_HELM_VALUES="$2"; shift 2 ;;
+      ADDITIONAL_HELM_VALUES+=("$2"); shift 2 ;;
     --image-registry)
       IMAGE_REGISTRY="$2"; shift 2 ;;
     -h|--help)
@@ -57,14 +57,14 @@ if [[ "$API_CHANNEL" == "standard" ]]; then
   EXPERIMENTAL_FLAG="--set controller.extraEnv.KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES=false"
 fi
 
-ADDITIONAL_VALUES_FLAG=""
-if [[ -n "$ADDITIONAL_HELM_VALUES" ]]; then
-  if [[ ! -f "$ADDITIONAL_HELM_VALUES" ]]; then
-    echo "Error: additional-helm-values file not found: $ADDITIONAL_HELM_VALUES" >&2
+ADDITIONAL_VALUES_FLAGS=()
+for values_file in ${ADDITIONAL_HELM_VALUES[@]+"${ADDITIONAL_HELM_VALUES[@]}"}; do
+  if [[ ! -f "$values_file" ]]; then
+    echo "Error: additional-helm-values file not found: $values_file" >&2
     exit 1
   fi
-  ADDITIONAL_VALUES_FLAG="-f $ADDITIONAL_HELM_VALUES"
-fi
+  ADDITIONAL_VALUES_FLAGS+=(-f "$values_file")
+done
 
 echo "==> Installing kgateway-crds (version=${VERSION})"
 if [[ "$VERSION_EXPLICIT" == "false" ]]; then
@@ -98,7 +98,7 @@ if [[ "$VERSION_EXPLICIT" == "false" ]]; then
     --set image.registry="${IMAGE_REGISTRY}" \
     --set "gatewayClassParametersRefs.kgateway.name=${GWP_NAME}" \
     --set "gatewayClassParametersRefs.kgateway.namespace=${GWP_NAMESPACE}" \
-    ${ADDITIONAL_VALUES_FLAG}
+    ${ADDITIONAL_VALUES_FLAGS[@]+"${ADDITIONAL_VALUES_FLAGS[@]}"}
 else
   helm upgrade -i -n "$GWP_NAMESPACE" kgateway "oci://${IMAGE_REGISTRY}/charts/kgateway" \
     --version "${VERSION}" \
@@ -107,7 +107,7 @@ else
     --set image.tag="${VERSION}" \
     --set "gatewayClassParametersRefs.kgateway.name=${GWP_NAME}" \
     --set "gatewayClassParametersRefs.kgateway.namespace=${GWP_NAMESPACE}" \
-    ${ADDITIONAL_VALUES_FLAG}
+    ${ADDITIONAL_VALUES_FLAGS[@]+"${ADDITIONAL_VALUES_FLAGS[@]}"}
 fi
 
 echo "==> Done. kgateway installed with GatewayParameters '${GWP_NAME}' (stats disabled)."
