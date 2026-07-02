@@ -159,11 +159,15 @@ jobs:
       # v2.2.x is built against Gateway API 1.4 and refuses to start on 1.5 (#13872), so the
       # v2.2.x x v1.5.1 lanes need special handling: skip the standard channel entirely, and
       # run the experimental channel with the version check bypassed to keep forward-compat
-      # signal. The experimental channel is further limited to the max lane: Gateway API 1.5.1
-      # experimental CRDs use the isIP() CEL function, added in Kubernetes 1.31, but the min
-      # lane runs k8s 1.30, so the CRDs cannot install there. This is done with step guards
-      # rather than a matrix `exclude:` because every dimension here is object-valued and
-      # object-valued excludes are unreliable (actions/runner#1512).
+      # signal. The experimental channel is further limited to the max lane: the Gateway API
+      # 1.5.1 experimental CRDs use the isIP() CEL function (added in Kubernetes 1.31), but
+      # v2.2.x's min lane currently runs k8s 1.30, so those CRDs fail to install there.
+      # (main/v2.3.x min lanes run k8s 1.31+, which is why only v2.2.x is skipped.) The
+      # per-lane Kubernetes versions live in .github/workflows/.env/nightly-tests/; the guard
+      # keys off the min/max label, so if v2.2.x's min lane is bumped to >=1.31 this skip can
+      # be dropped. This is done with step guards rather than a matrix `exclude:` because every
+      # dimension here is object-valued and object-valued excludes are unreliable
+      # (actions/runner#1512).
       - name: Determine run plan
         id: guard
         env:
@@ -180,7 +184,8 @@ jobs:
               standard)     run=false ;;
               experimental)
                 if [[ "${VERSIONS_LABEL}" == "min" ]]; then
-                  # k8s 1.30 lacks the isIP() CEL function required by the 1.5.1 experimental CRDs.
+                  # v2.2.x's min lane currently runs k8s 1.30, which lacks the isIP() CEL
+                  # function (added in k8s 1.31) the 1.5.1 experimental CRDs require.
                   run=false
                 else
                   bypass_version_check=true
