@@ -14,6 +14,7 @@ import (
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -42,6 +43,8 @@ func (c *CommonCollections) InitCollections(
 
 	kubeRawGateways := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.Gateway](c.Client, wellknown.GatewayGVR, filter), c.KrtOpts.ToOptions("KubeGateways")...)
 	metrics.RegisterEvents(kubeRawGateways, kmetrics.GetResourceMetricEventHandler[*gwv1.Gateway]())
+
+	gatewayParameters := krt.WrapClient(kclient.NewFilteredDelayed[*kgateway.GatewayParameters](c.Client, wellknown.GatewayParametersGVR, filter), c.KrtOpts.ToOptions("GatewayParameters")...)
 
 	var kubeRawListenerSets krt.Collection[*gwv1.ListenerSet]
 	promotedListenerSets := krt.WrapClient(
@@ -88,6 +91,7 @@ func (c *CommonCollections) InitCollections(
 		Gateways:            kubeRawGateways,
 		ListenerSets:        kubeRawListenerSets,
 		GatewayClasses:      gatewayClasses,
+		GatewayParameters:   gatewayParameters,
 		Namespaces:          namespaces,
 	},
 		krtcollections.WithGatewayForDeployerTransformationFunc(c.options.gatewayForDeployerTransformationFunc),

@@ -1,2 +1,4 @@
-controller:
-  disableStatsOnProxy: true
+gatewayClassParametersRefs:
+  kgateway:
+    name: conformance-gwp
+    namespace: kgateway-system

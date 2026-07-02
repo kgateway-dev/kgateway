@@ -1,0 +1,9 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: conformance-gwp
+  namespace: kgateway-system
+spec:
+  kube:
+    stats:
+      enabled: false

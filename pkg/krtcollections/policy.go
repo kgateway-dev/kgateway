@@ -22,6 +22,7 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/backendref"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
@@ -399,6 +400,7 @@ type GatewayIndexConfig struct {
 	Gateways            krt.Collection[*gwv1.Gateway]
 	ListenerSets        krt.Collection[*gwv1.ListenerSet]
 	GatewayClasses      krt.Collection[*gwv1.GatewayClass]
+	GatewayParameters   krt.Collection[*kgateway.GatewayParameters]
 	Namespaces          krt.Collection[NamespaceMetadata]
 
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
@@ -463,6 +465,55 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 	}
 }
 
+func gatewayProxyStatsDisabled(kctx krt.HandlerContext, config *GatewayIndexConfig, gw *gwv1.Gateway, gwClass *gwv1.GatewayClass) bool {
+	disabled := false
+	if gwClass != nil && gwClass.Spec.ParametersRef != nil {
+		if enabled, ok := gatewayClassStatsEnabled(kctx, config, gwClass.Spec.ParametersRef); ok {
+			disabled = !enabled
+		}
+	}
+	if gw.Spec.Infrastructure != nil && gw.Spec.Infrastructure.ParametersRef != nil {
+		if enabled, ok := gatewayStatsEnabled(kctx, config, gw.Namespace, gw.Spec.Infrastructure.ParametersRef); ok {
+			disabled = !enabled
+		}
+	}
+	return disabled
+}
+
+func gatewayClassStatsEnabled(kctx krt.HandlerContext, config *GatewayIndexConfig, ref *gwv1.ParametersReference) (bool, bool) {
+	if ref == nil || ref.Namespace == nil {
+		return false, false
+	}
+	if ref.Group != kgateway.GroupName || ref.Kind != gwv1.Kind(wellknown.GatewayParametersGVK.Kind) {
+		return false, false
+	}
+	return gatewayParametersStatsEnabled(kctx, config, string(*ref.Namespace), string(ref.Name))
+}
+
+func gatewayStatsEnabled(kctx krt.HandlerContext, config *GatewayIndexConfig, namespace string, ref *gwv1.LocalParametersReference) (bool, bool) {
+	if ref == nil {
+		return false, false
+	}
+	if ref.Group != kgateway.GroupName || ref.Kind != gwv1.Kind(wellknown.GatewayParametersGVK.Kind) {
+		return false, false
+	}
+	return gatewayParametersStatsEnabled(kctx, config, namespace, string(ref.Name))
+}
+
+func gatewayParametersStatsEnabled(kctx krt.HandlerContext, config *GatewayIndexConfig, namespace, name string) (bool, bool) {
+	if config.GatewayParameters == nil || namespace == "" || name == "" {
+		return false, false
+	}
+	gwp := ptr.Flatten(krt.FetchOne(kctx, config.GatewayParameters, krt.FilterKey(krt.Named{
+		Namespace: namespace,
+		Name:      name,
+	}.ResourceName())))
+	if gwp == nil || gwp.Spec.Kube.GetStats().GetEnabled() == nil {
+		return false, false
+	}
+	return *gwp.Spec.Kube.GetStats().GetEnabled(), true
+}
+
 func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
 		// only care about gateways use a class controlled by envoy
@@ -479,6 +530,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 				Name:      gw.Name,
 			},
 			Obj:                 gw,
+			ProxyStatsDisabled:  gatewayProxyStatsDisabled(kctx, config, gw, gwClass),
 			Listeners:           make([]ir.Listener, 0, len(gw.Spec.Listeners)),
 			DeniedListenerSets:  map[schema.GroupVersionKind]ir.ListenerSets{},
 			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{},

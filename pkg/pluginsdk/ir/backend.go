@@ -502,6 +502,8 @@ type Gateway struct {
 	DeniedListenerSets  GVKListenerSets
 	Obj                 *gwv1.Gateway
 
+	ProxyStatsDisabled bool
+
 	AttachedListenerPolicies AttachedPolicies
 	AttachedHttpPolicies     AttachedPolicies
 
@@ -570,6 +572,7 @@ func (c Gateway) ResourceName() string {
 
 func (c Gateway) Equals(in Gateway) bool {
 	return c.ObjectSource.Equals(in.ObjectSource) &&
+		c.ProxyStatsDisabled == in.ProxyStatsDisabled &&
 		ptrEquals(c.PerConnectionBufferLimitBytes, in.PerConnectionBufferLimitBytes) &&
 		versionEquals(c.Obj, in.Obj) &&
 		c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) &&

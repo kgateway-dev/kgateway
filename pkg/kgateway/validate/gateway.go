@@ -11,16 +11,18 @@ import (
 
 var ErrListenerPortReserved = fmt.Errorf("port is reserved")
 
+const ProxyStatsPort gwv1.PortNumber = 9091
+
 var reservedPorts = sets.New[int32](
-	9091,  // Metrics port
-	8082,  // Readiness port
-	19000, // Envoy admin port
+	int32(ProxyStatsPort), // Metrics port
+	8082,                  // Readiness port
+	19000,                 // Envoy admin port
 )
 
 // ListenerPort validates that the given listener port does not conflict with reserved ports.
-// When disableStatsOnProxy is true, port 9091 (the metrics port) is not considered reserved.
-func ListenerPort(listener ir.Listener, port gwv1.PortNumber, disableStatsOnProxy bool) error {
-	if disableStatsOnProxy && port == 9091 {
+// When proxyStatsDisabled is true, the proxy stats port is not considered reserved.
+func ListenerPort(listener ir.Listener, port gwv1.PortNumber, proxyStatsDisabled bool) error {
+	if proxyStatsDisabled && port == ProxyStatsPort {
 		return nil
 	}
 	if reservedPorts.Has(port) {

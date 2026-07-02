@@ -132,8 +132,6 @@ spec:
               value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
               value: {{ .Values.controller.awsEc2RefreshInterval | quote }}
-            - name: KGW_DISABLE_STATS_ON_PROXY
-              value: {{ .Values.controller.disableStatsOnProxy | quote }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}
