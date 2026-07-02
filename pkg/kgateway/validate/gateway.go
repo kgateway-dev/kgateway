@@ -27,7 +27,10 @@ var reservedPorts = sets.New(
 // ListenerPort validates that the given listener port does not conflict with reserved ports.
 func ListenerPort(gwp *kgateway.GatewayParameters, listener ir.Listener, port gwv1.PortNumber) error {
 	if port == MetricsPort {
-		if gwp != nil && gwp.Spec.Kube != nil && gwp.Spec.Kube.Stats != nil && gwp.Spec.Kube.Stats.Enabled != nil && !*gwp.Spec.Kube.Stats.Enabled {
+		if gwp != nil &&
+			gwp.Spec.GetKube().GetStats() != nil &&
+			gwp.Spec.GetKube().GetStats().GetEnabled() != nil &&
+			!*gwp.Spec.GetKube().GetStats().GetEnabled() {
 			return nil
 		}
 	}

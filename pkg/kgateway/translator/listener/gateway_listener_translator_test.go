@@ -704,15 +704,6 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			Expect(translatedListener.TcpFilterChain[0].FilterChainName).To(ContainSubstring(olderRoute.Name))
 			Expect(translatedListener.TcpFilterChain[0].FilterChainName).NotTo(ContainSubstring(newerRoute.Name))
 
-			findAccepted := func(conds []metav1.Condition) *metav1.Condition {
-				for i := range conds {
-					if conds[i].Type == string(gwv1.RouteConditionAccepted) {
-						return &conds[i]
-					}
-				}
-				return nil
-			}
-
 			findProgrammed := func(conds []metav1.Condition) *metav1.Condition {
 				for i := range conds {
 					if conds[i].Type == conditions.KgatewayConditionProgrammed {
