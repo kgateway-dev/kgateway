@@ -91,7 +91,7 @@ runs:
           ARGS+=(--image-registry "${{ env.IMAGE_REGISTRY }}")
         fi
 
-        ./install-kgateway-conformance.sh "${ARGS[@]}"
+        ./hack/install-kgateway-conformance.sh "${ARGS[@]}"
 
     - name: Run tests
       shell: bash
