@@ -288,6 +288,7 @@ func GetStatsValues(statsConfig *kgateway.StatsConfig) *HelmStatsConfig {
 	}
 	vals := &HelmStatsConfig{
 		Enabled:            statsConfig.GetEnabled(),
+		Port:               statsConfig.GetPort(),
 		RoutePrefixRewrite: statsConfig.GetRoutePrefixRewrite(),
 		EnableStatsRoute:   statsConfig.GetEnableStatsRoute(),
 		StatsPrefixRewrite: statsConfig.GetStatsRoutePrefixRewrite(),

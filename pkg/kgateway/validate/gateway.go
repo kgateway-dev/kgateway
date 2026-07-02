@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -11,33 +12,38 @@ import (
 )
 
 const (
-	MetricsPort    int32 = 9091
-	ReadinessPort  int32 = 8082
-	EnvoyAdminPort int32 = 19000
+	// DefaultMetricsPort is the default port for the Envoy stats/metrics server.
+	DefaultMetricsPort int32 = 9091
+	ReadinessPort      int32 = 8082
+	EnvoyAdminPort     int32 = 19000
 )
 
 var ErrListenerPortReserved = fmt.Errorf("port is reserved")
 
-var reservedPorts = sets.New(
-	MetricsPort,
+// staticReservedPorts are always reserved regardless of gateway configuration.
+var staticReservedPorts = sets.New(
 	ReadinessPort,
 	EnvoyAdminPort,
 )
 
 // ListenerPort validates that the given listener port does not conflict with reserved ports.
 func ListenerPort(gwp *kgateway.GatewayParameters, listener ir.Listener, port gwv1.PortNumber) error {
-	if port == MetricsPort {
-		if gwp != nil &&
-			gwp.Spec.GetKube().GetStats() != nil &&
-			gwp.Spec.GetKube().GetStats().GetEnabled() != nil &&
-			!*gwp.Spec.GetKube().GetStats().GetEnabled() {
-			return nil
+	statsPort := int32(DefaultMetricsPort)
+	if gwp != nil {
+		if p := gwp.Spec.GetKube().GetStats().GetPort(); p != nil {
+			statsPort = *p
 		}
 	}
 
-	if reservedPorts.Has(port) {
-		return fmt.Errorf("invalid port %d in listener: %w",
-			port, ErrListenerPortReserved)
+	if port == gwv1.PortNumber(statsPort) {
+		statsEnabled := gwp == nil || ptr.Deref(gwp.Spec.GetKube().GetStats().GetEnabled(), true)
+		if statsEnabled {
+			return fmt.Errorf("invalid port %d in listener: %w", port, ErrListenerPortReserved)
+		}
+	}
+
+	if staticReservedPorts.Has(port) {
+		return fmt.Errorf("invalid port %d in listener: %w", port, ErrListenerPortReserved)
 	}
 	return nil
 }

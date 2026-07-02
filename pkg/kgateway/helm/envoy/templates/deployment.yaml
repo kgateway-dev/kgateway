@@ -26,7 +26,7 @@ spec:
       annotations:
       {{- $promAnnotations := dict }}
       {{- if $statsConfig.enabled }}
-        {{- $promAnnotations = dict "prometheus.io/path" "/metrics" "prometheus.io/port" "9091" "prometheus.io/scrape" "true" }}
+        {{- $promAnnotations = dict "prometheus.io/path" "/metrics" "prometheus.io/port" ($statsConfig.port | default 9091 | toString) "prometheus.io/scrape" "true" }}
       {{- end}}
       {{- toYaml (merge
           (deepCopy ($gateway.gatewayAnnotations | default dict))
@@ -129,7 +129,7 @@ spec:
         {{- end }}
         {{- if $statsConfig.enabled }}
         - name: http-monitoring
-          containerPort: 9091
+          containerPort: {{ $statsConfig.port | default 9091 }}
         {{- end }}
 {{- with $gateway.startupProbe }}
         startupProbe:

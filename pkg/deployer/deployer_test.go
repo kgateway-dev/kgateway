@@ -784,6 +784,99 @@ var _ = Describe("Deployer", func() {
 			Expect(matcher.GetExclusionList().Patterns[3].GetIgnoreCase()).To(BeTrue())
 			Expect(matcher.GetExclusionList().Patterns[4].GetSafeRegex().GetRegex()).To(Equal("cluster\\..*\\.upstream_cx.*"))
 		})
+
+		It("uses configured stats port in bootstrap, Deployment, and prometheus annotations, and unblocks the default stats port for listeners", func() {
+			customPort := int32(9092)
+			gwp.Spec.Kube.Stats = &kgateway.StatsConfig{
+				Enabled: new(true),
+				Port:    &customPort,
+			}
+
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "envoy-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
+							Group: kgateway.GroupName,
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []gwv1.Listener{
+						{Name: "http", Port: 80},
+						// port 9091 is now allowed because the stats port moved to 9092
+						{Name: "legacy-metrics", Port: 9091},
+					},
+				},
+			}
+			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
+			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+			})
+			d, err := deployerinternal.NewGatewayDeployer(
+				wellknown.DefaultGatewayControllerName,
+				scheme,
+				fakeClient,
+				gwParams,
+			)
+			Expect(err).NotTo(HaveOccurred())
+			fakeClient.RunAndWait(context.Background().Done())
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+			objs := clientObjects(objsSlice)
+
+			By("verifying Envoy bootstrap uses the configured stats port")
+			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, "envoy-gateway")
+			Expect(bootstrapCfg.StaticResources.Listeners).To(HaveLen(2), "expected prometheus listener in addition to admin listener")
+			prometheusListener := bootstrapCfg.StaticResources.Listeners[1]
+			portSpec := prometheusListener.Address.GetSocketAddress().PortSpecifier.(*envoycorev3.SocketAddress_PortValue)
+			Expect(portSpec.PortValue).To(Equal(uint32(customPort)))
+
+			By("verifying Deployment container port uses the configured stats port")
+			dep := objs.findDeployment("envoy-gateway")
+			Expect(dep).ToNot(BeNil())
+			envoyContainer := dep.Spec.Template.Spec.Containers[0]
+			var foundStatsPort bool
+			for _, cp := range envoyContainer.Ports {
+				if cp.Name == "http-monitoring" {
+					Expect(cp.ContainerPort).To(Equal(customPort))
+					foundStatsPort = true
+				}
+			}
+			Expect(foundStatsPort).To(BeTrue(), "http-monitoring container port not found")
+
+			By("verifying prometheus scraping annotation uses the configured stats port")
+			annotations := dep.Spec.Template.Annotations
+			Expect(annotations["prometheus.io/port"]).To(Equal(fmt.Sprintf("%d", customPort)))
+
+			By("verifying port 9091 listener is included in Service (no longer reserved as stats port)")
+			svc := objs.findService("envoy-gateway")
+			Expect(svc).ToNot(BeNil())
+			var found9091 bool
+			for _, sp := range svc.Spec.Ports {
+				if sp.Port == 9091 {
+					found9091 = true
+				}
+			}
+			Expect(found9091).To(BeTrue(), "port 9091 should be allowed when stats port is moved to 9092")
+		})
 	})
 
 	Context("special cases", func() {

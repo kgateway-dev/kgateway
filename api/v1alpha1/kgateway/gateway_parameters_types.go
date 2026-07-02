@@ -709,6 +709,14 @@ type StatsConfig struct {
 	// +optional
 	Enabled *bool `json:"enabled,omitempty"`
 
+	// Port on which the Envoy stats/metrics server listens.
+	// Defaults to 9091 if not set.
+	//
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port *int32 `json:"port,omitempty"`
+
 	// The Envoy stats endpoint to which the metrics are written
 	//
 	// +optional
@@ -737,6 +745,13 @@ func (in *StatsConfig) GetEnabled() *bool {
 		return nil
 	}
 	return in.Enabled
+}
+
+func (in *StatsConfig) GetPort() *int32 {
+	if in == nil {
+		return nil
+	}
+	return in.Port
 }
 
 func (in *StatsConfig) GetRoutePrefixRewrite() *string {
