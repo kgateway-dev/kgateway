@@ -96,7 +96,7 @@ runs:
             --create-namespace \
             ${EXPERIMENTAL_FLAG} \
             --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
-            -f test/conformance/values.yaml
+            -f test/conformance/values.yaml \
             ${ADDITIONAL_VALUES}
         else
           # TODO(tim): this will require changes once the new helm chart is integrated
@@ -110,9 +110,19 @@ runs:
             --create-namespace \
             ${EXPERIMENTAL_FLAG} \
             --set image.tag=${VERSION} \
-            -f test/conformance/values.yaml
+            -f test/conformance/values.yaml \
             ${ADDITIONAL_VALUES}
         fi
+
+    - name: Apply conformance GatewayParameters
+      shell: bash
+      run: |
+        # Disable the Envoy proxy stats server for conformance proxies by
+        # pointing the built-in kgateway GatewayClass (via values.yaml) at this
+        # GatewayParameters object.
+        kubectl wait --for=condition=established --timeout=60s \
+          crd/gatewayparameters.gateway.kgateway.dev
+        kubectl apply -f test/conformance/gatewayparameters.yaml
 
     - name: Run tests
       shell: bash

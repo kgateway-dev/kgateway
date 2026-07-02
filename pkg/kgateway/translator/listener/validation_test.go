@@ -2547,14 +2547,12 @@ func TestReservedMetricsPortRejectedByDefault(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGatewayWithSettings(gwToIr(gateway, nil, nil), reporter, ListenerTranslatorConfig{
-		DisableStatsOnProxy: false,
-	})
+	validListeners := validateGatewayWithSettings(gwToIr(gateway, nil, nil), reporter, ListenerTranslatorConfig{})
 	g := NewWithT(t)
-	g.Expect(validListeners).To(BeEmpty(), "port 9091 should be rejected when stats enabled")
+	g.Expect(validListeners).To(BeEmpty(), "reserved metrics port 9091 should be rejected")
 }
 
-func TestReservedMetricsPortAllowedWhenDisableStatsOnProxy(t *testing.T) {
+func TestReservedMetricsPortAllowedWhenProxyStatsDisabled(t *testing.T) {
 	gateway := &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "test"},
 		Spec: gwv1.GatewaySpec{
@@ -2567,9 +2565,12 @@ func TestReservedMetricsPortAllowedWhenDisableStatsOnProxy(t *testing.T) {
 	report := reports.NewReportMap()
 	reporter := reports.NewReporter(&report)
 
-	validListeners := validateGatewayWithSettings(gwToIr(gateway, nil, nil), reporter, ListenerTranslatorConfig{
-		DisableStatsOnProxy: true,
-	})
+	// When the Gateway's GatewayParameters disable the proxy stats server, the
+	// metrics port is free and a listener may bind it.
+	gwIR := gwToIr(gateway, nil, nil)
+	gwIR.ProxyStatsDisabled = true
+
+	validListeners := validateGatewayWithSettings(gwIR, reporter, ListenerTranslatorConfig{})
 	g := NewWithT(t)
-	g.Expect(validListeners).To(HaveLen(1), "port 9091 should be accepted when proxy stats disabled")
+	g.Expect(validListeners).To(HaveLen(1), "port 9091 should be accepted when proxy stats are disabled")
 }

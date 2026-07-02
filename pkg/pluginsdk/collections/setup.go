@@ -14,6 +14,7 @@ import (
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	kgwv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -37,6 +38,11 @@ func (c *CommonCollections) InitCollections(
 
 	//nolint:forbidigo // ObjectFilter is not needed for this client as it is cluster scoped
 	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](c.Client), c.KrtOpts.ToOptions("KubeGatewayClasses")...)
+
+	gatewayParameters := krt.WrapClient(
+		kclient.NewFilteredDelayed[*kgwv1alpha1.GatewayParameters](c.Client, wellknown.GatewayParametersGVR, filter),
+		c.KrtOpts.ToOptions("KubeGatewayParameters")...,
+	)
 
 	namespaces, _ := krtcollections.NewNamespaceCollection(ctx, c.Client, c.KrtOpts)
 
@@ -88,6 +94,7 @@ func (c *CommonCollections) InitCollections(
 		Gateways:            kubeRawGateways,
 		ListenerSets:        kubeRawListenerSets,
 		GatewayClasses:      gatewayClasses,
+		GatewayParameters:   gatewayParameters,
 		Namespaces:          namespaces,
 	},
 		krtcollections.WithGatewayForDeployerTransformationFunc(c.options.gatewayForDeployerTransformationFunc),

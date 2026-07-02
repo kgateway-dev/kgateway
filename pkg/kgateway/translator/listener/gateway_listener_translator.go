@@ -41,7 +41,6 @@ const (
 type ListenerTranslatorConfig struct {
 	ListenerBindIpv6                     bool
 	EnableExperimentalGatewayAPIFeatures bool
-	DisableStatsOnProxy                  bool
 }
 
 // TranslateListeners translates the set of ListenerIRs required to produce a full output proxy (either from one Gateway or multiple merged Gateways)

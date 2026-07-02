@@ -1,2 +1,7 @@
-controller:
-  disableStatsOnProxy: true
+# Point the built-in "kgateway" GatewayClass at the kgateway-conformance
+# GatewayParameters (see gatewayparameters.yaml), which disables the Envoy proxy
+# stats server so port 9091 is not reserved during conformance runs.
+gatewayClassParametersRefs:
+  kgateway:
+    name: kgateway-conformance
+    namespace: kgateway-system
