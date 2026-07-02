@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -282,7 +281,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 	// 		- name: listenerset-protocol-conflict-listener		<----- protocol conflicts with gateway-protocol-conflict-listener
 	// 		  port: 80
 	// 		  protocol: UDP
-	for port, pp := range portListeners {
+	for _, pp := range portListeners {
 		for _, listener := range pp.listeners {
 			parentReporter := listener.GetParentReporter(reporter)
 			if unsupportedMixedTLSModeConflict(*pp, listener, settings) {
@@ -294,8 +293,6 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 				// If a listener does not have a protocol conflict with one listener,
 				// it could still have a hostname conflict with another listener
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
-			} else if err := validate.ListenerPort(listener, port); err != nil {
-				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonInvalid, err.Error())
 			} else {
 				validListeners = append(validListeners, listener)
 				// skip listeners that are attached to a gateway
@@ -325,9 +322,9 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 
 	validListenersPerParent := map[string]int{}
 	for _, l := range validListeners {
-		// If the kind is missing, assume it is a gateway
 		kind := l.Parent.GetObjectKind().GroupVersionKind().Kind
-		if kind == "" {
+		// Try to infer the kind if possible
+		if _, ok := l.Parent.(*gwv1.Gateway); ok {
 			kind = "Gateway"
 		}
 		parentKey := fmt.Sprintf("%s/%s/%s", kind, l.Parent.GetNamespace(), l.Parent.GetName())
