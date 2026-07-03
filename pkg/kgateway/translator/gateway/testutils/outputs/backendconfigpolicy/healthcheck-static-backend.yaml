@@ -1,9 +1,30 @@
 Clusters:
-- loadAssignment:
-    clusterName: kube_gwtest_backend-service_80
-  metadata: {}
-  name: kube_gwtest_backend-service_80
-  type: STATIC
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
+  healthChecks:
+  - healthyThreshold: 3
+    httpHealthCheck:
+      host: u-devportal-mcp-server.example.com
+      path: /ping
+    interval: 30s
+    timeout: 5s
+    unhealthyThreshold: 2
+  loadAssignment:
+    clusterName: backend_default_static-dns-backend_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: internal-my-internal-loadbalancer-1998974615.ap-south-1.elb.amazonaws.com
+              portValue: 80
+          healthCheckConfig: {}
+          hostname: internal-my-internal-loadbalancer-1998974615.ap-south-1.elb.amazonaws.com
+  name: backend_default_static-dns-backend_0
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
@@ -11,7 +32,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8080
+      portValue: 80
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -27,28 +48,28 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~8080
+          routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: true
-    name: listener~8080
-  name: listener~8080
+    name: listener~80
+  name: listener~80
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~8080
+  name: listener~80
   virtualHosts:
   - domains:
     - example.com
-    name: listener~8080~example_com
+    name: listener~80~example_com
     routes:
     - match:
         prefix: /
-      name: listener~8080~example_com-route-0-httproute-backend-route-gwtest-0-0-matcher-0
+      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
       route:
-        cluster: kube_gwtest_backend-service_80
+        cluster: backend_default_static-dns-backend_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   gateways:
-    gwtest/example-gateway:
+    default/example-gateway:
       conditions:
       - lastTransitionTime: null
         message: Successfully accepted Gateway
@@ -95,7 +116,7 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
-    gwtest/backend-route:
+    default/example-route:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -108,43 +129,33 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
           kind: ""
           name: example-gateway
   policies:
-    BackendConfigPolicy/gwtest/invalid-outlier-detection-policy:
+    BackendConfigPolicy/default/static-dns-backend-hc-policy:
       ancestors:
       - ancestorRef:
-          group: ""
-          kind: Service
-          name: backend-service
-          namespace: gwtest
+          group: gateway.kgateway.dev
+          kind: Backend
+          name: static-dns-backend
+          namespace: default
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            node { id: "validation-node-id" cluster: "validation-cluster" } static_resources
-            { listeners { name: "placeholder_listener" address { socket_address {
-            address: "0.0.0.0" port_value: 8081 } } filter_chains { filters { name:
-            "envoy.filters.network.http_connection_manager" typed_config { [type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager]
-            { stat_prefix: "placeholder" route_config { virtual_hosts { name: "placeholder_vhost"
-            domains: "*" } } http_filters { name: "envoy.filters.http.router" typed_config
-            { [type.googleapis.com/envoy.extensions.filters.http.router.v3.Router]
-            { } } } } } } name: "placeholder_filter_chain" } } clusters { name: "test-cluster-for-validation"
-            type: STATIC connect_timeout { seconds: 5 } outlier_detection { consecutive_5xx
-            { value: 5 } interval { } base_ejection_time { seconds: 30 } max_ejection_percent
-            { value: 10 } } } } : Proto constraint validation failed (BootstrapValidationError.StaticResources:
-            embedded message failed validation | caused by StaticResourcesValidationError.Clusters[0]:
-            embedded message failed validation | caused by ClusterValidationError.OutlierDetection:
-            embedded message failed validation | caused by OutlierDetectionValidationError.Interval:
-            value must be greater than 0s)'
-          reason: Invalid
-          status: "False"
+          message: Policy accepted
+          reason: Valid
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: ""
-          reason: Pending
-          status: "False"
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway

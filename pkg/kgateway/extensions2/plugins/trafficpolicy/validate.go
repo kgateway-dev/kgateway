@@ -73,5 +73,5 @@ func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator, e
 	}
 
 	// shell out to envoy to validate the partial bootstrap config.
-	return v.Validate(ctx, bootstrapCfg)
+	return v.Validate(validator.WithValidationCaller(ctx, validator.CallerTrafficPolicy), bootstrapCfg)
 }

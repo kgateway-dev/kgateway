@@ -96,7 +96,7 @@ func (s Service) BackendRef(port ServicePort) ir.BackendRefIR {
 	backendObj := s.BackendObject(uint32(port.Port)) //nolint:gosec // G115: service port is int32, always in valid range
 	return ir.BackendRefIR{
 		ClusterName:   backendObj.ClusterName(),
-		Weight:        0,
+		Weight:        1,
 		BackendObject: &backendObj,
 		Err:           ErrUnsupportedServiceType,
 	}

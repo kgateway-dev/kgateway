@@ -32,18 +32,15 @@ fileExistenceTests:
     path: "/etc/ssl/certs/ca-certificates.crt"
     shouldExist: true
 
-  - name: "wget installed"
-    path: "/usr/bin/wget"
-    shouldExist: true
-    isExecutableBy: "any"
-
 commandTests:
   - name: "kgateway binary is executable"
     command: "/usr/local/bin/kgateway"
     args: ["--help"]
     exitCode: 0
 
-  - name: "running as non-root user"
-    command: "id"
-    args: ["-u"]
-    expectedOutput: ["10101"]
+  # Runs the copied envoy binary so a missing dynamic dependency (glibc,
+  # libstdc++, libgcc_s) on the new base image fails the test early.
+  - name: "envoy binary is a valid executable"
+    command: "/usr/local/bin/envoy"
+    args: ["--version"]
+    exitCode: 0

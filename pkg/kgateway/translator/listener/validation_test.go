@@ -49,7 +49,17 @@ func gwToIr(gw *gwv1.Gateway, allowedLS, deniedLS *gwv1.ListenerSet) *ir.Gateway
 }
 
 func lsToIR(ls *gwv1.ListenerSet) ir.ListenerSet {
+	if ls.GroupVersionKind().Empty() {
+		ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
+	}
+	lsGVK := ls.GroupVersionKind()
 	out := ir.ListenerSet{
+		ObjectSource: ir.ObjectSource{
+			Group:     lsGVK.Group,
+			Kind:      lsGVK.Kind,
+			Namespace: ls.Namespace,
+			Name:      ls.Name,
+		},
 		Obj:       ls,
 		Listeners: make([]ir.Listener, 0, len(ls.Spec.Listeners)),
 	}
@@ -2522,4 +2532,44 @@ func hboneProtocolGw() *gwv1.Gateway {
 			},
 		},
 	}
+}
+
+func TestReservedMetricsPortRejectedByDefault(t *testing.T) {
+	gateway := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "test"},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "kgateway",
+			Listeners: []gwv1.Listener{
+				{Name: "http", Port: 9091, Protocol: gwv1.HTTPProtocolType},
+			},
+		},
+	}
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGatewayWithSettings(gwToIr(gateway, nil, nil), reporter, ListenerTranslatorConfig{
+		DisableStatsOnProxy: false,
+	})
+	g := NewWithT(t)
+	g.Expect(validListeners).To(BeEmpty(), "port 9091 should be rejected when stats enabled")
+}
+
+func TestReservedMetricsPortAllowedWhenDisableStatsOnProxy(t *testing.T) {
+	gateway := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "test"},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "kgateway",
+			Listeners: []gwv1.Listener{
+				{Name: "http", Port: 9091, Protocol: gwv1.HTTPProtocolType},
+			},
+		},
+	}
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGatewayWithSettings(gwToIr(gateway, nil, nil), reporter, ListenerTranslatorConfig{
+		DisableStatsOnProxy: true,
+	})
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1), "port 9091 should be accepted when proxy stats disabled")
 }

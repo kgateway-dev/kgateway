@@ -38,6 +38,9 @@ var (
 	stripHostPortAnyPortManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-strip-host-port-any-port.yaml")
 	stripHostPortMatchingPortManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-strip-host-port-matching-port.yaml")
 
+	localReplyConfigManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-local-reply-config.yaml")
+	localReplyHttpRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "local-reply-httproute.yaml")
+
 	// RequestID test manifests for testing the new RequestID configuration feature
 	listenerPolicyRequestIdManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-request-id.yaml")
 	requestIdEchoManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "request-id-echo.yaml")
