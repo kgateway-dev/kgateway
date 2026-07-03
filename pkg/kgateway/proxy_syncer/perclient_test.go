@@ -242,11 +242,16 @@ func TestSnapshotPerClientSynthesizesPlaceholderForMissingClusters(t *testing.T)
 	g.Expect(placeholderB.GetType()).To(gomega.Equal(envoyclusterv3.Cluster_STATIC))
 	g.Expect(placeholderB.GetLoadAssignment().GetEndpoints()).To(gomega.BeEmpty())
 
-	// Once the real cluster is produced it replaces the placeholder.
+	// Once the real cluster is produced it replaces the placeholder. Keep a
+	// reference so we can assert the snapshot resource is exactly (proto-equal
+	// to) the cluster we injected, instead of relying on incidental unset
+	// fields. Use a non-EDS cluster: a real EDS cluster with no endpoints would
+	// legitimately be held back by findMissingReferencedEndpointResources.
+	realClusterB := &envoyclusterv3.Cluster{Name: "cluster-b"}
 	clusterCol.UpdateObject(uccWithCluster{
 		Client:         ucc,
 		Name:           "cluster-b",
-		Cluster:        &envoyclusterv3.Cluster{Name: "cluster-b"},
+		Cluster:        realClusterB,
 		ClusterVersion: 2,
 	})
 
@@ -263,9 +268,9 @@ func TestSnapshotPerClientSynthesizesPlaceholderForMissingClusters(t *testing.T)
 		if !ok {
 			return false
 		}
-		// The real cluster-b has no discovery type or load assignment set, unlike
-		// the synthesized placeholder.
-		return c.GetClusterDiscoveryType() == nil
+		// The synthesized STATIC placeholder (empty load assignment) has been
+		// replaced by the exact real cluster we injected.
+		return proto.Equal(c, realClusterB)
 	}, time.Second, 20*time.Millisecond).Should(gomega.BeTrue())
 }
 
