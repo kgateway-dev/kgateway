@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"fmt"
+	"hash/fnv"
 	"maps"
 	"sort"
 
@@ -217,12 +218,35 @@ func snapshotPerClient(
 			clusterResources.Items,
 			clustersForUcc.erroredClusters,
 		); len(missingClusters) > 0 {
-			logger.Info(
-				"defer building snapshot until all referenced clusters are ready",
+			// Do not defer the entire per-client snapshot indefinitely when a
+			// referenced cluster is absent from CDS. The "return nil" path only
+			// protects clients that already have a previously-published (last-good)
+			// snapshot; a brand-new or scaled-out proxy has no cached config, so it
+			// is starved of xDS, stalls at "cm init: initializing cds", fails its
+			// startup probe and crashloops. On a large shared gateway this is never
+			// satisfiable because it references clusters that are legitimately empty
+			// forever (ExternalName services and scale-to-zero backends).
+			//
+			// Instead, synthesize a STATIC placeholder cluster with an empty load
+			// assignment for each missing referenced cluster so CDS stays coherent
+			// and Envoy can initialize. Routes targeting a still-unresolved backend
+			// return 503 (no healthy upstream) until the real cluster is produced and
+			// replaces the placeholder on a later snapshot. Tradeoff: during a
+			// controller restart an established proxy may briefly 503 a route whose
+			// real cluster is a moment behind (self-heals on the next snapshot), which
+			// is far less harmful than new proxies never starting.
+			logger.Warn(
+				"referenced clusters missing; synthesizing placeholder clusters so the proxy can start",
 				"client", ucc.ResourceName(),
 				"missing_clusters", missingClusters,
 			)
-			return nil
+			patched := make(map[string]envoycachetypes.ResourceWithTTL, len(clusterResources.Items)+len(missingClusters))
+			maps.Copy(patched, clusterResources.Items)
+			for _, name := range missingClusters {
+				patched[name] = envoycachetypes.ResourceWithTTL{Resource: placeholderCluster(name)}
+			}
+			clusterResources.Items = patched
+			clusterResources.Version = fmt.Sprintf("%s-placeholders-%016x", clusterResources.Version, hashStrings(missingClusters))
 		}
 		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
 		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
@@ -440,6 +464,39 @@ func endpointResourceNameForCluster(resource envoycachetypes.ResourceWithTTL) (s
 		return edsServiceName, true
 	}
 	return cluster.GetName(), true
+}
+
+// placeholderCluster returns a STATIC cluster with an empty load assignment,
+// used as a stand-in for a referenced-but-not-yet-produced cluster so that a
+// per-client xDS snapshot stays coherent and Envoy can initialize. Traffic to
+// it receives a 503 (no healthy upstream) until the real cluster is published
+// and replaces it on a later snapshot.
+func placeholderCluster(name string) *envoyclusterv3.Cluster {
+	return &envoyclusterv3.Cluster{
+		Name: name,
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+			Type: envoyclusterv3.Cluster_STATIC,
+		},
+		LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
+			ClusterName: name,
+			Endpoints:   []*envoyendpointv3.LocalityLbEndpoints{},
+		},
+	}
+}
+
+// hashStrings returns a stable, order-independent FNV-1a hash of the given
+// strings, used to fold the synthesized placeholder set into the CDS snapshot
+// version so that Envoy receives the placeholder update and, later, its
+// replacement.
+func hashStrings(ss []string) uint64 {
+	sorted := append([]string(nil), ss...)
+	sort.Strings(sorted)
+	h := fnv.New64a()
+	for _, s := range sorted {
+		_, _ = h.Write([]byte(s))
+		_, _ = h.Write([]byte{0})
+	}
+	return h.Sum64()
 }
 
 func stringSet(values []string) map[string]struct{} {

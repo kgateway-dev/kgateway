@@ -156,7 +156,7 @@ func TestFilterEndpointResourcesForStaticClusters_MixedStaticAndNonStatic(t *tes
 	}
 }
 
-func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T) {
+func TestSnapshotPerClientSynthesizesPlaceholderForMissingClusters(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
@@ -226,10 +226,23 @@ func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T)
 		},
 	)
 
-	g.Consistently(func() int {
+	// A missing referenced cluster no longer defers the whole per-client
+	// snapshot; a STATIC placeholder is synthesized so the proxy can start
+	// immediately (routes to it 503 until the real cluster lands).
+	g.Eventually(func() int {
 		return len(snapshots.List())
-	}, 200*time.Millisecond, 20*time.Millisecond).Should(gomega.Equal(0))
+	}, time.Second, 20*time.Millisecond).Should(gomega.Equal(1))
 
+	placeholderSnap := snapshots.List()[0].snap
+	g.Expect(placeholderSnap.Resources[envoycachetypes.Cluster].Items).To(gomega.HaveKey("cluster-a"))
+	g.Expect(placeholderSnap.Resources[envoycachetypes.Cluster].Items).To(gomega.HaveKey("cluster-b"))
+	placeholderB, ok := placeholderSnap.Resources[envoycachetypes.Cluster].Items["cluster-b"].Resource.(*envoyclusterv3.Cluster)
+	g.Expect(ok).To(gomega.BeTrue())
+	g.Expect(placeholderB.GetClusterDiscoveryType()).ToNot(gomega.BeNil())
+	g.Expect(placeholderB.GetType()).To(gomega.Equal(envoyclusterv3.Cluster_STATIC))
+	g.Expect(placeholderB.GetLoadAssignment().GetEndpoints()).To(gomega.BeEmpty())
+
+	// Once the real cluster is produced it replaces the placeholder.
 	clusterCol.UpdateObject(uccWithCluster{
 		Client:         ucc,
 		Name:           "cluster-b",
@@ -237,13 +250,23 @@ func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T)
 		ClusterVersion: 2,
 	})
 
-	g.Eventually(func() int {
-		return len(snapshots.List())
-	}, time.Second, 20*time.Millisecond).Should(gomega.Equal(1))
-
-	snap := snapshots.List()[0].snap
-	g.Expect(snap.Resources[envoycachetypes.Cluster].Items).To(gomega.HaveKey("cluster-a"))
-	g.Expect(snap.Resources[envoycachetypes.Cluster].Items).To(gomega.HaveKey("cluster-b"))
+	g.Eventually(func() bool {
+		list := snapshots.List()
+		if len(list) != 1 {
+			return false
+		}
+		item, ok := list[0].snap.Resources[envoycachetypes.Cluster].Items["cluster-b"]
+		if !ok {
+			return false
+		}
+		c, ok := item.Resource.(*envoyclusterv3.Cluster)
+		if !ok {
+			return false
+		}
+		// The real cluster-b has no discovery type or load assignment set, unlike
+		// the synthesized placeholder.
+		return c.GetClusterDiscoveryType() == nil
+	}, time.Second, 20*time.Millisecond).Should(gomega.BeTrue())
 }
 
 func TestSnapshotPerClientDefersUntilReferencedEDSClustersHaveEndpoints(t *testing.T) {
