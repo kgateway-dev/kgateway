@@ -5,6 +5,8 @@ Clusters:
       maxPendingRequests: 500
       maxRequests: 2000
       maxRetries: 10
+  commonLbConfig:
+    localityWeightedLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -117,6 +119,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

@@ -47,6 +47,9 @@ func TestKgateway(t *testing.T) {
 			"--set-string", "controller.extraEnv.AWS_ENDPOINT_URL_EC2="+localstackEndpoint,
 		)
 	}
+	if validationMode := os.Getenv("VALIDATION_MODE"); validationMode != "" {
+		installContext.ExtraHelmArgs = append(installContext.ExtraHelmArgs, "--set", "validation.level="+validationMode)
+	}
 
 	// Set the env to the install namespace if it is not already set
 	if !nsEnvPredefined {
@@ -79,10 +82,13 @@ func TestKgateway(t *testing.T) {
 		gatewayManifest = "kgateway-base-gateway-listenersets.yaml"
 	}
 
+	// Apply the base gateway once, then the shared nginx backend that suites reference
+	// instead of each deploying their own.
 	common.SetupBaseConfig(ctx, t, testInstallation,
 		filepath.Join("manifests", "kgateway-base.yaml"),
 		filepath.Join("manifests", gatewayManifest),
 	)
+	common.SetupSharedNginxBackend(ctx, t, testInstallation)
 	common.SetupBaseGateway(ctx, t, testInstallation, types.NamespacedName{
 		Namespace: "kgateway-base",
 		Name:      "gateway",

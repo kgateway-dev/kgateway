@@ -27,7 +27,7 @@ func TestHelmChartVersionAndAppVersion(t *testing.T) {
 	_, err = os.Stat(absHelmChartPath)
 	require.NoError(t, err, "helm chart not found at %s", absHelmChartPath)
 
-	helmCmd := exec.Command("helm", "template", "foobar", absHelmChartPath, "--namespace", "default")
+	helmCmd := helmCommand("template", "foobar", absHelmChartPath, "--namespace", "default")
 	grepCmd := exec.Command("grep", "-E", "-w", "-B", "1", "0\\.0\\.[12]")
 
 	helmOutput, err := helmCmd.StdoutPipe()
@@ -157,7 +157,7 @@ func TestImageTagVPrefix(t *testing.T) {
 					args = append(args, "--set", setValue)
 				}
 
-				helmCmd := exec.Command("helm", args...)
+				helmCmd := helmCommand(args...)
 				var output bytes.Buffer
 				var stderr bytes.Buffer
 				helmCmd.Stdout = &output
@@ -263,7 +263,7 @@ func renderHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersio
 		args = append(args, "-f", valuesFile.Name())
 	}
 
-	helmCmd := exec.Command("helm", args...)
+	helmCmd := helmCommand(args...)
 	var output bytes.Buffer
 	var stderr bytes.Buffer
 	helmCmd.Stdout = &output
@@ -678,7 +678,7 @@ func TestHelmChartTemplate(t *testing.T) {
 					args = append(args, "-f", valuesFile.Name())
 				}
 
-				helmCmd := exec.Command("helm", args...)
+				helmCmd := helmCommand(args...)
 				var output bytes.Buffer
 				var stderr bytes.Buffer
 				helmCmd.Stdout = &output

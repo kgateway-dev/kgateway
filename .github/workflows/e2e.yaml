@@ -93,7 +93,7 @@ jobs:
           # May 29, 2026: ~8 minutes
           - cluster-name: 'cluster-four'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestKgateway$$/^GlobalRateLimit$$|^TestCustomGWP$$'
+            go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestKgateway$$/^GlobalRateLimit$$|^TestKgateway$$/^InternalRedirect$$|^TestCustomGWP$$'
             localstack: 'false'
           # May 29, 2026: ~10 minutes
           - cluster-name: 'cluster-five'

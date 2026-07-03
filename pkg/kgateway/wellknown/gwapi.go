@@ -116,6 +116,16 @@ var (
 		Version:  TLSRouteV1Alpha3Version,
 		Resource: "tlsroutes",
 	}
+	TCPRouteV1GVK = schema.GroupVersionKind{
+		Group:   GatewayGroup,
+		Version: gwv1.GroupVersion.Version,
+		Kind:    TCPRouteKind,
+	}
+	TCPRouteV1GVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  gwv1.GroupVersion.Version,
+		Resource: "tcproutes",
+	}
 	TCPRouteGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: gwv1a2.GroupVersion.Version,

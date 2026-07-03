@@ -34,8 +34,12 @@ var (
 	http2ProtocolOptionsManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-http2-protocol-options.yaml")
 	proxyProtocolManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-proxy-protocol.yaml")
 	maxRequestsPerConnectionManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-max-requests-per-connection.yaml")
+	maxHeadersCountManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-max-headers-count.yaml")
 	stripHostPortAnyPortManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-strip-host-port-any-port.yaml")
 	stripHostPortMatchingPortManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-strip-host-port-matching-port.yaml")
+
+	localReplyConfigManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-local-reply-config.yaml")
+	localReplyHttpRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "local-reply-httproute.yaml")
 
 	// RequestID test manifests for testing the new RequestID configuration feature
 	listenerPolicyRequestIdManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-request-id.yaml")

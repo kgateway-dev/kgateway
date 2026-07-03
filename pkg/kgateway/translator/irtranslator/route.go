@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -139,6 +140,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	sanitizedName := utils.SanitizeForEnvoy(ctx, virtualHost.Name, "virtual host")
 
 	var envoyRoutes []*envoyroutev3.Route
+	var computedRoutes []computedHTTPRoute
 	for i, route := range virtualHost.Rules {
 		var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
 		if route.Parent != nil {
@@ -148,9 +150,14 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 			routeReport = h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
 		}
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
-		computedRoute := h.envoyRoutes(ctx, routeReport, route, generatedName)
+		computedRoute := h.envoyRoutes(routeReport, route, generatedName)
 		if computedRoute != nil {
 			envoyRoutes = append(envoyRoutes, computedRoute)
+			computedRoutes = append(computedRoutes, computedHTTPRoute{
+				in:          route,
+				routeReport: routeReport,
+				route:       computedRoute,
+			})
 		}
 	}
 	domains := []string{virtualHost.Hostname}
@@ -187,6 +194,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	}
 	out.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMap()
 
+	out = h.validateStrictRouteBatch(ctx, virtualHost, out, computedRoutes)
 	return out
 }
 
@@ -224,8 +232,13 @@ type backendConfigContext struct {
 	ResponseHeadersToRemove   []string
 }
 
+type computedHTTPRoute struct {
+	in          ir.HttpRouteRuleMatchIR
+	routeReport reportssdk.ParentRefReporter
+	route       *envoyroutev3.Route
+}
+
 func (h *httpRouteConfigurationTranslator) envoyRoutes(
-	ctx context.Context,
 	routeReport reportssdk.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
@@ -274,11 +287,20 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		// If there are no errors, validate the route will not be rejected by the xDS server.
 		// Skip delegating routes as they have no action and are not propagated to envoy
 		if routeProcessingErr == nil {
-			routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
+			routeProcessingErr = validateRoutePreEnvoy(out, h.validationLevel)
 		}
 	}
 
-	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
+	return h.finalizeRoute(routeReport, in, out, routeProcessingErr)
+}
+
+func (h *httpRouteConfigurationTranslator) finalizeRoute(
+	routeReport reportssdk.ParentRefReporter,
+	in ir.HttpRouteRuleMatchIR,
+	out *envoyroutev3.Route,
+	routeProcessingErr error,
+) *envoyroutev3.Route {
+	// routeAcceptanceErr is used to set the kgateway.dev/Programmed=false,Reason=RouteRuleDropped condition on the route
 	routeAcceptanceErr := errors.Join(routeProcessingErr, in.RouteAcceptanceError)
 
 	// routeReplacementErr is used to replace the route with a direct response
@@ -296,7 +318,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	if routeAcceptanceErr != nil && errors.Is(routeAcceptanceErr, ErrInvalidMatcher) {
 		h.logger.Info("invalid matcher", "error", routeAcceptanceErr)
 		routeReport.SetCondition(reportssdk.RouteCondition{
-			Type:    gwv1.RouteConditionAccepted,
+			Type:    gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 			Status:  metav1.ConditionFalse,
 			Reason:  reportssdk.RouteRuleDroppedReason,
 			Message: fmt.Sprintf("Dropped Rule (%d): %s", in.MatchIndex, acceptanceMsg),
@@ -308,10 +330,12 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	if routeReplacementErr != nil {
 		h.logger.Debug("invalid route", "error", routeReplacementErr)
 
-		// If routeAcceptanceErr is set, report Accepted=False with Reason=RouteRuleReplaced
+		// If routeAcceptanceErr is set, report the appropriate conditions
+		// Gateway API's Accepted condition only indicates the resource is valid not it has been successfully translated
+		// So a new condition is introduced
 		if routeAcceptanceErr != nil {
 			routeReport.SetCondition(reportssdk.RouteCondition{
-				Type:    gwv1.RouteConditionAccepted,
+				Type:    gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 				Status:  metav1.ConditionFalse,
 				Reason:  reportssdk.RouteRuleReplacedReason,
 				Message: fmt.Sprintf("Replaced Rule (%d): %s", in.MatchIndex, acceptanceMsg),
@@ -341,6 +365,58 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		}
 	}
 
+	return out
+}
+
+func (h *httpRouteConfigurationTranslator) validateStrictRouteBatch(
+	ctx context.Context,
+	virtualHost *ir.VirtualHost,
+	out *envoyroutev3.VirtualHost,
+	computedRoutes []computedHTTPRoute,
+) *envoyroutev3.VirtualHost {
+	if h.validationLevel != apisettings.ValidationStrict || len(out.GetRoutes()) == 0 {
+		return out
+	}
+	if err := validateFullRoutes(ctx, out.GetRoutes(), h.validator); err == nil {
+		return out
+	} else {
+		h.logger.Debug("strict route batch validation failed; isolating invalid routes", "vhost", out.GetName(), "error", err)
+	}
+
+	isolatedRoutes := make([]*envoyroutev3.Route, 0, len(out.GetRoutes()))
+	for _, computedRoute := range computedRoutes {
+		routeValidationErr := validateRoute(ctx, computedRoute.route, h.validator, h.validationLevel)
+		if routeValidationErr != nil {
+			route := h.finalizeRoute(computedRoute.routeReport, computedRoute.in, computedRoute.route, routeValidationErr)
+			if route != nil {
+				isolatedRoutes = append(isolatedRoutes, route)
+			}
+			continue
+		}
+		isolatedRoutes = append(isolatedRoutes, computedRoute.route)
+	}
+	out.Routes = isolatedRoutes
+	if len(out.GetRoutes()) == 0 {
+		return out
+	}
+	if err := validateFullRoutes(ctx, out.GetRoutes(), h.validator); err != nil {
+		h.logger.Error("strict route batch validation failed after invalid route isolation", "vhost", out.GetName(), "error", err)
+		incRouteReplacementMetric(h.gw, err)
+		if h.reporter != nil && virtualHost.ParentRef.Parent != nil {
+			reporter := virtualHost.ParentRef.GetParentReporter(h.reporter)
+			reporter.Listener(&virtualHost.ParentRef.Listener).SetCondition(reportssdk.ListenerCondition{
+				Type:    gwv1.ListenerConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  reportssdk.ListenerReplacedReason,
+				Message: err.Error(),
+			})
+		}
+		domain := "*"
+		if len(out.GetDomains()) > 0 {
+			domain = out.GetDomains()[0]
+		}
+		return setFallBackConfig(out.GetName(), domain)
+	}
 	return out
 }
 

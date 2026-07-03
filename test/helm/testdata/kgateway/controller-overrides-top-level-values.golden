@@ -387,6 +387,8 @@ spec:
               value: IfNotPresent
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: "[]"
+            - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
+              value: "[]"
             - name: KGW_POLICY_MERGE
               value: "{}"
             - name: KGW_VALIDATION_MODE
@@ -395,6 +397,8 @@ spec:
               value: "false"
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
               value: "30s"
+            - name: KGW_DISABLE_STATS_ON_PROXY
+              value: "false"
             - name: KGW_ENABLE_ENVOY
               value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS

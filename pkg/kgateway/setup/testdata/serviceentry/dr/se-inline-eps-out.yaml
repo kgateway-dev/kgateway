@@ -51,7 +51,9 @@ clusters:
     consecutive5xx: 7
     interval: 300s
   type: STATIC
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
