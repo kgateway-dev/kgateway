@@ -1,9 +1,10 @@
 package proxy_syncer
 
 import (
+	"cmp"
 	"fmt"
 	"hash/fnv"
-	"sort"
+	"slices"
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -120,14 +121,14 @@ func buildLocalClusterLoadAssignment(
 		})
 	}
 
-	sort.Slice(localEndpoints, func(i, j int) bool {
-		if localEndpoints[i].locality != localEndpoints[j].locality {
-			return localEndpoints[i].locality.String() < localEndpoints[j].locality.String()
+	slices.SortFunc(localEndpoints, func(a, b localClusterEndpoint) int {
+		if a.locality != b.locality {
+			return cmp.Compare(a.locality.String(), b.locality.String())
 		}
-		if localEndpoints[i].resourceName != localEndpoints[j].resourceName {
-			return localEndpoints[i].resourceName < localEndpoints[j].resourceName
+		if a.resourceName != b.resourceName {
+			return cmp.Compare(a.resourceName, b.resourceName)
 		}
-		return localEndpoints[i].address < localEndpoints[j].address
+		return cmp.Compare(a.address, b.address)
 	})
 
 	endpointsByLocality := make(map[ir.PodLocality][]localClusterEndpoint)

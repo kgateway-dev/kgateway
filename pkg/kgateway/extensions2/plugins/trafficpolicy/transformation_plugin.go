@@ -2,7 +2,7 @@ package trafficpolicy
 
 import (
 	"encoding/json"
-	"sort"
+	"slices"
 
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
@@ -135,7 +135,7 @@ func generateDynamicMetadata(ns string, kv map[string]kgateway.InjaTemplate) *dy
 	for k := range kv {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	for _, k := range keys {
 		v := kv[k]
