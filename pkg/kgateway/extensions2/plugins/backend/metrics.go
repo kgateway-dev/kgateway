@@ -67,8 +67,13 @@ var (
 	// ec2DiscoveryPollDuration measures the wall-clock time of the AWS
 	// DescribeInstances round trip for a poll, attributed to each Backend in the
 	// credential scope. Both successful and failed polls are observed, so the
-	// distribution includes slow timeouts. Buckets span from a fast in-region
-	// listing up to ec2RefreshTimeout (30s).
+	// distribution includes slow timeouts; it is partitioned by result so operators
+	// can isolate successful-poll latency from failures, whose latency is bimodal
+	// (fast credential/authorization rejections vs. slow timeouts). Only result is
+	// added, not reason: reason belongs on the counter, and native histograms
+	// allocate per label-set, so each extra label value multiplies retained
+	// histograms per Backend. Buckets span from a fast in-region listing up to
+	// ec2RefreshTimeout (30s).
 	ec2DiscoveryPollDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
 			Subsystem: ec2DiscoverySubsystem,
@@ -82,7 +87,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{ec2MetricNamespaceLabel, ec2MetricNameLabel},
+		[]string{ec2MetricNamespaceLabel, ec2MetricNameLabel, ec2MetricResultLabel},
 	)
 )
 
@@ -132,14 +137,17 @@ func recordEc2PollError(namespace, name, reason string) {
 	ec2DiscoveryErrorState.Set(1, identity...)
 }
 
-// recordEc2PollDuration observes how long a discovery poll took for a Backend. The
-// same duration is recorded for every Backend sharing a credential scope, since they
-// are resolved from a single AWS DescribeInstances call.
-func recordEc2PollDuration(namespace, name string, seconds float64) {
+// recordEc2PollDuration observes how long a discovery poll took for a Backend,
+// partitioned by result (success/error). The same duration is recorded for every
+// Backend sharing a credential scope, since they are resolved from a single AWS
+// DescribeInstances call.
+func recordEc2PollDuration(namespace, name, result string, seconds float64) {
 	if !metrics.Active() {
 		return
 	}
-	ec2DiscoveryPollDuration.Observe(seconds, ec2MetricIdentity(namespace, name)...)
+	ec2DiscoveryPollDuration.Observe(seconds, append(ec2MetricIdentity(namespace, name),
+		metrics.Label{Name: ec2MetricResultLabel, Value: result},
+	)...)
 }
 
 // recordEc2CredentialErrorState marks a Backend as being in an error state because its

@@ -29,6 +29,15 @@ func backendIdentityLabels(namespace, name string) []metrics.Label {
 	}
 }
 
+// pollDurationLabels returns the label set for a poll_duration_seconds series,
+// which is partitioned by result in addition to the Backend identity. Labels are
+// kept in sorted order (name < namespace < result) to match the gathered output.
+func pollDurationLabels(namespace, name, result string) []metrics.Label {
+	return append(backendIdentityLabels(namespace, name),
+		metrics.Label{Name: "result", Value: result},
+	)
+}
+
 func TestComputeStateRecordsSuccessfulPollMetrics(t *testing.T) {
 	ResetEc2DiscoveryMetrics()
 
@@ -69,7 +78,7 @@ func TestComputeStateRecordsSuccessfulPollMetrics(t *testing.T) {
 		Labels: backendIdentityLabels("default", "backend-a"),
 		Value:  0,
 	})
-	gathered.AssertMetricLabels(pollDurationMetric, backendIdentityLabels("default", "backend-a"))
+	gathered.AssertMetricLabels(pollDurationMetric, pollDurationLabels("default", "backend-a", "success"))
 	gathered.AssertHistogramPopulated(pollDurationMetric)
 }
 
@@ -166,8 +175,13 @@ func TestComputeStateRecordsErrorPollMetricsAndRetainsEndpointGauge(t *testing.T
 		Labels: backendIdentityLabels("default", "backend-a"),
 		Value:  1,
 	})
-	// A failed poll still has a duration (it can be a slow timeout), so it is observed.
-	gathered.AssertMetricLabels(pollDurationMetric, backendIdentityLabels("default", "backend-a"))
+	// A failed poll still has a duration (it can be a slow timeout), so it is observed
+	// under result=error. The first (successful) poll is recorded separately under
+	// result=success, demonstrating the result partition.
+	gathered.AssertMetricsLabels(pollDurationMetric, [][]metrics.Label{
+		pollDurationLabels("default", "backend-a", "error"),
+		pollDurationLabels("default", "backend-a", "success"),
+	})
 	gathered.AssertHistogramPopulated(pollDurationMetric)
 }
 
@@ -208,9 +222,9 @@ func TestDeleteEc2DiscoveryMetricsRemovesBackendSeries(t *testing.T) {
 	ResetEc2DiscoveryMetrics()
 
 	recordEc2PollSuccess("default", "backend-a", 3)
-	recordEc2PollDuration("default", "backend-a", 0.2)
+	recordEc2PollDuration("default", "backend-a", ec2PollResultSuccess, 0.2)
 	recordEc2PollSuccess("default", "backend-b", 5)
-	recordEc2PollDuration("default", "backend-b", 0.3)
+	recordEc2PollDuration("default", "backend-b", ec2PollResultSuccess, 0.3)
 
 	deleteEc2DiscoveryMetrics("default", "backend-a")
 
@@ -224,6 +238,6 @@ func TestDeleteEc2DiscoveryMetricsRemovesBackendSeries(t *testing.T) {
 		backendIdentityLabels("default", "backend-b"),
 	})
 	gathered.AssertMetricsLabels(pollDurationMetric, [][]metrics.Label{
-		backendIdentityLabels("default", "backend-b"),
+		pollDurationLabels("default", "backend-b", "success"),
 	})
 }

@@ -693,7 +693,7 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 					// reason (not the Degraded override) so the counter always
 					// attributes a concrete failure cause.
 					recordEc2PollError(cfg.namespace, cfg.name, reason)
-					recordEc2PollDuration(cfg.namespace, cfg.name, pollSeconds)
+					recordEc2PollDuration(cfg.namespace, cfg.name, ec2PollResultError, pollSeconds)
 				}
 				nextStateMu.Unlock()
 				return
@@ -711,7 +711,7 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 				backendState := selectResolvedEc2Backend(cfg, instances)
 				resolved[cfg.resourceName] = backendState
 				recordEc2PollSuccess(cfg.namespace, cfg.name, len(backendState.endpoints))
-				recordEc2PollDuration(cfg.namespace, cfg.name, pollSeconds)
+				recordEc2PollDuration(cfg.namespace, cfg.name, ec2PollResultSuccess, pollSeconds)
 				logger.Debug(
 					"resolved EC2 backend endpoints",
 					"backend", cfg.resourceName,
