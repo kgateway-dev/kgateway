@@ -21,10 +21,6 @@ const (
 
 	ec2PollResultSuccess = "success"
 	ec2PollResultError   = "error"
-	// ec2PollReasonNone is the reason recorded on a successful poll that resolved
-	// endpoints. It mirrors the convention of a non-empty reason on every series so
-	// the label is never absent.
-	ec2PollReasonNone = "none"
 )
 
 var (
@@ -100,13 +96,14 @@ func ec2MetricIdentity(namespace, name string) []metrics.Label {
 
 // recordEc2PollSuccess records the outcome of a successful discovery poll for a
 // Backend: it increments the poll counter, updates the active endpoint gauge to the
-// freshly resolved count, and clears the error-state gauge. A successful poll that
-// matched no instances is still a success, recorded with reason=NoMatchingInstances.
+// freshly resolved count, and clears the error-state gauge. The reason label mirrors
+// the Backend's EndpointsDiscovered status condition: reason=Discovered when endpoints
+// resolved, and reason=NoMatchingInstances when the poll succeeded but matched none.
 func recordEc2PollSuccess(namespace, name string, endpointCount int) {
 	if !metrics.Active() {
 		return
 	}
-	reason := ec2PollReasonNone
+	reason := string(kgateway.BackendReasonDiscovered)
 	if endpointCount == 0 {
 		reason = string(kgateway.BackendReasonNoMatchingInstances)
 	}

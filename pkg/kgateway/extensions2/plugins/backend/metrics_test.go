@@ -64,7 +64,7 @@ func TestComputeStateRecordsSuccessfulPollMetrics(t *testing.T) {
 			Labels: []metrics.Label{
 				{Name: "name", Value: "backend-a"},
 				{Name: "namespace", Value: "default"},
-				{Name: "reason", Value: "none"},
+				{Name: "reason", Value: "Discovered"},
 				{Name: "result", Value: "success"},
 			},
 			Value: 1,
