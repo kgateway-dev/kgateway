@@ -102,6 +102,11 @@ Statuses:
             validation failed: invalid xds configuration: error initializing configuration '/dev/fd/0': missing ]: [invalid-regex
           reason: RouteRuleDropped
           status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references

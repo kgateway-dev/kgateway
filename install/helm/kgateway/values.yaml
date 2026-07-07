@@ -193,6 +193,8 @@ controller:
     tls:
       # -- Enable TLS encryption for xDS communication. When enabled, the xDS server (port 9977) uses TLS. You must create a Secret named 'kgateway-xds-cert' in the kgateway installation namespace. The Secret must be of type 'kubernetes.io/tls' with 'tls.crt', 'tls.key', and 'ca.crt' data fields present.
       enabled: false
+  # -- Disable the Envoy proxy stats/metrics server (port 9091 will no longer be reserved).
+  disableStatsOnProxy: false
   # -- Enable dynamic discovery of AWS EC2 instances for `Backend` resources.
   enableAwsEc2Discovery: false
   # -- Set how often the controller refreshes discovered AWS EC2 instances for `Backend` resources.
@@ -257,6 +259,9 @@ image:
 
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/envoy/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
+
+# -- List of ServiceEntry exclusion label selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway ignores matching ServiceEntries when building ServiceEntry backends and endpoints. Empty selector entries are rejected because they would match every ServiceEntry.
+serviceEntriesExclusionLabelSelectors: []
 
 # -- Map of GatewayClass names to GatewayParameters references that will be set on
 #    the default GatewayClasses managed by kgateway. Each entry must define both the

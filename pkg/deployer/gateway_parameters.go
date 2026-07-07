@@ -81,6 +81,7 @@ type InMemoryGatewayParametersConfig struct {
 	ImageInfo                  *ImageInfo
 	WaypointClassName          string
 	OmitDefaultSecurityContext bool
+	DisableStatsOnProxy        bool
 }
 
 // GetInMemoryGatewayParameters returns an in-memory GatewayParameters for envoy-based gateways.
@@ -92,10 +93,16 @@ type InMemoryGatewayParametersConfig struct {
 // This allows users to define their own GatewayClass that acts very much like a
 // built-in class but is not an exact name match.
 func GetInMemoryGatewayParameters(cfg InMemoryGatewayParametersConfig) (*kgateway.GatewayParameters, error) {
+	var gwp *kgateway.GatewayParameters
 	if cfg.ClassName == cfg.WaypointClassName {
-		return defaultWaypointGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext), nil
+		gwp = defaultWaypointGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
+	} else {
+		gwp = defaultGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
 	}
-	return defaultGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext), nil
+	if cfg.DisableStatsOnProxy && gwp.Spec.Kube != nil && gwp.Spec.Kube.Stats != nil {
+		gwp.Spec.Kube.Stats.Enabled = new(false)
+	}
+	return gwp, nil
 }
 
 // defaultWaypointGatewayParameters returns an in-memory GatewayParameters with default values

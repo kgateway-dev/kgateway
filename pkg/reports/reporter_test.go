@@ -279,7 +279,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
-				Expect(status.Parents[0].Conditions).To(HaveLen(2))
+				Expect(status.Parents[0].Conditions).To(HaveLen(3))
 			},
 			Entry("regular httproute", httpRoute()),
 			Entry("regular tcproute", tcpRoute()),
@@ -299,7 +299,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
-				Expect(status.Parents[0].Conditions).To(HaveLen(3)) // 2 from the report, 1 from the original status
+				Expect(status.Parents[0].Conditions).To(HaveLen(4)) // 3 from the report, 1 from the original status
 			},
 			Entry("regular httproute", httpRoute(
 				metav1.Condition{
@@ -379,9 +379,9 @@ var _ = Describe("Reporting Infrastructure", func() {
 				Expect(status).NotTo(BeNil())
 				// 1 parent is ours, 1 parent is other
 				Expect(status.Parents).To(HaveLen(2))
-				// 2 default positive conditions for the single parentRef we "translated"
+				// 3 default positive conditions for the single parentRef we "translated"
 				// ours will be first due to alphabetical ordering of controller name ('k' vs. 'o')
-				Expect(status.Parents[0].Conditions).To(HaveLen(2))
+				Expect(status.Parents[0].Conditions).To(HaveLen(3))
 			},
 			Entry("httproute", &gwv1.HTTPRoute{
 				ObjectMeta: metav1.ObjectMeta{
@@ -430,7 +430,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
-				Expect(status.Parents[0].Conditions).To(HaveLen(2))
+				Expect(status.Parents[0].Conditions).To(HaveLen(3))
 
 				resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
@@ -461,7 +461,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
-				Expect(status.Parents[0].Conditions).To(HaveLen(2))
+				Expect(status.Parents[0].Conditions).To(HaveLen(3))
 
 				resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
@@ -483,7 +483,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
-				Expect(status.Parents[0].Conditions).To(HaveLen(2))
+				Expect(status.Parents[0].Conditions).To(HaveLen(3))
 
 				resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 				oldTransitionTime := resolvedRefs.LastTransitionTime
@@ -508,7 +508,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
-				Expect(status.Parents[0].Conditions).To(HaveLen(2))
+				Expect(status.Parents[0].Conditions).To(HaveLen(3))
 
 				resolvedRefs = meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 				newTransitionTime := resolvedRefs.LastTransitionTime
@@ -562,7 +562,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				// Check that each parent has the correct number of conditions
 				for _, parent := range status.Parents {
-					Expect(parent.Conditions).To(HaveLen(2))
+					Expect(parent.Conditions).To(HaveLen(3))
 				}
 			},
 			Entry("regular HTTPRoute", httpRoute()),
@@ -615,10 +615,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 				status2 := rm.BuildRouteStatus(ctx, route2, wellknown.DefaultGatewayControllerName)
 
 				Expect(status1).NotTo(BeNil())
-				Expect(status1.Parents[0].Conditions).To(HaveLen(2))
+				Expect(status1.Parents[0].Conditions).To(HaveLen(3))
 
 				Expect(status2).NotTo(BeNil())
-				Expect(status2.Parents[0].Conditions).To(HaveLen(2))
+				Expect(status2.Parents[0].Conditions).To(HaveLen(3))
 			},
 			Entry("HTTPRoutes with shared and separate listeners",
 				httpRoute(), httpRoute(),

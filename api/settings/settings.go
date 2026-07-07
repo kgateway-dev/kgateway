@@ -210,6 +210,12 @@ type Settings struct {
 	// any of these label keys will be excluded from kgateway's endpoint discovery.
 	WorkloadEntriesExclusionLabels string `split_words:"true"`
 
+	// ServiceEntriesExclusionLabelSelectors is a JSON representation of a list of metav1.LabelSelector.
+	// ServiceEntries matching any of these selectors will be excluded from kgateway's ServiceEntry backend
+	// and endpoint discovery. Unlike WorkloadEntriesExclusionLabels, this uses full selectors so exclusions
+	// can match specific label values.
+	ServiceEntriesExclusionLabelSelectors string `split_words:"true" default:"[]"`
+
 	// XdsServiceHost is the host that serves xDS config.
 	// It overrides xdsServiceName if set.
 	XdsServiceHost string `split_words:"true"`
@@ -261,6 +267,10 @@ type Settings struct {
 	// EnableEnvoy enables kgateway to send config to Envoy
 	EnableEnvoy bool `split_words:"true" default:"true"`
 
+	// DisableStatsOnProxy disables the stats/metrics server on the Envoy proxy.
+	// When true, port 9091 is no longer reserved and listeners may use it.
+	DisableStatsOnProxy bool `split_words:"true" default:"false"`
+
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.
 	// When enabled, the default weight for a route is 0.
@@ -282,8 +292,9 @@ type Settings struct {
 	ValidatorMode ValidatorMode `split_words:"true" default:"CACHE"`
 
 	// ValidatorCacheSize is the LRU capacity used by the CACHE validator mode.
-	// Ignored when ValidatorMode is BINARY. A value <= 0 selects the implementation default.
-	ValidatorCacheSize int `split_words:"true" default:"4096"`
+	// Ignored when ValidatorMode is BINARY. A value <= 0 (the default) selects the
+	// implementation default, validator.DefaultCacheSize.
+	ValidatorCacheSize int `split_words:"true"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
 	// Since these metrics can be numerous, it is disabled by default.

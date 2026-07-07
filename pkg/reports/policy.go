@@ -126,7 +126,7 @@ func (r *ReportMap) BuildPolicyStatus(
 			// probably because it's a parent that we don't control (e.g. Gateway from diff. controller)
 			continue
 		}
-		addMissingAncestorRefConditions(parentStatusReport)
+		ancestorConditions := ancestorRefConditionsWithDefaults(parentStatusReport.Conditions)
 
 		// Get the status of the current parentRef conditions if they exist
 		var currentParentRefConditions []metav1.Condition
@@ -138,7 +138,7 @@ func (r *ReportMap) BuildPolicyStatus(
 		}
 
 		// Build and append the Attached Condition.Type
-		existingConditions := addAttachmentCondition(parentStatusReport)
+		existingConditions := addAttachmentCondition(ancestorConditions, parentStatusReport.AttachmentState)
 
 		finalConditions := make([]metav1.Condition, 0, len(existingConditions))
 		for _, pCondition := range existingConditions {
@@ -202,43 +202,39 @@ func (r *ReportMap) BuildPolicyStatus(
 // If no report is found, nil is returned, signaling this parentRef is unknown to the report
 func (r *PolicyReport) getAncestorRefOrNil(parentRef *gwv1.ParentReference) *AncestorRefReport {
 	key := getParentRefKey(parentRef)
-	if r.Ancestors == nil {
-		r.Ancestors = make(map[ParentRefKey]*AncestorRefReport)
-	}
 	return r.Ancestors[key]
 }
 
-// addMissingAncestorRefConditions initializes the AncestorRefReport with a default Pending
-// condition reason for the Accepted and Attached conditions.
-// Positive conditions will be added when the policy is processed and attached to targeted resources.
-func addMissingAncestorRefConditions(report *AncestorRefReport) {
-	if cond := meta.FindStatusCondition(report.Conditions, string(shared.PolicyConditionAccepted)); cond == nil {
-		meta.SetStatusCondition(&report.Conditions, metav1.Condition{
+func ancestorRefConditionsWithDefaults(conditions []metav1.Condition) []metav1.Condition {
+	out := slices.Clone(conditions)
+	if cond := meta.FindStatusCondition(out, string(shared.PolicyConditionAccepted)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
 			Type:   string(shared.PolicyConditionAccepted),
 			Status: metav1.ConditionFalse,
 			Reason: string(shared.PolicyReasonPending),
 		})
 	}
-	if cond := meta.FindStatusCondition(report.Conditions, string(shared.PolicyConditionAttached)); cond == nil {
-		meta.SetStatusCondition(&report.Conditions, metav1.Condition{
+	if cond := meta.FindStatusCondition(out, string(shared.PolicyConditionAttached)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
 			Type:   string(shared.PolicyConditionAttached),
 			Status: metav1.ConditionFalse,
 			Reason: string(shared.PolicyReasonPending),
 		})
 	}
+	return out
 }
 
-func addAttachmentCondition(report *AncestorRefReport) []metav1.Condition {
-	if report.AttachmentState == reporter.PolicyAttachmentStatePending {
+func addAttachmentCondition(conditions []metav1.Condition, attachmentState reporter.PolicyAttachmentState) []metav1.Condition {
+	if attachmentState == reporter.PolicyAttachmentStatePending {
 		// no attachment state set, return the conditions as is
-		return report.Conditions
+		return conditions
 	}
 
 	// avoid modifying the existing Conditions on the report
-	existing := slices.Clone(report.Conditions)
+	existing := slices.Clone(conditions)
 
 	switch {
-	case report.AttachmentState.Has(reporter.PolicyAttachmentStateOverridden):
+	case attachmentState.Has(reporter.PolicyAttachmentStateOverridden):
 		meta.SetStatusCondition(&existing, metav1.Condition{
 			Type:    string(shared.PolicyConditionAttached),
 			Status:  metav1.ConditionFalse,
@@ -246,7 +242,7 @@ func addAttachmentCondition(report *AncestorRefReport) []metav1.Condition {
 			Message: reporter.PolicyOverriddenMsg,
 		})
 
-	case report.AttachmentState.Has(reporter.PolicyAttachmentStateMerged):
+	case attachmentState.Has(reporter.PolicyAttachmentStateMerged):
 		meta.SetStatusCondition(&existing, metav1.Condition{
 			Type:    string(shared.PolicyConditionAttached),
 			Status:  metav1.ConditionTrue,
@@ -254,7 +250,7 @@ func addAttachmentCondition(report *AncestorRefReport) []metav1.Condition {
 			Message: reporter.PolicyMergedMsg,
 		})
 
-	case report.AttachmentState.Has(reporter.PolicyAttachmentStateAttached):
+	case attachmentState.Has(reporter.PolicyAttachmentStateAttached):
 		meta.SetStatusCondition(&existing, metav1.Condition{
 			Type:    string(shared.PolicyConditionAttached),
 			Status:  metav1.ConditionTrue,

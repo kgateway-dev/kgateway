@@ -122,6 +122,8 @@ spec:
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
+            - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
+              value: {{ .Values.serviceEntriesExclusionLabelSelectors | toJson | quote }}
             - name: KGW_POLICY_MERGE
               value: {{ .Values.policyMerge | toJson | quote }}
             - name: KGW_VALIDATION_MODE
@@ -130,6 +132,8 @@ spec:
               value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
               value: {{ .Values.controller.awsEc2RefreshInterval | quote }}
+            - name: KGW_DISABLE_STATS_ON_PROXY
+              value: {{ .Values.controller.disableStatsOnProxy | quote }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}

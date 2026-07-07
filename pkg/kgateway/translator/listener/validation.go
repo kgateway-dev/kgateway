@@ -232,7 +232,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 			existingListener.protocol[protocol] = true
 			existingListener.listeners = append(existingListener.listeners, listener)
 
-			// TODO(Law): handle validation that hostname empty for udp/tcp
+			// CRD validation handles hostnames on TCP and UDP listeners so it is not required during validation
 			hostname := getOrDefaultHostname(listener.Hostname)
 			if _, ok := existingListener.hostnames[hostname]; !ok {
 				existingListener.hostnames[hostname] = generateUniqueListenerName(listener)
@@ -294,7 +294,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 				// If a listener does not have a protocol conflict with one listener,
 				// it could still have a hostname conflict with another listener
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
-			} else if err := validate.ListenerPort(listener, port); err != nil {
+			} else if err := validate.ListenerPort(listener, port, settings.DisableStatsOnProxy); err != nil {
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonInvalid, err.Error())
 			} else {
 				validListeners = append(validListeners, listener)
@@ -321,6 +321,36 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 			Reason: gwv1.GatewayReasonInvalid,
 		})
 		return validListeners
+	}
+
+	validListenersPerParent := map[string]int{}
+	for _, l := range validListeners {
+		// If the kind is missing, assume it is a gateway
+		kind := l.Parent.GetObjectKind().GroupVersionKind().Kind
+		if kind == "" {
+			kind = "Gateway"
+		}
+		parentKey := fmt.Sprintf("%s/%s/%s", kind, l.Parent.GetNamespace(), l.Parent.GetName())
+		validListenersPerParent[parentKey]++
+	}
+	if validListenersPerParent[fmt.Sprintf("Gateway/%s/%s", gw.Obj.Namespace, gw.Obj.Name)] < len(gw.Obj.Spec.Listeners) {
+		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
+			Type:   gwv1.GatewayConditionAccepted,
+			Status: metav1.ConditionTrue,
+			Reason: gwv1.GatewayReasonListenersNotValid,
+		})
+	}
+	for _, lsSets := range gw.AllowedListenerSets {
+		for _, lsIR := range lsSets {
+			key := fmt.Sprintf("%s/%s/%s", lsIR.Kind, lsIR.Namespace, lsIR.Name)
+			if validListenersPerParent[key] < len(lsIR.Listeners) {
+				reporter.ListenerSet(lsIR.Obj).SetCondition(reports.GatewayCondition{
+					Type:   gwv1.GatewayConditionAccepted,
+					Status: metav1.ConditionTrue,
+					Reason: gwv1.GatewayReasonListenersNotValid,
+				})
+			}
+		}
 	}
 
 	if len(attachedListenerSets) > 0 {
