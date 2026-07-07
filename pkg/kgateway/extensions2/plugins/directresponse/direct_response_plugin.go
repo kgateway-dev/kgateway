@@ -100,11 +100,6 @@ func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Repor
 	}
 }
 
-// called one or more times per route rule
-// TODO: inject dev.kgateway.route_source filter metadata onto outputRoute here by calling
-// addRouteSourceMetadata(pCtx.In, outputRoute.GetMetadata()). Blocked because addRouteSourceMetadata
-// is an unexported function in the irtranslator package. To fix, either export the function or
-// move it to a shared package accessible from plugin code.
 func (p *directResponsePluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
 	dr, ok := pCtx.Policy.(*directResponse)
 	if !ok {
