@@ -41,14 +41,18 @@ clusters:
         zone: r2z1
   name: istio-se_gwtest_inlined-se_se-a.example.com_80
   type: STATIC
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   name: istio-se_gwtest_workloads-se_se-b.example.com_80
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

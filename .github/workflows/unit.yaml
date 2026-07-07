@@ -22,17 +22,23 @@ jobs:
   go:
     name: Go Unit Tests
     runs-on: ubuntu-22.04
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
-      - name: Setup Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+      - name: Prep Go Runner
+        id: prep-go-runner
+        uses: ./.github/actions/prep-go-runner
+      - name: Restore Race Go Build Cache
+        # The tests below run with `CGO_ENABLED=1 -race`, which compiles a
+        # distinct set of GOCACHE entries from the CGO-disabled cache that
+        # prep-go-runner restores. This race-instrumented cache is seeded by
+        # the Cache Setup workflow on main; restore it so unit runs start warm.
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          go-version-file: go.mod
-      - name: Install dependencies
-        run: make mod-download
+          path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
+          key: ${{ steps.prep-go-runner.outputs.go-build-cache-key-race }}
       - name: Detect validator image rebuild
         id: validator-image
         shell: bash

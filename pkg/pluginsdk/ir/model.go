@@ -95,6 +95,12 @@ type EndpointsForBackend struct {
 	// +krtEqualsTodo include backend labels in equality or confirm omission
 	BackendLabels map[string]string
 
+	// AttachedPolicies carries the policy attachment view already resolved for
+	// the backend. LbEpsEqualityHash includes backend policy versioning, so this
+	// field does not need to participate in equality directly.
+	// +noKrtEquals
+	AttachedPolicies AttachedPolicies
+
 	// +krtEqualsTodo compare load-balanced endpoint map
 	LbEps                LocalityLbMap
 	ClusterName          string
@@ -145,6 +151,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 
 	return &EndpointsForBackend{
 		BackendLabels:        labels,
+		AttachedPolicies:     us.AttachedPolicies,
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          us.ClusterName(),
 		UpstreamResourceName: us.ResourceName(),
@@ -161,6 +168,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
 	return EndpointsForBackend{
 		BackendLabels:        e.BackendLabels,
+		AttachedPolicies:     e.AttachedPolicies,
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          e.ClusterName,
 		UpstreamResourceName: e.UpstreamResourceName,

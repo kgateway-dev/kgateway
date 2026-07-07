@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -11,10 +12,9 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -41,7 +41,13 @@ func (d *directResponse) Equals(in any) bool {
 	if !ok {
 		return false
 	}
-	return d.spec == d2.spec
+	// DirectResponseSpec contains pointer fields (Body, BodyFormat), so a struct
+	// `==` would compare those by pointer identity. Because the IR is rebuilt from
+	// a freshly decoded object on every recompute, equal specs get distinct
+	// pointers and `==` would spuriously report inequality, triggering needless
+	// re-translation. DirectResponseSpec is a plain (non-proto) API type, so a
+	// value-based DeepEqual is correct here.
+	return reflect.DeepEqual(d.spec, d2.spec)
 }
 
 type directResponsePluginGwPass struct {
@@ -127,32 +133,11 @@ func (p *directResponsePluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, output
 			},
 		}
 	} else if dr.spec.BodyFormat != nil {
-		switch {
-		case dr.spec.BodyFormat.Text != nil:
-			drAction.BodyFormat = &envoycorev3.SubstitutionFormatString{
-				Format: &envoycorev3.SubstitutionFormatString_TextFormatSource{
-					TextFormatSource: &envoycorev3.DataSource{
-						Specifier: &envoycorev3.DataSource_InlineString{
-							InlineString: *dr.spec.BodyFormat.Text,
-						},
-					},
-				},
-			}
-		case dr.spec.BodyFormat.JSON != nil:
-			jsonStruct, err := utils.JSONToProtoStruct(dr.spec.BodyFormat.JSON.Raw)
-			if err != nil {
-				return fmt.Errorf("DirectResponse body format JSON is invalid: %w", err)
-			}
-			drAction.BodyFormat = &envoycorev3.SubstitutionFormatString{
-				Format: &envoycorev3.SubstitutionFormatString_JsonFormat{
-					JsonFormat: jsonStruct,
-				},
-			}
+		bodyFormat, err := pluginutils.EnvoyBodyFormat(dr.spec.BodyFormat)
+		if err != nil {
+			return err
 		}
-		if drAction.BodyFormat == nil {
-			return fmt.Errorf("DirectResponse body format must specify either text or json")
-		}
-		drAction.BodyFormat.ContentType = ptr.Deref(dr.spec.BodyFormat.ContentType, "")
+		drAction.BodyFormat = bodyFormat
 	}
 	outputRoute.Action = &envoyroutev3.Route_DirectResponse{
 		DirectResponse: drAction,

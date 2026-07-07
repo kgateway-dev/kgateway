@@ -236,7 +236,7 @@ spec:
                                             type: string
                                           value:
                                             description: Value to compare against.
-                                            format: int32
+                                            format: uint32
                                             maximum: 4294967295
                                             minimum: 0
                                             type: integer
@@ -421,7 +421,7 @@ spec:
                                             type: string
                                           value:
                                             description: Value to compare against.
-                                            format: int32
+                                            format: uint32
                                             maximum: 4294967295
                                             minimum: 0
                                             type: integer
@@ -463,7 +463,7 @@ spec:
                                       type: string
                                     value:
                                       description: Value to compare against.
-                                      format: int32
+                                      format: uint32
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
@@ -613,7 +613,7 @@ spec:
                                             type: string
                                           value:
                                             description: Value to compare against.
-                                            format: int32
+                                            format: uint32
                                             maximum: 4294967295
                                             minimum: 0
                                             type: integer
@@ -798,7 +798,7 @@ spec:
                                             type: string
                                           value:
                                             description: Value to compare against.
-                                            format: int32
+                                            format: uint32
                                             maximum: 4294967295
                                             minimum: 0
                                             type: integer
@@ -886,7 +886,7 @@ spec:
                                       type: string
                                     value:
                                       description: Value to compare against.
-                                      format: int32
+                                      format: uint32
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
@@ -1663,6 +1663,1051 @@ spec:
                         x-kubernetes-validations:
                         - message: invalid duration value
                           rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                      localReplies:
+                        description: LocalReplies configures how Envoy's local replies
+                          are formatted etc.
+                        properties:
+                          defaultBodyFormat:
+                            description: |-
+                              DefaultBodyFormat is the format to use for local reply bodies if it's not overridden by any mapper.
+                              You can use the `%LOCAL_REPLY_BODY%` substitution to insert the original reply such as an error message.
+                            properties:
+                              contentType:
+                                description: |-
+                                  ContentType defines the HTTP Content-Type header to be sent with the response.
+                                  By default, `text/plain` is used for the Text format and `application/json` for the JSON format.
+                                  Note: This setting does not currently take effect due to a bug in Envoy, a fix for which is pending release.
+                                  The option is included for completeness and will become effective with a future version of Envoy.
+                                type: string
+                              json:
+                                description: |-
+                                  JSON is a format object by which Envoy will produce a JSON response body.
+                                  Mutually exclusive with Text.
+                                  See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-json-format for details.
+
+                                  Setting a field to `null` in the JSON object requires the use of
+                                  `kubectl apply --server-side` or equivalent. With the default client-side
+                                  `kubectl apply`, null values are stripped by kubectl before reaching
+                                  the API server.
+                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
+                              text:
+                                description: |-
+                                  Text is a format string by which Envoy will format the response body.
+                                  Mutually exclusive with JSON.
+                                  See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-text-format for details.
+                                maxLength: 4096
+                                minLength: 1
+                                type: string
+                            type: object
+                            x-kubernetes-validations:
+                            - message: exactly one of the fields in [json text] must
+                                be set
+                              rule: '[has(self.json),has(self.text)].filter(x,x==true).size()
+                                == 1'
+                          mappers:
+                            description: A list of custom options to apply based on
+                              filters. This may override the DefaultBodyFormat.
+                            items:
+                              description: LocalReplyMapper may customize the local
+                                reply based on stream, request, and response properties
+                                such as status code.
+                              properties:
+                                body:
+                                  description: |-
+                                    New body text for the reply if specified.
+                                    Available as `%LOCAL_REPLY_BODY%` in substitution strings.
+                                  type: string
+                                bodyFormatOverride:
+                                  description: Alternative body format for the reply
+                                    if specified. Takes precedence over default body
+                                    format.
+                                  properties:
+                                    contentType:
+                                      description: |-
+                                        ContentType defines the HTTP Content-Type header to be sent with the response.
+                                        By default, `text/plain` is used for the Text format and `application/json` for the JSON format.
+                                        Note: This setting does not currently take effect due to a bug in Envoy, a fix for which is pending release.
+                                        The option is included for completeness and will become effective with a future version of Envoy.
+                                      type: string
+                                    json:
+                                      description: |-
+                                        JSON is a format object by which Envoy will produce a JSON response body.
+                                        Mutually exclusive with Text.
+                                        See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-json-format for details.
+
+                                        Setting a field to `null` in the JSON object requires the use of
+                                        `kubectl apply --server-side` or equivalent. With the default client-side
+                                        `kubectl apply`, null values are stripped by kubectl before reaching
+                                        the API server.
+                                      type: object
+                                      x-kubernetes-preserve-unknown-fields: true
+                                    text:
+                                      description: |-
+                                        Text is a format string by which Envoy will format the response body.
+                                        Mutually exclusive with JSON.
+                                        See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-text-format for details.
+                                      maxLength: 4096
+                                      minLength: 1
+                                      type: string
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: exactly one of the fields in [json text]
+                                      must be set
+                                    rule: '[has(self.json),has(self.text)].filter(x,x==true).size()
+                                      == 1'
+                                filter:
+                                  allOf:
+                                  - maxProperties: 1
+                                    minProperties: 1
+                                  - maxProperties: 1
+                                    minProperties: 1
+                                  description: A filter that determines if this mapper
+                                    should apply.
+                                  properties:
+                                    andFilter:
+                                      description: |-
+                                        Performs a logical "and" operation on the result of each individual filter.
+                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
+                                      items:
+                                        description: |-
+                                          FilterType represents the type of filter to apply (only one of these should be set).
+                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                        maxProperties: 1
+                                        minProperties: 1
+                                        properties:
+                                          celFilter:
+                                            description: CELFilter filters requests
+                                              based on Common Expression Language
+                                              (CEL).
+                                            properties:
+                                              match:
+                                                description: |-
+                                                  The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
+                                                  see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                type: string
+                                            required:
+                                            - match
+                                            type: object
+                                          durationFilter:
+                                            description: |-
+                                              DurationFilter filters based on request duration.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                            properties:
+                                              op:
+                                                description: Op represents comparison
+                                                  operators.
+                                                enum:
+                                                - EQ
+                                                - GE
+                                                - LE
+                                                type: string
+                                              value:
+                                                description: Value to compare against.
+                                                format: uint32
+                                                maximum: 4294967295
+                                                minimum: 0
+                                                type: integer
+                                            required:
+                                            - op
+                                            - value
+                                            type: object
+                                          grpcStatusFilter:
+                                            description: |-
+                                              GrpcStatusFilter filters gRPC requests based on their response status.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                            properties:
+                                              exclude:
+                                                type: boolean
+                                              statuses:
+                                                items:
+                                                  description: GrpcStatus represents
+                                                    possible gRPC statuses.
+                                                  enum:
+                                                  - OK
+                                                  - CANCELED
+                                                  - UNKNOWN
+                                                  - INVALID_ARGUMENT
+                                                  - DEADLINE_EXCEEDED
+                                                  - NOT_FOUND
+                                                  - ALREADY_EXISTS
+                                                  - PERMISSION_DENIED
+                                                  - RESOURCE_EXHAUSTED
+                                                  - FAILED_PRECONDITION
+                                                  - ABORTED
+                                                  - OUT_OF_RANGE
+                                                  - UNIMPLEMENTED
+                                                  - INTERNAL
+                                                  - UNAVAILABLE
+                                                  - DATA_LOSS
+                                                  - UNAUTHENTICATED
+                                                  type: string
+                                                minItems: 1
+                                                type: array
+                                            type: object
+                                          headerFilter:
+                                            description: |-
+                                              HeaderFilter filters requests based on headers.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                            properties:
+                                              header:
+                                                description: |-
+                                                  HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+                                                  headers.
+                                                properties:
+                                                  name:
+                                                    description: |-
+                                                      Name is the name of the HTTP Header to be matched. Name matching MUST be
+                                                      case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
+
+                                                      If multiple entries specify equivalent header names, only the first
+                                                      entry with an equivalent name MUST be considered for a match. Subsequent
+                                                      entries with an equivalent header name MUST be ignored. Due to the
+                                                      case-insensitivity of header names, "foo" and "Foo" are considered
+                                                      equivalent.
+
+                                                      When a header is repeated in an HTTP request, it is
+                                                      implementation-specific behavior as to how this is represented.
+                                                      Generally, proxies should follow the guidance from the RFC:
+                                                      https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
+                                                      processing a repeated header, with special handling for "Set-Cookie".
+                                                    maxLength: 256
+                                                    minLength: 1
+                                                    pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                    type: string
+                                                  type:
+                                                    default: Exact
+                                                    description: |-
+                                                      Type specifies how to match against the value of the header.
+
+                                                      Support: Core (Exact)
+
+                                                      Support: Implementation-specific (RegularExpression)
+
+                                                      Since RegularExpression HeaderMatchType has implementation-specific
+                                                      conformance, implementations can support POSIX, PCRE or any other dialects
+                                                      of regular expressions. Please read the implementation's documentation to
+                                                      determine the supported dialect.
+                                                    enum:
+                                                    - Exact
+                                                    - RegularExpression
+                                                    type: string
+                                                  value:
+                                                    description: |-
+                                                      Value is the value of HTTP Header to be matched.
+                                                      <gateway:experimental:description>
+                                                      Must consist of printable US-ASCII characters, optionally separated
+                                                      by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                                                      </gateway:experimental:description>
+
+                                                      <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
+                                                    maxLength: 4096
+                                                    minLength: 1
+                                                    type: string
+                                                required:
+                                                - name
+                                                - value
+                                                type: object
+                                            required:
+                                            - header
+                                            type: object
+                                          notHealthCheckFilter:
+                                            description: |-
+                                              Filters for requests that are not health check requests.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                            type: boolean
+                                          responseFlagFilter:
+                                            description: |-
+                                              ResponseFlagFilter filters based on response flags.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                            properties:
+                                              flags:
+                                                items:
+                                                  type: string
+                                                minItems: 1
+                                                type: array
+                                            required:
+                                            - flags
+                                            type: object
+                                          runtimeFilter:
+                                            description: |-
+                                              Filters for random sampling of access logs.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                            properties:
+                                              percentSampled:
+                                                description: |-
+                                                  By default, the runtime filter will log on every request when the runtime key is set.
+                                                  If this field is set, it additionally applies a fractional percent check so that only a
+                                                  fraction of requests are logged.
+                                                properties:
+                                                  denominator:
+                                                    description: |-
+                                                      Specifies the denominator. If the denominator specified is less than the numerator,
+                                                      the final fractional percentage is capped at 1 (100%).
+                                                      Defaults to HUNDRED.
+                                                    enum:
+                                                    - HUNDRED
+                                                    - TEN_THOUSAND
+                                                    - MILLION
+                                                    type: string
+                                                  numerator:
+                                                    description: Specifies the numerator.
+                                                      Defaults to 0.
+                                                    format: int32
+                                                    minimum: 0
+                                                    type: integer
+                                                required:
+                                                - numerator
+                                                type: object
+                                              runtimeKey:
+                                                description: |-
+                                                  The runtime key to look up in the runtime implementation. This key determines whether
+                                                  the access log is enabled. When the runtime key value is set, the filter checks this key
+                                                  at runtime to decide whether to log each request.
+                                                minLength: 1
+                                                type: string
+                                              useIndependentRandomness:
+                                                description: |-
+                                                  If set to true, the filter uses Envoy's independent randomness source.
+                                                  When false (the default), the filter uses the runtime key lookup.
+                                                type: boolean
+                                            required:
+                                            - runtimeKey
+                                            type: object
+                                          statusCodeFilter:
+                                            description: |-
+                                              StatusCodeFilter filters based on HTTP status code.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                            properties:
+                                              op:
+                                                description: Op represents comparison
+                                                  operators.
+                                                enum:
+                                                - EQ
+                                                - GE
+                                                - LE
+                                                type: string
+                                              value:
+                                                description: Value to compare against.
+                                                format: uint32
+                                                maximum: 4294967295
+                                                minimum: 0
+                                                type: integer
+                                            required:
+                                            - op
+                                            - value
+                                            type: object
+                                          traceableFilter:
+                                            description: |-
+                                              Filters for requests that are traceable.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                            type: boolean
+                                        type: object
+                                      minItems: 2
+                                      type: array
+                                    celFilter:
+                                      description: CELFilter filters requests based
+                                        on Common Expression Language (CEL).
+                                      properties:
+                                        match:
+                                          description: |-
+                                            The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
+                                            see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                          type: string
+                                      required:
+                                      - match
+                                      type: object
+                                    durationFilter:
+                                      description: |-
+                                        DurationFilter filters based on request duration.
+                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                      properties:
+                                        op:
+                                          description: Op represents comparison operators.
+                                          enum:
+                                          - EQ
+                                          - GE
+                                          - LE
+                                          type: string
+                                        value:
+                                          description: Value to compare against.
+                                          format: uint32
+                                          maximum: 4294967295
+                                          minimum: 0
+                                          type: integer
+                                      required:
+                                      - op
+                                      - value
+                                      type: object
+                                    grpcStatusFilter:
+                                      description: |-
+                                        GrpcStatusFilter filters gRPC requests based on their response status.
+                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                      properties:
+                                        exclude:
+                                          type: boolean
+                                        statuses:
+                                          items:
+                                            description: GrpcStatus represents possible
+                                              gRPC statuses.
+                                            enum:
+                                            - OK
+                                            - CANCELED
+                                            - UNKNOWN
+                                            - INVALID_ARGUMENT
+                                            - DEADLINE_EXCEEDED
+                                            - NOT_FOUND
+                                            - ALREADY_EXISTS
+                                            - PERMISSION_DENIED
+                                            - RESOURCE_EXHAUSTED
+                                            - FAILED_PRECONDITION
+                                            - ABORTED
+                                            - OUT_OF_RANGE
+                                            - UNIMPLEMENTED
+                                            - INTERNAL
+                                            - UNAVAILABLE
+                                            - DATA_LOSS
+                                            - UNAUTHENTICATED
+                                            type: string
+                                          minItems: 1
+                                          type: array
+                                      type: object
+                                    headerFilter:
+                                      description: |-
+                                        HeaderFilter filters requests based on headers.
+                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                      properties:
+                                        header:
+                                          description: |-
+                                            HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+                                            headers.
+                                          properties:
+                                            name:
+                                              description: |-
+                                                Name is the name of the HTTP Header to be matched. Name matching MUST be
+                                                case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
+
+                                                If multiple entries specify equivalent header names, only the first
+                                                entry with an equivalent name MUST be considered for a match. Subsequent
+                                                entries with an equivalent header name MUST be ignored. Due to the
+                                                case-insensitivity of header names, "foo" and "Foo" are considered
+                                                equivalent.
+
+                                                When a header is repeated in an HTTP request, it is
+                                                implementation-specific behavior as to how this is represented.
+                                                Generally, proxies should follow the guidance from the RFC:
+                                                https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
+                                                processing a repeated header, with special handling for "Set-Cookie".
+                                              maxLength: 256
+                                              minLength: 1
+                                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                              type: string
+                                            type:
+                                              default: Exact
+                                              description: |-
+                                                Type specifies how to match against the value of the header.
+
+                                                Support: Core (Exact)
+
+                                                Support: Implementation-specific (RegularExpression)
+
+                                                Since RegularExpression HeaderMatchType has implementation-specific
+                                                conformance, implementations can support POSIX, PCRE or any other dialects
+                                                of regular expressions. Please read the implementation's documentation to
+                                                determine the supported dialect.
+                                              enum:
+                                              - Exact
+                                              - RegularExpression
+                                              type: string
+                                            value:
+                                              description: |-
+                                                Value is the value of HTTP Header to be matched.
+                                                <gateway:experimental:description>
+                                                Must consist of printable US-ASCII characters, optionally separated
+                                                by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                                                </gateway:experimental:description>
+
+                                                <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
+                                              maxLength: 4096
+                                              minLength: 1
+                                              type: string
+                                          required:
+                                          - name
+                                          - value
+                                          type: object
+                                      required:
+                                      - header
+                                      type: object
+                                    notHealthCheckFilter:
+                                      description: |-
+                                        Filters for requests that are not health check requests.
+                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                      type: boolean
+                                    orFilter:
+                                      description: |-
+                                        Performs a logical "or" operation on the result of each individual filter.
+                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
+                                      items:
+                                        description: |-
+                                          FilterType represents the type of filter to apply (only one of these should be set).
+                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                        maxProperties: 1
+                                        minProperties: 1
+                                        properties:
+                                          celFilter:
+                                            description: CELFilter filters requests
+                                              based on Common Expression Language
+                                              (CEL).
+                                            properties:
+                                              match:
+                                                description: |-
+                                                  The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
+                                                  see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                type: string
+                                            required:
+                                            - match
+                                            type: object
+                                          durationFilter:
+                                            description: |-
+                                              DurationFilter filters based on request duration.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                            properties:
+                                              op:
+                                                description: Op represents comparison
+                                                  operators.
+                                                enum:
+                                                - EQ
+                                                - GE
+                                                - LE
+                                                type: string
+                                              value:
+                                                description: Value to compare against.
+                                                format: uint32
+                                                maximum: 4294967295
+                                                minimum: 0
+                                                type: integer
+                                            required:
+                                            - op
+                                            - value
+                                            type: object
+                                          grpcStatusFilter:
+                                            description: |-
+                                              GrpcStatusFilter filters gRPC requests based on their response status.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                            properties:
+                                              exclude:
+                                                type: boolean
+                                              statuses:
+                                                items:
+                                                  description: GrpcStatus represents
+                                                    possible gRPC statuses.
+                                                  enum:
+                                                  - OK
+                                                  - CANCELED
+                                                  - UNKNOWN
+                                                  - INVALID_ARGUMENT
+                                                  - DEADLINE_EXCEEDED
+                                                  - NOT_FOUND
+                                                  - ALREADY_EXISTS
+                                                  - PERMISSION_DENIED
+                                                  - RESOURCE_EXHAUSTED
+                                                  - FAILED_PRECONDITION
+                                                  - ABORTED
+                                                  - OUT_OF_RANGE
+                                                  - UNIMPLEMENTED
+                                                  - INTERNAL
+                                                  - UNAVAILABLE
+                                                  - DATA_LOSS
+                                                  - UNAUTHENTICATED
+                                                  type: string
+                                                minItems: 1
+                                                type: array
+                                            type: object
+                                          headerFilter:
+                                            description: |-
+                                              HeaderFilter filters requests based on headers.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                            properties:
+                                              header:
+                                                description: |-
+                                                  HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+                                                  headers.
+                                                properties:
+                                                  name:
+                                                    description: |-
+                                                      Name is the name of the HTTP Header to be matched. Name matching MUST be
+                                                      case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
+
+                                                      If multiple entries specify equivalent header names, only the first
+                                                      entry with an equivalent name MUST be considered for a match. Subsequent
+                                                      entries with an equivalent header name MUST be ignored. Due to the
+                                                      case-insensitivity of header names, "foo" and "Foo" are considered
+                                                      equivalent.
+
+                                                      When a header is repeated in an HTTP request, it is
+                                                      implementation-specific behavior as to how this is represented.
+                                                      Generally, proxies should follow the guidance from the RFC:
+                                                      https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
+                                                      processing a repeated header, with special handling for "Set-Cookie".
+                                                    maxLength: 256
+                                                    minLength: 1
+                                                    pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                    type: string
+                                                  type:
+                                                    default: Exact
+                                                    description: |-
+                                                      Type specifies how to match against the value of the header.
+
+                                                      Support: Core (Exact)
+
+                                                      Support: Implementation-specific (RegularExpression)
+
+                                                      Since RegularExpression HeaderMatchType has implementation-specific
+                                                      conformance, implementations can support POSIX, PCRE or any other dialects
+                                                      of regular expressions. Please read the implementation's documentation to
+                                                      determine the supported dialect.
+                                                    enum:
+                                                    - Exact
+                                                    - RegularExpression
+                                                    type: string
+                                                  value:
+                                                    description: |-
+                                                      Value is the value of HTTP Header to be matched.
+                                                      <gateway:experimental:description>
+                                                      Must consist of printable US-ASCII characters, optionally separated
+                                                      by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                                                      </gateway:experimental:description>
+
+                                                      <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
+                                                    maxLength: 4096
+                                                    minLength: 1
+                                                    type: string
+                                                required:
+                                                - name
+                                                - value
+                                                type: object
+                                            required:
+                                            - header
+                                            type: object
+                                          notHealthCheckFilter:
+                                            description: |-
+                                              Filters for requests that are not health check requests.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                            type: boolean
+                                          responseFlagFilter:
+                                            description: |-
+                                              ResponseFlagFilter filters based on response flags.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                            properties:
+                                              flags:
+                                                items:
+                                                  type: string
+                                                minItems: 1
+                                                type: array
+                                            required:
+                                            - flags
+                                            type: object
+                                          runtimeFilter:
+                                            description: |-
+                                              Filters for random sampling of access logs.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                            properties:
+                                              percentSampled:
+                                                description: |-
+                                                  By default, the runtime filter will log on every request when the runtime key is set.
+                                                  If this field is set, it additionally applies a fractional percent check so that only a
+                                                  fraction of requests are logged.
+                                                properties:
+                                                  denominator:
+                                                    description: |-
+                                                      Specifies the denominator. If the denominator specified is less than the numerator,
+                                                      the final fractional percentage is capped at 1 (100%).
+                                                      Defaults to HUNDRED.
+                                                    enum:
+                                                    - HUNDRED
+                                                    - TEN_THOUSAND
+                                                    - MILLION
+                                                    type: string
+                                                  numerator:
+                                                    description: Specifies the numerator.
+                                                      Defaults to 0.
+                                                    format: int32
+                                                    minimum: 0
+                                                    type: integer
+                                                required:
+                                                - numerator
+                                                type: object
+                                              runtimeKey:
+                                                description: |-
+                                                  The runtime key to look up in the runtime implementation. This key determines whether
+                                                  the access log is enabled. When the runtime key value is set, the filter checks this key
+                                                  at runtime to decide whether to log each request.
+                                                minLength: 1
+                                                type: string
+                                              useIndependentRandomness:
+                                                description: |-
+                                                  If set to true, the filter uses Envoy's independent randomness source.
+                                                  When false (the default), the filter uses the runtime key lookup.
+                                                type: boolean
+                                            required:
+                                            - runtimeKey
+                                            type: object
+                                          statusCodeFilter:
+                                            description: |-
+                                              StatusCodeFilter filters based on HTTP status code.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                            properties:
+                                              op:
+                                                description: Op represents comparison
+                                                  operators.
+                                                enum:
+                                                - EQ
+                                                - GE
+                                                - LE
+                                                type: string
+                                              value:
+                                                description: Value to compare against.
+                                                format: uint32
+                                                maximum: 4294967295
+                                                minimum: 0
+                                                type: integer
+                                            required:
+                                            - op
+                                            - value
+                                            type: object
+                                          traceableFilter:
+                                            description: |-
+                                              Filters for requests that are traceable.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                            type: boolean
+                                        type: object
+                                      minItems: 2
+                                      type: array
+                                    responseFlagFilter:
+                                      description: |-
+                                        ResponseFlagFilter filters based on response flags.
+                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                      properties:
+                                        flags:
+                                          items:
+                                            type: string
+                                          minItems: 1
+                                          type: array
+                                      required:
+                                      - flags
+                                      type: object
+                                    runtimeFilter:
+                                      description: |-
+                                        Filters for random sampling of access logs.
+                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                      properties:
+                                        percentSampled:
+                                          description: |-
+                                            By default, the runtime filter will log on every request when the runtime key is set.
+                                            If this field is set, it additionally applies a fractional percent check so that only a
+                                            fraction of requests are logged.
+                                          properties:
+                                            denominator:
+                                              description: |-
+                                                Specifies the denominator. If the denominator specified is less than the numerator,
+                                                the final fractional percentage is capped at 1 (100%).
+                                                Defaults to HUNDRED.
+                                              enum:
+                                              - HUNDRED
+                                              - TEN_THOUSAND
+                                              - MILLION
+                                              type: string
+                                            numerator:
+                                              description: Specifies the numerator.
+                                                Defaults to 0.
+                                              format: int32
+                                              minimum: 0
+                                              type: integer
+                                          required:
+                                          - numerator
+                                          type: object
+                                        runtimeKey:
+                                          description: |-
+                                            The runtime key to look up in the runtime implementation. This key determines whether
+                                            the access log is enabled. When the runtime key value is set, the filter checks this key
+                                            at runtime to decide whether to log each request.
+                                          minLength: 1
+                                          type: string
+                                        useIndependentRandomness:
+                                          description: |-
+                                            If set to true, the filter uses Envoy's independent randomness source.
+                                            When false (the default), the filter uses the runtime key lookup.
+                                          type: boolean
+                                      required:
+                                      - runtimeKey
+                                      type: object
+                                    statusCodeFilter:
+                                      description: |-
+                                        StatusCodeFilter filters based on HTTP status code.
+                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                      properties:
+                                        op:
+                                          description: Op represents comparison operators.
+                                          enum:
+                                          - EQ
+                                          - GE
+                                          - LE
+                                          type: string
+                                        value:
+                                          description: Value to compare against.
+                                          format: uint32
+                                          maximum: 4294967295
+                                          minimum: 0
+                                          type: integer
+                                      required:
+                                      - op
+                                      - value
+                                      type: object
+                                    traceableFilter:
+                                      description: |-
+                                        Filters for requests that are traceable.
+                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                      type: boolean
+                                  type: object
+                                headers:
+                                  description: Headers to add or set for the reply
+                                    if specified.
+                                  properties:
+                                    add:
+                                      description: |-
+                                        Add adds the given header(s) (name, value) to the request before the action.
+                                        It appends to any existing values associated with the header name.
+
+                                        Input:
+                                          GET /foo HTTP/1.1
+                                          my-header: foo
+
+                                        Config:
+                                          add:
+                                          - name: "my-header"
+                                            value: "bar,baz"
+
+                                        Output:
+                                          GET /foo HTTP/1.1
+                                          my-header: foo,bar,baz
+                                      items:
+                                        description: |-
+                                          HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                                          be set. When using secretRef, name and key interact as follows:
+                                            - Both present: name is the header name, key is the Secret data key.
+                                            - name absent, key present: the key is also used as the header name.
+                                            - name present, key absent: the name is also used as the Secret data key.
+                                            - Both absent: every entry in the Secret is injected as a header (data key -> header name).
+                                        properties:
+                                          name:
+                                            description: |-
+                                              Name is the HTTP header field name. Name matching is case-insensitive.
+                                              (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                              Required when value is set. When secretRef is used, if omitted the Secret data key is
+                                              used as the header name; if both name and key are omitted every Secret entry is injected
+                                              as a header.
+                                            maxLength: 256
+                                            minLength: 1
+                                            pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                            type: string
+                                          secretRef:
+                                            description: |-
+                                              SecretRef sources the header value from a key in a Kubernetes Secret.
+                                              Mutually exclusive with value.
+                                            properties:
+                                              key:
+                                                description: |-
+                                                  Key is the key within the Secret's data map to use as the header value. When omitted and
+                                                  the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                                  omitted, all entries in the Secret are injected as headers.
+                                                maxLength: 253
+                                                minLength: 1
+                                                pattern: ^[-._a-zA-Z0-9]+$
+                                                type: string
+                                              name:
+                                                description: Name is the name of the
+                                                  Kubernetes Secret.
+                                                maxLength: 253
+                                                minLength: 1
+                                                type: string
+                                              namespace:
+                                                description: |-
+                                                  Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                                  referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                                  namespace permitting access from the policy's namespace.
+                                                maxLength: 63
+                                                minLength: 1
+                                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                                type: string
+                                            required:
+                                            - name
+                                            type: object
+                                          value:
+                                            description: |-
+                                              Value is an inline string value for the header. Mutually exclusive with secretRef.
+                                              Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                            maxLength: 4096
+                                            minLength: 1
+                                            pattern: ^[!-~]+([\t ]?[!-~]+)*$
+                                            type: string
+                                        type: object
+                                        x-kubernetes-validations:
+                                        - message: name is required when using an
+                                            inline value
+                                          rule: 'has(self.value) ? has(self.name)
+                                            : true'
+                                        - message: exactly one of the fields in [value
+                                            secretRef] must be set
+                                          rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                                            == 1'
+                                      maxItems: 16
+                                      type: array
+                                      x-kubernetes-list-type: atomic
+                                    remove:
+                                      description: |-
+                                        Remove the given header(s) from the HTTP request before the action. The
+                                        value of Remove is a list of HTTP header names. Note that header names are
+                                        case-insensitive (see https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+
+                                        Input:
+                                          GET /foo HTTP/1.1
+                                          my-header1: foo
+                                          my-header2: bar
+                                          my-header3: baz
+
+                                        Config:
+                                          remove: ["my-header1", "my-header3"]
+
+                                        Output:
+                                          GET /foo HTTP/1.1
+                                          my-header2: bar
+                                      items:
+                                        type: string
+                                      maxItems: 16
+                                      type: array
+                                      x-kubernetes-list-type: set
+                                    set:
+                                      description: |-
+                                        Set overwrites the request with the given header (name, value) before the action.
+
+                                        Input:
+                                          GET /foo HTTP/1.1
+                                          my-header: foo
+
+                                        Config:
+                                          set:
+                                          - name: "my-header"
+                                            value: "bar"
+
+                                        Output:
+                                          GET /foo HTTP/1.1
+                                          my-header: bar
+                                      items:
+                                        description: |-
+                                          HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                                          be set. When using secretRef, name and key interact as follows:
+                                            - Both present: name is the header name, key is the Secret data key.
+                                            - name absent, key present: the key is also used as the header name.
+                                            - name present, key absent: the name is also used as the Secret data key.
+                                            - Both absent: every entry in the Secret is injected as a header (data key -> header name).
+                                        properties:
+                                          name:
+                                            description: |-
+                                              Name is the HTTP header field name. Name matching is case-insensitive.
+                                              (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                              Required when value is set. When secretRef is used, if omitted the Secret data key is
+                                              used as the header name; if both name and key are omitted every Secret entry is injected
+                                              as a header.
+                                            maxLength: 256
+                                            minLength: 1
+                                            pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                            type: string
+                                          secretRef:
+                                            description: |-
+                                              SecretRef sources the header value from a key in a Kubernetes Secret.
+                                              Mutually exclusive with value.
+                                            properties:
+                                              key:
+                                                description: |-
+                                                  Key is the key within the Secret's data map to use as the header value. When omitted and
+                                                  the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                                  omitted, all entries in the Secret are injected as headers.
+                                                maxLength: 253
+                                                minLength: 1
+                                                pattern: ^[-._a-zA-Z0-9]+$
+                                                type: string
+                                              name:
+                                                description: Name is the name of the
+                                                  Kubernetes Secret.
+                                                maxLength: 253
+                                                minLength: 1
+                                                type: string
+                                              namespace:
+                                                description: |-
+                                                  Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                                  referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                                  namespace permitting access from the policy's namespace.
+                                                maxLength: 63
+                                                minLength: 1
+                                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                                type: string
+                                            required:
+                                            - name
+                                            type: object
+                                          value:
+                                            description: |-
+                                              Value is an inline string value for the header. Mutually exclusive with secretRef.
+                                              Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                            maxLength: 4096
+                                            minLength: 1
+                                            pattern: ^[!-~]+([\t ]?[!-~]+)*$
+                                            type: string
+                                        type: object
+                                        x-kubernetes-validations:
+                                        - message: name is required when using an
+                                            inline value
+                                          rule: 'has(self.value) ? has(self.name)
+                                            : true'
+                                        - message: exactly one of the fields in [value
+                                            secretRef] must be set
+                                          rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                                            == 1'
+                                      maxItems: 16
+                                      type: array
+                                      x-kubernetes-list-type: atomic
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: Local reply mappers may only add or modify
+                                      headers, not remove them
+                                    rule: '!has(self.remove)'
+                                  - message: at least one of the fields in [set add
+                                      remove] must be set
+                                    rule: '[has(self.set),has(self.add),has(self.remove)].filter(x,x==true).size()
+                                      >= 1'
+                                statusCode:
+                                  description: New response status code for the reply
+                                    if specified.
+                                  format: int32
+                                  maximum: 599
+                                  minimum: 100
+                                  type: integer
+                              required:
+                              - filter
+                              type: object
+                              x-kubernetes-validations:
+                              - message: at least one of the fields in [statusCode
+                                  body bodyFormatOverride headers] must be set
+                                rule: '[has(self.statusCode),has(self.body),has(self.bodyFormatOverride),has(self.headers)].filter(x,x==true).size()
+                                  >= 1'
+                            maxItems: 16
+                            minItems: 1
+                            type: array
+                        type: object
+                        x-kubernetes-validations:
+                        - message: at least one of the fields in [mappers defaultBodyFormat]
+                            must be set
+                          rule: '[has(self.mappers),has(self.defaultBodyFormat)].filter(x,x==true).size()
+                            >= 1'
                       maxHeadersCount:
                         description: |-
                           MaxHeadersCount sets the maximum number of headers allowed in a request.
@@ -2385,7 +3430,7 @@ spec:
                                                   type: string
                                                 value:
                                                   description: Value to compare against.
-                                                  format: int32
+                                                  format: uint32
                                                   maximum: 4294967295
                                                   minimum: 0
                                                   type: integer
@@ -2570,7 +3615,7 @@ spec:
                                                   type: string
                                                 value:
                                                   description: Value to compare against.
-                                                  format: int32
+                                                  format: uint32
                                                   maximum: 4294967295
                                                   minimum: 0
                                                   type: integer
@@ -2613,7 +3658,7 @@ spec:
                                             type: string
                                           value:
                                             description: Value to compare against.
-                                            format: int32
+                                            format: uint32
                                             maximum: 4294967295
                                             minimum: 0
                                             type: integer
@@ -2764,7 +3809,7 @@ spec:
                                                   type: string
                                                 value:
                                                   description: Value to compare against.
-                                                  format: int32
+                                                  format: uint32
                                                   maximum: 4294967295
                                                   minimum: 0
                                                   type: integer
@@ -2949,7 +3994,7 @@ spec:
                                                   type: string
                                                 value:
                                                   description: Value to compare against.
-                                                  format: int32
+                                                  format: uint32
                                                   maximum: 4294967295
                                                   minimum: 0
                                                   type: integer
@@ -3038,7 +4083,7 @@ spec:
                                             type: string
                                           value:
                                             description: Value to compare against.
-                                            format: int32
+                                            format: uint32
                                             maximum: 4294967295
                                             minimum: 0
                                             type: integer
@@ -3830,6 +4875,1060 @@ spec:
                               x-kubernetes-validations:
                               - message: invalid duration value
                                 rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                            localReplies:
+                              description: LocalReplies configures how Envoy's local
+                                replies are formatted etc.
+                              properties:
+                                defaultBodyFormat:
+                                  description: |-
+                                    DefaultBodyFormat is the format to use for local reply bodies if it's not overridden by any mapper.
+                                    You can use the `%LOCAL_REPLY_BODY%` substitution to insert the original reply such as an error message.
+                                  properties:
+                                    contentType:
+                                      description: |-
+                                        ContentType defines the HTTP Content-Type header to be sent with the response.
+                                        By default, `text/plain` is used for the Text format and `application/json` for the JSON format.
+                                        Note: This setting does not currently take effect due to a bug in Envoy, a fix for which is pending release.
+                                        The option is included for completeness and will become effective with a future version of Envoy.
+                                      type: string
+                                    json:
+                                      description: |-
+                                        JSON is a format object by which Envoy will produce a JSON response body.
+                                        Mutually exclusive with Text.
+                                        See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-json-format for details.
+
+                                        Setting a field to `null` in the JSON object requires the use of
+                                        `kubectl apply --server-side` or equivalent. With the default client-side
+                                        `kubectl apply`, null values are stripped by kubectl before reaching
+                                        the API server.
+                                      type: object
+                                      x-kubernetes-preserve-unknown-fields: true
+                                    text:
+                                      description: |-
+                                        Text is a format string by which Envoy will format the response body.
+                                        Mutually exclusive with JSON.
+                                        See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-text-format for details.
+                                      maxLength: 4096
+                                      minLength: 1
+                                      type: string
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: exactly one of the fields in [json text]
+                                      must be set
+                                    rule: '[has(self.json),has(self.text)].filter(x,x==true).size()
+                                      == 1'
+                                mappers:
+                                  description: A list of custom options to apply based
+                                    on filters. This may override the DefaultBodyFormat.
+                                  items:
+                                    description: LocalReplyMapper may customize the
+                                      local reply based on stream, request, and response
+                                      properties such as status code.
+                                    properties:
+                                      body:
+                                        description: |-
+                                          New body text for the reply if specified.
+                                          Available as `%LOCAL_REPLY_BODY%` in substitution strings.
+                                        type: string
+                                      bodyFormatOverride:
+                                        description: Alternative body format for the
+                                          reply if specified. Takes precedence over
+                                          default body format.
+                                        properties:
+                                          contentType:
+                                            description: |-
+                                              ContentType defines the HTTP Content-Type header to be sent with the response.
+                                              By default, `text/plain` is used for the Text format and `application/json` for the JSON format.
+                                              Note: This setting does not currently take effect due to a bug in Envoy, a fix for which is pending release.
+                                              The option is included for completeness and will become effective with a future version of Envoy.
+                                            type: string
+                                          json:
+                                            description: |-
+                                              JSON is a format object by which Envoy will produce a JSON response body.
+                                              Mutually exclusive with Text.
+                                              See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-json-format for details.
+
+                                              Setting a field to `null` in the JSON object requires the use of
+                                              `kubectl apply --server-side` or equivalent. With the default client-side
+                                              `kubectl apply`, null values are stripped by kubectl before reaching
+                                              the API server.
+                                            type: object
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          text:
+                                            description: |-
+                                              Text is a format string by which Envoy will format the response body.
+                                              Mutually exclusive with JSON.
+                                              See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto#envoy-v3-api-field-config-core-v3-substitutionformatstring-text-format for details.
+                                            maxLength: 4096
+                                            minLength: 1
+                                            type: string
+                                        type: object
+                                        x-kubernetes-validations:
+                                        - message: exactly one of the fields in [json
+                                            text] must be set
+                                          rule: '[has(self.json),has(self.text)].filter(x,x==true).size()
+                                            == 1'
+                                      filter:
+                                        allOf:
+                                        - maxProperties: 1
+                                          minProperties: 1
+                                        - maxProperties: 1
+                                          minProperties: 1
+                                        description: A filter that determines if this
+                                          mapper should apply.
+                                        properties:
+                                          andFilter:
+                                            description: |-
+                                              Performs a logical "and" operation on the result of each individual filter.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
+                                            items:
+                                              description: |-
+                                                FilterType represents the type of filter to apply (only one of these should be set).
+                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                              maxProperties: 1
+                                              minProperties: 1
+                                              properties:
+                                                celFilter:
+                                                  description: CELFilter filters requests
+                                                    based on Common Expression Language
+                                                    (CEL).
+                                                  properties:
+                                                    match:
+                                                      description: |-
+                                                        The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
+                                                        see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                      type: string
+                                                  required:
+                                                  - match
+                                                  type: object
+                                                durationFilter:
+                                                  description: |-
+                                                    DurationFilter filters based on request duration.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                                  properties:
+                                                    op:
+                                                      description: Op represents comparison
+                                                        operators.
+                                                      enum:
+                                                      - EQ
+                                                      - GE
+                                                      - LE
+                                                      type: string
+                                                    value:
+                                                      description: Value to compare
+                                                        against.
+                                                      format: uint32
+                                                      maximum: 4294967295
+                                                      minimum: 0
+                                                      type: integer
+                                                  required:
+                                                  - op
+                                                  - value
+                                                  type: object
+                                                grpcStatusFilter:
+                                                  description: |-
+                                                    GrpcStatusFilter filters gRPC requests based on their response status.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                                  properties:
+                                                    exclude:
+                                                      type: boolean
+                                                    statuses:
+                                                      items:
+                                                        description: GrpcStatus represents
+                                                          possible gRPC statuses.
+                                                        enum:
+                                                        - OK
+                                                        - CANCELED
+                                                        - UNKNOWN
+                                                        - INVALID_ARGUMENT
+                                                        - DEADLINE_EXCEEDED
+                                                        - NOT_FOUND
+                                                        - ALREADY_EXISTS
+                                                        - PERMISSION_DENIED
+                                                        - RESOURCE_EXHAUSTED
+                                                        - FAILED_PRECONDITION
+                                                        - ABORTED
+                                                        - OUT_OF_RANGE
+                                                        - UNIMPLEMENTED
+                                                        - INTERNAL
+                                                        - UNAVAILABLE
+                                                        - DATA_LOSS
+                                                        - UNAUTHENTICATED
+                                                        type: string
+                                                      minItems: 1
+                                                      type: array
+                                                  type: object
+                                                headerFilter:
+                                                  description: |-
+                                                    HeaderFilter filters requests based on headers.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                                  properties:
+                                                    header:
+                                                      description: |-
+                                                        HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+                                                        headers.
+                                                      properties:
+                                                        name:
+                                                          description: |-
+                                                            Name is the name of the HTTP Header to be matched. Name matching MUST be
+                                                            case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
+
+                                                            If multiple entries specify equivalent header names, only the first
+                                                            entry with an equivalent name MUST be considered for a match. Subsequent
+                                                            entries with an equivalent header name MUST be ignored. Due to the
+                                                            case-insensitivity of header names, "foo" and "Foo" are considered
+                                                            equivalent.
+
+                                                            When a header is repeated in an HTTP request, it is
+                                                            implementation-specific behavior as to how this is represented.
+                                                            Generally, proxies should follow the guidance from the RFC:
+                                                            https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
+                                                            processing a repeated header, with special handling for "Set-Cookie".
+                                                          maxLength: 256
+                                                          minLength: 1
+                                                          pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                          type: string
+                                                        type:
+                                                          default: Exact
+                                                          description: |-
+                                                            Type specifies how to match against the value of the header.
+
+                                                            Support: Core (Exact)
+
+                                                            Support: Implementation-specific (RegularExpression)
+
+                                                            Since RegularExpression HeaderMatchType has implementation-specific
+                                                            conformance, implementations can support POSIX, PCRE or any other dialects
+                                                            of regular expressions. Please read the implementation's documentation to
+                                                            determine the supported dialect.
+                                                          enum:
+                                                          - Exact
+                                                          - RegularExpression
+                                                          type: string
+                                                        value:
+                                                          description: |-
+                                                            Value is the value of HTTP Header to be matched.
+                                                            <gateway:experimental:description>
+                                                            Must consist of printable US-ASCII characters, optionally separated
+                                                            by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                                                            </gateway:experimental:description>
+
+                                                            <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
+                                                          maxLength: 4096
+                                                          minLength: 1
+                                                          type: string
+                                                      required:
+                                                      - name
+                                                      - value
+                                                      type: object
+                                                  required:
+                                                  - header
+                                                  type: object
+                                                notHealthCheckFilter:
+                                                  description: |-
+                                                    Filters for requests that are not health check requests.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                                  type: boolean
+                                                responseFlagFilter:
+                                                  description: |-
+                                                    ResponseFlagFilter filters based on response flags.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                                  properties:
+                                                    flags:
+                                                      items:
+                                                        type: string
+                                                      minItems: 1
+                                                      type: array
+                                                  required:
+                                                  - flags
+                                                  type: object
+                                                runtimeFilter:
+                                                  description: |-
+                                                    Filters for random sampling of access logs.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                                  properties:
+                                                    percentSampled:
+                                                      description: |-
+                                                        By default, the runtime filter will log on every request when the runtime key is set.
+                                                        If this field is set, it additionally applies a fractional percent check so that only a
+                                                        fraction of requests are logged.
+                                                      properties:
+                                                        denominator:
+                                                          description: |-
+                                                            Specifies the denominator. If the denominator specified is less than the numerator,
+                                                            the final fractional percentage is capped at 1 (100%).
+                                                            Defaults to HUNDRED.
+                                                          enum:
+                                                          - HUNDRED
+                                                          - TEN_THOUSAND
+                                                          - MILLION
+                                                          type: string
+                                                        numerator:
+                                                          description: Specifies the
+                                                            numerator. Defaults to
+                                                            0.
+                                                          format: int32
+                                                          minimum: 0
+                                                          type: integer
+                                                      required:
+                                                      - numerator
+                                                      type: object
+                                                    runtimeKey:
+                                                      description: |-
+                                                        The runtime key to look up in the runtime implementation. This key determines whether
+                                                        the access log is enabled. When the runtime key value is set, the filter checks this key
+                                                        at runtime to decide whether to log each request.
+                                                      minLength: 1
+                                                      type: string
+                                                    useIndependentRandomness:
+                                                      description: |-
+                                                        If set to true, the filter uses Envoy's independent randomness source.
+                                                        When false (the default), the filter uses the runtime key lookup.
+                                                      type: boolean
+                                                  required:
+                                                  - runtimeKey
+                                                  type: object
+                                                statusCodeFilter:
+                                                  description: |-
+                                                    StatusCodeFilter filters based on HTTP status code.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                                  properties:
+                                                    op:
+                                                      description: Op represents comparison
+                                                        operators.
+                                                      enum:
+                                                      - EQ
+                                                      - GE
+                                                      - LE
+                                                      type: string
+                                                    value:
+                                                      description: Value to compare
+                                                        against.
+                                                      format: uint32
+                                                      maximum: 4294967295
+                                                      minimum: 0
+                                                      type: integer
+                                                  required:
+                                                  - op
+                                                  - value
+                                                  type: object
+                                                traceableFilter:
+                                                  description: |-
+                                                    Filters for requests that are traceable.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                                  type: boolean
+                                              type: object
+                                            minItems: 2
+                                            type: array
+                                          celFilter:
+                                            description: CELFilter filters requests
+                                              based on Common Expression Language
+                                              (CEL).
+                                            properties:
+                                              match:
+                                                description: |-
+                                                  The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
+                                                  see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                type: string
+                                            required:
+                                            - match
+                                            type: object
+                                          durationFilter:
+                                            description: |-
+                                              DurationFilter filters based on request duration.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                            properties:
+                                              op:
+                                                description: Op represents comparison
+                                                  operators.
+                                                enum:
+                                                - EQ
+                                                - GE
+                                                - LE
+                                                type: string
+                                              value:
+                                                description: Value to compare against.
+                                                format: uint32
+                                                maximum: 4294967295
+                                                minimum: 0
+                                                type: integer
+                                            required:
+                                            - op
+                                            - value
+                                            type: object
+                                          grpcStatusFilter:
+                                            description: |-
+                                              GrpcStatusFilter filters gRPC requests based on their response status.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                            properties:
+                                              exclude:
+                                                type: boolean
+                                              statuses:
+                                                items:
+                                                  description: GrpcStatus represents
+                                                    possible gRPC statuses.
+                                                  enum:
+                                                  - OK
+                                                  - CANCELED
+                                                  - UNKNOWN
+                                                  - INVALID_ARGUMENT
+                                                  - DEADLINE_EXCEEDED
+                                                  - NOT_FOUND
+                                                  - ALREADY_EXISTS
+                                                  - PERMISSION_DENIED
+                                                  - RESOURCE_EXHAUSTED
+                                                  - FAILED_PRECONDITION
+                                                  - ABORTED
+                                                  - OUT_OF_RANGE
+                                                  - UNIMPLEMENTED
+                                                  - INTERNAL
+                                                  - UNAVAILABLE
+                                                  - DATA_LOSS
+                                                  - UNAUTHENTICATED
+                                                  type: string
+                                                minItems: 1
+                                                type: array
+                                            type: object
+                                          headerFilter:
+                                            description: |-
+                                              HeaderFilter filters requests based on headers.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                            properties:
+                                              header:
+                                                description: |-
+                                                  HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+                                                  headers.
+                                                properties:
+                                                  name:
+                                                    description: |-
+                                                      Name is the name of the HTTP Header to be matched. Name matching MUST be
+                                                      case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
+
+                                                      If multiple entries specify equivalent header names, only the first
+                                                      entry with an equivalent name MUST be considered for a match. Subsequent
+                                                      entries with an equivalent header name MUST be ignored. Due to the
+                                                      case-insensitivity of header names, "foo" and "Foo" are considered
+                                                      equivalent.
+
+                                                      When a header is repeated in an HTTP request, it is
+                                                      implementation-specific behavior as to how this is represented.
+                                                      Generally, proxies should follow the guidance from the RFC:
+                                                      https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
+                                                      processing a repeated header, with special handling for "Set-Cookie".
+                                                    maxLength: 256
+                                                    minLength: 1
+                                                    pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                    type: string
+                                                  type:
+                                                    default: Exact
+                                                    description: |-
+                                                      Type specifies how to match against the value of the header.
+
+                                                      Support: Core (Exact)
+
+                                                      Support: Implementation-specific (RegularExpression)
+
+                                                      Since RegularExpression HeaderMatchType has implementation-specific
+                                                      conformance, implementations can support POSIX, PCRE or any other dialects
+                                                      of regular expressions. Please read the implementation's documentation to
+                                                      determine the supported dialect.
+                                                    enum:
+                                                    - Exact
+                                                    - RegularExpression
+                                                    type: string
+                                                  value:
+                                                    description: |-
+                                                      Value is the value of HTTP Header to be matched.
+                                                      <gateway:experimental:description>
+                                                      Must consist of printable US-ASCII characters, optionally separated
+                                                      by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                                                      </gateway:experimental:description>
+
+                                                      <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
+                                                    maxLength: 4096
+                                                    minLength: 1
+                                                    type: string
+                                                required:
+                                                - name
+                                                - value
+                                                type: object
+                                            required:
+                                            - header
+                                            type: object
+                                          notHealthCheckFilter:
+                                            description: |-
+                                              Filters for requests that are not health check requests.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                            type: boolean
+                                          orFilter:
+                                            description: |-
+                                              Performs a logical "or" operation on the result of each individual filter.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
+                                            items:
+                                              description: |-
+                                                FilterType represents the type of filter to apply (only one of these should be set).
+                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                              maxProperties: 1
+                                              minProperties: 1
+                                              properties:
+                                                celFilter:
+                                                  description: CELFilter filters requests
+                                                    based on Common Expression Language
+                                                    (CEL).
+                                                  properties:
+                                                    match:
+                                                      description: |-
+                                                        The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
+                                                        see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                      type: string
+                                                  required:
+                                                  - match
+                                                  type: object
+                                                durationFilter:
+                                                  description: |-
+                                                    DurationFilter filters based on request duration.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                                  properties:
+                                                    op:
+                                                      description: Op represents comparison
+                                                        operators.
+                                                      enum:
+                                                      - EQ
+                                                      - GE
+                                                      - LE
+                                                      type: string
+                                                    value:
+                                                      description: Value to compare
+                                                        against.
+                                                      format: uint32
+                                                      maximum: 4294967295
+                                                      minimum: 0
+                                                      type: integer
+                                                  required:
+                                                  - op
+                                                  - value
+                                                  type: object
+                                                grpcStatusFilter:
+                                                  description: |-
+                                                    GrpcStatusFilter filters gRPC requests based on their response status.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                                  properties:
+                                                    exclude:
+                                                      type: boolean
+                                                    statuses:
+                                                      items:
+                                                        description: GrpcStatus represents
+                                                          possible gRPC statuses.
+                                                        enum:
+                                                        - OK
+                                                        - CANCELED
+                                                        - UNKNOWN
+                                                        - INVALID_ARGUMENT
+                                                        - DEADLINE_EXCEEDED
+                                                        - NOT_FOUND
+                                                        - ALREADY_EXISTS
+                                                        - PERMISSION_DENIED
+                                                        - RESOURCE_EXHAUSTED
+                                                        - FAILED_PRECONDITION
+                                                        - ABORTED
+                                                        - OUT_OF_RANGE
+                                                        - UNIMPLEMENTED
+                                                        - INTERNAL
+                                                        - UNAVAILABLE
+                                                        - DATA_LOSS
+                                                        - UNAUTHENTICATED
+                                                        type: string
+                                                      minItems: 1
+                                                      type: array
+                                                  type: object
+                                                headerFilter:
+                                                  description: |-
+                                                    HeaderFilter filters requests based on headers.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                                  properties:
+                                                    header:
+                                                      description: |-
+                                                        HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+                                                        headers.
+                                                      properties:
+                                                        name:
+                                                          description: |-
+                                                            Name is the name of the HTTP Header to be matched. Name matching MUST be
+                                                            case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
+
+                                                            If multiple entries specify equivalent header names, only the first
+                                                            entry with an equivalent name MUST be considered for a match. Subsequent
+                                                            entries with an equivalent header name MUST be ignored. Due to the
+                                                            case-insensitivity of header names, "foo" and "Foo" are considered
+                                                            equivalent.
+
+                                                            When a header is repeated in an HTTP request, it is
+                                                            implementation-specific behavior as to how this is represented.
+                                                            Generally, proxies should follow the guidance from the RFC:
+                                                            https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
+                                                            processing a repeated header, with special handling for "Set-Cookie".
+                                                          maxLength: 256
+                                                          minLength: 1
+                                                          pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                          type: string
+                                                        type:
+                                                          default: Exact
+                                                          description: |-
+                                                            Type specifies how to match against the value of the header.
+
+                                                            Support: Core (Exact)
+
+                                                            Support: Implementation-specific (RegularExpression)
+
+                                                            Since RegularExpression HeaderMatchType has implementation-specific
+                                                            conformance, implementations can support POSIX, PCRE or any other dialects
+                                                            of regular expressions. Please read the implementation's documentation to
+                                                            determine the supported dialect.
+                                                          enum:
+                                                          - Exact
+                                                          - RegularExpression
+                                                          type: string
+                                                        value:
+                                                          description: |-
+                                                            Value is the value of HTTP Header to be matched.
+                                                            <gateway:experimental:description>
+                                                            Must consist of printable US-ASCII characters, optionally separated
+                                                            by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
+                                                            </gateway:experimental:description>
+
+                                                            <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
+                                                          maxLength: 4096
+                                                          minLength: 1
+                                                          type: string
+                                                      required:
+                                                      - name
+                                                      - value
+                                                      type: object
+                                                  required:
+                                                  - header
+                                                  type: object
+                                                notHealthCheckFilter:
+                                                  description: |-
+                                                    Filters for requests that are not health check requests.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                                  type: boolean
+                                                responseFlagFilter:
+                                                  description: |-
+                                                    ResponseFlagFilter filters based on response flags.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                                  properties:
+                                                    flags:
+                                                      items:
+                                                        type: string
+                                                      minItems: 1
+                                                      type: array
+                                                  required:
+                                                  - flags
+                                                  type: object
+                                                runtimeFilter:
+                                                  description: |-
+                                                    Filters for random sampling of access logs.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                                  properties:
+                                                    percentSampled:
+                                                      description: |-
+                                                        By default, the runtime filter will log on every request when the runtime key is set.
+                                                        If this field is set, it additionally applies a fractional percent check so that only a
+                                                        fraction of requests are logged.
+                                                      properties:
+                                                        denominator:
+                                                          description: |-
+                                                            Specifies the denominator. If the denominator specified is less than the numerator,
+                                                            the final fractional percentage is capped at 1 (100%).
+                                                            Defaults to HUNDRED.
+                                                          enum:
+                                                          - HUNDRED
+                                                          - TEN_THOUSAND
+                                                          - MILLION
+                                                          type: string
+                                                        numerator:
+                                                          description: Specifies the
+                                                            numerator. Defaults to
+                                                            0.
+                                                          format: int32
+                                                          minimum: 0
+                                                          type: integer
+                                                      required:
+                                                      - numerator
+                                                      type: object
+                                                    runtimeKey:
+                                                      description: |-
+                                                        The runtime key to look up in the runtime implementation. This key determines whether
+                                                        the access log is enabled. When the runtime key value is set, the filter checks this key
+                                                        at runtime to decide whether to log each request.
+                                                      minLength: 1
+                                                      type: string
+                                                    useIndependentRandomness:
+                                                      description: |-
+                                                        If set to true, the filter uses Envoy's independent randomness source.
+                                                        When false (the default), the filter uses the runtime key lookup.
+                                                      type: boolean
+                                                  required:
+                                                  - runtimeKey
+                                                  type: object
+                                                statusCodeFilter:
+                                                  description: |-
+                                                    StatusCodeFilter filters based on HTTP status code.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                                  properties:
+                                                    op:
+                                                      description: Op represents comparison
+                                                        operators.
+                                                      enum:
+                                                      - EQ
+                                                      - GE
+                                                      - LE
+                                                      type: string
+                                                    value:
+                                                      description: Value to compare
+                                                        against.
+                                                      format: uint32
+                                                      maximum: 4294967295
+                                                      minimum: 0
+                                                      type: integer
+                                                  required:
+                                                  - op
+                                                  - value
+                                                  type: object
+                                                traceableFilter:
+                                                  description: |-
+                                                    Filters for requests that are traceable.
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                                  type: boolean
+                                              type: object
+                                            minItems: 2
+                                            type: array
+                                          responseFlagFilter:
+                                            description: |-
+                                              ResponseFlagFilter filters based on response flags.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                            properties:
+                                              flags:
+                                                items:
+                                                  type: string
+                                                minItems: 1
+                                                type: array
+                                            required:
+                                            - flags
+                                            type: object
+                                          runtimeFilter:
+                                            description: |-
+                                              Filters for random sampling of access logs.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                            properties:
+                                              percentSampled:
+                                                description: |-
+                                                  By default, the runtime filter will log on every request when the runtime key is set.
+                                                  If this field is set, it additionally applies a fractional percent check so that only a
+                                                  fraction of requests are logged.
+                                                properties:
+                                                  denominator:
+                                                    description: |-
+                                                      Specifies the denominator. If the denominator specified is less than the numerator,
+                                                      the final fractional percentage is capped at 1 (100%).
+                                                      Defaults to HUNDRED.
+                                                    enum:
+                                                    - HUNDRED
+                                                    - TEN_THOUSAND
+                                                    - MILLION
+                                                    type: string
+                                                  numerator:
+                                                    description: Specifies the numerator.
+                                                      Defaults to 0.
+                                                    format: int32
+                                                    minimum: 0
+                                                    type: integer
+                                                required:
+                                                - numerator
+                                                type: object
+                                              runtimeKey:
+                                                description: |-
+                                                  The runtime key to look up in the runtime implementation. This key determines whether
+                                                  the access log is enabled. When the runtime key value is set, the filter checks this key
+                                                  at runtime to decide whether to log each request.
+                                                minLength: 1
+                                                type: string
+                                              useIndependentRandomness:
+                                                description: |-
+                                                  If set to true, the filter uses Envoy's independent randomness source.
+                                                  When false (the default), the filter uses the runtime key lookup.
+                                                type: boolean
+                                            required:
+                                            - runtimeKey
+                                            type: object
+                                          statusCodeFilter:
+                                            description: |-
+                                              StatusCodeFilter filters based on HTTP status code.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                            properties:
+                                              op:
+                                                description: Op represents comparison
+                                                  operators.
+                                                enum:
+                                                - EQ
+                                                - GE
+                                                - LE
+                                                type: string
+                                              value:
+                                                description: Value to compare against.
+                                                format: uint32
+                                                maximum: 4294967295
+                                                minimum: 0
+                                                type: integer
+                                            required:
+                                            - op
+                                            - value
+                                            type: object
+                                          traceableFilter:
+                                            description: |-
+                                              Filters for requests that are traceable.
+                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                            type: boolean
+                                        type: object
+                                      headers:
+                                        description: Headers to add or set for the
+                                          reply if specified.
+                                        properties:
+                                          add:
+                                            description: |-
+                                              Add adds the given header(s) (name, value) to the request before the action.
+                                              It appends to any existing values associated with the header name.
+
+                                              Input:
+                                                GET /foo HTTP/1.1
+                                                my-header: foo
+
+                                              Config:
+                                                add:
+                                                - name: "my-header"
+                                                  value: "bar,baz"
+
+                                              Output:
+                                                GET /foo HTTP/1.1
+                                                my-header: foo,bar,baz
+                                            items:
+                                              description: |-
+                                                HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                                                be set. When using secretRef, name and key interact as follows:
+                                                  - Both present: name is the header name, key is the Secret data key.
+                                                  - name absent, key present: the key is also used as the header name.
+                                                  - name present, key absent: the name is also used as the Secret data key.
+                                                  - Both absent: every entry in the Secret is injected as a header (data key -> header name).
+                                              properties:
+                                                name:
+                                                  description: |-
+                                                    Name is the HTTP header field name. Name matching is case-insensitive.
+                                                    (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                                    Required when value is set. When secretRef is used, if omitted the Secret data key is
+                                                    used as the header name; if both name and key are omitted every Secret entry is injected
+                                                    as a header.
+                                                  maxLength: 256
+                                                  minLength: 1
+                                                  pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                  type: string
+                                                secretRef:
+                                                  description: |-
+                                                    SecretRef sources the header value from a key in a Kubernetes Secret.
+                                                    Mutually exclusive with value.
+                                                  properties:
+                                                    key:
+                                                      description: |-
+                                                        Key is the key within the Secret's data map to use as the header value. When omitted and
+                                                        the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                                        omitted, all entries in the Secret are injected as headers.
+                                                      maxLength: 253
+                                                      minLength: 1
+                                                      pattern: ^[-._a-zA-Z0-9]+$
+                                                      type: string
+                                                    name:
+                                                      description: Name is the name
+                                                        of the Kubernetes Secret.
+                                                      maxLength: 253
+                                                      minLength: 1
+                                                      type: string
+                                                    namespace:
+                                                      description: |-
+                                                        Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                                        referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                                        namespace permitting access from the policy's namespace.
+                                                      maxLength: 63
+                                                      minLength: 1
+                                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                                      type: string
+                                                  required:
+                                                  - name
+                                                  type: object
+                                                value:
+                                                  description: |-
+                                                    Value is an inline string value for the header. Mutually exclusive with secretRef.
+                                                    Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                                  maxLength: 4096
+                                                  minLength: 1
+                                                  pattern: ^[!-~]+([\t ]?[!-~]+)*$
+                                                  type: string
+                                              type: object
+                                              x-kubernetes-validations:
+                                              - message: name is required when using
+                                                  an inline value
+                                                rule: 'has(self.value) ? has(self.name)
+                                                  : true'
+                                              - message: exactly one of the fields
+                                                  in [value secretRef] must be set
+                                                rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                                                  == 1'
+                                            maxItems: 16
+                                            type: array
+                                            x-kubernetes-list-type: atomic
+                                          remove:
+                                            description: |-
+                                              Remove the given header(s) from the HTTP request before the action. The
+                                              value of Remove is a list of HTTP header names. Note that header names are
+                                              case-insensitive (see https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+
+                                              Input:
+                                                GET /foo HTTP/1.1
+                                                my-header1: foo
+                                                my-header2: bar
+                                                my-header3: baz
+
+                                              Config:
+                                                remove: ["my-header1", "my-header3"]
+
+                                              Output:
+                                                GET /foo HTTP/1.1
+                                                my-header2: bar
+                                            items:
+                                              type: string
+                                            maxItems: 16
+                                            type: array
+                                            x-kubernetes-list-type: set
+                                          set:
+                                            description: |-
+                                              Set overwrites the request with the given header (name, value) before the action.
+
+                                              Input:
+                                                GET /foo HTTP/1.1
+                                                my-header: foo
+
+                                              Config:
+                                                set:
+                                                - name: "my-header"
+                                                  value: "bar"
+
+                                              Output:
+                                                GET /foo HTTP/1.1
+                                                my-header: bar
+                                            items:
+                                              description: |-
+                                                HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                                                be set. When using secretRef, name and key interact as follows:
+                                                  - Both present: name is the header name, key is the Secret data key.
+                                                  - name absent, key present: the key is also used as the header name.
+                                                  - name present, key absent: the name is also used as the Secret data key.
+                                                  - Both absent: every entry in the Secret is injected as a header (data key -> header name).
+                                              properties:
+                                                name:
+                                                  description: |-
+                                                    Name is the HTTP header field name. Name matching is case-insensitive.
+                                                    (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                                    Required when value is set. When secretRef is used, if omitted the Secret data key is
+                                                    used as the header name; if both name and key are omitted every Secret entry is injected
+                                                    as a header.
+                                                  maxLength: 256
+                                                  minLength: 1
+                                                  pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                  type: string
+                                                secretRef:
+                                                  description: |-
+                                                    SecretRef sources the header value from a key in a Kubernetes Secret.
+                                                    Mutually exclusive with value.
+                                                  properties:
+                                                    key:
+                                                      description: |-
+                                                        Key is the key within the Secret's data map to use as the header value. When omitted and
+                                                        the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                                        omitted, all entries in the Secret are injected as headers.
+                                                      maxLength: 253
+                                                      minLength: 1
+                                                      pattern: ^[-._a-zA-Z0-9]+$
+                                                      type: string
+                                                    name:
+                                                      description: Name is the name
+                                                        of the Kubernetes Secret.
+                                                      maxLength: 253
+                                                      minLength: 1
+                                                      type: string
+                                                    namespace:
+                                                      description: |-
+                                                        Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                                        referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                                        namespace permitting access from the policy's namespace.
+                                                      maxLength: 63
+                                                      minLength: 1
+                                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                                      type: string
+                                                  required:
+                                                  - name
+                                                  type: object
+                                                value:
+                                                  description: |-
+                                                    Value is an inline string value for the header. Mutually exclusive with secretRef.
+                                                    Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                                  maxLength: 4096
+                                                  minLength: 1
+                                                  pattern: ^[!-~]+([\t ]?[!-~]+)*$
+                                                  type: string
+                                              type: object
+                                              x-kubernetes-validations:
+                                              - message: name is required when using
+                                                  an inline value
+                                                rule: 'has(self.value) ? has(self.name)
+                                                  : true'
+                                              - message: exactly one of the fields
+                                                  in [value secretRef] must be set
+                                                rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                                                  == 1'
+                                            maxItems: 16
+                                            type: array
+                                            x-kubernetes-list-type: atomic
+                                        type: object
+                                        x-kubernetes-validations:
+                                        - message: Local reply mappers may only add
+                                            or modify headers, not remove them
+                                          rule: '!has(self.remove)'
+                                        - message: at least one of the fields in [set
+                                            add remove] must be set
+                                          rule: '[has(self.set),has(self.add),has(self.remove)].filter(x,x==true).size()
+                                            >= 1'
+                                      statusCode:
+                                        description: New response status code for
+                                          the reply if specified.
+                                        format: int32
+                                        maximum: 599
+                                        minimum: 100
+                                        type: integer
+                                    required:
+                                    - filter
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: at least one of the fields in [statusCode
+                                        body bodyFormatOverride headers] must be set
+                                      rule: '[has(self.statusCode),has(self.body),has(self.bodyFormatOverride),has(self.headers)].filter(x,x==true).size()
+                                        >= 1'
+                                  maxItems: 16
+                                  minItems: 1
+                                  type: array
+                              type: object
+                              x-kubernetes-validations:
+                              - message: at least one of the fields in [mappers defaultBodyFormat]
+                                  must be set
+                                rule: '[has(self.mappers),has(self.defaultBodyFormat)].filter(x,x==true).size()
+                                  >= 1'
                             maxHeadersCount:
                               description: |-
                                 MaxHeadersCount sets the maximum number of headers allowed in a request.

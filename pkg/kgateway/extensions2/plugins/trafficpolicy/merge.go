@@ -56,6 +56,7 @@ func MergeTrafficPolicies(
 		mergeAutoHostRewrite,
 		mergeTimeouts,
 		mergeRetry,
+		mergeInternalRedirect,
 		mergeRBAC,
 		mergeJwt,
 		mergeCompression,
@@ -248,8 +249,8 @@ func mergeRustformation(
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 					Name: RustformationModuleName,
 				},
-				PerRouteConfigName: RustformationFilterName,
-				FilterConfig:       filterCfg,
+				FilterName:   RustformationFilterName,
+				FilterConfig: filterCfg,
 			}}
 		}
 		p1Json, err := utils.AnyToJson(p1.spec.rustformation.config.FilterConfig)
@@ -596,6 +597,21 @@ func mergeRetry(
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "retry")
 }
 
+func mergeInternalRedirect(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[internalRedirectIR]{
+		Get: func(spec *trafficPolicySpecIr) *internalRedirectIR { return spec.internalRedirect },
+		Set: func(spec *trafficPolicySpecIr, val *internalRedirectIR) { spec.internalRedirect = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "internalRedirect")
+}
+
 func mergeBasicAuth(
 	p1, p2 *TrafficPolicy,
 	p2Ref *ir.AttachedPolicyRef,
@@ -696,8 +712,8 @@ func mergeHttpACL(
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 					Name: httpACLModuleName,
 				},
-				PerRouteConfigName: httpACLFilterName,
-				FilterConfig:       filterCfg,
+				FilterName:   httpACLFilterName,
+				FilterConfig: filterCfg,
 			}}
 		}
 

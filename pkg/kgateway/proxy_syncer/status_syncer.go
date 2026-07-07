@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -24,6 +25,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -176,6 +178,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
+				case *gwv1.TCPRoute:
+					for _, parentRef := range r.Spec.ParentRefs {
+						gatewayNames = append(gatewayNames, string(parentRef.Name))
+					}
 				case *gwv1a2.TCPRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
@@ -248,30 +254,37 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 										finishFunc:  finish.finishFunc,
 										statusError: fmt.Errorf("partially invalid route condition"),
 									}
-
 									break
 								}
 							}
 
-							if cond.Type != string(gwv1.RouteConditionAccepted) {
-								continue
+							if cond.Type == conditions.KgatewayConditionProgrammed {
+								if cond.Status != metav1.ConditionTrue {
+									if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
+										finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
+											finishFunc:  finish.finishFunc,
+											statusError: fmt.Errorf("invalid route condition"),
+										}
+										break
+									}
+								}
 							}
 
-							if cond.Reason != string(gwv1.RouteReasonAccepted) &&
-								cond.Reason != string(gwv1.RouteReasonPending) {
-								if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
-									finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
-										finishFunc:  finish.finishFunc,
-										statusError: fmt.Errorf("invalid route condition"),
+							if cond.Type == string(gwv1.RouteConditionAccepted) {
+								if cond.Reason != string(gwv1.RouteReasonAccepted) &&
+									cond.Reason != string(gwv1.RouteReasonPending) {
+									if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
+										finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
+											finishFunc:  finish.finishFunc,
+											statusError: fmt.Errorf("invalid route condition"),
+										}
+										break
 									}
-
-									break
 								}
 							}
 						}
 					}
 				}
-
 				return nil
 			},
 			retry.Attempts(5),
@@ -285,6 +298,12 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 		var status *gwv1.RouteStatus
 		switch r := route.(type) {
 		case *gwv1.HTTPRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil, nil
+			}
+			r.Status.RouteStatus = *status
+		case *gwv1.TCPRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
 				return nil, nil
@@ -355,8 +374,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	for rnn := range rm.TCPRoutes {
 		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn,
 			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
-				route := new(gwv1a2.TCPRoute)
-				return route, s.mgr.GetClient().Get(ctx, routeKey, route)
+				return getTCPRouteForStatus(ctx, s.mgr.GetClient(), routeKey)
 			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
@@ -408,7 +426,7 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 	promotedTLSRoute := &gwv1.TLSRoute{}
 	if err := kubeClient.Get(ctx, key, promotedTLSRoute); err == nil {
 		return promotedTLSRoute, nil
-	} else if !shouldFallbackTLSRouteLookup(err) {
+	} else if !shouldFallbackRouteLookup(err) {
 		return nil, err
 	}
 
@@ -416,7 +434,7 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 	v1alpha3TLSRouteRaw.SetGroupVersionKind(wellknown.TLSRouteV1Alpha3GVK)
 	if err := kubeClient.Get(ctx, key, v1alpha3TLSRouteRaw); err == nil {
 		return v1alpha3TLSRouteRaw, nil
-	} else if !shouldFallbackTLSRouteLookup(err) {
+	} else if !shouldFallbackRouteLookup(err) {
 		return nil, err
 	}
 
@@ -427,7 +445,22 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 	return v1alpha2TLSRoute, nil
 }
 
-func shouldFallbackTLSRouteLookup(err error) bool {
+func getTCPRouteForStatus(ctx context.Context, kubeClient objectGetter, key client.ObjectKey) (client.Object, error) {
+	promotedTCPRoute := &gwv1.TCPRoute{}
+	if err := kubeClient.Get(ctx, key, promotedTCPRoute); err == nil {
+		return promotedTCPRoute, nil
+	} else if !shouldFallbackRouteLookup(err) {
+		return nil, err
+	}
+
+	v1alpha2TCPRoute := &gwv1a2.TCPRoute{}
+	if err := kubeClient.Get(ctx, key, v1alpha2TCPRoute); err != nil {
+		return nil, err
+	}
+	return v1alpha2TCPRoute, nil
+}
+
+func shouldFallbackRouteLookup(err error) bool {
 	return apimeta.IsNoMatchError(err)
 }
 
@@ -819,6 +852,9 @@ var opts = cmp.Options{
 	cmpopts.IgnoreMapEntries(func(k string, _ any) bool {
 		return k == "lastTransitionTime"
 	}),
+	cmpopts.SortSlices(func(a, b gwv1.RouteParentStatus) bool {
+		return lessRouteParentStatus(a, b)
+	}),
 }
 
 func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
@@ -836,4 +872,11 @@ func isBackendStatusEqual(objA, objB *kgateway.BackendStatus) bool {
 // isRouteStatusEqual compares two RouteStatus objects directly
 func isRouteStatusEqual(objA, objB *gwv1.RouteStatus) bool {
 	return cmp.Equal(objA, objB, opts)
+}
+
+func lessRouteParentStatus(a, b gwv1.RouteParentStatus) bool {
+	if cmp := strings.Compare(reports.ParentString(a.ParentRef), reports.ParentString(b.ParentRef)); cmp != 0 {
+		return cmp < 0
+	}
+	return strings.Compare(string(a.ControllerName), string(b.ControllerName)) < 0
 }

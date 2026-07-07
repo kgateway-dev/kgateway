@@ -41,6 +41,61 @@ func (v *ValidationMode) Decode(value string) error {
 	}
 }
 
+// ValidatorMode selects the strict-validation execution strategy.
+type ValidatorMode string
+
+const (
+	// ValidatorBinary forks envoy --mode validate per call.
+	ValidatorBinary ValidatorMode = "BINARY"
+	// ValidatorCache wraps ValidatorBinary with an LRU result cache.
+	ValidatorCache ValidatorMode = "CACHE"
+)
+
+// Decode implements envconfig.Decoder.
+func (v *ValidatorMode) Decode(value string) error {
+	mode := ValidatorMode(strings.ToUpper(value))
+	switch mode {
+	case ValidatorBinary, ValidatorCache:
+		*v = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid validator mode: %q", value)
+	}
+}
+
+// ReferenceGrantMode controls how strictly cross-namespace references are validated
+// via ReferenceGrant across the control plane.
+type ReferenceGrantMode string
+
+const (
+	// ReferenceGrantOff disables all ReferenceGrant validation. All cross-namespace
+	// references are permitted without any grant. Use only in environments where
+	// namespace isolation is enforced by other means.
+	ReferenceGrantOff ReferenceGrantMode = "OFF"
+
+	// ReferenceGrantPermissive enforces ReferenceGrant for cross-namespace
+	// BackendRef and SecretRef references (current default behavior). Cross-namespace
+	// ExtensionRef references are permitted without a grant.
+	ReferenceGrantPermissive ReferenceGrantMode = "PERMISSIVE"
+
+	// ReferenceGrantStrict enforces ReferenceGrant for all cross-namespace references,
+	// including ExtensionRef (e.g., TrafficPolicy referencing a GatewayExtension in
+	// another namespace).
+	ReferenceGrantStrict ReferenceGrantMode = "STRICT"
+)
+
+// Decode implements envconfig.Decoder.
+func (r *ReferenceGrantMode) Decode(value string) error {
+	mode := ReferenceGrantMode(strings.ToUpper(value))
+	switch mode {
+	case ReferenceGrantOff, ReferenceGrantPermissive, ReferenceGrantStrict:
+		*r = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid reference grant mode: %q", value)
+	}
+}
+
 // DnsLookupFamily controls the DNS lookup family for all static clusters created via Backend resources.
 type DnsLookupFamily string
 
@@ -155,6 +210,12 @@ type Settings struct {
 	// any of these label keys will be excluded from kgateway's endpoint discovery.
 	WorkloadEntriesExclusionLabels string `split_words:"true"`
 
+	// ServiceEntriesExclusionLabelSelectors is a JSON representation of a list of metav1.LabelSelector.
+	// ServiceEntries matching any of these selectors will be excluded from kgateway's ServiceEntry backend
+	// and endpoint discovery. Unlike WorkloadEntriesExclusionLabels, this uses full selectors so exclusions
+	// can match specific label values.
+	ServiceEntriesExclusionLabelSelectors string `split_words:"true" default:"[]"`
+
 	// XdsServiceHost is the host that serves xDS config.
 	// It overrides xdsServiceName if set.
 	XdsServiceHost string `split_words:"true"`
@@ -206,6 +267,10 @@ type Settings struct {
 	// EnableEnvoy enables kgateway to send config to Envoy
 	EnableEnvoy bool `split_words:"true" default:"true"`
 
+	// DisableStatsOnProxy disables the stats/metrics server on the Envoy proxy.
+	// When true, port 9091 is no longer reserved and listeners may use it.
+	DisableStatsOnProxy bool `split_words:"true" default:"false"`
+
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.
 	// When enabled, the default weight for a route is 0.
@@ -216,6 +281,20 @@ type Settings struct {
 	// - "STANDARD": Rewrites invalid routes to direct responses (typically HTTP 500)
 	// - "STRICT": Builds on STANDARD by running targeted validation
 	ValidationMode ValidationMode `split_words:"true" default:"STANDARD"`
+
+	// ValidatorMode selects the strict-validation execution strategy. Has no effect
+	// when ValidationMode is "STANDARD". Supported values:
+	// - "BINARY": fork envoy --mode validate per call (the pre-cache behavior).
+	// - "CACHE": wrap BINARY with an LRU result cache keyed on bootstrap content
+	//   hash (default). A validation verdict is a pure function of the config
+	//   bytes, so memoization cannot change outcomes, only skip redundant envoy
+	//   invocations; transient failures are never cached.
+	ValidatorMode ValidatorMode `split_words:"true" default:"CACHE"`
+
+	// ValidatorCacheSize is the LRU capacity used by the CACHE validator mode.
+	// Ignored when ValidatorMode is BINARY. A value <= 0 (the default) selects the
+	// implementation default, validator.DefaultCacheSize.
+	ValidatorCacheSize int `split_words:"true"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
 	// Since these metrics can be numerous, it is disabled by default.
@@ -258,6 +337,13 @@ type Settings struct {
 
 	// Enables setting the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
 	EnableAuthMetadata bool `split_words:"true" default:"false"`
+
+	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
+	// Supported values are:
+	// - "OFF": No ReferenceGrant validation. All cross-namespace references are permitted.
+	// - "PERMISSIVE": ReferenceGrant required for BackendRef and SecretRef (default behavior).
+	// - "STRICT": ReferenceGrant required for all cross-namespace references including ExtensionRef.
+	ReferenceGrantMode ReferenceGrantMode `split_words:"true" default:"PERMISSIVE"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
