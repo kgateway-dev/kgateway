@@ -1616,6 +1616,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy HTTP retry", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/http-retry.yaml"},
+			outputFile: "traffic-policy/http-retry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy timeout attached to GRPCRoute", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/grpcroute-timeout.yaml"},
