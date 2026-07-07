@@ -17,7 +17,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -598,11 +597,11 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metadata := pluginutils.AddRouteSourceMetadata(tt.in, tt.initialMetadata)
+			metadata := addRouteSourceMetadata(tt.in, tt.initialMetadata)
 
 			if tt.expected == nil {
 				if metadata != nil && metadata.FilterMetadata != nil {
-					_, ok := metadata.FilterMetadata[pluginutils.RouteSourceMetadataKey]
+					_, ok := metadata.FilterMetadata[routeSourceMetadataKey]
 					assert.False(t, ok, "expected no route source metadata")
 				}
 				return
@@ -611,8 +610,8 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 			require.NotNil(t, metadata, "metadata should not be nil")
 			require.NotNil(t, metadata.FilterMetadata, "filter metadata should not be nil")
 
-			structPb, ok := metadata.FilterMetadata[pluginutils.RouteSourceMetadataKey]
-			require.True(t, ok, "expected route source metadata key %q", pluginutils.RouteSourceMetadataKey)
+			structPb, ok := metadata.FilterMetadata[routeSourceMetadataKey]
+			require.True(t, ok, "expected route source metadata key %q", routeSourceMetadataKey)
 
 			fields := structPb.Fields
 			assert.Equal(t, len(tt.expected), len(fields), "unexpected number of fields")
@@ -673,20 +672,20 @@ func TestRouteSourceMetadataFlag(t *testing.T) {
 			// fully-wired translator (no backends, validator, or GatewayIR required).
 			out := h.initRoutes(in, "generated-name")
 			if h.routeSourceMetadataEnabled {
-				out.Metadata = pluginutils.AddRouteSourceMetadata(in, out.GetMetadata())
+				out.Metadata = addRouteSourceMetadata(in, out.GetMetadata())
 			}
 
 			if !tt.wantMeta {
 				if out.GetMetadata() != nil {
-					_, ok := out.GetMetadata().GetFilterMetadata()[pluginutils.RouteSourceMetadataKey]
+					_, ok := out.GetMetadata().GetFilterMetadata()[routeSourceMetadataKey]
 					assert.False(t, ok, "route_source metadata should be absent when the flag is off")
 				}
 				return
 			}
 
 			require.NotNil(t, out.GetMetadata(), "metadata must not be nil when the flag is on")
-			srcMeta, ok := out.GetMetadata().GetFilterMetadata()[pluginutils.RouteSourceMetadataKey]
-			require.True(t, ok, "filter metadata must contain key %q", pluginutils.RouteSourceMetadataKey)
+			srcMeta, ok := out.GetMetadata().GetFilterMetadata()[routeSourceMetadataKey]
+			require.True(t, ok, "filter metadata must contain key %q", routeSourceMetadataKey)
 
 			fields := srcMeta.GetFields()
 			assert.Equal(t, "HTTPRoute", fields["kind"].GetStringValue())
