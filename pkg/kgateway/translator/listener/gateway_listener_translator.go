@@ -869,9 +869,10 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		if !virtualHostNames[vhostName] {
 			virtualHostNames[vhostName] = true
 			virtualHost := &ir.VirtualHost{
-				Name:     vhostName,
-				Hostname: host,
-				Rules:    vhostRoutes.ToRoutes(),
+				Name:             vhostName,
+				Hostname:         host,
+				Rules:            vhostRoutes.ToRoutes(),
+				AttachedPolicies: hfc.attachedPolicies,
 			}
 			virtualHosts = append(virtualHosts, virtualHost)
 		}

@@ -173,6 +173,11 @@ Routes:
   virtualHosts:
   - domains:
     - tenant-a.example.com
+    metadata:
+      filterMetadata:
+        merge.ListenerPolicy.gateway.kgateway.dev:
+          default.clientCertificateValidation:
+          - gateway.kgateway.dev/ListenerPolicy/default/per-listener-mtls-a
     name: tenant-a-https~tenant-a_example_com
     requireTls: ALL
     routes:
@@ -192,6 +197,11 @@ Routes:
   virtualHosts:
   - domains:
     - tenant-b.example.com
+    metadata:
+      filterMetadata:
+        merge.ListenerPolicy.gateway.kgateway.dev:
+          default.clientCertificateValidation:
+          - gateway.kgateway.dev/ListenerPolicy/default/per-listener-mtls-b
     name: tenant-b-https~tenant-b_example_com
     requireTls: ALL
     routes:
