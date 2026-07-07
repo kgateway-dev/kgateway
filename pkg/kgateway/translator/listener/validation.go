@@ -7,6 +7,7 @@ import (
 
 	istioprotocol "istio.io/istio/pkg/config/protocol"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
@@ -325,11 +326,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 
 	validListenersPerParent := map[string]int{}
 	for _, l := range validListeners {
-		kind := l.Parent.GetObjectKind().GroupVersionKind().Kind
-		// Try to infer the kind if possible
-		if _, ok := l.Parent.(*gwv1.Gateway); ok {
-			kind = "Gateway"
-		}
+		kind := inferKind(l.Parent)
 		parentKey := fmt.Sprintf("%s/%s/%s", kind, l.Parent.GetNamespace(), l.Parent.GetName())
 		validListenersPerParent[parentKey]++
 	}
@@ -563,4 +560,17 @@ func getOrDefaultHostname(hostname *gwv1.Hostname) gwv1.Hostname {
 		ret = *hostname
 	}
 	return ret
+}
+
+func inferKind(obj client.Object) string {
+	if obj.GetObjectKind().GroupVersionKind().Kind != "" {
+		return obj.GetObjectKind().GroupVersionKind().Kind
+	}
+	if _, ok := obj.(*gwv1.Gateway); ok {
+		return "Gateway"
+	}
+	if _, ok := obj.(*gwv1.ListenerSet); ok {
+		return "ListenerSet"
+	}
+	return ""
 }

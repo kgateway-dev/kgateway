@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	MetricsPort    int32 = 9091
-	ReadinessPort  int32 = 8082
-	EnvoyAdminPort int32 = 19000
+	MetricsPort    gwv1.PortNumber = 9091
+	ReadinessPort  gwv1.PortNumber = 8082
+	EnvoyAdminPort gwv1.PortNumber = 19000
 )
 
 var ErrListenerPortReserved = fmt.Errorf("port is reserved")
