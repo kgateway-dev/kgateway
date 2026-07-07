@@ -294,7 +294,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 				// If a listener does not have a protocol conflict with one listener,
 				// it could still have a hostname conflict with another listener
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
-			} else if err := validate.ListenerPort(gw.GatewayParameters, listener, port); err != nil {
+			} else if err := validate.ListenerPort(listener, port); err != nil {
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonInvalid, err.Error())
 			} else {
 				validListeners = append(validListeners, listener)

@@ -14,7 +14,6 @@ import (
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	kgatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -81,14 +80,6 @@ func (c *CommonCollections) InitCollections(
 		}
 	}
 
-	gatewayParameters := krt.WrapClient(
-		kclient.NewFilteredDelayed[*kgatewayv1alpha1.GatewayParameters](
-			c.Client, wellknown.GatewayParametersGVR,
-			kclient.Filter{ObjectFilter: c.Client.ObjectFilter()},
-		),
-		c.KrtOpts.ToOptions("GatewayParameters")...,
-	)
-
 	gateways := krtcollections.NewGatewayIndex(krtcollections.GatewayIndexConfig{
 		KrtOpts:             c.KrtOpts,
 		ControllerNames:     controllerNames,
@@ -98,7 +89,6 @@ func (c *CommonCollections) InitCollections(
 		ListenerSets:        kubeRawListenerSets,
 		GatewayClasses:      gatewayClasses,
 		Namespaces:          namespaces,
-		GatewayParameters:   gatewayParameters,
 	},
 		krtcollections.WithGatewayForDeployerTransformationFunc(c.options.gatewayForDeployerTransformationFunc),
 		krtcollections.WithGatewayForEnvoyTransformationFunc(c.options.gatewayForEnvoyTransformationFunc),

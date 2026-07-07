@@ -114,7 +114,6 @@ func deepMergeStatsConfig(dst *kgateway.StatsConfig, src *kgateway.StatsConfig) 
 	}
 
 	dst.Enabled = MergePointers(dst.GetEnabled(), src.GetEnabled())
-	dst.Port = MergePointers(dst.GetPort(), src.GetPort())
 	dst.RoutePrefixRewrite = MergePointers(dst.GetRoutePrefixRewrite(), src.GetRoutePrefixRewrite())
 	dst.EnableStatsRoute = MergePointers(dst.GetEnableStatsRoute(), src.GetEnableStatsRoute())
 	dst.StatsRoutePrefixRewrite = MergePointers(dst.GetStatsRoutePrefixRewrite(), src.GetStatsRoutePrefixRewrite())

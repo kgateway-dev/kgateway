@@ -7470,14 +7470,6 @@ spec:
                             maxItems: 16
                             type: array
                         type: object
-                      port:
-                        description: |-
-                          Port on which the Envoy stats/metrics server listens.
-                          Defaults to 9091 if not set.
-                        format: int32
-                        maximum: 65535
-                        minimum: 1
-                        type: integer
                       routePrefixRewrite:
                         description: The Envoy stats endpoint to which the metrics
                           are written

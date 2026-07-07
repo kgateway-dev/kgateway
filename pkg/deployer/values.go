@@ -169,7 +169,6 @@ type HelmIstioContainer struct {
 
 type HelmStatsConfig struct {
 	Enabled            *bool             `json:"enabled,omitempty"`
-	Port               *int32            `json:"port,omitempty"`
 	RoutePrefixRewrite *string           `json:"routePrefixRewrite,omitempty"`
 	EnableStatsRoute   *bool             `json:"enableStatsRoute,omitempty"`
 	StatsPrefixRewrite *string           `json:"statsPrefixRewrite,omitempty"`

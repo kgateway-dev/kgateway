@@ -5318,11 +5318,6 @@ func (in *StatsConfig) DeepCopyInto(out *StatsConfig) {
 		*out = new(bool)
 		**out = **in
 	}
-	if in.Port != nil {
-		in, out := &in.Port, &out.Port
-		*out = new(int32)
-		**out = **in
-	}
 	if in.RoutePrefixRewrite != nil {
 		in, out := &in.RoutePrefixRewrite, &out.RoutePrefixRewrite
 		*out = new(string)
