@@ -302,7 +302,6 @@ type Pod struct {
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
-	// Do not use a slice of pointers (Kubernetes code-generator does not support it).
 	// If specified, the pod's tolerations. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core
 	// for details.
