@@ -10,8 +10,6 @@ import (
 )
 
 // Well-known topology label keys, avoid importing k8s.io/api and istio.io/api.
-// Must match the keys read by pkg/krtcollections.LocalityFromLabels; pinned to the
-// canonical constants by TestTopologyLabelKeysMatchCanonical.
 const (
 	labelTopologyRegion  = "topology.kubernetes.io/region"
 	labelTopologyZone    = "topology.kubernetes.io/zone"
