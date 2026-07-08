@@ -106,7 +106,7 @@ Addition (a route starts referencing `service-b`):
 
 - `service-b` enters `ReferencedClustersForEmission`, so assembly emits its cluster in the same coherent snapshot as the new route.
 - If per-client derivation for `service-b` lags the route change within a build, the engine already covers it: `service-b` is referenced but absent, so the flip is held and the new CDS goes out first (`resolveDeferredPerCluster`), bounded by the flip-release timer.
-- The remaining gap is delivery order when cluster and flip land in **one** snapshot: Envoy can apply the RDS before the CDS (see below). The reference-ahead window closes it by extending the *existing* flip-hold primitive with a second trigger: hold the flip not only when the new cluster is absent from the build, but also when it is newly **emitted** and its delivery has not yet been given time to land (window-gated v1; CDS-ACK-gated refinement). The release is the same flip-release mechanism the engine already has — this EP adds a trigger and a release condition, not a new subsystem.
+- The remaining gap is delivery order when cluster and flip land in **one** snapshot: Envoy can apply the RDS before the CDS (see below). The reference-ahead window closes it by extending the *existing* flip-hold primitive with a second trigger: hold the flip not only when the new cluster is absent from the build, but also when it is newly **emitted** and its delivery has not yet been given time to land (window-gated v1; ACK-*accelerated* refinement — ACK may only shorten the window, never extend or replace it; see Delivery ordering). The release is the same flip-release mechanism the engine already has — this EP adds a trigger and a release condition, not a new subsystem.
 
 Removal (a route stops referencing `service-a`):
 
@@ -117,6 +117,7 @@ The grace mechanism follows the `publishGate` pattern (per-client keyed state + 
 
 - A small per-client `dereferencedAt map[string]time.Time` records when each cluster left the referenced set; re-referencing clears the entry, so a flapping route keeps its cluster present rather than oscillating.
 - Expiry is timer-driven: when a grace window elapses, the gate re-publishes the client's snapshot without the pruned cluster, under the same lock as all other publications, so pruning can never race a coherent publish.
+- The same ACK-as-accelerator rule as the reference-ahead side applies (see Delivery ordering): the prune may run early once every known stream for the key has ACKed the de-referencing RDS, but the window is always the bound — window-only is safe, just slower; ACK-gated-only would let one wedged replica pin stale clusters (and their endpoints) indefinitely.
 
 ### Delivery ordering (the real correctness dependency)
 
@@ -130,7 +131,13 @@ Three ways to handle the addition side:
 
 1. **Accept a bounded transition blip (opt-in).** Steady state is unaffected; only a route edit that introduces a not-yet-present cluster blips, bounded by CDS/RDS delivery skew plus warming. This is the pragmatic default for users who value lean config over zero-blip route edits.
 2. **Enable ordered ADS** (`WithOrderedADS()`). Necessary hardening for busy streams, but **not sufficient**: it does not close the ACK-skew window (above), and its fixed CDS-before-RDS order is the wrong order for removals. On its own it narrows the blip; it does not eliminate it.
-3. **Reference-ahead grace (the actual drop-free mechanism).** When the referenced set grows and routes change in the same build, publish the enlarged CDS/EDS first with the *previous* RDS, and release the flip after the reference-ahead window (or, more precisely, once the CDS carrying the new cluster is ACKed — the server callbacks observe per-type ACKs). This recreates, for exactly the transitional cluster, the property emit-all provided globally: the destination is delivered and ACKed before any route names it. It is the same "hold only the flip" shape — and the same bounded flip-release — that `resolveDeferredPerCluster` and `publishGate` already implement for not-yet-derived clusters, and it subsumes ordered ADS whenever the window exceeds delivery+ACK latency.
+3. **Reference-ahead grace (the actual drop-free mechanism).** When the referenced set grows and routes change in the same build, publish the enlarged CDS/EDS first with the *previous* RDS, and release the flip after the reference-ahead window. This recreates, for exactly the transitional cluster, the property emit-all provided globally: the destination is delivered before any route names it. It is the same "hold only the flip" shape — and the same bounded flip-release — that `resolveDeferredPerCluster` and `publishGate` already implement for not-yet-derived clusters, and it subsumes ordered ADS whenever the window exceeds delivery+ACK latency.
+
+The window can be **accelerated by ACK observation, but must never be gated on it**. The distinction is load-bearing:
+
+- The snapshot cache is keyed per unique client identity, and multiple proxy replicas share one key; ACKs arrive per stream. "Release when ACKed" is therefore ill-defined for a shared key: releasing on the first stream's ACK reintroduces the race for the others, and releasing only when the *slowest* stream ACKs lets one wedged or rejecting replica freeze route flips for every replica of the gateway — the unbounded-withhold disease the publication engine exists to remove.
+- The safe rule: release **early** when every known stream for the key has ACKed the CDS carrying the new cluster; release **at the window** regardless. A stream that NACKs counts as "will not ACK" (it keeps its last-accepted config either way) and falls back to the window; the `kgateway_xds_nacks_total` counter makes that visible.
+- The per-stream observation point already exists: the publication-engine work reads `DiscoveryRequest.ErrorDetail` in `OnStreamRequest` for the NACK counter, and per-stream, per-type ACK bookkeeping is an extension of that same callback — not a new integration surface.
 
 The robust, drop-free configuration is therefore **reference-ahead grace (addition safety) plus de-reference grace (removal safety)**, with `WithOrderedADS` as optional defense-in-depth for busy streams. Ordered ADS is not, on its own, an addition-side fix. Shipping referenced-only with neither grace is viable as the opt-in trade-off but must be documented as having a transient transition blip, not as make-before-break.
 
@@ -206,7 +213,7 @@ Phased so each step is independently reviewable and revertible, and nothing user
 ### Phase 3: transition graces (de-reference and reference-ahead)
 
 - Add the de-reference gate: `dereferencedAt` per-client state on (or alongside) `publishGate`, updated when a cluster leaves `ReferencedClustersForEmission`, cleared on re-reference; the emission filter admits graced clusters; a timer prunes and re-publishes when the window elapses, under the gate's lock.
-- Add the reference-ahead trigger to the existing flip-hold: when a build both enlarges the emitted cluster set and changes RDS/LDS to reference the new clusters, hold the flip (publishing the enlarged CDS/EDS with the previously-published RDS/LDS) and release it via the existing flip-release path after `ClusterReferenceAhead` (v1: window-gated; CDS-ACK-gated via server callbacks as a follow-up refinement).
+- Add the reference-ahead trigger to the existing flip-hold: when a build both enlarges the emitted cluster set and changes RDS/LDS to reference the new clusters, hold the flip (publishing the enlarged CDS/EDS with the previously-published RDS/LDS) and release it via the existing flip-release path after `ClusterReferenceAhead` (v1: window-gated; follow-up: ACK-*accelerated* early release — all known streams for the key ACKed, window as the unconditional bound, never ACK-gated — extending the per-stream observation point `OnStreamRequest` already uses for `kgateway_xds_nacks_total`).
 - Add `ClusterDereferenceGrace` and `ClusterReferenceAhead` settings.
 - Tests: route flip `a -> b` yields snapshot 1 with CDS `{a,b}` + RDS still `-> a`, snapshot 2 with RDS `-> b`, then a later snapshot with `a` pruned; a flapping route does not oscillate; port a deterministic ADS wire-order probe harness into the proxy_syncer test suite and drive the emission path through the ACK-skew scenario, asserting the flip is never delivered before its cluster; integration confirms no endpoint gap on the stable path through churn across HTTP/GRPC/TCP/TLS.
 
@@ -230,6 +237,16 @@ This EP and Option B are not mutually exclusive. Option B is the quick standalon
 ### Option C: explicit `Backend` kube type plus disable-discovery
 
 Add a kube-type `Backend` resource so users declare which Services become clusters, plus a setting to disable auto-discovery entirely (maintainer suggestion in the issue thread). Maximal control, largest UX change.
+
+### Option D: generalized NACK-defensive staged publication (considered, rejected)
+
+A broader version of this EP's graces was weighed and rejected: split *any* snapshot whose partial rejection could yield an incoherent applied state into prerequisite-first snapshots (CDS in one version, the dependent RDS in the next), advancing each step on acknowledgment. The graces in this EP are the deliberately-bounded slice of that idea; the general mechanism fails on three counts:
+
+- **Per-key cache versus per-stream ACK.** The snapshot cache is keyed per unique client identity and replicas share keys, so ACK-gated advancement is either per-replica cache keys (undoing the identity collapse that controls per-client cost) or slowest-replica gating, where one wedged or rejecting pod freezes updates for every replica of its gateway — an unbounded withhold, the failure family the publication engine removed.
+- **Ladders under churn.** Staged publication makes every build a multi-step state machine that must be reconciled against newer builds arriving mid-ladder. Under the churn rates that motivated the engine work, ladders are routinely superseded before completing; the supersession logic is the same stateful, readiness-gated publication shape the engine deleted.
+- **Marginal benefit inverts the stale-versus-truth decision.** A partial NACK requires the control plane to emit a rejected proto — a translation bug class that is pre-validated against (strict validation mode) and now loudly observable and CI-asserted to be zero (`kgateway_xds_nacks_total`). During such a bug, Envoy already holds last-accepted config per type; the incoherence is confined to routes flipped in the same version, which fail visibly. Staging would instead keep serving stale targets while the bug is live — the opposite of the engine's fail-visible posture — at the cost of the two problems above.
+
+The two graces stage publication exactly where transitions are *routine operation* rather than a bug class (clusters entering and leaving the referenced set), remain window-bounded with ACK only as an accelerator, and reuse the existing hold/release primitives instead of introducing ladders.
 
 ### Status quo mitigations
 
@@ -259,7 +276,7 @@ Add a kube-type `Backend` resource so users declare which Services become cluste
 
 - **Prune versus indefinite carry-forward** for de-referenced clusters. This EP uses time-bounded grace-then-prune; the alternative (retain until a positive signal) is the open decision from the #14184 design notes and should be settled here, since it shapes removal semantics.
 - **Default durations for the two windows**, and whether to derive them from observed per-type ACK latency (the server callbacks expose it) rather than static values. Large fleets with batch route churn are the environments where measured-ACK-derived windows matter most.
-- **Window-gated versus ACK-gated reference-ahead.** The window version is simple and subsumes ordered ADS statistically; the ACK-gated version is exact (release the flip when the CDS carrying the new cluster is ACKed) but couples publish sequencing to per-stream ACK state. This EP proposes window-gated v1, ACK-gated as a refinement.
+- **Window-gated versus ACK-driven reference-ahead (resolved).** The window version is simple and subsumes ordered ADS statistically; an exact ACK-*gated* release is rejected because the snapshot cache is per-key while ACKs are per-stream (see Option D): with shared keys it degenerates to slowest-replica gating, an unbounded withhold. Resolution: window-gated v1; as a refinement, ACK may *accelerate* the release (all known streams for the key ACKed the prerequisite CDS) but the window remains the unconditional bound.
 - **Whether the reference-ahead window and the engine's flip-release deadline should be one knob or two.** They are the same bounded-hold primitive with different release conditions; this EP keeps them separate (the deadline is a safety bound, the window a pacing control) but a single-knob simplification is plausible.
 - **Whether to ship Option B (Service label selector) first** as the immediate mitigation while this lands.
 - **Whether to also enable ordered ADS (`WithOrderedADS`)** as busy-stream hardening alongside the graces — it cannot make additions drop-free on its own (ACK skew, probed), so the question is narrowly whether its latency/behavior change for all clients is worth the narrowed blip for users who opt out of reference-ahead.
