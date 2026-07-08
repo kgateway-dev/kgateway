@@ -1,6 +1,11 @@
 name: 'KGateway Load Tests'
 description: 'Run KGateway load testing suite'
 
+inputs:
+  cluster-node-version:
+    description: "Kind node version (e.g. v1.32.5@sha256:...)"
+    required: true
+
 runs:
   using: "composite"
   steps:
@@ -16,6 +21,7 @@ runs:
       run: ./hack/kind/setup-kind.sh
       env:
         SKIP_DOCKER: "false"
+        CLUSTER_NODE_VERSION: ${{ inputs.cluster-node-version }}
 
     - name: Install KGateway CRDs via Helm
       shell: bash

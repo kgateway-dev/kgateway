@@ -193,8 +193,6 @@ controller:
     tls:
       # -- Enable TLS encryption for xDS communication. When enabled, the xDS server (port 9977) uses TLS. You must create a Secret named 'kgateway-xds-cert' in the kgateway installation namespace. The Secret must be of type 'kubernetes.io/tls' with 'tls.crt', 'tls.key', and 'ca.crt' data fields present.
       enabled: false
-  # -- Disable the Envoy proxy stats/metrics server (port 9091 will no longer be reserved).
-  disableStatsOnProxy: false
   # -- Enable dynamic discovery of AWS EC2 instances for `Backend` resources.
   enableAwsEc2Discovery: false
   # -- Set how often the controller refreshes discovered AWS EC2 instances for `Backend` resources.
