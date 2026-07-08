@@ -201,9 +201,10 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 
 // setFallBackConfig creates a synthetic, catch-all virtual host that returns 500 errors
 // for all traffic that references this vhost.
-// Note: the route created here does not carry dev.kgateway.route_source filter metadata
-// because this function has no access to ir.HttpRouteRuleMatchIR — it is intentionally
-// called only in error paths where the original route context is no longer available.
+// Note: the route created here does not carry dev.kgateway.route_source filter metadata.
+// It is only used on error paths, where it replaces an entire RouteConfiguration or
+// virtual host with a single catch-all route — so there is no single originating xRoute
+// rule to attribute the source metadata to.
 func setFallBackConfig(name, domain string) *envoyroutev3.VirtualHost {
 	return &envoyroutev3.VirtualHost{
 		Domains: []string{domain},
