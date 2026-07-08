@@ -434,6 +434,50 @@ fn process_headers<T: TransformationOps>(
     Ok(())
 }
 
+fn parse_mtls_value(value: &str) -> bool {
+    let normalized = value.trim().to_ascii_lowercase();
+    matches!(normalized.as_str(), "1" | "true" | "yes" | "on")
+}
+
+fn get_connection_value<T: TransformationOps>(ops: &mut T) -> Option<minijinja::Value> {
+    let mut connection_map = HashMap::new();
+    let attrs = [
+        "connection.id",
+        "connection.mtls",
+        "connection.requested_server_name",
+        "connection.tls_version",
+        "connection.subject_local_certificate",
+        "connection.subject_peer_certificate",
+        "connection.dns_san_local_certificate",
+        "connection.dns_san_peer_certificate",
+        "connection.uri_san_local_certificate",
+        "connection.uri_san_peer_certificate",
+        "connection.sha256_peer_certificate_digest",
+        "connection.transport_failure_reason",
+        "connection.termination_details",
+    ];
+
+    for attr in attrs {
+        if let Some(val) = ops.get_connection_attribute(attr) {
+            let key = attr.strip_prefix("connection.").unwrap_or(attr);
+            if attr == "connection.mtls" {
+                connection_map.insert(
+                    key.to_string(),
+                    minijinja::Value::from(parse_mtls_value(&val)),
+                );
+            } else {
+                connection_map.insert(key.to_string(), minijinja::Value::from(val));
+            }
+        }
+    }
+
+    if connection_map.is_empty() {
+        None
+    } else {
+        Some(minijinja::Value::from(connection_map))
+    }
+}
+
 /// Transform Request
 ///
 /// On any header rendering errors, we will remove the header and continue
@@ -454,6 +498,10 @@ pub fn transform_request<T: TransformationOps>(
     let value = minijinja::Value::from_serialize(request_headers_map);
     m.insert(STATE_LOOKUP_KEY_HEADERS.to_string(), value.clone());
     m.insert(STATE_LOOKUP_KEY_REQ_HEADERS.to_string(), value);
+
+    if let Some(conn) = get_connection_value(&mut ops) {
+        m.insert("connection".to_string(), conn);
+    }
 
     let mut parsed_body_as_json = false;
     if flags.contains(ProcessFlags::BODY) {
@@ -578,6 +626,10 @@ pub fn transform_response<T: TransformationOps>(
         STATE_LOOKUP_KEY_REQ_HEADERS.to_string(),
         minijinja::Value::from_serialize(request_headers_map),
     );
+
+    if let Some(conn) = get_connection_value(&mut ops) {
+        m.insert("connection".to_string(), conn);
+    }
     let mut parsed_body_as_json = false;
     if flags.contains(ProcessFlags::BODY) {
         if let Some(body_transform) = transform.body.as_ref() {

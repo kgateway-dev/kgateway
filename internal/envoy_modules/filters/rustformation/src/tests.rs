@@ -321,3 +321,162 @@ fn test_json_body_extracted_from_received_when_buffered_is_empty() {
         abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
     );
 }
+
+#[test]
+fn test_tls_connection_properties() {
+    let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
+
+    let json_str = r#"
+    {
+      "request": {
+        "set": [
+          { "name": "X-TLS-Version", "value": "{{ connection.tls_version }}" },
+          { "name": "X-mTLS", "value": "{{ connection.mtls }}" },
+          { "name": "X-Client-Cert-Digest", "value": "{{ connection.sha256_peer_certificate_digest }}" },
+          { "name": "X-Conn-ID", "value": "{{ connection.id }}" }
+        ]
+      }
+    }
+    "#;
+    let filter_conf = FilterConfig::new(json_str).expect("Failed to parse filter config json");
+    let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+
+    envoy_filter
+        .expect_get_most_specific_route_config()
+        .returning(|| None);
+
+    envoy_filter
+        .expect_get_request_headers()
+        .returning(|| vec![(EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com"))]);
+
+    // Mock the get_attribute_string calls
+    envoy_filter.expect_get_attribute_string().returning(|id| {
+        match id {
+            abi::envoy_dynamic_module_type_attribute_id::ConnectionTlsVersion => {
+                Some(EnvoyBuffer::new(b"TLSv1.3"))
+            }
+            abi::envoy_dynamic_module_type_attribute_id::ConnectionMtls => {
+                Some(EnvoyBuffer::new(&[1])) // raw byte 1 represents true
+            }
+            abi::envoy_dynamic_module_type_attribute_id::ConnectionSha256PeerCertificateDigest => {
+                Some(EnvoyBuffer::new(b"some_sha256_digest"))
+            }
+            abi::envoy_dynamic_module_type_attribute_id::ConnectionId => {
+                Some(EnvoyBuffer::new(b"12345"))
+            }
+            _ => None,
+        }
+    });
+
+    let mut seq = Sequence::new();
+    envoy_filter
+        .expect_set_request_header()
+        .times(1)
+        .in_sequence(&mut seq)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-TLS-Version");
+            assert_eq!(std::str::from_utf8(value).unwrap(), "TLSv1.3");
+            true
+        });
+
+    envoy_filter
+        .expect_set_request_header()
+        .times(1)
+        .in_sequence(&mut seq)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-mTLS");
+            assert_eq!(std::str::from_utf8(value).unwrap(), "true");
+            true
+        });
+
+    envoy_filter
+        .expect_set_request_header()
+        .times(1)
+        .in_sequence(&mut seq)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-Client-Cert-Digest");
+            assert_eq!(std::str::from_utf8(value).unwrap(), "some_sha256_digest");
+            true
+        });
+
+    envoy_filter
+        .expect_set_request_header()
+        .times(1)
+        .in_sequence(&mut seq)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-Conn-ID");
+            assert_eq!(std::str::from_utf8(value).unwrap(), "12345");
+            true
+        });
+
+    let status = filter.on_request_headers(&mut envoy_filter, true);
+    assert_eq!(
+        status,
+        abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue
+    );
+}
+
+#[test]
+fn test_tls_connection_properties_in_response_and_false_mtls() {
+    let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
+
+    let json_str = r#"
+    {
+      "response": {
+        "set": [
+          { "name": "X-Response-Conn-ID", "value": "{{ connection.id }}" },
+          { "name": "X-Response-mTLS", "value": "{{ connection.mtls }}" }
+        ]
+      }
+    }
+    "#;
+    let filter_conf = FilterConfig::new(json_str).expect("Failed to parse filter config json");
+    let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+
+    envoy_filter
+        .expect_get_most_specific_route_config()
+        .returning(|| None);
+
+    envoy_filter
+        .expect_get_response_headers()
+        .returning(|| vec![(EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com"))]);
+
+    envoy_filter
+        .expect_get_attribute_string()
+        .returning(|id| match id {
+            abi::envoy_dynamic_module_type_attribute_id::ConnectionId => {
+                Some(EnvoyBuffer::new(b"67890"))
+            }
+            abi::envoy_dynamic_module_type_attribute_id::ConnectionMtls => {
+                Some(EnvoyBuffer::new(&[]))
+            }
+            _ => None,
+        });
+
+    let mut seq = Sequence::new();
+    envoy_filter
+        .expect_set_response_header()
+        .times(1)
+        .in_sequence(&mut seq)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-Response-Conn-ID");
+            assert_eq!(std::str::from_utf8(value).unwrap(), "67890");
+            true
+        });
+
+    envoy_filter
+        .expect_set_response_header()
+        .times(1)
+        .in_sequence(&mut seq)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-Response-mTLS");
+            assert_eq!(std::str::from_utf8(value).unwrap(), "false");
+            true
+        });
+
+    let status = filter.on_response_headers(&mut envoy_filter, true);
+    assert_eq!(
+        status,
+        abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue
+    );
+}
