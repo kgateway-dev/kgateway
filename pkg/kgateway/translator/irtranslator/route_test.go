@@ -664,14 +664,14 @@ func TestRouteSourceMetadataFlag(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &httpRouteConfigurationTranslator{
-				pluginPass:                 TranslationPassPlugins{},
-				routeSourceMetadataEnabled: tt.flagEnabled,
+				pluginPass:                TranslationPassPlugins{},
+				enableRouteSourceMetadata: tt.flagEnabled,
 			}
 
 			// Replicate the flag gate in envoyRoutes() without needing a
 			// fully-wired translator (no backends, validator, or GatewayIR required).
 			out := h.initRoutes(in, "generated-name")
-			if h.routeSourceMetadataEnabled {
+			if h.enableRouteSourceMetadata {
 				out.Metadata = addRouteSourceMetadata(in, out.GetMetadata())
 			}
 

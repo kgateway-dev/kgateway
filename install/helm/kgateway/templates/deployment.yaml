@@ -128,8 +128,8 @@ spec:
               value: {{ .Values.policyMerge | toJson | quote }}
             - name: KGW_VALIDATION_MODE
               value: {{ include "kgateway.validationLevel" . | quote }}
-            {{- if .Values.routeSourceMetadataEnabled }}
-            - name: KGW_ROUTE_SOURCE_METADATA_ENABLED
+            {{- if .Values.enableRouteSourceMetadata }}
+            - name: KGW_ENABLE_ROUTE_SOURCE_METADATA
               value: "true"
             {{- end }}
             - name: KGW_ENABLE_AWS_EC2_DISCOVERY

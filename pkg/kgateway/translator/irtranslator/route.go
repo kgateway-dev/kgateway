@@ -35,14 +35,14 @@ type httpRouteConfigurationTranslator struct {
 	fc               ir.FilterChainCommon
 	attachedPolicies ir.AttachedPolicies
 
-	routeConfigName            string
-	reporter                   reportssdk.Reporter
-	requireTlsOnVirtualHosts   bool
-	pluginPass                 TranslationPassPlugins
-	logger                     *slog.Logger
-	validationLevel            apisettings.ValidationMode
-	validator                  validator.Validator
-	routeSourceMetadataEnabled bool
+	routeConfigName           string
+	reporter                  reportssdk.Reporter
+	requireTlsOnVirtualHosts  bool
+	pluginPass                TranslationPassPlugins
+	logger                    *slog.Logger
+	validationLevel           apisettings.ValidationMode
+	validator                 validator.Validator
+	enableRouteSourceMetadata bool
 }
 
 const (
@@ -250,7 +250,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 ) *envoyroutev3.Route {
 	out := h.initRoutes(in, generatedName)
 
-	if h.routeSourceMetadataEnabled {
+	if h.enableRouteSourceMetadata {
 		out.Metadata = addRouteSourceMetadata(in, out.GetMetadata())
 	}
 

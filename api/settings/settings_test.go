@@ -162,9 +162,9 @@ func TestSettings(t *testing.T) {
 						Namespace: new(gwv1.Namespace("infra")),
 					},
 				},
-				EnableAuthMetadata:         true,
-				RouteSourceMetadataEnabled: true,
-				ReferenceGrantMode:         ReferenceGrantStrict,
+				EnableAuthMetadata:        true,
+				EnableRouteSourceMetadata: true,
+				ReferenceGrantMode:        ReferenceGrantStrict,
 			},
 		},
 		{

@@ -319,11 +319,11 @@ type Settings struct {
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
 
-	// RouteSourceMetadataEnabled enables attaching dev.kgateway.route_source filter metadata
+	// EnableRouteSourceMetadata enables attaching dev.kgateway.route_source filter metadata
 	// to every Envoy route. This metadata includes the Kubernetes source object (kind, group,
 	// name, namespace, rule) for each route, which can be useful for debugging and observability.
 	// Disabled by default.
-	RouteSourceMetadataEnabled bool `split_words:"true" default:"false"`
+	EnableRouteSourceMetadata bool `split_words:"true" default:"false"`
 
 	// GatewayClassParametersRefs configures the GatewayParameters references to set on the default GatewayClasses.
 	// Format: JSON map where keys are GatewayClass names and values are objects with "name" (required),

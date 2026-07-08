@@ -1592,7 +1592,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 		}, func(s *apisettings.Settings) {
-			s.RouteSourceMetadataEnabled = true
+			s.EnableRouteSourceMetadata = true
 		})
 	})
 
@@ -1605,7 +1605,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 		}, func(s *apisettings.Settings) {
-			s.RouteSourceMetadataEnabled = true
+			s.EnableRouteSourceMetadata = true
 		})
 	})
 
