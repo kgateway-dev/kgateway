@@ -693,8 +693,8 @@ spec:
                         description: |-
                           PreferLocal enables Envoy's zone-aware routing which prefers sending traffic
                           to local zone endpoints while maintaining overall traffic balance across zones.
-                          This requires the Envoy proxy to be aware of its own zone, which can be configured
-                          via the KGATEWAY_NODE_ZONE environment variable on the proxy pod.
+                          This requires the Envoy proxy to be aware of its own zone; see the zone-aware
+                          routing guide for how proxy locality is configured.
                           See https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/zone_aware
                         properties:
                           force:

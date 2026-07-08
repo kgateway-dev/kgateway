@@ -6,7 +6,7 @@ metadata:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
-  name: zone-a-gateway
+  name: zone-gw-params
   namespace: zone-aware
 spec:
   kube:
@@ -23,12 +23,6 @@ spec:
           matchLabels:
             app.kubernetes.io/name: zone-gw
             app.kubernetes.io/instance: zone-gw
-    envoyContainer:
-      env:
-      - name: KGATEWAY_NODE_REGION
-        value: us-east-1
-      - name: KGATEWAY_NODE_ZONE
-        value: us-east-1a
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -41,7 +35,7 @@ spec:
     parametersRef:
       group: gateway.kgateway.dev
       kind: GatewayParameters
-      name: zone-a-gateway
+      name: zone-gw-params
   listeners:
   - name: http
     protocol: HTTP

@@ -150,7 +150,33 @@ func waitForZoneAwareResources(t *testing.T, ctx context.Context, ti *e2e.TestIn
 		Namespace: zoneAwareNamespace,
 	}, gomega.Equal(3), 2*time.Minute)
 	waitForGatewayPodsInZones(t, ctx, ti)
+	requireGatewayPodTopologyLabels(t, ctx, ti)
 	waitForEndpointCount(t, ctx, ti, 3)
+}
+
+func requireGatewayPodTopologyLabels(t *testing.T, ctx context.Context, ti *e2e.TestInstallation) {
+	t.Helper()
+
+	nodes := &corev1.NodeList{}
+	require.NoError(t, ti.ClusterContext.Client.List(ctx, nodes), "list nodes")
+	nodeZones := map[string]string{}
+	for _, node := range nodes.Items {
+		nodeZones[node.Name] = node.Labels[corev1.LabelTopologyZone]
+	}
+
+	pods := &corev1.PodList{}
+	require.NoError(t, ti.ClusterContext.Client.List(ctx, pods,
+		crclient.InNamespace(zoneAwareNamespace),
+		crclient.MatchingLabels{wellknown.GatewayNameLabel: zoneAwareGateway},
+	), "list gateway pods")
+
+	for _, pod := range pods.Items {
+		if pod.Spec.NodeName == "" || !podReady(&pod) {
+			continue
+		}
+		require.Equal(t, nodeZones[pod.Spec.NodeName], pod.Labels[corev1.LabelTopologyZone],
+			"gateway pod %s must carry its node's topology.kubernetes.io/zone label", pod.Name)
+	}
 }
 
 func waitForZoneAwareCluster(t *testing.T, ctx context.Context, ti *e2e.TestInstallation, expectZoneAware bool) {
