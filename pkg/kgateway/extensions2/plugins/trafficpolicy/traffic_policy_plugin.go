@@ -399,7 +399,16 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 		return
 	}
 
-	p.handlePerVHostPolicies(policy.spec, out)
+	// Apply the retry policy to each route rather than to the vhost. A route-level
+	// retry policy (set by a more specific TrafficPolicy or the builtin HTTPRouteRetry
+	// policy) fully overrides the vhost-level one in Envoy, so applying it per route
+	// keeps that precedence explicit and consistent with the other per-route settings.
+	if policy.spec.retry != nil {
+		for _, route := range out.Routes {
+			applyRetryPolicy(policy.spec.retry, route)
+		}
+	}
+
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 }
 
@@ -795,11 +804,7 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 		}
 	}
 
-	// Only set the retry policy if it is not already set, which implies that it was
-	// set by the builtin HTTPRouteRetry policy
-	if action.GetRetryPolicy() == nil && spec.retry != nil {
-		action.RetryPolicy = spec.retry.policy
-	}
+	applyRetryPolicy(spec.retry, out)
 
 	if action.GetInternalRedirectPolicy() == nil && spec.internalRedirect != nil {
 		action.InternalRedirectPolicy = spec.internalRedirect.policy
@@ -812,13 +817,20 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	p.handleRouteTracing(spec, out)
 }
 
-// handlePerVHostPolicies handles policies that are meant to be processed at the vhost level
-func (p *trafficPolicyPluginGwPass) handlePerVHostPolicies(
-	spec trafficPolicySpecIr,
-	out *envoyroutev3.VirtualHost,
-) {
-	if spec.retry != nil {
-		out.RetryPolicy = spec.retry.policy
+func applyRetryPolicy(retry *retryIR, out *envoyroutev3.Route) {
+	if retry == nil || out == nil {
+		return
+	}
+
+	action := out.GetRoute()
+	if action == nil {
+		return
+	}
+
+	// Only set the retry policy if it is not already set, which implies that it was
+	// set by the builtin HTTPRouteRetry policy or a more specific TrafficPolicy.
+	if action.GetRetryPolicy() == nil {
+		action.RetryPolicy = retry.policy
 	}
 }
 

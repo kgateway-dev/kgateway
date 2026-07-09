@@ -7,6 +7,7 @@ import (
 
 	istioprotocol "istio.io/istio/pkg/config/protocol"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
@@ -294,7 +295,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 				// If a listener does not have a protocol conflict with one listener,
 				// it could still have a hostname conflict with another listener
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
-			} else if err := validate.ListenerPort(listener, port, settings.DisableStatsOnProxy); err != nil {
+			} else if err := validate.ListenerPort(listener, port); err != nil {
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonInvalid, err.Error())
 			} else {
 				validListeners = append(validListeners, listener)
@@ -325,11 +326,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 
 	validListenersPerParent := map[string]int{}
 	for _, l := range validListeners {
-		// If the kind is missing, assume it is a gateway
-		kind := l.Parent.GetObjectKind().GroupVersionKind().Kind
-		if kind == "" {
-			kind = "Gateway"
-		}
+		kind := inferKind(l.Parent)
 		parentKey := fmt.Sprintf("%s/%s/%s", kind, l.Parent.GetNamespace(), l.Parent.GetName())
 		validListenersPerParent[parentKey]++
 	}
@@ -563,4 +560,17 @@ func getOrDefaultHostname(hostname *gwv1.Hostname) gwv1.Hostname {
 		ret = *hostname
 	}
 	return ret
+}
+
+func inferKind(obj client.Object) string {
+	if obj.GetObjectKind().GroupVersionKind().Kind != "" {
+		return obj.GetObjectKind().GroupVersionKind().Kind
+	}
+	if _, ok := obj.(*gwv1.Gateway); ok {
+		return "Gateway"
+	}
+	if _, ok := obj.(*gwv1.ListenerSet); ok {
+		return "ListenerSet"
+	}
+	return ""
 }

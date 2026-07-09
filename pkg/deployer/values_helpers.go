@@ -43,11 +43,7 @@ func GetPortsValues(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters) 
 	// Add ports from Gateway listeners
 	for _, port := range gw.Ports.List() {
 		portName := listener.GenerateListenerNameFromPort(port)
-		disableStatsOnProxy := gwp != nil &&
-			gwp.Spec.GetKube().GetStats() != nil &&
-			gwp.Spec.GetKube().GetStats().GetEnabled() != nil &&
-			!*gwp.Spec.GetKube().GetStats().GetEnabled()
-		if err := validate.ListenerPort(ir.Listener{Listener: gwv1.Listener{Port: port}}, port, disableStatsOnProxy); err != nil {
+		if err := validate.ListenerPort(ir.Listener{Listener: gwv1.Listener{Port: port}}, port); err != nil {
 			// skip invalid ports; statuses are handled in the translator
 			logger.Error("skipping port", "gateway", gw.ResourceName(), "error", err)
 			continue

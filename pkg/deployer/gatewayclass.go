@@ -48,6 +48,7 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 	for _, feature := range features.UDPRouteFeatures.UnsortedList() {
 		exemptFeatures.Insert(feature)
 	}
+
 	return getSupportedFeatures(exemptFeatures)
 }
 

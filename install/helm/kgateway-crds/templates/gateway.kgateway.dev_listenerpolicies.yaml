@@ -2567,7 +2567,7 @@ spec:
                                       description: |-
                                         Remove the given header(s) from the HTTP request before the action. The
                                         value of Remove is a list of HTTP header names. Note that header names are
-                                        case-insensitive (see https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+                                        case-insensitive (see [RFC 2616, Section 4.2](https://datatracker.ietf.org/doc/html/rfc2616#section-4.2)).
 
                                         Input:
                                           GET /foo HTTP/1.1
@@ -5788,7 +5788,7 @@ spec:
                                             description: |-
                                               Remove the given header(s) from the HTTP request before the action. The
                                               value of Remove is a list of HTTP header names. Note that header names are
-                                              case-insensitive (see https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+                                              case-insensitive (see [RFC 2616, Section 4.2](https://datatracker.ietf.org/doc/html/rfc2616#section-4.2)).
 
                                               Input:
                                                 GET /foo HTTP/1.1
