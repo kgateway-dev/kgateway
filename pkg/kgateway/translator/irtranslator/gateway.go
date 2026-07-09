@@ -63,6 +63,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 			r := c.ResourcesToAdd()
 			res.ExtraClusters = append(res.ExtraClusters, r.Clusters...)
 			res.Secrets = append(res.Secrets, r.Secrets...)
+			res.Listeners = append(res.Listeners, r.InternalListeners...)
 		}
 	}
 

@@ -127,6 +127,13 @@ type HcmContext struct {
 	Gateway      GatewayIR
 }
 
+// TcpBackendContext is the context passed to ApplyForBackendTCP for every
+// backend of a TCP filter chain.
+type TcpBackendContext struct {
+	FilterChainName string
+	Backend         *BackendObjectIR
+}
+
 // ProxyTranslationPass represents a single translation pass for a gateway using envoy. It can hold state
 // for the duration of the translation.
 // Each of the functions here will be called in the order they appear in the interface.
@@ -145,6 +152,13 @@ type ProxyTranslationPass interface {
 		pCtx *RouteBackendContext,
 		in HttpBackend,
 		out *envoyroutev3.Route,
+	) error
+
+	// ApplyForBackendTCP is called for every backend of a TCP filter chain.
+	// No policy is applied. Plugins that need to emit per-backend resources
+	// (see ResourcesToAdd) for TCP-routed backends should implement this.
+	ApplyForBackendTCP(
+		pCtx *TcpBackendContext,
 	) error
 
 	// ApplyForRouteBackend applies a policy attached to a specific Backend (via extensionRef on the BackendRef).
@@ -218,6 +232,10 @@ func (s UnimplementedProxyTranslationPass) ApplyForBackend(pCtx *RouteBackendCon
 	return nil
 }
 
+func (s UnimplementedProxyTranslationPass) ApplyForBackendTCP(pCtx *TcpBackendContext) error {
+	return nil
+}
+
 func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
 }
 
@@ -251,6 +269,11 @@ func (s UnimplementedProxyTranslationPass) ResourcesToAdd() Resources {
 type Resources struct {
 	Clusters []*envoyclusterv3.Cluster
 	Secrets  []*envoytlsv3.Secret
+	// InternalListeners are internal envoy listeners
+	// (https://www.envoyproxy.io/docs/envoy/latest/configuration/other_features/internal_listener)
+	// contributed by the plugin, e.g. to bridge a cluster's endpoints to other
+	// clusters. They are added to the proxy's listener resources as-is.
+	InternalListeners []*envoylistenerv3.Listener
 }
 
 type GwTranslationCtx struct{}

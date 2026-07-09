@@ -441,6 +441,22 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 			reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, h.pluginPass, backend.BackendObject)
 		}
 	}
+	for _, backend := range l.BackendRefs {
+		if backend.BackendObject == nil {
+			continue
+		}
+		pass := h.pluginPass[backend.BackendObject.GetGroupKind()]
+		if pass == nil {
+			continue
+		}
+		if err := pass.ApplyForBackendTCP(&ir.TcpBackendContext{
+			FilterChainName: l.FilterChainName,
+			Backend:         backend.BackendObject,
+		}); err != nil {
+			logger.Error("failed to apply plugin for TCP backend",
+				"plugin", pass.Name, "backend", backend.BackendObject.ResourceName(), "error", err)
+		}
+	}
 	if len(l.BackendRefs) == 1 {
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
 			Cluster: l.BackendRefs[0].ClusterName,

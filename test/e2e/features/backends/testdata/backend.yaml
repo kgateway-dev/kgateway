@@ -10,4 +10,5 @@ spec:
     hosts:
       - host: nginx.nginx-shared.svc # static reference to the shared nginx Service (ns nginx-shared)
         port: 8080
-        
+      - host: http-echo.http-echo.svc # static reference to the shared nginx Service (ns nginx-shared)
+        port: 3000

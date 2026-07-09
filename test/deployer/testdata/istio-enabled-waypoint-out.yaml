@@ -32,6 +32,10 @@ data:
         role: kgateway-kube-gateway-api~default~waypoint
     cluster_manager:
       local_cluster_name: "waypoint.default"
+    bootstrap_extensions:
+    - name: envoy.bootstrap.internal_listener
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.bootstrap.internal_listener.v3.InternalListener
     static_resources:
       listeners:
       - name: readiness_listener

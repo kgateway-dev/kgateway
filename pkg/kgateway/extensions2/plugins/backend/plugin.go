@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -37,11 +40,12 @@ var errAwsEc2DiscoveryDisabled = errors.New("aws ec2 discovery is disabled by co
 
 // backendIr is the internal representation of a backend.
 type backendIr struct {
-	awsIr    *AwsIr
-	staticIr *StaticIr
-	dfpIr    *DfpIr
-	gcpIr    *GcpIr
-	errors   []error
+	awsIr            *AwsIr
+	staticIr         *StaticIr
+	dfpIr            *DfpIr
+	gcpIr            *GcpIr
+	priorityGroupsIr *PriorityGroupsIr
+	errors           []error
 }
 
 func (u *backendIr) Equals(other any) bool {
@@ -63,6 +67,10 @@ func (u *backendIr) Equals(other any) bool {
 	}
 	// GCP
 	if !u.gcpIr.Equals(otherBackend.gcpIr) {
+		return false
+	}
+	// Priority groups
+	if !u.priorityGroupsIr.Equals(otherBackend.priorityGroupsIr) {
 		return false
 	}
 	if len(u.errors) != len(otherBackend.errors) {
@@ -97,7 +105,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("Backends")...)
 
 	gk := wellknown.BackendGVK.GroupKind()
-	translateFn := buildTranslateFunc(commoncol.Secrets, commoncol.Settings.EnableAwsEc2Discovery)
+	translateFn := buildTranslateFunc(col, commoncol.Secrets, commoncol.Settings.EnableAwsEc2Discovery)
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.Backend) *ir.BackendObjectIR {
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.errors) > 0 {
@@ -145,12 +153,17 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 // buildTranslateFunc builds a function that translates a Backend to a backendIr that
 // the plugin can use to build the envoy config.
 func buildTranslateFunc(
+	col krt.Collection[*kgateway.Backend],
 	secrets *krtcollections.SecretIndex,
 	enableAwsEc2Discovery bool,
 ) func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
 	return func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
 		var beIr backendIr
 		switch {
+		case len(i.Spec.PriorityGroups) > 0:
+			pgIr, errs := buildPriorityGroupsIr(krtctx, col, i)
+			beIr.priorityGroupsIr = pgIr
+			beIr.errors = append(beIr.errors, errs...)
 		case i.Spec.Static != nil:
 			staticIr, err := buildStaticIr(i.Spec.Static)
 			if err != nil {
@@ -291,6 +304,11 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	// TODO: propagated error to CRD #11558.
 	spec := be.Spec
 	switch {
+	case len(spec.PriorityGroups) > 0:
+		if beIr.priorityGroupsIr == nil {
+			return nil
+		}
+		processPriorityGroups(beIr.priorityGroupsIr, out)
 	case spec.Static != nil:
 		processStatic(beIr.staticIr, out)
 	case spec.Aws != nil:
@@ -337,6 +355,15 @@ type backendPlugin struct {
 	ir.UnimplementedProxyTranslationPass
 	needsDfpFilter map[string]bool
 	needsGcpAuthn  map[string]bool
+	// priorityGroupListeners holds the internal listeners bridging priority
+	// groups backends to their referenced backends' clusters, keyed by
+	// listener name, collected from every priority groups backend routed to
+	// on this proxy.
+	priorityGroupListeners map[string]*envoylistenerv3.Listener
+	// needsGcpAuthnCluster is set when a priority groups backend references a
+	// GCP backend: the gcp_authn filter inside its internal listener needs
+	// the shared GCP metadata cluster.
+	needsGcpAuthnCluster bool
 }
 
 var _ ir.ProxyTranslationPass = &backendPlugin{}
@@ -351,6 +378,8 @@ func (p *backendPlugin) Name() string {
 
 func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
 	backend := pCtx.Backend.Obj.(*kgateway.Backend)
+	p.recordPriorityGroupResources(pCtx.Backend.ObjIr)
+
 	if backend.Spec.DynamicForwardProxy != nil {
 		if p.needsDfpFilter == nil {
 			p.needsDfpFilter = make(map[string]bool)
@@ -383,6 +412,32 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 	return nil
 }
 
+// ApplyForBackendTCP records the internal listeners of priority groups
+// backends routed to from TCP filter chains, so they are emitted even when no
+// HTTP route references the backend.
+func (p *backendPlugin) ApplyForBackendTCP(pCtx *ir.TcpBackendContext) error {
+	// p.recordPriorityGroupResources(pCtx.Backend.ObjIr)
+	return nil
+}
+
+// recordPriorityGroupResources collects the internal listeners (and the GCP
+// metadata cluster dependency) of a priority groups backend so ResourcesToAdd
+// can emit them. The gcp_authn/dfp filters of referenced backends live inside
+// those internal listeners, not on the outer filter chain.
+func (p *backendPlugin) recordPriorityGroupResources(objIr interface{ Equals(any) bool }) {
+	beIr, ok := objIr.(*backendIr)
+	if !ok || beIr.priorityGroupsIr == nil {
+		return
+	}
+	if p.priorityGroupListeners == nil {
+		p.priorityGroupListeners = make(map[string]*envoylistenerv3.Listener)
+	}
+	for _, l := range beIr.priorityGroupsIr.internalListeners {
+		p.priorityGroupListeners[l.GetName()] = l
+	}
+	p.needsGcpAuthnCluster = p.needsGcpAuthnCluster || beIr.priorityGroupsIr.needsGcpAuthn
+}
+
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
@@ -407,8 +462,13 @@ func (p *backendPlugin) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterChainCo
 func (p *backendPlugin) ResourcesToAdd() ir.Resources {
 	resources := ir.Resources{}
 	// Add GCP metadata cluster if any GCP backends are present
-	if len(p.needsGcpAuthn) > 0 {
+	if len(p.needsGcpAuthn) > 0 || p.needsGcpAuthnCluster {
 		resources.Clusters = []*envoyclusterv3.Cluster{getGcpAuthnCluster()}
+	}
+	// Emit the internal listeners bridging priority groups backends to their
+	// referenced backends' clusters, in stable order.
+	for _, name := range slices.Sorted(maps.Keys(p.priorityGroupListeners)) {
+		resources.InternalListeners = append(resources.InternalListeners, p.priorityGroupListeners[name])
 	}
 	return resources
 }

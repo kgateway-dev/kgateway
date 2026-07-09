@@ -49,6 +49,10 @@ data:
         role: kgateway-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}
     cluster_manager:
       local_cluster_name: {{ $localClusterName | quote }}
+    bootstrap_extensions:
+    - name: envoy.bootstrap.internal_listener
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.bootstrap.internal_listener.v3.InternalListener
     {{- if $statsConfig.matcher }}
     {{- $inclusionList := (default (list) $statsConfig.matcher.inclusionList ) -}}
     {{- $exclusionList := (default (list) $statsConfig.matcher.exclusionList ) -}}

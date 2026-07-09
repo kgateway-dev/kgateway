@@ -40,17 +40,20 @@ const (
 	BackendTypeDynamicForwardProxy BackendType = "DynamicForwardProxy"
 	// BackendTypeGCP is the type for GCP backends.
 	BackendTypeGCP BackendType = "GCP"
+	// BackendTypePriorityGroups is the type for priority groups backends.
+	BackendTypePriorityGroups BackendType = "PriorityGroups"
 )
 
 // BackendSpec defines the desired state of Backend.
-// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'AWS'",rule="self.type == 'AWS' ? has(self.aws) : true"
-// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'Static'",rule="self.type == 'Static' ? has(self.static) : true"
-// +kubebuilder:validation:XValidation:message="dynamicForwardProxy backend must be specified when type is 'DynamicForwardProxy'",rule="self.type == 'DynamicForwardProxy' ? has(self.dynamicForwardProxy) : true"
-// +kubebuilder:validation:XValidation:message="gcp backend must be specified when type is 'GCP'",rule="self.type == 'GCP' ? has(self.gcp) : true"
-// +kubebuilder:validation:ExactlyOneOf=aws;static;dynamicForwardProxy;gcp
+// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'AWS'",rule="!has(self.type) || (self.type == 'AWS' ? has(self.aws) : true)"
+// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'Static'",rule="!has(self.type) || (self.type == 'Static' ? has(self.static) : true)"
+// +kubebuilder:validation:XValidation:message="dynamicForwardProxy backend must be specified when type is 'DynamicForwardProxy'",rule="!has(self.type) || (self.type == 'DynamicForwardProxy' ? has(self.dynamicForwardProxy) : true)"
+// +kubebuilder:validation:XValidation:message="gcp backend must be specified when type is 'GCP'",rule="!has(self.type) || (self.type == 'GCP' ? has(self.gcp) : true)"
+// +kubebuilder:validation:XValidation:message="priorityGroups backend must be specified when type is 'PriorityGroups'",rule="!has(self.type) || (self.type == 'PriorityGroups' ? has(self.priorityGroups) : true)"
+// +kubebuilder:validation:ExactlyOneOf=aws;static;dynamicForwardProxy;gcp;priorityGroups
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
-	// +kubebuilder:validation:Enum=AWS;Static;DynamicForwardProxy;GCP
+	// +kubebuilder:validation:Enum=AWS;Static;DynamicForwardProxy;GCP;PriorityGroups
 	// Deprecated: The Type field is deprecated and will be removed in a future release.
 	// The backend type is inferred from the configuration.
 	// +optional
@@ -67,6 +70,23 @@ type BackendSpec struct {
 	// Gcp is the GCP backend configuration.
 	// +optional
 	Gcp *GcpBackend `json:"gcp,omitempty"`
+	// PriorityGroups is an ordered list of backend groups used for failover.
+	// Traffic is sent to the backends of the first group; each subsequent
+	// group is only used when the backends of all preceding groups are
+	// unhealthy.
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	PriorityGroups []PriorityGroups `json:"priorityGroups,omitempty"`
+}
+
+// PriorityGroups defines one failover priority level of a priority groups backend.
+type PriorityGroups struct {
+	// BackendRefs references the Backends that make up this priority group.
+	// Referenced Backends must be in the same namespace and must not be
+	// priority groups backends themselves.
+	// +required
+	// +kubebuilder:validation:MinItems=1
+	BackendRefs []corev1.LocalObjectReference `json:"backendRefs"`
 }
 
 // AppProtocol defines the application protocol to use when communicating with the backend.

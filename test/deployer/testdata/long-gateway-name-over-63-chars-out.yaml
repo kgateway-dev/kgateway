@@ -32,6 +32,10 @@ data:
         role: kgateway-kube-gateway-api~default~extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements
     cluster_manager:
       local_cluster_name: "extremely-long-gateway-name-that-exceeds-the-sixty-ff41b39ff097.default"
+    bootstrap_extensions:
+    - name: envoy.bootstrap.internal_listener
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.bootstrap.internal_listener.v3.InternalListener
     static_resources:
       listeners:
       - name: readiness_listener
