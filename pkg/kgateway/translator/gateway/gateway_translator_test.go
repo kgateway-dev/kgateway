@@ -1659,6 +1659,40 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("TrafficPolicy timeout targeting whole Gateway (HTTP and HTTPS listeners)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/timeout-gateway-whole.yaml"},
+			outputFile: "traffic-policy/timeout-gateway-whole.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy timeout targeting Gateway HTTP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/timeout-gateway-http-listener.yaml"},
+			outputFile: "traffic-policy/timeout-gateway-http-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy timeout targeting Gateway HTTPS listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/timeout-gateway-https-listener.yaml"},
+			outputFile: "traffic-policy/timeout-gateway-https-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("http gateway with session persistence (cookie)", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"session-persistence/cookie.yaml"},

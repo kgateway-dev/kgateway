@@ -381,12 +381,22 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 
 func (p *trafficPolicyPluginGwPass) applyGatewayLevelPerRouteSettings(spec trafficPolicySpecIr, out *envoyroutev3.RouteConfiguration) {
 	for _, vh := range out.VirtualHosts {
-		for _, route := range vh.Routes {
-			if route.GetRoute() == nil {
-				continue
-			}
-			p.handlePerRoutePolicies(spec, route)
+		p.applyPerRouteSettings(spec, vh.Routes)
+	}
+}
+
+// applyPerRouteSettings applies the route-level settings of a policy (timeouts,
+// retries, url rewrite, etc.) to each of the given routes. It is used when a
+// policy attaches above the route level (at a Gateway or a Gateway listener
+// section) so that the route-level settings still take effect on the routes it
+// covers. Routes without a RouteAction (e.g. redirect/direct response) are
+// skipped by handlePerRoutePolicies.
+func (p *trafficPolicyPluginGwPass) applyPerRouteSettings(spec trafficPolicySpecIr, routes []*envoyroutev3.Route) {
+	for _, route := range routes {
+		if route.GetRoute() == nil {
+			continue
 		}
+		p.handlePerRoutePolicies(spec, route)
 	}
 }
 
@@ -399,15 +409,14 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 		return
 	}
 
-	// Apply the retry policy to each route rather than to the vhost. A route-level
-	// retry policy (set by a more specific TrafficPolicy or the builtin HTTPRouteRetry
-	// policy) fully overrides the vhost-level one in Envoy, so applying it per route
-	// keeps that precedence explicit and consistent with the other per-route settings.
-	if policy.spec.retry != nil {
-		for _, route := range out.Routes {
-			applyRetryPolicy(policy.spec.retry, route)
-		}
-	}
+	// Apply the route-level settings to each route rather than to the vhost.
+	// A Gateway listener section attaches at the vhost level, but settings such
+	// as timeouts and retries are route-action-level in Envoy, so they must be
+	// applied per route to take effect. A route-level value (set by a more
+	// specific TrafficPolicy or a builtin HTTPRoute policy) fully overrides the
+	// one applied here, and the "only set if not already set" guards in
+	// handlePerRoutePolicies keep that precedence explicit.
+	p.applyPerRouteSettings(policy.spec, out.Routes)
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 }
