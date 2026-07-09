@@ -290,8 +290,6 @@ type EnvoyContainer struct {
 	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
-	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
-
 	// Additional arguments to pass to the Envoy binary.
 	//
 	// Similar to Kubernetes container args, variable references $(VAR_NAME) are
