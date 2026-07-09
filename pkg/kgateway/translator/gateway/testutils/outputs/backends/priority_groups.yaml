@@ -3,85 +3,103 @@ Clusters:
     name: envoy.clusters.dns
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
-      allAddressesInSingleEndpoint: true
       dnsLookupFamily: V4_PREFERRED
   connectTimeout: 5s
   loadAssignment:
-    clusterName: backend_default_lambda-backend_0
+    clusterName: backend_default_failover-echo_0
     endpoints:
     - lbEndpoints:
       - endpoint:
           address:
             socketAddress:
-              address: 172.18.0.2
-              portValue: 31566
-  name: backend_default_lambda-backend_0
-  typedExtensionProtocolOptions:
-    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-      commonHttpProtocolOptions:
-        idleTimeout: 30s
-      explicitHttpConfig:
-        http2ProtocolOptions: {}
-      httpFilters:
-      - name: envoy.filters.http.aws_lambda
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.aws_lambda.v3.Config
-          arn: arn:aws:lambda:us-east-1:000000000000:function:hello-function:$LATEST
-      - name: envoy.filters.http.aws_request_signing
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.aws_request_signing.v3.AwsRequestSigning
-          credentialProvider:
-            inlineCredential:
-              accessKeyId: AKIAIOSFODNN7EXAMPLE
-              secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-          region: us-east-1
-          serviceName: lambda
-      - name: envoy.filters.http.upstream_codec
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
+              address: http-echo.http-echo.svc
+              portValue: 3000
+          healthCheckConfig:
+            hostname: http-echo.http-echo.svc
+          hostname: http-echo.http-echo.svc
+  name: backend_default_failover-echo_0
 - clusterType:
     name: envoy.clusters.dns
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
-      allAddressesInSingleEndpoint: true
       dnsLookupFamily: V4_PREFERRED
   connectTimeout: 5s
   loadAssignment:
-    clusterName: backend_default_lambda-without-payload-transform_0
+    clusterName: backend_default_failover-httpbin_0
     endpoints:
     - lbEndpoints:
       - endpoint:
           address:
             socketAddress:
-              address: 172.18.0.2
-              portValue: 31566
-  name: backend_default_lambda-without-payload-transform_0
-  typedExtensionProtocolOptions:
-    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-      commonHttpProtocolOptions:
-        idleTimeout: 30s
-      explicitHttpConfig:
-        http2ProtocolOptions: {}
-      httpFilters:
-      - name: envoy.filters.http.aws_lambda
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.aws_lambda.v3.Config
-          arn: arn:aws:lambda:us-east-1:000000000000:function:hello-function:$LATEST
-          payloadPassthrough: true
-      - name: envoy.filters.http.aws_request_signing
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.aws_request_signing.v3.AwsRequestSigning
-          credentialProvider:
-            inlineCredential:
-              accessKeyId: AKIAIOSFODNN7EXAMPLE
-              secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-          region: us-east-1
-          serviceName: lambda
-      - name: envoy.filters.http.upstream_codec
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
+              address: httpbin.default.svc
+              portValue: 8000
+          healthCheckConfig:
+            hostname: httpbin.default.svc
+          hostname: httpbin.default.svc
+  name: backend_default_failover-httpbin_0
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
+  loadAssignment:
+    clusterName: backend_default_primary-nginx_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: nginx.nginx-shared.svc
+              portValue: 8080
+          healthCheckConfig:
+            hostname: nginx.nginx-shared.svc
+          hostname: nginx.nginx-shared.svc
+  name: backend_default_primary-nginx_0
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 10s
+  healthChecks:
+  - healthyThreshold: 1
+    httpHealthCheck:
+      path: /
+    interval: 1s
+    timeout: 1s
+    unhealthyThreshold: 1
+  loadAssignment:
+    clusterName: backend_default_priority-groups_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: nginx.nginx-shared.svc
+              portValue: 8080
+          healthCheckConfig:
+            hostname: nginx.nginx-shared.svc
+          hostname: nginx.nginx-shared.svc
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: http-echo.http-echo.svc
+              portValue: 3000
+          healthCheckConfig:
+            hostname: http-echo.http-echo.svc
+          hostname: http-echo.http-echo.svc
+      - endpoint:
+          address:
+            socketAddress:
+              address: httpbin.default.svc
+              portValue: 8000
+          healthCheckConfig:
+            hostname: httpbin.default.svc
+          hostname: httpbin.default.svc
+      priority: 1
+  name: backend_default_priority-groups_0
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
@@ -115,31 +133,39 @@ Routes:
   name: listener~80
   virtualHosts:
   - domains:
-    - www.example.com
-    name: listener~80~www_example_com
+    - failover.example.com
+    name: listener~80~failover_example_com
     routes:
     - match:
-        path: /lambda/no-payload-transform
-      name: listener~80~www_example_com-route-0-httproute-lambda-route-default-1-0-matcher-0
+        prefix: /
+      name: listener~80~failover_example_com-route-0-httproute-priority-groups-route-default-0-0-matcher-0
       route:
-        cluster: backend_default_lambda-without-payload-transform_0
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-    - match:
-        path: /lambda
-      name: listener~80~www_example_com-route-1-httproute-lambda-route-default-0-0-matcher-0
-      route:
-        cluster: backend_default_lambda-backend_0
+        cluster: backend_default_priority-groups_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
   backends:
-    default/lambda-backend:
+    default/failover-echo:
       conditions:
       - lastTransitionTime: null
         message: Backend accepted
         reason: Accepted
         status: "True"
         type: Accepted
-    default/lambda-without-payload-transform:
+    default/failover-httpbin:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    default/primary-nginx:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    default/priority-groups:
       conditions:
       - lastTransitionTime: null
         message: Backend accepted
@@ -194,7 +220,7 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
-    default/lambda-route:
+    default/priority-groups-route:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -217,3 +243,23 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+  policies:
+    BackendConfigPolicy/default/priority-groups-health:
+      ancestors:
+      - ancestorRef:
+          group: gateway.kgateway.dev
+          kind: Backend
+          name: priority-groups
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

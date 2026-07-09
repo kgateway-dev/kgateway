@@ -189,6 +189,21 @@ Secrets:
       inlineBytes: SE1BQyBzZWNyZXQ=
   name: oauth2/hmac_secret/kgateway-system/oauth2-hmac-secret
 Statuses:
+  backends:
+    default/oauth-provider-jwks:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    default/oauth-provider-token:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/test:
       conditions:
