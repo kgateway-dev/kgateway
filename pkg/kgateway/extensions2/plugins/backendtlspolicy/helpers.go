@@ -11,6 +11,23 @@ import (
 	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
+// InvalidTargetRefError is returned when a targetRef kind is not a valid
+// BackendTLSPolicy target (e.g. HTTPRoute instead of Service or Backend).
+type InvalidTargetRefError struct {
+	Group string
+	Kind  string
+}
+
+func (e *InvalidTargetRefError) Error() string {
+	if e == nil {
+		return ""
+	}
+	if e.Group == "" {
+		return fmt.Sprintf("unsupported targetRef kind %q: must be core/Service or gateway.kgateway.dev/Backend", e.Kind)
+	}
+	return fmt.Sprintf("unsupported targetRef kind %q in group %q: must be core/Service or gateway.kgateway.dev/Backend", e.Kind, e.Group)
+}
+
 const resolvedRefsMessage = "Resolved all references"
 
 type InvalidKindError struct {
@@ -94,6 +111,18 @@ func conditionsForErrors(policy ir.PolicyAtt) []pluginreporter.PolicyCondition {
 	var resolvedRefsCondition *pluginreporter.PolicyCondition
 
 	for _, err := range policy.Errors {
+		var invalidTargetRefErr *InvalidTargetRefError
+		if errors.As(err, &invalidTargetRefErr) {
+			resolvedRefsCondition = &pluginreporter.PolicyCondition{
+				Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
+				Status:             metav1.ConditionFalse,
+				Reason:             string(gwv1.BackendTLSPolicyReasonInvalidKind),
+				Message:            err.Error(),
+				ObservedGeneration: policy.Generation,
+			}
+			break
+		}
+
 		var invalidKindErr *InvalidKindError
 		if errors.As(err, &invalidKindErr) {
 			resolvedRefsCondition = &pluginreporter.PolicyCondition{

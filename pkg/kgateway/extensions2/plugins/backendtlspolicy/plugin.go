@@ -97,7 +97,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	translate := buildTranslateFunc(commoncol.ConfigMaps.Collection(), commoncol.Secrets)
 
 	policyStatusMarker, tlsPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
-		tlsPolicyIR, err := translate(krtctx, i)
+		tlsPolicyIR, translateErr := translate(krtctx, i)
 
 		// Create status marker if existing status has kgateway controller
 		var statusMarker *krtcollections.StatusMarker
@@ -108,6 +108,14 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			}
 		}
 
+		// Filter out targetRefs pointing at non-backend kinds (routes, gateways, etc.).
+		// Those are not valid targets for BackendTLSPolicy.
+		validRefs, refErrors := filterTargetRefs(i.Spec.TargetRefs)
+		// Note: when all refs are invalid (validRefs empty), this policy has no backend
+		// attachment so no gateway ancestor is produced and no policy status is written.
+		// The mixed case (at least one valid ref) correctly reports Accepted=False/InvalidKind.
+		// A dedicated orphan-policy status path is needed to fix the all-invalid case.
+
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     backendTlsPolicyGroupKind.Group,
@@ -117,10 +125,15 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 			Policy:     i,
 			PolicyIR:   tlsPolicyIR,
-			TargetRefs: pluginutils.TargetRefsToPolicyRefsWithSectionNameV1(i.Spec.TargetRefs),
+			TargetRefs: pluginutils.TargetRefsToPolicyRefsWithSectionNameV1(validRefs),
 		}
-		if err != nil {
-			pol.Errors = []error{err}
+		if translateErr != nil {
+			pol.Errors = append(pol.Errors, translateErr)
+		}
+		if len(refErrors) > 0 {
+			// Invalid targetRef kinds: store errors so status reflects InvalidKind.
+			// Valid refs (if any) still attach and receive TLS config.
+			pol.Errors = append(pol.Errors, refErrors...)
 		}
 		return statusMarker, pol
 	})
@@ -160,6 +173,40 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 		},
 	}
+}
+
+// filterTargetRefs splits refs into valid ones (Service, Backend) and errors
+// for any kind BackendTLSPolicy cannot target.
+func filterTargetRefs(
+	refs []gwv1.LocalPolicyTargetReferenceWithSectionName,
+) ([]gwv1.LocalPolicyTargetReferenceWithSectionName, []error) {
+	var valid []gwv1.LocalPolicyTargetReferenceWithSectionName
+	var errs []error
+	for _, ref := range refs {
+		if isBackendTargetRef(ref.LocalPolicyTargetReference) {
+			valid = append(valid, ref)
+		} else {
+			errs = append(errs, &InvalidTargetRefError{
+				Group: string(ref.Group),
+				Kind:  string(ref.Kind),
+			})
+		}
+	}
+	return valid, errs
+}
+
+// isBackendTargetRef reports whether ref is a kind BackendTLSPolicy can target.
+// Only Service (core group) and Backend (kgateway group) are valid.
+func isBackendTargetRef(ref gwv1.LocalPolicyTargetReference) bool {
+	group := string(ref.Group)
+	kind := string(ref.Kind)
+	switch {
+	case (group == "" || group == "core") && kind == kgwellknown.ServiceKind:
+		return true
+	case group == kgwellknown.BackendGVK.Group && kind == kgwellknown.BackendGVK.Kind:
+		return true
+	}
+	return false
 }
 
 func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {

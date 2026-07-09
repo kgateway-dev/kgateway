@@ -85,6 +85,15 @@ func TestBuildPolicyConditions(t *testing.T) {
 		requireReporterCondition(t, conds, string(gwv1.BackendTLSPolicyConditionResolvedRefs), metav1.ConditionFalse, string(gwv1.BackendTLSPolicyReasonInvalidCACertificateRef))
 		requireReporterCondition(t, conds, string(gwv1.PolicyConditionAccepted), metav1.ConditionFalse, string(gwv1.BackendTLSPolicyReasonNoValidCACertificate))
 	})
+
+	t.Run("invalid targetRef kind gets InvalidKind condition and Invalid accepted reason", func(t *testing.T) {
+		invalid := newTestPolicyAtt("invalid", time.Unix(10, 0))
+		invalid.Errors = []error{&InvalidTargetRefError{Group: "gateway.networking.k8s.io", Kind: "HTTPRoute"}}
+
+		conds := BuildPolicyConditions(invalid, &invalid)
+		requireReporterCondition(t, conds, string(gwv1.BackendTLSPolicyConditionResolvedRefs), metav1.ConditionFalse, string(gwv1.BackendTLSPolicyReasonInvalidKind))
+		requireReporterCondition(t, conds, string(gwv1.PolicyConditionAccepted), metav1.ConditionFalse, string(gwv1.PolicyReasonInvalid))
+	})
 }
 
 func TestBuildPolicyStatusFn(t *testing.T) {

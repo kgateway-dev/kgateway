@@ -12,6 +12,7 @@ import (
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -98,4 +99,98 @@ func TestProcessBackend_NilPolicySocket(t *testing.T) {
 
 	processBackend(context.Background(), pol, ir.BackendObjectIR{}, cluster)
 	assert.Same(t, existing, cluster.TransportSocket)
+}
+
+// TestFilterTargetRefs checks that valid backend-like refs pass through and
+// non-backend refs (routes, gateways) are rejected with InvalidTargetRefError.
+func TestFilterTargetRefs(t *testing.T) {
+	ref := func(group, kind, name string) gwv1.LocalPolicyTargetReferenceWithSectionName {
+		return gwv1.LocalPolicyTargetReferenceWithSectionName{
+			LocalPolicyTargetReference: gwv1.LocalPolicyTargetReference{
+				Group: gwv1.Group(group),
+				Kind:  gwv1.Kind(kind),
+				Name:  gwv1.ObjectName(name),
+			},
+		}
+	}
+
+	tests := []struct {
+		name      string
+		refs      []gwv1.LocalPolicyTargetReferenceWithSectionName
+		wantValid int
+		wantErrs  int
+	}{
+		{
+			name:      "Service ref is accepted",
+			refs:      []gwv1.LocalPolicyTargetReferenceWithSectionName{ref("", "Service", "svc")},
+			wantValid: 1,
+			wantErrs:  0,
+		},
+		{
+			name:      "Backend ref is accepted",
+			refs:      []gwv1.LocalPolicyTargetReferenceWithSectionName{ref("gateway.kgateway.dev", "Backend", "be")},
+			wantValid: 1,
+			wantErrs:  0,
+		},
+		{
+			name:      "HTTPRoute ref is rejected",
+			refs:      []gwv1.LocalPolicyTargetReferenceWithSectionName{ref("gateway.networking.k8s.io", "HTTPRoute", "route")},
+			wantValid: 0,
+			wantErrs:  1,
+		},
+		{
+			name:      "Gateway ref is rejected",
+			refs:      []gwv1.LocalPolicyTargetReferenceWithSectionName{ref("gateway.networking.k8s.io", "Gateway", "gw")},
+			wantValid: 0,
+			wantErrs:  1,
+		},
+		{
+			name: "mixed refs split correctly",
+			refs: []gwv1.LocalPolicyTargetReferenceWithSectionName{
+				ref("", "Service", "svc"),
+				ref("gateway.networking.k8s.io", "HTTPRoute", "route"),
+			},
+			wantValid: 1,
+			wantErrs:  1,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			valid, errs := filterTargetRefs(tc.refs)
+			require.Len(t, valid, tc.wantValid)
+			require.Len(t, errs, tc.wantErrs)
+			for _, err := range errs {
+				var targetRefErr *InvalidTargetRefError
+				require.ErrorAs(t, err, &targetRefErr, "error should be InvalidTargetRefError")
+			}
+		})
+	}
+}
+
+// TestIsBackendTargetRef checks which kinds are considered valid backend targets.
+func TestIsBackendTargetRef(t *testing.T) {
+	tests := []struct {
+		group string
+		kind  string
+		want  bool
+	}{
+		{"", "Service", true},
+		{"core", "Service", true},
+		{"gateway.kgateway.dev", "Backend", true},
+		{"gateway.networking.k8s.io", "HTTPRoute", false},
+		{"gateway.networking.k8s.io", "GRPCRoute", false},
+		{"gateway.networking.k8s.io", "Gateway", false},
+		{"", "HTTPRoute", false},
+	}
+	for _, tc := range tests {
+		name := tc.group + "/" + tc.kind
+		t.Run(name, func(t *testing.T) {
+			ref := gwv1.LocalPolicyTargetReference{
+				Group: gwv1.Group(tc.group),
+				Kind:  gwv1.Kind(tc.kind),
+			}
+			assert.Equal(t, tc.want, isBackendTargetRef(ref))
+		})
+	}
 }

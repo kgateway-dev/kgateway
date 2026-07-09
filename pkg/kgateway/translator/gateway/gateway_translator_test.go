@@ -1495,6 +1495,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend TLS Policy with all-invalid targetRef kinds has no backend attachment", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendtlspolicy/invalid-target-ref-kind.yaml"},
+			outputFile: "backendtlspolicy/invalid-target-ref-kind.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend TLS Policy with mixed valid and invalid targetRefs", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendtlspolicy/mixed-target-ref-kinds.yaml"},
+			outputFile: "backendtlspolicy/mixed-target-ref-kinds.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Proxy with no routes", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"edge-cases/no_route.yaml"},
@@ -1609,6 +1631,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/https-retry.yaml"},
 			outputFile: "traffic-policy/https-retry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy HTTP retry", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/http-retry.yaml"},
+			outputFile: "traffic-policy/http-retry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy listener retry fans out to routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/listener-retry.yaml"},
+			outputFile: "traffic-policy/listener-retry.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
