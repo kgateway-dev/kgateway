@@ -372,6 +372,7 @@ spec:
 				"spec.healthCheck.interval: Invalid value: .*: invalid duration value",
 				"spec.healthCheck.timeout: Invalid value: .*: invalid duration value",
 				"spec.http2ProtocolOptions.connectionKeepalive.interval: Invalid value: .*: invalid duration value",
+				"spec.http2ProtocolOptions.connectionKeepalive.interval: Invalid value: .*: type conversion error from 'string' to 'google.protobuf.Duration' evaluating rule: interval must be at least 1ms",
 				"spec.http2ProtocolOptions.connectionKeepalive.timeout: Invalid value: .*: timeout must be at least 1ms",
 				"spec.loadBalancer.updateMergeWindow: Invalid value: .*: invalid duration value",
 				"spec.tcpKeepalive.keepAliveInterval: Invalid value: .*: invalid duration value",
