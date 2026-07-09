@@ -304,7 +304,8 @@ spec:
                   PriorityGroups is an ordered list of backend groups used for failover.
                   Traffic is sent to the backends of the first group; each subsequent
                   group is only used when the backends of all preceding groups are
-                  unhealthy.
+                  unhealthy. The health check can be configured via the BackendConfigPolicy
+                  that targets this Backend
                 items:
                   description: PriorityGroup defines one failover priority level of
                     a priority groups backend.

@@ -73,7 +73,8 @@ type BackendSpec struct {
 	// PriorityGroups is an ordered list of backend groups used for failover.
 	// Traffic is sent to the backends of the first group; each subsequent
 	// group is only used when the backends of all preceding groups are
-	// unhealthy.
+	// unhealthy. The health check can be configured via the BackendConfigPolicy
+	// that targets this Backend
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
