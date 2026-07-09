@@ -446,6 +446,11 @@ func eventuallyDistribution(
 }
 
 func collectDistribution(ctx context.Context, ti *e2e.TestInstallation, gatewayPod string, requests int) (zoneCounts, error) {
+	// Bound the whole attempt so an unreachable gateway fails this Eventually tick
+	// quickly instead of blocking for up to requests x the per-request client timeout.
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	portForwarder, err := ti.ClusterContext.Cli.StartPortForward(ctx,
 		portforward.WithPod(gatewayPod, zoneAwareNamespace),
 		portforward.WithRemotePort(8080),

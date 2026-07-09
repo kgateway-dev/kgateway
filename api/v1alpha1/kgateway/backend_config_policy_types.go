@@ -541,6 +541,13 @@ type (
 
 type LocalityType string
 
+const (
+	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight#locality-weighted-load-balancing
+	// Locality weighted load balancing enables weighting assignments across different zones and geographical locations by using explicit weights.
+	// This field is required to enable locality weighted load balancing.
+	LocalityConfigTypeWeightedLb LocalityType = "WeightedLb"
+)
+
 // ZoneAwareLoadBalancer configures zone-aware routing behavior.
 // Currently, preferLocal must be specified.
 //

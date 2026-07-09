@@ -6,14 +6,9 @@ import (
 	"io"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"istio.io/api/label"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
-)
-
-// Well-known topology label keys, avoid importing k8s.io/api and istio.io/api.
-const (
-	labelTopologyRegion  = "topology.kubernetes.io/region"
-	labelTopologyZone    = "topology.kubernetes.io/zone"
-	labelTopologySubzone = "topology.istio.io/subzone"
 )
 
 // Transform reads an Envoy bootstrap config from in, interpolates any Kubernetes
@@ -84,9 +79,9 @@ func AddNodeLocalityToBootstrapYaml(bootstrapBytes []byte, api DownwardAPI) ([]b
 // nodeLocalityFromApi derives the proxy's locality from env vars, then pod's well-known topology labels.
 func nodeLocalityFromApi(api DownwardAPI) *envoycorev3.Locality {
 	labels := api.PodLabels()
-	region := cmp.Or(api.NodeRegion(), labels[labelTopologyRegion])
-	zone := cmp.Or(api.NodeZone(), labels[labelTopologyZone])
-	subzone := cmp.Or(api.NodeSubzone(), labels[labelTopologySubzone])
+	region := cmp.Or(api.NodeRegion(), labels[corev1.LabelTopologyRegion])
+	zone := cmp.Or(api.NodeZone(), labels[corev1.LabelTopologyZone])
+	subzone := cmp.Or(api.NodeSubzone(), labels[label.TopologySubzone.Name])
 	if zone == "" && region == "" && subzone == "" {
 		return nil
 	}
