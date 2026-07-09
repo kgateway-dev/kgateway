@@ -191,7 +191,7 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.HttpbinLabelSelector,
 	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, common.SharedNginxNamespace, metav1.ListOptions{
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, "http-echo", metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=http-echo",
 	})
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, common.SharedNginxNamespace, metav1.ListOptions{
