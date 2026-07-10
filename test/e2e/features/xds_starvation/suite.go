@@ -4,10 +4,18 @@
 // xDS publication (#14184): a gateway whose config contains a reference that
 // can never become ready (an ExternalName Service, which produces no
 // EndpointSlices) must still publish config, keep its pods Ready across
-// rollouts, and keep receiving updates across controller restarts. Under the
-// former whole-snapshot readiness gates (#13868, reverted) this exact shape
-// withheld the entire snapshot forever: warm proxies were stranded and fresh
-// pods crash-looped (#14352).
+// rollouts, and keep receiving updates across controller restarts.
+//
+// Honesty note: this suite is a regression pin for these properties, not a
+// reproducer of the #14184/#14352 wedge. Verified empirically (2026-07-10, on
+// a build with the #13868 gates plus the strict-validation cache and per-client
+// fan-out fixes): the gate's defer state for this reference shape is transient
+// — the ExternalName backend still yields a per-client CDS row microseconds
+// after the route arrives, so the gate unblocks and the suite passes on gated
+// builds too. The field wedge required per-client derivation lag at production
+// scale (the transient defer window stretched by fan-out x config size x
+// churn, self-amplified by crashloop reconnects), which a laptop-scale
+// fixture does not produce.
 package xds_starvation
 
 import (

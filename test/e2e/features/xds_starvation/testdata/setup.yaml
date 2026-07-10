@@ -13,10 +13,10 @@ spec:
           from: Same
 ---
 # A backend that can never become ready: an ExternalName Service produces no
-# EndpointSlices, so the referenced cluster never gets endpoints. This is the
-# steady-state shape (#14352) that made #13868's whole-snapshot readiness
-# gates permanently unsatisfiable; with the gates removed, routes to it fail
-# individually while everything else keeps publishing.
+# EndpointSlices, so the referenced cluster never gets endpoints and requests
+# to it always fail. A permanently-unready reference is the steady-state shape
+# from the #14184/#14352 reports; the suite pins that its presence never
+# withholds publication for the rest of the config.
 apiVersion: v1
 kind: Service
 metadata:

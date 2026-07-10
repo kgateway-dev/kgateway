@@ -174,6 +174,35 @@ duration, and failure diagnostics.
 - **Total Writes**: Number of status updates during test
 - **Resource Usage**: CPU, memory, and API call metrics
 
+### StrictChurn Test (per-client xDS convergence)
+
+`strictchurn_suite.go` is a convergence/liveness test for the per-client xDS
+pipeline under its worst-case shape (#14184) rather than a latency benchmark:
+
+- **Setup**: Enables `KGW_VALIDATION_MODE=STRICT` on the controller (restored on
+  teardown), creates ~200 simulated backends and baseline routes across two
+  gateways, plus one stable route to a real nginx backend.
+- **Load**: Cycles of Service+EndpointSlice+HTTPRoute create/delete, a
+  background rewriter that keeps the simulated fleet's EndpointSlices moving
+  continuously, persistent dangling and starved backend references, two
+  gateway Envoy rolls, and a controller restart mid-churn.
+- **Assertions**: The stable route answers 200 at every checkpoint (connected
+  proxies are never stranded on stale or withheld config); rolled gateway
+  Envoys become Ready within a bound (a fresh xDS client's first snapshot is
+  never withheld indefinitely); a route created after churn becomes routable
+  within a bound (publication liveness).
+
+To probe the xDS first-connect grace period, set `KGW_XDS_FIRST_CONNECT_DELAY`
+in the environment: the suite forwards it to the controller deployment for the
+duration of the run. `0` exercises the raw reconnect race the delay narrows;
+large values verify warm clients keep serving through the delay and rolled
+Envoys still beat the rollout bound. Scale past the laptop-friendly defaults
+with `KGW_LOADTEST_BACKENDS` / `KGW_LOADTEST_ROUTES`.
+
+Because the suite mutates the controller deployment, it is registered with the
+suite runner but excluded from the CI e2e clusters; run it explicitly with
+`make run-load-tests-strict-churn`.
+
 ## Framework Architecture
 
 ### Components
