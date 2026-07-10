@@ -14,6 +14,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -28,6 +29,7 @@ type Statuses struct {
 	TLSRoutes    map[string]*gwv1.RouteStatus       `json:"tlsRoutes,omitempty"`
 	GRPCRoutes   map[string]*gwv1.RouteStatus       `json:"grpcRoutes,omitempty"`
 	Policies     map[string]*gwv1.PolicyStatus      `json:"policies,omitempty"`
+	Backends     map[string]*kgateway.BackendStatus `json:"backends,omitempty"`
 }
 
 func buildStatusesFromReports(
@@ -51,6 +53,7 @@ func buildStatusesFromReports(
 		TLSRoutes:    make(map[string]*gwv1.RouteStatus),
 		GRPCRoutes:   make(map[string]*gwv1.RouteStatus),
 		Policies:     make(map[string]*gwv1.PolicyStatus),
+		Backends:     make(map[string]*kgateway.BackendStatus),
 	}
 
 	// Build Gateway statuses. We need to use the actual Gateway object to make sure that
@@ -165,6 +168,20 @@ func buildStatusesFromReports(
 		}
 	}
 
+	// Build Backend statuses
+	for backendNN := range reportsMap.Backends {
+		backend := kgateway.Backend{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      backendNN.Name,
+				Namespace: backendNN.Namespace,
+			},
+		}
+		if status := reportsMap.BuildBackendStatus(ctx, &backend, kgateway.BackendStatus{}); status != nil {
+			normalizeBackendStatus(status, fixedTime)
+			statuses.Backends[backendNN.String()] = status
+		}
+	}
+
 	return statuses
 }
 
@@ -223,6 +240,13 @@ func normalizePolicyStatus(status *gwv1.PolicyStatus, time metav1.Time) {
 	}
 }
 
+// normalizeBackendStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing
+func normalizeBackendStatus(status *kgateway.BackendStatus, time metav1.Time) {
+	for i := range status.Conditions {
+		status.Conditions[i].LastTransitionTime = time
+	}
+}
+
 func compareStatuses(expectedFile string, actualStatuses *Statuses) (string, error) {
 	expectedOutput := &translationResult{}
 	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
@@ -266,6 +290,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 		TLSRoutes:    make(map[string]*gwv1.RouteStatus),
 		GRPCRoutes:   make(map[string]*gwv1.RouteStatus),
 		Policies:     make(map[string]*gwv1.PolicyStatus),
+		Backends:     make(map[string]*kgateway.BackendStatus),
 	}
 
 	// Sort gateways
@@ -336,6 +361,16 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	sort.Strings(policyKeys)
 	for _, k := range policyKeys {
 		sorted.Policies[k] = statuses.Policies[k]
+	}
+
+	// Sort backends
+	backendKeys := make([]string, 0, len(statuses.Backends))
+	for k := range statuses.Backends {
+		backendKeys = append(backendKeys, k)
+	}
+	sort.Strings(backendKeys)
+	for _, k := range backendKeys {
+		sorted.Backends[k] = statuses.Backends[k]
 	}
 
 	return sorted
