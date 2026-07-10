@@ -12,7 +12,12 @@ fn make_headers(
 ) -> Vec<(EnvoyBuffer<'static>, EnvoyBuffer<'static>)> {
     pairs
         .iter()
-        .map(|(k, v)| (EnvoyBuffer::new(k), EnvoyBuffer::new(v)))
+        .map(|(k, v)| {
+            (
+                EnvoyBuffer::new(k.as_bytes()),
+                EnvoyBuffer::new(v.as_bytes()),
+            )
+        })
         .collect()
 }
 

@@ -74,6 +74,12 @@ pub fn parse_cookie_string(cookie_str: &str) -> HashMap<String, String> {
     cookies
 }
 
+/// The `(exact_map, insensitive_map)` pair returned by [`parse_cookie_maps`].
+type CookieMaps = (
+    Option<HashMap<String, String>>,
+    Option<HashMap<String, String>>,
+);
+
 /// Parse all Cookie header values from a header map into up to two maps in a
 /// single pass over the headers.
 ///
@@ -86,7 +92,7 @@ pub fn parse_cookie_maps(
     headers: &HashMap<String, Vec<String>>,
     need_exact: bool,
     need_insensitive: bool,
-) -> (Option<HashMap<String, String>>, Option<HashMap<String, String>>) {
+) -> CookieMaps {
     if !need_exact && !need_insensitive {
         return (None, None);
     }
@@ -101,7 +107,8 @@ pub fn parse_cookie_maps(
         for cookie_str in cookie_values {
             for (name, value) in parse_cookie_string(cookie_str) {
                 if let Some(ref mut m) = insensitive_m {
-                    m.entry(name.to_lowercase()).or_insert_with(|| value.clone());
+                    m.entry(name.to_lowercase())
+                        .or_insert_with(|| value.clone());
                 }
                 if let Some(ref mut m) = exact_m {
                     m.entry(name).or_insert(value);
@@ -119,8 +126,7 @@ pub fn parse_cookies_from_header_map(
     headers: &HashMap<String, Vec<String>>,
     case_insensitive: bool,
 ) -> HashMap<String, String> {
-    let (exact, insensitive) =
-        parse_cookie_maps(headers, !case_insensitive, case_insensitive);
+    let (exact, insensitive) = parse_cookie_maps(headers, !case_insensitive, case_insensitive);
     exact.or(insensitive).unwrap_or_default()
 }
 
