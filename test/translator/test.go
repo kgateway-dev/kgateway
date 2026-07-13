@@ -1,6 +1,7 @@
 package translator
 
 import (
+	stdcmp "cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"testing"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,7 +42,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/gatewaytls"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
@@ -304,7 +308,7 @@ func TestTranslationWithExtraPlugins(
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
 		Secrets:       result.Proxy.Secrets,
-		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
+		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets, result.PolicyPlugins),
 	}
 	outputYaml, err := testutils.MarshalAnyYaml(output)
 	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
@@ -337,11 +341,12 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	Proxy        *irtranslator.TranslationResult
-	ReportsMap   reports.ReportMap
-	Gateways     map[types.NamespacedName]*gwv1.Gateway
-	ListenerSets map[types.NamespacedName]*gwv1.ListenerSet
-	Clusters     []*envoyclusterv3.Cluster
+	Proxy         *irtranslator.TranslationResult
+	ReportsMap    reports.ReportMap
+	Gateways      map[types.NamespacedName]*gwv1.Gateway
+	ListenerSets  map[types.NamespacedName]*gwv1.ListenerSet
+	PolicyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin
+	Clusters      []*envoyclusterv3.Cluster
 }
 
 func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
@@ -363,17 +368,17 @@ func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationR
 		return nil
 	}
 
-	sort.Slice(proxy.Listeners, func(i, j int) bool {
-		return proxy.Listeners[i].GetName() < proxy.Listeners[j].GetName()
+	slices.SortFunc(proxy.Listeners, func(a, b *envoylistenerv3.Listener) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
-	sort.Slice(proxy.Routes, func(i, j int) bool {
-		return proxy.Routes[i].GetName() < proxy.Routes[j].GetName()
+	slices.SortFunc(proxy.Routes, func(a, b *envoyroutev3.RouteConfiguration) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
-	sort.Slice(proxy.ExtraClusters, func(i, j int) bool {
-		return proxy.ExtraClusters[i].GetName() < proxy.ExtraClusters[j].GetName()
+	slices.SortFunc(proxy.ExtraClusters, func(a, b *envoyclusterv3.Cluster) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
-	sort.Slice(proxy.Secrets, func(i, j int) bool {
-		return proxy.Secrets[i].GetName() < proxy.Secrets[j].GetName()
+	slices.SortFunc(proxy.Secrets, func(a, b *envoytlsv3.Secret) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
 
 	// Sort credentials in routes to ensure deterministic output
@@ -439,8 +444,8 @@ func sortCredentialsInAny(config *anypb.Any) {
 
 	// Sort credentials by client name
 	if len(apiKeyAuth.Credentials) > 0 {
-		sort.Slice(apiKeyAuth.Credentials, func(i, j int) bool {
-			return apiKeyAuth.Credentials[i].Client < apiKeyAuth.Credentials[j].Client
+		slices.SortFunc(apiKeyAuth.Credentials, func(a, b *envoyapikeyauthv3.Credential) int {
+			return stdcmp.Compare(a.Client, b.Client)
 		})
 
 		// Marshal back to Any and update the config
@@ -466,8 +471,8 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	if len(clusters) == 0 {
 		return clusters
 	}
-	sort.Slice(clusters, func(i, j int) bool {
-		return clusters[i].GetName() < clusters[j].GetName()
+	slices.SortFunc(clusters, func(a, b *envoyclusterv3.Cluster) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
 	return clusters
 }
@@ -512,13 +517,14 @@ func GetHTTPRouteStatusError(
 
 func GetPolicyStatusError(
 	reportsMap reports.ReportMap,
+	policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin,
 	policy *reporter.PolicyKey,
 ) error {
 	for key := range reportsMap.Policies {
 		if policy != nil && *policy != key {
 			continue
 		}
-		status := reportsMap.BuildPolicyStatus(context.Background(), key, wellknown.DefaultGatewayControllerName, gwv1.PolicyStatus{})
+		status := buildPolicyStatus(reportsMap, policyPlugins, key, gwv1.PolicyStatus{})
 		for ancestor, report := range status.Ancestors {
 			for _, c := range report.Conditions {
 				if c.Status != metav1.ConditionTrue {
@@ -530,7 +536,7 @@ func GetPolicyStatusError(
 	return nil
 }
 
-func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
+func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin) error {
 	err := GetHTTPRouteStatusError(reportsMap, nil)
 	if err != nil {
 		return err
@@ -636,7 +642,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
-	err = GetPolicyStatusError(reportsMap, nil)
+	err = GetPolicyStatusError(reportsMap, policyPlugins, nil)
 	if err != nil {
 		return err
 	}
@@ -672,6 +678,14 @@ func (tc TestCase) Run(
 		}
 		// add a creation timestamp to each object to ensure consistent application of policy
 		for _, obj := range objs {
+			if secret, ok := obj.(*corev1.Secret); ok && len(secret.StringData) > 0 {
+				if secret.Data == nil {
+					secret.Data = make(map[string][]byte, len(secret.StringData))
+				}
+				for key, value := range secret.StringData {
+					secret.Data[key] = []byte(value)
+				}
+			}
 			fakeNow = fakeNow.Add(time.Second)
 			obj.SetCreationTimestamp(metav1.NewTime(fakeNow))
 		}
@@ -754,7 +768,7 @@ func (tc TestCase) Run(
 		Kind:      "test-backend-plugin",
 		Namespace: "default",
 		Name:      "example-svc",
-	}, 80, "")
+	}, 80, "", "")
 	extensions.ContributesBackends[gk] = pluginsdk.BackendPlugin{
 		Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
 			testBackend,
@@ -785,6 +799,7 @@ func (tc TestCase) Run(
 	}
 
 	results := make(map[types.NamespacedName]ActualTestResult)
+	queries := query.NewData(commoncol)
 
 	// Build a map of all gateways by NamespacedName for status building
 	gatewayMap := make(map[types.NamespacedName]*gwv1.Gateway)
@@ -818,28 +833,51 @@ func (tc TestCase) Run(
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicyRequiringStatus() {
 			backendIRs = append(backendIRs, col.List()...)
 		}
-		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)
+		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs, map[schema.GroupKind]struct{}{
+			wellknown.BackendTLSPolicyGVK.GroupKind(): {},
+		})
 
 		// Merge gateway reports with backend policy reports
 		mergedReports := reportsMap
 		maps.Copy(mergedReports.Policies, backendPolicyReports.Policies)
+
+		// Backend Accepted conditions are also generated outside gateway translation
+		// (see proxy_syncer's backendStatusReport singleton). Reproduce that here from
+		// the kgateway Backend plugin's collections so golden files capture Backend
+		// statuses. Per-client translation errors are not reproducible here (the
+		// uccWithCluster type is internal to proxy_syncer), so only IR errors and
+		// plugin-contributed conditions are reflected.
+		var kgwBackends []ir.BackendObjectIR
+		var kgwExtraConditions []ir.BackendObjectStatus
+		if kgwBackendPlugin, ok := extensions.ContributesBackends[wellknown.BackendGVK.GroupKind()]; ok {
+			if kgwBackendPlugin.Backends != nil {
+				kgwBackends = kgwBackendPlugin.Backends.List()
+			}
+			if kgwBackendPlugin.ExtraConditions != nil {
+				kgwExtraConditions = kgwBackendPlugin.ExtraConditions.List()
+			}
+		}
+		backendStatusReports := proxy_syncer.GenerateBackendStatusReport(kgwBackends, nil, kgwExtraConditions)
+		maps.Copy(mergedReports.Backends, backendStatusReports.Backends)
 
 		gwNN := types.NamespacedName{
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
 		}
 		actual := ActualTestResult{
-			Proxy:        xdsSnap,
-			ReportsMap:   mergedReports,
-			Gateways:     gatewayMap,
-			ListenerSets: listenerSetMap,
+			Proxy:         xdsSnap,
+			ReportsMap:    mergedReports,
+			Gateways:      gatewayMap,
+			ListenerSets:  listenerSetMap,
+			PolicyPlugins: extensions.ContributesPolicies,
 		}
 		results[gwNN] = actual
 
 		ctx := context.Background()
 		t := translator.GetBackendTranslator()
-		ucc := ir.NewUniqlyConnectedClient("test", "test", nil, ir.PodLocality{})
+		ucc := ir.NewUniquelyConnectedClient("test", "test", nil, ir.PodLocality{})
 		var clusters []*envoyclusterv3.Cluster
+		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
 				cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
@@ -850,6 +888,24 @@ func (tc TestCase) Run(
 				}
 				if cluster != nil {
 					clusters = append(clusters, cluster)
+				}
+			}
+		}
+		if clientCertificate, err := gatewaytls.ResolveForGateway(krt.TestingDummyContext{}, ctx, queries, &gw); err == nil && clientCertificate != nil {
+			for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
+				for _, backend := range col.List() {
+					clone := backend.CloneForGatewayBackendClientCertificate(gw.ObjectSource, clientCertificate)
+					if _, ok := referencedClusters[clone.ClusterName()]; !ok {
+						continue
+					}
+
+					cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, &clone)
+					if err != nil {
+						continue
+					}
+					if cluster != nil {
+						clusters = append(clusters, cluster)
+					}
 				}
 			}
 		}
@@ -872,4 +928,36 @@ func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error)
 		return nil, fmt.Errorf("parsing proxy from file: %w", err)
 	}
 	return &proxy, nil
+}
+
+func extractRouteConfigurationClusterNames(routeConfigs []*envoyroutev3.RouteConfiguration) map[string]struct{} {
+	clusterNames := make(map[string]struct{})
+	for _, routeConfig := range routeConfigs {
+		for _, virtualHost := range routeConfig.GetVirtualHosts() {
+			for _, route := range virtualHost.GetRoutes() {
+				switch action := route.GetAction().(type) {
+				case *envoyroutev3.Route_Route:
+					if action.Route == nil {
+						continue
+					}
+					switch clusterSpecifier := action.Route.GetClusterSpecifier().(type) {
+					case *envoyroutev3.RouteAction_Cluster:
+						if clusterSpecifier.Cluster != "" {
+							clusterNames[clusterSpecifier.Cluster] = struct{}{}
+						}
+					case *envoyroutev3.RouteAction_WeightedClusters:
+						if clusterSpecifier.WeightedClusters == nil {
+							continue
+						}
+						for _, weightedCluster := range clusterSpecifier.WeightedClusters.GetClusters() {
+							if weightedCluster.GetName() != "" {
+								clusterNames[weightedCluster.GetName()] = struct{}{}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return clusterNames
 }

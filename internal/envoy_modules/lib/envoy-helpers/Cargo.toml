@@ -1,0 +1,7 @@
+[package]
+name = "envoy-helpers"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+envoy-proxy-dynamic-modules-rust-sdk = { workspace = true }

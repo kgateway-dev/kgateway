@@ -19,11 +19,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/deployer"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/dfp"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/directresponse"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/ec2"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extproc"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/faultinjection"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/frontendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/header_modifiers"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/http_acl"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/internalredirect"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/jwt"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/leaderelection"
@@ -46,6 +49,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/trafficpolicystatus"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/transformation"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/websocket"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/xds_starvation"
 )
 
 func KubeGatewaySuiteRunner() e2e.SuiteRunner {
@@ -56,6 +60,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	// Slow tests not yet migrated to use the more modern testing approach
 	kubeGatewaySuiteRunner.Register("ListenerPolicy", listener_policy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("EC2", ec2.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("SessionPersistence", session_persistence.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TCPRouteServices", tcproute.NewTestingSuite)
@@ -92,13 +97,16 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PathMatching", path_matching.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("InternalRedirect", internalredirect.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("HttpACL", http_acl.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("APIKeyAuth", apikeyauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("WebSocket", websocket.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("XdsStarvation", xds_starvation.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

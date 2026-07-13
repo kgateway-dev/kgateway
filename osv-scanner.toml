@@ -1,0 +1,35 @@
+# OSV-Scanner ignore list.
+#
+# Only entries that are unambiguous false positives belong here. Each entry
+# must explain *why* it is a false positive so a future reader can re-verify.
+#
+# Format reference: https://google.github.io/osv-scanner/configuration/
+
+# The following four CVEs are flagged against istio.io/istio, which we pin
+# to the Go pseudo-version `v0.0.0-20260421191718-517aa47d8436`.
+#
+# OSV-Scanner compares the literal "0.0.0" prefix against the CVE's fixed
+# version (all of which are Istio 1.x releases from 2019-2022) and concludes
+# "0.0.0 < 1.x", firing a false positive. In reality the pseudo-version's
+# embedded timestamp (20260421191718 = 2026-04-21 19:17:18 UTC) is years
+# after every fix below, so the pinned commit includes all of these fixes.
+
+[[IgnoredVulns]]
+id = "CVE-2019-14993"
+reason = "False positive: istio.io/istio pseudo-version v0.0.0-20260421191718-517aa47d8436 is a 2026-04-21 commit, ~7 years after the fix in Istio 1.1.13 / 1.2.4 (2019-08)."
+
+[[IgnoredVulns]]
+id = "CVE-2021-39155"
+reason = "False positive: istio.io/istio pseudo-version v0.0.0-20260421191718-517aa47d8436 is a 2026-04-21 commit, ~5 years after the fix in Istio 1.11.1 / 1.10.4 / 1.9.8 (2021-08)."
+
+[[IgnoredVulns]]
+id = "CVE-2021-39156"
+reason = "False positive: istio.io/istio pseudo-version v0.0.0-20260421191718-517aa47d8436 is a 2026-04-21 commit, ~5 years after the fix in Istio 1.11.1 / 1.10.4 / 1.9.8 (2021-08)."
+
+[[IgnoredVulns]]
+id = "CVE-2022-23635"
+reason = "False positive: istio.io/istio pseudo-version v0.0.0-20260421191718-517aa47d8436 is a 2026-04-21 commit, ~4 years after the fix in Istio 1.13.1 / 1.12.4 / 1.11.7 (2022-02)."
+
+[[IgnoredVulns]]
+id = "CVE-2022-31045"
+reason = "False positive: istio.io/istio pseudo-version v0.0.0-20260421191718-517aa47d8436 is a 2026-04-21 commit, ~4 years after the fix in Istio 1.12.18 / 1.13.5 / 1.14.1 (2022-06)."

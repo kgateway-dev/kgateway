@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
@@ -50,7 +49,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Deployment: &kgateway.ProxyDeployment{
-							Replicas: ptr.To[int32](5),
+							Replicas: new(int32(5)),
 						},
 					},
 				},
@@ -59,7 +58,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Deployment: &kgateway.ProxyDeployment{
-							Replicas: ptr.To[int32](5),
+							Replicas: new(int32(5)),
 						},
 					},
 				},
@@ -71,7 +70,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Deployment: &kgateway.ProxyDeployment{
-							Replicas: ptr.To[int32](2),
+							Replicas: new(int32(2)),
 						},
 					},
 				},
@@ -80,7 +79,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Deployment: &kgateway.ProxyDeployment{
-							Replicas: ptr.To[int32](3),
+							Replicas: new(int32(3)),
 						},
 					},
 				},
@@ -89,7 +88,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Deployment: &kgateway.ProxyDeployment{
-							Replicas: ptr.To[int32](3),
+							Replicas: new(int32(3)),
 						},
 					},
 				},
@@ -101,7 +100,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Deployment: &kgateway.ProxyDeployment{
-							Replicas: ptr.To[int32](2),
+							Replicas: new(int32(2)),
 						},
 					},
 				},
@@ -115,7 +114,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Deployment: &kgateway.ProxyDeployment{
-							Replicas: ptr.To[int32](2),
+							Replicas: new(int32(2)),
 						},
 					},
 				},
@@ -252,6 +251,36 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 			},
 		},
 		{
+			name: "merges envoy extra args",
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						EnvoyContainer: &kgateway.EnvoyContainer{
+							ExtraArgs: []string{"--base-id", "1"},
+						},
+					},
+				},
+			},
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						EnvoyContainer: &kgateway.EnvoyContainer{
+							ExtraArgs: []string{"--disable-extensions", "envoy.filters.http.lua"},
+						},
+					},
+				},
+			},
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						EnvoyContainer: &kgateway.EnvoyContainer{
+							ExtraArgs: []string{"--base-id", "1", "--disable-extensions", "envoy.filters.http.lua"},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "should have only one probeHandler action",
 			dst: &kgateway.GatewayParameters{
 				Spec: kgateway.GatewayParametersSpec{
@@ -343,7 +372,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
-							Type: ptr.To(corev1.ServiceTypeLoadBalancer),
+							Type: new(corev1.ServiceTypeLoadBalancer),
 						},
 					},
 				},
@@ -361,7 +390,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
-							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
+							Type:              new(corev1.ServiceTypeLoadBalancer),
 							LoadBalancerClass: new("service.k8s.aws/nlb"),
 						},
 					},
@@ -374,7 +403,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
-							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
+							Type:              new(corev1.ServiceTypeLoadBalancer),
 							LoadBalancerClass: new("default-class"),
 						},
 					},
@@ -393,7 +422,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
-							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
+							Type:              new(corev1.ServiceTypeLoadBalancer),
 							LoadBalancerClass: new("service.k8s.aws/nlb"),
 						},
 					},
@@ -406,7 +435,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
-							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
+							Type:              new(corev1.ServiceTypeLoadBalancer),
 							LoadBalancerClass: new("default-class"),
 						},
 					},
@@ -423,7 +452,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Service: &kgateway.Service{
-							Type:              ptr.To(corev1.ServiceTypeLoadBalancer),
+							Type:              new(corev1.ServiceTypeLoadBalancer),
 							LoadBalancerClass: new("default-class"),
 						},
 					},
@@ -440,6 +469,140 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 			// Run additional validation if provided
 			if tt.validate != nil {
 				tt.validate(t, tt.dst)
+			}
+		})
+	}
+}
+
+func TestDeepMergeImage(t *testing.T) {
+	emptyStr := ""
+
+	tests := []struct {
+		name string
+		dst  *kgateway.Image
+		src  *kgateway.Image
+		want *kgateway.Image
+	}{
+		{
+			name: "non-empty digest with no tag in src clears inherited tag",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+			},
+			src: &kgateway.Image{
+				Digest: new("sha256:abc"),
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        &emptyStr,
+				Digest:     new("sha256:abc"),
+			},
+		},
+		{
+			name: "non-empty tag with no digest in src clears inherited digest",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Digest:     new("sha256:def"),
+			},
+			src: &kgateway.Image{
+				Tag: new("v2.0.0"),
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v2.0.0"),
+				Digest:     &emptyStr,
+			},
+		},
+		{
+			name: "non-empty tag and digest in src keep both",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     new("sha256:def"),
+			},
+			src: &kgateway.Image{
+				Tag:    new("v2.0.0"),
+				Digest: new("sha256:abc"),
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v2.0.0"),
+				Digest:     new("sha256:abc"),
+			},
+		},
+		{
+			name: "empty-string digest in src is an explicit clear and does not clobber inherited tag",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     new("sha256:def"),
+			},
+			src: &kgateway.Image{
+				Digest: &emptyStr,
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     &emptyStr,
+			},
+		},
+		{
+			name: "empty-string tag in src is an explicit clear and does not clobber inherited digest",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+				Digest:     new("sha256:def"),
+			},
+			src: &kgateway.Image{
+				Tag: &emptyStr,
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        &emptyStr,
+				Digest:     new("sha256:def"),
+			},
+		},
+		{
+			name: "nil src returns dst unchanged",
+			dst: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+			},
+			src: nil,
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        new("v1.0.0"),
+			},
+		},
+		{
+			name: "nil dst with digest-only src yields a tag-cleared result without mutating src",
+			dst:  nil,
+			src: &kgateway.Image{
+				Repository: new("repo"),
+				Digest:     new("sha256:abc"),
+			},
+			want: &kgateway.Image{
+				Repository: new("repo"),
+				Tag:        &emptyStr,
+				Digest:     new("sha256:abc"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Snapshot src so we can verify DeepMergeImage does not mutate it.
+			var srcBefore *kgateway.Image
+			if tt.src != nil {
+				cp := *tt.src
+				srcBefore = &cp
+			}
+
+			got := DeepMergeImage(tt.dst, tt.src)
+			assert.Equal(t, tt.want, got)
+
+			if tt.src != nil {
+				assert.Equal(t, srcBefore, tt.src, "DeepMergeImage must not mutate src")
 			}
 		})
 	}

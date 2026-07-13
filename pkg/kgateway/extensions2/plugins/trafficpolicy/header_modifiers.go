@@ -1,12 +1,16 @@
 package trafficpolicy
 
 import (
+	"fmt"
+
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	"google.golang.org/protobuf/proto"
+	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -41,16 +45,47 @@ func (hm *headerModifiersIR) Validate() error {
 }
 
 // constructHeaderModifiers constructs the headerModifiers policy IR from the policy specification.
-func constructHeaderModifiers(spec kgateway.TrafficPolicySpec, out *trafficPolicySpecIr) {
-	if spec.HeaderModifiers == nil {
-		return
+// It resolves any secret-backed header values via the secrets index (ReferenceGrant-enforced).
+func constructHeaderModifiers(
+	krtctx krt.HandlerContext,
+	policy *kgateway.TrafficPolicy,
+	secrets *krtcollections.SecretIndex,
+	out *trafficPolicySpecIr,
+) error {
+	if policy.Spec.HeaderModifiers == nil {
+		return nil
 	}
 
-	p := buildHeaderModifiersPolicy(spec.HeaderModifiers)
-
-	out.headerModifiers = &headerModifiersIR{
-		policy: p,
+	spec := policy.Spec.HeaderModifiers
+	from := krtcollections.From{
+		GroupKind: wellknown.TrafficPolicyGVK.GroupKind(),
+		Namespace: policy.Namespace,
 	}
+
+	p := &header_mutationv3.HeaderMutationPerRoute{
+		Mutations: &header_mutationv3.Mutations{},
+	}
+
+	gwReqFilter, err := pluginutils.ConvertHeaderFilter(krtctx, from, secrets, spec.Request)
+	if err != nil {
+		return fmt.Errorf("request: %w", err)
+	}
+	reqMutations := pluginutils.ConvertMutations(gwReqFilter)
+	p.Mutations.RequestMutations = append(p.Mutations.RequestMutations, reqMutations...)
+
+	gwRespFilter, err := pluginutils.ConvertHeaderFilter(krtctx, from, secrets, spec.Response)
+	if err != nil {
+		return fmt.Errorf("response: %w", err)
+	}
+	respMutations := pluginutils.ConvertMutations(gwRespFilter)
+	p.Mutations.ResponseMutations = append(p.Mutations.ResponseMutations, respMutations...)
+
+	if len(p.Mutations.RequestMutations) == 0 && len(p.Mutations.ResponseMutations) == 0 {
+		p.Mutations = nil
+	}
+
+	out.headerModifiers = &headerModifiersIR{policy: p}
+	return nil
 }
 
 // handleHeaderModifiers adds header modifier filters.
@@ -71,21 +106,4 @@ func (p *trafficPolicyPluginGwPass) handleHeaderModifiers(fcn string, typedFilte
 	if _, ok := p.headerMutationInChain[fcn]; !ok {
 		p.headerMutationInChain[fcn] = &header_mutationv3.HeaderMutationPerRoute{}
 	}
-}
-
-// buildHeaderModifiersPolicy converts a TrafficPolicy HeaderModifiersPolicy into an Envoy HeaderMutationPerRoute.
-func buildHeaderModifiersPolicy(
-	spec *sharedv1alpha1.HeaderModifiers,
-) *header_mutationv3.HeaderMutationPerRoute {
-	policy := &header_mutationv3.HeaderMutationPerRoute{}
-	policy.Mutations = &header_mutationv3.Mutations{}
-
-	policy.Mutations.RequestMutations = append(policy.Mutations.RequestMutations, pluginutils.ConvertMutations(spec.Request)...)
-	policy.Mutations.ResponseMutations = append(policy.Mutations.ResponseMutations, pluginutils.ConvertMutations(spec.Response)...)
-
-	if len(policy.Mutations.RequestMutations) == 0 && len(policy.Mutations.ResponseMutations) == 0 {
-		policy.Mutations = nil
-	}
-
-	return policy
 }

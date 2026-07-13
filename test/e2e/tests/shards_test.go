@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -24,6 +24,11 @@ type workflowConfig struct {
 	} `json:"jobs"`
 }
 
+var e2eTestsNotRequiredInPRShards = map[string]string{
+	"TestKgateway/AttachedRoutes": "load tests run in the dedicated nightly load-test workflow",
+	"TestZoneAwareRouting":        "requires a multi-zone multi-worker kind cluster; check guide to run manually",
+}
+
 // TestAllE2ETestsInShards verifies that every E2E test function and registered
 // suite in test/e2e/tests/ is covered by at least one regex in e2e.yaml.
 // This prevents new tests from being added without CI coverage.
@@ -33,13 +38,16 @@ func TestAllE2ETestsInShards(t *testing.T) {
 
 	var missing []string
 	for _, tp := range sourceTests {
+		if _, ok := e2eTestsNotRequiredInPRShards[tp]; ok {
+			continue
+		}
 		if !isCoveredByShardPaths(tp, shardPaths) {
 			missing = append(missing, tp)
 		}
 	}
 
 	if len(missing) > 0 {
-		sort.Strings(missing)
+		slices.Sort(missing)
 		t.Errorf("E2E tests not covered by e2e.yaml:\n  %s\n\nUpdate .github/workflows/e2e.yaml to include these tests",
 			strings.Join(missing, "\n  "))
 	}
@@ -151,7 +159,7 @@ func discoverE2ETestPaths(t *testing.T) []string {
 		}
 	}
 
-	sort.Strings(paths)
+	slices.Sort(paths)
 	return paths
 }
 

@@ -3,8 +3,9 @@ package listener_test
 import (
 	"context"
 	"errors"
+	"time"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query/mocks"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
@@ -138,8 +140,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						ParentRefs: []gwv1.ParentReference{
 							{
 								Name:      gwv1.ObjectName("test-gateway"),
-								Namespace: ptr.To(gwv1.Namespace("default")),
-								Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+								Namespace: new(gwv1.Namespace("default")),
+								Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 							},
 						},
 					},
@@ -149,16 +151,16 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      "backend-svc1",
-										Namespace: ptr.To(gwv1.Namespace("default")),
-										Port:      ptr.To(gwv1.PortNumber(8081)),
+										Namespace: new(gwv1.Namespace("default")),
+										Port:      new(gwv1.PortNumber(8081)),
 									},
 									Weight: new(int32(50)),
 								},
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      "backend-svc2",
-										Namespace: ptr.To(gwv1.Namespace("default")),
-										Port:      ptr.To(gwv1.PortNumber(8082)),
+										Namespace: new(gwv1.Namespace("default")),
+										Port:      new(gwv1.PortNumber(8082)),
 									},
 									Weight: new(int32(50)),
 								},
@@ -197,8 +199,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						ParentRefs: []gwv1.ParentReference{
 							{
 								Name:      gwv1.ObjectName("test-gateway"),
-								Namespace: ptr.To(gwv1.Namespace("default")),
-								Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+								Namespace: new(gwv1.Namespace("default")),
+								Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 							},
 						},
 					},
@@ -250,8 +252,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						ParentRefs: []gwv1.ParentReference{
 							{
 								Name:      gwv1.ObjectName("test-gateway"),
-								Namespace: ptr.To(gwv1.Namespace("default")),
-								Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+								Namespace: new(gwv1.Namespace("default")),
+								Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 							},
 						},
 					},
@@ -261,8 +263,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      "backend-svc1",
-										Namespace: ptr.To(gwv1.Namespace("default")),
-										Port:      ptr.To(gwv1.PortNumber(8081)),
+										Namespace: new(gwv1.Namespace("default")),
+										Port:      new(gwv1.PortNumber(8081)),
 									},
 								},
 							},
@@ -312,8 +314,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						ParentRefs: []gwv1.ParentReference{
 							{
 								Name:      gwv1.ObjectName("test-gateway"),
-								Namespace: ptr.To(gwv1.Namespace("default")),
-								Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+								Namespace: new(gwv1.Namespace("default")),
+								Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 							},
 						},
 					},
@@ -323,8 +325,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      "backend-svc1",
-										Namespace: ptr.To(gwv1.Namespace("default")),
-										Port:      ptr.To(gwv1.PortNumber(8081)),
+										Namespace: new(gwv1.Namespace("default")),
+										Port:      new(gwv1.PortNumber(8081)),
 									},
 									Weight: new(int32(100)),
 								},
@@ -368,8 +370,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						ParentRefs: []gwv1.ParentReference{
 							{
 								Name:      gwv1.ObjectName("test-gateway"),
-								Namespace: ptr.To(gwv1.Namespace("default")),
-								Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+								Namespace: new(gwv1.Namespace("default")),
+								Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 							},
 						},
 					},
@@ -379,16 +381,16 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      "backend-svc1",
-										Namespace: ptr.To(gwv1.Namespace("default")),
-										Port:      ptr.To(gwv1.PortNumber(8081)),
+										Namespace: new(gwv1.Namespace("default")),
+										Port:      new(gwv1.PortNumber(8081)),
 									},
 									Weight: new(int32(60)),
 								},
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      "backend-svc2",
-										Namespace: ptr.To(gwv1.Namespace("default")),
-										Port:      ptr.To(gwv1.PortNumber(8082)),
+										Namespace: new(gwv1.Namespace("default")),
+										Port:      new(gwv1.PortNumber(8082)),
 									},
 									Weight: new(int32(40)),
 								},
@@ -444,8 +446,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 					ParentRefs: []gwv1.ParentReference{
 						{
 							Name:      gwv1.ObjectName("test-gateway"),
-							Namespace: ptr.To(gwv1.Namespace("default")),
-							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							Namespace: new(gwv1.Namespace("default")),
+							Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 						},
 					},
 				},
@@ -455,8 +457,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 							{
 								BackendObjectReference: gwv1.BackendObjectReference{
 									Name:      "backend-svc",
-									Namespace: ptr.To(gwv1.Namespace("other-namespace")),
-									Port:      ptr.To(gwv1.PortNumber(8080)),
+									Namespace: new(gwv1.Namespace("other-namespace")),
+									Port:      new(gwv1.PortNumber(8080)),
 								},
 							},
 						},
@@ -504,8 +506,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 					ParentRefs: []gwv1.ParentReference{
 						{
 							Name:      gwv1.ObjectName("test-gateway"),
-							Namespace: ptr.To(gwv1.Namespace("default")),
-							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							Namespace: new(gwv1.Namespace("default")),
+							Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 						},
 					},
 				},
@@ -515,8 +517,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 							{
 								BackendObjectReference: gwv1.BackendObjectReference{
 									Name:      "backend-svc",
-									Namespace: ptr.To(gwv1.Namespace("other-namespace")),
-									Port:      ptr.To(gwv1.PortNumber(8080)),
+									Namespace: new(gwv1.Namespace("other-namespace")),
+									Port:      new(gwv1.PortNumber(8080)),
 								},
 							},
 						},
@@ -576,8 +578,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 					ParentRefs: []gwv1.ParentReference{
 						{
 							Name:      gwv1.ObjectName("test-gateway"),
-							Namespace: ptr.To(gwv1.Namespace("default")),
-							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							Namespace: new(gwv1.Namespace("default")),
+							Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 						},
 					},
 				},
@@ -642,6 +644,93 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			Expect(programmedCondition.Reason).To(Equal(string(gwv1.ListenerReasonInvalid)))
 			Expect(programmedCondition.Message).To(ContainSubstring("TCP/TLS listener has no valid backends or routes"))
 		})
+
+		It("should accept the oldest TCPRoute and reject conflicting TCPRoutes on the same listener", func() {
+			By("Creating two TCPRoutes with different CreationTimestamps, both attached to the same listener")
+			parentRefs := []gwv1.ParentReference{
+				{
+					Name:      gwv1.ObjectName("test-gateway"),
+					Namespace: new(gwv1.Namespace("default")),
+					Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
+				},
+			}
+			backendRefs := []gwv1.BackendRef{
+				{
+					BackendObjectReference: gwv1.BackendObjectReference{
+						Name:      "backend-svc",
+						Namespace: new(gwv1.Namespace("default")),
+						Port:      new(gwv1.PortNumber(8080)),
+					},
+				},
+			}
+
+			olderRoute := tcpRoute("older-tcp-route")
+			olderRoute.CreationTimestamp = metav1.NewTime(time.Now().Add(-time.Hour))
+			olderRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: parentRefs},
+				Rules:           []gwv1a2.TCPRouteRule{{BackendRefs: backendRefs}},
+			}
+
+			newerRoute := tcpRoute("newer-tcp-route")
+			newerRoute.CreationTimestamp = metav1.Now()
+			newerRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: parentRefs},
+				Rules:           []gwv1a2.TCPRouteRule{{BackendRefs: backendRefs}},
+			}
+
+			By("Creating the RouteInfo slice with both routes")
+			// newer first, to prove ordering is by timestamp not slice order.
+			// ParentRef mirrors the specific listener attachment as set by the query layer.
+			routes := []*query.RouteInfo{
+				{Object: tcpToIr(newerRoute), ParentRef: parentRefs[0]},
+				{Object: tcpToIr(olderRoute), ParentRef: parentRefs[0]},
+			}
+
+			By("Setting up a fresh reporter and translating the listener")
+			rm := reports.NewReportMap()
+			testStatusReporter := reports.NewReporter(&rm)
+			testListenerReporter := testStatusReporter.Gateway(gateway).Listener(&gwListener)
+
+			testMl := &listener.MergedListeners{
+				Listeners: []*listener.MergedListener{},
+				Queries:   queries,
+			}
+			testMl.AppendTcpListener(lisToIr(gwListener), routes, testListenerReporter)
+			translatedListener := testMl.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, testStatusReporter)
+
+			By("Validating that the oldest TCPRoute wins the filter chain")
+			Expect(translatedListener).NotTo(BeNil())
+			Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
+			Expect(translatedListener.TcpFilterChain[0].FilterChainName).To(ContainSubstring(olderRoute.Name))
+			Expect(translatedListener.TcpFilterChain[0].FilterChainName).NotTo(ContainSubstring(newerRoute.Name))
+
+			findProgrammed := func(conds []metav1.Condition) *metav1.Condition {
+				for i := range conds {
+					if conds[i].Type == conditions.KgatewayConditionProgrammed {
+						return &conds[i]
+					}
+				}
+				return nil
+			}
+
+			By("Validating that the older TCPRoute is Accepted")
+			olderStatus := rm.BuildRouteStatus(ctx, olderRoute, wellknown.DefaultGatewayControllerName)
+			Expect(olderStatus).NotTo(BeNil())
+			Expect(olderStatus.Parents).To(HaveLen(1))
+			olderProgrammed := findProgrammed(olderStatus.Parents[0].Conditions)
+			Expect(olderProgrammed).NotTo(BeNil(), "Expected Programmed condition on older route")
+			Expect(olderProgrammed.Status).To(Equal(metav1.ConditionTrue))
+			Expect(olderProgrammed.Reason).To(Equal(conditions.KgatewayReasonProgrammed))
+
+			By("Validating that the newer conflicting TCPRoute is rejected")
+			newerStatus := rm.BuildRouteStatus(ctx, newerRoute, wellknown.DefaultGatewayControllerName)
+			Expect(newerStatus).NotTo(BeNil())
+			Expect(newerStatus.Parents).To(HaveLen(1))
+			newerProgrammed := findProgrammed(newerStatus.Parents[0].Conditions)
+			Expect(newerProgrammed).NotTo(BeNil(), "Expected Programmed condition on newer route")
+			Expect(newerProgrammed.Status).To(Equal(metav1.ConditionFalse))
+			Expect(newerProgrammed.Reason).To(Equal("Conflicted"))
+		})
 	})
 	Context("TLS", func() {
 		BeforeEach(func() {
@@ -683,8 +772,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						ParentRefs: []gwv1.ParentReference{
 							{
 								Name:      gwv1.ObjectName("test-gateway"),
-								Namespace: ptr.To(gwv1.Namespace("default")),
-								Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+								Namespace: new(gwv1.Namespace("default")),
+								Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 							},
 						},
 					},
@@ -695,16 +784,16 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      "backend-svc1",
-										Namespace: ptr.To(gwv1.Namespace("default")),
-										Port:      ptr.To(gwv1.PortNumber(8081)),
+										Namespace: new(gwv1.Namespace("default")),
+										Port:      new(gwv1.PortNumber(8081)),
 									},
 									Weight: new(int32(50)),
 								},
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      "backend-svc2",
-										Namespace: ptr.To(gwv1.Namespace("default")),
-										Port:      ptr.To(gwv1.PortNumber(8082)),
+										Namespace: new(gwv1.Namespace("default")),
+										Port:      new(gwv1.PortNumber(8082)),
 									},
 									Weight: new(int32(50)),
 								},
@@ -744,8 +833,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						ParentRefs: []gwv1.ParentReference{
 							{
 								Name:      gwv1.ObjectName("test-gateway"),
-								Namespace: ptr.To(gwv1.Namespace("default")),
-								Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+								Namespace: new(gwv1.Namespace("default")),
+								Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 							},
 						},
 					},
@@ -755,8 +844,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      "backend-svc1",
-										Namespace: ptr.To(gwv1.Namespace("default")),
-										Port:      ptr.To(gwv1.PortNumber(8081)),
+										Namespace: new(gwv1.Namespace("default")),
+										Port:      new(gwv1.PortNumber(8081)),
 									},
 								},
 							},
@@ -807,8 +896,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						ParentRefs: []gwv1.ParentReference{
 							{
 								Name:      gwv1.ObjectName("test-gateway"),
-								Namespace: ptr.To(gwv1.Namespace("default")),
-								Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+								Namespace: new(gwv1.Namespace("default")),
+								Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 							},
 						},
 					},
@@ -818,8 +907,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 								{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      "backend-svc1",
-										Namespace: ptr.To(gwv1.Namespace("default")),
-										Port:      ptr.To(gwv1.PortNumber(8081)),
+										Namespace: new(gwv1.Namespace("default")),
+										Port:      new(gwv1.PortNumber(8081)),
 									},
 									Weight: new(int32(100)),
 								},
@@ -857,15 +946,15 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			})
 
 			It("should create a filter chain per intersecting TLSRoute hostname", func() {
-				gwListener.Hostname = ptr.To(gwv1.Hostname("*.example.com"))
+				gwListener.Hostname = new(gwv1.Hostname("*.example.com"))
 
 				exactRoute := tlsRoute("exact-tls-route")
 				exactRoute.Spec = gwv1a2.TLSRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{{
 							Name:      gwv1.ObjectName("test-gateway"),
-							Namespace: ptr.To(gwv1.Namespace("default")),
-							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							Namespace: new(gwv1.Namespace("default")),
+							Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 						}},
 					},
 					Hostnames: []gwv1a2.Hostname{"abc.example.com"},
@@ -873,8 +962,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						BackendRefs: []gwv1.BackendRef{{
 							BackendObjectReference: gwv1.BackendObjectReference{
 								Name:      "backend-svc1",
-								Namespace: ptr.To(gwv1.Namespace("default")),
-								Port:      ptr.To(gwv1.PortNumber(8081)),
+								Namespace: new(gwv1.Namespace("default")),
+								Port:      new(gwv1.PortNumber(8081)),
 							},
 						}},
 					}},
@@ -885,8 +974,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{{
 							Name:      gwv1.ObjectName("test-gateway"),
-							Namespace: ptr.To(gwv1.Namespace("default")),
-							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							Namespace: new(gwv1.Namespace("default")),
+							Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 						}},
 					},
 					Hostnames: []gwv1a2.Hostname{"*.com"},
@@ -894,8 +983,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 						BackendRefs: []gwv1.BackendRef{{
 							BackendObjectReference: gwv1.BackendObjectReference{
 								Name:      "backend-svc2",
-								Namespace: ptr.To(gwv1.Namespace("default")),
-								Port:      ptr.To(gwv1.PortNumber(8082)),
+								Namespace: new(gwv1.Namespace("default")),
+								Port:      new(gwv1.PortNumber(8082)),
 							},
 						}},
 					}},
@@ -984,8 +1073,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 					ParentRefs: []gwv1.ParentReference{
 						{
 							Name:      gwv1.ObjectName("test-gateway"),
-							Namespace: ptr.To(gwv1.Namespace("default")),
-							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							Namespace: new(gwv1.Namespace("default")),
+							Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
 						},
 					},
 				},
@@ -995,8 +1084,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 							{
 								BackendObjectReference: gwv1.BackendObjectReference{
 									Name:      "backend-svc1",
-									Namespace: ptr.To(gwv1.Namespace("default")),
-									Port:      ptr.To(gwv1.PortNumber(3001)),
+									Namespace: new(gwv1.Namespace("default")),
+									Port:      new(gwv1.PortNumber(3001)),
 								},
 							},
 						},

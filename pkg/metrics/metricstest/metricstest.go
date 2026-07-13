@@ -94,6 +94,7 @@ type GatheredMetrics interface {
 	AssertMetric(name string, expectedMetric ExpectMetric)
 	AssertMetrics(name string, expectedMetrics []ExpectMetric)
 	AssertMetricsInclude(name string, expectedMetrics []ExpectMetric)
+	MustGetMetricValueByLabels(name string, labels []metrics.Label) float64
 	Length() int
 	MetricLength(name string) int
 }
@@ -406,6 +407,19 @@ func (g *prometheusGatheredMetrics) AssertMetricsInclude(name string, expectedMe
 
 		assert.True(g.t, matchedExpectedMetric.Match(g.t, g.mustGetMetricValue(m)), "Metric %s value mismatch -  value is %f", name, g.mustGetMetricValue(m))
 	}
+}
+
+// MustGetMetricValueByLabels returns the value of the time-series matching the
+// given labels under the named metric.
+func (g *prometheusGatheredMetrics) MustGetMetricValueByLabels(name string, labels []metrics.Label) float64 {
+	require.NotEmpty(g.t, g.metrics[name], "Metric %s not found", name)
+	for _, m := range g.metrics[name] {
+		if err := g.metricObjLabelsMatch(m, labels); err == nil {
+			return g.mustGetMetricValue(m)
+		}
+	}
+	require.Fail(g.t, "No series matching labels", "metric %s, labels %v", name, labels)
+	return 0
 }
 
 // Both counters and gauges are supported.

@@ -149,7 +149,7 @@ var _ = Describe("Deployer", func() {
 				Group:     kgateway.GroupName,
 				Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 				Name:      wellknown.DefaultGatewayParametersName,
-				Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
+				Namespace: new(gwv1.Namespace(defaultNamespace)),
 			}
 			return gwc
 		}
@@ -193,7 +193,7 @@ var _ = Describe("Deployer", func() {
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Deployment: &kgateway.ProxyDeployment{
-							Replicas: ptr.To[int32](2),
+							Replicas: new(int32(2)),
 						},
 						EnvoyContainer: &kgateway.EnvoyContainer{
 							Bootstrap: &kgateway.EnvoyBootstrap{
@@ -207,7 +207,7 @@ var _ = Describe("Deployer", func() {
 								Registry:   new("scooby"),
 								Repository: new("dooby"),
 								Tag:        new("doo"),
-								PullPolicy: ptr.To(corev1.PullAlways),
+								PullPolicy: new(corev1.PullAlways),
 							},
 						},
 						PodTemplate: &kgateway.Pod{
@@ -220,7 +220,7 @@ var _ = Describe("Deployer", func() {
 							},
 						},
 						Service: &kgateway.Service{
-							Type:      ptr.To(corev1.ServiceTypeClusterIP),
+							Type:      new(corev1.ServiceTypeClusterIP),
 							ClusterIP: new("99.99.99.99"),
 							ExtraLabels: map[string]string{
 								"foo-label": "bar-label",
@@ -228,7 +228,7 @@ var _ = Describe("Deployer", func() {
 							ExtraAnnotations: map[string]string{
 								"foo": "bar",
 							},
-							ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
+							ExternalTrafficPolicy: new(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 						},
 						ServiceAccount: &kgateway.ServiceAccount{
 							ExtraLabels: map[string]string{
@@ -300,7 +300,7 @@ var _ = Describe("Deployer", func() {
 						Group:     kgateway.GroupName,
 						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      wellknown.DefaultGatewayParametersName,
-						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
+						Namespace: new(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
@@ -384,7 +384,7 @@ var _ = Describe("Deployer", func() {
 						Group:     kgateway.GroupName,
 						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      gwp.GetName(),
-						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
+						Namespace: new(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
@@ -460,7 +460,7 @@ var _ = Describe("Deployer", func() {
 						Group:     kgateway.GroupName,
 						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      gwp.GetName(),
-						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
+						Namespace: new(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
@@ -1168,7 +1168,7 @@ var _ = Describe("Deployer", func() {
 						Kube: &kgateway.KubernetesProxyConfig{
 							// Only override a few values, rest should be defaulted
 							Service: &kgateway.Service{
-								Type: ptr.To(corev1.ServiceTypeClusterIP),
+								Type: new(corev1.ServiceTypeClusterIP),
 							},
 							EnvoyContainer: &kgateway.EnvoyContainer{
 								Bootstrap: &kgateway.EnvoyBootstrap{
@@ -1298,7 +1298,7 @@ var _ = Describe("Deployer", func() {
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Deployment: &kgateway.ProxyDeployment{
-								Replicas: ptr.To[int32](3),
+								Replicas: new(int32(3)),
 							},
 							EnvoyContainer: &kgateway.EnvoyContainer{
 								Bootstrap: &kgateway.EnvoyBootstrap{
@@ -1312,7 +1312,7 @@ var _ = Describe("Deployer", func() {
 									Registry:   new("foo"),
 									Repository: new("bar"),
 									Tag:        new("quux"),
-									PullPolicy: ptr.To(corev1.PullAlways),
+									PullPolicy: new(corev1.PullAlways),
 								},
 							},
 							PodTemplate: &kgateway.Pod{
@@ -1325,7 +1325,7 @@ var _ = Describe("Deployer", func() {
 								},
 							},
 							Service: &kgateway.Service{
-								Type:      ptr.To(corev1.ServiceTypeClusterIP),
+								Type:      new(corev1.ServiceTypeClusterIP),
 								ClusterIP: new("99.99.99.99"),
 								ExtraLabels: map[string]string{
 									"override-foo-label": "override-bar-label",
@@ -1333,7 +1333,7 @@ var _ = Describe("Deployer", func() {
 								ExtraAnnotations: map[string]string{
 									"override-foo": "override-bar",
 								},
-								ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
+								ExternalTrafficPolicy: new(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 							},
 							ServiceAccount: &kgateway.ServiceAccount{
 								ExtraLabels: map[string]string{
@@ -1359,7 +1359,7 @@ var _ = Describe("Deployer", func() {
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Deployment: &kgateway.ProxyDeployment{
-								Replicas: ptr.To[int32](3),
+								Replicas: new(int32(3)),
 							},
 							EnvoyContainer: &kgateway.EnvoyContainer{
 								Bootstrap: &kgateway.EnvoyBootstrap{
@@ -1373,7 +1373,7 @@ var _ = Describe("Deployer", func() {
 									Registry:   new("foo"),
 									Repository: new("bar"),
 									Tag:        new("quux"),
-									PullPolicy: ptr.To(corev1.PullAlways),
+									PullPolicy: new(corev1.PullAlways),
 								},
 							},
 							PodTemplate: &kgateway.Pod{
@@ -1387,7 +1387,7 @@ var _ = Describe("Deployer", func() {
 								},
 							},
 							Service: &kgateway.Service{
-								Type:      ptr.To(corev1.ServiceTypeClusterIP),
+								Type:      new(corev1.ServiceTypeClusterIP),
 								ClusterIP: new("99.99.99.99"),
 								ExtraLabels: map[string]string{
 									"foo-label":          "bar-label",
@@ -1397,7 +1397,7 @@ var _ = Describe("Deployer", func() {
 									"foo":          "bar",
 									"override-foo": "override-bar",
 								},
-								ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
+								ExternalTrafficPolicy: new(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 							},
 							ServiceAccount: &kgateway.ServiceAccount{
 								ExtraLabels: map[string]string{
@@ -1487,6 +1487,12 @@ var _ = Describe("Deployer", func() {
 				return params
 			}
 
+			fullyDefinedGatewayParamsWithExtraArgs = func() *kgateway.GatewayParameters {
+				params := fullyDefinedGatewayParameters()
+				params.Spec.Kube.EnvoyContainer.ExtraArgs = []string{"--base-id", "7", "--cpuset-threads"}
+				return params
+			}
+
 			withGatewayParams = func(gw *gwv1.Gateway, gwpName string) *gwv1.Gateway {
 				gw.Spec.Infrastructure = &gwv1.GatewayInfrastructure{
 					ParametersRef: &gwv1.LocalParametersReference{
@@ -1550,18 +1556,24 @@ var _ = Describe("Deployer", func() {
 
 				Expect(actualImageString).To(HavePrefix(expectedImageRegAndRepo))
 				expectedTagPtr := apiImage.Tag
+				expectedDigestValue := ptr.Deref(apiImage.Digest, "")
 				expectedTagValue := ptr.Deref(expectedTagPtr, "")
-				if expectedTagPtr == nil {
-					// deepMergeImage indeed does a deep merge
+				if expectedTagPtr == nil && expectedDigestValue == "" {
+					// deepMergeImage indeed does a deep merge: if no tag was
+					// specified and no digest was specified, the default tag
+					// is inherited from the parent.
 					Expect(defaultTagValue).NotTo(BeEmpty())
 					expectedTagValue = defaultTagValue
 				}
+				// When a digest is specified without a tag, the digest erases
+				// the inherited default tag — the rendered image is
+				// `repo@digest` with no `:tag`.
+				expectedTagDelimiter := expectedImageRegAndRepo + ":"
 				if expectedTagValue != "" {
-					Expect(actualImageString).To(ContainSubstring(":" + expectedTagValue))
+					Expect(actualImageString).To(ContainSubstring(expectedTagDelimiter + expectedTagValue))
 				} else {
-					Expect(actualImageString).ToNot(ContainSubstring(":"))
+					Expect(actualImageString).ToNot(ContainSubstring(expectedTagDelimiter))
 				}
-				expectedDigestValue := ptr.Deref(apiImage.Digest, "")
 				if expectedDigestValue != "" {
 					Expect(actualImageString).To(HaveSuffix("@" + expectedDigestValue))
 				}
@@ -1604,10 +1616,10 @@ var _ = Describe("Deployer", func() {
 				Expect(sa.GetLabels()).ToNot(BeNil())
 				Expect(sa.GetLabels()).To(containMapElements(expectedGwp.ServiceAccount.ExtraLabels))
 
-				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
-				Expect(cm).ToNot(BeNil())
-				// This verifies that the cluster name provided to envoy matches the service name used when generating OTel stats
-				Expect(cm.Data[envoyDataKey]).To(ContainSubstring(fmt.Sprintf("cluster: %s", listenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
+				envoyBootstrap := objs.getEnvoyConfig(dep.Namespace, defaultConfigMapName)
+				expectedClusterName := listenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace)
+				Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal(expectedClusterName))
+				Expect(envoyBootstrap.GetClusterManager().GetLocalClusterName()).To(Equal(expectedClusterName))
 
 				logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 				levels := []types.GomegaMatcher{}
@@ -1795,6 +1807,15 @@ var _ = Describe("Deployer", func() {
 			}))
 		}
 
+		fullyDefinedValidationExtraArgs := func(objs clientObjects, inp *input) {
+			fullyDefinedValidationWithoutRunAsUser(objs, inp)
+
+			envoyContainer := objs.findDeployment(defaultDeploymentName).Spec.Template.Spec.Containers[0]
+			extraArgs := []string{"--base-id", "7", "--cpuset-threads"}
+			Expect(envoyContainer.Args).To(ContainElements(extraArgs[0], extraArgs[1], extraArgs[2]))
+			Expect(envoyContainer.Args[len(envoyContainer.Args)-len(extraArgs):]).To(Equal(extraArgs))
+		}
+
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
 			checkErr := func(err, expectedErr error) (shouldReturn bool) {
 				GinkgoHelper()
@@ -1933,6 +1954,15 @@ var _ = Describe("Deployer", func() {
 					fullyDefinedValidationCustomEnv(objs, inp)
 				},
 			}),
+			Entry("Fully defined GatewayParameters with extra args", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: fullyDefinedGatewayParamsWithExtraArgs(),
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) {
+					fullyDefinedValidationExtraArgs(objs, inp)
+				},
+			}),
 			Entry("no listeners on gateway", &input{
 				dInputs: defaultDeployerInputs(),
 				gw: &gwv1.Gateway{
@@ -1960,7 +1990,7 @@ var _ = Describe("Deployer", func() {
 					Expect(port.NodePort).To(Equal(int32(0)))
 				},
 			}),
-			Entry("static NodePort", &input{
+			Entry("static NodePort on NodePort service", &input{
 				dInputs:    defaultDeployerInputs(),
 				gw:         defaultGatewayWithGatewayParams(gwpOverrideName),
 				defaultGwp: defaultGatewayParams(),
@@ -1972,11 +2002,45 @@ var _ = Describe("Deployer", func() {
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Service: &kgateway.Service{
-								Type: ptr.To(corev1.ServiceTypeNodePort),
+								Type: new(corev1.ServiceTypeNodePort),
 								Ports: []kgateway.Port{
 									{
 										Port:     80,
-										NodePort: ptr.To[int32](30000),
+										NodePort: new(int32(30000)),
+									},
+								},
+							},
+						},
+					},
+				},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) {
+					svc := objs.findService(defaultServiceName)
+					Expect(svc).NotTo(BeNil())
+
+					port := svc.Spec.Ports[0]
+					Expect(port.Port).To(Equal(int32(80)))
+					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
+					Expect(port.NodePort).To(Equal(int32(30000)))
+				},
+			}),
+			Entry("static NodePort on LoadBalancer service", &input{
+				dInputs:    defaultDeployerInputs(),
+				gw:         defaultGatewayWithGatewayParams(gwpOverrideName),
+				defaultGwp: defaultGatewayParams(),
+				overrideGwp: &kgateway.GatewayParameters{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      gwpOverrideName,
+						Namespace: defaultNamespace,
+					},
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
+							Service: &kgateway.Service{
+								Type: new(corev1.ServiceTypeLoadBalancer),
+								Ports: []kgateway.Port{
+									{
+										Port:     80,
+										NodePort: new(int32(30000)),
 									},
 								},
 							},
@@ -2186,7 +2250,7 @@ var _ = Describe("Deployer", func() {
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Deployment: &kgateway.ProxyDeployment{
-								Replicas: ptr.To[int32](3),
+								Replicas: new(int32(3)),
 							},
 						},
 					},
@@ -2309,7 +2373,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
 				Deployment: &kgateway.ProxyDeployment{
-					Replicas: ptr.To[int32](3),
+					Replicas: new(int32(3)),
 				},
 				EnvoyContainer: &kgateway.EnvoyContainer{
 					Bootstrap: &kgateway.EnvoyBootstrap{
@@ -2323,7 +2387,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 						Registry:   new("foo"),
 						Repository: new("bar"),
 						Tag:        new("bat"),
-						PullPolicy: ptr.To(corev1.PullAlways),
+						PullPolicy: new(corev1.PullAlways),
 					},
 					SecurityContext: &corev1.SecurityContext{
 						RunAsUser: new(int64(111)),
@@ -2339,7 +2403,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 						Repository: new("sds-repository"),
 						Tag:        nil,
 						Digest:     new("sds-digest"),
-						PullPolicy: ptr.To(corev1.PullAlways),
+						PullPolicy: new(corev1.PullAlways),
 					},
 					SecurityContext: &corev1.SecurityContext{
 						RunAsUser: new(int64(222)),
@@ -2401,7 +2465,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 					}},
 				},
 				Service: &kgateway.Service{
-					Type:      ptr.To(corev1.ServiceTypeClusterIP),
+					Type:      new(corev1.ServiceTypeClusterIP),
 					ClusterIP: new("99.99.99.99"),
 					ExtraAnnotations: map[string]string{
 						"service-anno": "foo",
@@ -2409,7 +2473,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 					ExtraLabels: map[string]string{
 						"service-label": "foo",
 					},
-					ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
+					ExternalTrafficPolicy: new(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 				},
 				ServiceAccount: &kgateway.ServiceAccount{
 					ExtraLabels: map[string]string{
@@ -2426,7 +2490,7 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 							Repository: new("istio-repository"),
 							Tag:        new(""),
 							Digest:     new("istio-digest"),
-							PullPolicy: ptr.To(corev1.PullAlways),
+							PullPolicy: new(corev1.PullAlways),
 						},
 						SecurityContext: &corev1.SecurityContext{
 							RunAsUser: new(int64(444)),
@@ -2493,6 +2557,9 @@ func generateReadinessProbe() *corev1.Probe {
 	}
 }
 
+// deployObjsCtxKey is an unexported key used to verify context propagation in patcher tests.
+type deployObjsCtxKey struct{}
+
 var _ = Describe("DeployObjs", func() {
 	var (
 		ns   = "test-ns"
@@ -2507,9 +2574,50 @@ var _ = Describe("DeployObjs", func() {
 			fc,
 			nil,
 			deployer.WithPatcher(patcher),
+			deployer.WithManagedBy(wellknown.DefaultManagedByValue),
 		)
 		Expect(err).ToNot(HaveOccurred())
 		return d
+	}
+
+	newGatewaySource := func() *gwv1.Gateway {
+		gw := &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns,
+				UID:       "gateway-uid",
+			},
+			Spec: gwv1.GatewaySpec{
+				GatewayClassName: wellknown.DefaultGatewayClassName,
+			},
+		}
+		gw.SetGroupVersionKind(wellknown.GatewayGVK)
+		return gw
+	}
+
+	newGatewayService := func() *corev1.Service {
+		return &corev1.Service{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       wellknown.ServiceGVK.Kind,
+				APIVersion: wellknown.ServiceGVK.GroupVersion().String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns,
+				Labels: map[string]string{
+					wellknown.ManagedByLabel:        wellknown.DefaultManagedByValue,
+					wellknown.GatewayClassNameLabel: wellknown.DefaultGatewayClassName,
+					wellknown.GatewayNameLabel:      name,
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Type: corev1.ServiceTypeLoadBalancer,
+				Ports: []corev1.ServicePort{{
+					Name: "http",
+					Port: 80,
+				}},
+			},
+		}
 	}
 
 	It("skips patch if object is unchanged", func() {
@@ -2519,7 +2627,7 @@ var _ = Describe("DeployObjs", func() {
 			Data:       map[string]string{"foo": "bar"},
 		}
 		fc := fake.NewClient(GinkgoT(), cm.DeepCopy())
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
 			Fail("Patch should not be called")
 			return errors.New("unexpected Patch call")
 		})
@@ -2541,7 +2649,7 @@ var _ = Describe("DeployObjs", func() {
 		// obj to deploy won't have a status set.
 		pod2.Status = corev1.PodStatus{}
 		fc := fake.NewClient(GinkgoT(), pod1.DeepCopy())
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
 			Fail("Patch should not be called")
 			return errors.New("unexpected Patch call")
 		})
@@ -2552,6 +2660,7 @@ var _ = Describe("DeployObjs", func() {
 	})
 
 	It("patches if object is different", func() {
+		testCtx := context.WithValue(ctx, deployObjsCtxKey{}, true)
 		cm := &corev1.ConfigMap{
 			TypeMeta: metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
 
@@ -2561,33 +2670,131 @@ var _ = Describe("DeployObjs", func() {
 		fc := fake.NewClient(GinkgoT(), cm.DeepCopy())
 		cm.Data = map[string]string{"foo": "bar", "bar": "baz"}
 		patched := false
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(gotCtx context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			Expect(gotCtx.Value(deployObjsCtxKey{})).To(BeTrue(), "patcher must receive the caller's context, not context.Background()")
 			patched = true
 			return nil
 		})
 		fc.RunAndWait(context.Background().Done())
 
-		err := d.DeployObjs(ctx, []client.Object{cm})
+		err := d.DeployObjs(testCtx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeTrue())
+	})
+
+	It("refuses to patch an existing Service not owned by the source Gateway", func() {
+		gw := newGatewaySource()
+		existingSvc := newGatewayService()
+		existingSvc.Labels = nil
+		existingSvc.Annotations = nil
+		existingSvc.OwnerReferences = nil
+
+		fc := fake.NewClient(GinkgoT(), existingSvc)
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			Fail("Patch should not be called")
+			return errors.New("unexpected Patch call")
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		err := d.DeployObjsWithSource(ctx, []client.Object{newGatewayService()}, gw)
+		Expect(err).To(MatchError(ContainSubstring("existing Service is not owned by kgateway")))
+	})
+
+	It("patches an existing Service with matching Gateway labels", func() {
+		gw := newGatewaySource()
+		existingSvc := newGatewayService()
+		existingSvc.Annotations = nil
+		existingSvc.OwnerReferences = nil
+		existingSvc.Spec.Type = corev1.ServiceTypeClusterIP
+
+		fc := fake.NewClient(GinkgoT(), existingSvc)
+		patched := false
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			patched = true
+			return nil
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		err := d.DeployObjsWithSource(ctx, []client.Object{newGatewayService()}, gw)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeTrue())
+	})
+
+	It("patches an existing Service with a controller owner reference for the source Gateway", func() {
+		gw := newGatewaySource()
+		existingSvc := newGatewayService()
+		existingSvc.Labels = nil
+		existingSvc.Annotations = nil
+		existingSvc.OwnerReferences = []metav1.OwnerReference{{
+			APIVersion: wellknown.GatewayGVK.GroupVersion().String(),
+			Kind:       wellknown.GatewayGVK.Kind,
+			Name:       gw.GetName(),
+			UID:        gw.GetUID(),
+			Controller: new(true),
+		}}
+		existingSvc.Spec.Type = corev1.ServiceTypeClusterIP
+
+		fc := fake.NewClient(GinkgoT(), existingSvc)
+		patched := false
+		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			patched = true
+			return nil
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		err := d.DeployObjsWithSource(ctx, []client.Object{newGatewayService()}, gw)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
 	})
 
 	It("patches if object does not exist (IsNotFound error)", func() {
+		testCtx := context.WithValue(ctx, deployObjsCtxKey{}, true)
 		cm := &corev1.ConfigMap{
 			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
 		}
 		fc := fake.NewClient(GinkgoT())
 		patched := false
-		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+		d := getDeployer(fc, func(gotCtx context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			Expect(gotCtx.Value(deployObjsCtxKey{})).To(BeTrue(), "patcher must receive the caller's context, not context.Background()")
 			patched = true
 			return nil
 		})
 		fc.RunAndWait(context.Background().Done())
 
-		err := d.DeployObjs(ctx, []client.Object{cm})
+		err := d.DeployObjs(testCtx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
+	})
+
+	It("cancels an in-flight patch when the caller context is canceled", func() {
+		testCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		cm := &corev1.ConfigMap{
+			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+		}
+		fc := fake.NewClient(GinkgoT())
+		patchStarted := make(chan struct{})
+		d := getDeployer(fc, func(gotCtx context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			close(patchStarted)
+			<-gotCtx.Done()
+			return gotCtx.Err()
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		errCh := make(chan error, 1)
+		go func() {
+			errCh <- d.DeployObjs(testCtx, []client.Object{cm})
+		}()
+
+		Eventually(patchStarted).Should(BeClosed(), "patch should start before canceling the caller context")
+		cancel()
+
+		var err error
+		Eventually(errCh).Should(Receive(&err), "DeployObjs should return when the caller context is canceled")
+		Expect(errors.Is(err, context.Canceled)).To(BeTrue(), "DeployObjs should return the patcher context cancellation")
 	})
 })
 

@@ -1,15 +1,15 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_example-svc_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -105,6 +105,16 @@ Listeners:
                           filter: dev.kgateway.disable_jwt
                           path:
                           - key: disable
+        - disabled: true
+          name: jwt_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -187,6 +197,16 @@ Listeners:
                           filter: dev.kgateway.disable_jwt
                           path:
                           - key: disable
+        - disabled: true
+          name: jwt_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -232,6 +252,15 @@ Routes:
       jwt/default/jwt-ext:
         '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
         requirementName: jwt-ext_default_requirements
+      jwt_enabled:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+        dynamicModuleConfig:
+          name: rust_module
+        filterConfig:
+          '@type': type.googleapis.com/google.protobuf.StringValue
+          value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+        filterName: rustformation
+        perRouteConfigName: rustformation
 - ignorePortInHostMatching: true
   name: listener~8083
   virtualHosts:
@@ -260,6 +289,15 @@ Routes:
       jwt/default/jwt-ext:
         '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
         requirementName: jwt-ext_default_requirements
+      jwt_enabled:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+        dynamicModuleConfig:
+          name: rust_module
+        filterConfig:
+          '@type': type.googleapis.com/google.protobuf.StringValue
+          value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+        filterName: rustformation
+        perRouteConfigName: rustformation
 Statuses:
   gateways:
     default/example-gateway:
@@ -275,6 +313,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 0
         conditions:
@@ -318,6 +361,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io

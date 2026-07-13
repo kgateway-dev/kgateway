@@ -59,6 +59,8 @@ var (
 	transformSkipBufferingManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-skip-buffering.yaml")
 	transformSkipBufferingBodyFuncManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-skip-buffering-with-body-func.yaml")
 	transformModelExtractionParseAsNoneManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-model-extraction-parseas-none.yaml")
+	transformForGetCookieManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-get-cookie.yaml")
+	transformForGetCookieIManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-get-cookie-i.yaml")
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -87,6 +89,8 @@ var (
 			transformSkipBufferingBodyFuncManifest,
 			rustformationForModelExtractionManifest,
 			transformModelExtractionParseAsNoneManifest,
+			transformForGetCookieManifest,
+			transformForGetCookieIManifest,
 		},
 	}
 )
@@ -775,6 +779,61 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			},
 			req: &testmatchers.HttpRequest{},
 		},
+		{
+			// test 24
+			name:      "get-cookie-basic",
+			routeName: "get-cookie",
+			opts: []curl.Option{
+				curl.WithMultiHeader("Cookie", []string{"session=abc123; User=johndoe", "foo=bar; test=123"}),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+			},
+			req: &testmatchers.HttpRequest{
+				Headers: map[string]any{
+					"x-session": "abc123",
+					"x-user":    "johndoe",
+					"x-foo":     "bar",
+					"x-test":    "123",
+				},
+				NotHeaders: []string{
+					// get_cookie("missing") returns "" which causes the header to be removed
+					"x-missing-cookie",
+					// cookie names are case-sensitive per RFC 6265: SESSION != session
+					"x-wrong-case",
+					// lower case user does not match
+					"x-missing-user-lower-case",
+				},
+			},
+		},
+		{
+			// test 25
+			name:      "get-cookie-i-basic",
+			routeName: "get-cookie-i",
+			opts: []curl.Option{
+				// "Session" and "User" have capital first letters to exercise case-insensitive matching.
+				// Second Cookie header adds "foo" to cover multi-header lookup.
+				curl.WithMultiHeader("Cookie", []string{"Session=abc123; User=johndoe", "foo=bar"}),
+			},
+			resp: &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+			},
+			req: &testmatchers.HttpRequest{
+				Headers: map[string]any{
+					// get_cookie_i("session") matches "Session=abc123"
+					"x-session-lower-lookup": "abc123",
+					// get_cookie_i("SESSION") also matches "Session=abc123"
+					"x-session-upper-lookup": "abc123",
+					"x-user":                 "johndoe",
+					// get_cookie_i("FOO") matches "foo=bar" from the second Cookie header
+					"x-foo-upper-lookup": "bar",
+				},
+				NotHeaders: []string{
+					// get_cookie_i("missing") returns "" which causes the header to be removed
+					"x-missing",
+				},
+			},
+		},
 	}
 
 	// If no indices are provided, return the full original slice.
@@ -935,6 +994,8 @@ func (s *testingSuite) assertSuiteResourceStatus() {
 		"example-route-for-skip-buffering",
 		"example-route-for-skip-buffering-body-func",
 		"example-route-for-model-extraction-parseas-none",
+		"example-route-for-get-cookie",
+		"example-route-for-get-cookie-i",
 	}
 	trafficPoliciesToCheck := []string{
 		"example-traffic-policy-for-body-as-string",
@@ -952,6 +1013,8 @@ func (s *testingSuite) assertSuiteResourceStatus() {
 		"example-traffic-policy-for-skip-buffering",
 		"example-traffic-policy-for-skip-buffering-body-func",
 		"example-traffic-policy-for-model-extraction-parseas-none",
+		"example-traffic-policy-for-get-cookie",
+		"example-traffic-policy-for-get-cookie-i",
 	}
 	s.assertRouteAndTrafficPolicyStatus(routesToCheck, trafficPoliciesToCheck)
 }

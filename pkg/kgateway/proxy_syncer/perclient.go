@@ -54,12 +54,13 @@ func (c endpointsWithUccName) Equals(k endpointsWithUccName) bool {
 
 func snapshotPerClient(
 	krtopts krtutil.KrtOptions,
-	uccCol krt.Collection[ir.UniqlyConnectedClient],
+	uccCol krt.Collection[ir.UniquelyConnectedClient],
 	mostXdsSnapshots krt.Collection[GatewayXdsResources],
 	endpoints PerClientEnvoyEndpoints,
 	clusters PerClientEnvoyClusters,
+	extraEndpointCollections ...PerClientEnvoyEndpoints,
 ) krt.Collection[XdsSnapWrapper] {
-	clusterSnapshot := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *clustersWithErrors {
+	clusterSnapshot := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *clustersWithErrors {
 		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
 		if len(clustersForUcc) == 0 {
 			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
@@ -99,8 +100,11 @@ func snapshotPerClient(
 		}
 	}, krtopts.ToOptions("ClusterResources")...)
 
-	endpointResources := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *endpointsWithUccName {
+	endpointResources := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *endpointsWithUccName {
 		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)
+		for _, extraEndpoints := range extraEndpointCollections {
+			endpointsForUcc = append(endpointsForUcc, extraEndpoints.FetchEndpointsForClient(kctx, ucc)...)
+		}
 		endpointsProto := make([]envoycachetypes.ResourceWithTTL, 0, len(endpointsForUcc))
 		var endpointsHash uint64
 		for _, ep := range endpointsForUcc {
@@ -115,7 +119,7 @@ func snapshotPerClient(
 		}
 	}, krtopts.ToOptions("EndpointResources")...)
 
-	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *XdsSnapWrapper {
+	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *XdsSnapWrapper {
 		defer (collectXDSTransformMetrics(ucc.ResourceName()))(nil)
 
 		listenerRouteSnapshot := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
@@ -128,18 +132,25 @@ func snapshotPerClient(
 
 		// HACK
 		// https://github.com/solo-io/gloo/pull/10611/files#diff-060acb7cdd3a287a3aef1dd864aae3e0193da17b6230c382b649ce9dc0eca80b
-		// Without this, we will send a "blip" where the DestinationRule
-		// or other per-client config is not applied to the clusters
-		// by sending the genericSnap clusters on the first pass, then
-		// the correct ones.
-		// This happens because the event for the new connected client
-		// triggers the per-client cluster transformation in parallel
-		// with this snapshotPerClient transformation. This Fetch is racing
-		// with that computation and will almost always lose.
-		// While we're looking for a way to make this ordering predictable
-		// to avoid hacks like this, it will do for now.
+		// This handler can fire before the per-client collections — driven
+		// by the same upstream events — have re-run, so FetchOne may briefly
+		// return nil even though results are imminent. Defer instead of
+		// publishing: returning nil surfaces as a Delete event in
+		// proxy_syncer.go's xDS subscriber, whose Delete branch is
+		// intentionally a no-op, so the xDS snapshot cache retains the
+		// last-published snapshot and Envoy keeps serving its previous,
+		// coherent config until a new snapshot overwrites it.
+		//
+		// Between the first per-client cluster row landing and the last,
+		// published snapshots can still be partial — the reconnect-time race
+		// #13868 tried to close with whole-snapshot readiness gates. Those
+		// gates could stay unsatisfied indefinitely (stranding warm clients
+		// on stale endpoints and starving new pods into crashloops, #14184)
+		// and were reverted. The first-connect delay in
+		// pkg/krtcollections/uniqueclients.go keeps a client's first watch
+		// from observing that convergence window.
 		if clustersForUcc == nil || clientEndpointResources == nil {
-			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
+			logger.Info("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
 			return nil
 		}
 
@@ -156,13 +167,13 @@ func snapshotPerClient(
 			clusterResources.Version = fmt.Sprintf("%d", clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash)
 			clusterResources.Items = clustersProto
 		}
+		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
+		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
 
 		snap.erroredClusters = clustersForUcc.erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources
-		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
-		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
 		snapshot.Resources[envoycachetypes.Endpoint] = endpointRes
 		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
 		snapshot.Resources[envoycachetypes.Listener] = listenerRouteSnapshot.Listeners

@@ -82,7 +82,21 @@ type PerClientProcessor struct {
 	waypointGatewayClassName string
 }
 
-func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+	// Cheap UCC-only filter first: if the ucc doesn't have the
+	// ambient.istio.io/redirection=enabled annotation, nothing this plugin does
+	// can affect the output. Skipping here avoids the expensive Gateway
+	// FetchOne below for the dominant case (most UCCs are not ambient).
+	if val, ok := ucc.Labels[istioannot.AmbientRedirection.Name]; !ok || val != "enabled" {
+		return
+	}
+
+	// Cheap backend filter next: skip backends (and their namespaces/aliases)
+	// that aren't opted in to ingress-use-waypoint.
+	if !HasIngressUseWaypointLabel(kctx, t.commonCols, in) {
+		return
+	}
+
 	// If the ucc has a waypoint gateway class we will let it have an EDS cluster
 	// First try the annotation (for long gateway names > 63 chars), then fall back to the label
 	gwName := ucc.Labels[wellknown.GatewayNameAnnotation]
@@ -98,19 +112,6 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 	gwir := krt.FetchOne(kctx, t.commonCols.GatewayIndex.Gateways, krt.FilterKey(gwKey.ResourceName()))
 	if gwir == nil || gwir.Obj == nil || string(gwir.Obj.Spec.GatewayClassName) == t.waypointGatewayClassName {
 		// no op
-		return
-	}
-
-	// If the ucc doesn't have the ambient.istio.io/redirection=enabled annotation, we don't need to do anything
-	// For efficiency, the specific annotation (if exists) has been addeded to the augmented labels of the ucc.
-	if val, ok := ucc.Labels[istioannot.AmbientRedirection.Name]; !ok || val != "enabled" {
-		// no op
-		return
-	}
-
-	// Only handle backends with the istio.io/ingress-use-waypoint label
-	if !HasIngressUseWaypointLabel(kctx, t.commonCols, in) {
-		// Neither the backend nor any relevant namespace/alias has the label, skip processing
 		return
 	}
 
@@ -153,7 +154,7 @@ func ApplyIngressUseWaypointCluster(in ir.BackendObjectIR, out *envoyclusterv3.C
 		Endpoints:   make([]*envoyendpointv3.LocalityLbEndpoints, 0, 1),
 	}
 
-	if endpoint := claEndpoint(sortedAddresses, uint32(in.Port)); endpoint != nil { //nolint:gosec // G115: BackendObjectIR.Port is int32 representing a port number, always in valid range
+	if endpoint := claEndpoint(sortedAddresses, uint32(in.GetPort())); endpoint != nil { //nolint:gosec // G115: BackendObjectIR port is int32 representing a port number, always in valid range
 		out.GetLoadAssignment().Endpoints = append(out.GetLoadAssignment().GetEndpoints(), endpoint)
 	}
 }

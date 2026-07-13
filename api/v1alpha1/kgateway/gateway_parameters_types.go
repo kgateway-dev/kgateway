@@ -290,7 +290,23 @@ type EnvoyContainer struct {
 	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
-	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
+	// Additional arguments to pass to the Envoy binary.
+	//
+	// Similar to Kubernetes container args, variable references $(VAR_NAME) are
+	// expanded using the container's environment. If a variable cannot be
+	// resolved, the reference is left unchanged. Double $$ are reduced to a
+	// single $, which allows escaping the $(VAR_NAME) syntax.
+	//
+	// The following Envoy flags are already managed by kgateway and must not be
+	// set here: `--disable-hot-restart`, `--service-node`, `--log-level`, and
+	// `--component-log-level`. Consider using a DeploymentOverlay to override these values if desired.
+	//
+	// +optional
+	// +kubebuilder:validation:MaxItems=32
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:MaxLength=256
+	// +kubebuilder:validation:items:MinLength=1
+	ExtraArgs []string `json:"extraArgs,omitempty"`
 
 	// The container environment variables.
 	//
@@ -331,6 +347,13 @@ func (in *EnvoyContainer) GetResources() *corev1.ResourceRequirements {
 		return nil
 	}
 	return in.Resources
+}
+
+func (in *EnvoyContainer) GetExtraArgs() []string {
+	if in == nil {
+		return nil
+	}
+	return in.ExtraArgs
 }
 
 func (in *EnvoyContainer) GetEnv() []corev1.EnvVar {
@@ -384,6 +407,18 @@ type EnvoyBootstrap struct {
 	//
 	// +optional
 	DnsResolver *DnsResolver `json:"dnsResolver,omitempty"`
+
+	// EnableReadinessProbeProxyProtocol enables the PROXY protocol listener filter
+	// on the kgateway readiness listener (port 8082).
+	// Set this to true if and only if the load balancer in front of the gateway
+	// prepends PROXY protocol headers to incoming TCP connections targeting the
+	// readiness port. For example, when using an AWS NLB with proxy protocol v2
+	// enabled at the target group level
+	// (`service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"`).
+	// Defaults to false.
+	//
+	// +optional
+	EnableReadinessProbeProxyProtocol *bool `json:"enableReadinessProbeProxyProtocol,omitempty"`
 }
 
 // LogFormat configures Envoy's application log format. Either JSON or Text must be specified.
@@ -440,6 +475,13 @@ func (in *EnvoyBootstrap) GetDnsResolver() *DnsResolver {
 		return nil
 	}
 	return in.DnsResolver
+}
+
+func (in *EnvoyBootstrap) GetEnableReadinessProbeProxyProtocol() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.EnableReadinessProbeProxyProtocol
 }
 
 func (in *DnsResolver) GetUdpMaxQueries() *int32 {

@@ -7,13 +7,56 @@ on:
       - 'main'
       - 'v1.**.x'
 
+env:
+  CGO_ENABLED: '0'
+
 jobs:
-  setup-mod-cache:
-    name: Setup Go Modules Cache
+  setup-go-caches:
+    name: Setup Go Caches
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-    - name: Prep Go Runner
-      uses: ./.github/actions/prep-go-runner
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Prep Go Runner
+        id: prep-go-runner
+        uses: ./.github/actions/prep-go-runner
+      - name: Prime Go Build Cache
+        if: steps.prep-go-runner.outputs.go-build-cache-hit != 'true'
+        run: |
+          go test -run '^$' ./...
+          go test -run '^$' -tags e2e ./...
+      - name: Save Go Build Cache
+        if: success() && steps.prep-go-runner.outputs.go-build-cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
+          key: ${{ steps.prep-go-runner.outputs.go-build-cache-key }}
+      # The unit tests compile with `CGO_ENABLED=1 -race`, which produces a
+      # distinct set of GOCACHE entries from the CGO-disabled build primed
+      # above. Seed a second cache so PR unit jobs start with a warm
+      # race-instrumented build cache instead of recompiling the world.
+      - name: Restore Race Go Build Cache
+        id: race-build-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
+          key: ${{ steps.prep-go-runner.outputs.go-build-cache-key-race }}
+      - name: Prime Race Go Build Cache
+        if: steps.race-build-cache.outputs.cache-hit != 'true'
+        env:
+          CGO_ENABLED: '1'
+        run: |
+          # Start from an empty build cache so the race cache we save below
+          # contains only race-instrumented entries, not a superset that also
+          # duplicates the CGO-disabled entries saved above. The -race build
+          # can't reuse the non-race artifacts anyway (instrumentation changes
+          # every action ID), so nothing is lost by clearing them first.
+          go clean -cache
+          go test -run '^$' -race ./...
+      - name: Save Race Go Build Cache
+        if: success() && steps.race-build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
+          key: ${{ steps.prep-go-runner.outputs.go-build-cache-key-race }}

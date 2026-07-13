@@ -82,28 +82,30 @@ type TrafficPolicy struct {
 }
 
 type trafficPolicySpecIr struct {
-	buffer          *bufferIR
-	extProc         *extprocIR
-	rustformation   *rustformationIR
-	extAuth         *extAuthIR
-	localRateLimit  *localRateLimitIR
-	globalRateLimit *globalRateLimitIR
-	cors            *corsIR
-	csrf            *csrfIR
-	headerModifiers *headerModifiersIR
-	autoHostRewrite *autoHostRewriteIR
-	retry           *retryIR
-	timeouts        *timeoutsIR
-	rbac            *rbacIR
-	jwt             *jwtIr
-	compression     *compressionIR
-	decompression   *decompressionIR
-	basicAuth       *basicAuthIR
-	urlRewrite      *urlRewriteIR
-	apiKeyAuth      *apiKeyAuthIR
-	oauth2          *oauthIR
-	tracing         *routeTracingIR
-	faultInjection  *faultInjectionIR
+	buffer           *bufferIR
+	extProc          *extprocIR
+	rustformation    *rustformationIR
+	extAuth          *extAuthIR
+	localRateLimit   *localRateLimitIR
+	globalRateLimit  *globalRateLimitIR
+	cors             *corsIR
+	csrf             *csrfIR
+	headerModifiers  *headerModifiersIR
+	autoHostRewrite  *autoHostRewriteIR
+	retry            *retryIR
+	timeouts         *timeoutsIR
+	internalRedirect *internalRedirectIR
+	rbac             *rbacIR
+	jwt              *jwtIr
+	compression      *compressionIR
+	decompression    *decompressionIR
+	basicAuth        *basicAuthIR
+	urlRewrite       *urlRewriteIR
+	apiKeyAuth       *apiKeyAuthIR
+	oauth2           *oauthIR
+	tracing          *routeTracingIR
+	faultInjection   *faultInjectionIR
+	httpACL          *httpACLIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -155,6 +157,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.timeouts.Equals(d2.spec.timeouts) {
 		return false
 	}
+	if !d.spec.internalRedirect.Equals(d2.spec.internalRedirect) {
+		return false
+	}
 	if !d.spec.rbac.Equals(d2.spec.rbac) {
 		return false
 	}
@@ -185,6 +190,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.faultInjection.Equals(d2.spec.faultInjection) {
 		return false
 	}
+	if !d.spec.httpACL.Equals(d2.spec.httpACL) {
+		return false
+	}
 	return true
 }
 
@@ -202,6 +210,8 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.cors.Validate)
 	validators = append(validators, p.spec.headerModifiers.Validate)
 	validators = append(validators, p.spec.buffer.Validate)
+	validators = append(validators, p.spec.retry.Validate)
+	validators = append(validators, p.spec.timeouts.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	validators = append(validators, p.spec.rbac.Validate)
 	validators = append(validators, p.spec.jwt.Validate)
@@ -213,6 +223,8 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.oauth2.Validate)
 	validators = append(validators, p.spec.tracing.Validate)
 	validators = append(validators, p.spec.faultInjection.Validate)
+	validators = append(validators, p.spec.httpACL.Validate)
+	validators = append(validators, p.spec.internalRedirect.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -224,6 +236,10 @@ func (p *TrafficPolicy) Validate() error {
 type trafficPolicyPluginGwPass struct {
 	reporter reporter.Reporter
 	ir.UnimplementedProxyTranslationPass
+
+	// This is used to determine if the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata
+	// should be set on routes that have been successfully authenticated
+	enableAuthMetadata bool
 
 	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
 	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
@@ -242,6 +258,7 @@ type trafficPolicyPluginGwPass struct {
 	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
 	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
 	faultInChain             map[string]*faulthttpv3.HTTPFault
+	httpACLInChain           map[string]bool
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
@@ -269,7 +286,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 		}
 
 		policyIR, errors := constructor.ConstructIR(krtctx, policyCR)
-		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
+		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode, commoncol.Settings.EnableAuthMetadata); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)
 		}
@@ -320,7 +337,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
-				NewGatewayTranslationPass:       NewGatewayTranslationPass,
+				NewGatewayTranslationPass: func(tctx ir.GwTranslationCtx, rep reporter.Reporter) ir.ProxyTranslationPass {
+					return NewGatewayTranslationPass(tctx, rep, commoncol.Settings.EnableAuthMetadata)
+				},
 				Policies:                        policyCol,
 				ProcessPolicyStaleStatusMarkers: processMarkers,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
@@ -334,9 +353,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	}
 }
 
-func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter, enableAuthMetadata bool) ir.ProxyTranslationPass {
 	return &trafficPolicyPluginGwPass{
 		reporter:                 reporter,
+		enableAuthMetadata:       enableAuthMetadata,
 		setTransformationInChain: map[string]bool{},
 		secrets:                  map[string]*envoytlsv3.Secret{},
 	}
@@ -356,6 +376,28 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 	}
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+	p.applyGatewayLevelPerRouteSettings(policy.spec, out)
+}
+
+func (p *trafficPolicyPluginGwPass) applyGatewayLevelPerRouteSettings(spec trafficPolicySpecIr, out *envoyroutev3.RouteConfiguration) {
+	for _, vh := range out.VirtualHosts {
+		p.applyPerRouteSettings(spec, vh.Routes)
+	}
+}
+
+// applyPerRouteSettings applies the route-level settings of a policy (timeouts,
+// retries, url rewrite, etc.) to each of the given routes. It is used when a
+// policy attaches above the route level (at a Gateway or a Gateway listener
+// section) so that the route-level settings still take effect on the routes it
+// covers. Routes without a RouteAction (e.g. redirect/direct response) are
+// skipped by handlePerRoutePolicies.
+func (p *trafficPolicyPluginGwPass) applyPerRouteSettings(spec trafficPolicySpecIr, routes []*envoyroutev3.Route) {
+	for _, route := range routes {
+		if route.GetRoute() == nil {
+			continue
+		}
+		p.handlePerRoutePolicies(spec, route)
+	}
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
@@ -367,7 +409,15 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 		return
 	}
 
-	p.handlePerVHostPolicies(policy.spec, out)
+	// Apply the route-level settings to each route rather than to the vhost.
+	// A Gateway listener section attaches at the vhost level, but settings such
+	// as timeouts and retries are route-action-level in Envoy, so they must be
+	// applied per route to take effect. A route-level value (set by a more
+	// specific TrafficPolicy or a builtin HTTPRoute policy) fully overrides the
+	// one applied here, and the "only set if not already set" guards in
+	// handlePerRoutePolicies keep that precedence explicit.
+	p.applyPerRouteSettings(policy.spec, out.Routes)
+
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 }
 
@@ -398,6 +448,12 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	return nil
 }
 
+// runAsUpstreamFilter returns true if the filter stage is after route
+func runAsUpstreamFilter(filterStage filters.FilterStage[filters.WellKnownFilterStage]) bool {
+	return filterStage.RelativeTo > filters.RouteStage ||
+		(filterStage.RelativeTo == filters.RouteStage && filterStage.RelativeWeight > 0)
+}
+
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
@@ -411,6 +467,23 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
+	// Add HTTP ACL filter immediately after FaultStage, before all other filters.
+	if p.httpACLInChain[fcc.FilterChainName] {
+		cfg := utils.MustMessageToAny(&wrapperspb.StringValue{
+			Value: httpACLDefaultListenerJSON,
+		})
+		aclListenerCfg := &dynamicmodulesv3.DynamicModuleFilter{
+			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
+				Name: httpACLModuleName,
+			},
+			FilterName:   httpACLFilterName,
+			FilterConfig: cfg,
+		}
+		filter := filters.MustNewStagedFilter(httpACLFilterNamePrefix, aclListenerCfg, filters.AfterStage(filters.FaultStage))
+		filter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, filter)
+	}
+
 	// Add global ExtProc disable filter when there are providers
 	if len(p.extProcPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
@@ -418,18 +491,30 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 	// Add ExtProc filters for listener
 	for _, provider := range p.extProcPerProvider.Providers[fcc.FilterChainName] {
+		// Skip providers configured for after route — those are added as upstream http filters.
+		if runAsUpstreamFilter(provider.FilterStage) {
+			continue
+		}
+
 		extProcFilter := provider.Extension.ExtProc
 		if extProcFilter == nil {
 			continue
 		}
 
-		// add the specific auth filter
+		// Use FilterStageSpec.Weight for filter chain ordering.
+		// PrecedenceWeight (from kgateway.dev/policy-weight annotation) is for
+		// policy merge ordering, not filter chain ordering, so it is not used here.
+		var weight int32
+		if provider.Extension.FilterStage != nil {
+			weight = provider.Extension.FilterStage.Weight
+		}
+
 		extProcName := extProcFilterName(provider.Name)
 		stagedExtProcFilter := filters.MustNewStagedFilterWithWeight(
 			extProcName,
 			extProcFilter,
-			filters.AfterStage(filters.WellKnownFilterStage(filters.AuthZStage)),
-			provider.Extension.PrecedenceWeight,
+			provider.FilterStage,
+			weight,
 		)
 
 		// handle the case where route level only should be fired
@@ -438,19 +523,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 
 	if p.setTransformationInChain[fcc.FilterChainName] {
-		cfg := utils.MustMessageToAny(&wrapperspb.StringValue{
-			Value: "{}",
-		})
-		rustCfg := dynamicmodulesv3.DynamicModuleFilter{
-			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
-				Name: "rust_module",
-			},
-			FilterName:   "http_simple_mutations",
-			FilterConfig: cfg,
-		}
-
 		rustFilter := filters.MustNewStagedFilter(rustformationFilterNamePrefix,
-			&rustCfg,
+			GenerateBlankTransformationConfig(),
 			filters.BeforeStage(filters.AcceptedStage),
 		)
 		rustFilter.Filter.Disabled = true
@@ -461,6 +535,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	if len(p.extAuthPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		// register the filter that sets metadata so that it can have overrides on the route level
 		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, ExtAuthGlobalDisableFilterName, ExtAuthGlobalDisableFilterMetadataNamespace)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, ExtAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 	// Add Ext_authz filter for listener
 	for _, provider := range p.extAuthPerProvider.Providers[fcc.FilterChainName] {
@@ -485,6 +560,9 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	}
 
 	// Add OIDC filters for providers
+	if len(p.oauth2PerProvider.Providers[fcc.FilterChainName]) > 0 {
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, OauthEnabledFilterName, p.enableAuthMetadata)
+	}
 	for _, provider := range p.oauth2PerProvider.Providers[fcc.FilterChainName] {
 		oidcFilter := provider.Extension.OAuth2.cfg
 		if oidcFilter == nil {
@@ -521,6 +599,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 	if len(p.jwtPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, jwtGlobalDisableFilterName, jwtGlobalDisableFilterMetadataNamespace)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, JwtEnabledFilterName, p.enableAuthMetadata)
 	}
 	for _, provider := range p.jwtPerProvider.Providers[fcc.FilterChainName] {
 		jwtFilter := provider.Extension.Jwt
@@ -605,6 +684,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		filter := filters.MustNewStagedFilter(basicAuthFilterName, f, filters.DuringStage(filters.AuthNStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, BasicAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 
 	// Add API key auth filter to the chain
@@ -612,10 +692,49 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		filter := filters.MustNewStagedFilter(apiKeyAuthFilterNamePrefix, f, filters.DuringStage(filters.AuthNStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
+		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, APIKeyAuthEnabledFilterName, p.enableAuthMetadata)
 	}
 
 	if len(stagedFilters) == 0 {
 		return nil, nil
+	}
+
+	return stagedFilters, nil
+}
+
+func (p *trafficPolicyPluginGwPass) UpstreamHttpFilters(_ ir.HttpFiltersContext, fcc ir.FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error) {
+	var stagedFilters []filters.StagedUpstreamHttpFilter
+
+	for _, provider := range p.extProcPerProvider.Providers[fcc.FilterChainName] {
+		// Only add extproc as upstream filter when stage is after route.
+		if !runAsUpstreamFilter(provider.FilterStage) {
+			continue
+		}
+
+		extProcFilter := provider.Extension.ExtProc
+		if extProcFilter == nil {
+			continue
+		}
+
+		// Use FilterStageSpec.Weight for filter chain ordering.
+		// PrecedenceWeight (from kgateway.dev/policy-weight annotation) is for
+		// policy merge ordering, not filter chain ordering, so it is not used here.
+		var weight int32
+		if provider.Extension.FilterStage != nil {
+			weight = provider.Extension.FilterStage.Weight
+		}
+
+		extProcName := extProcFilterName(provider.Name)
+		stagedExtProcFilter := filters.MustNewStagedUpstreamFilterWithWeight(
+			extProcName,
+			extProcFilter,
+			filters.UpstreamHTTPFilterStage{RelativeTo: filters.TransformationStage},
+			weight,
+		)
+
+		// handle the case where route level only should be fired
+		stagedExtProcFilter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, stagedExtProcFilter)
 	}
 
 	return stagedFilters, nil
@@ -657,6 +776,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleAPIKeyAuth(fcn, typedFilterConfig, spec.apiKeyAuth)
 	p.handleOauth2(fcn, typedFilterConfig, spec.oauth2)
 	p.handleFaultInjection(fcn, typedFilterConfig, spec.faultInjection)
+	p.handleHttpACL(fcn, typedFilterConfig, spec.httpACL)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level
@@ -682,7 +802,10 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	}
 
 	if spec.timeouts != nil {
-		action.IdleTimeout = spec.timeouts.routeStreamIdleTimeout
+		// Only set idle timeout if not already set (route policy takes precedence)
+		if action.GetIdleTimeout() == nil {
+			action.IdleTimeout = spec.timeouts.routeStreamIdleTimeout
+		}
 		// Only set the route timeout if it is not already set, which implies that it was
 		// set by the builtin HTTPRouteTimeouts policy
 		if action.GetTimeout() == nil {
@@ -690,10 +813,10 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 		}
 	}
 
-	// Only set the retry policy if it is not already set, which implies that it was
-	// set by the builtin HTTPRouteRetry policy
-	if action.GetRetryPolicy() == nil && spec.retry != nil {
-		action.RetryPolicy = spec.retry.policy
+	applyRetryPolicy(spec.retry, out)
+
+	if action.GetInternalRedirectPolicy() == nil && spec.internalRedirect != nil {
+		action.InternalRedirectPolicy = spec.internalRedirect.policy
 	}
 
 	// Apply URL rewrite configuration
@@ -703,13 +826,20 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	p.handleRouteTracing(spec, out)
 }
 
-// handlePerVHostPolicies handles policies that are meant to be processed at the vhost level
-func (p *trafficPolicyPluginGwPass) handlePerVHostPolicies(
-	spec trafficPolicySpecIr,
-	out *envoyroutev3.VirtualHost,
-) {
-	if spec.retry != nil {
-		out.RetryPolicy = spec.retry.policy
+func applyRetryPolicy(retry *retryIR, out *envoyroutev3.Route) {
+	if retry == nil || out == nil {
+		return
+	}
+
+	action := out.GetRoute()
+	if action == nil {
+		return
+	}
+
+	// Only set the retry policy if it is not already set, which implies that it was
+	// set by the builtin HTTPRouteRetry policy or a more specific TrafficPolicy.
+	if action.GetRetryPolicy() == nil {
+		action.RetryPolicy = retry.policy
 	}
 }
 

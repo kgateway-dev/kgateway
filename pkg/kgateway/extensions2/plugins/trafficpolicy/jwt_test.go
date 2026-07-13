@@ -2,19 +2,22 @@ package trafficpolicy
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -115,7 +118,7 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 			providers: map[string]*jwtauthnv3.JwtProvider{
 				"provider1": {Issuer: "test-issuer"},
 			},
-			validationMode:  ptr.To(kgateway.ValidationModeAllowMissing),
+			validationMode:  new(kgateway.ValidationModeAllowMissing),
 			expectedType:    "requires_any",
 			expectedCount:   2, // provider requirement + allow missing
 			hasAllowMissing: true,
@@ -127,7 +130,7 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 				"provider1": {Issuer: "test-issuer-1"},
 				"provider2": {Issuer: "test-issuer-2"},
 			},
-			validationMode:  ptr.To(kgateway.ValidationModeAllowMissing),
+			validationMode:  new(kgateway.ValidationModeAllowMissing),
 			expectedType:    "requires_any",
 			expectedCount:   2, // requires_any with providers + allow missing
 			hasAllowMissing: true,
@@ -515,7 +518,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 		{
 			name: "allow missing mode",
 			jwt: &kgateway.JWT{
-				ValidationMode: ptr.To(kgateway.ValidationModeAllowMissing),
+				ValidationMode: new(kgateway.ValidationModeAllowMissing),
 				Providers: []kgateway.NamedJWTProvider{
 					{
 						Name: "test-provider",
@@ -535,7 +538,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 		{
 			name: "allow missing mode with multiple providers",
 			jwt: &kgateway.JWT{
-				ValidationMode: ptr.To(kgateway.ValidationModeAllowMissing),
+				ValidationMode: new(kgateway.ValidationModeAllowMissing),
 				Providers: []kgateway.NamedJWTProvider{
 					{
 						Name: "provider1",
@@ -625,15 +628,12 @@ func TestTranslateJwksRemote(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
-		backend := &ir.BackendObjectIR{
-			ObjectSource: ir.ObjectSource{
-				Kind:      "Service",
-				Namespace: "backend-ns",
-				Name:      "backend",
-			},
-			GvPrefix: "svc",
-			Port:     8443,
-		}
+		backendVal := ir.NewBackendObjectIR(ir.ObjectSource{
+			Kind:      "Service",
+			Namespace: "backend-ns",
+			Name:      "backend",
+		}, 8443, "", "svc")
+		backend := &backendVal
 		resolver := &fakeBackendResolver{backend: backend}
 		out := &jwtauthnv3.JwtProvider{}
 		cacheDuration := metav1.Duration{Duration: time.Minute}
@@ -662,6 +662,59 @@ func TestTranslateJwksRemote(t *testing.T) {
 		assert.Equal(t, time.Minute, remote.RemoteJwks.GetCacheDuration().AsDuration())
 	})
 
+	t.Run("async fetch and retry policy", func(t *testing.T) {
+		t.Parallel()
+		backendVal := ir.NewBackendObjectIR(ir.ObjectSource{
+			Kind:      "Service",
+			Namespace: "backend-ns",
+			Name:      "backend",
+		}, 8443, "", "svc")
+		backend := &backendVal
+		resolver := &fakeBackendResolver{backend: backend}
+		out := &jwtauthnv3.JwtProvider{}
+
+		err := translateJwks(
+			nil,
+			kgateway.JWKS{
+				RemoteJWKS: &kgateway.RemoteJWKS{
+					URL:        "https://example.com/jwks",
+					BackendRef: makeBackendRef("backend", "backend-ns", 8443),
+					AsyncFetch: &kgateway.JWKSAsyncFetch{
+						FastListener:          new(true),
+						FailedRefetchDuration: &metav1.Duration{Duration: 10 * time.Second},
+					},
+					RetryPolicy: &kgateway.JWKSRetryPolicy{
+						NumRetries: new(int32(3)),
+						BackOff: &kgateway.JWKSRetryBackOff{
+							BaseInterval: metav1.Duration{Duration: time.Second},
+							MaxInterval:  &metav1.Duration{Duration: 30 * time.Second},
+						},
+					},
+				},
+			},
+			out,
+			nil,
+			resolver,
+			ir.ObjectSource{Namespace: "ext-ns"},
+		)
+		require.NoError(t, err)
+
+		remote, ok := out.JwksSourceSpecifier.(*jwtauthnv3.JwtProvider_RemoteJwks)
+		require.True(t, ok, "expected remote jwks config to be set")
+
+		asyncFetch := remote.RemoteJwks.GetAsyncFetch()
+		require.NotNil(t, asyncFetch, "expected async fetch to be set")
+		assert.True(t, asyncFetch.GetFastListener())
+		assert.Equal(t, 10*time.Second, asyncFetch.GetFailedRefetchDuration().AsDuration())
+
+		retryPolicy := remote.RemoteJwks.GetRetryPolicy()
+		require.NotNil(t, retryPolicy, "expected retry policy to be set")
+		assert.Equal(t, uint32(3), retryPolicy.GetNumRetries().GetValue())
+		require.NotNil(t, retryPolicy.GetRetryBackOff(), "expected retry backoff to be set")
+		assert.Equal(t, time.Second, retryPolicy.GetRetryBackOff().GetBaseInterval().AsDuration())
+		assert.Equal(t, 30*time.Second, retryPolicy.GetRetryBackOff().GetMaxInterval().AsDuration())
+	})
+
 	t.Run("missing backend ref errors", func(t *testing.T) {
 		t.Parallel()
 		resolver := &fakeBackendResolver{err: errors.New("backend missing")}
@@ -682,5 +735,110 @@ func TestTranslateJwksRemote(t *testing.T) {
 		)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "remote jwks: unresolved backend ref")
+	})
+}
+
+func TestHttpFiltersJwt(t *testing.T) {
+	t.Run("adds jwt filter and auth-enabled filter to chain", func(t *testing.T) {
+		plugin := &trafficPolicyPluginGwPass{
+			enableAuthMetadata: true,
+			jwtPerProvider: ProviderNeededMap{
+				Providers: map[string][]Provider{
+					"test-filter-chain": {
+						{
+							Name: "test-jwt",
+							Extension: &TrafficPolicyGatewayExtensionIR{
+								Name: "test-jwt",
+								Jwt:  &envoymatchingv3.ExtensionWithMatcher{},
+							},
+						},
+					},
+				},
+			},
+		}
+		fcc := ir.FilterChainCommon{FilterChainName: "test-filter-chain"}
+
+		httpFilters, err := plugin.HttpFilters(ir.HttpFiltersContext{}, fcc)
+
+		require.NoError(t, err)
+		require.NotNil(t, httpFilters)
+		// global disable filter, auth-enabled metadata filter, then jwt filter
+		assert.Equal(t, 3, len(httpFilters))
+		assert.Equal(t, jwtGlobalDisableFilterName, httpFilters[0].Filter.GetName())
+		assert.Equal(t, filters.BeforeStage(filters.FaultStage), httpFilters[0].Stage)
+		assert.Equal(t, JwtEnabledFilterName, httpFilters[1].Filter.GetName())
+		assert.Equal(t, filters.AfterStage(filters.AuthNStage), httpFilters[1].Stage)
+		assert.Equal(t, jwtFilterName("test-jwt"), httpFilters[2].Filter.GetName())
+		assert.Equal(t, filters.DuringStage(filters.AuthNStage), httpFilters[2].Stage)
+	})
+}
+
+func TestJwtPolicyPlugin(t *testing.T) {
+	t.Run("applies jwt configuration to route", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				jwt: &jwtIr{
+					perProviderConfig: []*perProviderJwtConfig{
+						{
+							provider: &TrafficPolicyGatewayExtensionIR{
+								Name: "test-jwt",
+								Jwt:  &envoymatchingv3.ExtensionWithMatcher{},
+							},
+							perRouteConfig: &jwtauthnv3.PerRouteConfig{
+								RequirementSpecifier: &jwtauthnv3.PerRouteConfig_RequirementName{
+									RequirementName: "test-jwt",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		require.NotNil(t, pCtx.TypedFilterConfig)
+		jwtConfig, ok := pCtx.TypedFilterConfig[jwtFilterName("test-jwt")]
+		assert.True(t, ok)
+		assert.NotNil(t, jwtConfig)
+		assert.Empty(t, pCtx.TypedFilterConfig[jwtGlobalDisableFilterName])
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[JwtEnabledFilterName])
+		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[JwtEnabledFilterName]),
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "jwt_enabled must set dynamic metadata")
+	})
+
+	t.Run("handles disabled jwt configuration", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				jwt: &jwtIr{
+					disableAllProviders: true,
+				},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		assert.NotNil(t, pCtx.TypedFilterConfig, pCtx)
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[jwtGlobalDisableFilterName])
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[JwtEnabledFilterName])
+		assert.NotContains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[JwtEnabledFilterName]), AuthSucceededMetadataKey, "jwt_enabled must not set dynamic metadata if the policy is disabled at the route level")
 	})
 }

@@ -145,6 +145,14 @@ type CircuitBreakers struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	MaxRetries *int32 `json:"maxRetries,omitempty"`
+
+	// TrackRemaining controls whether Envoy tracks the remaining resource
+	// gauges for this circuit breaker threshold group. When enabled, the
+	// remaining_cx, remaining_pending, remaining_rq, and remaining_retries
+	// statistics are populated. Enabling this has a performance cost.
+	// If not specified, defaults to false.
+	// +optional
+	TrackRemaining *bool `json:"trackRemaining,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="!(has(self.jitter) && has(self.refreshRate)) || duration(self.jitter) <= duration(self.refreshRate)",message="jitter must be less than or equal to refreshRate"
@@ -244,8 +252,10 @@ type Http2ProtocolOptions struct {
 	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
 
 	// The maximum number of concurrent streams that the connection can have.
+	// Envoy defaults to 1024.
 	// +optional
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=2147483647
 	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
 
 	// Allows invalid HTTP messaging and headers. When disabled (default), then
@@ -253,6 +263,40 @@ type Http2ProtocolOptions struct {
 	// When enabled, only the offending stream is terminated.
 	// +optional
 	OverrideStreamErrorOnInvalidHttpMessage *bool `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
+
+	// ConnectionKeepalive enables HTTP/2 keepalive PINGs on upstream connections,
+	// actively detecting half-dead connections: if a PING is not acknowledged
+	// within the timeout, the connection is closed.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-keepalivesettings) for more details.
+	// +optional
+	ConnectionKeepalive *ConnectionKeepalive `json:"connectionKeepalive,omitempty"`
+}
+
+// ConnectionKeepalive configures HTTP/2 keepalive PINGs for upstream connections.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-keepalivesettings) for more details.
+type ConnectionKeepalive struct {
+	// Timeout after which the connection is closed if no response to a keepalive
+	// PING is received. A PING response is considered received if any frame
+	// arrives on the connection while the PING is outstanding.
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms"
+	// +required
+	Timeout metav1.Duration `json:"timeout"`
+
+	// Interval between keepalive PINGs. If unset, PINGs are only sent when
+	// triggered by ConnectionIdleInterval.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="interval must be at least 1ms"
+	Interval *metav1.Duration `json:"interval,omitempty"`
+
+	// If set, a PING is sent before dispatching new streams on a connection that
+	// has been idle for at least this duration, verifying the connection is
+	// still alive before reusing it.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="connectionIdleInterval must be at least 1ms"
+	ConnectionIdleInterval *metav1.Duration `json:"connectionIdleInterval,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive) for more details.
@@ -372,6 +416,8 @@ type TLSFiles struct {
 }
 
 // +kubebuilder:validation:ExactlyOneOf=leastRequest;roundRobin;ringHash;maglev;random
+// +kubebuilder:validation:XValidation:rule="!(has(self.localityType) && has(self.zoneAware))",message="localityType and zoneAware are mutually exclusive"
+// +kubebuilder:validation:XValidation:rule="!((has(self.ringHash) || has(self.maglev)) && has(self.zoneAware))",message="zoneAware is not supported with ringHash or maglev load balancers"
 type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
@@ -413,6 +459,13 @@ type LoadBalancer struct {
 	// +optional
 	// +kubebuilder:validation:Enum=WeightedLb
 	LocalityType *LocalityType `json:"localityType,omitempty"`
+
+	// ZoneAware configures zone-aware routing behavior for the load balancer.
+	// When enabled, traffic is preferentially routed to endpoints in the same
+	// availability zone as the Envoy proxy.
+	// This is mutually exclusive with localityType.
+	// +optional
+	ZoneAware *ZoneAwareLoadBalancer `json:"zoneAware,omitempty"`
 
 	// If set to true, the load balancer will drain connections when the host set changes.
 	//
@@ -528,6 +581,63 @@ const (
 	// This field is required to enable locality weighted load balancing.
 	LocalityConfigTypeWeightedLb LocalityType = "WeightedLb"
 )
+
+// ZoneAwareLoadBalancer configures zone-aware routing behavior.
+// Currently, preferLocal must be specified.
+//
+// +kubebuilder:validation:AtLeastOneOf=preferLocal
+type ZoneAwareLoadBalancer struct {
+	// PreferLocal enables Envoy's zone-aware routing which prefers sending traffic
+	// to local zone endpoints while maintaining overall traffic balance across zones.
+	// On Kubernetes 1.35+, the zone is automatically derived from node label.
+	// The KGATEWAY_NODE_* environment variables on the proxy pod can be set as an explicit override.
+	// See https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/zone_aware
+	// +optional
+	PreferLocal *ZoneAwarePreferLocal `json:"preferLocal,omitempty"`
+}
+
+// ZoneAwarePreferLocal configures Envoy's native zone-aware routing.
+// Envoy will prefer sending traffic to endpoints in the same zone as the proxy,
+// while still maintaining rough request balance across all upstream hosts.
+type ZoneAwarePreferLocal struct {
+	// Force enables Envoy forced zone-local routing. Envoy routes to same-zone
+	// endpoints while the local endpoint threshold is met. If there are not enough
+	// local endpoints, traffic falls back to standard zone-aware routing behavior.
+	// +optional
+	Force *ZoneAwareForce `json:"force,omitempty"`
+
+	// MinEndpointsThreshold is the minimum number of total endpoints in the cluster
+	// that must exist for zone-aware routing to be enabled. If the total number
+	// of endpoints is below this threshold, zone-aware routing is disabled.
+	// This maps to Envoy's min_cluster_size setting.
+	// Defaults to 6.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=6
+	MinEndpointsThreshold *uint64 `json:"minEndpointsThreshold,omitempty"`
+
+	// RoutingEnabled is the percentage of requests for which Envoy applies
+	// zone-aware routing once the minEndpointsThreshold is met.
+	// Defaults to 100.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:default=100
+	RoutingEnabled *int32 `json:"routingEnabled,omitempty"`
+}
+
+// ZoneAwareForce configures Envoy forceLocalZone behavior.
+type ZoneAwareForce struct {
+	// MinEndpointsInZoneThreshold is the minimum number of endpoints that must
+	// exist in the local zone for forced zone-local routing to be active.
+	// If the local zone has fewer endpoints than this threshold, the system
+	// falls back to standard zone-aware routing behavior.
+	// Defaults to 1.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=1
+	MinEndpointsInZoneThreshold *uint32 `json:"minEndpointsInZoneThreshold,omitempty"`
+}
 
 // HealthCheck contains the options to configure the health check.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/health_check.proto) for more details.

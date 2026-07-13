@@ -7,6 +7,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
@@ -20,11 +21,16 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -226,6 +232,56 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "http2 connection keepalive applied to http2 backend",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					Http2ProtocolOptions: &kgateway.Http2ProtocolOptions{
+						ConnectionKeepalive: &kgateway.ConnectionKeepalive{
+							Timeout:                metav1.Duration{Duration: 5 * time.Second},
+							Interval:               new(metav1.Duration{Duration: 30 * time.Second}),
+							ConnectionIdleInterval: new(metav1.Duration{Duration: 60 * time.Second}),
+						},
+					},
+				},
+			},
+			backend: &ir.BackendObjectIR{
+				AppProtocol: ir.HTTP2AppProtocol,
+			},
+			cluster: &envoyclusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{},
+								},
+							},
+						},
+					}),
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{
+										ConnectionKeepalive: &envoycorev3.KeepaliveSettings{
+											Timeout:                durationpb.New(5 * time.Second),
+											Interval:               durationpb.New(30 * time.Second),
+											ConnectionIdleInterval: durationpb.New(60 * time.Second),
+										},
+									},
+								},
+							},
+						},
+					}),
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "http2 protocol options not applied to non-http2 backend",
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
@@ -286,6 +342,28 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "circuit breakers with track remaining",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					CircuitBreakers: &kgateway.CircuitBreakers{
+						MaxConnections: new(int32(100)),
+						TrackRemaining: func() *bool { v := true; return &v }(),
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				CircuitBreakers: &envoyclusterv3.CircuitBreakers{
+					Thresholds: []*envoyclusterv3.CircuitBreakers_Thresholds{
+						{
+							MaxConnections: &wrapperspb.UInt32Value{Value: 100},
+							TrackRemaining: true,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "upstream proxy protocol V1 without TLS",
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{
@@ -296,7 +374,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			},
 			want: &envoyclusterv3.Cluster{
 				TransportSocket: &envoycorev3.TransportSocket{
-					Name: TransportSocketUpstreamProxyProtocol,
+					Name: wellknown.TransportSocketUpstreamProxyProtocol,
 					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
 							Config: &envoycorev3.ProxyProtocolConfig{
@@ -325,7 +403,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			},
 			want: &envoyclusterv3.Cluster{
 				TransportSocket: &envoycorev3.TransportSocket{
-					Name: TransportSocketUpstreamProxyProtocol,
+					Name: wellknown.TransportSocketUpstreamProxyProtocol,
 					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
 							Config: &envoycorev3.ProxyProtocolConfig{
@@ -364,7 +442,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			},
 			want: &envoyclusterv3.Cluster{
 				TransportSocket: &envoycorev3.TransportSocket{
-					Name: TransportSocketUpstreamProxyProtocol,
+					Name: wellknown.TransportSocketUpstreamProxyProtocol,
 					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
 						TypedConfig: mustMessageToAny(t, &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{
 							Config: &envoycorev3.ProxyProtocolConfig{
@@ -523,6 +601,220 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 
 		assert.Equal(t, "envoy.clusters.aggregate", cluster.GetClusterType().GetName())
 		assert.True(t, proto.Equal(mustMessageToAny(t, &wrapperspb.StringValue{Value: "unchanged"}), cluster.GetClusterType().GetTypedConfig()))
+	})
+}
+
+// clusterWithEndpointHealthCheckHostname builds a static-style cluster whose
+// single endpoint carries an auto-stamped health_check_config.hostname, mimicking
+// what the static backend plugin produces.
+func clusterWithEndpointHealthCheckHostname(hostname string) *envoyclusterv3.Cluster {
+	return &envoyclusterv3.Cluster{
+		LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
+			Endpoints: []*envoyendpointv3.LocalityLbEndpoints{{
+				LbEndpoints: []*envoyendpointv3.LbEndpoint{{
+					HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+						Endpoint: &envoyendpointv3.Endpoint{
+							Hostname: hostname,
+							HealthCheckConfig: &envoyendpointv3.Endpoint_HealthCheckConfig{
+								Hostname: hostname,
+							},
+						},
+					},
+				}},
+			}},
+		},
+	}
+}
+
+func endpointHealthCheckHostname(cluster *envoyclusterv3.Cluster) string {
+	return cluster.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetHealthCheckConfig().GetHostname()
+}
+
+func TestBackendConfigPolicyHealthCheckHostnameOverride(t *testing.T) {
+	const dialHost = "internal-lb.ap-south-1.elb.amazonaws.com"
+
+	t.Run("clears endpoint hostname when HTTP host is configured", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				HealthCheck: &kgateway.HealthCheck{
+					Timeout:            metav1.Duration{Duration: 5 * time.Second},
+					Interval:           metav1.Duration{Duration: 30 * time.Second},
+					UnhealthyThreshold: 2,
+					HealthyThreshold:   3,
+					Http: &kgateway.HealthCheckHttp{
+						Host: new("app-host.example.com"),
+						Path: "/ping",
+					},
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := clusterWithEndpointHealthCheckHostname(dialHost)
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		assert.Equal(t, "app-host.example.com", cluster.GetHealthChecks()[0].GetHttpHealthCheck().GetHost())
+		assert.Empty(t, endpointHealthCheckHostname(cluster), "endpoint hostname should be cleared so the configured host wins")
+	})
+
+	t.Run("clears endpoint hostname when gRPC authority is configured", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				HealthCheck: &kgateway.HealthCheck{
+					Timeout:            metav1.Duration{Duration: 5 * time.Second},
+					Interval:           metav1.Duration{Duration: 30 * time.Second},
+					UnhealthyThreshold: 2,
+					HealthyThreshold:   3,
+					Grpc: &kgateway.HealthCheckGrpc{
+						Authority: new("app-host.example.com"),
+					},
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := clusterWithEndpointHealthCheckHostname(dialHost)
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		assert.Equal(t, "app-host.example.com", cluster.GetHealthChecks()[0].GetGrpcHealthCheck().GetAuthority())
+		assert.Empty(t, endpointHealthCheckHostname(cluster), "endpoint hostname should be cleared so the configured authority wins")
+	})
+
+	t.Run("preserves endpoint hostname when no host is configured", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				HealthCheck: &kgateway.HealthCheck{
+					Timeout:            metav1.Duration{Duration: 5 * time.Second},
+					Interval:           metav1.Duration{Duration: 30 * time.Second},
+					UnhealthyThreshold: 2,
+					HealthyThreshold:   3,
+					Http: &kgateway.HealthCheckHttp{
+						Path: "/ping",
+					},
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := clusterWithEndpointHealthCheckHostname(dialHost)
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		assert.Equal(t, dialHost, endpointHealthCheckHostname(cluster), "endpoint hostname should be preserved as the default when no host is configured")
+	})
+}
+
+func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
+	localLabels := map[string]string{corev1.LabelTopologyZone: "zone-a"}
+	remoteLabels := map[string]string{corev1.LabelTopologyZone: "zone-b"}
+
+	newInputs := func() *endpoints.EndpointsInputs {
+		return &endpoints.EndpointsInputs{
+			EndpointsForBackend: ir.EndpointsForBackend{
+				UpstreamResourceName: "/Service/default/httpbin:8080",
+				TrafficDistribution:  wellknown.TrafficDistributionPreferSameZone,
+				LbEps: ir.LocalityLbMap{
+					{Zone: "zone-a"}: {{EndpointMd: ir.EndpointMetadata{Labels: localLabels}}},
+					{Zone: "zone-b"}: {{EndpointMd: ir.EndpointMetadata{Labels: remoteLabels}}},
+				},
+			},
+		}
+	}
+
+	newPolicy := func(hasZoneAware bool, forceMinEndpoints *uint32, policyRef *ir.AttachedPolicyRef) ir.PolicyAtt {
+		return ir.PolicyAtt{
+			GroupKind:  wellknown.BackendConfigPolicyGVK.GroupKind(),
+			Generation: 1,
+			PolicyRef:  policyRef,
+			PolicyIr: &BackendConfigPolicyIR{
+				loadBalancerConfig: &LoadBalancerConfigIR{
+					hasZoneAware:               hasZoneAware,
+					zoneAwareForceMinEndpoints: forceMinEndpoints,
+				},
+			},
+		}
+	}
+	servicePolicyRef := &ir.AttachedPolicyRef{
+		Group:     wellknown.BackendConfigPolicyGVK.Group,
+		Kind:      wellknown.BackendConfigPolicyGVK.Kind,
+		Namespace: "default",
+		Name:      "httpbin-policy",
+	}
+	withPolicies := func(inputs *endpoints.EndpointsInputs, policies ...ir.PolicyAtt) *endpoints.EndpointsInputs {
+		inputs.EndpointsForBackend.AttachedPolicies = ir.AttachedPolicies{
+			Policies: map[schema.GroupKind][]ir.PolicyAtt{
+				wellknown.BackendConfigPolicyGVK.GroupKind(): policies,
+			},
+		}
+		return inputs
+	}
+
+	t.Run("ignores policies without zoneAware", func(t *testing.T) {
+		inputs := withPolicies(newInputs(), newPolicy(false, nil, servicePolicyRef))
+		plugin := backendConfigEndpointPlugin{}
+
+		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, inputs)
+
+		assert.Zero(t, hash)
+		assert.Equal(t, wellknown.TrafficDistributionPreferSameZone, inputs.EndpointsForBackend.TrafficDistribution)
+		assert.Nil(t, inputs.PriorityInfo)
+	})
+
+	t.Run("preferLocal clears service traffic distribution without force priority", func(t *testing.T) {
+		inputs := withPolicies(newInputs(), newPolicy(true, nil, servicePolicyRef))
+		plugin := backendConfigEndpointPlugin{}
+
+		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, inputs)
+
+		assert.NotZero(t, hash)
+		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
+		assert.Nil(t, inputs.PriorityInfo)
+	})
+
+	t.Run("force mode clears service traffic distribution", func(t *testing.T) {
+		inputs := withPolicies(newInputs(), newPolicy(true, new(uint32(2)), servicePolicyRef))
+		plugin := backendConfigEndpointPlugin{}
+
+		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+
+		assert.NotZero(t, hash)
+		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
+		assert.Nil(t, inputs.PriorityInfo)
+	})
+
+	t.Run("force mode preserves existing endpoint priority", func(t *testing.T) {
+		inputs := withPolicies(newInputs(), newPolicy(true, new(uint32(1)), servicePolicyRef))
+		priorityInfo := &endpoints.PriorityInfo{
+			FailoverPriority: endpoints.NewPriorities([]string{corev1.LabelTopologyZone}),
+		}
+		inputs.PriorityInfo = priorityInfo
+		plugin := backendConfigEndpointPlugin{}
+
+		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+
+		assert.NotZero(t, hash)
+		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
+		assert.Same(t, priorityInfo, inputs.PriorityInfo)
+		assert.Equal(t, 0, inputs.PriorityInfo.FailoverPriority.GetPriority(localLabels, localLabels))
+		assert.Equal(t, 1, inputs.PriorityInfo.FailoverPriority.GetPriority(localLabels, remoteLabels))
+	})
+
+	t.Run("hostname alias attachment applies to serviceentry endpoints", func(t *testing.T) {
+		inputs := newInputs()
+		inputs.EndpointsForBackend.UpstreamResourceName = "networking.istio.io/ServiceEntry/default/httpbin-se:80_se.example.com"
+		hostnamePolicyRef := &ir.AttachedPolicyRef{
+			Group:     wellknown.BackendConfigPolicyGVK.Group,
+			Kind:      wellknown.BackendConfigPolicyGVK.Kind,
+			Namespace: "default",
+			Name:      "hostname-policy",
+		}
+		inputs = withPolicies(inputs, newPolicy(true, new(uint32(1)), hostnamePolicyRef))
+		plugin := backendConfigEndpointPlugin{}
+
+		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+
+		assert.NotZero(t, hash)
+		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
+		assert.Nil(t, inputs.PriorityInfo)
 	})
 }
 

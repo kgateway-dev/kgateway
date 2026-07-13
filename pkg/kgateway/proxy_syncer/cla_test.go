@@ -14,12 +14,10 @@ import (
 
 func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Namespace: "ns",
-			Name:      "name",
-		},
-	}
+	us := ir.NewBackendObjectIR(ir.ObjectSource{
+		Namespace: "ns",
+		Name:      "name",
+	}, 0, "", "")
 	efu := ir.NewEndpointsForBackend(us)
 	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &envoyendpointv3.LbEndpoint{
@@ -49,7 +47,7 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R2"},
 		},
 	})
-	ucc := ir.UniqlyConnectedClient{
+	ucc := ir.UniquelyConnectedClient{
 		Namespace: "ns",
 		Locality:  ir.PodLocality{Region: "R1"},
 		Labels:    map[string]string{corev1.LabelTopologyRegion: "R1"},
@@ -84,12 +82,10 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 // similar to TestTranslatesDestrulesFailoverPriority but implicit
 func TestTranslatesDestrulesFailover(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Namespace: "ns",
-			Name:      "name",
-		},
-	}
+	us := ir.NewBackendObjectIR(ir.ObjectSource{
+		Namespace: "ns",
+		Name:      "name",
+	}, 0, "", "")
 	efu := ir.NewEndpointsForBackend(us)
 	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &envoyendpointv3.LbEndpoint{
@@ -119,7 +115,7 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R2"},
 		},
 	})
-	ucc := ir.UniqlyConnectedClient{
+	ucc := ir.UniquelyConnectedClient{
 		Namespace: "ns",
 		Locality:  ir.PodLocality{Region: "R1"},
 		Labels:    map[string]string{corev1.LabelTopologyRegion: "R1"},

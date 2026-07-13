@@ -1,12 +1,25 @@
 package proxy_syncer
 
 import (
+	"errors"
 	"testing"
+	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/onsi/gomega"
+	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 func TestFilterEndpointResourcesForStaticClusters_FiltersStaticClusterCLAs(t *testing.T) {
@@ -129,6 +142,291 @@ func TestFilterEndpointResourcesForStaticClusters_MixedStaticAndNonStatic(t *tes
 	if _, ok := out.Items["static-b"]; ok {
 		t.Error("expected static-b CLA to be filtered out")
 	}
+}
+
+// TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored pins the
+// fail-closed behavior for errored clusters: a cluster whose backend
+// translation failed is excluded from the CDS payload (routes to it get
+// 500/NC in Envoy) but does not prevent the rest of the snapshot from
+// publishing.
+func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
+
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
+	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{
+				{
+					Name:    "vhost",
+					Domains: []string{"*"},
+					Routes: []*envoyroutev3.Route{
+						{
+							Name: "single-route",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-a"},
+								},
+							},
+						},
+						{
+							Name: "errored-route",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-b"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
+	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
+		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:         routes,
+		Listeners:      listeners,
+	}})
+	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+		{
+			Client:         ucc,
+			Name:           "cluster-a",
+			Cluster:        &envoyclusterv3.Cluster{Name: "cluster-a"},
+			ClusterVersion: 1,
+		},
+		{
+			Client:         ucc,
+			Name:           "cluster-b",
+			Cluster:        &envoyclusterv3.Cluster{Name: "cluster-b"},
+			ClusterVersion: 2,
+			Error:          errors.New("boom"),
+		},
+	})
+	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
+
+	snapshots := snapshotPerClient(
+		krtutil.KrtOptions{},
+		uccs,
+		mostXdsSnapshots,
+		PerClientEnvoyEndpoints{
+			endpoints: endpointCol,
+			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+				return []string{ep.Client.ResourceName()}
+			}),
+		},
+		PerClientEnvoyClusters{
+			clusters: clusterCol,
+			index: krtpkg.UnnamedIndex(clusterCol, func(cluster uccWithCluster) []string {
+				return []string{cluster.Client.ResourceName()}
+			}),
+		},
+	)
+
+	g.Eventually(func() int {
+		return len(snapshots.List())
+	}, time.Second, 20*time.Millisecond).Should(gomega.Equal(1))
+
+	snap := snapshots.List()[0]
+	g.Expect(snap.erroredClusters).To(gomega.ConsistOf("cluster-b"))
+	g.Expect(snap.snap.Resources[envoycachetypes.Cluster].Items).ToNot(gomega.HaveKey("cluster-b"))
+}
+
+// TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef verifies that
+// a user BackendRef typo — e.g. an HTTPRoute pointing at a Service that does
+// not exist — does not prevent the snapshot from publishing. IR-time
+// resolution substitutes wellknown.BlackholeClusterName for the unresolved
+// target, so valid routes still reach Envoy.
+func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
+
+	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{
+				{
+					Name:    "vhost",
+					Domains: []string{"*"},
+					Routes: []*envoyroutev3.Route{
+						{
+							Name: "good-route",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-a"},
+								},
+							},
+						},
+						{
+							// Simulates a BackendRef whose target Service does
+							// not exist: IR translation substitutes blackhole.
+							Name: "typo-backendref-route",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: wellknown.BlackholeClusterName},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
+	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
+		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:         routes,
+		Listeners:      listeners,
+	}})
+
+	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+		{
+			Client:         ucc,
+			Name:           "cluster-a",
+			Cluster:        &envoyclusterv3.Cluster{Name: "cluster-a"},
+			ClusterVersion: 1,
+		},
+	})
+	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
+
+	snapshots := snapshotPerClient(
+		krtutil.KrtOptions{},
+		uccs,
+		mostXdsSnapshots,
+		PerClientEnvoyEndpoints{
+			endpoints: endpointCol,
+			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+				return []string{ep.Client.ResourceName()}
+			}),
+		},
+		PerClientEnvoyClusters{
+			clusters: clusterCol,
+			index: krtpkg.UnnamedIndex(clusterCol, func(cluster uccWithCluster) []string {
+				return []string{cluster.Client.ResourceName()}
+			}),
+		},
+	)
+
+	g.Eventually(func() int {
+		return len(snapshots.List())
+	}, 2*time.Second, 20*time.Millisecond).Should(gomega.Equal(1),
+		"a snapshot must publish so Envoy can serve the good route even when another route's BackendRef is unresolvable")
+}
+
+// TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRuntime
+// verifies that a BackendRef pointing at a nonexistent Service arriving after
+// the control plane is already serving does not cause the per-client snapshot
+// to be withdrawn. IR translation substitutes blackhole for the unresolved
+// target, so the snapshot re-publishes with the new route set rather than
+// being withdrawn. The existing good route keeps flowing; the typo'd route
+// blackholes in Envoy — no 500/NC for valid traffic.
+func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRuntime(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
+
+	goodRoutes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{{
+				Name:    "vhost",
+				Domains: []string{"*"},
+				Routes: []*envoyroutev3.Route{{
+					Name: "good-route",
+					Action: &envoyroutev3.Route_Route{
+						Route: &envoyroutev3.RouteAction{
+							ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-a"},
+						},
+					},
+				}},
+			}},
+		},
+	})
+	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
+	initial := GatewayXdsResources{
+		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:         goodRoutes,
+		Listeners:      listeners,
+	}
+	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+
+	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+		{
+			Client:         ucc,
+			Name:           "cluster-a",
+			Cluster:        &envoyclusterv3.Cluster{Name: "cluster-a"},
+			ClusterVersion: 1,
+		},
+	})
+	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
+
+	snapshots := snapshotPerClient(
+		krtutil.KrtOptions{},
+		uccs,
+		mostXdsSnapshots,
+		PerClientEnvoyEndpoints{
+			endpoints: endpointCol,
+			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+				return []string{ep.Client.ResourceName()}
+			}),
+		},
+		PerClientEnvoyClusters{
+			clusters: clusterCol,
+			index: krtpkg.UnnamedIndex(clusterCol, func(cluster uccWithCluster) []string {
+				return []string{cluster.Client.ResourceName()}
+			}),
+		},
+	)
+
+	g.Eventually(func() int {
+		return len(snapshots.List())
+	}, time.Second, 20*time.Millisecond).Should(gomega.Equal(1))
+
+	// A misconfigured route arrives whose BackendRef cannot be resolved;
+	// IR translation substitutes blackhole.
+	badRoutes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{{
+				Name:    "vhost",
+				Domains: []string{"*"},
+				Routes: []*envoyroutev3.Route{
+					{
+						Name: "good-route",
+						Action: &envoyroutev3.Route_Route{
+							Route: &envoyroutev3.RouteAction{
+								ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-a"},
+							},
+						},
+					},
+					{
+						Name: "typo-backendref-route",
+						Action: &envoyroutev3.Route_Route{
+							Route: &envoyroutev3.RouteAction{
+								ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: wellknown.BlackholeClusterName},
+							},
+						},
+					},
+				},
+			}},
+		},
+	})
+	updated := initial
+	updated.Routes = badRoutes
+	mostXdsSnapshots.UpdateObject(updated)
+
+	g.Consistently(func() int {
+		return len(snapshots.List())
+	}, 500*time.Millisecond, 20*time.Millisecond).Should(gomega.Equal(1),
+		"snapshot must stay published after an unresolvable BackendRef arrives; withdrawing it strands Envoy on restart")
 }
 
 func mapKeys[M ~map[K]V, K comparable, V any](m M) []K {

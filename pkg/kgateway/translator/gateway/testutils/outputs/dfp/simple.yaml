@@ -7,10 +7,8 @@ Clusters:
         lbPolicy: LEAST_REQUEST
   connectTimeout: 5s
   lbPolicy: CLUSTER_PROVIDED
-  metadata: {}
   name: backend_default_dfp-backend_0
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -57,6 +55,14 @@ Routes:
         cluster: backend_default_dfp-backend_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
+  backends:
+    default/dfp-backend:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:
@@ -70,6 +76,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
@@ -113,6 +124,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

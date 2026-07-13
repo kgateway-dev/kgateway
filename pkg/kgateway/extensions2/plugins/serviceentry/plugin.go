@@ -2,10 +2,13 @@ package serviceentry
 
 import (
 	"context"
+	"strings"
 
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/slices"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -35,6 +38,25 @@ func HostnameAliaser(se *networkingclient.ServiceEntry) []ir.ObjectSource {
 
 type Options struct {
 	Aliaser
+	// WorkloadEntriesExclusionLabelKeys is the set of label keys that, if present on a WorkloadEntry,
+	// cause it to be excluded from endpoint discovery. When nil, the default from
+	// Settings.WorkloadEntriesExclusionLabels is used. Use an empty set to explicitly disable
+	// exclusions.
+	WorkloadEntriesExclusionLabelKeys sets.Set[string]
+
+	// ServiceEntriesExclusionLabelSelectors is the set of label selectors that, if any match a
+	// ServiceEntry, cause it to be excluded from ServiceEntry backend and endpoint discovery. Unlike
+	// WorkloadEntriesExclusionLabelKeys, this uses full selectors so exclusions can match specific label
+	// values. When nil, the default from Settings.ServiceEntriesExclusionLabelSelectors is used. Use an
+	// empty slice to explicitly disable exclusions.
+	ServiceEntriesExclusionLabelSelectors []labels.Selector
+
+	// PromoteWorkloadEntryAnnotations is the set of WorkloadEntry annotation keys that, if present
+	// on the WorkloadEntry's metadata, are copied verbatim into the workload's AugmentedLabels so
+	// that endpoint plugins can observe them. kgateway is agnostic to what the keys mean; it does
+	// an opaque string copy. Callers (e.g. downstream distributions) supply the keys they care
+	// about. When nil or empty, no annotations are promoted.
+	PromoteWorkloadEntryAnnotations sets.Set[string]
 }
 
 func NewPlugin(
@@ -49,11 +71,47 @@ func NewPlugin(
 	})
 }
 
+// ParseExclusionLabels splits a comma-separated string of label keys into a set.
+func ParseExclusionLabels(raw string) sets.Set[string] {
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	keys := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if k := strings.TrimSpace(p); k != "" {
+			keys = append(keys, k)
+		}
+	}
+	if len(keys) == 0 {
+		return nil
+	}
+	return sets.New(keys...)
+}
+
 func NewPluginWithOpts(
 	_ context.Context,
 	commonCols *collections.CommonCollections,
 	opts Options,
 ) sdk.Plugin {
+	// If the caller didn't supply an explicit exclusion set, fall back to the value
+	// from settings (KGW_WORKLOAD_ENTRIES_EXCLUSION_LABELS env var).
+	if opts.WorkloadEntriesExclusionLabelKeys == nil {
+		opts.WorkloadEntriesExclusionLabelKeys = ParseExclusionLabels(commonCols.Settings.WorkloadEntriesExclusionLabels)
+	}
+	if opts.ServiceEntriesExclusionLabelSelectors == nil {
+		// NewCommonCollections parses and validates this setting before plugins are initialized.
+		// The parse fallback is only for tests or manually constructed CommonCollections.
+		opts.ServiceEntriesExclusionLabelSelectors = commonCols.ServiceEntriesExclusionLabelSelectors
+		if opts.ServiceEntriesExclusionLabelSelectors == nil {
+			selectors, err := collections.ParseExclusionLabelSelectors(commonCols.Settings.ServiceEntriesExclusionLabelSelectors)
+			if err != nil {
+				logger.Error("error parsing ServiceEntry exclusion label selectors; ServiceEntries will not be excluded", "error", err)
+			} else {
+				opts.ServiceEntriesExclusionLabelSelectors = selectors
+			}
+		}
+	}
 	seCollections := initServiceEntryCollections(commonCols, opts)
 	return sdk.Plugin{
 		ContributesBackends: map[schema.GroupKind]sdk.BackendPlugin{

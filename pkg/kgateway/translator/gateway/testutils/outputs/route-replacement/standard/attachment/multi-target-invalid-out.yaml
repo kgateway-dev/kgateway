@@ -1,15 +1,15 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_example-svc_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -32,7 +32,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -72,7 +72,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -112,7 +112,7 @@ Listeners:
             filterConfig:
               '@type': type.googleapis.com/google.protobuf.StringValue
               value: '{}'
-            filterName: http_simple_mutations
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -193,7 +193,8 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
           }"}}}'
-      perRouteConfigName: http_simple_mutations
+      filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - www.example.com
@@ -221,7 +222,8 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
           }"}}}'
-      perRouteConfigName: http_simple_mutations
+      filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - www.example.com
@@ -249,7 +251,8 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
           }"}}}'
-      perRouteConfigName: http_simple_mutations
+      filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - www.example.com
@@ -268,7 +271,7 @@ Statuses:
       attachedListenerSets: 1
       conditions:
       - lastTransitionTime: null
-        message: 'extauth: gateway extension gwtest/missing-extauth not found'
+        message: 'extauth: gwtest/missing-extauth: gateway extension not found'
         reason: GatewayReplaced
         status: "False"
         type: Accepted
@@ -277,6 +280,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
@@ -348,6 +356,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -366,6 +379,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -388,7 +406,8 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: gateway extension gwtest/missing-extauth not found'
+          message: 'gateway.kgateway.dev/TrafficPolicy/gwtest/xlistenerset-wide-invalid-policy:
+            extauth: gwtest/missing-extauth: gateway extension not found'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -487,7 +506,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: gateway extension gwtest/missing-extauth not found'
+          message: 'extauth: gwtest/missing-extauth: gateway extension not found'
           reason: Invalid
           status: "False"
           type: Accepted

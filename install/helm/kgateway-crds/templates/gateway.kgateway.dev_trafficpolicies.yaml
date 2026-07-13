@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.1-0.20251023132335-bf7d6b742e6a
+    controller-gen.kubebuilder.io/version: v0.20.1
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -54,6 +54,117 @@ spec:
             description: TrafficPolicySpec defines the desired state of a traffic
               policy.
             properties:
+              acl:
+                description: |-
+                  ACL configures IP-based access control for HTTP requests.
+                  Rules are evaluated using longest-prefix matching on the effictive client IP
+                  from envoy base on settings. See the UseRemoteAddress, XffTrustedCIDRs,
+                  XffNumTrustedHops settings under ListenerPolicy -> HttpSettings for details.
+
+                  When multiple TrafficPolicy objects target the same route, their ACL fields are
+                  deep-merged by default: rules are unioned (higher-priority policy's rules first),
+                  and singleton fields (defaultAction, denyResponse) are taken from the higher-priority
+                  policy. If singleton fields conflict between policies, the merge falls back to
+                  shallow (higher-priority policy wins entirely). Gateway-level and route-level ACL
+                  policies are kept in separate merge groups and are never combined with each other;
+                  a route-level ACL completely replaces the gateway-level ACL for that route.
+                properties:
+                  defaultAction:
+                    description: DefaultAction is the action to take when no rule
+                      matches the client IP.
+                    enum:
+                    - allow
+                    - deny
+                    type: string
+                  denyResponse:
+                    description: DenyResponse customizes the HTTP response sent when
+                      a request is denied.
+                    properties:
+                      blockedByHeaderName:
+                        description: |-
+                          BlockedByHeaderName, when set, adds a response header with this name on every deny.
+                          The header value mirrors the blocked-by dynamic metadata: the matched rule's name,
+                          "rule" for an unnamed rule, or "default" for a default-action deny.
+                        maxLength: 256
+                        minLength: 1
+                        type: string
+                      headers:
+                        description: Headers are additional response headers to attach
+                          on every deny.
+                        items:
+                          description: ACLResponseHeader defines a response header
+                            to include in deny responses.
+                          properties:
+                            name:
+                              description: Name is the header name.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            value:
+                              description: Value is the header value.
+                              maxLength: 4096
+                              type: string
+                          required:
+                          - name
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                      statusCode:
+                        description: StatusCode is the HTTP status code returned on
+                          deny. Defaults to 403.
+                        format: int32
+                        maximum: 599
+                        minimum: 100
+                        type: integer
+                    type: object
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [statusCode headers blockedByHeaderName]
+                        must be set
+                      rule: '[has(self.statusCode),has(self.headers),has(self.blockedByHeaderName)].filter(x,x==true).size()
+                        >= 1'
+                  rules:
+                    description: Rules is a list of IP/CIDR-based rules. Longest-prefix
+                      match wins regardless of rule order.
+                    items:
+                      description: ACLRule defines an IP/CIDR-based ACL rule.
+                      properties:
+                        action:
+                          description: Action determines what to do when a client
+                            IP matches this rule.
+                          enum:
+                          - allow
+                          - deny
+                          type: string
+                        cidrs:
+                          description: |-
+                            CIDRs is a list of IP addresses or CIDR ranges (e.g. "10.0.0.0/8", "2001:db8::/32", "192.168.1.1", "::1").
+                            Bare IPs without a prefix are treated as /32 for IPv4 and /128 for IPv6.
+                            All entries share the same name and action.
+                          items:
+                            description: |-
+                              IPOrCIDR accepts either a bare IP address or an address range in CIDR notation.
+                              A bare IP without a prefix length is treated as /32 for IPv4 and /128 for IPv6.
+                              Note: The regex for the IP validation patterns was taken from https://www.ditig.com/validating-ipv4-and-ipv6-addresses-with-regexp
+                            pattern: ^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}(\/([0-9]|[1-2][0-9]|3[0-2]))?$|^((?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,7}:|:(?::[0-9A-Fa-f]{1,4}){1,7}|(?:[0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|(?:[0-9A-Fa-f]{1,4}:){1,5}(?::[0-9A-Fa-f]{1,4}){1,2}|(?:[0-9A-Fa-f]{1,4}:){1,4}(?::[0-9A-Fa-f]{1,4}){1,3}|(?:[0-9A-Fa-f]{1,4}:){1,3}(?::[0-9A-Fa-f]{1,4}){1,4}|(?:[0-9A-Fa-f]{1,4}:){1,2}(?::[0-9A-Fa-f]{1,4}){1,5}|[0-9A-Fa-f]{1,4}:(?:(?::[0-9A-Fa-f]{1,4}){1,6})|:(?:(?::[0-9A-Fa-f]{1,4}){1,6}))(\/(12[0-8]|1[0-1][0-9]|[1-9][0-9]|[0-9]))?$
+                            type: string
+                          maxItems: 256
+                          minItems: 1
+                          type: array
+                        name:
+                          description: Name is an optional rule identifier emitted
+                            as blocked-by dynamic metadata on deny.
+                          maxLength: 256
+                          type: string
+                      required:
+                      - action
+                      - cidrs
+                      type: object
+                    maxItems: 256
+                    type: array
+                required:
+                - defaultAction
+                type: object
               apiKeyAuth:
                 description: APIKeyAuth authenticates users based on a configured
                   API Key.
@@ -224,7 +335,7 @@ spec:
                 description: |-
                   AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
                   NOTE: This field is only honored for HTTPRoute targets.
-                  NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
+                  NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/api-spec/main/spec/#httpurlrewritefilter)
                   configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
                 type: boolean
               basicAuth:
@@ -382,9 +493,9 @@ spec:
                       Multiple header names in the value of the `Access-Control-Allow-Headers`
                       response header are separated by a comma (",").
 
-                      When the `AllowHeaders` field is configured with one or more headers, the
+                      When the `allowHeaders` field is configured with one or more headers, the
                       gateway must return the `Access-Control-Allow-Headers` response header
-                      which value is present in the `AllowHeaders` field.
+                      which value is present in the `allowHeaders` field.
 
                       If any header name in the `Access-Control-Request-Headers` request header
                       is not included in the list of header names specified by the response
@@ -396,21 +507,20 @@ spec:
                       client side.
 
                       A wildcard indicates that the requests with all HTTP headers are allowed.
-                      If config contains the wildcard "*" in allowHeaders and the request is
-                      not credentialed, the `Access-Control-Allow-Headers` response header
-                      can either use the `*` wildcard or the value of
-                      Access-Control-Request-Headers from the request.
 
-                      When the request is credentialed, the gateway must not specify the `*`
-                      wildcard in the `Access-Control-Allow-Headers` response header. When
-                      also the `AllowCredentials` field is true and `AllowHeaders` field
-                      is specified with the `*` wildcard, the gateway must specify one or more
-                      HTTP headers in the value of the `Access-Control-Allow-Headers` response
-                      header. The value of the header `Access-Control-Allow-Headers` is same as
-                      the `Access-Control-Request-Headers` header provided by the client. If
-                      the header `Access-Control-Request-Headers` is not included in the
-                      request, the gateway will omit the `Access-Control-Allow-Headers`
-                      response header, instead of specifying the `*` wildcard.
+                      If the configuration contains the wildcard `*` in `allowHeaders` and
+                      `allowCredentials` is set to `false`, the `Access-Control-Allow-Headers`
+                      response header may either contain the wildcard `*` or echo the value
+                      of the `Access-Control-Request-Headers` request header.
+
+                      If the configuration contains the wildcard `*` in `allowHeaders` and
+                      `allowCredentials` is set to `true`, the gateway must not return `*`
+                      in the `Access-Control-Allow-Headers` response header. Instead, it must
+                      return one or more header names matching the value of the
+                      `Access-Control-Request-Headers` request header.
+                      If the `Access-Control-Request-Headers` header is not present in the
+                      request, the gateway must omit the `Access-Control-Allow-Headers`
+                      response header.
 
                       Support: Extended
                     items:
@@ -454,32 +564,29 @@ spec:
                       A CORS-safelisted method is a method that is `GET`, `HEAD`, or `POST`.
                       (See https://fetch.spec.whatwg.org/#cors-safelisted-method) The
                       CORS-safelisted methods are always allowed, regardless of whether they
-                      are specified in the `AllowMethods` field.
+                      are specified in the `allowMethods` field.
 
-                      When the `AllowMethods` field is configured with one or more methods, the
+                      When the `allowMethods` field is configured with one or more methods, the
                       gateway must return the `Access-Control-Allow-Methods` response header
-                      which value is present in the `AllowMethods` field.
+                      which value is present in the `allowMethods` field.
 
                       If the HTTP method of the `Access-Control-Request-Method` request header
                       is not included in the list of methods specified by the response header
                       `Access-Control-Allow-Methods`, it will present an error on the client
                       side.
 
-                      If config contains the wildcard "*" in allowMethods and the request is
-                      not credentialed, the `Access-Control-Allow-Methods` response header
-                      can either use the `*` wildcard or the value of
-                      Access-Control-Request-Method from the request.
+                      If the configuration contains the wildcard `*` in `allowMethods` and
+                      `allowCredentials` is set to `false`, the `Access-Control-Allow-Methods`
+                      response header may either contain the wildcard `*` or echo the value
+                      of the `Access-Control-Request-Method` request header.
 
-                      When the request is credentialed, the gateway must not specify the `*`
-                      wildcard in the `Access-Control-Allow-Methods` response header. When
-                      also the `AllowCredentials` field is true and `AllowMethods` field
-                      specified with the `*` wildcard, the gateway must specify one HTTP method
-                      in the value of the Access-Control-Allow-Methods response header. The
-                      value of the header `Access-Control-Allow-Methods` is same as the
-                      `Access-Control-Request-Method` header provided by the client. If the
-                      header `Access-Control-Request-Method` is not included in the request,
-                      the gateway will omit the `Access-Control-Allow-Methods` response header,
-                      instead of specifying the `*` wildcard.
+                      If the configuration contains the wildcard `*` in `allowMethods` and
+                      `allowCredentials` is set to `true`, the gateway must not return `*`
+                      in the `Access-Control-Allow-Methods` response header. Instead, it must
+                      return a single HTTP method matching the value of the
+                      `Access-Control-Request-Method` request header.
+                      If the `Access-Control-Request-Method` header is not present in the request,
+                      the gateway must omit the `Access-Control-Allow-Methods` response header.
 
                       Support: Extended
                     items:
@@ -528,7 +635,7 @@ spec:
                       An origin value that includes _only_ the `*` character indicates requests
                       from all `Origin`s are allowed.
 
-                      When the `AllowOrigins` field is configured with multiple origins, it
+                      When the `allowOrigins` field is configured with multiple origins, it
                       means the server supports clients from multiple origins. If the request
                       `Origin` matches the configured allowed origins, the gateway must return
                       the given `Origin` and sets value of the header
@@ -550,19 +657,15 @@ spec:
                       `Access-Control-Allow-Origin` to the same value as the `Origin`
                       header provided by the client.
 
-                      When config has the wildcard ("*") in allowOrigins, and the request
-                      is not credentialed (e.g., it is a preflight request), the
-                      `Access-Control-Allow-Origin` response header either contains the
-                      wildcard as well or the Origin from the request.
+                      If the configuration contains the wildcard `*` in `allowOrigins` and
+                      `allowCredentials` is set to `false`, the `Access-Control-Allow-Origin`
+                      response header may either contain the wildcard `*` or echo the value
+                      of the `Origin` request header.
 
-                      When the request is credentialed, the gateway must not specify the `*`
-                      wildcard in the `Access-Control-Allow-Origin` response header. When
-                      also the `AllowCredentials` field is true and `AllowOrigins` field
-                      specified with the `*` wildcard, the gateway must return a single origin
-                      in the value of the `Access-Control-Allow-Origin` response header,
-                      instead of specifying the `*` wildcard. The value of the header
-                      `Access-Control-Allow-Origin` is same as the `Origin` header provided by
-                      the client.
+                      If the configuration contains the wildcard `*` in `allowOrigins` and
+                      `allowCredentials` is set to `true`, the gateway must not return `*`
+                      in the `Access-Control-Allow-Origin` response header. Instead, it must
+                      return a single origin matching the value of the `Origin` request header.
 
                       Support: Extended
                     items:
@@ -605,7 +708,7 @@ spec:
                       (See https://fetch.spec.whatwg.org/#cors-safelisted-response-header-name)
                       The CORS-safelisted response headers are exposed to client by default.
 
-                      When an HTTP header name is specified using the `ExposeHeaders` field,
+                      When an HTTP header name is specified using the `exposeHeaders` field,
                       this additional header will be exposed as part of the response to the
                       client.
 
@@ -615,12 +718,15 @@ spec:
                       response header are separated by a comma (",").
 
                       A wildcard indicates that the responses with all HTTP headers are exposed
-                      to clients. The `Access-Control-Expose-Headers` response header can only
-                      use `*` wildcard as value when the request is not credentialed.
+                      to clients.
 
-                      When the `exposeHeaders` config field contains the "*" wildcard and
-                      the request is credentialed, the gateway cannot use the `*` wildcard in
-                      the `Access-Control-Expose-Headers` response header.
+                      If the configuration contains the wildcard `*` in `exposeHeaders` and
+                      `allowCredentials` is set to `false`, the `Access-Control-Expose-Headers`
+                      response header can contain the wildcard `*`.
+
+                      If the configuration contains the wildcard `*` in `exposeHeaders` and
+                      `allowCredentials` is set to `true`, the gateway cannot use the `*`
+                      in the `Access-Control-Expose-Headers` response header.
 
                       Support: Extended
                     items:
@@ -1020,9 +1126,8 @@ spec:
                     properties:
                       add:
                         description: |-
-                          Add adds the given header(s) (name, value) to the request
-                          before the action. It appends to any existing values associated
-                          with the header name.
+                          Add adds the given header(s) (name, value) to the request before the action.
+                          It appends to any existing values associated with the header name.
 
                           Input:
                             GET /foo HTTP/1.1
@@ -1037,50 +1142,81 @@ spec:
                             GET /foo HTTP/1.1
                             my-header: foo,bar,baz
                         items:
-                          description: HTTPHeader represents an HTTP Header name and
-                            value as defined by RFC 7230.
+                          description: |-
+                            HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                            be set. When using secretRef, name and key interact as follows:
+                              - Both present: name is the header name, key is the Secret data key.
+                              - name absent, key present: the key is also used as the header name.
+                              - name present, key absent: the name is also used as the Secret data key.
+                              - Both absent: every entry in the Secret is injected as a header (data key -> header name).
                           properties:
                             name:
                               description: |-
-                                Name is the name of the HTTP Header to be matched. Name matching MUST be
-                                case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
-
-                                If multiple entries specify equivalent header names, the first entry with
-                                an equivalent name MUST be considered for a match. Subsequent entries
-                                with an equivalent header name MUST be ignored. Due to the
-                                case-insensitivity of header names, "foo" and "Foo" are considered
-                                equivalent.
+                                Name is the HTTP header field name. Name matching is case-insensitive.
+                                (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                Required when value is set. When secretRef is used, if omitted the Secret data key is
+                                used as the header name; if both name and key are omitted every Secret entry is injected
+                                as a header.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
+                            secretRef:
+                              description: |-
+                                SecretRef sources the header value from a key in a Kubernetes Secret.
+                                Mutually exclusive with value.
+                              properties:
+                                key:
+                                  description: |-
+                                    Key is the key within the Secret's data map to use as the header value. When omitted and
+                                    the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                    omitted, all entries in the Secret are injected as headers.
+                                  maxLength: 253
+                                  minLength: 1
+                                  pattern: ^[-._a-zA-Z0-9]+$
+                                  type: string
+                                name:
+                                  description: Name is the name of the Kubernetes
+                                    Secret.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                    referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                    namespace permitting access from the policy's namespace.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                              required:
+                              - name
+                              type: object
                             value:
                               description: |-
-                                Value is the value of HTTP Header to be matched.
-                                <gateway:experimental:description>
-                                Must consist of printable US-ASCII characters, optionally separated
-                                by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
-                                </gateway:experimental:description>
-
-                                <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
+                                Value is an inline string value for the header. Mutually exclusive with secretRef.
+                                Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
                               maxLength: 4096
                               minLength: 1
+                              pattern: ^[!-~]+([\t ]?[!-~]+)*$
                               type: string
-                          required:
-                          - name
-                          - value
                           type: object
+                          x-kubernetes-validations:
+                          - message: name is required when using an inline value
+                            rule: 'has(self.value) ? has(self.name) : true'
+                          - message: exactly one of the fields in [value secretRef]
+                              must be set
+                            rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                              == 1'
                         maxItems: 16
                         type: array
-                        x-kubernetes-list-map-keys:
-                        - name
-                        x-kubernetes-list-type: map
+                        x-kubernetes-list-type: atomic
                       remove:
                         description: |-
                           Remove the given header(s) from the HTTP request before the action. The
-                          value of Remove is a list of HTTP header names. Note that the header
-                          names are case-insensitive (see
-                          https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+                          value of Remove is a list of HTTP header names. Note that header names are
+                          case-insensitive (see [RFC 2616, Section 4.2](https://datatracker.ietf.org/doc/html/rfc2616#section-4.2)).
 
                           Input:
                             GET /foo HTTP/1.1
@@ -1101,8 +1237,7 @@ spec:
                         x-kubernetes-list-type: set
                       set:
                         description: |-
-                          Set overwrites the request with the given header (name, value)
-                          before the action.
+                          Set overwrites the request with the given header (name, value) before the action.
 
                           Input:
                             GET /foo HTTP/1.1
@@ -1117,53 +1252,89 @@ spec:
                             GET /foo HTTP/1.1
                             my-header: bar
                         items:
-                          description: HTTPHeader represents an HTTP Header name and
-                            value as defined by RFC 7230.
+                          description: |-
+                            HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                            be set. When using secretRef, name and key interact as follows:
+                              - Both present: name is the header name, key is the Secret data key.
+                              - name absent, key present: the key is also used as the header name.
+                              - name present, key absent: the name is also used as the Secret data key.
+                              - Both absent: every entry in the Secret is injected as a header (data key -> header name).
                           properties:
                             name:
                               description: |-
-                                Name is the name of the HTTP Header to be matched. Name matching MUST be
-                                case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
-
-                                If multiple entries specify equivalent header names, the first entry with
-                                an equivalent name MUST be considered for a match. Subsequent entries
-                                with an equivalent header name MUST be ignored. Due to the
-                                case-insensitivity of header names, "foo" and "Foo" are considered
-                                equivalent.
+                                Name is the HTTP header field name. Name matching is case-insensitive.
+                                (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                Required when value is set. When secretRef is used, if omitted the Secret data key is
+                                used as the header name; if both name and key are omitted every Secret entry is injected
+                                as a header.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
+                            secretRef:
+                              description: |-
+                                SecretRef sources the header value from a key in a Kubernetes Secret.
+                                Mutually exclusive with value.
+                              properties:
+                                key:
+                                  description: |-
+                                    Key is the key within the Secret's data map to use as the header value. When omitted and
+                                    the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                    omitted, all entries in the Secret are injected as headers.
+                                  maxLength: 253
+                                  minLength: 1
+                                  pattern: ^[-._a-zA-Z0-9]+$
+                                  type: string
+                                name:
+                                  description: Name is the name of the Kubernetes
+                                    Secret.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                    referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                    namespace permitting access from the policy's namespace.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                              required:
+                              - name
+                              type: object
                             value:
                               description: |-
-                                Value is the value of HTTP Header to be matched.
-                                <gateway:experimental:description>
-                                Must consist of printable US-ASCII characters, optionally separated
-                                by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
-                                </gateway:experimental:description>
-
-                                <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
+                                Value is an inline string value for the header. Mutually exclusive with secretRef.
+                                Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
                               maxLength: 4096
                               minLength: 1
+                              pattern: ^[!-~]+([\t ]?[!-~]+)*$
                               type: string
-                          required:
-                          - name
-                          - value
                           type: object
+                          x-kubernetes-validations:
+                          - message: name is required when using an inline value
+                            rule: 'has(self.value) ? has(self.name) : true'
+                          - message: exactly one of the fields in [value secretRef]
+                              must be set
+                            rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                              == 1'
                         maxItems: 16
                         type: array
-                        x-kubernetes-list-map-keys:
-                        - name
-                        x-kubernetes-list-type: map
+                        x-kubernetes-list-type: atomic
                     type: object
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [set add remove] must
+                        be set
+                      rule: '[has(self.set),has(self.add),has(self.remove)].filter(x,x==true).size()
+                        >= 1'
                   response:
                     description: Response modifies response headers.
                     properties:
                       add:
                         description: |-
-                          Add adds the given header(s) (name, value) to the request
-                          before the action. It appends to any existing values associated
-                          with the header name.
+                          Add adds the given header(s) (name, value) to the request before the action.
+                          It appends to any existing values associated with the header name.
 
                           Input:
                             GET /foo HTTP/1.1
@@ -1178,50 +1349,81 @@ spec:
                             GET /foo HTTP/1.1
                             my-header: foo,bar,baz
                         items:
-                          description: HTTPHeader represents an HTTP Header name and
-                            value as defined by RFC 7230.
+                          description: |-
+                            HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                            be set. When using secretRef, name and key interact as follows:
+                              - Both present: name is the header name, key is the Secret data key.
+                              - name absent, key present: the key is also used as the header name.
+                              - name present, key absent: the name is also used as the Secret data key.
+                              - Both absent: every entry in the Secret is injected as a header (data key -> header name).
                           properties:
                             name:
                               description: |-
-                                Name is the name of the HTTP Header to be matched. Name matching MUST be
-                                case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
-
-                                If multiple entries specify equivalent header names, the first entry with
-                                an equivalent name MUST be considered for a match. Subsequent entries
-                                with an equivalent header name MUST be ignored. Due to the
-                                case-insensitivity of header names, "foo" and "Foo" are considered
-                                equivalent.
+                                Name is the HTTP header field name. Name matching is case-insensitive.
+                                (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                Required when value is set. When secretRef is used, if omitted the Secret data key is
+                                used as the header name; if both name and key are omitted every Secret entry is injected
+                                as a header.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
+                            secretRef:
+                              description: |-
+                                SecretRef sources the header value from a key in a Kubernetes Secret.
+                                Mutually exclusive with value.
+                              properties:
+                                key:
+                                  description: |-
+                                    Key is the key within the Secret's data map to use as the header value. When omitted and
+                                    the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                    omitted, all entries in the Secret are injected as headers.
+                                  maxLength: 253
+                                  minLength: 1
+                                  pattern: ^[-._a-zA-Z0-9]+$
+                                  type: string
+                                name:
+                                  description: Name is the name of the Kubernetes
+                                    Secret.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                    referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                    namespace permitting access from the policy's namespace.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                              required:
+                              - name
+                              type: object
                             value:
                               description: |-
-                                Value is the value of HTTP Header to be matched.
-                                <gateway:experimental:description>
-                                Must consist of printable US-ASCII characters, optionally separated
-                                by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
-                                </gateway:experimental:description>
-
-                                <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
+                                Value is an inline string value for the header. Mutually exclusive with secretRef.
+                                Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
                               maxLength: 4096
                               minLength: 1
+                              pattern: ^[!-~]+([\t ]?[!-~]+)*$
                               type: string
-                          required:
-                          - name
-                          - value
                           type: object
+                          x-kubernetes-validations:
+                          - message: name is required when using an inline value
+                            rule: 'has(self.value) ? has(self.name) : true'
+                          - message: exactly one of the fields in [value secretRef]
+                              must be set
+                            rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                              == 1'
                         maxItems: 16
                         type: array
-                        x-kubernetes-list-map-keys:
-                        - name
-                        x-kubernetes-list-type: map
+                        x-kubernetes-list-type: atomic
                       remove:
                         description: |-
                           Remove the given header(s) from the HTTP request before the action. The
-                          value of Remove is a list of HTTP header names. Note that the header
-                          names are case-insensitive (see
-                          https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+                          value of Remove is a list of HTTP header names. Note that header names are
+                          case-insensitive (see [RFC 2616, Section 4.2](https://datatracker.ietf.org/doc/html/rfc2616#section-4.2)).
 
                           Input:
                             GET /foo HTTP/1.1
@@ -1242,8 +1444,7 @@ spec:
                         x-kubernetes-list-type: set
                       set:
                         description: |-
-                          Set overwrites the request with the given header (name, value)
-                          before the action.
+                          Set overwrites the request with the given header (name, value) before the action.
 
                           Input:
                             GET /foo HTTP/1.1
@@ -1258,51 +1459,155 @@ spec:
                             GET /foo HTTP/1.1
                             my-header: bar
                         items:
-                          description: HTTPHeader represents an HTTP Header name and
-                            value as defined by RFC 7230.
+                          description: |-
+                            HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                            be set. When using secretRef, name and key interact as follows:
+                              - Both present: name is the header name, key is the Secret data key.
+                              - name absent, key present: the key is also used as the header name.
+                              - name present, key absent: the name is also used as the Secret data key.
+                              - Both absent: every entry in the Secret is injected as a header (data key -> header name).
                           properties:
                             name:
                               description: |-
-                                Name is the name of the HTTP Header to be matched. Name matching MUST be
-                                case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
-
-                                If multiple entries specify equivalent header names, the first entry with
-                                an equivalent name MUST be considered for a match. Subsequent entries
-                                with an equivalent header name MUST be ignored. Due to the
-                                case-insensitivity of header names, "foo" and "Foo" are considered
-                                equivalent.
+                                Name is the HTTP header field name. Name matching is case-insensitive.
+                                (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                                Required when value is set. When secretRef is used, if omitted the Secret data key is
+                                used as the header name; if both name and key are omitted every Secret entry is injected
+                                as a header.
                               maxLength: 256
                               minLength: 1
                               pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                               type: string
+                            secretRef:
+                              description: |-
+                                SecretRef sources the header value from a key in a Kubernetes Secret.
+                                Mutually exclusive with value.
+                              properties:
+                                key:
+                                  description: |-
+                                    Key is the key within the Secret's data map to use as the header value. When omitted and
+                                    the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                    omitted, all entries in the Secret are injected as headers.
+                                  maxLength: 253
+                                  minLength: 1
+                                  pattern: ^[-._a-zA-Z0-9]+$
+                                  type: string
+                                name:
+                                  description: Name is the name of the Kubernetes
+                                    Secret.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                    referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                    namespace permitting access from the policy's namespace.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                              required:
+                              - name
+                              type: object
                             value:
                               description: |-
-                                Value is the value of HTTP Header to be matched.
-                                <gateway:experimental:description>
-                                Must consist of printable US-ASCII characters, optionally separated
-                                by single tabs or spaces. See: https://tools.ietf.org/html/rfc7230#section-3.2
-                                </gateway:experimental:description>
-
-                                <gateway:experimental:validation:Pattern=`^[!-~]+([\t ]?[!-~]+)*$`>
+                                Value is an inline string value for the header. Mutually exclusive with secretRef.
+                                Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
                               maxLength: 4096
                               minLength: 1
+                              pattern: ^[!-~]+([\t ]?[!-~]+)*$
                               type: string
-                          required:
-                          - name
-                          - value
                           type: object
+                          x-kubernetes-validations:
+                          - message: name is required when using an inline value
+                            rule: 'has(self.value) ? has(self.name) : true'
+                          - message: exactly one of the fields in [value secretRef]
+                              must be set
+                            rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                              == 1'
                         maxItems: 16
                         type: array
-                        x-kubernetes-list-map-keys:
-                        - name
-                        x-kubernetes-list-type: map
+                        x-kubernetes-list-type: atomic
                     type: object
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [set add remove] must
+                        be set
+                      rule: '[has(self.set),has(self.add),has(self.remove)].filter(x,x==true).size()
+                        >= 1'
                 type: object
                 x-kubernetes-validations:
                 - message: at least one of the fields in [request response] must be
                     set
                   rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
+              internalRedirect:
+                description: |-
+                  InternalRedirect handles upstream 3xx redirects inside the gateway.
+                  Applies only to routes that forward traffic to a backend.
+                properties:
+                  allowCrossSchemeRedirect:
+                    description: |-
+                      AllowCrossSchemeRedirect permits redirects across http/https schemes.
+                      Defaults to false.
+                    type: boolean
+                  maxRedirects:
+                    description: |-
+                      MaxRedirects caps followed redirects for a single downstream request.
+                      Defaults to 1.
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  redirectResponseCodes:
+                    description: |-
+                      RedirectResponseCodes are upstream status codes that trigger internal redirects.
+                      If unset, only 302 redirects are followed.
+                    items:
+                      description: InternalRedirectResponseCode is a 3xx response
+                        code supported for internal redirects.
+                      enum:
+                      - 301
+                      - 302
+                      - 303
+                      - 307
+                      - 308
+                      format: int32
+                      type: integer
+                    maxItems: 5
+                    minItems: 1
+                    type: array
+                    x-kubernetes-validations:
+                    - message: redirectResponseCodes must not contain duplicates
+                      rule: self.all(c, self.exists_one(c2, c2 == c))
+                  responseHeadersToCopy:
+                    description: |-
+                      ResponseHeadersToCopy are copied from the redirect response to the
+                      internally redirected request.
+                    items:
+                      description: |-
+                        HTTPHeaderName is the name of an HTTP header.
+
+                        Valid values include:
+
+                        * "Authorization"
+                        * "Set-Cookie"
+
+                        Invalid values include:
+
+                          - ":method" - ":" is an invalid character. This means that HTTP/2 pseudo
+                            headers are not currently supported by this type.
+                          - "/invalid" - "/ " is an invalid character
+                      maxLength: 256
+                      minLength: 1
+                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                      type: string
+                    maxItems: 16
+                    minItems: 1
+                    type: array
+                    x-kubernetes-validations:
+                    - message: responseHeadersToCopy must not contain duplicates
+                      rule: self.all(h, self.exists_one(h2, h2 == h))
+                type: object
               jwtAuth:
                 description: |-
                   JWT specifies the JWT authentication configuration for the policy.
@@ -1602,7 +1907,7 @@ spec:
                       rule: duration(self) >= duration('1ms')
                   perTryTimeout:
                     description: |-
-                      PerTryTimeout specifies the timeout per retry attempt (incliding the initial attempt).
+                      PerTryTimeout specifies the timeout per retry attempt (including the initial attempt).
                       If a global timeout is configured on a route, this timeout must be less than the global
                       route timeout.
                       It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
@@ -2002,6 +2307,48 @@ spec:
                               this Value field is ignored and no body transformation will be done.
                             type: string
                         type: object
+                      dynamicMetadata:
+                        description: |-
+                          DynamicMetadata is a list of dynamic metadata entries to set.
+                          The values are stored in Envoy dynamic metadata and can be used in access log
+                          templates or consumed by other filters down the chain.
+                        items:
+                          description: DynamicMetadataTransformation defines a single
+                            dynamic metadata entry to set.
+                          properties:
+                            key:
+                              description: Key is the metadata key within the namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: Namespace is the dynamic metadata namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            value:
+                              description: Value is the value to set in dynamic metadata.
+                              properties:
+                                stringValue:
+                                  description: StringValue is an Inja template whose
+                                    rendered output is stored as the metadata string
+                                    value.
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [stringValue]
+                                  must be set
+                                rule: '[has(self.stringValue)].filter(x,x==true).size()
+                                  == 1'
+                          required:
+                          - key
+                          - namespace
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: atomic
                       remove:
                         description: Remove is a list of header names to remove from
                           the request/response.
@@ -2083,6 +2430,48 @@ spec:
                               this Value field is ignored and no body transformation will be done.
                             type: string
                         type: object
+                      dynamicMetadata:
+                        description: |-
+                          DynamicMetadata is a list of dynamic metadata entries to set.
+                          The values are stored in Envoy dynamic metadata and can be used in access log
+                          templates or consumed by other filters down the chain.
+                        items:
+                          description: DynamicMetadataTransformation defines a single
+                            dynamic metadata entry to set.
+                          properties:
+                            key:
+                              description: Key is the metadata key within the namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: Namespace is the dynamic metadata namespace.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            value:
+                              description: Value is the value to set in dynamic metadata.
+                              properties:
+                                stringValue:
+                                  description: StringValue is an Inja template whose
+                                    rendered output is stored as the metadata string
+                                    value.
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [stringValue]
+                                  must be set
+                                rule: '[has(self.stringValue)].filter(x,x==true).size()
+                                  == 1'
+                          required:
+                          - key
+                          - namespace
+                          - value
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: atomic
                       remove:
                         description: Remove is a list of header names to remove from
                           the request/response.

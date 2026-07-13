@@ -9,11 +9,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 # The version of the Node Docker image to use for booting the cluster: https://hub.docker.com/r/kindest/node/tags
 # This version should stay in sync with `../../Makefile`.
-CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f}"
+CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5}"
 # The version used to tag images
 VERSION="${VERSION:-v1.0.0-ci1}"
 # Skip building docker images if we are testing a released version
 SKIP_DOCKER="${SKIP_DOCKER:-false}"
+# Load prebuilt docker images into the cluster instead of rebuilding them
+LOAD_DOCKER_IMAGES="${LOAD_DOCKER_IMAGES:-false}"
 # Stop after creating the kind cluster
 JUST_KIND="${JUST_KIND:-false}"
 # The version of the k8s gateway api conformance tests to run.
@@ -28,11 +30,12 @@ HELM="${HELM:-go tool helm}"
 LOCALSTACK="${LOCALSTACK:-false}"
 # If true, use cloud-provider-kind instead of MetalLB for LoadBalancer support.
 CLOUD_PROVIDER_KIND="${CLOUD_PROVIDER_KIND:-false}"
-# Registry cache reference for envoyinit Docker build (optional)
+# Registry cache references for Docker builds (optional)
 ENVOYINIT_CACHE_REF="${ENVOYINIT_CACHE_REF:-}"
+CONTROLLER_CACHE_REF="${CONTROLLER_CACHE_REF:-}"
+SDS_CACHE_REF="${SDS_CACHE_REF:-}"
 
-# Export the variables so they are available in the environment
-export VERSION CLUSTER_NAME ENVOYINIT_CACHE_REF
+export VERSION CLUSTER_NAME ENVOYINIT_CACHE_REF CONTROLLER_CACHE_REF SDS_CACHE_REF
 
 function create_kind_cluster_or_skip() {
   activeClusters=$($KIND get clusters)
@@ -85,18 +88,17 @@ function create_and_setup() {
 create_and_setup
 
 if [[ $SKIP_DOCKER == 'true' ]]; then
-  # TODO(tim): refactor the Makefile & CI scripts so we're loading local
-  # charts to real helm repos, and then we can remove this block.
-  echo "SKIP_DOCKER=true, not building images or chart"
+  echo "SKIP_DOCKER=true, not building images"
+  if [[ $LOAD_DOCKER_IMAGES == 'true' ]]; then
+    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-load
+  fi
 else
   # 2. Make all the docker images and load them to the kind cluster
   VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load kind-build-and-load-dummy-idp
-
-  VERSION=$VERSION make package-kgateway-charts
 fi
 
 # 7. Setup localstack
 if [[ $LOCALSTACK == "true" ]]; then
   echo "Setting up localstack"
-  . $SCRIPT_DIR/setup-localstack.sh
+  . $SCRIPT_DIR/../setup-localstack.sh
 fi

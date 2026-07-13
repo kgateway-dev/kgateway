@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"istio.io/istio/pkg/ptr"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -41,16 +43,25 @@ func TestConformance(t *testing.T) {
 
 	// Configure profiles and exempt features based on detected channel
 	profiles := sets.New(suite.GatewayGRPCConformanceProfileName, suite.GatewayHTTPConformanceProfileName)
-	if channel == features.FeatureChannelExperimental {
+	runTLSProfile := channel == features.FeatureChannelExperimental
+	if !runTLSProfile {
+		served, err := tlsRouteV1Served()
+		if err != nil {
+			t.Logf("Failed to detect TLSRoute v1 support: %v", err)
+		} else {
+			runTLSProfile = served
+		}
+	}
+	if runTLSProfile {
 		profiles.Insert(suite.GatewayTLSConformanceProfileName)
 	}
-	options.ConformanceProfiles = profiles
+	options.ConformanceProfiles = profiles.UnsortedList()
 	sf, err := fetchGatewayClassSupportedFeatures(options.GatewayClassName)
 	if err != nil {
 		t.Fatalf("Failed to fetch GatewayClass supported features: %v", err)
 	}
 	// Gateway API has this detection, but if we exempt any features it turns it off. So copy it over so we can have more control.
-	options.SupportedFeatures = sf
+	options.SupportedFeatures = sf.UnsortedList()
 
 	if channel == features.FeatureChannelStandard {
 		exemptExperimentalFeatures(&options)
@@ -75,6 +86,7 @@ func TestConformance(t *testing.T) {
 		options.SkipTests = append(options.SkipTests, string(features.GatewayStaticAddressesFeature.Name))
 	}
 	options.Debug = true
+	options.TimeoutConfig.MaxTimeToConsistency = 60 * time.Second
 
 	t.Logf("Running conformance tests with\nprofiles: %+v\n", profiles)
 	conformance.RunConformanceWithOptions(t, options)
@@ -82,11 +94,11 @@ func TestConformance(t *testing.T) {
 
 func exemptExperimentalFeatures(options *suite.ConformanceOptions) {
 	if options.ExemptFeatures == nil {
-		options.ExemptFeatures = suite.FeaturesSet{}
+		options.ExemptFeatures = suite.FeaturesSet{}.UnsortedList()
 	}
 	for _, feature := range features.AllFeatures.UnsortedList() {
 		if feature.Channel == features.FeatureChannelExperimental {
-			options.ExemptFeatures.Insert(feature.Name)
+			options.ExemptFeatures = append(options.ExemptFeatures, feature.Name)
 		}
 	}
 }
@@ -153,6 +165,36 @@ func detectGatewayAPIChannel() (string, error) {
 	}
 
 	return channel, nil
+}
+
+func tlsRouteV1Served() (bool, error) {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return false, err
+	}
+	clientset, err := apiextensionsclient.NewForConfig(cfg)
+	if err != nil {
+		return false, err
+	}
+
+	crd, err := clientset.ApiextensionsV1().CustomResourceDefinitions().Get(
+		context.Background(),
+		"tlsroutes.gateway.networking.k8s.io",
+		metav1.GetOptions{},
+	)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	for _, version := range crd.Spec.Versions {
+		if version.Name == gwv1.GroupVersion.Version {
+			return version.Served, nil
+		}
+	}
+	return false, nil
 }
 
 func featureSetToCommaSeparatedString(featureSet sets.Set[features.Feature]) string {

@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -13,10 +15,11 @@ Clusters:
     timeout: 3s
     unhealthyThreshold: 3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin-grpc_8080
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -31,11 +34,9 @@ Clusters:
     timeout: 3s
     unhealthyThreshold: 3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_httpbin_8080
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -80,6 +81,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 0
         conditions:

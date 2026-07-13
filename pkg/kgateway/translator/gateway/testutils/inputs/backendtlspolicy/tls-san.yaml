@@ -21,6 +21,9 @@ spec:
     - name: backend1
       kind: Backend
       group: gateway.kgateway.dev
+    - name: backend2
+      kind: Backend
+      group: gateway.kgateway.dev
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend

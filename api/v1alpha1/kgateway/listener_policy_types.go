@@ -1,6 +1,7 @@
 package kgateway
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -91,11 +92,18 @@ type ListenerPortConfig struct {
 
 type ListenerConfig struct {
 	// ProxyProtocol configures the PROXY protocol listener filter.
-	// When set, Envoy will expect connections to include the PROXY protocol header.
+	// By default, when set, Envoy will require connections to include the PROXY
+	// protocol header. This behavior can be relaxed by setting
+	// allowRequestsWithoutProxyProtocol to true, which allows the listener to
+	// also accept connections without the PROXY protocol header.
 	// This is commonly used when kgateway is behind a load balancer that preserves client IP information.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/listener/proxy_protocol/v3/proxy_protocol.proto
 	// +optional
 	ProxyProtocol *ProxyProtocolConfig `json:"proxyProtocol,omitempty"`
+
+	// TCPKeepalive configures OS-level TCP keepalive checks for downstream client connections accepted by this listener.
+	// +optional
+	TCPKeepalive *TCPKeepalive `json:"tcpKeepalive,omitempty"`
 
 	// PerConnectionBufferLimitBytes sets the per-connection buffer limit for all listeners on the gateway.
 	// This controls the maximum size of read and write buffers for new connections.
@@ -107,31 +115,7 @@ type ListenerConfig struct {
 	// +kubebuilder:validation:Minimum=0
 	PerConnectionBufferLimitBytes *int32 `json:"perConnectionBufferLimitBytes,omitempty"`
 
-	// RBAC specifies network-level role-based access control for this listener.
-	// Network RBAC is evaluated at the TCP connection level, before any HTTP processing begins.
-	// This allows filtering based on connection attributes such as source IP address, destination port,
-	// and TLS client certificate information.
-	//
-	// Available CEL attributes for network RBAC include:
-	//   - source.address: Source IP address (e.g., "192.168.1.100")
-	//   - source.port: Source port number
-	//   - destination.address: Destination IP address
-	//   - destination.port: Destination port (e.g., 443, 8080)
-	//   - connection.tls.subject: TLS client certificate subject
-	//   - connection.tls.uri_san: TLS URI Subject Alternative Name
-	//
-	// Example: Allow only corporate network IPs
-	//   rbac:
-	//     policy:
-	//       matchExpressions:
-	//         - 'source.address.startsWith("10.0.0.")'
-	//         - 'source.address.startsWith("192.168.0.")'
-	//     action: Allow
-	//
-	// +optional
-	RBAC *shared.Authorization `json:"rbac,omitempty"`
-
-	// HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
+	// HTTPSettings is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
 	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
@@ -159,11 +143,27 @@ type ListenerDefaultConfig struct {
 // ProxyProtocolConfig configures the PROXY protocol listener filter.
 // The presence of this configuration enables PROXY protocol support.
 type ProxyProtocolConfig struct {
-	// The presence or absence of this configuration is what matters.
+	// AllowRequestsWithoutProxyProtocol, when true, configures the PROXY protocol
+	// listener filter to accept connections that do not include a PROXY protocol
+	// header in addition to those that do. This allows a single listener to serve
+	// mixed traffic, e.g. PROXY-preserving load balancer traffic plus direct
+	// in-cluster traffic on the same port.
+	//
+	// Security: accepting connections without a PROXY header is non-conformant
+	// with the PROXY protocol spec and allows clients to spoof the perceived
+	// source address. Only enable this when every source that can reach the
+	// listener is trusted. See
+	// https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt.
+	//
+	// Defaults to false.
+	//
+	// +optional
+	AllowRequestsWithoutProxyProtocol *bool `json:"allowRequestsWithoutProxyProtocol,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:message="useRemoteAddress must be set to false if xffTrustedCIDRs is set",rule="!has(self.xffTrustedCIDRs) || (has(self.useRemoteAddress) && !self.useRemoteAddress)"
 // +kubebuilder:validation:XValidation:message="only one of xffNumTrustedHops and xffTrustedCIDRs may be set",rule="!has(self.xffNumTrustedHops) || !has(self.xffTrustedCIDRs)"
+// +kubebuilder:validation:XValidation:message="forwardClientCertDetails.details requires mode to be AppendForward or SanitizeSet (or unset)",rule="!has(self.forwardClientCertDetails) || !has(self.forwardClientCertDetails.details) || !has(self.forwardClientCertDetails.mode) || self.forwardClientCertDetails.mode == 'AppendForward' || self.forwardClientCertDetails.mode == 'SanitizeSet'"
 type HTTPSettings struct {
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
@@ -175,6 +175,10 @@ type HTTPSettings struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/opentelemetry.proto.html
 	// +optional
 	Tracing *Tracing `json:"tracing,omitempty"`
+
+	// LocalReplies configures how Envoy's local replies are formatted etc.
+	// +optional
+	LocalReplies *LocalReplyConfig `json:"localReplies,omitempty"`
 
 	// UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
@@ -234,11 +238,35 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	StreamIdleTimeout *metav1.Duration `json:"streamIdleTimeout,omitempty"`
 
-	// IdleTimeout is the idle timeout for connnections.
+	// IdleTimeout is the idle timeout for connections.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
+
+	// MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
+	// keepalive connection. When the limit is reached, Envoy closes the connection, which forces
+	// clients to reconnect. This allows L4 load balancers like AWS NLB to rebalance long-lived
+	// HTTP/2 and gRPC connections across gateway pods.
+	// If set to 0 or unspecified, defaults to unlimited.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MaxRequestsPerConnection *int32 `json:"maxRequestsPerConnection,omitempty"`
+
+	// MaxHeadersCount sets the maximum number of headers allowed in a request.
+	// Downstream requests that exceed this limit will receive a 431 response for HTTP/1.x and a
+	// stream reset for HTTP/2. If unset, defaults to Envoy's built-in default of 100.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-headers-count
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxHeadersCount *int32 `json:"maxHeadersCount,omitempty"`
+
+	// Http2ProtocolOptions configures downstream HTTP/2 behavior on the listener's
+	// HttpConnectionManager.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions
+	// +optional
+	Http2ProtocolOptions *ListenerHTTP2ProtocolOptions `json:"http2ProtocolOptions,omitempty"`
 
 	// HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
 	// +optional
@@ -267,6 +295,15 @@ type HTTPSettings struct {
 	// +optional
 	EarlyRequestHeaderModifier *gwv1.HTTPHeaderFilter `json:"earlyRequestHeaderModifier,omitempty"`
 
+	// ForwardClientCertDetails configures how Envoy handles the x-forwarded-client-cert (XFCC)
+	// header and which parts of the downstream client certificate are forwarded to upstream
+	// backends. Most modes only have effect on listeners where mTLS is configured. The exceptions
+	// are Sanitize, which strips XFCC unconditionally, and AlwaysForwardOnly, which forwards XFCC
+	// unconditionally; on a non-mTLS listener under any other mode the setting is a no-op.
+	// See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-forward-client-cert-details
+	// +optional
+	ForwardClientCertDetails *ForwardClientCertDetails `json:"forwardClientCertDetails,omitempty"`
+
 	// MaxRequestHeadersKb sets the maximum size of request headers that Envoy will accept.
 	// If unset, the Envoy default is 60 KiB.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-max-request-headers-kb
@@ -279,6 +316,15 @@ type HTTPSettings struct {
 	// This extension sets the x-request-id header to a UUID value.
 	// +optional
 	UuidRequestIdConfig *UuidRequestIdConfig `json:"uuidRequestIdConfig,omitempty"`
+
+	// StripHostPortMode determines whether, and under what conditions, Envoy will strip the port
+	// from the Host/authority header. StripMatchingHostPort strips the port only if it matches
+	// the listener's own port. StripAnyHostPort strips the port unconditionally.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-matching-host-port
+	// See also: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-any-host-port
+	// +kubebuilder:validation:Enum=MatchingPort;AnyPort
+	// +optional
+	StripHostPortMode *StripHostPortMode `json:"stripHostPortMode,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -298,6 +344,69 @@ type AccessLog struct {
 	// Filter access logs configuration
 	// +optional
 	Filter *AccessLogFilter `json:"filter,omitempty"`
+}
+
+// LocalReplyConfig represents the listener-wide options for local replies returned by Envoy (e.g. errors, direct responses)
+// +kubebuilder:validation:AtLeastOneOf=mappers;defaultBodyFormat
+type LocalReplyConfig struct {
+	// DefaultBodyFormat is the format to use for local reply bodies if it's not overridden by any mapper.
+	// You can use the `%LOCAL_REPLY_BODY%` substitution to insert the original reply such as an error message.
+	// +optional
+	DefaultBodyFormat *shared.BodyFormat `json:"defaultBodyFormat,omitempty"`
+	// A list of custom options to apply based on filters. This may override the DefaultBodyFormat.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	// +optional
+	Mappers []LocalReplyMapper `json:"mappers,omitempty"`
+}
+
+// LocalReplyMapper may customize the local reply based on stream, request, and response properties such as status code.
+// +kubebuilder:validation:AtLeastOneOf=statusCode;body;bodyFormatOverride;headers
+type LocalReplyMapper struct {
+	// A filter that determines if this mapper should apply.
+	// +required
+	Filter AccessLogFilter `json:"filter"`
+	// New response status code for the reply if specified.
+	// +kubebuilder:validation:Minimum=100
+	// +kubebuilder:validation:Maximum=599
+	// +optional
+	StatusCode *uint32 `json:"statusCode,omitempty"`
+	// New body text for the reply if specified.
+	// Available as `%LOCAL_REPLY_BODY%` in substitution strings.
+	// +optional
+	Body *string `json:"body,omitempty"`
+	// Alternative body format for the reply if specified. Takes precedence over default body format.
+	// +optional
+	BodyFormatOverride *shared.BodyFormat `json:"bodyFormatOverride,omitempty"`
+	// Headers to add or set for the reply if specified.
+	// +kubebuilder:validation:XValidation:message="Local reply mappers may only add or modify headers, not remove them",rule="!has(self.remove)"
+	// +optional
+	Headers *shared.HTTPHeaderFilter `json:"headers,omitempty"`
+}
+
+// ListenerHTTP2ProtocolOptions mirrors Http2ProtocolOptions for listener-facing
+// policies, but avoids the expensive CEL validations that push the listener CRDs
+// over Kubernetes' schema cost budget.
+type ListenerHTTP2ProtocolOptions struct {
+	// InitialStreamWindowSize is the initial window size for the stream.
+	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
+	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Values can be specified with units like "64Ki".
+	// +optional
+	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
+
+	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+	// Same range and default value as InitialStreamWindowSize.
+	// Values can be specified with units like "64Ki".
+	// +optional
+	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
+
+	// The maximum number of concurrent streams that the connection can have.
+	// Envoy defaults to 1024.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=2147483647
+	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
 }
 
 // FileSink represents the file sink configuration for access logs.
@@ -528,6 +637,10 @@ type FilterType struct {
 	GrpcStatusFilter *GrpcStatusFilter `json:"grpcStatusFilter,omitempty"`
 	// +optional
 	CELFilter *CELFilter `json:"celFilter,omitempty"`
+	// Filters for random sampling of access logs.
+	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+	// +optional
+	RuntimeFilter *RuntimeFilter `json:"runtimeFilter,omitempty"`
 }
 
 // ComparisonFilter represents a filter based on a comparison.
@@ -539,8 +652,9 @@ type ComparisonFilter struct {
 	// Value to compare against.
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:validation:Format=uint32
 	// +required
-	Value int32 `json:"value"`
+	Value uint32 `json:"value"`
 }
 
 // Op represents comparison operators.
@@ -601,6 +715,45 @@ type CELFilter struct {
 	// see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
 	// +required
 	Match string `json:"match"`
+}
+
+// RuntimeFilter filters for random sampling of access logs.
+// A request will be logged if the runtime key is set and the request's random value is less than the percent_sampled value.
+// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+type RuntimeFilter struct {
+	// The runtime key to look up in the runtime implementation. This key determines whether
+	// the access log is enabled. When the runtime key value is set, the filter checks this key
+	// at runtime to decide whether to log each request.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	RuntimeKey string `json:"runtimeKey"`
+
+	// By default, the runtime filter will log on every request when the runtime key is set.
+	// If this field is set, it additionally applies a fractional percent check so that only a
+	// fraction of requests are logged.
+	// +optional
+	PercentSampled *FractionalPercent `json:"percentSampled,omitempty"`
+
+	// If set to true, the filter uses Envoy's independent randomness source.
+	// When false (the default), the filter uses the runtime key lookup.
+	// +optional
+	UseIndependentRandomness *bool `json:"useIndependentRandomness,omitempty"`
+}
+
+// FractionalPercent represents a fraction as a numerator and denominator.
+// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/type/v3/percent.proto#envoy-v3-api-msg-type-v3-fractionalpercent
+type FractionalPercent struct {
+	// Specifies the numerator. Defaults to 0.
+	// +required
+	// +kubebuilder:validation:Minimum=0
+	Numerator int32 `json:"numerator"`
+
+	// Specifies the denominator. If the denominator specified is less than the numerator,
+	// the final fractional percentage is capped at 1 (100%).
+	// Defaults to HUNDRED.
+	// +optional
+	// +kubebuilder:validation:Enum=HUNDRED;TEN_THOUSAND;MILLION
+	Denominator *DenominatorType `json:"denominator,omitempty"`
 }
 
 // GrpcStatusFilter filters gRPC requests based on their response status.
@@ -873,6 +1026,18 @@ const (
 	PassThroughServerHeaderTransformation ServerHeaderTransformation = "PassThrough"
 )
 
+// StripHostPortMode determines whether or not Envoy strips the port component from the
+// Host/authority header.
+type StripHostPortMode string
+
+const (
+	// StripMatchingHostPortMode strips the port from the header if and only if it matches
+	// the listener's own port.
+	StripMatchingHostPortMode StripHostPortMode = "MatchingPort"
+	// StripAnyHostPortMode strips any port from the header, regardless of its value.
+	StripAnyHostPortMode StripHostPortMode = "AnyPort"
+)
+
 // EnvoyHealthCheck represents configuration for Envoy's health check filter.
 // The filter will be configured in No pass through mode, and will only match requests with the specified path.
 type EnvoyHealthCheck struct {
@@ -927,3 +1092,70 @@ const (
 	// but validates the certificate if one is presented. If validation fails, the connection is rejected.
 	ClientCertificateValidationModeOptional ClientCertificateValidationMode = "Optional"
 )
+
+// ForwardClientCertDetails configures how Envoy handles the x-forwarded-client-cert (XFCC)
+// header forwarded to upstream backends.
+type ForwardClientCertDetails struct {
+	// Mode controls how Envoy handles the XFCC header on the request forwarded upstream.
+	// If unset and Details is provided, Mode defaults to SanitizeSet.
+	// If both Mode and Details are unset, this field has no effect.
+	//
+	// - Sanitize: do not send the XFCC header upstream.
+	// - ForwardOnly: forward the XFCC header in the request unchanged.
+	// - AppendForward: append the current client's details to the XFCC header.
+	// - SanitizeSet: reset the XFCC header with the current client's details, ignoring any client-supplied value.
+	// - AlwaysForwardOnly: always forward the XFCC header, even for non-mTLS connections.
+	//
+	// +kubebuilder:validation:Enum=Sanitize;ForwardOnly;AppendForward;SanitizeSet;AlwaysForwardOnly
+	// +optional
+	Mode *ForwardClientCertMode `json:"mode,omitempty"`
+
+	// Details selects which fields from the downstream client certificate are written into
+	// the XFCC header that is sent upstream. These fields are only honored by Envoy when
+	// Mode is AppendForward or SanitizeSet.
+	// +optional
+	Details *SetCurrentClientCertDetails `json:"details,omitempty"`
+}
+
+// ForwardClientCertMode is the XFCC header forwarding mode for HTTP Connection Manager.
+type ForwardClientCertMode string
+
+const (
+	// ForwardClientCertModeSanitize strips the XFCC header from requests forwarded upstream.
+	ForwardClientCertModeSanitize ForwardClientCertMode = "Sanitize"
+	// ForwardClientCertModeForwardOnly forwards the XFCC header from the request unchanged.
+	ForwardClientCertModeForwardOnly ForwardClientCertMode = "ForwardOnly"
+	// ForwardClientCertModeAppendForward appends the current client's details to the XFCC header.
+	ForwardClientCertModeAppendForward ForwardClientCertMode = "AppendForward"
+	// ForwardClientCertModeSanitizeSet resets the XFCC header with the current client's details,
+	// ignoring any client-supplied value.
+	ForwardClientCertModeSanitizeSet ForwardClientCertMode = "SanitizeSet"
+	// ForwardClientCertModeAlwaysForwardOnly always forwards the XFCC header, even for non-mTLS connections.
+	ForwardClientCertModeAlwaysForwardOnly ForwardClientCertMode = "AlwaysForwardOnly"
+)
+
+// SetCurrentClientCertDetails selects fields from the downstream client certificate to include
+// in the XFCC header when Envoy sets or appends it. Fields default to false when unset.
+// See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-msg-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-setcurrentclientcertdetails
+type SetCurrentClientCertDetails struct {
+	// Subject forwards the certificate Subject in the XFCC header.
+	// +optional
+	Subject *bool `json:"subject,omitempty"`
+
+	// Cert forwards the entire client certificate in URL-encoded PEM format in the XFCC header.
+	// +optional
+	Cert *bool `json:"cert,omitempty"`
+
+	// Chain forwards the entire client certificate chain (including the leaf certificate) in
+	// URL-encoded PEM format in the XFCC header.
+	// +optional
+	Chain *bool `json:"chain,omitempty"`
+
+	// DNS forwards DNS-type Subject Alternative Names from the client certificate in the XFCC header.
+	// +optional
+	DNS *bool `json:"dns,omitempty"`
+
+	// URI forwards the URI-type Subject Alternative Name from the client certificate in the XFCC header.
+	// +optional
+	URI *bool `json:"uri,omitempty"`
+}

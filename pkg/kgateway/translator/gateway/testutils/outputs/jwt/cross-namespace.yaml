@@ -1,33 +1,35 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_backend-svc_80
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_remote-jwks_8080
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_remote_remote-jwks_8080
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -102,6 +104,16 @@ Listeners:
                           filter: dev.kgateway.disable_jwt
                           path:
                           - key: disable
+        - disabled: true
+          name: jwt_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -139,6 +151,15 @@ Routes:
         jwt/default/allowed-jwt-ext:
           '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
           requirementName: allowed-jwt-ext_default_requirements
+        jwt_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          filterName: rustformation
+          perRouteConfigName: rustformation
   - domains:
     - denied.example.com
     name: listener~80~denied_example_com
@@ -165,6 +186,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 2
         conditions:
@@ -208,6 +234,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -217,10 +248,15 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): jwt: jwt: remote jwks: unresolved backend ref:
-            missing reference grant'
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/denied-policy:
+            jwt: jwt: remote jwks: unresolved backend ref: missing reference grant'
           reason: RouteRuleReplaced
           status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references

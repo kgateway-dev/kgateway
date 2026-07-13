@@ -4,20 +4,20 @@ metadata:
   name: example-route
 spec:
   parentRefs:
-  - name: gw
+    - name: gw
   hostnames:
-  - "example.com"
+    - "example.com"
   rules:
-  - backendRefs:
-    - name: example-svc
-      port: 8080
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /timeout
-    backendRefs:
-    - name: example-svc
-      port: 8080
+    - backendRefs:
+        - name: example-svc
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /timeout
+      backendRefs:
+        - name: example-svc
+          port: 8080
 ---
 apiVersion: gateway.solo.io/v1
 kind: HttpListenerOption
@@ -25,9 +25,9 @@ metadata:
   name: server-name
 spec:
   targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: gw
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
   options:
     httpConnectionManagerSettings:
       serverName: "unit-test v4.19"
@@ -52,8 +52,8 @@ metadata:
     app.kubernetes.io/name: nginx
 spec:
   containers:
-  - name: nginx
-    image: nginx:stable
-    ports:
-    - containerPort: 80
-      name: http-web-svc
+    - name: nginx
+      image: nginx:stable
+      ports:
+        - containerPort: 80
+          name: http-web-svc

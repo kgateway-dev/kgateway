@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"fmt"
 	"testing"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -8,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -363,4 +365,86 @@ func TestHandleAPIKeyAuth(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHttpFiltersAPIKeyAuth(t *testing.T) {
+	t.Run("adds api key auth filter and auth-enabled filter to chain", func(t *testing.T) {
+		plugin := &trafficPolicyPluginGwPass{
+			enableAuthMetadata: true,
+			apiKeyAuthInChain: map[string]*envoyapikeyauthv3.ApiKeyAuth{
+				"test-filter-chain": {},
+			},
+		}
+		fcc := ir.FilterChainCommon{FilterChainName: "test-filter-chain"}
+
+		httpFilters, err := plugin.HttpFilters(ir.HttpFiltersContext{}, fcc)
+
+		require.NoError(t, err)
+		require.NotNil(t, httpFilters)
+		// api key auth filter followed by auth-enabled metadata filter
+		assert.Equal(t, 2, len(httpFilters))
+		assert.Equal(t, apiKeyAuthFilterNamePrefix, httpFilters[0].Filter.GetName())
+		assert.Equal(t, filters.DuringStage(filters.AuthNStage), httpFilters[0].Stage)
+		assert.Equal(t, APIKeyAuthEnabledFilterName, httpFilters[1].Filter.GetName())
+		assert.Equal(t, filters.AfterStage(filters.AuthNStage), httpFilters[1].Stage)
+	})
+}
+
+func TestAPIKeyAuthPolicyPlugin(t *testing.T) {
+	t.Run("applies api key auth configuration to route", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				apiKeyAuth: &apiKeyAuthIR{
+					config: &envoyapikeyauthv3.ApiKeyAuthPerRoute{
+						Credentials: []*envoyapikeyauthv3.Credential{
+							{Key: "test-key", Client: "test-client"},
+						},
+					},
+				},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		require.NotNil(t, pCtx.TypedFilterConfig)
+		apiKeyAuthConfig, ok := pCtx.TypedFilterConfig[apiKeyAuthFilterNamePrefix]
+		assert.True(t, ok)
+		assert.NotNil(t, apiKeyAuthConfig)
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[APIKeyAuthEnabledFilterName])
+		assert.Contains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[APIKeyAuthEnabledFilterName]),
+			`\"key\":\"auth_succeeded\",\"value\":{\"stringValue\":\"true\"}}`, "api_key_auth_enabled must set dynamic metadata")
+	})
+
+	t.Run("handles disabled api key auth configuration", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{enableAuthMetadata: true}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				apiKeyAuth: &apiKeyAuthIR{disable: true},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		assert.NotNil(t, pCtx.TypedFilterConfig, pCtx)
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[apiKeyAuthFilterNamePrefix])
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[APIKeyAuthEnabledFilterName])
+		assert.NotContains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[APIKeyAuthEnabledFilterName]), AuthSucceededMetadataKey, "api_key_auth_enabled must not set dynamic metadata if the policy is disabled at the route level")
+	})
 }

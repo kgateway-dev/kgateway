@@ -1,15 +1,15 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_example-svc_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -67,6 +67,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
@@ -101,12 +106,16 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): invalid route configuration: validation failed:
-            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Incorrect configuration: %RESPONSE(Invalid-Variable). Couldn''t find valid
-            command at position 0'
+          message: |-
+            Replaced Rule (0): invalid route configuration
+            validation failed: invalid xds configuration: error initializing configuration '/dev/fd/0': Incorrect configuration: %RESPONSE(Invalid-Variable). Couldn't find valid command at position 0
           reason: RouteRuleReplaced
           status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references

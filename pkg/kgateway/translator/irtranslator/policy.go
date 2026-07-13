@@ -8,6 +8,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	backendtlspolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -117,6 +118,92 @@ func addMergeOriginsToFilterMetadata(
 	}
 	metadata.FilterMetadata[mergeMetadataKeyPrefix+gk.String()] = pb
 	return metadata
+}
+
+const routeSourceMetadataKey = "dev.kgateway.route_source"
+
+// addRouteSourceMetadata sets the dev.kgateway.route_source filter metadata on
+// an Envoy route from the originating xRoute IR. Existing metadata is preserved.
+func addRouteSourceMetadata(in ir.HttpRouteRuleMatchIR, metadata *envoycorev3.Metadata) *envoycorev3.Metadata {
+	if in.Parent == nil {
+		return metadata
+	}
+
+	fields := map[string]*structpb.Value{}
+	if in.Parent.Kind != "" {
+		fields["kind"] = structpb.NewStringValue(in.Parent.Kind)
+	}
+	if in.Parent.Group != "" {
+		fields["group"] = structpb.NewStringValue(in.Parent.Group)
+	}
+	if in.Parent.Name != "" {
+		fields["name"] = structpb.NewStringValue(in.Parent.Name)
+	}
+	if in.Parent.Namespace != "" {
+		fields["namespace"] = structpb.NewStringValue(in.Parent.Namespace)
+	}
+	if in.Name != "" {
+		fields["rule"] = structpb.NewStringValue(in.Name)
+	}
+
+	if len(fields) == 0 {
+		return metadata
+	}
+
+	if metadata == nil {
+		metadata = &envoycorev3.Metadata{}
+	}
+	if metadata.FilterMetadata == nil {
+		metadata.FilterMetadata = map[string]*structpb.Struct{}
+	}
+	metadata.FilterMetadata[routeSourceMetadataKey] = &structpb.Struct{Fields: fields}
+	return metadata
+}
+
+func reportBackendObjectPolicyStatus(
+	rp reporter.Reporter,
+	ancestorRef gwv1.ParentReference,
+	pluginPass TranslationPassPlugins,
+	backend *ir.BackendObjectIR,
+) {
+	if backend == nil {
+		return
+	}
+
+	gk := wellknown.BackendTLSPolicyGVK.GroupKind()
+	policies := backend.AttachedPolicies.Policies[gk]
+	if len(policies) == 0 {
+		return
+	}
+
+	var effectivePolicy *ir.PolicyAtt
+	if pass := pluginPass[gk]; pass != nil {
+		effectivePolicies, _ := mergePolicies(pass, policies)
+		if len(effectivePolicies) > 0 {
+			effectivePolicy = &effectivePolicies[0]
+		}
+	}
+	if effectivePolicy == nil {
+		effectivePolicy = &policies[0]
+	}
+
+	for _, policy := range policies {
+		if policy.PolicyRef == nil {
+			continue
+		}
+
+		key := reporter.PolicyKey{
+			Group:     policy.PolicyRef.Group,
+			Kind:      policy.PolicyRef.Kind,
+			Namespace: policy.PolicyRef.Namespace,
+			Name:      policy.PolicyRef.Name,
+		}
+
+		ancestorReporter := rp.Policy(key, policy.Generation).AncestorRef(ancestorRef)
+		for _, condition := range backendtlspolicyplugin.BuildPolicyConditions(policy, effectivePolicy) {
+			ancestorReporter.SetCondition(condition)
+		}
+	}
 }
 
 // reportRouteConfigPolicyErrors reports policy errors to the appropriate reporter based on attachment level.

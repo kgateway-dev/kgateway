@@ -3,6 +3,7 @@ package ir
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"time"
 
@@ -112,6 +113,10 @@ type RouteContext struct {
 	TypedFilterConfig TypedFilterConfigMap
 	// ListenerPort is the port of the Gateway listener that this route is attached to
 	ListenerPort uint32
+	// ListenerHasTLS reports whether the Gateway listener terminates TLS (i.e. is
+	// an HTTPS listener). Used by request-redirect post-processing to infer the
+	// effective scheme when the redirect filter doesn't set one.
+	ListenerHasTLS bool
 
 	InheritedPolicyPriority apiannotations.InheritedPolicyPriorityValue
 }
@@ -184,6 +189,11 @@ type ProxyTranslationPass interface {
 	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
 	HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error)
 
+	// called 1 time per filter-chain.
+	// If a plugin emits new filters, they must be with a plugin unique name.
+	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
+	UpstreamHttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error)
+
 	// called 1 time per filter chain after listeners and allows tweaking HCM settings.
 	ApplyHCM(
 		pCtx *HcmContext,
@@ -226,6 +236,10 @@ func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, 
 	return nil, nil
 }
 
+func (s UnimplementedProxyTranslationPass) UpstreamHttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error) {
+	return nil, nil
+}
+
 func (s UnimplementedProxyTranslationPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
 	return nil, nil
 }
@@ -245,6 +259,12 @@ type PolicyIR interface {
 	// in case multiple policies attached to the same resource, we sort by policy creation time.
 	CreationTime() time.Time
 	Equals(in any) bool
+}
+
+// PolicyHashIR can be implemented by PolicyIRs that need downstream resources
+// to observe policy content changes without understanding the concrete IR type.
+type PolicyHashIR interface {
+	PolicyHash() uint64
 }
 
 type PolicyWrapper struct {
@@ -281,6 +301,12 @@ func versionEquals(a, b metav1.Object) bool {
 	var versionEquals bool
 	if a.GetGeneration() != 0 && b.GetGeneration() != 0 {
 		versionEquals = a.GetGeneration() == b.GetGeneration()
+		// Generation alone is insufficient because Kubernetes only increments generation on spec changes,
+		// not metadata changes like labels.
+		// ResourceVersion: is too broad as it is bumped on status changes as well.
+		if versionEquals {
+			versionEquals = maps.Equal(a.GetLabels(), b.GetLabels()) && maps.Equal(a.GetAnnotations(), b.GetAnnotations())
+		}
 	} else {
 		versionEquals = a.GetResourceVersion() == b.GetResourceVersion()
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 
 	xdscorev3 "github.com/cncf/xds/go/xds/core/v3"
 	xdsmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
@@ -42,6 +43,7 @@ type TrafficPolicyGatewayExtensionIR struct {
 	Jwt              *envoymatchingv3.ExtensionWithMatcher
 	OAuth2           *oauthPerProviderConfig
 	PrecedenceWeight int32
+	FilterStage      *kgateway.FilterStageSpec
 	Err              error
 }
 
@@ -67,6 +69,9 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 		return false
 	}
 	if e.PrecedenceWeight != other.PrecedenceWeight {
+		return false
+	}
+	if !reflect.DeepEqual(e.FilterStage, other.FilterStage) {
 		return false
 	}
 
@@ -187,6 +192,7 @@ func TranslateGatewayExtensionBuilder(
 				return p
 			}
 			p.ExtProc = buildCompositeExtProcFilter(*gExt.ExtProc, envoyGrpcService)
+			p.FilterStage = gExt.ExtProc.FilterStage
 
 		case gExt.RateLimit != nil:
 			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.RateLimit.GrpcService)
@@ -511,6 +517,9 @@ func buildCompositeExtProcFilter(in kgateway.ExtProcProvider, envoyGrpcService *
 				Untyped: in.MetadataOptions.Forwarding.Untyped,
 			}
 		}
+	}
+	if len(in.RequestAttributes) > 0 {
+		filter.RequestAttributes = in.RequestAttributes
 	}
 	return buildCompositeFilter(
 		"composite_ext_proc",

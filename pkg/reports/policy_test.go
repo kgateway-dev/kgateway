@@ -1,13 +1,14 @@
 package reports
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -35,16 +36,16 @@ func TestPolicyStatusReport(t *testing.T) {
 				a.NotNil(policyReport)
 				// during gw-1 translation, reporter will default to positive conditions
 				policyReport.AncestorRef(gwv1.ParentReference{
-					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-					Kind:      ptr.To(gwv1.Kind("Gateway")),
-					Namespace: ptr.To(gwv1.Namespace("default")),
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("Gateway")),
+					Namespace: new(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-1"),
 				})
 				// during gw-2 translation, reporter will default to positive conditions
 				policyReport.AncestorRef(gwv1.ParentReference{
-					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-					Kind:      ptr.To(gwv1.Kind("Gateway")),
-					Namespace: ptr.To(gwv1.Namespace("default")),
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("Gateway")),
+					Namespace: new(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-2"),
 				})
 			},
@@ -59,9 +60,9 @@ func TestPolicyStatusReport(t *testing.T) {
 				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-1"),
 						},
 						ControllerName: "example-controller",
@@ -82,9 +83,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					},
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-2"),
 						},
 						ControllerName: "example-controller",
@@ -118,9 +119,9 @@ func TestPolicyStatusReport(t *testing.T) {
 				a.NotNil(policyReport)
 				// during gw-1 translation, add PolicyReasonValid
 				policyReport.AncestorRef(gwv1.ParentReference{
-					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-					Kind:      ptr.To(gwv1.Kind("Gateway")),
-					Namespace: ptr.To(gwv1.Namespace("default")),
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("Gateway")),
+					Namespace: new(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-1"),
 				}).SetCondition(reporter.PolicyCondition{
 					Type:   string(shared.PolicyConditionAccepted),
@@ -129,16 +130,16 @@ func TestPolicyStatusReport(t *testing.T) {
 				})
 				// during gw-1 translation, add PolicyReasonAttached
 				policyReport.AncestorRef(gwv1.ParentReference{
-					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-					Kind:      ptr.To(gwv1.Kind("Gateway")),
-					Namespace: ptr.To(gwv1.Namespace("default")),
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("Gateway")),
+					Namespace: new(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-1"),
 				}).SetAttachmentState(reporter.PolicyAttachmentStateAttached)
 				// during gw-2 translation, add PolicyReasonInvalid
 				policyReport.AncestorRef(gwv1.ParentReference{
-					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-					Kind:      ptr.To(gwv1.Kind("Gateway")),
-					Namespace: ptr.To(gwv1.Namespace("default")),
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("Gateway")),
+					Namespace: new(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-2"),
 				}).SetCondition(reporter.PolicyCondition{
 					Type:   string(shared.PolicyConditionAccepted),
@@ -158,9 +159,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					// No existing status for gw-1 but test with an existing status for gw-2
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-2"),
 						},
 						ControllerName: "example-controller",
@@ -179,9 +180,9 @@ func TestPolicyStatusReport(t *testing.T) {
 				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-1"),
 						},
 						ControllerName: "example-controller",
@@ -203,9 +204,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					},
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-2"),
 						},
 						ControllerName: "example-controller",
@@ -251,9 +252,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					// Existing stale status for gw-1 that should be cleared
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-1"),
 						},
 						ControllerName: "example-controller",
@@ -284,9 +285,9 @@ func TestPolicyStatusReport(t *testing.T) {
 				a.NotNil(policyReport)
 				// during gw-1 translation, add PolicyReasonValid
 				policyReport.AncestorRef(gwv1.ParentReference{
-					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-					Kind:      ptr.To(gwv1.Kind("Gateway")),
-					Namespace: ptr.To(gwv1.Namespace("default")),
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("Gateway")),
+					Namespace: new(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-1"),
 				}).SetCondition(reporter.PolicyCondition{
 					Type:   string(shared.PolicyConditionAccepted),
@@ -295,9 +296,9 @@ func TestPolicyStatusReport(t *testing.T) {
 				})
 				// during gw-2 translation, add PolicyReasonInvalid
 				policyReport.AncestorRef(gwv1.ParentReference{
-					Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-					Kind:      ptr.To(gwv1.Kind("Gateway")),
-					Namespace: ptr.To(gwv1.Namespace("default")),
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("Gateway")),
+					Namespace: new(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-2"),
 				}).SetCondition(reporter.PolicyCondition{
 					Type:   string(shared.PolicyConditionAccepted),
@@ -316,9 +317,9 @@ func TestPolicyStatusReport(t *testing.T) {
 				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-3"),
 						},
 						ControllerName: "not-our-controller", // not our controller
@@ -333,9 +334,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					},
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-1"),
 						},
 						ControllerName: "example-controller",
@@ -350,9 +351,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					},
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-2"),
 						},
 						ControllerName: "example-controller",
@@ -371,9 +372,9 @@ func TestPolicyStatusReport(t *testing.T) {
 				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-1"),
 						},
 						ControllerName: "example-controller",
@@ -394,9 +395,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					},
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-2"),
 						},
 						ControllerName: "example-controller",
@@ -417,9 +418,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					},
 					{
 						AncestorRef: gwv1.ParentReference{
-							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace("default")),
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
 							Name:      gwv1.ObjectName("gw-3"),
 						},
 						ControllerName: "not-our-controller", // not our controller
@@ -451,5 +452,37 @@ func TestPolicyStatusReport(t *testing.T) {
 			diff := cmp.Diff(tc.wantStatus, gotStatus, cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"))
 			a.Empty(diff)
 		})
+	}
+}
+
+func TestBuildPolicyStatusCapsAncestorsAtAPILimit(t *testing.T) {
+	rm := NewReportMap()
+	statusReporter := NewReporter(&rm)
+	key := reporter.PolicyKey{
+		Group:     "example.com",
+		Kind:      "Policy",
+		Namespace: "default",
+		Name:      "example",
+	}
+
+	policyReporter := statusReporter.Policy(key, 1)
+	for i := range MaxPolicyStatusAncestors + 1 {
+		policyReporter.AncestorRef(gwv1.ParentReference{
+			Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+			Kind:      new(gwv1.Kind("Gateway")),
+			Namespace: new(gwv1.Namespace("default")),
+			Name:      gwv1.ObjectName(fmt.Sprintf("gw-%02d", i)),
+		}).SetCondition(reporter.PolicyCondition{
+			Type:   string(shared.PolicyConditionAccepted),
+			Status: metav1.ConditionTrue,
+			Reason: string(shared.PolicyReasonValid),
+		})
+	}
+
+	gotStatus := rm.BuildPolicyStatus(t.Context(), key, "example-controller", gwv1.PolicyStatus{})
+	require.NotNil(t, gotStatus)
+	require.Len(t, gotStatus.Ancestors, MaxPolicyStatusAncestors)
+	for _, ancestor := range gotStatus.Ancestors {
+		require.NotEqual(t, gwv1.ObjectName("StatusSummary"), ancestor.AncestorRef.Name)
 	}
 }

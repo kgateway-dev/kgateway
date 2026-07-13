@@ -3,6 +3,9 @@
 Kgateway maintains **releases through a GitHub-Actions + GoReleaser pipeline**. This guide provides step-by-step
 instructions for creating a *minor* or a *patch* release.
 
+> **Making any changes here?** See if you should update the issue template at
+> [.github/ISSUE_TEMPLATE/RELEASE-REQUEST.md](/.github/ISSUE_TEMPLATE/RELEASE-REQUEST.md) to keep its checklist in sync.
+
 ## Background
 
 Kgateway uses [Semantic Versioning 2.0.0](https://semver.org/) to communicate the impact of every release
@@ -44,9 +47,61 @@ If the release branch **does not** exist, create one:
     git push ${REMOTE} v2.${MINOR}.x
     ```
 
+- On `main`, bump `ROLLING_MAIN_VERSION` in the [Makefile](../../Makefile) to the next minor's rolling tag via a PR (for example, after cutting `v2.3.x`, set it to `v2.4.0-main`), since `main` now tracks the next minor.
+- On `main`, bump `gateway-api-version` in the [e2e test workflow](https://github.com/kgateway-dev/kgateway/blob/96403169afb6b0f4becb864b42d22fcf000033f7/.github/workflows/e2e.yaml#L129) to 1 version lower than what is used in go.mod (since this is an upgrade test)
+
+- Update the OSV security scan workflow branch allowlist in [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml) to include the new release branch, and drop any branch that is no longer LTS.
+  This workflow only scans an explicit set of branches, so each newly cut release branch must be added to both the scheduled scan matrix and the `workflow_dispatch` branch options.
+  This allowlist is the single source of truth for which branches get scanned: tooling such as [`hack/osvtool`](../../hack/osvtool) and the `cve-bump` skill reads it rather than hardcoding the branch list, so keeping it current is all that is needed.
+
+### OSV scan and CVE triage
+
+Before a release is cut, maintainers typically use the OSV scan results for the
+branch that will be released and clear any open source-dependency findings that
+would otherwise ship in the release artifact. The release workflow does not run
+this triage for you, so it belongs in the release checklist.
+
+If you are using Codex, Claude Code, etc., the `cve-bump` skill
+(invoked with `@cve-bump`, `Clear CVEs`, etc. depending on the coding
+agent) wraps this workflow and uses `hack/osvtool` as the canonical
+entry point. For a manual run, start with the table view to see the
+current branch state:
+
+```bash
+./hack/osvtool --table --target source --state todo
+./hack/osvtool --table --target image --state todo
+```
+
+Use `--state todo` to focus on critical and high findings, or `--state open`
+when you want the full severity picture. `hack/osvtool` reads the branch
+allowlist from [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml),
+so the branches it checks stay aligned with the scheduled scan workflow.
+
+For a specific release branch, pull the raw alerts and decide how each one will
+be handled:
+
+```bash
+./hack/osvtool --raw --branch v2.3.x --target source --state todo
+./hack/osvtool --raw --branch v2.3.x --target image --state todo
+```
+
+The usual outcomes are:
+
+- bump a dependency to the first fixed version when the advisory has a fix
+- update `osv-scanner.toml` only for confirmed false positives
+- leave the finding open and defer the release if there is no safe fix yet
+
+Once the dependency bumps or ignore-list updates land (for images, as
+opposed to source code, note that this only happens upon release),
+manually rerun the osv-scanner GitHub Action or wait for its nightly
+run. Then rerun the skill or `hack/osvtool` for the release branch to
+confirm the branch is clean enough to publish. If you add or retire a
+release branch, update the allowlist in the OSV workflow before
+relying on the scan results for that branch.
+
 ### Patch Release
 
-A patch release is generated from an existing release branch, i.e. [v2.0.x](https://github.com/kgateway-dev/kgateway/commits/v2.0.x/).
+A patch release is generated from an existing release branch, e.g. [v2.2.x](https://github.com/kgateway-dev/kgateway/commits/v2.2.x/).
 After all the necessary backport pull requests have merged, you can proceed to the next section.
 
 ## Publish the Release
@@ -57,33 +112,37 @@ Use the "Run workflow" drop-down in the right corner of the page to dispatch a r
 
 - Select the branch to release from
   - Minor release: Select the `main` branch.
-  - Patch release: Select the release branch, e.g. `v2.0.x`, that will be patched.
+  - Patch release: Select the release branch, e.g. `v2.2.x`, that will be patched.
 - Enter the version for the release to create, e.g. `v2.0.3`. This will trigger
   the release process and result in a new GitHub release, [v2.0.3](https://github.com/kgateway-dev/kgateway/releases/tag/v2.0.3)
   for example.
 - Click on the "validate release" option, which bootstraps an environment from the
   generated artifacts and runs the conformance suite against that deployed environment.
-- Generate the release notes using the provided script (see [Generating Release Notes](#generating-release-notes) below).
+- The workflow automatically generates release notes and publishes them with the GitHub release. If you need to preview them locally, see [Generating Release Notes](#generating-release-notes) below.
 
-## Generating Release Notes
+The workflow generates release notes automatically (see [Release Notes](#release-notes) below).
+Once the workflow completes, review the release notes on the GitHub release and edit the description
+if anything was miscategorized.
 
-Use the `hack/generate-release-notes.sh` script to generate release notes from merged PRs:
+## Release Notes
+
+The Release workflow runs `make release-notes` automatically and feeds the output to GoReleaser, so no
+manual step is required when cutting a release. Under the hood it invokes
+[`hack/generate-release-notes.sh`](../../hack/generate-release-notes.sh), which:
+
+- Finds all PR numbers from commit messages between the previous tag and the new release
+- Fetches PR details via the GitHub API
+- Extracts content from `release-note` code blocks in PR descriptions
+- Categorizes entries by `kind/` labels (breaking_change, feature, fix, deprecation, documentation, cleanup, install, bump)
+
+To preview release notes locally — for example to sanity-check what an upcoming release will include —
+you can invoke the script directly:
 
 ```bash
 GITHUB_TOKEN=<your_token> ./hack/generate-release-notes.sh -p v2.0.3 -c v2.1.0
 ```
 
-The script does the following:
-
-- Finds all PR numbers from commit messages between the two tags
-- Fetches PR details via the GitHub API
-- Extracts content from `release-note` code blocks in PR descriptions
-- Categorizes entries by `kind/` labels (breaking_change, feature, fix, deprecation, documentation, cleanup, install, bump)
-- Generates `_output/RELEASE_NOTES.md` by default
-
-Run `./hack/generate-release-notes.sh --help` to see all options.
-
-After running the script, review the generated file for accuracy, then add the content to the GitHub release description.
+This writes `_output/RELEASE_NOTES.md`. Run `./hack/generate-release-notes.sh --help` for all options.
 
 ## Verification
 

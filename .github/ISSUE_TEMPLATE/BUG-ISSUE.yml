@@ -55,6 +55,42 @@ body:
     validations:
       required: true
   - type: textarea
+    id: helm-values
+    attributes:
+      label: Helm Values
+      description: |
+        The helm values used to install kgateway
+      placeholder: |
+        This can be found by running :
+        helm -n <release namespace> get values <release name>
+        eg: helm -n kgateway-system get values kgateway
+    validations:
+      required: false
+  - type: textarea
+    id: kgateway-logs
+    attributes:
+      label: Kgateway pod logs
+      description: |
+        The kgateway logs (from all running pods)
+      placeholder: |
+        This can be found by running :
+        kubectl -n <release namespace> logs -l kgateway=kgateway
+        eg: kubectl -n kgateway-system logs -l kgateway=kgateway
+    validations:
+      required: false
+  - type: textarea
+    id: proxy-logs
+    attributes:
+      label: Proxy pod logs
+      description: |
+        The proxy logs (from all running pods)
+      placeholder: |
+        This can be found by running :
+        kubectl -n <proxy namespace> logs -l app.kubernetes.io/component=proxy
+        eg: kubectl -n kgateway-system logs -l app.kubernetes.io/component=proxy
+    validations:
+      required: false
+  - type: textarea
     id: additional-environment-detail
     attributes:
       label: Additional Environment Detail

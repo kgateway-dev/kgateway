@@ -84,6 +84,20 @@ spec:
   oauth2:
     extensionRef:
       name: oauth-route-1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-attachment-2
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: test
+      sectionName: rule1
+  oauth2:
+    extensionRef:
+      name: oauth-route-2
 # TODO: uncomment this when disable is supported
 # ---
 # apiVersion: gateway.kgateway.dev/v1alpha1
@@ -188,6 +202,33 @@ spec:
       - type: RegularExpression
         name: x-baz
         value: ^baz-.*
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: oauth-route-2
+spec:
+  oauth2:
+    backendRef:
+      kind: Backend
+      group: gateway.kgateway.dev
+      name: oauth-provider-2
+    tokenEndpoint: https://provider-2.com/token
+    authorizationEndpoint: https://provider-2.com/auth
+    credentials:
+      clientID: client-id
+      clientSecretRef:
+        name: oauth-client-secret
+    redirectURI: https://test.com/callback
+    logoutPath: /log-out
+    endSessionEndpoint: https://provider-2.com/logout
+    forwardAccessToken: true
+    scopes: ["email", "groups"]
+    jwt:
+      jwksURI: https://provider-2.com/jwks.json
+      accessToken:
+        audiences:
+          - test.com
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend

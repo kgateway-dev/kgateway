@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -17,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utiljson "k8s.io/apimachinery/pkg/util/json"
 	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/yaml"
 
@@ -30,8 +32,9 @@ var AllCRDs = []schema.GroupVersionResource{
 	gvr.HTTPRoute,
 	gvr.GRPCRoute,
 	gvr.TCPRoute,
+	wellknown.TCPRouteV1GVR,
 	gvr.TLSRoute,
-	gvr.TLSRoute_v1alpha2,
+	wellknown.TLSRouteV1Alpha3GVR,
 	gvr.ReferenceGrant,
 	gvr.BackendTLSPolicy,
 	wellknown.XListenerSetGVR,
@@ -59,7 +62,31 @@ const (
 	CRDPath = "install/helm/kgateway-crds/templates"
 )
 
-// GetStructuralSchemas returns a map of GroupVersionKind to Structural schemas for all CRDs in the given directory.
+// GetGatewayAPICRDDir returns the path to Gateway API CRDs from the active module.
+// It looks for the experimental CRDs which include XListenerSet and other experimental features.
+func GetGatewayAPICRDDir() (string, error) {
+	cmd := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", "sigs.k8s.io/gateway-api")
+	cmd.Dir = GitRootDirectory()
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve gateway-api module directory: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	modDir := strings.TrimSpace(string(out))
+	if modDir == "" {
+		return "", fmt.Errorf("gateway-api module directory is empty")
+	}
+	crdDir := filepath.Join(modDir, "config", "crd", "experimental")
+
+	if _, err := os.Stat(crdDir); err != nil {
+		return "", fmt.Errorf("gateway-api CRD directory not found: %w", err)
+	}
+
+	return crdDir, nil
+}
+
+// GetStructuralSchemas returns a map of GroupVersionKind to Structural schemas for all CRDs in the given directories.
 func GetStructuralSchemas(
 	crdDir string,
 ) (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
@@ -122,10 +149,16 @@ func ApplyDefaults(
 	objYAML []byte,
 	structuralSchema *apiserverschema.Structural,
 ) (*unstructured.Unstructured, []byte, error) {
-	// Convert YAML to map without losing any fields (using the Go type with omitempty will drop zero-value fields)
-	raw := make(map[string]any)
-	err := yaml.Unmarshal(objYAML, &raw)
+	// Convert YAML to map without losing any fields (using the Go type with omitempty will drop zero-value fields).
+	// Go through JSON and unmarshal with the k8s util json package so that whole numbers become int64 rather than
+	// float64. This matches how the apiserver builds unstructured content and is required for CEL validation, which
+	// strictly distinguishes int from float (e.g. a Service port stored as float64 fails integer-typed CEL rules).
+	jsonBytes, err := yaml.YAMLToJSON(objYAML)
 	if err != nil {
+		return nil, nil, err
+	}
+	raw := make(map[string]any)
+	if err := utiljson.Unmarshal(jsonBytes, &raw); err != nil {
 		return nil, nil, err
 	}
 	u := &unstructured.Unstructured{

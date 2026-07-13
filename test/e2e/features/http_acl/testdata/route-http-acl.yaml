@@ -1,0 +1,57 @@
+---
+# ACL attached via ExtensionRef to only the /status route rule.
+# The /get route has no ACL — proving per-rule isolation.
+# defaultAction=allow, deny 192.168.0.0/16.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route
+  namespace: kgateway-base
+spec:
+  hostnames:
+    - httpbin
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: kgateway-base
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /get
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /status
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.kgateway.dev
+            kind: TrafficPolicy
+            name: route-acl
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-acl
+  namespace: kgateway-base
+spec:
+  acl:
+    defaultAction: allow
+    rules:
+      - cidrs:
+          - "192.168.0.0/16"
+        action: deny

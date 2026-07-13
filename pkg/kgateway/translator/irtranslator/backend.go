@@ -10,7 +10,10 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -19,6 +22,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -36,6 +40,7 @@ const (
 type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
 	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
+	EndpointPlugins     []sdk.EndpointPlugin
 	CommonCols          *collections.CommonCollections
 	Validator           validator.Validator
 	Mode                apisettings.ValidationMode
@@ -49,14 +54,11 @@ type BackendTranslator struct {
 func (t *BackendTranslator) TranslateBackend(
 	ctx context.Context,
 	kctx krt.HandlerContext,
-	ucc ir.UniqlyConnectedClient,
+	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
 ) (*envoyclusterv3.Cluster, error) {
 	// defensive checks that the backend is supported and has a plugin that can translate it.
-	gk := schema.GroupKind{
-		Group: backend.Group,
-		Kind:  backend.Kind,
-	}
+	gk := backend.GetGroupKind()
 	process, ok := t.ContributedBackends[gk]
 	if !ok {
 		return nil, errors.New("no backend translator found for " + gk.String())
@@ -68,7 +70,7 @@ func (t *BackendTranslator) TranslateBackend(
 	// Check for pre-existing errors in the Backend IR before starting translation.
 	// Exit translation early if we have errors
 	if backend.Errors != nil {
-		logger.Error("backend has pre-existing errors", "backend", backend.Name, "errors", backend.Errors)
+		logger.Error("backend has pre-existing errors", "backend", backend.GetName(), "errors", backend.Errors)
 		return buildBlackholeCluster(backend), errors.Join(backend.Errors...)
 	}
 
@@ -80,6 +82,11 @@ func (t *BackendTranslator) TranslateBackend(
 	// Apply policies to the computed cluster
 	if err := t.runPolicies(kctx, ctx, ucc, backend, inlineEps, out); err != nil {
 		logger.Error("failed to apply policies to cluster", "cluster", out.GetName(), "error", err)
+		return buildBlackholeCluster(backend), err
+	}
+	defaultLocalityConfig(out)
+	if err := applyGatewayBackendClientCertificate(out, backend); err != nil {
+		logger.Error("failed to apply gateway backend client certificate", "cluster", out.GetName(), "error", err)
 		return buildBlackholeCluster(backend), err
 	}
 
@@ -94,10 +101,40 @@ func (t *BackendTranslator) TranslateBackend(
 	return out, nil
 }
 
+// defaultLocalityConfig keeps traffic evenly distributed across zones for clusters
+// that did not opt into a locality-aware LB mode. The proxy bootstrap always sets
+// cluster_manager.local_cluster_name, and once the gateway fleet spans multiple
+// zones Envoy's implicit zone-aware defaults (routing_enabled 100%,
+// min_cluster_size 6) would otherwise engage with no policy configured.
+func defaultLocalityConfig(c *envoyclusterv3.Cluster) {
+	if c.GetLoadBalancingPolicy() != nil {
+		// Typed load balancing policies carry their own locality_lb_config and
+		// ignore common_lb_config.locality_config_specifier (see the
+		// backendconfigpolicy plugin's buildTypedLocalityLbConfig).
+		return
+	}
+	if c.GetCommonLbConfig().GetLocalityConfigSpecifier() != nil {
+		// A policy plugin already chose a locality mode.
+		return
+	}
+	if c.GetEdsClusterConfig() == nil {
+		// Only kgateway-managed EDS clusters are guaranteed to carry locality
+		// load-balancing weights on their CLAs; leave plugin-provided inline
+		// clusters untouched.
+		return
+	}
+	if c.CommonLbConfig == nil {
+		c.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
+	}
+	c.CommonLbConfig.LocalityConfigSpecifier = &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+		LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+	}
+}
+
 func (t *BackendTranslator) runPolicies(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	ucc ir.UniqlyConnectedClient,
+	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
 	inlineEps *ir.EndpointsForBackend,
 	out *envoyclusterv3.Cluster,
@@ -109,6 +146,7 @@ func (t *BackendTranslator) runPolicies(
 		endpointInputs = &endpoints.EndpointsInputs{
 			EndpointsForBackend: *inlineEps,
 		}
+		endpointInputs.EndpointsForBackend.AttachedPolicies = backend.AttachedPolicies
 	}
 
 	var errs []error
@@ -121,23 +159,29 @@ func (t *BackendTranslator) runPolicies(
 		if policyPlugin.PerClientProcessBackend != nil {
 			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, *backend, out)
 		}
-		// run endpoint plugins if we have endpoints to process
-		if endpointInputs != nil && policyPlugin.PerClientProcessEndpoints != nil {
-			policyPlugin.PerClientProcessEndpoints(kctx, ctx, ucc, endpointInputs)
-		}
 		// if the policy plugin has no ProcessBackend function, skip it
 		if policyPlugin.ProcessBackend == nil {
 			continue
 		}
+		policies := backend.AttachedPolicies.Policies[gk]
+		if policyPlugin.MergePolicies != nil && len(policies) > 0 {
+			policies = []ir.PolicyAtt{policyPlugin.MergePolicies(policies)}
+		}
 		// apply plugins to the backend. we want to skip applying the plugin if the
 		// attached IR encountered any errors during construction.
-		for _, polAttachment := range backend.AttachedPolicies.Policies[gk] {
+		for _, polAttachment := range policies {
 			if len(polAttachment.Errors) > 0 {
 				logger.Error("policy has errors", "gk", gk, "errors", polAttachment.Errors, "policyRef", polAttachment.PolicyRef)
 				errs = append(errs, polAttachment.Errors...)
 				continue
 			}
 			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, *backend, out)
+		}
+	}
+
+	if endpointInputs != nil {
+		for _, processEndpoints := range t.orderedEndpointPlugins() {
+			processEndpoints(kctx, ctx, ucc, endpointInputs)
 		}
 	}
 
@@ -154,6 +198,13 @@ func (t *BackendTranslator) runPolicies(
 	return errors.Join(errs...)
 }
 
+func (t *BackendTranslator) orderedEndpointPlugins() []sdk.EndpointPlugin {
+	if t.EndpointPlugins != nil {
+		return t.EndpointPlugins
+	}
+	return OrderedEndpointPlugins(t.ContributedPolicies)
+}
+
 // validateClusterConfig validates an individual cluster configuration using Envoy's
 // validation. This catches configuration errors that would cause Envoy data plane NACKs,
 // such as invalid cipher suites, invalid TLS parameters, etc.
@@ -164,7 +215,7 @@ func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *
 	if err != nil {
 		return err
 	}
-	if err := t.Validator.Validate(ctx, bootstrap); err != nil {
+	if err := t.Validator.Validate(validator.WithValidationCaller(ctx, validator.CallerBackend), bootstrap); err != nil {
 		return err
 	}
 	return nil
@@ -267,11 +318,15 @@ func toExtensionDnsLookupFamily(family envoyclusterv3.Cluster_DnsLookupFamily) e
 }
 
 func translateAppProtocol(appProtocol ir.AppProtocol) map[string]*anypb.Any {
-	typedExtensionProtocolOptions := map[string]*anypb.Any{}
-	if appProtocol == ir.HTTP2AppProtocol {
-		typedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = cloneAny(h2Options)
+	// Avoid allocating an empty map for the common HTTP/1 case. Downstream
+	// callers (utils/cluster.go, extensions2/pluginutils) lazily allocate the
+	// map when they need to set a key.
+	if appProtocol != ir.HTTP2AppProtocol {
+		return nil
 	}
-	return typedExtensionProtocolOptions
+	return map[string]*anypb.Any{
+		"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": cloneAny(h2Options),
+	}
 }
 
 func cloneAny(msg *anypb.Any) *anypb.Any {
@@ -289,7 +344,6 @@ func cloneAny(msg *anypb.Any) *anypb.Any {
 func initializeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
 	out := &envoyclusterv3.Cluster{
 		Name:                          b.ClusterName(),
-		Metadata:                      new(envoycorev3.Metadata),
 		ConnectTimeout:                durationpb.New(clusterConnectionTimeout),
 		TypedExtensionProtocolOptions: translateAppProtocol(b.AppProtocol),
 		CommonLbConfig:                createCommonLbConfig(b),
@@ -321,4 +375,68 @@ func createCommonLbConfig(b *ir.BackendObjectIR) *envoyclusterv3.Cluster_CommonL
 		}
 	}
 	return nil
+}
+
+func applyGatewayBackendClientCertificate(out *envoyclusterv3.Cluster, backend *ir.BackendObjectIR) error {
+	if backend == nil || backend.GatewayBackendClientCertificate == nil {
+		return nil
+	}
+
+	certificate := backend.GatewayBackendClientCertificate.Certificate
+	if ts, err := injectGatewayBackendClientCertificate(out.GetTransportSocket(), certificate); err != nil {
+		return err
+	} else if ts != nil {
+		out.TransportSocket = ts
+	}
+	for _, match := range out.GetTransportSocketMatches() {
+		ts, err := injectGatewayBackendClientCertificate(match.GetTransportSocket(), certificate)
+		if err != nil {
+			return err
+		}
+		if ts != nil {
+			match.TransportSocket = ts
+		}
+	}
+	return nil
+}
+
+// injectGatewayBackendClientCertificate returns a clone of transportSocket with the
+// Gateway-scoped client cert/key set on its UpstreamTlsContext. Returns (nil, nil) when
+// transportSocket is not a TLS socket so the caller can leave it untouched. The clone
+// avoids aliasing transport-socket protos shared with other clusters by upstream plugins.
+func injectGatewayBackendClientCertificate(
+	transportSocket *envoycorev3.TransportSocket,
+	certificate ir.TLSCertificate,
+) (*envoycorev3.TransportSocket, error) {
+	if transportSocket == nil || transportSocket.GetName() != envoywellknown.TransportSocketTls {
+		return nil, nil
+	}
+	typedConfig := transportSocket.GetTypedConfig()
+	if typedConfig == nil {
+		return nil, nil
+	}
+
+	tlsContext := &envoytlsv3.UpstreamTlsContext{}
+	if err := typedConfig.UnmarshalTo(tlsContext); err != nil {
+		return nil, err
+	}
+	if tlsContext.CommonTlsContext == nil {
+		tlsContext.CommonTlsContext = &envoytlsv3.CommonTlsContext{}
+	}
+	tlsContext.CommonTlsContext.TlsCertificates = []*envoytlsv3.TlsCertificate{{
+		CertificateChain: pluginutils.InlineStringDataSource(string(certificate.CertChain)),
+		PrivateKey:       pluginutils.InlineStringDataSource(string(certificate.PrivateKey)),
+	}}
+	tlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = nil
+
+	updatedTypedConfig, err := utils.MessageToAny(tlsContext)
+	if err != nil {
+		return nil, err
+	}
+	clone, ok := proto.Clone(transportSocket).(*envoycorev3.TransportSocket)
+	if !ok {
+		return nil, errors.New("failed to clone transport socket")
+	}
+	clone.ConfigType = &envoycorev3.TransportSocket_TypedConfig{TypedConfig: updatedTypedConfig}
+	return clone, nil
 }

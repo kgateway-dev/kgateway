@@ -10,6 +10,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -227,6 +228,134 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			// require.NoError(t, err)
 			require.NotNil(t, result)
 			tt.validateResult(t, result)
+		})
+	}
+}
+
+func TestConvertFilterStageSpec(t *testing.T) {
+	tests := []struct {
+		name     string
+		cfg      *kgateway.FilterStageSpec
+		expected filters.FilterStage[filters.WellKnownFilterStage]
+	}{
+		{
+			name:     "nil returns default",
+			cfg:      nil,
+			expected: defaultExtProcFilterStage,
+		},
+		{
+			name:     "Fault/Before",
+			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageFault, Predicate: kgateway.FilterStagePredicateBefore},
+			expected: filters.BeforeStage(filters.FaultStage),
+		},
+		{
+			name:     "Fault/During",
+			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageFault, Predicate: kgateway.FilterStagePredicateDuring},
+			expected: filters.DuringStage(filters.FaultStage),
+		},
+		{
+			name:     "Fault/After",
+			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageFault, Predicate: kgateway.FilterStagePredicateAfter},
+			expected: filters.AfterStage(filters.FaultStage),
+		},
+		{
+			name:     "AuthN/Before",
+			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageAuthN, Predicate: kgateway.FilterStagePredicateBefore},
+			expected: filters.BeforeStage(filters.AuthNStage),
+		},
+		{
+			name:     "AuthN/During",
+			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageAuthN, Predicate: kgateway.FilterStagePredicateDuring},
+			expected: filters.DuringStage(filters.AuthNStage),
+		},
+		{
+			name:     "AuthZ/After",
+			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageAuthZ, Predicate: kgateway.FilterStagePredicateAfter},
+			expected: filters.AfterStage(filters.AuthZStage),
+		},
+		{
+			name:     "RateLimit/During",
+			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageRateLimit, Predicate: kgateway.FilterStagePredicateDuring},
+			expected: filters.DuringStage(filters.RateLimitStage),
+		},
+		{
+			name:     "Route/Before",
+			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageRoute, Predicate: kgateway.FilterStagePredicateBefore},
+			expected: filters.BeforeStage(filters.RouteStage),
+		},
+		{
+			name:     "unknown stage returns default",
+			cfg:      &kgateway.FilterStageSpec{Stage: "Unknown", Predicate: kgateway.FilterStagePredicateBefore},
+			expected: defaultExtProcFilterStage,
+		},
+		{
+			name:     "empty predicate defaults to During",
+			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageAuthN},
+			expected: filters.DuringStage(filters.AuthNStage),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := convertFilterStageSpec(tt.cfg, defaultExtProcFilterStage)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestExtprocIREqualsWithFilterStage(t *testing.T) {
+	tests := []struct {
+		name     string
+		extproc1 *extprocIR
+		extproc2 *extprocIR
+		expected bool
+	}{
+		{
+			name: "same filter stage is equal",
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{
+				{filterStage: filters.BeforeStage(filters.AuthNStage)},
+			}},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{
+				{filterStage: filters.BeforeStage(filters.AuthNStage)},
+			}},
+			expected: true,
+		},
+		{
+			name: "different filter stage is not equal",
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{
+				{filterStage: filters.BeforeStage(filters.AuthNStage)},
+			}},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{
+				{filterStage: filters.AfterStage(filters.AuthZStage)},
+			}},
+			expected: false,
+		},
+		{
+			name: "different predicate is not equal",
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{
+				{filterStage: filters.BeforeStage(filters.AuthNStage)},
+			}},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{
+				{filterStage: filters.DuringStage(filters.AuthNStage)},
+			}},
+			expected: false,
+		},
+		{
+			name: "default stage equals explicit default",
+			extproc1: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{
+				{filterStage: defaultExtProcFilterStage},
+			}},
+			extproc2: &extprocIR{perProviderConfig: []*perProviderExtProcConfig{
+				{filterStage: filters.AfterStage(filters.AuthZStage)},
+			}},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.extproc1.Equals(tt.extproc2)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

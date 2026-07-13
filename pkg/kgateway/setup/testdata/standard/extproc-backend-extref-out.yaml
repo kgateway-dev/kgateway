@@ -1,20 +1,22 @@
 clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_extproc_9091
   type: EDS
   typedExtensionProtocolOptions:
@@ -22,22 +24,24 @@ clusters:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       explicitHttpConfig:
         http2ProtocolOptions: {}
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_ratings_8080
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_reviews_8080
   type: EDS
 endpoints:
@@ -58,6 +62,14 @@ endpoints:
     - endpoint:
         address:
           socketAddress:
+            address: 10.244.2.14
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
             address: 10.244.1.11
             portValue: 8080
       loadBalancingWeight: 1
@@ -66,14 +78,6 @@ endpoints:
       region: r1
       subZone: r1z2s3
       zone: r1z2
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 10.244.2.14
-            portValue: 8080
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
 listeners:
 - address:
     socketAddress:

@@ -7,6 +7,7 @@ import (
 
 	istioprotocol "istio.io/istio/pkg/config/protocol"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
@@ -162,7 +163,7 @@ func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter)
 	return validListeners
 }
 
-func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener {
+func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
 	if len(gw.Listeners) == 0 {
 		// gwReporter.Err("gateway must contain at least 1 listener")
 	}
@@ -232,7 +233,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 			existingListener.protocol[protocol] = true
 			existingListener.listeners = append(existingListener.listeners, listener)
 
-			// TODO(Law): handle validation that hostname empty for udp/tcp
+			// CRD validation handles hostnames on TCP and UDP listeners so it is not required during validation
 			hostname := getOrDefaultHostname(listener.Hostname)
 			if _, ok := existingListener.hostnames[hostname]; !ok {
 				existingListener.hostnames[hostname] = generateUniqueListenerName(listener)
@@ -285,7 +286,10 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 	for port, pp := range portListeners {
 		for _, listener := range pp.listeners {
 			parentReporter := listener.GetParentReporter(reporter)
-			if protocolConflict(*pp, listener) {
+			if unsupportedMixedTLSModeConflict(*pp, listener, settings) {
+				parentReporter.ListenerName(string(listener.Name)).SetSupportedKinds([]gwv1.RouteGroupKind{})
+				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, ListenerMessageProtocolConflict)
+			} else if protocolConflict(*pp, listener) {
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, ListenerMessageProtocolConflict)
 			} else if hostNameConflict(*pp, listener) {
 				// If a listener does not have a protocol conflict with one listener,
@@ -320,6 +324,32 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 		return validListeners
 	}
 
+	validListenersPerParent := map[string]int{}
+	for _, l := range validListeners {
+		kind := inferKind(l.Parent)
+		parentKey := fmt.Sprintf("%s/%s/%s", kind, l.Parent.GetNamespace(), l.Parent.GetName())
+		validListenersPerParent[parentKey]++
+	}
+	if validListenersPerParent[fmt.Sprintf("Gateway/%s/%s", gw.Obj.Namespace, gw.Obj.Name)] < len(gw.Obj.Spec.Listeners) {
+		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
+			Type:   gwv1.GatewayConditionAccepted,
+			Status: metav1.ConditionTrue,
+			Reason: gwv1.GatewayReasonListenersNotValid,
+		})
+	}
+	for _, lsSets := range gw.AllowedListenerSets {
+		for _, lsIR := range lsSets {
+			key := fmt.Sprintf("%s/%s/%s", lsIR.Kind, lsIR.Namespace, lsIR.Name)
+			if validListenersPerParent[key] < len(lsIR.Listeners) {
+				reporter.ListenerSet(lsIR.Obj).SetCondition(reports.GatewayCondition{
+					Type:   gwv1.GatewayConditionAccepted,
+					Status: metav1.ConditionTrue,
+					Reason: gwv1.GatewayReasonListenersNotValid,
+				})
+			}
+		}
+	}
+
 	if len(attachedListenerSets) > 0 {
 		reporter.Gateway(gw.Obj).SetAttachedListenerSets(int32(len(attachedListenerSets))) //nolint:gosec // disable G115 directive.
 	}
@@ -328,8 +358,38 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 }
 
 func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter) []ir.Listener {
+	return validateGatewayWithSettings(consolidatedGateway, reporter, ListenerTranslatorConfig{
+		EnableExperimentalGatewayAPIFeatures: true,
+	})
+}
+
+func validateGatewayWithSettings(consolidatedGateway *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
 	rejectDeniedListenerSets(consolidatedGateway, reporter)
-	return validateListeners(consolidatedGateway, reporter)
+	return validateListeners(consolidatedGateway, reporter, settings)
+}
+
+func unsupportedMixedTLSModeConflict(portProtocol portProtocol, listener ir.Listener, settings ListenerTranslatorConfig) bool {
+	if settings.EnableExperimentalGatewayAPIFeatures {
+		return false
+	}
+	if listener.Protocol != gwv1.TLSProtocolType {
+		return false
+	}
+
+	hasTerminate := false
+	hasPassthrough := false
+	for _, listenerOnPort := range portProtocol.listeners {
+		if listenerOnPort.Protocol != gwv1.TLSProtocolType || listenerOnPort.TLS == nil || listenerOnPort.TLS.Mode == nil {
+			continue
+		}
+		switch *listenerOnPort.TLS.Mode {
+		case gwv1.TLSModeTerminate:
+			hasTerminate = true
+		case gwv1.TLSModePassthrough:
+			hasPassthrough = true
+		}
+	}
+	return hasTerminate && hasPassthrough
 }
 
 func protocolConflict(portProtocol portProtocol, listener ir.Listener) bool {
@@ -500,4 +560,17 @@ func getOrDefaultHostname(hostname *gwv1.Hostname) gwv1.Hostname {
 		ret = *hostname
 	}
 	return ret
+}
+
+func inferKind(obj client.Object) string {
+	if obj.GetObjectKind().GroupVersionKind().Kind != "" {
+		return obj.GetObjectKind().GroupVersionKind().Kind
+	}
+	if _, ok := obj.(*gwv1.Gateway); ok {
+		return "Gateway"
+	}
+	if _, ok := obj.(*gwv1.ListenerSet); ok {
+		return "ListenerSet"
+	}
+	return ""
 }

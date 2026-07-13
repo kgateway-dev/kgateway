@@ -1,20 +1,22 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_backend-svc_80
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_remote_remote-extauth_9000
   type: EDS
   typedExtensionProtocolOptions:
@@ -23,7 +25,6 @@ Clusters:
       explicitHttpConfig:
         http2ProtocolOptions: {}
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -61,6 +62,16 @@ Listeners:
                 clusterName: kube_remote_remote-extauth_9000
             statusOnError:
               code: Forbidden
+        - disabled: true
+          name: ext_auth_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -115,6 +126,16 @@ Listeners:
                 clusterName: kube_remote_remote-extauth_9000
             statusOnError:
               code: Forbidden
+        - disabled: true
+          name: ext_auth_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -146,6 +167,15 @@ Routes:
     ext_auth/default/allowed-extauth-ext:
       '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
       config: {}
+    ext_auth_enabled:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+      filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - allowed.example.com
@@ -166,6 +196,15 @@ Routes:
         ext_auth/default/allowed-extauth-ext:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
+        ext_auth_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          filterName: rustformation
+          perRouteConfigName: rustformation
   - domains:
     - denied.example.com
     name: listener~80~denied_example_com
@@ -199,6 +238,15 @@ Routes:
     ext_auth/default/allowed-extauth-ext:
       '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
       config: {}
+    ext_auth_enabled:
+      '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+      dynamicModuleConfig:
+        name: rust_module
+      filterConfig:
+        '@type': type.googleapis.com/google.protobuf.StringValue
+        value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+      filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - listener.example.com
@@ -219,6 +267,15 @@ Routes:
       ext_auth/default/allowed-extauth-ext:
         '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
         config: {}
+      ext_auth_enabled:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+        dynamicModuleConfig:
+          name: rust_module
+        filterConfig:
+          '@type': type.googleapis.com/google.protobuf.StringValue
+          value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+        filterName: rustformation
+        perRouteConfigName: rustformation
 Statuses:
   gateways:
     default/example-gateway:
@@ -233,6 +290,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 3
         conditions:
@@ -304,6 +366,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -314,10 +381,15 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): extauth: failed to resolve ExtAuth gRPC backend:
-            missing reference grant'
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/route-denied-policy:
+            extauth: failed to resolve ExtAuth gRPC backend: missing reference grant'
           reason: RouteRuleReplaced
           status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references
@@ -343,6 +415,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -362,6 +439,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

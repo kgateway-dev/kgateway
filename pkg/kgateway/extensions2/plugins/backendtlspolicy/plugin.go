@@ -8,6 +8,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -78,6 +79,13 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 	return proto.Equal(d.transportSocket, d2.transportSocket)
 }
 
+func (d *backendTlsPolicy) PolicyHash() uint64 {
+	if d == nil || d.transportSocket == nil {
+		return 0
+	}
+	return utils.HashProto(d.transportSocket)
+}
+
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	cli := kclient.NewFilteredDelayed[*gwv1.BackendTLSPolicy](
 		commoncol.Client,
@@ -144,8 +152,11 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				Policies:                        tlsPolicyCol,
 				ProcessPolicyStaleStatusMarkers: processMarkers,
 				ProcessBackend:                  processBackend,
+				MergePolicies:                   MergePolicies,
 				GetPolicyStatus:                 getPolicyStatusFn(cli),
 				PatchPolicyStatus:               patchPolicyStatusFn(cli),
+				BuildPolicyStatus:               buildPolicyStatusFn(),
+				PolicyStatusFromGatewayReports:  true,
 			},
 		},
 	}
@@ -159,7 +170,46 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 	if tlsPol.transportSocket == nil {
 		return
 	}
+
+	// If BackendConfigPolicy already wrapped the cluster's transport socket in
+	// upstream proxy protocol, preserve that wrapper and replace the inner
+	// socket with our TLS one. Otherwise BTP "wins" for TLS and we configure the
+	// TLS socket directly.
+	if existing := out.TransportSocket; existing != nil && existing.GetName() == kgwellknown.TransportSocketUpstreamProxyProtocol {
+		if wrapped, ok := replaceInnerInProxyProtocol(existing, tlsPol.transportSocket); ok {
+			out.TransportSocket = wrapped
+			return
+		}
+	}
 	out.TransportSocket = tlsPol.transportSocket
+}
+
+// replaceInnerInProxyProtocol returns a new transport socket carrying the same
+// ProxyProtocolUpstreamTransport wrapper as wrapper but with its inner
+// TransportSocket replaced by inner. Returns false if wrapper isn't a
+// ProxyProtocolUpstreamTransport.
+func replaceInnerInProxyProtocol(wrapper, inner *envoycorev3.TransportSocket) (*envoycorev3.TransportSocket, bool) {
+	typed := wrapper.GetTypedConfig()
+	if typed == nil {
+		return nil, false
+	}
+	pp := &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{}
+	if err := typed.UnmarshalTo(pp); err != nil {
+		logger.Error("failed to unpack upstream proxy protocol transport for BackendTLSPolicy", "error", err)
+		return nil, false
+	}
+	pp.TransportSocket = inner
+	repacked, err := utils.MessageToAny(pp)
+	if err != nil {
+		logger.Error("failed to repack upstream proxy protocol transport for BackendTLSPolicy", "error", err)
+		return nil, false
+	}
+	return &envoycorev3.TransportSocket{
+		Name: wrapper.GetName(),
+		ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+			TypedConfig: repacked,
+		},
+	}, true
 }
 
 func buildTranslateFunc(
@@ -211,13 +261,19 @@ func buildTranslateFunc(
 				}
 				cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
 				if cfgmap == nil {
-					err := fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn)
+					err := &InvalidCACertificateRefError{
+						Ref:   localObjectRefString(refKind, certRef),
+						Cause: fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn),
+					}
 					logger.Error("error fetching ConfigMap", "error", err, "policy_name", policyCR.Name)
 					return &policyIr, err
 				}
 				caCert, err = sslutils.GetCACertFromConfigMap(*cfgmap)
 				if err != nil {
-					perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
+					perr := &InvalidCACertificateRefError{
+						Ref:   localObjectRefString(refKind, certRef),
+						Cause: err,
+					}
 					logger.Error("error extracting CA cert from ConfigMap", "error", perr, "policy_name", policyCR.Name)
 					return &policyIr, perr
 				}
@@ -225,22 +281,34 @@ func buildTranslateFunc(
 				// secret is always in the same namespace as the policy (LocalObjectReference), no need to check reference grant
 				secret, err := secrets.GetSecretWithoutRefGrant(krtctx, string(certRef.Name), policyCR.Namespace)
 				if err != nil {
-					perr := fmt.Errorf("%w: %v", ErrSecretNotFound, err)
+					perr := &InvalidCACertificateRefError{
+						Ref:   localObjectRefString(refKind, certRef),
+						Cause: fmt.Errorf("%w: %v", ErrSecretNotFound, err),
+					}
 					logger.Error("error fetching Secret", "error", perr, "policy_name", policyCR.Name)
 					return &policyIr, perr
 				}
 				caCert, err = sslutils.GetCACertFromSecret(secret)
 				if err != nil {
-					perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
+					perr := &InvalidCACertificateRefError{
+						Ref:   localObjectRefString(refKind, certRef),
+						Cause: err,
+					}
 					logger.Error("error extracting CA cert from Secret", "error", perr, "policy_name", policyCR.Name)
 					return &policyIr, perr
 				}
 			default:
-				return &policyIr, fmt.Errorf("%w: unsupported certificate reference kind: %s", ErrInvalidValidationSpec, refKind)
+				return &policyIr, &InvalidKindError{
+					Group: string(certRef.Group),
+					Kind:  refKind,
+				}
 			}
 			tlsContextDefault, err = tlsutils.ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
 			if err != nil {
-				perr := fmt.Errorf("%w: %v", ErrCreatingTLSConfig, err)
+				perr := &InvalidCACertificateRefError{
+					Ref:   localObjectRefString(refKind, certRef),
+					Cause: err,
+				}
 				logger.Error("error resolving TLS config", "error", perr, "policy_name", policyCR.Name)
 				return &policyIr, perr
 			}
@@ -262,6 +330,10 @@ func buildTranslateFunc(
 
 		return &policyIr, nil
 	}
+}
+
+func localObjectRefString(kind string, ref gwv1.LocalObjectReference) string {
+	return fmt.Sprintf("%s/%s", kind, ref.Name)
 }
 
 func convertSubjectAltNames(validation gwv1.BackendTLSPolicyValidation) []*envoytlsv3.SubjectAltNameMatcher {

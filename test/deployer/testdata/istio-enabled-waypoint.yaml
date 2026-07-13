@@ -4,7 +4,7 @@ metadata:
   name: kgateway-waypoint
 spec:
   controllerName: kgateway.dev/kgateway
-  description: Waypoint class for managing east-west traffic with Istio ambient mesh.
+  description: Waypoint class for Istio ambient mesh east-west.
 ---
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1

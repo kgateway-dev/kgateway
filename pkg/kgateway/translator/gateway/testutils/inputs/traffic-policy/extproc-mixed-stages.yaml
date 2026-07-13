@@ -1,0 +1,122 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "test.com"
+  rules:
+  - name: before-authn
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /before-authn
+  - name: after-route
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /after-route
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-before-authn
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: before-authn
+  extProc:
+    extensionRef:
+      name: extproc-before-authn
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-after-route
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: after-route
+  extProc:
+    extensionRef:
+      name: extproc-after-route
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-before-authn
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: extproc
+        port: 9091
+    filterStage:
+      stage: AuthN
+      predicate: Before
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extproc-after-route
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: extproc
+        port: 9092
+    filterStage:
+      stage: Route
+      predicate: After
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extproc
+spec:
+  ports:
+  - port: 9091
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+    targetPort: 9091
+  - port: 9092
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+    targetPort: 9092
+  selector:
+    app: extproc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test

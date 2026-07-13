@@ -1,0 +1,125 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "test.com"
+  rules:
+  - name: rule0
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /route-0
+  - name: rule1
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /route-1
+---
+# Gateway-level ACL (lower priority). Default deny
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-acl-a
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+  acl:
+    defaultAction: deny
+    rules:
+    - cidrs:
+      - "10.0.0.0/8"
+      action: allow
+---
+# Gateway-level ACL (higher priority). Same defaultAction
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-acl-b
+  annotations:
+    kgateway.dev/policy-weight: "5"
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+  acl:
+    defaultAction: deny
+    rules:
+    - cidrs:
+      - "192.168.0.0/16"
+      action: allow
+---
+# Route-level ACL for rule0 (lower priority). Default allow
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-acl-rule0-a
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: rule0
+  acl:
+    defaultAction: allow
+    rules:
+    - cidrs:
+      - "172.16.0.0/12"
+      action: deny
+---
+# Route-level ACL for rule0 (higher priority). Default allow 
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-acl-rule0-b
+  annotations:
+    kgateway.dev/policy-weight: "5"
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: rule0
+  acl:
+    defaultAction: allow
+    rules:
+    - cidrs:
+      - "10.10.0.0/16"
+      action: deny
+---
+# rule1 have no route-level ACL; only the merged gateway-level ACL applies.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test

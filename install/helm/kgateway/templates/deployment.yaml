@@ -1,4 +1,6 @@
 {{- $controllerPodAnnotations := ternary .Values.controller.podAnnotations .Values.podAnnotations (not (kindIs "invalid" .Values.controller.podAnnotations)) }}
+{{- /* The template owns prometheus.io/scrape|path|port whether they are enabled or disabled; strip them from user-provided annotations either way to avoid duplicate keys. */}}
+{{- $controllerPodAnnotations = omit $controllerPodAnnotations "prometheus.io/scrape" "prometheus.io/path" "prometheus.io/port" }}
 {{- $controllerPodSecurityContext := ternary .Values.controller.podSecurityContext .Values.podSecurityContext (not (kindIs "invalid" .Values.controller.podSecurityContext)) }}
 {{- $controllerSecurityContext := ternary .Values.controller.securityContext .Values.securityContext (not (kindIs "invalid" .Values.controller.securityContext)) }}
 {{- $controllerResources := ternary .Values.controller.resources .Values.resources (not (kindIs "invalid" .Values.controller.resources)) }}
@@ -6,6 +8,20 @@
 {{- $controllerAffinity := ternary .Values.controller.affinity .Values.affinity (not (kindIs "invalid" .Values.controller.affinity)) }}
 {{- $controllerTolerations := ternary .Values.controller.tolerations .Values.tolerations (not (kindIs "invalid" .Values.controller.tolerations)) }}
 {{- $controllerTopologySpreadConstraints := ternary .Values.controller.topologySpreadConstraints .Values.topologySpreadConstraints (not (kindIs "invalid" .Values.controller.topologySpreadConstraints)) }}
+{{- $defaultReadinessProbe := dict "httpGet" (dict "path" "/readyz" "port" .Values.controller.service.ports.health) "initialDelaySeconds" 1 "periodSeconds" 10 }}
+{{- $readinessProbeDefaults := deepCopy $defaultReadinessProbe }}
+{{- $controllerReadinessProbe := deepCopy (.Values.controller.readinessProbe | default dict) }}
+{{- if or (hasKey $controllerReadinessProbe "exec") (hasKey $controllerReadinessProbe "tcpSocket") (hasKey $controllerReadinessProbe "grpc") }}
+{{- $readinessProbeDefaults = omit $readinessProbeDefaults "httpGet" }}
+{{- end }}
+{{- $controllerReadinessProbe = merge $controllerReadinessProbe $readinessProbeDefaults }}
+{{- $defaultStartupProbe := dict "httpGet" (dict "path" "/readyz" "port" .Values.controller.service.ports.health) "initialDelaySeconds" 0 "periodSeconds" 1 "failureThreshold" 600 }}
+{{- $startupProbeDefaults := deepCopy $defaultStartupProbe }}
+{{- $controllerStartupProbe := deepCopy (.Values.controller.startupProbe | default dict) }}
+{{- if or (hasKey $controllerStartupProbe "exec") (hasKey $controllerStartupProbe "tcpSocket") (hasKey $controllerStartupProbe "grpc") }}
+{{- $startupProbeDefaults = omit $startupProbeDefaults "httpGet" }}
+{{- end }}
+{{- $controllerStartupProbe = merge $controllerStartupProbe $startupProbeDefaults }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,7 +34,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if not (kindIs "invalid" .Values.controller.replicaCount) }}
+  {{- if and (empty .Values.controller.horizontalPodAutoscaler) (not (kindIs "invalid" .Values.controller.replicaCount)) }}
   replicas: {{ .Values.controller.replicaCount }}
   {{- end }}
   selector:
@@ -30,12 +46,17 @@ spec:
   {{- end }}
   template:
     metadata:
+      {{- if or .Values.controller.prometheusAnnotations $controllerPodAnnotations }}
       annotations:
+        {{- if .Values.controller.prometheusAnnotations }}
         prometheus.io/path: "/metrics"
         prometheus.io/port: {{ .Values.controller.service.ports.metrics | default 9092 | quote}}
+        prometheus.io/scrape: "true"
+        {{- end }}
         {{- with $controllerPodAnnotations }}
         {{- toYaml $controllerPodAnnotations | nindent 8 }}
         {{- end }}
+      {{- end }}
       labels:
         {{- include "kgateway.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: controller
@@ -71,19 +92,9 @@ spec:
               name: metrics
               protocol: TCP
           readinessProbe:
-            httpGet:
-              path: /readyz
-              port: {{ .Values.controller.service.ports.health }}
-            initialDelaySeconds: 1
-            periodSeconds: 10
+            {{- toYaml $controllerReadinessProbe | nindent 12 }}
           startupProbe:
-            httpGet:
-              path: /readyz
-              port: {{ .Values.controller.service.ports.health }}
-            initialDelaySeconds: 0
-            periodSeconds: 1
-            {{- /* Allow failing for 120s before the pod is killed */}}
-            failureThreshold: 120
+            {{- toYaml $controllerStartupProbe | nindent 12 }}
           env:
             - name: GOMEMLIMIT
               valueFrom:
@@ -97,6 +108,8 @@ spec:
                   resource: limits.cpu
             - name: KGW_LOG_LEVEL
               value: {{ .Values.controller.logLevel | quote }}
+            - name: KGW_ADMIN_BIND_ADDRESS
+              value: {{ .Values.controller.admin.bindAddress | quote }}
             - name: KGW_XDS_SERVICE_NAME
               value: {{ include "kgateway.fullname" . }}
             - name: KGW_XDS_SERVICE_PORT
@@ -109,10 +122,20 @@ spec:
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
+            - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
+              value: {{ .Values.serviceEntriesExclusionLabelSelectors | toJson | quote }}
             - name: KGW_POLICY_MERGE
               value: {{ .Values.policyMerge | toJson | quote }}
             - name: KGW_VALIDATION_MODE
               value: {{ include "kgateway.validationLevel" . | quote }}
+            {{- if .Values.enableRouteSourceMetadata }}
+            - name: KGW_ENABLE_ROUTE_SOURCE_METADATA
+              value: "true"
+            {{- end }}
+            - name: KGW_ENABLE_AWS_EC2_DISCOVERY
+              value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
+            - name: KGW_AWS_EC2_REFRESH_INTERVAL
+              value: {{ .Values.controller.awsEc2RefreshInterval | quote }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}
@@ -127,8 +150,8 @@ spec:
             - name: KGW_ENABLE_WAYPOINT
               value: "true"
             {{- end }}
-            {{- if .Values.controller.xds.tls.enabled }}
-            - name: KGW_XDS_TLS_ENABLED
+            {{- if and .Values.controller.xds.tls.enabled (not (and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "KGW_XDS_TLS"))) }}
+            - name: KGW_XDS_TLS
               value: "true"
             {{- end }}
             - name: POD_NAMESPACE

@@ -10,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -85,16 +84,7 @@ func (r *RouteInfo) GetChildrenForRef(backendRef ir.ObjectSource) ([]*RouteInfo,
 
 // Clone creates a deep copy of the RouteInfo object.
 func (r *RouteInfo) Clone() *RouteInfo {
-	if r == nil {
-		return nil
-	}
-	return &RouteInfo{
-		Object:            r.Object,
-		ParentRef:         r.ParentRef,
-		ListenerParentRef: r.ListenerParentRef,
-		HostnameOverrides: slices.Clone(r.HostnameOverrides),
-		Children:          r.Children,
-	}
+	return cloneRouteInfoWithVariants(r, nil)
 }
 
 // UniqueRouteName returns a unique name for the route based on the route kind, name, namespace,
@@ -261,8 +251,8 @@ func (r *gatewayQueries) getDelegatedChildren(
 				routeInfo := &RouteInfo{
 					Object: &childRoute,
 					ParentRef: gwv1.ParentReference{
-						Group:     ptr.To(gwv1.Group(wellknown.GatewayGroup)),
-						Kind:      ptr.To(gwv1.Kind(wellknown.HTTPRouteKind)),
+						Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+						Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
 						Namespace: new(gwv1.Namespace(parent.Namespace)),
 						Name:      gwv1.ObjectName(parent.Name),
 					},

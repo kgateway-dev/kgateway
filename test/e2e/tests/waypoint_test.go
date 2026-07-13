@@ -66,11 +66,27 @@ func TestKgatewayWaypoint(t *testing.T) {
 	}
 
 	// Install the ambient profile to enable zTunnel
-	err = testInstallation.InstallRevisionedIstio(
-		ctx, "kgateway-waypoint-rev", "ambient",
+	istioArgs := []string{
 		// required for ServiceEntry usage
 		// enabled by default in 1.25; we test as far back as 1.23
 		"--set", "values.cni.ambient.dnsCapture=true",
+	}
+	// k3s stores CNI config and binaries in non-standard locations. In recent
+	// k3s releases the CNI bin directory is /var/lib/rancher/k3s/data/cni
+	// (not the /var/lib/rancher/k3s/data/current/bin path documented by Istio,
+	// which is where the bundled node binaries live). The kubelet looks in
+	// /var/lib/rancher/k3s/data/cni for CNI plugins, so istio-cni must install
+	// itself there or pod sandbox creation fails with
+	// `failed to find plugin "istio-cni" in path [/var/lib/rancher/k3s/data/cni]`.
+	if os.Getenv("CLUSTER_TYPE") == "k3d" {
+		istioArgs = append(istioArgs,
+			"--set", "values.cni.cniConfDir=/var/lib/rancher/k3s/agent/etc/cni/net.d",
+			"--set", "values.cni.cniBinDir=/var/lib/rancher/k3s/data/cni",
+		)
+	}
+	err = testInstallation.InstallRevisionedIstio(
+		ctx, "kgateway-waypoint-rev", "ambient",
+		istioArgs...,
 	)
 	if err != nil {
 		t.Fatal(err)

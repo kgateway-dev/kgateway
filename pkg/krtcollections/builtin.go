@@ -265,8 +265,11 @@ func (r ruleIR) applyTimeouts(
 			timeout = timeouts.backendRequestTimeout
 		}
 	case timeouts.backendRequestTimeout != nil:
-		// Only BackendRequest is set
-		timeout = timeouts.backendRequestTimeout
+		// Do not set the timeout if retry is specified and only BackendRequest is set.
+		// This will be handled in envoyroutev3.RetryPolicy.PerTryTimeout
+		if !hasRetry {
+			timeout = timeouts.backendRequestTimeout
+		}
 	case timeouts.requestTimeout != nil:
 		// Only Request is set
 		timeout = timeouts.requestTimeout
@@ -288,7 +291,7 @@ func convertRetry(
 	in := &kgateway.Retry{
 		Attempts: 1,
 		RetryOn: []kgateway.RetryOnCondition{
-			"cancelled", "connect-failure", "refused-stream", "retriable-headers", "retriable-status-codes", "unavailable",
+			"cancelled", "connect-failure", "refused-stream", "retriable-headers", "retriable-status-codes", "unavailable", "reset",
 		},
 		StatusCodes: retry.Codes,
 	}
@@ -354,6 +357,13 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *sta
 		cookie := &httpv3.Cookie{
 			Name: utils.SanitizeCookieName(ptr.Deref(sessionPersistence.SessionName, "sessionPersistence")),
 			Ttl:  ttl,
+			// Always set path to root to set cookie for all requests to hostname.
+			// Default browser behavior otherwise is to use the current "directory" of the request.
+			// When a request comes in without session cookie for a subpath, it would be limited to that subpath and
+			// requests to unrelated subpaths could get routed to a different upstream.
+			// Cf. https://httpwg.org/specs/rfc6265.html#sane-path
+			// This intentionally ignores the specification in GEP-1619 as computing the "correct" path can lead to unintended consequences.
+			Path: "/",
 		}
 		// Only set LifetimeType if present in CookieConfig
 		if sessionPersistence.CookieConfig != nil &&
@@ -422,19 +432,13 @@ func translateScheme(out *envoyroutev3.RedirectAction, scheme *string) {
 	}
 }
 
-func translatePort(scheme string, port *gwv1.PortNumber) uint32 {
-	// If port is explicitly provided, use it regardless of scheme
-	if port != nil {
-		return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
-	}
-	// Otherwise, use default port for the scheme
+func defaultPortForScheme(scheme string) uint32 {
 	switch strings.ToLower(scheme) {
 	case "http":
 		return 80
 	case "https":
 		return 443
 	default:
-		// Scheme is empty and port is nil - needs listener port (return 0 as sentinel)
 		return 0
 	}
 }
@@ -701,8 +705,17 @@ func (p *builtinPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *
 
 	var errs error
 	if pol.filter != nil {
+		// Only post-process redirects when this policy is allowed to set the
+		// route redirect. Lower-priority request-redirect policies still run
+		// through ApplyForRoute, but must not recompute PortRedirect for a
+		// higher-priority redirect that already won the merge.
+		canPostProcessRedirect := outputRoute != nil &&
+			pol.filter.filterType == gwv1.HTTPRouteFilterRequestRedirect &&
+			policy.IsSettable(outputRoute.GetRedirect(), mergeOpts)
 		pol.filter.apply(outputRoute, mergeOpts)
-		applyRedirectPortPostProcessing(pCtx, pol, outputRoute)
+		if canPostProcessRedirect {
+			applyRedirectPortPostProcessing(pCtx, pol, outputRoute)
+		}
 	}
 
 	p.applyRulePolicy(pCtx, pol.rule, mergeOpts, outputRoute)
@@ -823,15 +836,17 @@ func (h *RoutesIndex) convertfilterIR(
 	}, nil
 }
 
-// REQUEST REDIRECT IR
-// ===================
 type requestRedirectIr struct {
-	// Redir is the redirect action to apply to the route.
+	// Redir is the base redirect action (hostname, status code, scheme rewrite,
+	// path rewrite). PortRedirect is intentionally left unset here and resolved
+	// per listener in applyRedirectPortPostProcessing, because the same IR is
+	// reused across every listener the HTTPRoute attaches to.
 	Redir *envoyroutev3.RedirectAction
-	// NeedsListenerPort indicates that the redirect port should be set to the listener port
-	// when scheme is empty and port is nil. This is set during IR creation and resolved
-	// during apply() when we have access to the listener context.
-	NeedsListenerPort bool
+	// Scheme and Port preserve the user's raw intent from the
+	// HTTPRequestRedirectFilter so that port resolution can distinguish
+	// "user omitted this field" from "user picked a default value".
+	Scheme *string
+	Port   *gwv1.PortNumber
 }
 
 func (r *requestRedirectIr) apply(
@@ -841,8 +856,12 @@ func (r *requestRedirectIr) apply(
 	if outputRoute == nil || !policy.IsSettable(outputRoute.GetRedirect(), mergeOpts) {
 		return
 	}
+	// Clone so each Envoy route owns its RedirectAction. The same HttpRouteIR (and thus the
+	// same requestRedirectIr) is applied across multiple listeners; applyRedirectPortPostProcessing
+	// mutates PortRedirect per listener and must not update shared IR state.
+	redir := proto.Clone(r.Redir).(*envoyroutev3.RedirectAction)
 	outputRoute.Action = &envoyroutev3.Route_Redirect{
-		Redirect: r.Redir,
+		Redirect: redir,
 	}
 }
 
@@ -861,24 +880,32 @@ func convertRequestRedirectIR(
 		return nil, err
 	}
 
-	portRedirect := translatePort(ptr.Deref(f.Scheme, ""), f.Port)
 	redir := &envoyroutev3.RedirectAction{
 		HostRedirect: translateHostname(f.Hostname),
 		ResponseCode: statusCode,
-		PortRedirect: portRedirect,
+		// PortRedirect is intentionally left unset; see applyRedirectPortPostProcessing.
 	}
 	translateScheme(redir, f.Scheme)
 	translatePathRewrite(redir, f.Path)
 
 	return &requestRedirectIr{
-		Redir:             redir,
-		NeedsListenerPort: portRedirect == 0 && f.Scheme == nil && f.Port == nil,
+		Redir:  redir,
+		Scheme: f.Scheme,
+		Port:   f.Port,
 	}, nil
 }
 
-// applyRedirectPortPostProcessing handles the special case where redirect port needs
-// to be set to the listener port when both scheme and port are nil in the redirect filter.
-// Per Gateway API spec: "If redirect scheme is empty, the redirect port MUST be the Gateway Listener port."
+// applyRedirectPortPostProcessing resolves the redirect PortRedirect for the
+// current listener per the Gateway API spec:
+//
+//   - If filter.Port is set, use it.
+//   - Else if filter.Scheme is set, use the scheme's well-known port
+//     (http=80, https=443).
+//   - Else, use the Gateway Listener port.
+//
+// Per the spec the port is omitted from the Location header when the effective
+// port matches the effective scheme's well-known default (http+80, https+443).
+// In Envoy, leaving PortRedirect at 0 omits the port from the Location header.
 func applyRedirectPortPostProcessing(
 	pCtx *ir.RouteContext,
 	pol *builtinPlugin,
@@ -888,13 +915,41 @@ func applyRedirectPortPostProcessing(
 		return
 	}
 	redirectIr, ok := pol.filter.policy.(*requestRedirectIr)
-	if !ok || !redirectIr.NeedsListenerPort {
+	if !ok {
 		return
 	}
 	redirect := outputRoute.GetRedirect()
-	if redirect != nil && redirect.GetPortRedirect() == 0 {
-		redirect.PortRedirect = pCtx.ListenerPort
+	if redirect == nil {
+		return
 	}
+
+	// Effective scheme: filter.Scheme if set, otherwise inferred from the listener.
+	effectiveScheme := strings.ToLower(ptr.Deref(redirectIr.Scheme, ""))
+	if effectiveScheme == "" {
+		if pCtx.ListenerHasTLS {
+			effectiveScheme = "https"
+		} else {
+			effectiveScheme = "http"
+		}
+	}
+
+	// Effective port: filter.Port > scheme default > listener port.
+	var effectivePort uint32
+	switch {
+	case redirectIr.Port != nil:
+		effectivePort = uint32(*redirectIr.Port) //nolint:gosec // G115: Gateway API PortNumber is int32 in valid port range
+	case redirectIr.Scheme != nil:
+		effectivePort = defaultPortForScheme(effectiveScheme)
+	default:
+		effectivePort = pCtx.ListenerPort
+	}
+
+	// Omit the port when it matches the scheme's well-known default.
+	if effectivePort == defaultPortForScheme(effectiveScheme) {
+		redirect.PortRedirect = 0
+		return
+	}
+	redirect.PortRedirect = effectivePort
 }
 
 // URL REWRITE IR

@@ -9,8 +9,12 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -77,22 +81,23 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructCompression(policyCR.Spec, &outSpec)
 
 	// Construct header modifiers specific IR
-	constructHeaderModifiers(policyCR.Spec, &outSpec)
-	// Construct header modifiers specific IR
-	constructHeaderModifiers(policyCR.Spec, &outSpec)
+	if err := constructHeaderModifiers(krtctx, policyCR, c.commoncol.Secrets, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
 	// Construct auto host rewrite specific IR
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
 	constructBuffer(policyCR.Spec, &outSpec)
 	// Construct fault injection specific IR
 	constructFaultInjection(policyCR.Spec, &outSpec)
-	// Construct timeout and retry specific IR
-	constructTimeoutRetry(policyCR.Spec, &outSpec)
-
-	// Construct rbac specific IR
-	if err := constructRBAC(policyCR, &outSpec); err != nil {
+	// Construct HTTP ACL specific IR
+	if err := constructHttpACL(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
+	// Construct timeout and retry specific IR
+	constructTimeoutRetry(policyCR.Spec, &outSpec)
+	// Construct internal redirect specific IR
+	constructInternalRedirect(policyCR.Spec, &outSpec)
 
 	// Construct rbac specific IR
 	if err := constructRBAC(policyCR, &outSpec); err != nil {
@@ -136,10 +141,26 @@ func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerConte
 		namespace = gwv1.Namespace(ns)
 	}
 
+	// In Strict mode, cross-namespace ExtensionRef requires a ReferenceGrant.
+	if c.commoncol.Settings.ReferenceGrantMode == apisettings.ReferenceGrantStrict {
+		if !c.commoncol.RefGrants.ReferenceAllowed(krtctx,
+			wellknown.TrafficPolicyGVK.GroupKind(),
+			ns,
+			ir.ObjectSource{
+				Group:     wellknown.GatewayExtensionGVK.Group,
+				Kind:      wellknown.GatewayExtensionGVK.Kind,
+				Namespace: string(namespace),
+				Name:      string(extensionRef.Name),
+			},
+		) {
+			return nil, krtcollections.ErrMissingReferenceGrant
+		}
+	}
+
 	gwExtNN := types.NamespacedName{Name: string(extensionRef.Name), Namespace: string(namespace)}
 	gatewayExtension := krt.FetchOne(krtctx, c.gatewayExtensions, krt.FilterObjectName(gwExtNN))
 	if gatewayExtension == nil {
-		return nil, fmt.Errorf("gateway extension %s not found", gwExtNN.String())
+		return nil, fmt.Errorf("%s: %w", gwExtNN.String(), pluginutils.ErrGatewayExtensionNotFound)
 	}
 	if gatewayExtension.Err != nil {
 		return gatewayExtension, gatewayExtension.Err

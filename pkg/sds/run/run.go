@@ -13,6 +13,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/sds/server"
 )
 
+// sdsUpdateDebounce is the quiet period after the last fsnotify event before
+// reloading certs from disk, so writers can finish updating related files.
+const sdsUpdateDebounce = 500 * time.Millisecond
+
 func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddress string, logger *slog.Logger) error {
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -43,32 +47,78 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 	// Wire in signal handling
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigs)
 
-	go func() {
-		for {
-			select {
-			// watch for events
-			case event := <-watcher.Events:
-				logger.Info("received event", "event", event)
-				sdsServer.UpdateSDSConfig(ctx)
-				watchFiles(watcher, secrets, logger)
-			// watch for errors
-			case err := <-watcher.Errors:
-				logger.Warn("received error from file watcher", "error", err)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
+	// Add the watches before the goroutine starts so re-adding watches does not
+	// race with the initial watcher setup.
 	watchFiles(watcher, secrets, logger)
 
-	<-sigs
+	go func() {
+		runWatcherLoop(ctx, watcher, logger, func(ctx context.Context) {
+			if err := sdsServer.UpdateSDSConfig(ctx); err != nil {
+				logger.Warn("failed to update SDS config after cert file change", "error", err)
+			}
+			if ctx.Err() != nil {
+				return
+			}
+			watchFiles(watcher, secrets, logger)
+		})
+	}()
+
+	select {
+	case <-sigs:
+	case <-ctx.Done():
+	}
 	cancel()
 	select {
 	case <-serverStopped:
 		return nil
 	case <-time.After(3 * time.Second):
 		return nil
+	}
+}
+
+func runWatcherLoop(ctx context.Context, watcher *fsnotify.Watcher, logger *slog.Logger, onDebouncedUpdate func(context.Context)) {
+	debounceTimer := time.NewTimer(sdsUpdateDebounce)
+	stopAndDrainTimer(debounceTimer)
+	defer debounceTimer.Stop()
+
+	var pendingUpdate bool
+	for {
+		select {
+		case event := <-watcher.Events:
+			logger.Info("received event", "event", event)
+			pendingUpdate = true
+			stopAndDrainTimer(debounceTimer)
+			debounceTimer.Reset(sdsUpdateDebounce)
+		case err := <-watcher.Errors:
+			logger.Warn("received error from file watcher", "error", err)
+		case <-debounceTimer.C:
+			if !pendingUpdate {
+				continue
+			}
+			pendingUpdate = false
+			if ctx.Err() != nil {
+				return
+			}
+			onDebouncedUpdate(ctx)
+		case <-ctx.Done():
+			stopAndDrainTimer(debounceTimer)
+			return
+		}
+	}
+}
+
+func stopAndDrainTimer(timer *time.Timer) {
+	if timer == nil {
+		return
+	}
+	if timer.Stop() {
+		return
+	}
+	select {
+	case <-timer.C:
+	default:
 	}
 }
 

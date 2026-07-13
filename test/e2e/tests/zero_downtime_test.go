@@ -6,7 +6,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -52,15 +51,10 @@ func TestZeroDowntimeRollout(t *testing.T) {
 
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
-	gatewayManifest := filepath.Join(fsutils.MustGetThisDir(), "../features/zero_downtime_rollout/testdata", "gateway.yaml")
-	testutils.Cleanup(t, func() {
-		if err := testInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", gatewayManifest); err != nil &&
-			!strings.Contains(err.Error(), "not found") {
-			t.Errorf("failed to delete base config manifests %s: %v", gatewayManifest, err)
-		}
-	})
-	common.SetupBaseConfig(ctx, t, testInstallation, gatewayManifest)
-	common.SetupBaseGateway(ctx, testInstallation, types.NamespacedName{
+	common.SetupBaseConfig(ctx, t, testInstallation,
+		filepath.Join(fsutils.MustGetThisDir(), "../features/zero_downtime_rollout/testdata", "gateway.yaml"),
+	)
+	common.SetupBaseGateway(ctx, t, testInstallation, types.NamespacedName{
 		Namespace: "default",
 		Name:      "gw",
 	})

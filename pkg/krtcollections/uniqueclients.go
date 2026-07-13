@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -23,6 +25,45 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
+// xdsFirstConnectDelay is slept on the first DiscoveryRequest of every new
+// xDS stream, after the client has been registered (which kicks off
+// per-client translation) and before returning to go-control-plane, which
+// only then creates the stream's first watch. This gives the per-client
+// cluster and endpoint collections a head start so the first snapshot the
+// client observes is (almost always) fully converged rather than partially
+// translated — the reconnect-time race that #13868's whole-snapshot
+// readiness gates tried to close before they were reverted for causing
+// indefinite starvation (#14184). Each gRPC stream runs on its own
+// goroutine, so the sleep delays only this client and holds no locks; a
+// reconnecting warm Envoy keeps serving its existing config meanwhile.
+//
+// Stored as nanoseconds in an atomic so the test override cannot race the
+// stream goroutines that read it, and initialized lazily on first use so
+// test binaries can set the environment variable from TestMain (package
+// initialization would otherwise read the environment before any test code
+// runs). Override with KGW_XDS_FIRST_CONNECT_DELAY (Go duration, e.g. "2s";
+// "0" or negative disables).
+var (
+	xdsFirstConnectDelayNanos atomic.Int64
+	xdsFirstConnectDelayInit  sync.Once
+)
+
+func xdsFirstConnectDelay() time.Duration {
+	xdsFirstConnectDelayInit.Do(func() {
+		d := time.Second
+		if v := os.Getenv("KGW_XDS_FIRST_CONNECT_DELAY"); v != "" {
+			parsed, err := time.ParseDuration(v)
+			if err == nil {
+				d = parsed
+			} else {
+				slog.Warn("invalid KGW_XDS_FIRST_CONNECT_DELAY; using default", "value", v, "default", time.Second, "error", err)
+			}
+		}
+		xdsFirstConnectDelayNanos.Store(int64(d))
+	})
+	return time.Duration(xdsFirstConnectDelayNanos.Load())
+}
+
 type ConnectedClient struct {
 	uniqueClientName string
 }
@@ -34,19 +75,19 @@ func newConnectedClient(uniqueClientName string) ConnectedClient {
 }
 
 // Certain parts of translation (mainly priority failover) require different translation for
-// different clients (for example, 2 envoys on different AZs).
-// This collection represents the unique clients (envoys) that are connected to the xds server.
-// by unique we mean same namespace, role, labels (which include locality).
-// This collection is populated using xds server callbacks. When an envoy connects to us,
-// we grab it's pod name/namesspace from the requests node->id.
-// We then fetch that pod to get its labels, create a UniqlyConnectedClient and it them to the collection.
+// different clients (for example, two envoys in different AZs).
+// This collection represents the unique clients (envoys) that are connected to the xDS server.
+// By unique, we mean clients with the same namespace, role, and labels (which include locality).
+// This collection is populated using xDS server callbacks. When an envoy connects to us,
+// we grab its pod name and namespace from the request's `node.id`.
+// We then fetch that pod to get its labels, create a `UniquelyConnectedClient`, and add it to the collection.
 
 type callbacksCollection struct {
 	logger           *slog.Logger
 	augmentedPods    krt.Collection[LocalityPod]
 	clients          map[int64]ConnectedClient
 	uniqClientsCount map[string]uint64
-	uniqClients      map[string]ir.UniqlyConnectedClient
+	uniqClients      map[string]ir.UniquelyConnectedClient
 	stateLock        sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
@@ -95,7 +136,7 @@ func (x *callbacks) getPeerInfo(sid int64, r *envoy_service_discovery_v3.Discove
 }
 
 // If augmentedPods is nil, we won't use the pod locality info, and all pods for the same gateway will receive the same config.
-type UniquelyConnectedClientsBulider func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient]
+type UniquelyConnectedClientsBuilder func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniquelyConnectedClient]
 
 // THIS IS THE SET OF THINGS WE RUN TRANSLATION FOR
 // add returned callbacks to the xds server.
@@ -103,7 +144,7 @@ type UniquelyConnectedClientsBulider func(ctx context.Context, krtOpts krtutil.K
 func NewUniquelyConnectedClients(
 	extraXDSCallbacks xdsserver.Callbacks,
 	xdsAuth bool,
-) (xdsserver.Callbacks, UniquelyConnectedClientsBulider) {
+) (xdsserver.Callbacks, UniquelyConnectedClientsBuilder) {
 	cb := &callbacks{
 		extraXDSCallbacks: extraXDSCallbacks,
 		xdsAuth:           xdsAuth,
@@ -118,21 +159,21 @@ func NewUniquelyConnectedClients(
 	return envoycb, buildCollection(cb)
 }
 
-func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
-	return func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient] {
+func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
+	return func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniquelyConnectedClient] {
 		trigger := krt.NewRecomputeTrigger(true)
 		col := &callbacksCollection{
 			logger:           logger,
 			augmentedPods:    augmentedPods,
 			clients:          make(map[int64]ConnectedClient),
 			uniqClientsCount: make(map[string]uint64),
-			uniqClients:      make(map[string]ir.UniqlyConnectedClient),
+			uniqClients:      make(map[string]ir.UniquelyConnectedClient),
 			trigger:          trigger,
 		}
 
 		callbacks.collection.Store(col)
 		return krt.NewManyFromNothing(
-			func(ctx krt.HandlerContext) []ir.UniqlyConnectedClient {
+			func(ctx krt.HandlerContext) []ir.UniquelyConnectedClient {
 				trigger.MarkDependant(ctx)
 
 				return col.getClients()
@@ -176,7 +217,7 @@ func (x *callbacksCollection) streamClosed(sid int64) {
 	}
 }
 
-func (x *callbacksCollection) del(sid int64) *ir.UniqlyConnectedClient {
+func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 	x.stateLock.Lock()
 	defer x.stateLock.Unlock()
 
@@ -219,7 +260,7 @@ func NormalizeGatewayRole(originalRole, namespace string, labels map[string]stri
 	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, namespace, gwName)
 }
 
-func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (string, bool, error) {
+func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (ucName string, newStream, newUCC bool, err error) {
 	var pod *LocalityPod
 	// see if user wants to use pod locality info; this is only possible when podRef is set in getPeerInfo
 	if peer.podRef != nil {
@@ -231,13 +272,16 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	defer x.stateLock.Unlock()
 	c, ok := x.clients[sid]
 	if !ok {
+		if err := logAndCheckEnvoyVersion(x.logger, r.GetNode()); err != nil {
+			return "", false, false, err
+		}
 		var locality ir.PodLocality
 		var ns string
 		var labels map[string]string
 		if peer.podRef != nil {
 			if pod == nil {
 				// we need to use the pod locality info, so it's an error if we can't get the pod
-				return "", false, fmt.Errorf("pod not found for node %v", r.GetNode())
+				return "", false, false, fmt.Errorf("pod not found for node %v", r.GetNode())
 			} else {
 				locality = pod.Locality
 				ns = pod.Namespace
@@ -247,7 +291,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 		}
 		x.logger.Debug("adding xds client", "locality", locality, "ns", ns, "labels", labels, "role", peer.role)
 		// TODO: modify request to include the label that are relevant for the client?
-		ucc := ir.NewUniqlyConnectedClient(peer.role, ns, labels, locality)
+		ucc := ir.NewUniquelyConnectedClient(peer.role, ns, labels, locality)
 		c = newConnectedClient(ucc.ResourceName())
 		x.clients[sid] = c
 		currentUnique := x.uniqClientsCount[ucc.ResourceName()]
@@ -257,7 +301,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 			addedNew = true
 		}
 	}
-	return c.uniqueClientName, addedNew, nil
+	return c.uniqueClientName, !ok, addedNew, nil
 }
 
 // OnStreamRequest is called once a request is received on a stream.
@@ -287,7 +331,7 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 }
 
 func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) error {
-	ucc, isNew, err := x.add(sid, r, peer)
+	ucc, isNewStream, isNewUCC, err := x.add(sid, r, peer)
 	if err != nil {
 		x.logger.Debug("error processing xds client", "error", err)
 		return err
@@ -310,16 +354,21 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	// the unique client resource name as well.
 	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc)
 	r.GetNode().Metadata = nodeMd
-	if isNew {
+	if isNewUCC {
 		x.trigger.TriggerRecomputation()
+	}
+	if delay := xdsFirstConnectDelay(); isNewStream && delay > 0 {
+		// See xdsFirstConnectDelay: give per-client translation a head start
+		// before go-control-plane creates this stream's first watch.
+		time.Sleep(delay)
 	}
 	return nil
 }
 
-func (x *callbacksCollection) getClients() []ir.UniqlyConnectedClient {
+func (x *callbacksCollection) getClients() []ir.UniquelyConnectedClient {
 	x.stateLock.RLock()
 	defer x.stateLock.RUnlock()
-	clients := make([]ir.UniqlyConnectedClient, 0, len(x.uniqClients))
+	clients := make([]ir.UniquelyConnectedClient, 0, len(x.uniqClients))
 	for _, c := range x.uniqClients {
 		clients = append(clients, c)
 	}
@@ -368,7 +417,7 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 	role := roleFromRequest(r)
 	role = NormalizeGatewayRole(role, pod.Namespace, pod.AugmentedLabels)
 
-	ucc := ir.NewUniqlyConnectedClient(role, pod.Namespace, pod.AugmentedLabels, pod.Locality)
+	ucc := ir.NewUniquelyConnectedClient(role, pod.Namespace, pod.AugmentedLabels, pod.Locality)
 
 	nodeMd := r.GetNode().GetMetadata()
 	if nodeMd == nil {
@@ -384,6 +433,51 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 	// the unique client resource name as well.
 	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc.ResourceName())
 	r.GetNode().Metadata = nodeMd
+	return nil
+}
+
+// minEnvoy{Minor,Patch}Version is the minimum Envoy version (under major 1) required to connect.
+// Old Envoy is not forward-compatible with newer control plane xDS schemas; new Envoy is
+// backward-compatible with older control planes, so we enforce a floor here to prevent a broken
+// state during helm upgrades.
+const (
+	minEnvoyMinorVersion = 37
+	minEnvoyPatchVersion = 2
+)
+
+func logAndCheckEnvoyVersion(logger *slog.Logger, node *envoycorev3.Node) error {
+	if node == nil {
+		return nil
+	}
+
+	versionStr := "unknown"
+	var major, minor, patch uint32
+	knownVersion := false
+
+	switch v := node.GetUserAgentVersionType().(type) {
+	case *envoycorev3.Node_UserAgentBuildVersion:
+		sv := v.UserAgentBuildVersion.GetVersion()
+		if sv != nil {
+			major = sv.GetMajorNumber()
+			minor = sv.GetMinorNumber()
+			patch = sv.GetPatch()
+			versionStr = fmt.Sprintf("%d.%d.%d", major, minor, patch)
+			knownVersion = true
+		}
+	case *envoycorev3.Node_UserAgentVersion:
+		versionStr = v.UserAgentVersion
+	}
+
+	logger.Info("envoy proxy connected", "version", versionStr, "node_id", node.GetId(), "user_agent", node.GetUserAgentName())
+
+	if !knownVersion {
+		return nil
+	}
+
+	if major < 1 || (major == 1 && minor < minEnvoyMinorVersion) || (major == 1 && minor == minEnvoyMinorVersion && patch < minEnvoyPatchVersion) {
+		return fmt.Errorf("envoy version %s is not compatible with this control plane: minimum required version is 1.%d.%d; upgrade envoy before upgrading the control plane",
+			versionStr, minEnvoyMinorVersion, minEnvoyPatchVersion)
+	}
 	return nil
 }
 

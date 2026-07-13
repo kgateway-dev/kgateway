@@ -45,20 +45,20 @@ clusters:
         subZone: r2z1s1
         zone: r2z1
       priority: 3
-  metadata: {}
   name: istio-se_gwtest_example-se_se.example.com_80
   outlierDetection:
     baseEjectionTime: 900s
     consecutive5xx: 7
     interval: 300s
   type: STATIC
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
 listeners:

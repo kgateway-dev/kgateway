@@ -13,6 +13,7 @@ linters:
   enable:
     - bodyclose
     - copyloopvar
+    - depguard
     - forbidigo
     - ginkgolinter
     - gomodguard
@@ -30,6 +31,7 @@ linters:
     - sloglint
     - spancheck
     - staticcheck
+    - testifylint
     - unparam
     - unused
     - usestdlibvars
@@ -48,20 +50,28 @@ linters:
         settings:
           linters:
             enable:
-            - "*"
+              - "*"
             disable:
-            - commentstart
-            - integers
-            - maxlength
-            - nobools
-            - nomaps
-            - optionalfields
-            - ssatags
+              - commentstart
+              - integers
+              - maxlength
+              - nobools
+              - nomaps
+              - optionalfields
+              - ssatags
           lintersConfig:
             conditions:
               isFirstField: Ignore
               useProtobuf: Forbid
               usePatchStrategy: Ignore
+    depguard:
+      rules:
+        default:
+          files:
+            - "$all"
+          deny:
+            - pkg: "sort"
+              desc: "Should be replaced with slices package"
     forbidigo:
       forbid:
         - pattern: anypb.New
@@ -145,7 +155,15 @@ linters:
     staticcheck:
       checks:
         - SA1019 # deprecated usage
+        - SA2002 # testing.T FailNow/SkipNow called from goroutine
         - ST1019 # duplicate imports
+    testifylint:
+      disable-all: true
+      enable:
+        - go-require # require/assert.FailNow in non-test goroutines
+        - suite-subtest-run # use s.Run instead of s.T().Run in testify suites
+      go-require:
+        ignore-http-handlers: true
     sloglint:
       static-msg: true
       msg-style: lowercased
@@ -176,6 +194,10 @@ linters:
         linters:
           - forbidigo
         text: 'require testutils.Cleanup'
+      # unparam is often noisy in tests where helper signatures intentionally stay uniform.
+      - path: _test\.go$
+        linters:
+          - unparam
       # Skip client.Client forbidgo rule for e2e tests
       - path: test/e2e/
         linters:
@@ -200,12 +222,12 @@ formatters:
   settings:
     gci:
       sections:
-      - standard
-      - default
-      - prefix(github.com/kgateway-dev)
-      - blank
-      - dot
-      - localmodule
+        - standard
+        - default
+        - prefix(github.com/kgateway-dev)
+        - blank
+        - dot
+        - localmodule
       custom-order: true
   exclusions:
     generated: lax

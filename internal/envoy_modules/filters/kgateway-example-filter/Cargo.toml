@@ -1,0 +1,8 @@
+[package]
+name = "kgateway-example-filter"
+version = "0.1.0"
+edition = "2021"
+
+# This is a reference skeleton, see README.md and /docs/guides/adding-a-filter.md.
+[dependencies]
+envoy-proxy-dynamic-modules-rust-sdk = { workspace = true }

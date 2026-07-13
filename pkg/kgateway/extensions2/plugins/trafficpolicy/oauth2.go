@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
@@ -42,6 +43,8 @@ const (
 	oauthJWTRequirementName     = "oauth2"
 	oauthJWTAccessTokenProvider = "oauth2/accessToken" //nolint:gosec // G101: This is only an identifier within the Envoy filter, not a credential
 	oauthJWTIDTokenProvider     = "oauth2/idToken"     //nolint:gosec // G101: This is only an identifier within the Envoy filter, not a credential
+
+	OauthEnabledFilterName = "oauth2_enabled"
 )
 
 type oauthIR struct {
@@ -168,6 +171,20 @@ func buildOAuth2ProviderConfig(
 	backend, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, in.BackendRef.BackendObjectReference)
 	if err != nil || backend == nil {
 		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
+	}
+
+	// Use a dedicated backend to fetch JWKS if specified, otherwise fall back to the primary backend.
+	// This is needed when the JWKS endpoint is on a different domain than the token endpoint.
+	jwksBackend := backend
+	if in.JWT != nil && in.JWT.JWKSBackendRef != nil {
+		resolved, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, *in.JWT.JWKSBackendRef)
+		if err != nil {
+			return nil, fmt.Errorf("error resolving JWKS backend %v: %w", *in.JWT.JWKSBackendRef, err)
+		}
+		if resolved == nil {
+			return nil, fmt.Errorf("JWKS backend not found: %v", *in.JWT.JWKSBackendRef)
+		}
+		jwksBackend = resolved
 	}
 
 	// Fetch the client credentials
@@ -314,7 +331,7 @@ func buildOAuth2ProviderConfig(
 		cfg.Config.DenyRedirectMatcher = matcher
 	}
 
-	jwtCfg, err := buildOAuth2JWTConfig(ext, jwksURI, cookieNames, backend)
+	jwtCfg, err := buildOAuth2JWTConfig(ext, jwksURI, cookieNames, jwksBackend)
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +372,7 @@ func buildOAuth2JWTConfig(
 	ext *ir.GatewayExtension,
 	jwksURI string,
 	cookieNames *envoyoauth2v3.OAuth2Credentials_CookieNames,
-	backend *ir.BackendObjectIR,
+	jwksBackend *ir.BackendObjectIR,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
 	jwt := ext.OAuth2.JWT
 	if jwt == nil {
@@ -379,7 +396,7 @@ func buildOAuth2JWTConfig(
 				Timeout: &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs},
 				Uri:     jwksURI,
 				HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
-					Cluster: backend.ClusterName(),
+					Cluster: jwksBackend.ClusterName(),
 				},
 			},
 		},
@@ -418,12 +435,26 @@ func buildOAuth2JWTConfig(
 		})
 	}
 
+	var combinedRequirement *envoyjwtauthnv3.JwtRequirement
+	switch {
+	// should never happen due to earlier guard clauses, but helps catch issues faster if the behavior ever changes
+	case len(requirements) == 0:
+		return nil, fmt.Errorf("did not create any JWT requirements for GatewayExtension %s, but JWT parsing was configured", ext.NamespacedName())
+	// requires_all needs at least two requirements, so only use that if we have more than one
+	case len(requirements) == 1:
+		combinedRequirement = requirements[0]
+	default:
+		combinedRequirement = &envoyjwtauthnv3.JwtRequirement{
+			RequiresType: &envoyjwtauthnv3.JwtRequirement_RequiresAll{
+				RequiresAll: &envoyjwtauthnv3.JwtRequirementAndList{Requirements: requirements},
+			},
+		}
+	}
+
 	return &envoyjwtauthnv3.JwtAuthentication{
 		Providers: providers,
 		RequirementMap: map[string]*envoyjwtauthnv3.JwtRequirement{
-			oauthJWTRequirementName: {RequiresType: &envoyjwtauthnv3.JwtRequirement_RequiresAll{
-				RequiresAll: &envoyjwtauthnv3.JwtRequirementAndList{Requirements: requirements},
-			}},
+			oauthJWTRequirementName: combinedRequirement,
 		},
 	}, nil
 }
@@ -471,7 +502,7 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 	}
 
 	// TODO: add disable capability when needed
-	p.oauth2PerProvider.Add(filterChain, in.source.Name, in.source)
+	p.oauth2PerProvider.Add(filterChain, in.source.Name, in.source, filters.BeforeStage(filters.AuthNStage))
 	perFilterConfig.AddTypedConfig(oauthFilterName(in.source.Name), EnableFilterPerRoute())
 	if in.jwtCfg != nil {
 		perFilterConfig.AddTypedConfig(oauthJWTFilterName(in.source.Name), &envoyjwtauthnv3.PerRouteConfig{
@@ -483,6 +514,9 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 	for _, secret := range in.secrets {
 		p.secrets[secret.Name] = secret
 	}
+
+	// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
+	AddAuthMetadataIfNeeded(perFilterConfig, OauthEnabledFilterName, p.enableAuthMetadata)
 }
 
 // getCookieSuffix generates a unique suffix for cookie names based on the given object
