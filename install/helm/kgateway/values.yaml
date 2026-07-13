@@ -299,4 +299,5 @@ validation:
 # This metadata includes the Kubernetes source object (kind, group, name, namespace, rule)
 # for each route, which helps correlate Envoy routes with their originating Kubernetes resources.
 # Default is false (disabled).
+# Note: This feature is experimental and subject to breaking changes in future releases.
 enableRouteSourceMetadata: false

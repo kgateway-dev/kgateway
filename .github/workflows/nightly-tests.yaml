@@ -269,3 +269,4 @@ jobs:
           run-regex: ${{ matrix.controllers.regex }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           matrix-label: "nightly-kgw-api-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+          envtest-k8s-version: ${{ steps.dotenv.outputs.envtest_k8s_version }}

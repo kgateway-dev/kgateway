@@ -467,6 +467,8 @@ type LoadBalancer struct {
 	// When enabled, traffic is preferentially routed to endpoints in the same
 	// availability zone as the Envoy proxy.
 	// This is mutually exclusive with localityType.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
 	// +optional
 	ZoneAware *ZoneAwareLoadBalancer `json:"zoneAware,omitempty"`
 
@@ -588,6 +590,8 @@ const (
 // ZoneAwareLoadBalancer configures zone-aware routing behavior.
 // Currently, preferLocal must be specified.
 //
+// Note: This struct is part of an experimental API and subject to breaking changes in future releases.
+//
 // +kubebuilder:validation:AtLeastOneOf=preferLocal
 type ZoneAwareLoadBalancer struct {
 	// PreferLocal enables Envoy's zone-aware routing which prefers sending traffic
@@ -602,6 +606,8 @@ type ZoneAwareLoadBalancer struct {
 // ZoneAwarePreferLocal configures Envoy's native zone-aware routing.
 // Envoy will prefer sending traffic to endpoints in the same zone as the proxy,
 // while still maintaining rough request balance across all upstream hosts.
+//
+// Note: This struct is part of an experimental API and subject to breaking changes in future releases.
 type ZoneAwarePreferLocal struct {
 	// Force enables Envoy forced zone-local routing. Envoy routes to same-zone
 	// endpoints while the local endpoint threshold is met. If there are not enough
@@ -630,6 +636,8 @@ type ZoneAwarePreferLocal struct {
 }
 
 // ZoneAwareForce configures Envoy forceLocalZone behavior.
+//
+// Note: This struct is part of an experimental API and subject to breaking changes in future releases.
 type ZoneAwareForce struct {
 	// MinEndpointsInZoneThreshold is the minimum number of endpoints that must
 	// exist in the local zone for forced zone-local routing to be active.
