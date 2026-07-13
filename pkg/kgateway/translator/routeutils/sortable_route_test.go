@@ -75,9 +75,14 @@ func defaultRtB() *gwv1.HTTPRoute {
 var _ = DescribeTable("SortableRoute CompareTo()",
 	func(first, second *SortableRoute, shouldSwap bool) {
 		// CompareTo is the canonical comparator used by the production sort path
-		// (slices.SortStableFunc). A positive result means first sorts after second,
-		// i.e. the pair would be swapped relative to input order.
-		Expect(first.CompareTo(second)).To(BeNumerically(">", 0), "failed swap=%t", shouldSwap)
+		// (slices.SortStableFunc). A positive result means first sorts after second
+		// (the pair would be swapped relative to input order); a non-positive result
+		// means first sorts before or equal to second.
+		if shouldSwap {
+			Expect(first.CompareTo(second)).To(BeNumerically(">", 0), "failed swap=%t", shouldSwap)
+		} else {
+			Expect(first.CompareTo(second)).To(BeNumerically("<=", 0), "failed swap=%t", shouldSwap)
+		}
 	},
 	Entry(
 		"equal will not swap",
