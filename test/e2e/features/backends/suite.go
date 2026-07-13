@@ -163,7 +163,7 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 	}
 	// the health check needs a couple of intervals to observe a state change,
 	// and pod restarts add latency; give the eventual matches a generous window
-	failoverRetry := []retry.Option{retry.Timeout(1 * time.Minute)}
+	failoverRetry := []retry.Option{retry.Timeout(2 * time.Minute)}
 
 	// group 0 (nginx) serves all traffic
 	common.BaseGateway.SendEventuallyConsistent(
