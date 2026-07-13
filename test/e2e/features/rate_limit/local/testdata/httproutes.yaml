@@ -11,8 +11,8 @@ spec:
     - "example.com"
   rules:
     - backendRefs:
-        - name: simple-svc
-          port: 8080
+        - name: backend
+          port: 80
       matches:
       - path:
           type: PathPrefix
@@ -31,8 +31,8 @@ spec:
     - "example.com"
   rules:
     - backendRefs:
-        - name: simple-svc
-          port: 8080
+        - name: backend
+          port: 80
       matches:
       - path:
           type: PathPrefix
