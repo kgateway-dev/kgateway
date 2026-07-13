@@ -430,6 +430,8 @@ type LoadBalancer struct {
 	// When enabled, traffic is preferentially routed to endpoints in the same
 	// availability zone as the Envoy proxy.
 	// This is mutually exclusive with localityType.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
 	// +optional
 	ZoneAware *ZoneAwareLoadBalancer `json:"zoneAware,omitempty"`
 

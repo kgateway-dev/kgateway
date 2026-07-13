@@ -75,6 +75,8 @@ type BackendSpec struct {
 	// group is only used when the backends of all preceding groups are
 	// unhealthy. The health check can be configured via the BackendConfigPolicy
 	// that targets this Backend
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
