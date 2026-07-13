@@ -125,6 +125,7 @@ Routes:
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
           }"}}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - www.example.com
@@ -166,6 +167,7 @@ Routes:
           value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
             }"}}}'
         filterName: rustformation
+        perRouteConfigName: rustformation
 Statuses:
   gateways:
     gwtest/example-gateway:

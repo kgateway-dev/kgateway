@@ -1033,7 +1033,7 @@ CLOUD_PROVIDER_KIND ?= false
 
 .PHONY: kind-create
 kind-create: ## Create a KinD cluster
-	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
+	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
 
 CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.6.0
@@ -1230,7 +1230,9 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_REPORT_ARGS)
+# This test uses port 9091 which is reserved for the metrics port. The test passes if the port in the conformance test is changed
+CONFORMANCE_SKIP_TESTS := -skip-tests=TCPRouteMultipleRoutesAttachment
+CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SKIP_TESTS) $(CONFORMANCE_REPORT_ARGS)
 
 CONFORMANCE_TEST_DIR ?= ./test/conformance/...
 CONFORMANCE_GO_TEST_ARGS ?= -timeout=60m

@@ -35,13 +35,14 @@ type httpRouteConfigurationTranslator struct {
 	fc               ir.FilterChainCommon
 	attachedPolicies ir.AttachedPolicies
 
-	routeConfigName          string
-	reporter                 reportssdk.Reporter
-	requireTlsOnVirtualHosts bool
-	pluginPass               TranslationPassPlugins
-	logger                   *slog.Logger
-	validationLevel          apisettings.ValidationMode
-	validator                validator.Validator
+	routeConfigName           string
+	reporter                  reportssdk.Reporter
+	requireTlsOnVirtualHosts  bool
+	pluginPass                TranslationPassPlugins
+	logger                    *slog.Logger
+	validationLevel           apisettings.ValidationMode
+	validator                 validator.Validator
+	enableRouteSourceMetadata bool
 }
 
 const (
@@ -200,6 +201,10 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 
 // setFallBackConfig creates a synthetic, catch-all virtual host that returns 500 errors
 // for all traffic that references this vhost.
+// Note: the route created here does not carry dev.kgateway.route_source filter metadata.
+// It is only used on error paths, where it replaces an entire RouteConfiguration or
+// virtual host with a single catch-all route — so there is no single originating xRoute
+// rule to attribute the source metadata to.
 func setFallBackConfig(name, domain string) *envoyroutev3.VirtualHost {
 	return &envoyroutev3.VirtualHost{
 		Domains: []string{domain},
@@ -244,6 +249,10 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	generatedName string,
 ) *envoyroutev3.Route {
 	out := h.initRoutes(in, generatedName)
+
+	if h.enableRouteSourceMetadata {
+		out.Metadata = addRouteSourceMetadata(in, out.GetMetadata())
+	}
 
 	backendConfigCtx := backendConfigContext{typedPerFilterConfigRoute: ir.TypedFilterConfigMap(map[string]proto.Message{})}
 	if len(in.Backends) == 1 {

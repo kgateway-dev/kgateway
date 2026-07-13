@@ -100,7 +100,7 @@ jobs:
           summarize-report: true
 
   kube_gateway_api_load_tests:
-    name: Load Tests (ref=${{ matrix.ref.display_ref }}, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
+    name: Load Tests (ref=${{ matrix.ref.display_ref }}, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }})
     needs: determine_refs
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
@@ -109,18 +109,24 @@ jobs:
       fail-fast: false
       matrix:
         ref: ${{ fromJson(needs.determine_refs.outputs.refs) }}
-        kube-version:
-          - node: 'v1.31.9@sha256:b94a3a6c06198d17f59cca8c6f486236fa05e2fb359cbd75dabbfc348a10b211'
-            kubectl: v1.31.9
-            kind: v0.29.0
-          - node: 'v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5'
-            kubectl: v1.36.1
-            kind: v0.32.0
+        env-versions:
+          - file: "./.github/workflows/.env/nightly-tests/max_versions.env"
+            label: max_versions
+          - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
+            label: min_versions
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: ${{ matrix.ref.checkout_ref }}
+      - name: Dotenv Action
+        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        id: dotenv
+        with:
+          path: ${{ matrix.env-versions.file }}
+          log-variables: true
       - uses: ./.github/actions/kube-gateway-api-load-tests
+        with:
+          cluster-node-version: ${{ steps.dotenv.outputs.node_version }}
 
   kgateway_e2e_tests_for_gateway_api_versions:
     name: E2E (ref=${{ matrix.ref.display_ref }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})

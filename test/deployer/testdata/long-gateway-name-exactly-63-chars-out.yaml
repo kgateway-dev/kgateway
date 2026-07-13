@@ -372,6 +372,9 @@ spec:
         - mountPath: /var/run/secrets/tokens
           name: xds-token
           readOnly: true
+        - mountPath: /etc/podinfo
+          name: podinfo
+          readOnly: true
       serviceAccountName: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
       terminationGracePeriodSeconds: 60
       volumes:
@@ -385,4 +388,10 @@ spec:
       - configMap:
           name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
         name: envoy-config
+      - downwardAPI:
+          items:
+          - fieldRef:
+              fieldPath: metadata.labels
+            path: labels
+        name: podinfo
 status: {}

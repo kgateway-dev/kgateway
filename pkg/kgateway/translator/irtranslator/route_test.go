@@ -7,10 +7,12 @@ import (
 	"testing"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -511,4 +513,186 @@ func TestSummarizeRuleErrors_FlattensNestedJoins(t *testing.T) {
 		"gateway.kgateway.dev/TrafficPolicy/ns/b-pol: b\n" +
 		"gateway.kgateway.dev/TrafficPolicy/ns/c-pol: c"
 	assert.Equal(t, want, got)
+}
+
+func TestAddRouteSourceMetadata(t *testing.T) {
+	tests := []struct {
+		name            string
+		in              ir.HttpRouteRuleMatchIR
+		initialMetadata *envoycorev3.Metadata
+		expected        map[string]string
+		expectPreserved bool
+	}{
+		{
+			name: "full metadata",
+			in: ir.HttpRouteRuleMatchIR{
+				Name: "test-rule",
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Kind:      "HTTPRoute",
+						Group:     "gateway.networking.k8s.io",
+						Name:      "test-route",
+						Namespace: "default",
+					},
+				},
+			},
+			expected: map[string]string{
+				"kind":      "HTTPRoute",
+				"group":     "gateway.networking.k8s.io",
+				"name":      "test-route",
+				"namespace": "default",
+				"rule":      "test-rule",
+			},
+		},
+		{
+			name: "missing rule and kind",
+			in: ir.HttpRouteRuleMatchIR{
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Group:     "gateway.networking.k8s.io",
+						Name:      "test-route",
+						Namespace: "default",
+					},
+				},
+			},
+			expected: map[string]string{
+				"group":     "gateway.networking.k8s.io",
+				"name":      "test-route",
+				"namespace": "default",
+			},
+		},
+		{
+			name: "nil parent",
+			in: ir.HttpRouteRuleMatchIR{
+				Name: "test-rule",
+			},
+			expected: nil,
+		},
+		{
+			name: "existing metadata preserved",
+			in: ir.HttpRouteRuleMatchIR{
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Kind: "HTTPRoute",
+						Name: "test-route",
+					},
+				},
+			},
+			initialMetadata: &envoycorev3.Metadata{
+				FilterMetadata: map[string]*structpb.Struct{
+					"existing.key": {
+						Fields: map[string]*structpb.Value{
+							"foo": structpb.NewStringValue("bar"),
+						},
+					},
+				},
+			},
+			expectPreserved: true,
+			expected: map[string]string{
+				"kind": "HTTPRoute",
+				"name": "test-route",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metadata := addRouteSourceMetadata(tt.in, tt.initialMetadata)
+
+			if tt.expected == nil {
+				if metadata != nil && metadata.FilterMetadata != nil {
+					_, ok := metadata.FilterMetadata[routeSourceMetadataKey]
+					assert.False(t, ok, "expected no route source metadata")
+				}
+				return
+			}
+
+			require.NotNil(t, metadata, "metadata should not be nil")
+			require.NotNil(t, metadata.FilterMetadata, "filter metadata should not be nil")
+
+			structPb, ok := metadata.FilterMetadata[routeSourceMetadataKey]
+			require.True(t, ok, "expected route source metadata key %q", routeSourceMetadataKey)
+
+			fields := structPb.Fields
+			assert.Equal(t, len(tt.expected), len(fields), "unexpected number of fields")
+
+			for k, v := range tt.expected {
+				val, ok := fields[k]
+				assert.True(t, ok, "missing expected key: %s", k)
+				assert.Equal(t, v, val.GetStringValue(), "value mismatch for key: %s", k)
+			}
+
+			if tt.expectPreserved {
+				existingPb, ok := metadata.FilterMetadata["existing.key"]
+				require.True(t, ok, "expected existing metadata key to be preserved")
+				assert.Equal(t, "bar", existingPb.Fields["foo"].GetStringValue(), "existing metadata value mismatch")
+			}
+		})
+	}
+}
+
+func TestRouteSourceMetadataFlag(t *testing.T) {
+	in := ir.HttpRouteRuleMatchIR{
+		Name: "my-rule",
+		Parent: &ir.HttpRouteIR{
+			ObjectSource: ir.ObjectSource{
+				Kind:      "HTTPRoute",
+				Group:     "gateway.networking.k8s.io",
+				Name:      "my-route",
+				Namespace: "default",
+			},
+		},
+	}
+
+	tests := []struct {
+		name        string
+		flagEnabled bool
+		wantMeta    bool
+	}{
+		{
+			name:        "disabled by default, no route_source metadata",
+			flagEnabled: false,
+			wantMeta:    false,
+		},
+		{
+			name:        "enabled, route_source metadata is attached",
+			flagEnabled: true,
+			wantMeta:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &httpRouteConfigurationTranslator{
+				pluginPass:                TranslationPassPlugins{},
+				enableRouteSourceMetadata: tt.flagEnabled,
+			}
+
+			// Replicate the flag gate in envoyRoutes() without needing a
+			// fully-wired translator (no backends, validator, or GatewayIR required).
+			out := h.initRoutes(in, "generated-name")
+			if h.enableRouteSourceMetadata {
+				out.Metadata = addRouteSourceMetadata(in, out.GetMetadata())
+			}
+
+			if !tt.wantMeta {
+				if out.GetMetadata() != nil {
+					_, ok := out.GetMetadata().GetFilterMetadata()[routeSourceMetadataKey]
+					assert.False(t, ok, "route_source metadata should be absent when the flag is off")
+				}
+				return
+			}
+
+			require.NotNil(t, out.GetMetadata(), "metadata must not be nil when the flag is on")
+			srcMeta, ok := out.GetMetadata().GetFilterMetadata()[routeSourceMetadataKey]
+			require.True(t, ok, "filter metadata must contain key %q", routeSourceMetadataKey)
+
+			fields := srcMeta.GetFields()
+			assert.Equal(t, "HTTPRoute", fields["kind"].GetStringValue())
+			assert.Equal(t, "gateway.networking.k8s.io", fields["group"].GetStringValue())
+			assert.Equal(t, "my-route", fields["name"].GetStringValue())
+			assert.Equal(t, "default", fields["namespace"].GetStringValue())
+			assert.Equal(t, "my-rule", fields["rule"].GetStringValue())
+		})
+	}
 }

@@ -49,6 +49,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/trafficpolicystatus"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/transformation"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/websocket"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/xds_starvation"
 )
 
 func KubeGatewaySuiteRunner() e2e.SuiteRunner {
@@ -105,6 +106,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("WebSocket", websocket.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("XdsStarvation", xds_starvation.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

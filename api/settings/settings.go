@@ -267,10 +267,6 @@ type Settings struct {
 	// EnableEnvoy enables kgateway to send config to Envoy
 	EnableEnvoy bool `split_words:"true" default:"true"`
 
-	// DisableStatsOnProxy disables the stats/metrics server on the Envoy proxy.
-	// When true, port 9091 is no longer reserved and listeners may use it.
-	DisableStatsOnProxy bool `split_words:"true" default:"false"`
-
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.
 	// When enabled, the default weight for a route is 0.
@@ -322,6 +318,12 @@ type Settings struct {
 
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
+
+	// EnableRouteSourceMetadata enables attaching dev.kgateway.route_source filter metadata
+	// to every Envoy route. This metadata includes the Kubernetes source object (kind, group,
+	// name, namespace, rule) for each route, which can be useful for debugging and observability.
+	// Disabled by default.
+	EnableRouteSourceMetadata bool `split_words:"true" default:"false"`
 
 	// GatewayClassParametersRefs configures the GatewayParameters references to set on the default GatewayClasses.
 	// Format: JSON map where keys are GatewayClass names and values are objects with "name" (required),

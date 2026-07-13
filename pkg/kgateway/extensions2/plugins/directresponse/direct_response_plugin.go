@@ -100,7 +100,6 @@ func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Repor
 	}
 }
 
-// called one or more times per route rule
 func (p *directResponsePluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
 	dr, ok := pCtx.Policy.(*directResponse)
 	if !ok {
