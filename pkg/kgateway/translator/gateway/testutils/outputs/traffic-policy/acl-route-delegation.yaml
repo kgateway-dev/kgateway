@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -74,6 +76,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["192.168.0.0/16"]},{"action":"allow","cidrs":["10.0.0.0/8"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
   - domains:
     - dpp.test.com
     name: listener~8080~dpp_test_com
@@ -99,6 +102,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["10.0.0.0/8"]},{"action":"allow","cidrs":["192.168.0.0/16"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
   - domains:
     - spc.test.com
     name: listener~8080~spc_test_com
@@ -123,6 +127,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"allow","rules":[{"action":"deny","cidrs":["192.168.0.0/16"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
   - domains:
     - spp.test.com
     name: listener~8080~spp_test_com
@@ -147,6 +152,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["10.0.0.0/8"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
 Statuses:
   gateways:
     default/test:
@@ -209,6 +215,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -228,6 +239,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -247,6 +263,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -266,6 +287,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -285,6 +311,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -303,6 +334,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -321,6 +357,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -339,6 +380,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

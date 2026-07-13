@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"sync/atomic"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -12,7 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -88,14 +86,6 @@ type GatewayXdsResources struct {
 
 	// Secrets are items in the SDS response payload.
 	Secrets envoycache.Resources
-
-	// ReferencedClusters is the set of cluster names referenced by Routes and
-	// Listeners. It is derived from the proto contents, so it is a pure function
-	// of Routes.Version and Listeners.Version (already covered by Equals). Used
-	// by per-client snapshotting to avoid redundantly walking protos for every
-	// connected client on each update.
-	// +noKrtEquals
-	ReferencedClusters map[string]struct{}
 }
 
 func (r GatewayXdsResources) ResourceName() string {
@@ -131,20 +121,17 @@ func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 
 func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *GatewayXdsResources {
 	c, ch := sliceToResourcesHash(xdsSnap.ExtraClusters)
-	routes := sliceToResources(xdsSnap.Routes)
-	listeners := sliceToResources(xdsSnap.Listeners)
 	return &GatewayXdsResources{
 		NamespacedName: types.NamespacedName{
 			Namespace: gw.Obj.GetNamespace(),
 			Name:      gw.Obj.GetName(),
 		},
-		reports:            r,
-		ClustersHash:       ch,
-		Clusters:           c,
-		Routes:             routes,
-		Listeners:          listeners,
-		Secrets:            sliceToResources(xdsSnap.Secrets),
-		ReferencedClusters: collectReferencedClusters(routes, listeners),
+		reports:      r,
+		ClustersHash: ch,
+		Clusters:     c,
+		Routes:       sliceToResources(xdsSnap.Routes),
+		Listeners:    sliceToResources(xdsSnap.Listeners),
+		Secrets:      sliceToResources(xdsSnap.Secrets),
 	}
 }
 
@@ -197,56 +184,7 @@ func (r report) ResourceName() string {
 
 // do we really need this for a singleton?
 func (r report) Equals(in report) bool {
-	if !maps.Equal(r.reportMap.Gateways, in.reportMap.Gateways) {
-		return false
-	}
-	if !maps.EqualFunc(r.reportMap.ListenerSets, in.reportMap.ListenerSets,
-		func(a, b map[types.NamespacedName]*reports.ListenerSetReport) bool {
-			return maps.Equal(a, b)
-		}) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.TCPRoutes, in.reportMap.TCPRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.TLSRoutes, in.reportMap.TLSRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.Policies, in.reportMap.Policies) {
-		return false
-	}
-	if !maps.EqualFunc(r.reportMap.Backends, in.reportMap.Backends, backendReportEqual) {
-		return false
-	}
-	return true
-}
-
-// backendReportEqual reports whether two BackendReports hold the same conditions and observed generation.
-func backendReportEqual(a, b *reports.BackendReport) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	if a.GetObservedGeneration() != b.GetObservedGeneration() {
-		return false
-	}
-	ac, bc := a.GetConditions(), b.GetConditions()
-	if len(ac) != len(bc) {
-		return false
-	}
-	for i := range ac {
-		other := meta.FindStatusCondition(bc, ac[i].Type)
-		if other == nil ||
-			ac[i].Status != other.Status ||
-			ac[i].Reason != other.Reason ||
-			ac[i].Message != other.Message ||
-			ac[i].ObservedGeneration != other.ObservedGeneration {
-			return false
-		}
-	}
-	return true
+	return reports.EqualReportMaps(r.reportMap, in.reportMap)
 }
 
 var logger = logging.New("proxy_syncer")
@@ -310,6 +248,11 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		newFinalBackendEndpoints(krtopts, finalBackends, allEndpoints),
 		s.translator.TranslateEndpoints,
 	)
+	localClusterEpPerClient := NewPerClientLocalClusterEndpoints(
+		krtopts,
+		s.uniqueClients,
+		s.commonCols.LocalityPods,
+	)
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
 		krtopts,
@@ -324,6 +267,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		s.mostXdsSnapshots,
 		epPerClient,
 		clustersPerClient,
+		localClusterEpPerClient,
 	)
 
 	excludedPolicyKinds := make(map[schema.GroupKind]struct{})
@@ -347,15 +291,23 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
 	// backendStatusReport is the sole writer of the Backend Accepted condition: it merges
-	// each Backend's IR errors with its per-client translation errors.
-	kgwBackendCol := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()].Backends
+	// each Backend's IR errors with its per-client translation errors. It also merges any
+	// plugin-contributed conditions (e.g. the EC2 EndpointsDiscovered condition) so all
+	// Backend conditions are written by a single owner.
+	kgwBackendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
+	kgwBackendCol := kgwBackendPlugin.Backends
+	kgwBackendExtraConditions := kgwBackendPlugin.ExtraConditions
 	s.backendStatusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		var kgwBackends []ir.BackendObjectIR
 		if kgwBackendCol != nil {
 			kgwBackends = krt.Fetch(kctx, kgwBackendCol)
 		}
 		clusters := krt.Fetch(kctx, clustersPerClient.clusters)
-		merged := GenerateBackendStatusReport(kgwBackends, clusters)
+		var extraConditions []ir.BackendObjectStatus
+		if kgwBackendExtraConditions != nil {
+			extraConditions = krt.Fetch(kctx, kgwBackendExtraConditions)
+		}
+		merged := GenerateBackendStatusReport(kgwBackends, clusters, extraConditions)
 		return &report{merged}
 	}, krtopts.ToOptions("BackendStatusReport")...)
 
@@ -392,78 +344,11 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 func mergeProxyReports(
 	proxies []GatewayXdsResources,
 ) reports.ReportMap {
-	merged := reports.NewReportMap()
-	for _, p := range proxies {
-		// 1. merge GW Reports for all Proxies' status reports
-		maps.Copy(merged.Gateways, p.reports.Gateways)
-
-		// 2. merge LS Reports for all Proxies' status reports
-		maps.Copy(merged.ListenerSets, p.reports.ListenerSets)
-
-		// 3. merge httproute parentRefs into RouteReports
-		for rnn, rr := range p.reports.HTTPRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.HTTPRoutes[rnn]
-			if old == nil {
-				merged.HTTPRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.HTTPRoutes[rnn].Parents, rr.Parents)
-		}
-
-		// 4. merge tcproute parentRefs into RouteReports
-		for rnn, rr := range p.reports.TCPRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.TCPRoutes[rnn]
-			if old == nil {
-				merged.TCPRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.TCPRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for rnn, rr := range p.reports.TLSRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.TLSRoutes[rnn]
-			if old == nil {
-				merged.TLSRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.TLSRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for rnn, rr := range p.reports.GRPCRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.GRPCRoutes[rnn]
-			if old == nil {
-				merged.GRPCRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.GRPCRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for key, report := range p.reports.Policies {
-			// if we haven't encountered this policy, just copy it over completely
-			old := merged.Policies[key]
-			if old == nil {
-				merged.Policies[key] = report
-				continue
-			}
-			// else, let's merge our parentRefs into the existing map
-			// obsGen will stay as-is...
-			maps.Copy(merged.Policies[key].Ancestors, report.Ancestors)
-		}
+	inputs := make([]reports.ReportMap, 0, len(proxies))
+	for _, proxy := range proxies {
+		inputs = append(inputs, proxy.reports)
 	}
-
-	return merged
+	return reports.MergeReportMaps(inputs...)
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
@@ -518,14 +403,13 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				s.proxyTranslator.syncXds(ctx, snapWrap)
 			} else {
 				// Intentional no-op. When snapshotPerClient returns nil (its
-				// readiness guards deferred publishing), KRT surfaces a Delete
-				// for this UCC. Clearing the xDS cache here would withdraw
-				// Envoy's last coherent Snapshot for the duration of the defer,
-				// causing 500/NC on valid routes. Leaving the cache alone means
-				// Envoy keeps serving its previously-published config until a
-				// new coherent snapshot overwrites it — the "retain last good"
-				// behavior that prevents unresolvable cluster references from
-				// stranding live traffic.
+				// per-client inputs weren't derived yet, so it deferred
+				// publishing), KRT surfaces a Delete for this UCC. Clearing
+				// the xDS cache here would withdraw Envoy's last coherent
+				// Snapshot for the duration of the defer, causing 500/NC on
+				// valid routes. Leaving the cache alone means Envoy keeps
+				// serving its previously-published config until a new
+				// snapshot overwrites it — "retain last good".
 				//
 				// Known leak: this branch also fires when a UCC truly goes
 				// away (Envoy pod replaced on rollout, scaled down, etc.),

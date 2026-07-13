@@ -608,6 +608,11 @@ type xdsDumper struct {
 	adsClient envoy_service_discovery_v3.AggregatedDiscoveryService_StreamAggregatedResourcesClient
 	dr        *envoy_service_discovery_v3.DiscoveryRequest
 	cancel    context.CancelFunc
+	// localClusterName is the per-gateway "local cluster" EDS resource the control plane
+	// programs for native zone-aware routing. Real Envoy subscribes to it via its bootstrap
+	// static EDS cluster; the dumper must request it too (see Dump) so go-control-plane's ADS
+	// superset check doesn't withhold the entire EDS response.
+	localClusterName string
 }
 
 func (x xdsDumper) Close() {
@@ -631,14 +636,21 @@ func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string)
 		t.Fatalf("failed to connect to xds server: %v", err)
 	}
 
+	// The setup tests always run the gateway in the "gwtest" namespace (encoded in the role
+	// below); keep the local cluster name's namespace in sync with it.
+	const gwNamespace = "gwtest"
+
 	d := xdsDumper{
 		conn: conn,
+		// Build the local cluster name with the exact same helper the control plane uses, so the
+		// dumper subscribes to the resource that actually exists in the snapshot.
+		localClusterName: proxy_syncer.LocalClusterName(gwname, gwNamespace),
 		dr: &envoy_service_discovery_v3.DiscoveryRequest{
 			Node: &envoycorev3.Node{
-				Id: "gateway.gwtest",
+				Id: "gateway." + gwNamespace,
 				Metadata: &structpb.Struct{
 					Fields: map[string]*structpb.Value{
-						"role": structpb.NewStringValue(fmt.Sprintf("kgateway-kube-gateway-api~%s~%s", "gwtest", gwname)),
+						"role": structpb.NewStringValue(fmt.Sprintf("kgateway-kube-gateway-api~%s~%s", gwNamespace, gwname)),
 					},
 				},
 			},
@@ -754,7 +766,15 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	x.adsClient.Send(dr)
 	dr = proto.Clone(x.dr).(*envoy_service_discovery_v3.DiscoveryRequest)
 	dr.TypeUrl = "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment"
-	dr.ResourceNames = clusterServiceNames
+	// Also subscribe to the per-gateway local cluster EDS. In ADS mode go-control-plane only
+	// responds when the request lists a superset of the snapshot's resources, so omitting the
+	// local cluster (which real Envoy requests via its bootstrap static EDS cluster) would
+	// cause the entire EDS response, including backend endpoints, to be withheld.
+	edsResourceNames := clusterServiceNames
+	if x.localClusterName != "" {
+		edsResourceNames = append(slices.Clone(clusterServiceNames), x.localClusterName)
+	}
+	dr.ResourceNames = edsResourceNames
 	x.adsClient.Send(dr)
 
 	var endpoints []*envoyendpointv3.ClusterLoadAssignment
@@ -783,10 +803,13 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 					if err := anyCla.UnmarshalTo(&cla); err != nil {
 						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cla: %v", err))
 					}
-					// remove kube endpoints, as with envtests we will get random ports, so we cant assert on them
-					if !strings.Contains(cla.ClusterName, "kubernetes") {
-						endpoints = append(endpoints, &cla)
+					// remove kube endpoints, as with envtests we will get random ports, so we cant assert on them.
+					// also skip the per-gateway local cluster: it's requested only to satisfy the ADS
+					// superset check and isn't part of the asserted golden output.
+					if strings.Contains(cla.ClusterName, "kubernetes") || cla.ClusterName == x.localClusterName {
+						continue
 					}
+					endpoints = append(endpoints, &cla)
 				}
 			}
 		}
@@ -1024,9 +1047,49 @@ func sortResource[T fmt.Stringer](resources []T) []T {
 	return resources
 }
 
+// sortLocalityLbEndpoints sorts locality endpoints by locality (region, zone,
+// sub-zone), then priority, then endpoint addresses. The endpoints are received
+// over xDS in a non-deterministic order, so sorting them gives stable golden
+// output. The comparison logic (equalset) is order-independent, so this only
+// affects serialization, not correctness.
+func sortLocalityLbEndpoints(eps []*envoyendpointv3.LocalityLbEndpoints) {
+	sort.SliceStable(eps, func(i, j int) bool {
+		li, lj := eps[i].GetLocality(), eps[j].GetLocality()
+		if li.GetRegion() != lj.GetRegion() {
+			return li.GetRegion() < lj.GetRegion()
+		}
+		if li.GetZone() != lj.GetZone() {
+			return li.GetZone() < lj.GetZone()
+		}
+		if li.GetSubZone() != lj.GetSubZone() {
+			return li.GetSubZone() < lj.GetSubZone()
+		}
+		if eps[i].GetPriority() != eps[j].GetPriority() {
+			return eps[i].GetPriority() < eps[j].GetPriority()
+		}
+		return localityLbEndpointAddrs(eps[i]) < localityLbEndpointAddrs(eps[j])
+	})
+}
+
+// localityLbEndpointAddrs returns a deterministic, sorted, comma-joined string
+// of the socket addresses within a locality, used as a sort tie-breaker.
+func localityLbEndpointAddrs(e *envoyendpointv3.LocalityLbEndpoints) string {
+	var addrs []string
+	for _, lb := range e.GetLbEndpoints() {
+		addrs = append(addrs, lb.GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
+	}
+	sort.Strings(addrs)
+	return strings.Join(addrs, ",")
+}
+
 func (x *xdsDump) ToYaml() ([]byte, error) {
 	jsonM := map[string][]any{}
 	for _, c := range sortResource(x.Clusters) {
+		// Clone before sorting inline endpoints so the dump is not mutated.
+		c = proto.Clone(c).(*envoyclusterv3.Cluster)
+		if c.LoadAssignment != nil {
+			sortLocalityLbEndpoints(c.LoadAssignment.Endpoints)
+		}
 		roundtrip, err := protoJsonRoundTrip(c)
 		if err != nil {
 			return nil, err
@@ -1041,6 +1104,9 @@ func (x *xdsDump) ToYaml() ([]byte, error) {
 		jsonM["listeners"] = append(jsonM["listeners"], roundtrip)
 	}
 	for _, c := range sortResource(x.Endpoints) {
+		// Clone + sort localities for deterministic output (see clusters above).
+		c = proto.Clone(c).(*envoyendpointv3.ClusterLoadAssignment)
+		sortLocalityLbEndpoints(c.Endpoints)
 		roundtrip, err := protoJsonRoundTrip(c)
 		if err != nil {
 			return nil, err

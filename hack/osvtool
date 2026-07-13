@@ -14,6 +14,7 @@ branch. The summary contains:
   - severity: counts by severity
   - maxAgeDays: maximum alert age in days by severity
   - byTarget: source and image alert counts
+  - byImage: image alert counts per scanned image (kgateway, sds, envoy-wrapper)
   - lastSuccessfulScan: timestamp for the latest selected OSV code-scanning analysis
 
 Options:
@@ -185,7 +186,7 @@ workflow_image_platforms() {
         exit 1
     fi
 
-    platforms="$(yq '.jobs.scan.strategy.matrix.platform[]' "$workflow_path" 2>/dev/null || true)"
+    platforms="$(yq '.jobs.scan_image.strategy.matrix.platform[]' "$workflow_path" 2>/dev/null || true)"
     if [[ -z "$platforms" ]]; then
         echo "error: could not discover image scan platforms from $workflow_path" >&2
         exit 1
@@ -194,13 +195,33 @@ workflow_image_platforms() {
     printf '%s\n' "$platforms"
 }
 
+workflow_image_names() {
+    local workflow_path="$1"
+    local images
+
+    if [[ ! -f "$workflow_path" ]]; then
+        echo "error: workflow file not found: $workflow_path" >&2
+        exit 1
+    fi
+
+    images="$(yq '.jobs.scan_image.strategy.matrix.image[]' "$workflow_path" 2>/dev/null || true)"
+    if [[ -z "$images" ]]; then
+        echo "error: could not discover image scan targets from $workflow_path" >&2
+        exit 1
+    fi
+
+    printf '%s\n' "$images"
+}
+
 expected_image_category() {
     local branch="$1"
-    local platform="$2"
+    local image="$2"
+    local platform="$3"
     local safe_branch="${branch//[\/.]/-}"
+    local safe_image="${image//[\/.]/-}"
     local safe_platform="${platform//[\/.]/-}"
 
-    printf 'osv-scanner-%s-images-%s\n' "$safe_branch" "$safe_platform"
+    printf 'osv-scanner-%s-images-%s-%s\n' "$safe_branch" "$safe_image" "$safe_platform"
 }
 
 target_alert_filter() {
@@ -283,7 +304,7 @@ fetch_branch_scan_metadata() {
 
     jq -s '
         add
-        | [.[] | select(.analysis_key == ".github/workflows/osv-scanner.yaml:scan")]
+        | [.[] | select((.analysis_key // "") | startswith(".github/workflows/osv-scanner.yaml:"))]
         | sort_by(.category // "")
         | group_by(.category // "")
         | map(max_by(.created_at))
@@ -366,6 +387,15 @@ emit_summary() {
                     else
                         "other"
                     end;
+                def image_label:
+                    (.most_recent_instance.category // "") as $c
+                    | ((try ($c | capture("^osv-scanner-.*-images-(?<img>.+)-linux-(amd64|arm64)$").img) catch null) // "unknown");
+                def by_image:
+                    reduce (.[] | select(is_image)) as $alert (
+                        {};
+                        ($alert | image_label) as $img
+                        | .[$img] = ((.[$img] // 0) + 1)
+                    );
                 def sev: (.rule.security_severity_level // "unknown" | ascii_downcase);
                 def age_days($now): (($now - ((.created_at | fromdateiso8601)? // $now)) / 86400 | floor);
                 def zero_counts: {critical: 0, high: 0, medium: 0, low: 0, unknown: 0};
@@ -419,6 +449,7 @@ emit_summary() {
                             source: (summary_for("source") + {url: $sourceUrl}),
                             image: (summary_for("image") + {url: $imageUrl})
                         },
+                        byImage: by_image,
                         lastSuccessfulScan: latest_scan(selected_scans),
                         lastSuccessfulScans: {
                             source: latest_scan(source_scans),
@@ -573,6 +604,16 @@ emit_worst() {
             shift
         done
     fi
+    local image_names_count="$1"
+    shift
+    local image_names=()
+    if [[ "$image_names_count" -gt 0 ]]; then
+        local q
+        for ((q = 0; q < image_names_count; q++)); do
+            image_names+=("$1")
+            shift
+        done
+    fi
     local branches=("$@")
     local now
     local source_alerts
@@ -607,9 +648,14 @@ emit_worst() {
         esac
 
         expected_image_categories=()
-        for platform in "${image_platforms[@]}"; do
-            expected_image_categories+=("$(expected_image_category "${branches[$i]}" "$platform")")
-        done
+        if [[ "${#image_names[@]}" -gt 0 ]]; then
+            local image
+            for image in "${image_names[@]}"; do
+                for platform in "${image_platforms[@]}"; do
+                    expected_image_categories+=("$(expected_image_category "${branches[$i]}" "$image" "$platform")")
+                done
+            done
+        fi
 
         if [[ "$source_alerts" -gt 0 || "$require_source" -eq 1 ]]; then
             while IFS= read -r stale_line; do
@@ -807,6 +853,7 @@ main() {
         emit_raw "$tmpdir" "${branches[@]}" | yq -p=json -o=yaml
     elif [[ "$worst" -eq 1 ]]; then
         local image_platforms=()
+        local image_names=()
         if [[ "$target" == "image" || "$target" == "all" ]]; then
             local platform
             while IFS= read -r platform; do
@@ -814,8 +861,14 @@ main() {
                     image_platforms+=("$platform")
                 fi
             done < <(workflow_image_platforms "$workflow_path")
+            local image_name
+            while IFS= read -r image_name; do
+                if [[ -n "$image_name" ]]; then
+                    image_names+=("$image_name")
+                fi
+            done < <(workflow_image_names "$workflow_path")
         fi
-        emit_worst "$tmpdir" "$target" "${#image_platforms[@]}" "${image_platforms[@]}" "${branches[@]}" | yq -p=json -o=yaml
+        emit_worst "$tmpdir" "$target" "${#image_platforms[@]}" "${image_platforms[@]}" "${#image_names[@]}" "${image_names[@]}" "${branches[@]}" | yq -p=json -o=yaml
     elif [[ "$table" -eq 1 ]]; then
         emit_table "$tmpdir" "$repo" "$target" "$api_state" "${branches[@]}"
     else

@@ -61,6 +61,7 @@ type HttpListenerPolicyIr struct {
 	// and the final config is then marshalled.
 	tracingProvider               *envoytracev3.OpenTelemetryConfig
 	tracingConfig                 *envoy_hcm.HttpConnectionManager_Tracing
+	localReplyConfig              *envoy_hcm.LocalReplyConfig
 	acceptHttp10                  *bool
 	defaultHostForHttp10          *string
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
@@ -96,6 +97,11 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 	if !proto.Equal(d.tracingConfig, d2.tracingConfig) {
+		return false
+	}
+
+	// Check local reply
+	if !proto.Equal(d.localReplyConfig, d2.localReplyConfig) {
 		return false
 	}
 
@@ -135,7 +141,7 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	// Check serverHeaderTransformation
-	if d.serverHeaderTransformation != d2.serverHeaderTransformation {
+	if !cmputils.PointerValsEqual(d.serverHeaderTransformation, d2.serverHeaderTransformation) {
 		return false
 	}
 
@@ -232,6 +238,12 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 	tracingProvider, tracingConfig, err := convertTracingConfig(h, commoncol, krtctx, objSrc)
 	if err != nil {
 		logger.Error("error translating tracing", "error", err)
+		errs = append(errs, err)
+	}
+
+	localReplyConfig, err := convertLocalReplyConfig(h, commoncol, krtctx, objSrc)
+	if err != nil {
+		logger.Error("error translating local reply config", "error", err)
 		errs = append(errs, err)
 	}
 
@@ -369,6 +381,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		accessLogPolicies:             h.AccessLog,
 		tracingProvider:               tracingProvider,
 		tracingConfig:                 tracingConfig,
+		localReplyConfig:              localReplyConfig,
 		upgradeConfigs:                upgradeConfigs,
 		useRemoteAddress:              h.UseRemoteAddress,
 		preserveExternalRequestId:     h.PreserveExternalRequestId,

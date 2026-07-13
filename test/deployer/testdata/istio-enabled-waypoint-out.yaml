@@ -27,9 +27,11 @@ data:
       - name: admin_layer
         admin_layer: {}
     node:
-      cluster: waypoint.default
+      cluster: "waypoint.default"
       metadata:
         role: kgateway-kube-gateway-api~default~waypoint
+    cluster_manager:
+      local_cluster_name: "waypoint.default"
     static_resources:
       listeners:
       - name: readiness_listener
@@ -122,6 +124,14 @@ data:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       clusters:
+        - name: "waypoint.default"
+          connect_timeout: 0.250s
+          type: EDS
+          lb_policy: ROUND_ROBIN
+          eds_cluster_config:
+            eds_config:
+              ads: {}
+              resource_api_version: V3
         - name: xds_cluster
           alt_stat_name: xds_cluster
           connect_timeout: 5.000s
@@ -383,6 +393,9 @@ spec:
         - mountPath: /var/run/secrets/tokens
           name: xds-token
           readOnly: true
+        - mountPath: /etc/podinfo
+          name: podinfo
+          readOnly: true
       - env:
         - name: POD_NAME
           valueFrom:
@@ -521,6 +534,12 @@ spec:
       - configMap:
           name: waypoint
         name: envoy-config
+      - downwardAPI:
+          items:
+          - fieldRef:
+              fieldPath: metadata.labels
+            path: labels
+        name: podinfo
       - emptyDir:
           medium: Memory
         name: istio-certs

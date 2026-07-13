@@ -6,9 +6,12 @@ import (
 	"context"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	"istio.io/istio/pkg/test/util/retry"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -144,6 +147,135 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 		Message: `Backend error: "failed to create aws request signing config: failed to derive static secret: access_key is not a valid string
 secret_key is not a valid string"`,
 	})
+}
+
+// TestPriorityGroupsFailover verifies that a priority groups Backend sends
+// traffic to the first group, fails over to the second group (whose members
+// share a priority and are load balanced together) when the first group's
+// backend dies, and recovers once it returns. Failover is driven by the
+// active health check configured via BackendConfigPolicy: the referenced
+// backends' endpoints are merged into the cluster's load assignment, so the
+// health checks probe the real services directly.
+func (s *testingSuite) TestPriorityGroupsFailover() {
+	pgManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/priority-groups.yaml")
+
+	pgBackend := &kgateway.Backend{
+		ObjectMeta: metav1.ObjectMeta{Name: "priority-groups", Namespace: proxyObjMeta.GetNamespace()},
+	}
+	referencedBackends := []client.Object{
+		&kgateway.Backend{ObjectMeta: metav1.ObjectMeta{Name: "primary-nginx", Namespace: proxyObjMeta.GetNamespace()}},
+		&kgateway.Backend{ObjectMeta: metav1.ObjectMeta{Name: "failover-echo", Namespace: proxyObjMeta.GetNamespace()}},
+		&kgateway.Backend{ObjectMeta: metav1.ObjectMeta{Name: "failover-httpbin", Namespace: proxyObjMeta.GetNamespace()}},
+	}
+
+	testutils.Cleanup(s.T(), func() {
+		s.Require().NoError(s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, pgManifest))
+		s.Require().NoError(s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, defaults.HttpbinManifest))
+		s.Require().NoError(s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, defaults.HttpEchoPodManifest))
+		// restore the shared nginx backend for the suites that run after this one
+		s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.NginxPodManifest))
+		s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, common.SharedNginxNamespace, metav1.ListOptions{
+			LabelSelector: defaults.WellKnownAppLabel + "=nginx",
+		})
+		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, pgBackend)
+	})
+
+	s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.HttpEchoPodManifest))
+	s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.HttpbinManifest))
+	s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, pgManifest))
+
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, append(referencedBackends, pgBackend)...)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: defaults.WellKnownAppLabel + "=gateway",
+	})
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
+		LabelSelector: defaults.HttpbinLabelSelector,
+	})
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, "http-echo", metav1.ListOptions{
+		LabelSelector: defaults.WellKnownAppLabel + "=http-echo",
+	})
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, common.SharedNginxNamespace, metav1.ListOptions{
+		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
+	})
+
+	// all backendRefs resolve
+	s.assertStatus(pgBackend, metav1.Condition{
+		Type:    "Accepted",
+		Status:  metav1.ConditionTrue,
+		Reason:  "Accepted",
+		Message: "Backend accepted",
+	})
+
+	curlOpts := []curl.Option{
+		curl.WithHostHeader("failover.example.com"),
+		curl.WithPath("/"),
+		curl.WithPort(80),
+	}
+	// the health check needs a couple of intervals to observe a state change,
+	// and pod restarts add latency; give the eventual matches a generous window
+	failoverRetry := []retry.Option{retry.Timeout(1 * time.Minute)}
+
+	// group 0 (nginx) serves all traffic
+	common.BaseGateway.SendEventuallyConsistent(
+		s.ctx,
+		s.T(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring(defaults.NginxResponse),
+		},
+		curlOpts...,
+	)
+
+	// kill group 0 by deleting the shared nginx pod. Its Service keeps the
+	// ClusterIP, so the priority-0 endpoint stays resolvable but the health
+	// check starts failing.
+	nginxPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "nginx", Namespace: common.SharedNginxNamespace},
+	}
+	s.Require().NoError(s.testInstallation.ClusterContext.Client.Delete(s.ctx, nginxPod))
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, common.SharedNginxNamespace, metav1.ListOptions{
+		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
+	})
+
+	// traffic fails over to group 1 with no outage: every response is a 200.
+	// Both group members share priority 1 and are load balanced together, so
+	// both response signatures must be observed.
+	common.BaseGateway.SendWithRetry(
+		s.ctx,
+		s.T(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("http-echo"),
+		},
+		failoverRetry,
+		curlOpts...,
+	)
+	common.BaseGateway.SendWithRetry(
+		s.ctx,
+		s.T(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("httpbin"),
+		},
+		failoverRetry,
+		curlOpts...,
+	)
+
+	// restore group 0; one passing health check marks it healthy again and
+	// traffic drains back to the higher priority group
+	s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.NginxPodManifest))
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, common.SharedNginxNamespace, metav1.ListOptions{
+		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
+	})
+	common.BaseGateway.SendEventuallyConsistent(
+		s.ctx,
+		s.T(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring(defaults.NginxResponse),
+		},
+		curlOpts...,
+	)
 }
 
 func (s *testingSuite) assertStatus(backend *kgateway.Backend, expected metav1.Condition) {
