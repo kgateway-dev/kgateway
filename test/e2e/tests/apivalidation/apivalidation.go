@@ -54,7 +54,7 @@ spec:
     - host: example.com
       port: 80
 `,
-			wantErrors: []string{`exactly one of the fields in \[aws static dynamicForwardProxy gcp\] must be set`},
+			wantErrors: []string{`exactly one of the fields in \[aws static dynamicForwardProxy gcp priorityGroups\] must be set`},
 		},
 		{
 			name: "Backend: empty lambda qualifier does not match pattern",

@@ -294,3 +294,9 @@ validation:
   #    Strict adds xDS preflight validation and blocks snapshots that would NACK in Envoy.
   #    Default is "standard".
   level: standard
+
+# -- Enable attaching dev.kgateway.route_source filter metadata to every Envoy route.
+# This metadata includes the Kubernetes source object (kind, group, name, namespace, rule)
+# for each route, which helps correlate Envoy routes with their originating Kubernetes resources.
+# Default is false (disabled).
+enableRouteSourceMetadata: false

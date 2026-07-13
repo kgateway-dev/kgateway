@@ -169,6 +169,21 @@ Routes:
         cluster: backend_default_backend1_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
+  backends:
+    default/backend1:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    default/backend2:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:

@@ -15,11 +15,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
+// localClusterEndpointPort is the port used in local-cluster CLA endpoints.
+// The value is arbitrary, and the admin port is used since it is guaranteed
+// to be listening on every Envoy pod.
 const localClusterEndpointPort uint32 = 19000
 
 type localClusterEndpoint struct {
@@ -28,18 +31,32 @@ type localClusterEndpoint struct {
 	locality     ir.PodLocality
 }
 
+func gatewayPodIndexKey(namespace, gatewayName string) string {
+	return namespace + "/" + gatewayName
+}
+
 func NewPerClientLocalClusterEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
 	localityPods krt.Collection[krtcollections.LocalityPod],
 ) PerClientEnvoyEndpoints {
+	podsByGateway := krtpkg.UnnamedIndex(localityPods, func(pod krtcollections.LocalityPod) []string {
+		gwName := gatewayNameFromLabels(pod.AugmentedLabels)
+		if gwName == "" {
+			return nil
+		}
+		return []string{gatewayPodIndexKey(pod.Namespace, gwName)}
+	})
+
 	endpoints := krt.NewCollection(uccs, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *UccWithEndpoints {
 		localClusterName, gatewayName, gatewayNamespace := localClusterInfo(ucc)
 		if localClusterName == "" || gatewayName == "" || gatewayNamespace == "" {
 			return nil
 		}
 
-		cla := buildLocalClusterLoadAssignment(localClusterName, gatewayName, gatewayNamespace, krt.Fetch(kctx, localityPods))
+		logger.Debug("building local cluster CLA", "local_cluster_name", localClusterName, "gateway", gatewayName, "namespace", gatewayNamespace)
+		gwPods := krt.Fetch(kctx, localityPods, krt.FilterIndex(podsByGateway, gatewayPodIndexKey(gatewayNamespace, gatewayName)))
+		cla := buildLocalClusterLoadAssignment(localClusterName, gwPods)
 		return &UccWithEndpoints{
 			Client:        ucc,
 			Endpoints:     cla,
@@ -88,15 +105,10 @@ func LocalClusterName(gatewayName, gatewayNamespace string) string {
 
 func buildLocalClusterLoadAssignment(
 	clusterName string,
-	gatewayName string,
-	gatewayNamespace string,
 	pods []krtcollections.LocalityPod,
 ) *envoyendpointv3.ClusterLoadAssignment {
 	localEndpoints := make([]localClusterEndpoint, 0, len(pods))
 	for _, pod := range pods {
-		if pod.Namespace != gatewayNamespace || gatewayNameFromLabels(pod.AugmentedLabels) != gatewayName {
-			continue
-		}
 		address := pod.Address()
 		if address == "" {
 			continue

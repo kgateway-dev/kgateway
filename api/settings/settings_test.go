@@ -54,6 +54,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES":  "false",
 		"KGW_ENABLE_AUTH_METADATA":                      "true",
 		"KGW_WORKLOAD_ENTRIES_EXCLUSION_LABELS":         "example.io/managed-by,example.io/other-key",
+		"KGW_ENABLE_ROUTE_SOURCE_METADATA":              "true",
 		"KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS": `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
 		"KGW_REFERENCE_GRANT_MODE":                      string(ReferenceGrantStrict),
 	}
@@ -161,8 +162,9 @@ func TestSettings(t *testing.T) {
 						Namespace: new(gwv1.Namespace("infra")),
 					},
 				},
-				EnableAuthMetadata: true,
-				ReferenceGrantMode: ReferenceGrantStrict,
+				EnableAuthMetadata:        true,
+				EnableRouteSourceMetadata: true,
+				ReferenceGrantMode:        ReferenceGrantStrict,
 			},
 		},
 		{

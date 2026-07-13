@@ -162,6 +162,43 @@ unknown_top_level:
 			Expect(locality).To(HaveKeyWithValue("zone", "us-east1-b"))
 		})
 
+		It("should derive node locality from pod topology labels when env vars are unset", func() {
+			api.podLabels = topologyPodLabels()
+
+			output, err := AddNodeLocalityToBootstrapYaml([]byte(staticNodeBootstrap), api)
+			Expect(err).NotTo(HaveOccurred())
+
+			locality := decodeNodeLocality(output)
+			Expect(locality).To(HaveKeyWithValue("region", "us-east1"))
+			Expect(locality).To(HaveKeyWithValue("zone", "us-east1-b"))
+			Expect(locality).To(HaveKeyWithValue("sub_zone", "rack-a"))
+		})
+
+		It("should prefer KGATEWAY_NODE_* values over pod topology labels field by field", func() {
+			// Subzone comes from the env var (it is not covered by PodTopologyLabelsAdmission);
+			// zone and region fall back to the pod's topology labels.
+			api.nodeSubzone = "rack-override"
+			api.podLabels = topologyPodLabels()
+
+			output, err := AddNodeLocalityToBootstrapYaml([]byte(staticNodeBootstrap), api)
+			Expect(err).NotTo(HaveOccurred())
+
+			locality := decodeNodeLocality(output)
+			Expect(locality).To(HaveKeyWithValue("region", "us-east1"))
+			Expect(locality).To(HaveKeyWithValue("zone", "us-east1-b"))
+			Expect(locality).To(HaveKeyWithValue("sub_zone", "rack-override"))
+		})
+
+		It("should not add locality when pod labels contain no topology keys", func() {
+			api.podLabels = map[string]string{
+				"app.kubernetes.io/name": "zone-gw",
+			}
+
+			output, err := AddNodeLocalityToBootstrapYaml([]byte(staticNodeBootstrap), api)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(Equal([]byte(staticNodeBootstrap)), "bootstrap should pass through unchanged without locality sources")
+		})
+
 		It("should merge node locality fields when adding partial node locality", func() {
 			api.nodeZone = "us-east1-b"
 
@@ -189,6 +226,31 @@ node:
 		})
 	})
 })
+
+const staticNodeBootstrap = `
+node:
+  id: static
+`
+
+func topologyPodLabels() map[string]string {
+	return map[string]string{
+		"topology.kubernetes.io/region": "us-east1",
+		"topology.kubernetes.io/zone":   "us-east1-b",
+		"topology.istio.io/subzone":     "rack-a",
+	}
+}
+
+func decodeNodeLocality(bootstrapYaml []byte) map[string]any {
+	GinkgoHelper()
+
+	var decoded map[string]any
+	Expect(yaml.Unmarshal(bootstrapYaml, &decoded)).To(Succeed())
+	node, ok := decoded["node"].(map[string]any)
+	Expect(ok).To(BeTrue(), "bootstrap should have a node section")
+	locality, ok := node["locality"].(map[string]any)
+	Expect(ok).To(BeTrue(), "node should have a locality section")
+	return locality
+}
 
 func setLocalityEnv(region, zone, subzone string) {
 	GinkgoHelper()
