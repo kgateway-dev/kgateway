@@ -461,7 +461,7 @@ func (s *testingSuite) TestHttpACLDynamicMetadata() {
 		// Envoy flushes access logs to stdout asynchronously; allow the same
 		// window other suites use for container-log assertions so a slow node
 		// doesn't produce a false negative.
-	}, 30*time.Second, 100*time.Millisecond)
+	}, 30*time.Second, time.Second)
 }
 
 // TestHttpACLLargeRuleset verifies the control plane can accept and apply a TrafficPolicy
