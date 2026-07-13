@@ -670,15 +670,15 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		}
 	}
 
-	newPolicy := func(hasZoneAware bool, force *ZoneAwareForceIR, policyRef *ir.AttachedPolicyRef) ir.PolicyAtt {
+	newPolicy := func(hasZoneAware bool, forceMinEndpoints *uint32, policyRef *ir.AttachedPolicyRef) ir.PolicyAtt {
 		return ir.PolicyAtt{
 			GroupKind:  wellknown.BackendConfigPolicyGVK.GroupKind(),
 			Generation: 1,
 			PolicyRef:  policyRef,
 			PolicyIr: &BackendConfigPolicyIR{
 				loadBalancerConfig: &LoadBalancerConfigIR{
-					hasZoneAware:   hasZoneAware,
-					zoneAwareForce: force,
+					hasZoneAware:               hasZoneAware,
+					zoneAwareForceMinEndpoints: forceMinEndpoints,
 				},
 			},
 		}
@@ -721,7 +721,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 	})
 
 	t.Run("force mode clears service traffic distribution", func(t *testing.T) {
-		inputs := withPolicies(newInputs(), newPolicy(true, &ZoneAwareForceIR{minEndpointsInZoneThreshold: 2}, servicePolicyRef))
+		inputs := withPolicies(newInputs(), newPolicy(true, new(uint32(2)), servicePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
 		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
@@ -732,7 +732,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 	})
 
 	t.Run("force mode preserves existing endpoint priority", func(t *testing.T) {
-		inputs := withPolicies(newInputs(), newPolicy(true, &ZoneAwareForceIR{minEndpointsInZoneThreshold: 1}, servicePolicyRef))
+		inputs := withPolicies(newInputs(), newPolicy(true, new(uint32(1)), servicePolicyRef))
 		priorityInfo := &endpoints.PriorityInfo{
 			FailoverPriority: endpoints.NewPriorities([]string{corev1.LabelTopologyZone}),
 		}
@@ -757,7 +757,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 			Namespace: "default",
 			Name:      "hostname-policy",
 		}
-		inputs = withPolicies(inputs, newPolicy(true, &ZoneAwareForceIR{minEndpointsInZoneThreshold: 1}, hostnamePolicyRef))
+		inputs = withPolicies(inputs, newPolicy(true, new(uint32(1)), hostnamePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
 		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)

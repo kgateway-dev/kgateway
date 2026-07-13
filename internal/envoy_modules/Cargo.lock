@@ -785,6 +785,7 @@ dependencies = [
  "anyhow",
  "base64",
  "bitflags",
+ "envoy-helpers",
  "minijinja",
  "once_cell",
  "rand",

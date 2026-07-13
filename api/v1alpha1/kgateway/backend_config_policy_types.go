@@ -555,8 +555,8 @@ const (
 type ZoneAwareLoadBalancer struct {
 	// PreferLocal enables Envoy's zone-aware routing which prefers sending traffic
 	// to local zone endpoints while maintaining overall traffic balance across zones.
-	// This requires the Envoy proxy to be aware of its own zone, which can be configured
-	// via the KGATEWAY_NODE_ZONE environment variable on the proxy pod.
+	// On Kubernetes 1.35+, the zone is automatically derived from node label.
+	// The KGATEWAY_NODE_* environment variables on the proxy pod can be set as an explicit override.
 	// See https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/zone_aware
 	// +optional
 	PreferLocal *ZoneAwarePreferLocal `json:"preferLocal,omitempty"`

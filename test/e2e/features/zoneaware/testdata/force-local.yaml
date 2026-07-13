@@ -1,0 +1,16 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: zone-backend-policy
+  namespace: zone-aware
+spec:
+  targetRefs:
+  - name: zone-backend
+    group: ""
+    kind: Service
+  loadBalancer:
+    roundRobin: {}
+    zoneAware:
+      preferLocal:
+        force:
+          minEndpointsInZoneThreshold: 1

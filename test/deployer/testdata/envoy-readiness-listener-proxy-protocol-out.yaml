@@ -377,6 +377,9 @@ spec:
         - mountPath: /var/run/secrets/tokens
           name: xds-token
           readOnly: true
+        - mountPath: /etc/podinfo
+          name: podinfo
+          readOnly: true
       serviceAccountName: gw
       terminationGracePeriodSeconds: 60
       volumes:
@@ -390,4 +393,10 @@ spec:
       - configMap:
           name: gw
         name: envoy-config
+      - downwardAPI:
+          items:
+          - fieldRef:
+              fieldPath: metadata.labels
+            path: labels
+        name: podinfo
 status: {}

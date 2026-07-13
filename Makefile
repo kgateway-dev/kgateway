@@ -1033,7 +1033,7 @@ CLOUD_PROVIDER_KIND ?= false
 
 .PHONY: kind-create
 kind-create: ## Create a KinD cluster
-	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
+	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
 
 CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.6.0
