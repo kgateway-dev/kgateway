@@ -33,6 +33,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 var _ manager.LeaderElectionRunnable = &StatusSyncer{}
@@ -646,8 +647,57 @@ func (s *StatusSyncer) patchListenerSetStatus(
 	if err != nil {
 		return err
 	}
+	// Legacy XListenerSet CRDs require "port" in status.listeners[*],
+	// but the promoted gwv1.ListenerEntryStatus type no longer carries it.
+	// Inject the value from spec before patching.
+	injectListenerPorts(statusMap, ls.Spec.Listeners)
 	legacyListenerSet.Object["status"] = statusMap
 	return s.mgr.GetClient().Status().Patch(ctx, legacyListenerSet, client.Merge)
+}
+
+// legacyPortFallback is used when a listener protocol requires an explicit port
+// but none is set, matching the v2.2.4 fallback behaviour. 65535 is an out-of-
+// range sentinel that satisfies the schema's required field without silently
+// routing traffic to a real port.
+const legacyPortFallback int64 = 65535
+
+// injectListenerPorts adds the "port" field to each entry in statusMap["listeners"]
+// by looking up the matching listener in specListeners by name.
+// This is needed because gwv1.ListenerEntryStatus no longer carries Port, but the
+// legacy XListenerSet CRD schema still requires it.
+// Listeners whose name does not match any spec entry receive legacyPortFallback
+// so that the patch payload always satisfies the schema's required constraint.
+func injectListenerPorts(statusMap map[string]any, specListeners []gwv1.ListenerEntry) {
+	listeners, ok := statusMap["listeners"].([]any)
+	if !ok {
+		return
+	}
+
+	// Precompute name→port to avoid O(n²) scan.
+	portByName := make(map[string]int64, len(specListeners))
+	for _, spec := range specListeners {
+		port, err := kubeutils.DetectListenerPortNumber(spec.Protocol, spec.Port)
+		if err != nil {
+			port = gwv1.PortNumber(legacyPortFallback)
+		}
+		portByName[string(spec.Name)] = int64(port)
+	}
+
+	for i, entry := range listeners {
+		entryMap, ok := entry.(map[string]any)
+		if !ok {
+			continue
+		}
+		name, _ := entryMap["name"].(string)
+		port, matched := portByName[name]
+		if !matched {
+			// No corresponding spec entry; use the fallback so the patch
+			// payload still satisfies the schema's required port constraint.
+			port = legacyPortFallback
+		}
+		entryMap["port"] = port
+		listeners[i] = entryMap
+	}
 }
 
 func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
