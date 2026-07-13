@@ -305,6 +305,48 @@ spec:
                   Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
                   See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
                 properties:
+                  connectionKeepalive:
+                    description: |-
+                      ConnectionKeepalive enables HTTP/2 keepalive PINGs on upstream connections,
+                      actively detecting half-dead connections: if a PING is not acknowledged
+                      within the timeout, the connection is closed.
+                      See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-keepalivesettings) for more details.
+                    properties:
+                      connectionIdleInterval:
+                        description: |-
+                          If set, a PING is sent before dispatching new streams on a connection that
+                          has been idle for at least this duration, verifying the connection is
+                          still alive before reusing it.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: connectionIdleInterval must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
+                      interval:
+                        description: |-
+                          Interval between keepalive PINGs. If unset, PINGs are only sent when
+                          triggered by ConnectionIdleInterval.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: interval must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
+                      timeout:
+                        description: |-
+                          Timeout after which the connection is closed if no response to a keepalive
+                          PING is received. A PING response is considered received if any frame
+                          arrives on the connection while the PING is outstanding.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: timeout must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
+                    required:
+                    - timeout
+                    type: object
                   initialConnectionWindowSize:
                     anyOf:
                     - type: integer
