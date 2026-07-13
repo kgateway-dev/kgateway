@@ -265,8 +265,11 @@ func (r ruleIR) applyTimeouts(
 			timeout = timeouts.backendRequestTimeout
 		}
 	case timeouts.backendRequestTimeout != nil:
-		// Only BackendRequest is set
-		timeout = timeouts.backendRequestTimeout
+		// Do not set the timeout if retry is specified and only BackendRequest is set.
+		// This will be handled in envoyroutev3.RetryPolicy.PerTryTimeout
+		if !hasRetry {
+			timeout = timeouts.backendRequestTimeout
+		}
 	case timeouts.requestTimeout != nil:
 		// Only Request is set
 		timeout = timeouts.requestTimeout
@@ -288,7 +291,7 @@ func convertRetry(
 	in := &kgateway.Retry{
 		Attempts: 1,
 		RetryOn: []kgateway.RetryOnCondition{
-			"cancelled", "connect-failure", "refused-stream", "retriable-headers", "retriable-status-codes", "unavailable",
+			"cancelled", "connect-failure", "refused-stream", "retriable-headers", "retriable-status-codes", "unavailable", "reset",
 		},
 		StatusCodes: retry.Codes,
 	}

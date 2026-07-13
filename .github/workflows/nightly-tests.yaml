@@ -100,7 +100,7 @@ jobs:
           summarize-report: true
 
   kube_gateway_api_load_tests:
-    name: Load Tests (ref=${{ matrix.ref.display_ref }}, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
+    name: Load Tests (ref=${{ matrix.ref.display_ref }}, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }})
     needs: determine_refs
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
@@ -109,18 +109,24 @@ jobs:
       fail-fast: false
       matrix:
         ref: ${{ fromJson(needs.determine_refs.outputs.refs) }}
-        kube-version:
-          - node: 'v1.31.9@sha256:b94a3a6c06198d17f59cca8c6f486236fa05e2fb359cbd75dabbfc348a10b211'
-            kubectl: v1.31.9
-            kind: v0.29.0
-          - node: 'v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f'
-            kubectl: v1.35.0
-            kind: v0.31.0
+        env-versions:
+          - file: "./.github/workflows/.env/nightly-tests/max_versions.env"
+            label: max_versions
+          - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
+            label: min_versions
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: ${{ matrix.ref.checkout_ref }}
+      - name: Dotenv Action
+        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        id: dotenv
+        with:
+          path: ${{ matrix.env-versions.file }}
+          log-variables: true
       - uses: ./.github/actions/kube-gateway-api-load-tests
+        with:
+          cluster-node-version: ${{ steps.dotenv.outputs.node_version }}
 
   kgateway_e2e_tests_for_gateway_api_versions:
     name: E2E (ref=${{ matrix.ref.display_ref }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
@@ -138,6 +144,10 @@ jobs:
           - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
             label: min
         gateway-api-version:
+          - version: 'v1.6.0'
+            channel: experimental
+          - version: 'v1.6.0'
+            channel: standard
           - version: 'v1.5.1'
             channel: experimental
           - version: 'v1.5.1'
@@ -157,9 +167,15 @@ jobs:
         with:
           ref: ${{ matrix.ref.checkout_ref }}
       # v2.2.x is built against Gateway API 1.4 and refuses to start on 1.5 (#13872), so the
-      # v2.2.x x v1.5.1 lanes need special handling: skip the standard channel entirely, and
+      # v2.2.x x v1.5+ lanes need special handling: skip the standard channel entirely, and
       # run the experimental channel with the version check bypassed to keep forward-compat
-      # signal. This is done with step guards rather than a matrix `exclude:` because every
+      # signal. The experimental channel is further limited to the max lane: the Gateway API
+      # 1.5.1 experimental CRDs use the isIP() CEL function (added in Kubernetes 1.31), but
+      # v2.2.x's min lane currently runs k8s 1.30, so those CRDs fail to install there.
+      # (main/v2.3.x min lanes run k8s 1.31+, which is why only v2.2.x is skipped.) The
+      # per-lane Kubernetes versions live in .github/workflows/.env/nightly-tests/; the guard
+      # keys off the min/max label, so if v2.2.x's min lane is bumped to >=1.31 this skip can
+      # be dropped. This is done with step guards rather than a matrix `exclude:` because every
       # dimension here is object-valued and object-valued excludes are unreliable
       # (actions/runner#1512).
       - name: Determine run plan
@@ -168,19 +184,34 @@ jobs:
           REF: ${{ matrix.ref.checkout_ref }}
           GW_API_VERSION: ${{ matrix.gateway-api-version.version }}
           GW_API_CHANNEL: ${{ matrix.gateway-api-version.channel }}
+          VERSIONS_LABEL: ${{ matrix.env-versions.label }}
         shell: bash
         run: |
           run=true
           bypass_version_check=false
-          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.5.1" ]]; then
+          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.6.0" ]]; then
             case "${GW_API_CHANNEL}" in
               standard)     run=false ;;
               experimental) bypass_version_check=true ;;
             esac
           fi
+          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.5.1" ]]; then
+            case "${GW_API_CHANNEL}" in
+              standard)     run=false ;;
+              experimental)
+                if [[ "${VERSIONS_LABEL}" == "min" ]]; then
+                  # v2.2.x's min lane currently runs k8s 1.30, which lacks the isIP() CEL
+                  # function (added in k8s 1.31) the 1.5.1 experimental CRDs require.
+                  run=false
+                else
+                  bypass_version_check=true
+                fi
+                ;;
+            esac
+          fi
           echo "run=${run}" >> "${GITHUB_OUTPUT}"
           echo "bypass_version_check=${bypass_version_check}" >> "${GITHUB_OUTPUT}"
-          echo "ref=${REF} gw-api=${GW_API_VERSION}-${GW_API_CHANNEL} -> run=${run} bypass_version_check=${bypass_version_check}"
+          echo "ref=${REF} gw-api=${GW_API_VERSION}-${GW_API_CHANNEL} versions=${VERSIONS_LABEL} -> run=${run} bypass_version_check=${bypass_version_check}"
       # Bake KGW_SKIP_GATEWAY_API_VERSION_CHECK into the chart before setup-kind-cluster
       # packages it (hack/kind/setup-kind.sh runs `make package-kgateway-charts` from source),
       # so the controller starts despite the unsupported Gateway API version.

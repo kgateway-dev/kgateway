@@ -9,6 +9,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoyrawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
@@ -294,6 +295,15 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 
 	if pol.healthCheck != nil {
 		out.HealthChecks = []*envoycorev3.HealthCheck{pol.healthCheck}
+		// Backend plugins (e.g. the static backend) stamp each endpoint's
+		// health_check_config.hostname with the backend's dial address. Per Envoy
+		// semantics that endpoint-level hostname overrides the cluster-level
+		// http_health_check host (and gRPC authority). When the BackendConfigPolicy
+		// explicitly configures a health check host, honor it by clearing the
+		// auto-stamped endpoint hostname so the configured value is used.
+		if healthCheckHasExplicitHost(pol.healthCheck) {
+			clearEndpointHealthCheckHostnames(out.GetLoadAssignment())
+		}
 	}
 
 	if pol.outlierDetection != nil {
@@ -305,6 +315,36 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	}
 
 	applyDnsClusterConfig(pol, out)
+}
+
+// healthCheckHasExplicitHost reports whether the health check configures a
+// cluster-level host (HTTP) or authority (gRPC) that the user expects to be
+// used for health check requests.
+func healthCheckHasExplicitHost(hc *envoycorev3.HealthCheck) bool {
+	if http := hc.GetHttpHealthCheck(); http != nil {
+		return http.GetHost() != ""
+	}
+	if grpc := hc.GetGrpcHealthCheck(); grpc != nil {
+		return grpc.GetAuthority() != ""
+	}
+	return false
+}
+
+// clearEndpointHealthCheckHostnames removes the per-endpoint
+// health_check_config.hostname override so the cluster-level health check host
+// takes effect. Envoy treats a non-empty endpoint hostname as an override of
+// the cluster-level configuration.
+func clearEndpointHealthCheckHostnames(cla *envoyendpointv3.ClusterLoadAssignment) {
+	if cla == nil {
+		return
+	}
+	for _, locality := range cla.GetEndpoints() {
+		for _, lbEndpoint := range locality.GetLbEndpoints() {
+			if cfg := lbEndpoint.GetEndpoint().GetHealthCheckConfig(); cfg != nil {
+				cfg.Hostname = ""
+			}
+		}
+	}
 }
 
 func translate(

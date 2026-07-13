@@ -1,7 +1,8 @@
 package irtranslator
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -27,14 +28,14 @@ func OrderedEndpointPlugins(policies sdk.ContributesPolicies) []sdk.EndpointPlug
 		})
 	}
 
-	sort.SliceStable(entries, func(i, j int) bool {
-		if entries[i].groupKind.Group != entries[j].groupKind.Group {
-			return entries[i].groupKind.Group < entries[j].groupKind.Group
+	slices.SortStableFunc(entries, func(a, b endpointPluginEntry) int {
+		if a.groupKind.Group != b.groupKind.Group {
+			return cmp.Compare(a.groupKind.Group, b.groupKind.Group)
 		}
-		if entries[i].groupKind.Kind != entries[j].groupKind.Kind {
-			return entries[i].groupKind.Kind < entries[j].groupKind.Kind
+		if a.groupKind.Kind != b.groupKind.Kind {
+			return cmp.Compare(a.groupKind.Kind, b.groupKind.Kind)
 		}
-		return entries[i].name < entries[j].name
+		return cmp.Compare(a.name, b.name)
 	})
 
 	endpointPlugins := make([]sdk.EndpointPlugin, 0, len(entries))

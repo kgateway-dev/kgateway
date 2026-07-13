@@ -3,6 +3,8 @@ package backend
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -10,6 +12,7 @@ import (
 
 	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 	awsec2 "github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/smithy-go"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
@@ -64,6 +67,242 @@ func TestSelectResolvedEc2BackendUsesConfiguredAddressType(t *testing.T) {
 	}
 	if got.endpoints[0].address != "54.0.0.1" {
 		t.Fatalf("selectResolvedEc2Backend() address = %q, want public IP", got.endpoints[0].address)
+	}
+}
+
+func TestSelectResolvedEc2BackendSetsDiscoveredStatus(t *testing.T) {
+	cfg := ec2BackendConfig{
+		resourceName: "backend-a",
+		region:       "us-east-1",
+		port:         8080,
+		addressType:  kgateway.AwsAddressTypePrivateIP,
+	}
+
+	got := selectResolvedEc2Backend(cfg, []ec2DiscoveredInstance{
+		{instanceID: "i-1", privateIP: "10.0.0.1"},
+		{instanceID: "i-2", privateIP: "10.0.0.2"},
+	})
+
+	if got.status.status != metav1.ConditionTrue {
+		t.Fatalf("status = %q, want True", got.status.status)
+	}
+	if got.status.reason != string(kgateway.BackendReasonDiscovered) {
+		t.Fatalf("reason = %q, want Discovered", got.status.reason)
+	}
+	if got.status.message != "2 endpoints active" {
+		t.Fatalf("message = %q, want %q", got.status.message, "2 endpoints active")
+	}
+}
+
+func TestSelectResolvedEc2BackendSetsNoMatchingInstancesStatus(t *testing.T) {
+	cfg := ec2BackendConfig{
+		resourceName: "backend-a",
+		region:       "us-east-1",
+		port:         8080,
+		addressType:  kgateway.AwsAddressTypePrivateIP,
+		filters:      []ec2TagFilter{{key: "app", value: "payments", exact: true}},
+	}
+
+	got := selectResolvedEc2Backend(cfg, []ec2DiscoveredInstance{
+		{instanceID: "i-1", privateIP: "10.0.0.1", tags: map[string]string{"app": "billing"}},
+	})
+
+	if len(got.endpoints) != 0 {
+		t.Fatalf("endpoints = %d, want 0", len(got.endpoints))
+	}
+	if got.status.status != metav1.ConditionFalse {
+		t.Fatalf("status = %q, want False", got.status.status)
+	}
+	if got.status.reason != string(kgateway.BackendReasonNoMatchingInstances) {
+		t.Fatalf("reason = %q, want NoMatchingInstances", got.status.reason)
+	}
+	// The message must describe the filters in use so an operator can tell a
+	// misconfiguration from an empty fleet.
+	if !strings.Contains(got.status.message, "app=payments") {
+		t.Fatalf("message = %q, want it to describe the filter app=payments", got.status.message)
+	}
+}
+
+func TestClassifyEc2DiscoveryError(t *testing.T) {
+	tests := []struct {
+		name       string
+		err        error
+		wantReason string
+	}{
+		{
+			name:       "credential error",
+			err:        &ec2CredentialError{err: errors.New("invalid aws secret: access_key is not a valid string")},
+			wantReason: string(kgateway.BackendReasonCredentialError),
+		},
+		{
+			name:       "authorization error",
+			err:        fmt.Errorf("describe instances: %w", &smithy.GenericAPIError{Code: "UnauthorizedOperation", Message: "not authorized"}),
+			wantReason: string(kgateway.BackendReasonAuthorizationError),
+		},
+		{
+			name:       "transient discovery error",
+			err:        fmt.Errorf("describe instances: %w", &smithy.GenericAPIError{Code: "RequestLimitExceeded", Message: "slow down"}),
+			wantReason: string(kgateway.BackendReasonDiscoveryError),
+		},
+		{
+			name:       "non-aws error",
+			err:        errors.New("connection reset"),
+			wantReason: string(kgateway.BackendReasonDiscoveryError),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reason, message := classifyEc2DiscoveryError(tt.err)
+			if reason != tt.wantReason {
+				t.Fatalf("reason = %q, want %q", reason, tt.wantReason)
+			}
+			if message == "" {
+				t.Fatal("message is empty, want a human-readable description")
+			}
+		})
+	}
+}
+
+func TestComputeStateReflectsAuthorizationFailureInStatus(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	backend := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", nil)
+	backendIR := backendObjectIR(backend, secret)
+
+	c := &ec2EndpointsCollection{
+		backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{backendIR}),
+		lister: &fakeEc2InstanceLister{
+			err: fmt.Errorf("describe instances: %w", &smithy.GenericAPIError{Code: "AuthFailure", Message: "auth failed"}),
+		},
+	}
+
+	state, err := c.computeState(context.Background())
+	if err == nil {
+		t.Fatal("computeState() error = nil, want error")
+	}
+
+	got := state[backendIR.ResourceName()].status
+	if got.status != metav1.ConditionFalse {
+		t.Fatalf("status = %q, want False", got.status)
+	}
+	if got.reason != string(kgateway.BackendReasonAuthorizationError) {
+		t.Fatalf("reason = %q, want AuthorizationError", got.reason)
+	}
+	// No prior successful poll, so the message must make clear no endpoints are served.
+	if !strings.Contains(got.message, "no endpoints available from a previous poll") {
+		t.Fatalf("message = %q, want it to note no endpoints are available", got.message)
+	}
+}
+
+func TestComputeStateReportsDegradedWhenFailureCarriesEndpoints(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	backend := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", nil)
+	backendIR := backendObjectIR(backend, secret)
+
+	c := &ec2EndpointsCollection{
+		backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{backendIR}),
+		lister: &fakeEc2InstanceLister{
+			instances: []ec2DiscoveredInstance{
+				{instanceID: "i-1", privateIP: "10.0.0.10"},
+			},
+		},
+	}
+
+	// First poll succeeds and resolves endpoints.
+	state, err := c.computeState(context.Background())
+	if err != nil {
+		t.Fatalf("computeState() error = %v", err)
+	}
+	if got := len(state[backendIR.ResourceName()].endpoints); got == 0 {
+		t.Fatal("expected endpoints from the initial successful poll")
+	}
+	c.state = state
+
+	// Second poll fails: endpoints are carried forward, so the backend is degraded
+	// rather than hard down, and must not keep the raw AuthorizationError reason.
+	c.lister = &fakeEc2InstanceLister{
+		err: fmt.Errorf("describe instances: %w", &smithy.GenericAPIError{Code: "AuthFailure", Message: "auth failed"}),
+	}
+	state, err = c.computeState(context.Background())
+	if err == nil {
+		t.Fatal("computeState() error = nil, want error")
+	}
+	got := state[backendIR.ResourceName()].status
+	if got.status != metav1.ConditionFalse {
+		t.Fatalf("status = %q, want False", got.status)
+	}
+	if got.reason != string(kgateway.BackendReasonDegraded) {
+		t.Fatalf("reason = %q, want Degraded", got.reason)
+	}
+	if got := len(state[backendIR.ResourceName()].endpoints); got == 0 {
+		t.Fatal("expected endpoints to be carried forward across the failed poll")
+	}
+	if !strings.Contains(got.message, "serving") {
+		t.Fatalf("message = %q, want it to note endpoints are still served", got.message)
+	}
+}
+
+func TestEc2DiscoveryFailureMessage(t *testing.T) {
+	const cause = "AuthFailure: auth failed"
+	tests := []struct {
+		name             string
+		carriedEndpoints int
+		wantSubstr       string
+	}{
+		{
+			name:             "no carried-forward endpoints",
+			carriedEndpoints: 0,
+			wantSubstr:       "no endpoints available from a previous poll",
+		},
+		{
+			name:             "serving carried-forward endpoints",
+			carriedEndpoints: 3,
+			wantSubstr:       "serving 3 endpoints from the last successful poll",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ec2DiscoveryFailureMessage(cause, tt.carriedEndpoints)
+			if !strings.HasPrefix(got, cause) {
+				t.Fatalf("message = %q, want it to start with the cause %q", got, cause)
+			}
+			if !strings.Contains(got, tt.wantSubstr) {
+				t.Fatalf("message = %q, want it to contain %q", got, tt.wantSubstr)
+			}
+		})
+	}
+}
+
+func TestDiscoveryStatusForBackendReportsCredentialErrorForUnresolvedSecret(t *testing.T) {
+	// A Secret-auth backend whose secret is unresolved (nil on the IR) is filtered
+	// out of the discovery loop, but must still surface a CredentialError.
+	be := newEc2Backend("backend-a", "", nil)
+	be.Spec.Aws.Auth = &kgateway.AwsAuth{
+		Type:      kgateway.AwsAuthTypeSecret,
+		SecretRef: &corev1.LocalObjectReference{Name: "missing-secret"},
+	}
+	backend := backendObjectIR(be, nil)
+
+	c := &ec2EndpointsCollection{enabled: true}
+	got := c.discoveryStatusForBackend(krt.TestingDummyContext{}, backend)
+	if got == nil {
+		t.Fatal("discoveryStatusForBackend() = nil, want a CredentialError status")
+	}
+	if len(got.Conditions) != 1 {
+		t.Fatalf("conditions = %d, want 1", len(got.Conditions))
+	}
+	cond := got.Conditions[0]
+	if cond.Type != string(kgateway.BackendConditionEndpointsDiscovered) {
+		t.Fatalf("condition type = %q, want EndpointsDiscovered", cond.Type)
+	}
+	if cond.Status != metav1.ConditionFalse {
+		t.Fatalf("condition status = %q, want False", cond.Status)
+	}
+	if cond.Reason != string(kgateway.BackendReasonCredentialError) {
+		t.Fatalf("condition reason = %q, want CredentialError", cond.Reason)
+	}
+	// The message must not expose secret values.
+	if strings.Contains(cond.Message, "access") || strings.Contains(cond.Message, "secret-value") {
+		t.Fatalf("message = %q, must not expose secret values", cond.Message)
 	}
 }
 
@@ -217,6 +456,162 @@ func TestComputeStateClearsEndpointsOnRefreshFailureAfterConfigChange(t *testing
 	}
 	if !got.config.Equals(currentCfg.stateKey()) {
 		t.Fatal("backend config key did not update to the current config")
+	}
+}
+
+func TestComputeStatePreservesEndpointsOnRefreshFailureAfterCredentialOnlyChange(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	priorBackend := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", []kgateway.AwsTagFilter{tagKeyValue("app", "payments")})
+	currentBackend := newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/updated", []kgateway.AwsTagFilter{tagKeyValue("app", "payments")})
+
+	priorBackendIR := backendObjectIR(priorBackend, secret)
+	currentBackendIR := backendObjectIR(currentBackend, secret)
+	priorCfg := ec2ConfigFromBackend(priorBackendIR)
+	currentCfg := ec2ConfigFromBackend(currentBackendIR)
+	if priorCfg == nil || currentCfg == nil {
+		t.Fatal("ec2ConfigFromBackend() returned nil")
+	}
+
+	c := &ec2EndpointsCollection{
+		backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{currentBackendIR}),
+		lister: &fakeEc2InstanceLister{
+			err: errors.New("boom"),
+		},
+		state: map[string]ec2ResolvedBackend{
+			priorBackendIR.ResourceName(): {
+				port:   priorCfg.port,
+				config: priorCfg.stateKey(),
+				endpoints: []ec2ResolvedEndpoint{{
+					address:    "10.0.0.10",
+					instanceID: "i-1",
+					region:     priorCfg.region,
+					zone:       "us-east-1a",
+				}},
+			},
+		},
+	}
+
+	state, err := c.computeState(context.Background())
+	if err == nil {
+		t.Fatal("computeState() error = nil, want error")
+	}
+
+	got := state[currentBackendIR.ResourceName()]
+	if len(got.endpoints) != 1 {
+		t.Fatalf("backend endpoints = %d, want 1 preserved after credential-only change", len(got.endpoints))
+	}
+	if got.endpoints[0].address != "10.0.0.10" {
+		t.Fatalf("backend endpoint address = %q, want 10.0.0.10", got.endpoints[0].address)
+	}
+	if !got.config.Equals(currentCfg.stateKey()) {
+		t.Fatal("backend config key did not update to the current config")
+	}
+}
+
+func TestEndpointsForBackendRequestsRefreshWhenStateIsMissing(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	backendIR := backendObjectIR(newEc2Backend("backend-a", "", nil), secret)
+	cfg := ec2ConfigFromBackend(backendIR)
+	if cfg == nil {
+		t.Fatal("ec2ConfigFromBackend() returned nil")
+	}
+
+	c := &ec2EndpointsCollection{
+		refreshCh: make(chan struct{}, 1),
+		state:     map[string]ec2ResolvedBackend{},
+	}
+
+	eps := c.endpointsForBackend(backendIR, cfg)
+	if got := countEndpoints(eps); got != 0 {
+		t.Fatalf("endpointsForBackend() endpoints = %d, want 0 before first discovery", got)
+	}
+	requireRefreshRequested(t, c)
+}
+
+func TestEndpointsForBackendDiscardsStaleStateAfterSemanticChange(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	priorBackendIR := backendObjectIR(newEc2Backend("backend-a", "", nil), secret)
+	priorCfg := ec2ConfigFromBackend(priorBackendIR)
+
+	currentBackend := newEc2Backend("backend-a", "", nil)
+	currentBackend.Spec.Aws.Ec2.Port = 9090
+	currentBackendIR := backendObjectIR(currentBackend, secret)
+	currentCfg := ec2ConfigFromBackend(currentBackendIR)
+	if priorCfg == nil || currentCfg == nil {
+		t.Fatal("ec2ConfigFromBackend() returned nil")
+	}
+
+	c := &ec2EndpointsCollection{
+		refreshCh: make(chan struct{}, 1),
+		state: map[string]ec2ResolvedBackend{
+			priorBackendIR.ResourceName(): {
+				port:   priorCfg.port,
+				config: priorCfg.stateKey(),
+				endpoints: []ec2ResolvedEndpoint{{
+					address:    "10.0.0.10",
+					instanceID: "i-1",
+					region:     priorCfg.region,
+					zone:       "us-east-1a",
+				}},
+			},
+		},
+	}
+
+	eps := c.endpointsForBackend(currentBackendIR, currentCfg)
+	if got := countEndpoints(eps); got != 0 {
+		t.Fatalf("endpointsForBackend() endpoints = %d, want 0 after the port changed", got)
+	}
+	requireRefreshRequested(t, c)
+}
+
+func TestEndpointsForBackendServesCachedEndpointsAfterCredentialOnlyChange(t *testing.T) {
+	secret := newTestAWSSecret("aws-creds", "default", "1")
+	priorBackendIR := backendObjectIR(newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", nil), secret)
+	priorCfg := ec2ConfigFromBackend(priorBackendIR)
+
+	currentBackendIR := backendObjectIR(newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/updated", nil), secret)
+	currentCfg := ec2ConfigFromBackend(currentBackendIR)
+	if priorCfg == nil || currentCfg == nil {
+		t.Fatal("ec2ConfigFromBackend() returned nil")
+	}
+
+	c := &ec2EndpointsCollection{
+		refreshCh: make(chan struct{}, 1),
+		state: map[string]ec2ResolvedBackend{
+			priorBackendIR.ResourceName(): {
+				port:   priorCfg.port,
+				config: priorCfg.stateKey(),
+				endpoints: []ec2ResolvedEndpoint{{
+					address:    "10.0.0.10",
+					instanceID: "i-1",
+					region:     priorCfg.region,
+					zone:       "us-east-1a",
+				}},
+			},
+		},
+	}
+
+	eps := c.endpointsForBackend(currentBackendIR, currentCfg)
+	if got := countEndpoints(eps); got != 1 {
+		t.Fatalf("endpointsForBackend() endpoints = %d, want 1 served across a credential-only change", got)
+	}
+	requireRefreshRequested(t, c)
+}
+
+func countEndpoints(eps *ir.EndpointsForBackend) int {
+	total := 0
+	for _, lbEps := range eps.LbEps {
+		total += len(lbEps)
+	}
+	return total
+}
+
+func requireRefreshRequested(t *testing.T, c *ec2EndpointsCollection) {
+	t.Helper()
+	select {
+	case <-c.refreshCh:
+	default:
+		t.Fatal("expected an on-demand refresh request")
 	}
 }
 
@@ -399,7 +794,7 @@ func TestAwsEc2InstanceListerClientForPrunesSupersededSecretVersions(t *testing.
 }
 
 func TestBuildTranslateFuncRejectsEc2WhenDiscoveryDisabled(t *testing.T) {
-	translate := buildTranslateFunc(nil, false)
+	translate := buildTranslateFunc(nil, nil, false)
 
 	backendIR := translate(nil, newEc2Backend("backend-a", "", nil))
 
@@ -415,9 +810,14 @@ func TestBuildTranslateFuncRejectsEc2WhenDiscoveryDisabled(t *testing.T) {
 }
 
 func TestBuildTranslateFuncFailsClosedForMissingEc2Secret(t *testing.T) {
-	translate := buildTranslateFunc(newSecretIndexForTest(t), true)
+	translate := buildTranslateFunc(nil, newSecretIndexForTest(t), true)
 
-	backendIR := translate(krt.TestingDummyContext{}, newEc2Backend("backend-a", "", nil))
+	backend := newEc2Backend("backend-a", "", nil)
+	backend.Spec.Aws.Auth = &kgateway.AwsAuth{
+		Type:      kgateway.AwsAuthTypeSecret,
+		SecretRef: &corev1.LocalObjectReference{Name: "aws-creds"},
+	}
+	backendIR := translate(krt.TestingDummyContext{}, backend)
 
 	if len(backendIR.errors) == 0 {
 		t.Fatal("translate() errors = 0, want at least 1")
@@ -501,7 +901,7 @@ func (f *fakeEc2InstanceLister) ListInstances(_ context.Context, source ec2Crede
 }
 
 func newEc2Backend(name, roleArn string, filters []kgateway.AwsTagFilter) *kgateway.Backend {
-	return &kgateway.Backend{
+	be := &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
@@ -509,21 +909,21 @@ func newEc2Backend(name, roleArn string, filters []kgateway.AwsTagFilter) *kgate
 		Spec: kgateway.BackendSpec{
 			Aws: &kgateway.AwsBackend{
 				Region: "us-east-1",
-				Auth: &kgateway.AwsAuth{
-					Type: kgateway.AwsAuthTypeSecret,
-					SecretRef: &corev1.LocalObjectReference{
-						Name: "aws-creds",
-					},
-				},
 				Ec2: &kgateway.AwsEc2{
 					Port:        8080,
 					AddressType: kgateway.AwsAddressTypePrivateIP,
-					RoleArn:     roleArn,
 					Filters:     filters,
 				},
 			},
 		},
 	}
+	if roleArn != "" {
+		be.Spec.Aws.Auth = &kgateway.AwsAuth{
+			Type:       kgateway.AwsAuthTypeAssumeRole,
+			AssumeRole: &kgateway.AwsAssumeRole{RoleArn: roleArn},
+		}
+	}
+	return be
 }
 
 func backendObjectIR(be *kgateway.Backend, secret *ir.Secret) ir.BackendObjectIR {

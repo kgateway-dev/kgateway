@@ -263,6 +263,40 @@ type Http2ProtocolOptions struct {
 	// When enabled, only the offending stream is terminated.
 	// +optional
 	OverrideStreamErrorOnInvalidHttpMessage *bool `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
+
+	// ConnectionKeepalive enables HTTP/2 keepalive PINGs on upstream connections,
+	// actively detecting half-dead connections: if a PING is not acknowledged
+	// within the timeout, the connection is closed.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-keepalivesettings) for more details.
+	// +optional
+	ConnectionKeepalive *ConnectionKeepalive `json:"connectionKeepalive,omitempty"`
+}
+
+// ConnectionKeepalive configures HTTP/2 keepalive PINGs for upstream connections.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-keepalivesettings) for more details.
+type ConnectionKeepalive struct {
+	// Timeout after which the connection is closed if no response to a keepalive
+	// PING is received. A PING response is considered received if any frame
+	// arrives on the connection while the PING is outstanding.
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms"
+	// +required
+	Timeout metav1.Duration `json:"timeout"`
+
+	// Interval between keepalive PINGs. If unset, PINGs are only sent when
+	// triggered by ConnectionIdleInterval.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="interval must be at least 1ms"
+	Interval *metav1.Duration `json:"interval,omitempty"`
+
+	// If set, a PING is sent before dispatching new streams on a connection that
+	// has been idle for at least this duration, verifying the connection is
+	// still alive before reusing it.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="connectionIdleInterval must be at least 1ms"
+	ConnectionIdleInterval *metav1.Duration `json:"connectionIdleInterval,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive) for more details.
@@ -555,8 +589,8 @@ const (
 type ZoneAwareLoadBalancer struct {
 	// PreferLocal enables Envoy's zone-aware routing which prefers sending traffic
 	// to local zone endpoints while maintaining overall traffic balance across zones.
-	// This requires the Envoy proxy to be aware of its own zone, which can be configured
-	// via the KGATEWAY_NODE_ZONE environment variable on the proxy pod.
+	// On Kubernetes 1.35+, the zone is automatically derived from node label.
+	// The KGATEWAY_NODE_* environment variables on the proxy pod can be set as an explicit override.
 	// See https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/zone_aware
 	// +optional
 	PreferLocal *ZoneAwarePreferLocal `json:"preferLocal,omitempty"`

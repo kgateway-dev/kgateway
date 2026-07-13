@@ -1,0 +1,51 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: lambda-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+      - path:
+          type: Exact
+          value: /lambda
+      backendRefs:
+        - name: lambda-assume-role
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+# AssumeRole auth: chains off the gateway's ambient credentials (IRSA) to assume a
+# per-target invoke role via STS, whose temporary credentials sign Lambda requests.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: lambda-assume-role
+  namespace: default
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    region: us-east-1
+    auth:
+      type: AssumeRole
+      assumeRole:
+        roleArn: arn:aws:iam::311275790335:role/project-invoke-role
+    lambda:
+      functionName: hello-function
+      qualifier: $LATEST

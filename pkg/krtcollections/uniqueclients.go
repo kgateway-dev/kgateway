@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -22,6 +24,45 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
+
+// xdsFirstConnectDelay is slept on the first DiscoveryRequest of every new
+// xDS stream, after the client has been registered (which kicks off
+// per-client translation) and before returning to go-control-plane, which
+// only then creates the stream's first watch. This gives the per-client
+// cluster and endpoint collections a head start so the first snapshot the
+// client observes is (almost always) fully converged rather than partially
+// translated — the reconnect-time race that #13868's whole-snapshot
+// readiness gates tried to close before they were reverted for causing
+// indefinite starvation (#14184). Each gRPC stream runs on its own
+// goroutine, so the sleep delays only this client and holds no locks; a
+// reconnecting warm Envoy keeps serving its existing config meanwhile.
+//
+// Stored as nanoseconds in an atomic so the test override cannot race the
+// stream goroutines that read it, and initialized lazily on first use so
+// test binaries can set the environment variable from TestMain (package
+// initialization would otherwise read the environment before any test code
+// runs). Override with KGW_XDS_FIRST_CONNECT_DELAY (Go duration, e.g. "2s";
+// "0" or negative disables).
+var (
+	xdsFirstConnectDelayNanos atomic.Int64
+	xdsFirstConnectDelayInit  sync.Once
+)
+
+func xdsFirstConnectDelay() time.Duration {
+	xdsFirstConnectDelayInit.Do(func() {
+		d := time.Second
+		if v := os.Getenv("KGW_XDS_FIRST_CONNECT_DELAY"); v != "" {
+			parsed, err := time.ParseDuration(v)
+			if err == nil {
+				d = parsed
+			} else {
+				slog.Warn("invalid KGW_XDS_FIRST_CONNECT_DELAY; using default", "value", v, "default", time.Second, "error", err)
+			}
+		}
+		xdsFirstConnectDelayNanos.Store(int64(d))
+	})
+	return time.Duration(xdsFirstConnectDelayNanos.Load())
+}
 
 type ConnectedClient struct {
 	uniqueClientName string
@@ -219,7 +260,7 @@ func NormalizeGatewayRole(originalRole, namespace string, labels map[string]stri
 	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, namespace, gwName)
 }
 
-func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (string, bool, error) {
+func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (ucName string, newStream, newUCC bool, err error) {
 	var pod *LocalityPod
 	// see if user wants to use pod locality info; this is only possible when podRef is set in getPeerInfo
 	if peer.podRef != nil {
@@ -232,7 +273,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	c, ok := x.clients[sid]
 	if !ok {
 		if err := logAndCheckEnvoyVersion(x.logger, r.GetNode()); err != nil {
-			return "", false, err
+			return "", false, false, err
 		}
 		var locality ir.PodLocality
 		var ns string
@@ -240,7 +281,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 		if peer.podRef != nil {
 			if pod == nil {
 				// we need to use the pod locality info, so it's an error if we can't get the pod
-				return "", false, fmt.Errorf("pod not found for node %v", r.GetNode())
+				return "", false, false, fmt.Errorf("pod not found for node %v", r.GetNode())
 			} else {
 				locality = pod.Locality
 				ns = pod.Namespace
@@ -260,7 +301,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 			addedNew = true
 		}
 	}
-	return c.uniqueClientName, addedNew, nil
+	return c.uniqueClientName, !ok, addedNew, nil
 }
 
 // OnStreamRequest is called once a request is received on a stream.
@@ -290,7 +331,7 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 }
 
 func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) error {
-	ucc, isNew, err := x.add(sid, r, peer)
+	ucc, isNewStream, isNewUCC, err := x.add(sid, r, peer)
 	if err != nil {
 		x.logger.Debug("error processing xds client", "error", err)
 		return err
@@ -313,8 +354,13 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	// the unique client resource name as well.
 	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc)
 	r.GetNode().Metadata = nodeMd
-	if isNew {
+	if isNewUCC {
 		x.trigger.TriggerRecomputation()
+	}
+	if delay := xdsFirstConnectDelay(); isNewStream && delay > 0 {
+		// See xdsFirstConnectDelay: give per-client translation a head start
+		// before go-control-plane creates this stream's first watch.
+		time.Sleep(delay)
 	}
 	return nil
 }

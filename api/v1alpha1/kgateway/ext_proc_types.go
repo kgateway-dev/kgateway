@@ -69,6 +69,13 @@ type ExtProcProvider struct {
 	// +optional
 	MetadataOptions *MetadataOptions `json:"metadataOptions,omitempty"`
 
+	// RequestAttributes specifies a list of Envoy attribute expressions whose values will be
+	// included in the ProcessingRequest.attributes map sent to the external processing server
+	// on every HTTP request.
+	// See: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto
+	// +optional
+	RequestAttributes []string `json:"requestAttributes,omitempty"`
+
 	// FilterStage specifies where in the HTTP filter chain the ExtProc filter
 	// should be placed. If not specified, the ExtProc filter defaults to running
 	// after the AuthZ stage.

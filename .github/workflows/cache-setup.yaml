@@ -32,3 +32,31 @@ jobs:
         with:
           path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
           key: ${{ steps.prep-go-runner.outputs.go-build-cache-key }}
+      # The unit tests compile with `CGO_ENABLED=1 -race`, which produces a
+      # distinct set of GOCACHE entries from the CGO-disabled build primed
+      # above. Seed a second cache so PR unit jobs start with a warm
+      # race-instrumented build cache instead of recompiling the world.
+      - name: Restore Race Go Build Cache
+        id: race-build-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
+          key: ${{ steps.prep-go-runner.outputs.go-build-cache-key-race }}
+      - name: Prime Race Go Build Cache
+        if: steps.race-build-cache.outputs.cache-hit != 'true'
+        env:
+          CGO_ENABLED: '1'
+        run: |
+          # Start from an empty build cache so the race cache we save below
+          # contains only race-instrumented entries, not a superset that also
+          # duplicates the CGO-disabled entries saved above. The -race build
+          # can't reuse the non-race artifacts anyway (instrumentation changes
+          # every action ID), so nothing is lost by clearing them first.
+          go clean -cache
+          go test -run '^$' -race ./...
+      - name: Save Race Go Build Cache
+        if: success() && steps.race-build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
+          key: ${{ steps.prep-go-runner.outputs.go-build-cache-key-race }}

@@ -110,6 +110,11 @@ Statuses:
             acl: invalid CIDR(s): "172.18.0.0/12" (host bits set; did you mean "172.16.0.0/12"?)'
           reason: RouteRuleReplaced
           status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references

@@ -81,6 +81,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"allow","rules":[{"action":"deny","cidrs":["192.168.0.0/16"]},{"action":"deny","cidrs":["2001:db8::/32"]},{"action":"deny","cidrs":["192.168.1.100"]},{"action":"deny","cidrs":["2001:db8::1"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
 Statuses:
   gateways:
     default/example-gateway:
@@ -143,6 +144,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

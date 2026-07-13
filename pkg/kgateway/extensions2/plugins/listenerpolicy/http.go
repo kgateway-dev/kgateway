@@ -141,7 +141,7 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	// Check serverHeaderTransformation
-	if d.serverHeaderTransformation != d2.serverHeaderTransformation {
+	if !cmputils.PointerValsEqual(d.serverHeaderTransformation, d2.serverHeaderTransformation) {
 		return false
 	}
 
@@ -452,6 +452,9 @@ func translateHttp2ProtocolOptions(http2ProtocolOptions *kgateway.ListenerHTTP2P
 	}
 	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
 		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.Value())} //nolint:gosec // G115: plugin validation ensures 65535-2147483647 range, safe for uint32
+	}
+	if http2ProtocolOptions.AllowConnect != nil {
+		out.AllowConnect = *http2ProtocolOptions.AllowConnect
 	}
 	return out
 }

@@ -393,6 +393,9 @@ spec:
         - mountPath: /var/run/secrets/tokens
           name: xds-token
           readOnly: true
+        - mountPath: /etc/podinfo
+          name: podinfo
+          readOnly: true
       - env:
         - name: POD_NAME
           valueFrom:
@@ -531,6 +534,12 @@ spec:
       - configMap:
           name: waypoint
         name: envoy-config
+      - downwardAPI:
+          items:
+          - fieldRef:
+              fieldPath: metadata.labels
+            path: labels
+        name: podinfo
       - emptyDir:
           medium: Memory
         name: istio-certs
