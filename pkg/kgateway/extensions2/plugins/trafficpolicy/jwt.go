@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"cmp"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
@@ -10,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
@@ -477,7 +477,9 @@ func buildJwtRequirementFromProviders(
 	}
 
 	// sort for idempotency
-	sort.Slice(reqs, func(i, j int) bool { return reqs[i].GetProviderName() < reqs[j].GetProviderName() })
+	slices.SortFunc(reqs, func(a, b *jwtauthnv3.JwtRequirement) int {
+		return cmp.Compare(a.GetProviderName(), b.GetProviderName())
+	})
 
 	var jwtReqs *jwtauthnv3.JwtRequirement
 	// if there is only one requirement, return it directly

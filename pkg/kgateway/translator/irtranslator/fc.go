@@ -2,7 +2,6 @@ package irtranslator
 
 import (
 	"fmt"
-	"sort"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -180,7 +179,7 @@ func convertCustomNetworkFilters(customNetworkFilters []ir.CustomEnvoyFilter) []
 }
 
 func sortNetworkFilters(filters filters.StagedNetworkFilterList) []*envoylistenerv3.Filter {
-	sort.Sort(filters)
+	filters.Sort()
 	var sortedFilters []*envoylistenerv3.Filter
 	for _, filter := range filters {
 		sortedFilters = append(sortedFilters, filter.Filter)
@@ -405,7 +404,7 @@ func convertCustomHttpFilters(customHttpFilters []ir.CustomEnvoyFilter) []filter
 }
 
 func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilter {
-	sort.Sort(filters)
+	filters.Sort()
 	var sortedFilters []*envoyhttp.HttpFilter
 	for _, filter := range filters {
 		if len(sortedFilters) > 0 && proto.Equal(sortedFilters[len(sortedFilters)-1], filter.Filter) {
@@ -418,7 +417,7 @@ func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilt
 }
 
 func sortUpstreamHttpFilters(filters filters.StagedUpstreamHttpFilterList) []*envoyhttp.HttpFilter {
-	sort.Sort(filters)
+	filters.Sort()
 	var sortedFilters []*envoyhttp.HttpFilter
 	for _, filter := range filters {
 		if len(sortedFilters) > 0 && proto.Equal(sortedFilters[len(sortedFilters)-1], filter.Filter) {
