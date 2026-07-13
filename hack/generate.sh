@@ -63,10 +63,12 @@ done
 go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}/kgateway" paths="${APIS_PKG}/api/${VERSION}/shared" \
     output:crd:artifacts:config=${ROOT_DIR}/${KGATEWAY_CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}
 # Template the ClusterRole name to include the namespace
-sed_in_place '1i\{{- if .Values.rbac.create }}' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
 sed_in_place 's|name: kgateway|name: kgateway-{{ .Release.Namespace }}|g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
+# Wrap the ClusterRole in a conditional so it can be disabled via rbac.create
+role_yaml="$(cat "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml")"
+printf '{{- if .Values.rbac.create }}\n%s\n{{- end }}\n' "${role_yaml}" \
+  > "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
 sed_in_place "s|AllowHeaders cannot contain '\\*' alongside other methods|AllowHeaders cannot contain '\\*' alongside other headers|g" "${ROOT_DIR}/${KGATEWAY_CRD_DIR}/gateway.kgateway.dev_trafficpolicies.yaml"
-sed_in_place '$a\{{- end }}' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
 
 # throw away
 new_report="$(mktemp -t "$(basename "$0").api_violations.XXXXXX")"
