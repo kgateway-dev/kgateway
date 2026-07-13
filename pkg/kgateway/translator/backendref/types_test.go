@@ -3,7 +3,6 @@ package backendref
 import (
 	"testing"
 
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -17,8 +16,8 @@ func TestRef(t *testing.T) {
 		{
 			name: "Valid IsDelegatedHTTPRoute Reference",
 			ref: gwv1.BackendObjectReference{
-				Kind:  ptr.To(gwv1.Kind("HTTPRoute")),
-				Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+				Kind:  new(gwv1.Kind("HTTPRoute")),
+				Group: new(gwv1.Group(gwv1.GroupName)),
 			},
 			refFn:    IsDelegatedHTTPRoute,
 			expected: true,
@@ -26,8 +25,8 @@ func TestRef(t *testing.T) {
 		{
 			name: "Invalid Kind",
 			ref: gwv1.BackendObjectReference{
-				Kind:  ptr.To(gwv1.Kind("InvalidKind")),
-				Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+				Kind:  new(gwv1.Kind("InvalidKind")),
+				Group: new(gwv1.Group(gwv1.GroupName)),
 			},
 			refFn:    IsDelegatedHTTPRoute,
 			expected: false,
@@ -35,8 +34,8 @@ func TestRef(t *testing.T) {
 		{
 			name: "Invalid Group",
 			ref: gwv1.BackendObjectReference{
-				Kind:  ptr.To(gwv1.Kind("HTTPRoute")),
-				Group: ptr.To(gwv1.Group("InvalidGroup")),
+				Kind:  new(gwv1.Kind("HTTPRoute")),
+				Group: new(gwv1.Group("InvalidGroup")),
 			},
 			refFn:    IsDelegatedHTTPRoute,
 			expected: false,
@@ -44,7 +43,7 @@ func TestRef(t *testing.T) {
 		{
 			name: "Invalid Group",
 			ref: gwv1.BackendObjectReference{
-				Group: ptr.To(gwv1.Group(gwv1.GroupName)),
+				Group: new(gwv1.Group(gwv1.GroupName)),
 			},
 			refFn:    IsDelegatedHTTPRoute,
 			expected: false, // Default Kind should not pass
@@ -52,7 +51,7 @@ func TestRef(t *testing.T) {
 		{
 			name: "No Group",
 			ref: gwv1.BackendObjectReference{
-				Kind: ptr.To(gwv1.Kind("HTTPRoute")),
+				Kind: new(gwv1.Kind("HTTPRoute")),
 			},
 			refFn:    IsDelegatedHTTPRoute,
 			expected: false, // Default Group should not pass
@@ -66,8 +65,8 @@ func TestRef(t *testing.T) {
 		{
 			name: "Delegation label selector",
 			ref: gwv1.BackendObjectReference{
-				Kind:  ptr.To(gwv1.Kind("label")),
-				Group: ptr.To(gwv1.Group("delegation.kgateway.dev")),
+				Kind:  new(gwv1.Kind("label")),
+				Group: new(gwv1.Group("delegation.kgateway.dev")),
 			},
 			refFn:    IsDelegatedHTTPRoute,
 			expected: true,

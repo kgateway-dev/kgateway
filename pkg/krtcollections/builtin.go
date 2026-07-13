@@ -265,8 +265,11 @@ func (r ruleIR) applyTimeouts(
 			timeout = timeouts.backendRequestTimeout
 		}
 	case timeouts.backendRequestTimeout != nil:
-		// Only BackendRequest is set
-		timeout = timeouts.backendRequestTimeout
+		// Do not set the timeout if retry is specified and only BackendRequest is set.
+		// This will be handled in envoyroutev3.RetryPolicy.PerTryTimeout
+		if !hasRetry {
+			timeout = timeouts.backendRequestTimeout
+		}
 	case timeouts.requestTimeout != nil:
 		// Only Request is set
 		timeout = timeouts.requestTimeout
@@ -288,7 +291,7 @@ func convertRetry(
 	in := &kgateway.Retry{
 		Attempts: 1,
 		RetryOn: []kgateway.RetryOnCondition{
-			"cancelled", "connect-failure", "refused-stream", "retriable-headers", "retriable-status-codes", "unavailable",
+			"cancelled", "connect-failure", "refused-stream", "retriable-headers", "retriable-status-codes", "unavailable", "reset",
 		},
 		StatusCodes: retry.Codes,
 	}
@@ -354,6 +357,13 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *sta
 		cookie := &httpv3.Cookie{
 			Name: utils.SanitizeCookieName(ptr.Deref(sessionPersistence.SessionName, "sessionPersistence")),
 			Ttl:  ttl,
+			// Always set path to root to set cookie for all requests to hostname.
+			// Default browser behavior otherwise is to use the current "directory" of the request.
+			// When a request comes in without session cookie for a subpath, it would be limited to that subpath and
+			// requests to unrelated subpaths could get routed to a different upstream.
+			// Cf. https://httpwg.org/specs/rfc6265.html#sane-path
+			// This intentionally ignores the specification in GEP-1619 as computing the "correct" path can lead to unintended consequences.
+			Path: "/",
 		}
 		// Only set LifetimeType if present in CookieConfig
 		if sessionPersistence.CookieConfig != nil &&

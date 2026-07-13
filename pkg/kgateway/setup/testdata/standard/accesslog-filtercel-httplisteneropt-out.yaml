@@ -14,7 +14,9 @@ clusters:
           hostname: 1.2.3.4
   name: backend_gwtest_log_0
   type: STATIC
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -22,7 +24,9 @@ clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_kubernetes_443
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}

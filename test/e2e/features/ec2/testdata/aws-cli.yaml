@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: aws-cli-ec2
+  namespace: kgateway-base
+  labels:
+    app.kubernetes.io/name: aws-cli-ec2
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+  - name: aws-cli
+    image: amazon/aws-cli:2.31.29
+    command:
+    - /bin/sh
+    - -c
+    - sleep infinity
+    env:
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: aws-ec2-creds
+          key: accessKey
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: aws-ec2-creds
+          key: secretKey
+    - name: AWS_DEFAULT_REGION
+      value: us-east-1
+    readinessProbe:
+      exec:
+        command:
+        - aws
+        - --version
+      initialDelaySeconds: 5
+      periodSeconds: 5

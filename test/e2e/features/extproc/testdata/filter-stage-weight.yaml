@@ -1,0 +1,82 @@
+---
+# GatewayExtension with high weight (runs earlier in the chain)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: ext-proc-high-weight
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: ext-proc-server-a
+        port: 4444
+    filterStage:
+      stage: AuthZ
+      predicate: After
+      weight: 10
+---
+# GatewayExtension with low weight (runs later in the chain)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: ext-proc-low-weight
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: ext-proc-server-b
+        port: 4444
+    filterStage:
+      stage: AuthZ
+      predicate: After
+      weight: -5
+---
+# TrafficPolicy referencing high-weight ExtProc (used as inline filter)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-high
+spec:
+  extProc:
+    extensionRef:
+      name: ext-proc-high-weight
+---
+# TrafficPolicy referencing low-weight ExtProc (used as inline filter)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extproc-low
+spec:
+  extProc:
+    extensionRef:
+      name: ext-proc-low-weight
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-weight-test
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: kgateway-base
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /both
+      backendRefs:
+        - name: ext-proc-backend
+          port: 3000
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.kgateway.dev
+            kind: TrafficPolicy
+            name: extproc-high
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.kgateway.dev
+            kind: TrafficPolicy
+            name: extproc-low

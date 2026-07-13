@@ -33,7 +33,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 	exemptFeatures := GetCommonExemptFeatures()
 	// backfill individual features that we don't support yet.
 	exemptFeatures.Insert(
-		features.GatewayHTTPListenerIsolationFeature,
 		// We do not yet implement the 421 misdirected-request behavior across HTTPS listeners
 		// sharing the same port.
 		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,
@@ -46,11 +45,10 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 			features.TLSRouteModeMixedFeature,
 		)
 	}
-
-	// Support only the core BackendTLSPolicy feature set for now.
-	for _, feature := range features.BackendTLSPolicyExtendedFeatures.UnsortedList() {
+	for _, feature := range features.UDPRouteFeatures.UnsortedList() {
 		exemptFeatures.Insert(feature)
 	}
+
 	return getSupportedFeatures(exemptFeatures)
 }
 

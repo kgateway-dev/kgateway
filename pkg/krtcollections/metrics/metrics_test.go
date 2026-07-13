@@ -9,7 +9,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
@@ -68,14 +67,14 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{{
 								Name: testGateway,
-								Kind: ptr.To(gwv1.Kind("Gateway")),
+								Kind: new(gwv1.Kind("Gateway")),
 							}},
 						},
 						Hostnames: []gwv1.Hostname{"example.com"},
 						Rules: []gwv1.HTTPRouteRule{{
 							Matches: []gwv1.HTTPRouteMatch{{
 								Path: &gwv1.HTTPPathMatch{
-									Type:  ptr.To(gwv1.PathMatchPathPrefix),
+									Type:  new(gwv1.PathMatchPathPrefix),
 									Value: new("/"),
 								},
 							}},
@@ -100,11 +99,11 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 						CommonRouteSpec: gwv1a2.CommonRouteSpec{
 							ParentRefs: []gwv1a2.ParentReference{{
 								Name: testGateway,
-								Kind: ptr.To(gwv1.Kind("Gateway")),
+								Kind: new(gwv1.Kind("Gateway")),
 							}},
 						},
 						Rules: []gwv1a2.TCPRouteRule{{
-							Name: ptr.To(gwv1a2.SectionName("test-rule")),
+							Name: new(gwv1a2.SectionName("test-rule")),
 						}},
 					},
 				},
@@ -126,11 +125,11 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 						CommonRouteSpec: gwv1a2.CommonRouteSpec{
 							ParentRefs: []gwv1a2.ParentReference{{
 								Name: testGateway,
-								Kind: ptr.To(gwv1.Kind("Gateway")),
+								Kind: new(gwv1.Kind("Gateway")),
 							}},
 						},
 						Rules: []gwv1a2.TLSRouteRule{{
-							Name: ptr.To(gwv1a2.SectionName("test-rule")),
+							Name: new(gwv1a2.SectionName("test-rule")),
 						}},
 					},
 				},
@@ -152,14 +151,14 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{{
 								Name: testGateway,
-								Kind: ptr.To(gwv1.Kind("Gateway")),
+								Kind: new(gwv1.Kind("Gateway")),
 							}},
 						},
 						Hostnames: []gwv1.Hostname{"example.com"},
 						Rules: []gwv1.GRPCRouteRule{{
 							Matches: []gwv1.GRPCRouteMatch{{
 								Method: &gwv1.GRPCMethodMatch{
-									Type: ptr.To(gwv1.GRPCMethodMatchType("exact")),
+									Type: new(gwv1.GRPCMethodMatchType("exact")),
 								},
 							}},
 						}},
@@ -201,8 +200,8 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 					Spec: gwv1.ListenerSetSpec{
 						ParentRef: gwv1.ParentGatewayReference{
 							Name:      testGateway,
-							Kind:      ptr.To(gwv1.Kind("Gateway")),
-							Namespace: ptr.To(gwv1.Namespace(testNamespace)),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace(testNamespace)),
 						},
 					},
 				},

@@ -8,7 +8,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -107,22 +106,20 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					},
 				}
 				// Setup the backendObjIR
-				up = &ir.BackendObjectIR{
-					ObjectSource: ir.ObjectSource{
-						Namespace: backingSvc.Namespace,
-						Name:      backingSvc.Name,
-						Kind:      "Service",
-						Group:     "",
-					},
-					Port: 8080,
-					Obj:  backingSvc,
-				}
+				backend := ir.NewBackendObjectIR(ir.ObjectSource{
+					Namespace: backingSvc.Namespace,
+					Name:      backingSvc.Name,
+					Kind:      "Service",
+					Group:     "",
+				}, 8080, "", "")
+				backend.Obj = backingSvc
+				up = &backend
 				// Setup the route rules
 				route.Spec.Rules = []gwv1.HTTPRouteRule{
 					{
 						Matches: []gwv1.HTTPRouteMatch{
 							{Path: &gwv1.HTTPPathMatch{
-								Type:  ptr.To(gwv1.PathMatchPathPrefix),
+								Type:  new(gwv1.PathMatchPathPrefix),
 								Value: new("/"),
 							}},
 						},
@@ -131,9 +128,9 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      gwv1.ObjectName("foo"),
-										Namespace: ptr.To(gwv1.Namespace("bar")),
-										Kind:      ptr.To(gwv1.Kind("Service")),
-										Port:      ptr.To(gwv1.PortNumber(8080)),
+										Namespace: new(gwv1.Namespace("bar")),
+										Kind:      new(gwv1.Kind("Service")),
+										Port:      new(gwv1.PortNumber(8080)),
 									},
 								},
 							},
@@ -167,7 +164,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
 				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal(up.ClusterName()))
-				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(ptr.To(gwv1.PathMatchPathPrefix)))
+				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(new(gwv1.PathMatchPathPrefix)))
 				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(new("/")))
 
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
@@ -189,22 +186,20 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		When("referencing a non-existent backing service", func() {
 			BeforeEach(func() {
 				// Setup the backendObjIR
-				up = &ir.BackendObjectIR{
-					ObjectSource: ir.ObjectSource{
-						Namespace: backingSvc.Namespace,
-						Name:      backingSvc.Name,
-						Kind:      "Service",
-						Group:     "",
-					},
-					Port: 8080,
-					Obj:  backingSvc,
-				}
+				backend := ir.NewBackendObjectIR(ir.ObjectSource{
+					Namespace: backingSvc.Namespace,
+					Name:      backingSvc.Name,
+					Kind:      "Service",
+					Group:     "",
+				}, 8080, "", "")
+				backend.Obj = backingSvc
+				up = &backend
 				// Setup the route rules
 				route.Spec.Rules = []gwv1.HTTPRouteRule{
 					{
 						Matches: []gwv1.HTTPRouteMatch{
 							{Path: &gwv1.HTTPPathMatch{
-								Type:  ptr.To(gwv1.PathMatchPathPrefix),
+								Type:  new(gwv1.PathMatchPathPrefix),
 								Value: new("/"),
 							}},
 						},
@@ -213,9 +208,9 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name:      gwv1.ObjectName("foo"),
-										Namespace: ptr.To(gwv1.Namespace("bar")),
-										Kind:      ptr.To(gwv1.Kind("Service")),
-										Port:      ptr.To(gwv1.PortNumber(8080)),
+										Namespace: new(gwv1.Namespace("bar")),
+										Kind:      new(gwv1.Kind("Service")),
+										Port:      new(gwv1.PortNumber(8080)),
 									},
 								},
 							},
@@ -247,7 +242,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
 				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("blackhole_cluster"))
-				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(ptr.To(gwv1.PathMatchPathPrefix)))
+				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(new(gwv1.PathMatchPathPrefix)))
 				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(new("/")))
 
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
@@ -309,8 +304,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		//					Rules: []gwv1.HTTPRouteRule{{
 		//						Matches: []gwv1.HTTPRouteMatch{{
 		//							Path: &gwv1.HTTPPathMatch{
-		//								Type:  ptr.To(gwv1.PathMatchPathPrefix),
-		//								Value: ptr.To("/"),
+		//								Type:  new(gwv1.PathMatchPathPrefix),
+		//								Value: new("/"),
 		//							},
 		//						}},
 		//						BackendRefs: backendRefs,
@@ -352,9 +347,9 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					BackendRef: gwv1.BackendRef{
 						BackendObjectReference: gwv1.BackendObjectReference{
 							Name:      gwv1.ObjectName(backingSvc.GetName()),
-							Namespace: ptr.To(gwv1.Namespace(backingSvc.GetNamespace())),
-							Kind:      ptr.To(gwv1.Kind("Service")),
-							Port:      ptr.To(gwv1.PortNumber(backingSvc.Spec.Ports[0].Port)),
+							Namespace: new(gwv1.Namespace(backingSvc.GetNamespace())),
+							Kind:      new(gwv1.Kind("Service")),
+							Port:      new(gwv1.PortNumber(backingSvc.Spec.Ports[0].Port)),
 						},
 					},
 				}}
@@ -407,8 +402,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					{
 						Type: gwv1.HTTPRouteFilterRequestRedirect,
 						RequestRedirect: &gwv1.HTTPRequestRedirectFilter{
-							Hostname:   ptr.To(gwv1.PreciseHostname("foo")),
-							StatusCode: ptr.To(301),
+							Hostname:   new(gwv1.PreciseHostname("foo")),
+							StatusCode: new(301),
 						},
 					},
 					{
@@ -471,9 +466,9 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					BackendRef: gwv1.BackendRef{
 						BackendObjectReference: gwv1.BackendObjectReference{
 							Name:      gwv1.ObjectName(backingSvc.GetName()),
-							Namespace: ptr.To(gwv1.Namespace(backingSvc.GetNamespace())),
-							Kind:      ptr.To(gwv1.Kind("Service")),
-							Port:      ptr.To(gwv1.PortNumber(backingSvc.Spec.Ports[0].Port)),
+							Namespace: new(gwv1.Namespace(backingSvc.GetNamespace())),
+							Kind:      new(gwv1.Kind("Service")),
+							Port:      new(gwv1.PortNumber(backingSvc.Spec.Ports[0].Port)),
 						},
 					},
 				}}
@@ -482,8 +477,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					{
 						Type: gwv1.HTTPRouteFilterRequestRedirect,
 						RequestRedirect: &gwv1.HTTPRequestRedirectFilter{
-							Hostname:   ptr.To(gwv1.PreciseHostname("foo")),
-							StatusCode: ptr.To(301),
+							Hostname:   new(gwv1.PreciseHostname("foo")),
+							StatusCode: new(301),
 						},
 					},
 				}

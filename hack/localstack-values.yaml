@@ -8,7 +8,7 @@ mountDind:
   enabled: true
   forceTLS: true
   image: "docker:26-dind"
-startServices: "lambda"
+startServices: "lambda,ec2"
 volumes:
   - name: docker-sock
     hostPath:

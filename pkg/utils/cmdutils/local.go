@@ -44,6 +44,7 @@ func (c *LocalCmder) Command(ctx context.Context, name string, arg ...string) Cm
 type LocalCmd struct {
 	*exec.Cmd
 	combinedOutput *threadsafe.Buffer
+	quiet          bool
 }
 
 // WithEnv sets env
@@ -78,13 +79,19 @@ func (cmd *LocalCmd) WithStderr(w io.Writer) Cmd {
 	return cmd
 }
 
+// WithQuiet suppresses the "+ <command>" trace line
+func (cmd *LocalCmd) WithQuiet() Cmd {
+	cmd.quiet = true
+	return cmd
+}
+
 // Run runs the command
 // If the returned error is non-nil, it should be of type *RunError
 func (cmd *LocalCmd) Run() *RunError {
 	// Combined output is used to capture the stdout and stderr of the command for logging
 	var combinedOutput threadsafe.Buffer
 
-	if printCommands {
+	if printCommands && !cmd.quiet {
 		// Print to stderr to avoid interfering with stdout intended for parsing
 		fmt.Fprintf(os.Stderr, "+ %s\n", PrettyCommand(false, cmd.Args[0], cmd.Args[1:]...))
 	}
@@ -106,7 +113,7 @@ func (cmd *LocalCmd) Run() *RunError {
 // Start starts the command but doesn't block
 // If the returned error is non-nil, it should be of type *RunError
 func (cmd *LocalCmd) Start() *RunError {
-	if printCommands {
+	if printCommands && !cmd.quiet {
 		// Print to stderr to avoid interfering with stdout intended for parsing
 		fmt.Fprintf(os.Stderr, "+ %s\n", PrettyCommand(false, cmd.Args[0], cmd.Args[1:]...))
 	}

@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -191,6 +193,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
           }"}}}'
+      filterName: rustformation
       perRouteConfigName: rustformation
   virtualHosts:
   - domains:
@@ -219,6 +222,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
           }"}}}'
+      filterName: rustformation
       perRouteConfigName: rustformation
   virtualHosts:
   - domains:
@@ -247,6 +251,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_gateway_template
           }"}}}'
+      filterName: rustformation
       perRouteConfigName: rustformation
   virtualHosts:
   - domains:
@@ -351,6 +356,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -369,6 +379,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io

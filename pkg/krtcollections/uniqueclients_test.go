@@ -26,6 +26,10 @@ import (
 )
 
 func TestUniqueClients(t *testing.T) {
+	// Disable the first-connect delay: this test drives many new streams
+	// through OnStreamRequest and doesn't exercise snapshot publication.
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+
 	testCases := []struct {
 		name     string
 		inputs   []any

@@ -458,7 +458,10 @@ func (s *testingSuite) TestHttpACLDynamicMetadata() {
 		assert.Contains(c, logs, `"blocked_by":"block-internal-range"`)
 		assert.Contains(c, logs, `"blocked_by":"rule"`)
 		assert.Contains(c, logs, `"blocked_by":"default"`)
-	}, 5*time.Second, 100*time.Millisecond)
+		// Envoy flushes access logs to stdout asynchronously; allow the same
+		// window other suites use for container-log assertions so a slow node
+		// doesn't produce a false negative.
+	}, 30*time.Second, 100*time.Millisecond)
 }
 
 // TestHttpACLLargeRuleset verifies the control plane can accept and apply a TrafficPolicy

@@ -47,8 +47,57 @@ If the release branch **does not** exist, create one:
     git push ${REMOTE} v2.${MINOR}.x
     ```
 
-- Update the OSV security scan workflow branch allowlist in [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml) to include the new release branch.
+- On `main`, bump `ROLLING_MAIN_VERSION` in the [Makefile](../../Makefile) to the next minor's rolling tag via a PR (for example, after cutting `v2.3.x`, set it to `v2.4.0-main`), since `main` now tracks the next minor.
+- On `main`, bump `gateway-api-version` in the [e2e test workflow](https://github.com/kgateway-dev/kgateway/blob/96403169afb6b0f4becb864b42d22fcf000033f7/.github/workflows/e2e.yaml#L129) to 1 version lower than what is used in go.mod (since this is an upgrade test)
+
+- Update the OSV security scan workflow branch allowlist in [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml) to include the new release branch, and drop any branch that is no longer LTS.
   This workflow only scans an explicit set of branches, so each newly cut release branch must be added to both the scheduled scan matrix and the `workflow_dispatch` branch options.
+  This allowlist is the single source of truth for which branches get scanned: tooling such as [`hack/osvtool`](../../hack/osvtool) and the `cve-bump` skill reads it rather than hardcoding the branch list, so keeping it current is all that is needed.
+
+### OSV scan and CVE triage
+
+Before a release is cut, maintainers typically use the OSV scan results for the
+branch that will be released and clear any open source-dependency findings that
+would otherwise ship in the release artifact. The release workflow does not run
+this triage for you, so it belongs in the release checklist.
+
+If you are using Codex, Claude Code, etc., the `cve-bump` skill
+(invoked with `@cve-bump`, `Clear CVEs`, etc. depending on the coding
+agent) wraps this workflow and uses `hack/osvtool` as the canonical
+entry point. For a manual run, start with the table view to see the
+current branch state:
+
+```bash
+./hack/osvtool --table --target source --state todo
+./hack/osvtool --table --target image --state todo
+```
+
+Use `--state todo` to focus on critical and high findings, or `--state open`
+when you want the full severity picture. `hack/osvtool` reads the branch
+allowlist from [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml),
+so the branches it checks stay aligned with the scheduled scan workflow.
+
+For a specific release branch, pull the raw alerts and decide how each one will
+be handled:
+
+```bash
+./hack/osvtool --raw --branch v2.3.x --target source --state todo
+./hack/osvtool --raw --branch v2.3.x --target image --state todo
+```
+
+The usual outcomes are:
+
+- bump a dependency to the first fixed version when the advisory has a fix
+- update `osv-scanner.toml` only for confirmed false positives
+- leave the finding open and defer the release if there is no safe fix yet
+
+Once the dependency bumps or ignore-list updates land (for images, as
+opposed to source code, note that this only happens upon release),
+manually rerun the osv-scanner GitHub Action or wait for its nightly
+run. Then rerun the skill or `hack/osvtool` for the release branch to
+confirm the branch is clean enough to publish. If you add or retire a
+release branch, update the allowlist in the OSV workflow before
+relying on the scan results for that branch.
 
 ### Patch Release
 

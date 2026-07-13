@@ -18,6 +18,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -27,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
@@ -93,7 +95,7 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 		providerName := providerName(cfg.provider)
 		jwtName := jwtFilterName(providerName)
 		pCtxTypedFilterConfig.AddTypedConfig(jwtName, cfg.perRouteConfig)
-		p.jwtPerProvider.Add(fcn, providerName, cfg.provider)
+		p.jwtPerProvider.Add(fcn, providerName, cfg.provider, filters.DuringStage(filters.AuthNStage))
 	}
 
 	if len(jwtIr.perProviderConfig) > 0 {
@@ -311,9 +313,41 @@ func translateJwks(
 		if remote.CacheDuration != nil {
 			jwksOut.RemoteJwks.CacheDuration = durationpb.New(remote.CacheDuration.Duration)
 		}
+		if remote.AsyncFetch != nil {
+			jwksOut.RemoteJwks.AsyncFetch = translateJwksAsyncFetch(remote.AsyncFetch)
+		}
+		if remote.RetryPolicy != nil {
+			jwksOut.RemoteJwks.RetryPolicy = translateJwksRetryPolicy(remote.RetryPolicy)
+		}
 		out.JwksSourceSpecifier = jwksOut
 	}
 	return nil
+}
+
+func translateJwksAsyncFetch(in *kgateway.JWKSAsyncFetch) *jwtauthnv3.JwksAsyncFetch {
+	asyncFetch := &jwtauthnv3.JwksAsyncFetch{
+		FastListener: ptr.Deref(in.FastListener, false),
+	}
+	if in.FailedRefetchDuration != nil {
+		asyncFetch.FailedRefetchDuration = durationpb.New(in.FailedRefetchDuration.Duration)
+	}
+	return asyncFetch
+}
+
+func translateJwksRetryPolicy(in *kgateway.JWKSRetryPolicy) *envoycorev3.RetryPolicy {
+	retryPolicy := &envoycorev3.RetryPolicy{}
+	if in.NumRetries != nil {
+		retryPolicy.NumRetries = wrapperspb.UInt32(uint32(*in.NumRetries)) //nolint:gosec // G115: kubebuilder validation ensures NumRetries is >= 1
+	}
+	if in.BackOff != nil {
+		retryPolicy.RetryBackOff = &envoycorev3.BackoffStrategy{
+			BaseInterval: durationpb.New(in.BackOff.BaseInterval.Duration),
+		}
+		if in.BackOff.MaxInterval != nil {
+			retryPolicy.RetryBackOff.MaxInterval = durationpb.New(in.BackOff.MaxInterval.Duration)
+		}
+	}
+	return retryPolicy
 }
 
 func translateJwksConfigMap(cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_LocalJwks, error) {

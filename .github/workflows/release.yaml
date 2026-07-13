@@ -206,6 +206,18 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: "docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392" # v3.6.0
+        with:
+          # Pin the binfmt/QEMU emulator to a specific version. The action caches
+          # the emulator image (`cache-image: true`) under a key derived from the
+          # image ref; with the default `latest` tag that key is version-less, so a
+          # cache populated during QEMU's 8.2-era arm64 ELF-loader regression keeps
+          # getting restored even after Docker Hub's `latest` advances. That stale
+          # emulator segfaults running arm64 glibc trigger scripts
+          # (`Processing triggers for libc-bin ... qemu: uncaught target signal 11`)
+          # during cross-platform `docker build`, breaking the arm64 release image.
+          # A versioned tag gives a version-specific cache key (sidestepping the
+          # poisoned `latest` cache) and a QEMU build that contains the upstream fix.
+          image: tonistiigi/binfmt:qemu-v10.2.3
       - uses: "docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2" # v3.10.0
 
       - name: Download release notes

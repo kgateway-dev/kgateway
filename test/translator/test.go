@@ -767,7 +767,7 @@ func (tc TestCase) Run(
 		Kind:      "test-backend-plugin",
 		Namespace: "default",
 		Name:      "example-svc",
-	}, 80, "")
+	}, 80, "", "")
 	extensions.ContributesBackends[gk] = pluginsdk.BackendPlugin{
 		Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
 			testBackend,
@@ -839,6 +839,25 @@ func (tc TestCase) Run(
 		// Merge gateway reports with backend policy reports
 		mergedReports := reportsMap
 		maps.Copy(mergedReports.Policies, backendPolicyReports.Policies)
+
+		// Backend Accepted conditions are also generated outside gateway translation
+		// (see proxy_syncer's backendStatusReport singleton). Reproduce that here from
+		// the kgateway Backend plugin's collections so golden files capture Backend
+		// statuses. Per-client translation errors are not reproducible here (the
+		// uccWithCluster type is internal to proxy_syncer), so only IR errors and
+		// plugin-contributed conditions are reflected.
+		var kgwBackends []ir.BackendObjectIR
+		var kgwExtraConditions []ir.BackendObjectStatus
+		if kgwBackendPlugin, ok := extensions.ContributesBackends[wellknown.BackendGVK.GroupKind()]; ok {
+			if kgwBackendPlugin.Backends != nil {
+				kgwBackends = kgwBackendPlugin.Backends.List()
+			}
+			if kgwBackendPlugin.ExtraConditions != nil {
+				kgwExtraConditions = kgwBackendPlugin.ExtraConditions.List()
+			}
+		}
+		backendStatusReports := proxy_syncer.GenerateBackendStatusReport(kgwBackends, nil, kgwExtraConditions)
+		maps.Copy(mergedReports.Backends, backendStatusReports.Backends)
 
 		gwNN := types.NamespacedName{
 			Namespace: gw.Namespace,

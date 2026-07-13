@@ -1,5 +1,7 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -7,7 +9,9 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_infra_example-svc_80
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
@@ -308,6 +312,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+      filterName: rustformation
       perRouteConfigName: rustformation
   virtualHosts:
   - domains:
@@ -341,6 +346,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          filterName: rustformation
           perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-2-0
@@ -366,6 +372,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          filterName: rustformation
           perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-2-1
@@ -386,6 +393,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{}'
+          filterName: rustformation
           perRouteConfigName: rustformation
         global_disable/ext_auth:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
@@ -401,6 +409,7 @@ Routes:
         filterConfig:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+        filterName: rustformation
         perRouteConfigName: rustformation
   - domains:
     - no-auth.example.com
@@ -430,6 +439,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+      filterName: rustformation
       perRouteConfigName: rustformation
   virtualHosts:
   - domains:
@@ -459,6 +469,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          filterName: rustformation
           perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /example-route-tls-section-name
@@ -482,6 +493,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          filterName: rustformation
           perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /example-tls-sibling-route
@@ -511,6 +523,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          filterName: rustformation
           perRouteConfigName: rustformation
 - ignorePortInHostMatching: true
   metadata:
@@ -530,6 +543,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+      filterName: rustformation
       perRouteConfigName: rustformation
   virtualHosts:
   - domains:
@@ -689,6 +703,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -707,6 +726,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -725,6 +749,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -743,6 +772,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -761,6 +795,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -779,6 +818,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -797,6 +841,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

@@ -189,6 +189,11 @@ type ProxyTranslationPass interface {
 	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
 	HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error)
 
+	// called 1 time per filter-chain.
+	// If a plugin emits new filters, they must be with a plugin unique name.
+	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
+	UpstreamHttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error)
+
 	// called 1 time per filter chain after listeners and allows tweaking HCM settings.
 	ApplyHCM(
 		pCtx *HcmContext,
@@ -228,6 +233,10 @@ func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(policy PolicyIR,
 }
 
 func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+	return nil, nil
+}
+
+func (s UnimplementedProxyTranslationPass) UpstreamHttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

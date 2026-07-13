@@ -15,17 +15,19 @@ type ProviderNeededMap struct {
 }
 
 type Provider struct {
-	Name      string
-	Extension *TrafficPolicyGatewayExtensionIR
+	Name        string
+	Extension   *TrafficPolicyGatewayExtensionIR
+	FilterStage filters.FilterStage[filters.WellKnownFilterStage]
 }
 
-func (p *ProviderNeededMap) Add(filterChain, providerName string, provider *TrafficPolicyGatewayExtensionIR) {
+func (p *ProviderNeededMap) Add(filterChain, providerName string, provider *TrafficPolicyGatewayExtensionIR, filterStage filters.FilterStage[filters.WellKnownFilterStage]) {
 	if p.Providers == nil {
 		p.Providers = make(map[string][]Provider)
 	}
 	p.Providers[filterChain] = append(p.Providers[filterChain], Provider{
-		Name:      providerName,
-		Extension: provider,
+		Name:        providerName,
+		Extension:   provider,
+		FilterStage: filterStage,
 	})
 }
 

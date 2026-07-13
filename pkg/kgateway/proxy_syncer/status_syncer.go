@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -24,6 +25,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -46,32 +49,36 @@ type StatusSyncer struct {
 
 	latestReportQueue              utils.AsyncQueue[reports.ReportMap]
 	latestBackendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
+	latestBackendStatusReportQueue utils.AsyncQueue[reports.ReportMap]
 	cacheSyncs                     []cache.InformerSynced
 
 	customStatusSync func(ctx context.Context, rm reports.ReportMap)
 }
 
-func NewStatusSyncer(
-	mgr manager.Manager,
-	plugins plug.Plugin,
-	controllerName string,
-	client apiclient.Client,
-	commonCols *collections.CommonCollections,
-	reportQueue utils.AsyncQueue[reports.ReportMap],
-	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap],
-	cacheSyncs []cache.InformerSynced,
-	opts ...StatusSyncerOption,
-) *StatusSyncer {
-	cfg := processStatusSyncerOptions(opts...)
+// StatusSyncerConfig holds the dependencies required to construct a StatusSyncer.
+type StatusSyncerConfig struct {
+	Mgr                      manager.Manager
+	Plugins                  plug.Plugin
+	ControllerName           string
+	Client                   apiclient.Client
+	ReportQueue              utils.AsyncQueue[reports.ReportMap]
+	BackendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
+	BackendStatusReportQueue utils.AsyncQueue[reports.ReportMap]
+	CacheSyncs               []cache.InformerSynced
+}
+
+func NewStatusSyncer(cfg StatusSyncerConfig, opts ...StatusSyncerOption) *StatusSyncer {
+	optCfg := processStatusSyncerOptions(opts...)
 	return &StatusSyncer{
-		mgr:                            mgr,
-		plugins:                        plugins,
-		istioClient:                    client,
-		controllerName:                 controllerName,
-		latestReportQueue:              reportQueue,
-		latestBackendPolicyReportQueue: backendPolicyReportQueue,
-		cacheSyncs:                     cacheSyncs,
-		customStatusSync:               cfg.CustomStatusSync,
+		mgr:                            cfg.Mgr,
+		plugins:                        cfg.Plugins,
+		istioClient:                    cfg.Client,
+		controllerName:                 cfg.ControllerName,
+		latestReportQueue:              cfg.ReportQueue,
+		latestBackendPolicyReportQueue: cfg.BackendPolicyReportQueue,
+		latestBackendStatusReportQueue: cfg.BackendStatusReportQueue,
+		cacheSyncs:                     cfg.CacheSyncs,
+		customStatusSync:               optCfg.CustomStatusSync,
 	}
 }
 
@@ -128,6 +135,16 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 			s.syncPolicyStatus(ctx, latestReport)
 		}
 	}()
+	go func() {
+		for {
+			latestReport, err := s.latestBackendStatusReportQueue.Dequeue(ctx)
+			if err != nil {
+				logger.Error("failed to dequeue backend status reports", "error", err)
+				return
+			}
+			s.syncBackendStatus(ctx, latestReport)
+		}
+	}()
 
 	<-ctx.Done()
 	return nil
@@ -158,6 +175,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 
 				switch r := route.(type) {
 				case *gwv1.HTTPRoute:
+					for _, parentRef := range r.Spec.ParentRefs {
+						gatewayNames = append(gatewayNames, string(parentRef.Name))
+					}
+				case *gwv1.TCPRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
@@ -233,30 +254,37 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 										finishFunc:  finish.finishFunc,
 										statusError: fmt.Errorf("partially invalid route condition"),
 									}
-
 									break
 								}
 							}
 
-							if cond.Type != string(gwv1.RouteConditionAccepted) {
-								continue
+							if cond.Type == conditions.KgatewayConditionProgrammed {
+								if cond.Status != metav1.ConditionTrue {
+									if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
+										finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
+											finishFunc:  finish.finishFunc,
+											statusError: fmt.Errorf("invalid route condition"),
+										}
+										break
+									}
+								}
 							}
 
-							if cond.Reason != string(gwv1.RouteReasonAccepted) &&
-								cond.Reason != string(gwv1.RouteReasonPending) {
-								if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
-									finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
-										finishFunc:  finish.finishFunc,
-										statusError: fmt.Errorf("invalid route condition"),
+							if cond.Type == string(gwv1.RouteConditionAccepted) {
+								if cond.Reason != string(gwv1.RouteReasonAccepted) &&
+									cond.Reason != string(gwv1.RouteReasonPending) {
+									if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
+										finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
+											finishFunc:  finish.finishFunc,
+											statusError: fmt.Errorf("invalid route condition"),
+										}
+										break
 									}
-
-									break
 								}
 							}
 						}
 					}
 				}
-
 				return nil
 			},
 			retry.Attempts(5),
@@ -270,6 +298,12 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 		var status *gwv1.RouteStatus
 		switch r := route.(type) {
 		case *gwv1.HTTPRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil, nil
+			}
+			r.Status.RouteStatus = *status
+		case *gwv1.TCPRoute:
 			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
 			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
 				return nil, nil
@@ -340,8 +374,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	for rnn := range rm.TCPRoutes {
 		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn,
 			func(ctx context.Context, routeKey client.ObjectKey) (client.Object, error) {
-				route := new(gwv1a2.TCPRoute)
-				return route, s.mgr.GetClient().Get(ctx, routeKey, route)
+				return getTCPRouteForStatus(ctx, s.mgr.GetClient(), routeKey)
 			},
 			func(route client.Object) (*gwv1.RouteStatus, error) {
 				return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
@@ -393,7 +426,7 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 	promotedTLSRoute := &gwv1.TLSRoute{}
 	if err := kubeClient.Get(ctx, key, promotedTLSRoute); err == nil {
 		return promotedTLSRoute, nil
-	} else if !shouldFallbackTLSRouteLookup(err) {
+	} else if !shouldFallbackRouteLookup(err) {
 		return nil, err
 	}
 
@@ -401,7 +434,7 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 	v1alpha3TLSRouteRaw.SetGroupVersionKind(wellknown.TLSRouteV1Alpha3GVK)
 	if err := kubeClient.Get(ctx, key, v1alpha3TLSRouteRaw); err == nil {
 		return v1alpha3TLSRouteRaw, nil
-	} else if !shouldFallbackTLSRouteLookup(err) {
+	} else if !shouldFallbackRouteLookup(err) {
 		return nil, err
 	}
 
@@ -412,7 +445,22 @@ func getTLSRouteForStatus(ctx context.Context, kubeClient objectGetter, key clie
 	return v1alpha2TLSRoute, nil
 }
 
-func shouldFallbackTLSRouteLookup(err error) bool {
+func getTCPRouteForStatus(ctx context.Context, kubeClient objectGetter, key client.ObjectKey) (client.Object, error) {
+	promotedTCPRoute := &gwv1.TCPRoute{}
+	if err := kubeClient.Get(ctx, key, promotedTCPRoute); err == nil {
+		return promotedTCPRoute, nil
+	} else if !shouldFallbackRouteLookup(err) {
+		return nil, err
+	}
+
+	v1alpha2TCPRoute := &gwv1a2.TCPRoute{}
+	if err := kubeClient.Get(ctx, key, v1alpha2TCPRoute); err != nil {
+		return nil, err
+	}
+	return v1alpha2TCPRoute, nil
+}
+
+func shouldFallbackRouteLookup(err error) bool {
 	return apimeta.IsNoMatchError(err)
 }
 
@@ -733,6 +781,52 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 	}
 }
 
+func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportMap) {
+	for nsName := range rm.Backends {
+		finishMetrics := CollectStatusSyncMetrics(StatusSyncMetricLabels{
+			Name:      nsName.Name,
+			Namespace: nsName.Namespace,
+			Syncer:    "BackendStatusSyncer",
+		})
+
+		err := retry.Do(
+			func() error {
+				backend := new(kgateway.Backend)
+				if err := s.mgr.GetClient().Get(ctx, nsName, backend); err != nil {
+					if apierrors.IsNotFound(err) {
+						// the backend is gone; if it's recreated we'll retranslate it
+						return nil
+					}
+					logger.Error("error getting backend", "error", err, "resource_ref", nsName)
+					return err
+				}
+				status := rm.BuildBackendStatus(ctx, backend, backend.Status)
+				if status == nil || isBackendStatusEqual(&backend.Status, status) {
+					return nil
+				}
+				backend.Status = *status
+				return s.mgr.GetClient().Status().Update(ctx, backend)
+			},
+			retry.Attempts(5),
+			retry.Delay(100*time.Millisecond),
+			retry.DelayType(retry.BackOffDelay),
+		)
+		if err != nil {
+			logger.Error("all attempts failed at updating Backend status", "error", err, "backend", nsName)
+			finishMetrics(err)
+			continue
+		}
+
+		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
+			Namespace:    nsName.Namespace,
+			Gateway:      "",
+			ResourceType: wellknown.BackendGVK.Kind,
+			ResourceName: nsName.Name,
+		})
+		finishMetrics(nil)
+	}
+}
+
 func buildPolicyStatus(
 	ctx context.Context,
 	rm reports.ReportMap,
@@ -758,6 +852,9 @@ var opts = cmp.Options{
 	cmpopts.IgnoreMapEntries(func(k string, _ any) bool {
 		return k == "lastTransitionTime"
 	}),
+	cmpopts.SortSlices(func(a, b gwv1.RouteParentStatus) bool {
+		return lessRouteParentStatus(a, b)
+	}),
 }
 
 func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
@@ -768,7 +865,18 @@ func isListenerSetStatusEqual(objA, objB *gwv1.ListenerSetStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 
+func isBackendStatusEqual(objA, objB *kgateway.BackendStatus) bool {
+	return cmp.Equal(objA, objB, opts)
+}
+
 // isRouteStatusEqual compares two RouteStatus objects directly
 func isRouteStatusEqual(objA, objB *gwv1.RouteStatus) bool {
 	return cmp.Equal(objA, objB, opts)
+}
+
+func lessRouteParentStatus(a, b gwv1.RouteParentStatus) bool {
+	if cmp := strings.Compare(reports.ParentString(a.ParentRef), reports.ParentString(b.ParentRef)); cmp != 0 {
+		return cmp < 0
+	}
+	return strings.Compare(string(a.ControllerName), string(b.ControllerName)) < 0
 }

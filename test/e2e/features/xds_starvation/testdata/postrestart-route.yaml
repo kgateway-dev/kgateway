@@ -1,0 +1,16 @@
+# Applied after a controller restart to prove warm clients still receive
+# config updates while the never-ready reference exists.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: xds-starvation-postrestart
+spec:
+  parentRefs:
+    - name: xds-starvation-gw
+  hostnames:
+    - "postrestart.example.com"
+  rules:
+    - backendRefs:
+        - name: nginx
+          namespace: nginx-shared
+          port: 8080
