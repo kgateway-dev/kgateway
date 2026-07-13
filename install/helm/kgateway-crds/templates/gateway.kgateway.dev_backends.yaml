@@ -307,10 +307,12 @@ spec:
                   unhealthy. The health check can be configured via the BackendConfigPolicy
                   that targets this Backend
 
-                  Note: This feature is experimental and subject to breaking changes in future releases.
+                  Note: This field is part of an experimental API and subject to breaking changes in future releases.
                 items:
-                  description: PriorityGroup defines one failover priority level of
-                    a priority groups backend.
+                  description: |-
+                    PriorityGroup defines one failover priority level of a priority groups backend.
+
+                    Note: This struct is part of an experimental API and subject to breaking changes in future releases.
                   properties:
                     backendRefs:
                       description: |-
