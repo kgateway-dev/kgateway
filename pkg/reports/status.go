@@ -15,6 +15,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -34,6 +35,7 @@ const (
 	ValidRefsMessage               = "Successfully resolved all references"
 	ListenerProgrammedMessage      = "Successfully programmed Listener"
 	RouteAcceptedMessage           = "Successfully accepted Route"
+	RouteProgrammedMessage         = "Successfully programmed Route"
 	GatewayClassAcceptedMessage    = "GatewayClass accepted by kgateway controller"
 )
 
@@ -492,6 +494,12 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 		if len(parentRefs) == 0 {
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
+	case *gwv1.TCPRoute:
+		existingStatus = route.Status.RouteStatus
+		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
+		if len(parentRefs) == 0 {
+			parentRefs = append(parentRefs, routeReport.parentRefs()...)
+		}
 	case *gwv1a2.TCPRoute:
 		existingStatus = route.Status.RouteStatus
 		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
@@ -741,8 +749,8 @@ func listenerConditionsWithDefaults(conditions []metav1.Condition) []metav1.Cond
 	return out
 }
 
-func parentRefConditionsWithDefaults(conditions []metav1.Condition) []metav1.Condition {
-	out := slices.Clone(conditions)
+func parentRefConditionsWithDefaults(conds []metav1.Condition) []metav1.Condition {
+	out := slices.Clone(conds)
 	if cond := meta.FindStatusCondition(out, string(gwv1.RouteConditionAccepted)); cond == nil {
 		meta.SetStatusCondition(&out, metav1.Condition{
 			Type:    string(gwv1.RouteConditionAccepted),
@@ -757,6 +765,14 @@ func parentRefConditionsWithDefaults(conditions []metav1.Condition) []metav1.Con
 			Status:  metav1.ConditionTrue,
 			Reason:  string(gwv1.RouteReasonResolvedRefs),
 			Message: ValidRefsMessage,
+		})
+	}
+	if cond := meta.FindStatusCondition(out, conditions.KgatewayConditionProgrammed); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    conditions.KgatewayConditionProgrammed,
+			Status:  metav1.ConditionTrue,
+			Reason:  conditions.KgatewayReasonProgrammed,
+			Message: RouteProgrammedMessage,
 		})
 	}
 	return out

@@ -16,6 +16,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/httproute"
@@ -646,7 +647,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 // attachment of a route that lost the oldest-wins selection.
 func rejectConflictingRoute(ri *query.RouteInfo, reporter reports.Reporter) {
 	condition := reports.RouteCondition{
-		Type:   gwv1.RouteConditionAccepted,
+		Type:   conditions.KgatewayConditionProgrammed,
 		Status: metav1.ConditionFalse,
 		Reason: gwv1.RouteConditionReason("Conflicted"),
 	}

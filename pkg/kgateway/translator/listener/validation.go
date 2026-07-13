@@ -7,6 +7,7 @@ import (
 
 	istioprotocol "istio.io/istio/pkg/config/protocol"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
@@ -323,6 +324,32 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 		return validListeners
 	}
 
+	validListenersPerParent := map[string]int{}
+	for _, l := range validListeners {
+		kind := inferKind(l.Parent)
+		parentKey := fmt.Sprintf("%s/%s/%s", kind, l.Parent.GetNamespace(), l.Parent.GetName())
+		validListenersPerParent[parentKey]++
+	}
+	if validListenersPerParent[fmt.Sprintf("Gateway/%s/%s", gw.Obj.Namespace, gw.Obj.Name)] < len(gw.Obj.Spec.Listeners) {
+		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
+			Type:   gwv1.GatewayConditionAccepted,
+			Status: metav1.ConditionTrue,
+			Reason: gwv1.GatewayReasonListenersNotValid,
+		})
+	}
+	for _, lsSets := range gw.AllowedListenerSets {
+		for _, lsIR := range lsSets {
+			key := fmt.Sprintf("%s/%s/%s", lsIR.Kind, lsIR.Namespace, lsIR.Name)
+			if validListenersPerParent[key] < len(lsIR.Listeners) {
+				reporter.ListenerSet(lsIR.Obj).SetCondition(reports.GatewayCondition{
+					Type:   gwv1.GatewayConditionAccepted,
+					Status: metav1.ConditionTrue,
+					Reason: gwv1.GatewayReasonListenersNotValid,
+				})
+			}
+		}
+	}
+
 	if len(attachedListenerSets) > 0 {
 		reporter.Gateway(gw.Obj).SetAttachedListenerSets(int32(len(attachedListenerSets))) //nolint:gosec // disable G115 directive.
 	}
@@ -533,4 +560,17 @@ func getOrDefaultHostname(hostname *gwv1.Hostname) gwv1.Hostname {
 		ret = *hostname
 	}
 	return ret
+}
+
+func inferKind(obj client.Object) string {
+	if obj.GetObjectKind().GroupVersionKind().Kind != "" {
+		return obj.GetObjectKind().GroupVersionKind().Kind
+	}
+	if _, ok := obj.(*gwv1.Gateway); ok {
+		return "Gateway"
+	}
+	if _, ok := obj.(*gwv1.ListenerSet); ok {
+		return "ListenerSet"
+	}
+	return ""
 }

@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
@@ -99,12 +100,12 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 // TestRouteAttachedInvalidPolicy tests that routes with valid configuration
 // but invalid route-attached policies are replaced with direct responses
 func (s *testingSuite) TestRouteAttachedInvalidPolicy() {
-	// Verify route status shows Accepted=False with RouteRuleDropped reason (for replacement)
+	// Verify route status shows kgateway.dev/Programmed=False with RouteRuleDropped reason (for replacement)
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		invalidPolicyRoute.Name,
 		invalidPolicyRoute.Namespace,
-		gwv1.RouteConditionAccepted,
+		gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 		metav1.ConditionFalse,
 	)
 
@@ -128,12 +129,12 @@ func (s *testingSuite) TestRouteAttachedInvalidPolicy() {
 
 // TestInvalidMatcherDropsRoute tests that routes with invalid matchers are dropped entirely
 func (s *testingSuite) TestInvalidMatcherDropsRoute() {
-	// Verify route status shows Accepted=False with RouteRuleDropped reason
+	// Verify route status shows kgateway.dev/Programmed=False with RouteRuleDropped reason
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		invalidMatcherRoute.Name,
 		invalidMatcherRoute.Namespace,
-		gwv1.RouteConditionAccepted,
+		gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 		metav1.ConditionFalse,
 	)
 
@@ -157,12 +158,12 @@ func (s *testingSuite) TestInvalidMatcherDropsRoute() {
 // TestInvalidRouteRuleFilter tests that routes with invalid built-in route rule filters
 // are replaced with direct responses
 func (s *testingSuite) TestInvalidRouteRuleFilter() {
-	// Verify route status shows Accepted=False with RouteRuleDropped reason (for replacement)
+	// Verify route status shows kgateway.dev/Programmed=False with RouteRuleDropped reason (for replacement)
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
 		invalidConfigRoute.Name,
 		invalidConfigRoute.Namespace,
-		gwv1.RouteConditionAccepted,
+		gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 		metav1.ConditionFalse,
 	)
 
@@ -425,7 +426,7 @@ func (s *testingSuite) TestRouteReplacementMetric() {
 		// one class is surfaced per translation.
 		s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 			s.Ctx, dualErrorRoute.Name, dualErrorRoute.Namespace,
-			gwv1.RouteConditionAccepted, metav1.ConditionFalse,
+			gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed), metav1.ConditionFalse,
 		)
 
 		refNotFoundLabels := s.metricLabels(irtranslator.ErrTypeRefNotFound)
@@ -452,7 +453,7 @@ func (s *testingSuite) assertReplacementMetricIncrements(
 ) {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx, route.Name, route.Namespace,
-		gwv1.RouteConditionAccepted, metav1.ConditionFalse,
+		gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed), metav1.ConditionFalse,
 	)
 
 	labels := s.metricLabels(expectedErrorType)

@@ -100,6 +100,7 @@ routes:
               }}"}],"body":{"parseAs":"AsString","value":"request-response"}},"response":{"add":[{"name":"original-greatness","value":"{{request_headers(\"x-greatness\")}}"}],"body":{"parseAs":"AsJson","value":"{{
               body }}"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
   - domains:
     - www.example-request.com
     name: listener~8080~www_example-request_com
@@ -125,6 +126,7 @@ routes:
             value: '{"request":{"set":[{"name":"x-greatness","value":"{{length(headers(\":path\"))
               }}"}],"body":{"parseAs":"AsJson","value":"requested"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
   - domains:
     - www.example-response.com
     name: listener~8080~www_example-response_com
@@ -149,3 +151,4 @@ routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"original-greatness","value":"{{request_headers(\"x-greatness\")}}"}]}}'
           filterName: rustformation
+          perRouteConfigName: rustformation

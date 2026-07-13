@@ -27,9 +27,10 @@ import (
 var logger = logging.New("translator/ir")
 
 type Translator struct {
-	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
-	ValidationLevel     apisettings.ValidationMode
-	Validator           validator.Validator
+	ContributedPolicies       map[schema.GroupKind]sdk.PolicyPlugin
+	ValidationLevel           apisettings.ValidationMode
+	Validator                 validator.Validator
+	EnableRouteSourceMetadata bool
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
@@ -128,17 +129,18 @@ func (t *Translator) ComputeListener(
 
 		// compute routes
 		hr := httpRouteConfigurationTranslator{
-			gw:                       gw,
-			listener:                 lis,
-			routeConfigName:          hfc.FilterChainName,
-			fc:                       hfc.FilterChainCommon,
-			attachedPolicies:         hfc.AttachedPolicies,
-			reporter:                 reporter,
-			requireTlsOnVirtualHosts: hfc.FilterChainCommon.TLS != nil,
-			pluginPass:               pass,
-			logger:                   logger.With("route_config_name", hfc.FilterChainName),
-			validationLevel:          t.ValidationLevel,
-			validator:                t.Validator,
+			gw:                        gw,
+			listener:                  lis,
+			routeConfigName:           hfc.FilterChainName,
+			fc:                        hfc.FilterChainCommon,
+			attachedPolicies:          hfc.AttachedPolicies,
+			reporter:                  reporter,
+			requireTlsOnVirtualHosts:  hfc.FilterChainCommon.TLS != nil,
+			pluginPass:                pass,
+			logger:                    logger.With("route_config_name", hfc.FilterChainName),
+			validationLevel:           t.ValidationLevel,
+			validator:                 t.Validator,
+			enableRouteSourceMetadata: t.EnableRouteSourceMetadata,
 		}
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)
 		if rc != nil {

@@ -794,7 +794,7 @@ func TestAwsEc2InstanceListerClientForPrunesSupersededSecretVersions(t *testing.
 }
 
 func TestBuildTranslateFuncRejectsEc2WhenDiscoveryDisabled(t *testing.T) {
-	translate := buildTranslateFunc(nil, false)
+	translate := buildTranslateFunc(nil, nil, false)
 
 	backendIR := translate(nil, newEc2Backend("backend-a", "", nil))
 
@@ -810,7 +810,7 @@ func TestBuildTranslateFuncRejectsEc2WhenDiscoveryDisabled(t *testing.T) {
 }
 
 func TestBuildTranslateFuncFailsClosedForMissingEc2Secret(t *testing.T) {
-	translate := buildTranslateFunc(newSecretIndexForTest(t), true)
+	translate := buildTranslateFunc(nil, newSecretIndexForTest(t), true)
 
 	backend := newEc2Backend("backend-a", "", nil)
 	backend.Spec.Aws.Auth = &kgateway.AwsAuth{

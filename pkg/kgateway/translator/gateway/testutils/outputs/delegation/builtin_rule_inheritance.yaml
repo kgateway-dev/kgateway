@@ -73,7 +73,7 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
         retryPolicy:
           numRetries: 3
-          retryOn: cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable
+          retryOn: cancelled,connect-failure,refused-stream,reset,retriable-headers,retriable-status-codes,unavailable
         timeout: 5s
     - match:
         pathSeparatedPrefix: /a/2
@@ -87,7 +87,7 @@ Routes:
           - 503
           retryBackOff:
             baseInterval: 1s
-          retryOn: cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable
+          retryOn: cancelled,connect-failure,refused-stream,reset,retriable-headers,retriable-status-codes,unavailable
         timeout: 10s
     - match:
         prefix: /
@@ -107,7 +107,7 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
         retryPolicy:
           numRetries: 3
-          retryOn: cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable
+          retryOn: cancelled,connect-failure,refused-stream,reset,retriable-headers,retriable-status-codes,unavailable
         timeout: 5s
 Statuses:
   gateways:
@@ -171,6 +171,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -190,6 +195,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -209,6 +219,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -228,6 +243,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -246,6 +266,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
