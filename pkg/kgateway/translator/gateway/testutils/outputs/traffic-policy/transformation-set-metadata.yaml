@@ -79,6 +79,7 @@ Routes:
               header(\"x-user-id\") }}"}],"dynamicMetadata":[{"namespace":"com.example.auth","key":"user-id-response","value":{"stringValue":"{{
               header(\"x-user-id\") }}"}}]}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
 Statuses:
   gateways:
     default/test:
@@ -141,6 +142,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

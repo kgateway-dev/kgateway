@@ -92,7 +92,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.38.1
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.38.3
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -457,17 +457,17 @@ test-with-coverage: test
 
 .PHONY: golden-deployer
 golden-deployer:  ## Refreshes golden files for ./test/deployer snapshot testing
-	REFRESH_GOLDEN=true go test ./test/deployer/... > /dev/null || true
+	HELM="$(HELM)" REFRESH_GOLDEN=true go test ./test/deployer/... > /dev/null || true
 	@echo ""
 	@echo "This must pass after refreshing:"
-	go test ./test/deployer/...
+	HELM="$(HELM)" go test ./test/deployer/...
 
 .PHONY: golden-helm
 golden-helm:  ## Refreshes golden files for ./test/helm snapshot testing
-	REFRESH_GOLDEN=true go test ./test/helm/... > /dev/null || true
+	HELM="$(HELM)" REFRESH_GOLDEN=true go test ./test/helm/... > /dev/null || true
 	@echo ""
 	@echo "This must pass after refreshing:"
-	go test ./test/helm/...
+	HELM="$(HELM)" go test ./test/helm/...
 
 ## Refreshes golden files for translation testing
 golden-translator-%:
@@ -480,7 +480,9 @@ golden-translator-%:
 # Env test
 #----------------------------------------------------------------------------------
 
-ENVTEST_K8S_VERSION = 1.31
+# Gateway API v1.6 experimental CRDs (xbackends) use the CEL format library,
+# which requires a kube-apiserver newer than 1.31.
+ENVTEST_K8S_VERSION = 1.33
 ENVTEST ?= go -C tools tool setup-envtest
 
 .PHONY: envtest-path
@@ -1024,17 +1026,17 @@ INSTALL_NAMESPACE ?= kgateway-system
 
 # The version of the Node Docker image to use for booting the kind cluster: https://hub.docker.com/r/kindest/node/tags
 # This version should stay in sync with `hack/kind/setup-kind.sh`.
-CLUSTER_NODE_VERSION ?= v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f
+CLUSTER_NODE_VERSION ?= v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5
 
 # If true, use cloud-provider-kind instead of MetalLB for LoadBalancer support.
 CLOUD_PROVIDER_KIND ?= false
 
 .PHONY: kind-create
 kind-create: ## Create a KinD cluster
-	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
+	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
 
 CONFORMANCE_CHANNEL ?= experimental
-CONFORMANCE_VERSION ?= v1.5.1
+CONFORMANCE_VERSION ?= v1.6.0
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs. HACK: Use SSA to avoid the issue with the CRD annotations being too long.
 ifeq ($(shell echo $(CONFORMANCE_VERSION) | grep -q '^v[0-9]' && echo yes),yes)
@@ -1228,19 +1230,22 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_REPORT_ARGS)
+# This test uses port 9091 which is reserved for the metrics port. The test passes if the port in the conformance test is changed
+CONFORMANCE_SKIP_TESTS := -skip-tests=TCPRouteMultipleRoutesAttachment
+CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SKIP_TESTS) $(CONFORMANCE_REPORT_ARGS)
 
 CONFORMANCE_TEST_DIR ?= ./test/conformance/...
+CONFORMANCE_GO_TEST_ARGS ?= -timeout=60m
 
 .PHONY: conformance ## Run the conformance test suite
 conformance:  ## Run the Gateway API conformance suite
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS)
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance $(CONFORMANCE_GO_TEST_ARGS) -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api conformance tests.
 conformance-%:  ## Run only the specified Gateway API conformance test by ShortName
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS) \
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance $(CONFORMANCE_GO_TEST_ARGS) -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
 # An alias target for running all conformance test suites.

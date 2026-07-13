@@ -71,6 +71,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["192.168.0.0/16"]},{"action":"allow","cidrs":["10.0.0.0/8"]}]}'
       filterName: http-acl
+      perRouteConfigName: http-acl
   virtualHosts:
   - domains:
     - test.com
@@ -97,6 +98,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"allow","rules":[{"action":"deny","cidrs":["10.10.0.0/16"]},{"action":"deny","cidrs":["172.16.0.0/12"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
     - match:
         pathSeparatedPrefix: /route-1
       name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0
@@ -165,6 +167,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

@@ -120,6 +120,46 @@ func addMergeOriginsToFilterMetadata(
 	return metadata
 }
 
+const routeSourceMetadataKey = "dev.kgateway.route_source"
+
+// addRouteSourceMetadata sets the dev.kgateway.route_source filter metadata on
+// an Envoy route from the originating xRoute IR. Existing metadata is preserved.
+func addRouteSourceMetadata(in ir.HttpRouteRuleMatchIR, metadata *envoycorev3.Metadata) *envoycorev3.Metadata {
+	if in.Parent == nil {
+		return metadata
+	}
+
+	fields := map[string]*structpb.Value{}
+	if in.Parent.Kind != "" {
+		fields["kind"] = structpb.NewStringValue(in.Parent.Kind)
+	}
+	if in.Parent.Group != "" {
+		fields["group"] = structpb.NewStringValue(in.Parent.Group)
+	}
+	if in.Parent.Name != "" {
+		fields["name"] = structpb.NewStringValue(in.Parent.Name)
+	}
+	if in.Parent.Namespace != "" {
+		fields["namespace"] = structpb.NewStringValue(in.Parent.Namespace)
+	}
+	if in.Name != "" {
+		fields["rule"] = structpb.NewStringValue(in.Name)
+	}
+
+	if len(fields) == 0 {
+		return metadata
+	}
+
+	if metadata == nil {
+		metadata = &envoycorev3.Metadata{}
+	}
+	if metadata.FilterMetadata == nil {
+		metadata.FilterMetadata = map[string]*structpb.Struct{}
+	}
+	metadata.FilterMetadata[routeSourceMetadataKey] = &structpb.Struct{Fields: fields}
+	return metadata
+}
+
 func reportBackendObjectPolicyStatus(
 	rp reporter.Reporter,
 	ancestorRef gwv1.ParentReference,

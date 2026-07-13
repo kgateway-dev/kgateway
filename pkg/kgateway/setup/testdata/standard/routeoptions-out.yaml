@@ -94,6 +94,7 @@ routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"x-foo-req","value":"abc"}]},"response":{"set":[{"name":"x-foo-resp","value":"xyz"}]}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
   - domains:
     - www.example.com
     name: listener~8080~www_example_com
@@ -118,3 +119,4 @@ routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"x-foo-req","value":"abc"}]},"response":{"set":[{"name":"x-foo-resp","value":"xyz"}]}}'
           filterName: rustformation
+          perRouteConfigName: rustformation

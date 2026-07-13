@@ -258,6 +258,9 @@ image:
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/envoy/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
 
+# -- List of ServiceEntry exclusion label selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway ignores matching ServiceEntries when building ServiceEntry backends and endpoints. Empty selector entries are rejected because they would match every ServiceEntry.
+serviceEntriesExclusionLabelSelectors: []
+
 # -- Map of GatewayClass names to GatewayParameters references that will be set on
 #    the default GatewayClasses managed by kgateway. Each entry must define both the
 #    name and namespace of the GatewayParameters resource.
@@ -291,3 +294,9 @@ validation:
   #    Strict adds xDS preflight validation and blocks snapshots that would NACK in Envoy.
   #    Default is "standard".
   level: standard
+
+# -- Enable attaching dev.kgateway.route_source filter metadata to every Envoy route.
+# This metadata includes the Kubernetes source object (kind, group, name, namespace, rule)
+# for each route, which helps correlate Envoy routes with their originating Kubernetes resources.
+# Default is false (disabled).
+enableRouteSourceMetadata: false

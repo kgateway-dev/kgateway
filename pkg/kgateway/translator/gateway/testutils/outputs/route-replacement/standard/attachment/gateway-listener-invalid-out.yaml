@@ -132,6 +132,7 @@ Routes:
         value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
           }"}}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - secure.example.com
@@ -171,6 +172,7 @@ Routes:
           value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
             }"}}}'
         filterName: rustformation
+        perRouteConfigName: rustformation
 - ignorePortInHostMatching: true
   name: listener~8081
   virtualHosts:
@@ -302,6 +304,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

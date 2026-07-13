@@ -135,6 +135,9 @@ Listeners:
                               responseBodyMode: BUFFERED
                               responseHeaderMode: SKIP
                               responseTrailerMode: SEND
+                            requestAttributes:
+                            - source.address
+                            - connection.requested_server_name
                             routeCacheAction: CLEAR
                             statPrefix: my_extproc
                   predicate:
@@ -267,6 +270,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -285,6 +293,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
