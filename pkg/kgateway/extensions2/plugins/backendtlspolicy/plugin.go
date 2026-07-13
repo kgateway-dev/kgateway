@@ -196,7 +196,8 @@ func filterTargetRefs(
 }
 
 // isBackendTargetRef reports whether ref is a kind BackendTLSPolicy can target.
-// Only Service (core group) and Backend (kgateway group) are valid.
+// Valid kinds are: core/Service, gateway.kgateway.dev/Backend, and
+// networking.istio.io/Hostname (used in Istio service-entry scenarios).
 func isBackendTargetRef(ref gwv1.LocalPolicyTargetReference) bool {
 	group := string(ref.Group)
 	kind := string(ref.Kind)
@@ -204,6 +205,8 @@ func isBackendTargetRef(ref gwv1.LocalPolicyTargetReference) bool {
 	case (group == "" || group == "core") && kind == kgwellknown.ServiceKind:
 		return true
 	case group == kgwellknown.BackendGVK.Group && kind == kgwellknown.BackendGVK.Kind:
+		return true
+	case group == kgwellknown.HostnameGVK.Group && kind == kgwellknown.HostnameGVK.Kind:
 		return true
 	}
 	return false

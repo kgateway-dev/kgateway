@@ -133,6 +133,12 @@ func TestFilterTargetRefs(t *testing.T) {
 			wantErrs:  0,
 		},
 		{
+			name:      "Hostname ref is accepted",
+			refs:      []gwv1.LocalPolicyTargetReferenceWithSectionName{ref("networking.istio.io", "Hostname", "host")},
+			wantValid: 1,
+			wantErrs:  0,
+		},
+		{
 			name:      "HTTPRoute ref is rejected",
 			refs:      []gwv1.LocalPolicyTargetReferenceWithSectionName{ref("gateway.networking.k8s.io", "HTTPRoute", "route")},
 			wantValid: 0,
@@ -178,6 +184,7 @@ func TestIsBackendTargetRef(t *testing.T) {
 		{"", "Service", true},
 		{"core", "Service", true},
 		{"gateway.kgateway.dev", "Backend", true},
+		{"networking.istio.io", "Hostname", true},
 		{"gateway.networking.k8s.io", "HTTPRoute", false},
 		{"gateway.networking.k8s.io", "GRPCRoute", false},
 		{"gateway.networking.k8s.io", "Gateway", false},
