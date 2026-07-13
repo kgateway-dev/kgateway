@@ -48,3 +48,4 @@ spec:
     initialConnectionWindowSize: 256Ki
     initialStreamWindowSize: 128Ki
     maxConcurrentStreams: 123
+    allowConnect: true

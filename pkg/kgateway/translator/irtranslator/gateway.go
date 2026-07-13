@@ -1,8 +1,9 @@
 package irtranslator
 
 import (
+	"cmp"
 	"context"
-	"sort"
+	"slices"
 	"strconv"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -10,7 +11,7 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"istio.io/istio/pkg/slices"
+	istioslices "istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -82,7 +83,7 @@ func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
 }
 
 func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {
-	listener := slices.FindFunc(gw.SourceObject.Listeners, func(l ir.Listener) bool {
+	listener := istioslices.FindFunc(gw.SourceObject.Listeners, func(l ir.Listener) bool {
 		return filterChainName == query.GenerateRouteKey(l.Parent, string(l.Name))
 	})
 	if listener == nil {
@@ -192,8 +193,8 @@ func (t *Translator) ComputeListener(
 		}
 	}
 	// sort filter chains for idempotency
-	sort.Slice(ret.GetFilterChains(), func(i, j int) bool {
-		return ret.GetFilterChains()[i].GetName() < ret.GetFilterChains()[j].GetName()
+	slices.SortFunc(ret.GetFilterChains(), func(a, b *envoylistenerv3.FilterChain) int {
+		return cmp.Compare(a.GetName(), b.GetName())
 	})
 	if hasTls {
 		ret.ListenerFilters = append(ret.GetListenerFilters(), tlsInspectorFilter())
