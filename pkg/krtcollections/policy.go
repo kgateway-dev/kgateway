@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"istio.io/istio/pkg/config/labels"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
@@ -31,6 +32,7 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
@@ -1118,7 +1120,7 @@ func (h *RoutesIndex) HasSynced() bool {
 			return false
 		}
 	}
-	return h.httpRoutes.HasSynced() && h.grpcRoutes.HasSynced() && h.tcpRoutes.HasSynced() && h.tlsRoutes.HasSynced() && h.routes.HasSynced() && h.policies.HasSynced() && h.backends.HasSynced() && h.refgrants.HasSynced()
+	return h.httpRoutes.HasSynced() && h.routes.HasSynced() && h.policies.HasSynced() && h.backends.HasSynced() && h.refgrants.HasSynced()
 }
 
 // HTTPRoutes returns the raw krt collection that contains only the HTTPRouteIR.
@@ -1126,12 +1128,25 @@ func (r *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
 	return r.httpRoutes
 }
 
-// ProcessHTTPRouteStatusMarkers adds empty status in report map if no status reported for the marked route.
-// Used for clearing stale status for orphaned routes.
-func (r *RoutesIndex) ProcessHTTPRouteStatusMarkers(
-	objStatus []krt.ObjectWithStatus[*gwv1.HTTPRoute, StatusMarker],
-	reportMap reports.ReportMap,
+// ProcessRouteStatusMarkers adds empty status in the report map for any marked route (HTTP, TCP,
+// TLS, GRPC) that has no status reported. Used for clearing stale status for orphaned routes.
+func (r *RoutesIndex) ProcessRouteStatusMarkers(kctx krt.HandlerContext, reportMap reports.ReportMap) {
+	rp := reports.NewReporter(&reportMap)
+	processRouteStatusMarkers(kctx, r.httpRouteStatusMarkers, reportMap.HTTPRoutes, rp)
+	processRouteStatusMarkers(kctx, r.tcpRouteStatusMarkers, reportMap.TCPRoutes, rp)
+	processRouteStatusMarkers(kctx, r.tlsRouteStatusMarkers, reportMap.TLSRoutes, rp)
+	processRouteStatusMarkers(kctx, r.grpcRouteStatusMarkers, reportMap.GRPCRoutes, rp)
+}
+
+// processRouteStatusMarkers fetches the route status markers and adds empty status for routes not
+// in the report map to clear stale status.
+func processRouteStatusMarkers[T controllers.Object](
+	kctx krt.HandlerContext,
+	statusCol krt.StatusCollection[T, StatusMarker],
+	reportMap map[types.NamespacedName]*reports.RouteReport,
+	rp reporter.Reporter,
 ) {
+	objStatus := krt.Fetch(kctx, statusCol)
 	for _, status := range objStatus {
 		routeKey := types.NamespacedName{
 			Namespace: status.Obj.GetNamespace(),
@@ -1139,80 +1154,10 @@ func (r *RoutesIndex) ProcessHTTPRouteStatusMarkers(
 		}
 
 		// Add empty status to clear stale status for routes with no valid ParentRefs
-		if reportMap.HTTPRoutes[routeKey] == nil {
-			rp := reports.NewReporter(&reportMap)
-			rp.Route(status.Obj)
+		if reportMap[routeKey] == nil {
+			_ = rp.Route(status.Obj)
 		}
 	}
-}
-
-// ProcessGRPCRouteStatusMarkers adds empty status in report map if no status reported for the marked route.
-// Used for clearing stale status for orphaned routes.
-func (r *RoutesIndex) ProcessGRPCRouteStatusMarkers(
-	objStatus []krt.ObjectWithStatus[*gwv1.GRPCRoute, StatusMarker],
-	reportMap reports.ReportMap,
-) {
-	for _, status := range objStatus {
-		routeKey := types.NamespacedName{
-			Namespace: status.Obj.GetNamespace(),
-			Name:      status.Obj.GetName(),
-		}
-
-		if reportMap.GRPCRoutes[routeKey] == nil {
-			rp := reports.NewReporter(&reportMap)
-			rp.Route(status.Obj)
-		}
-	}
-}
-
-// ProcessTCPRouteStatusMarkers adds empty status in report map if no status reported for the marked route.
-// Used for clearing stale status for orphaned routes.
-func (r *RoutesIndex) ProcessTCPRouteStatusMarkers(
-	objStatus []krt.ObjectWithStatus[*gwv1a2.TCPRoute, StatusMarker],
-	reportMap reports.ReportMap,
-) {
-	for _, status := range objStatus {
-		routeKey := types.NamespacedName{
-			Namespace: status.Obj.GetNamespace(),
-			Name:      status.Obj.GetName(),
-		}
-
-		if reportMap.TCPRoutes[routeKey] == nil {
-			rp := reports.NewReporter(&reportMap)
-			rp.Route(status.Obj)
-		}
-	}
-}
-
-// ProcessTLSRouteStatusMarkers adds empty status in report map if no status reported for the marked route.
-// Used for clearing stale status for orphaned routes.
-func (r *RoutesIndex) ProcessTLSRouteStatusMarkers(
-	objStatus []krt.ObjectWithStatus[*gwv1a2.TLSRoute, StatusMarker],
-	reportMap reports.ReportMap,
-) {
-	for _, status := range objStatus {
-		routeKey := types.NamespacedName{
-			Namespace: status.Obj.GetNamespace(),
-			Name:      status.Obj.GetName(),
-		}
-
-		if reportMap.TLSRoutes[routeKey] == nil {
-			rp := reports.NewReporter(&reportMap)
-			rp.Route(status.Obj)
-		}
-	}
-}
-
-func (h *RoutesIndex) GetGRPCRouteStatusMarkers() krt.StatusCollection[*gwv1.GRPCRoute, StatusMarker] {
-	return h.grpcRouteStatusMarkers
-}
-
-func (h *RoutesIndex) GetTCPRouteStatusMarkers() krt.StatusCollection[*gwv1a2.TCPRoute, StatusMarker] {
-	return h.tcpRouteStatusMarkers
-}
-
-func (h *RoutesIndex) GetTLSRouteStatusMarkers() krt.StatusCollection[*gwv1a2.TLSRoute, StatusMarker] {
-	return h.tlsRouteStatusMarkers
 }
 
 func NewRoutesIndex(
@@ -1320,10 +1265,6 @@ func NewRoutesIndex(
 	h.byParentRef = byParentRef
 
 	return h
-}
-
-func (h *RoutesIndex) GetHTTPRouteStatusMarkers() krt.StatusCollection[*gwv1.HTTPRoute, StatusMarker] {
-	return h.httpRouteStatusMarkers
 }
 
 func (h *RoutesIndex) FetchHTTPRoutesBySelector(kctx krt.HandlerContext, selector HTTPRouteSelector) []ir.HttpRouteIR {

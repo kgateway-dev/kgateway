@@ -74,78 +74,7 @@ func TestGetBackendSameNamespace(t *testing.T) {
 	}
 }
 
-func TestProcessRouteStatusMarkersAddsEmptyReports(t *testing.T) {
-	routeKey := types.NamespacedName{Namespace: "default", Name: "orphaned-route"}
-
-	t.Run("grpc route", func(t *testing.T) {
-		reportMap := reports.NewReportMap()
-		routes := &RoutesIndex{}
-
-		routes.ProcessGRPCRouteStatusMarkers([]krt.ObjectWithStatus[*gwv1.GRPCRoute, StatusMarker]{{
-			Obj: &gwv1.GRPCRoute{ObjectMeta: metav1.ObjectMeta{
-				Namespace: routeKey.Namespace,
-				Name:      routeKey.Name,
-			}},
-		}}, reportMap)
-
-		require.NotNil(t, reportMap.GRPCRoutes[routeKey])
-		require.Empty(t, reportMap.GRPCRoutes[routeKey].Parents)
-	})
-
-	t.Run("tcp route", func(t *testing.T) {
-		reportMap := reports.NewReportMap()
-		routes := &RoutesIndex{}
-
-		routes.ProcessTCPRouteStatusMarkers([]krt.ObjectWithStatus[*gwv1a2.TCPRoute, StatusMarker]{{
-			Obj: &gwv1a2.TCPRoute{ObjectMeta: metav1.ObjectMeta{
-				Namespace: routeKey.Namespace,
-				Name:      routeKey.Name,
-			}},
-		}}, reportMap)
-
-		require.NotNil(t, reportMap.TCPRoutes[routeKey])
-		require.Empty(t, reportMap.TCPRoutes[routeKey].Parents)
-	})
-
-	t.Run("tls route", func(t *testing.T) {
-		reportMap := reports.NewReportMap()
-		routes := &RoutesIndex{}
-
-		routes.ProcessTLSRouteStatusMarkers([]krt.ObjectWithStatus[*gwv1a2.TLSRoute, StatusMarker]{{
-			Obj: &gwv1a2.TLSRoute{ObjectMeta: metav1.ObjectMeta{
-				Namespace: routeKey.Namespace,
-				Name:      routeKey.Name,
-			}},
-		}}, reportMap)
-
-		require.NotNil(t, reportMap.TLSRoutes[routeKey])
-		require.Empty(t, reportMap.TLSRoutes[routeKey].Parents)
-	})
-}
-
-func TestProcessRouteStatusMarkersPreservesExistingReports(t *testing.T) {
-	routeKey := types.NamespacedName{Namespace: "default", Name: "reported-route"}
-	reportMap := reports.NewReportMap()
-	reporter := reports.NewReporter(&reportMap)
-	reporter.Route(&gwv1.GRPCRoute{ObjectMeta: metav1.ObjectMeta{
-		Namespace: routeKey.Namespace,
-		Name:      routeKey.Name,
-	}}).ParentRef(&gwv1.ParentReference{Name: "gateway"})
-	before := reportMap.GRPCRoutes[routeKey]
-
-	routes := &RoutesIndex{}
-	routes.ProcessGRPCRouteStatusMarkers([]krt.ObjectWithStatus[*gwv1.GRPCRoute, StatusMarker]{{
-		Obj: &gwv1.GRPCRoute{ObjectMeta: metav1.ObjectMeta{
-			Namespace: routeKey.Namespace,
-			Name:      routeKey.Name,
-		}},
-	}}, reportMap)
-
-	require.Same(t, before, reportMap.GRPCRoutes[routeKey])
-	require.NotEmpty(t, reportMap.GRPCRoutes[routeKey].Parents)
-}
-
-func TestRouteStatusMarkerCollectionsIncludeStaleGRPCTCPTLSRoutes(t *testing.T) {
+func TestProcessRouteStatusMarkers(t *testing.T) {
 	controllerName := gwv1.GatewayController(wellknown.DefaultGatewayControllerName)
 	parentStatus := []gwv1.RouteParentStatus{{
 		ControllerName: controllerName,
@@ -154,38 +83,88 @@ func TestRouteStatusMarkerCollectionsIncludeStaleGRPCTCPTLSRoutes(t *testing.T) 
 		},
 	}}
 
+	routeKey := types.NamespacedName{Namespace: "default", Name: "orphaned-route"}
+
+	t.Run("grpc route", func(t *testing.T) {
+		routes := preRouteIndex(t, []any{
+			&gwv1.GRPCRoute{
+				ObjectMeta: metav1.ObjectMeta{Name: routeKey.Name, Namespace: routeKey.Namespace},
+				Status: gwv1.GRPCRouteStatus{
+					RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
+				},
+			},
+		})
+		reportMap := reports.NewReportMap()
+		routes.ProcessRouteStatusMarkers(krt.TestingDummyContext{}, reportMap)
+
+		require.NotNil(t, reportMap.GRPCRoutes[routeKey])
+		require.Empty(t, reportMap.GRPCRoutes[routeKey].Parents)
+	})
+
+	t.Run("tcp route", func(t *testing.T) {
+		routes := preRouteIndex(t, []any{
+			&gwv1a2.TCPRoute{
+				ObjectMeta: metav1.ObjectMeta{Name: routeKey.Name, Namespace: routeKey.Namespace},
+				Status: gwv1a2.TCPRouteStatus{
+					RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
+				},
+			},
+		})
+		reportMap := reports.NewReportMap()
+		routes.ProcessRouteStatusMarkers(krt.TestingDummyContext{}, reportMap)
+
+		require.NotNil(t, reportMap.TCPRoutes[routeKey])
+		require.Empty(t, reportMap.TCPRoutes[routeKey].Parents)
+	})
+
+	t.Run("tls route", func(t *testing.T) {
+		routes := preRouteIndex(t, []any{
+			&gwv1a2.TLSRoute{
+				ObjectMeta: metav1.ObjectMeta{Name: routeKey.Name, Namespace: routeKey.Namespace},
+				Status: gwv1a2.TLSRouteStatus{
+					RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
+				},
+			},
+		})
+		reportMap := reports.NewReportMap()
+		routes.ProcessRouteStatusMarkers(krt.TestingDummyContext{}, reportMap)
+
+		require.NotNil(t, reportMap.TLSRoutes[routeKey])
+		require.Empty(t, reportMap.TLSRoutes[routeKey].Parents)
+	})
+}
+
+func TestProcessRouteStatusMarkersPreservesExistingReports(t *testing.T) {
+	controllerName := gwv1.GatewayController(wellknown.DefaultGatewayControllerName)
+	parentStatus := []gwv1.RouteParentStatus{{
+		ControllerName: controllerName,
+		ParentRef: gwv1.ParentReference{
+			Name: "gateway",
+		},
+	}}
+
+	routeKey := types.NamespacedName{Namespace: "default", Name: "reported-route"}
 	routes := preRouteIndex(t, []any{
 		&gwv1.GRPCRoute{
-			ObjectMeta: metav1.ObjectMeta{Name: "grpc-route", Namespace: "default"},
+			ObjectMeta: metav1.ObjectMeta{Name: routeKey.Name, Namespace: routeKey.Namespace},
 			Status: gwv1.GRPCRouteStatus{
-				RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
-			},
-		},
-		&gwv1a2.TCPRoute{
-			ObjectMeta: metav1.ObjectMeta{Name: "tcp-route", Namespace: "default"},
-			Status: gwv1a2.TCPRouteStatus{
-				RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
-			},
-		},
-		&gwv1a2.TLSRoute{
-			ObjectMeta: metav1.ObjectMeta{Name: "tls-route", Namespace: "default"},
-			Status: gwv1a2.TLSRouteStatus{
 				RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
 			},
 		},
 	})
 
-	grpcMarkers := krt.Fetch(krt.TestingDummyContext{}, routes.GetGRPCRouteStatusMarkers())
-	require.Len(t, grpcMarkers, 1)
-	require.Equal(t, "grpc-route", grpcMarkers[0].Obj.Name)
+	reportMap := reports.NewReportMap()
+	reporter := reports.NewReporter(&reportMap)
+	reporter.Route(&gwv1.GRPCRoute{ObjectMeta: metav1.ObjectMeta{
+		Namespace: routeKey.Namespace,
+		Name:      routeKey.Name,
+	}}).ParentRef(&gwv1.ParentReference{Name: "gateway"})
+	before := reportMap.GRPCRoutes[routeKey]
 
-	tcpMarkers := krt.Fetch(krt.TestingDummyContext{}, routes.GetTCPRouteStatusMarkers())
-	require.Len(t, tcpMarkers, 1)
-	require.Equal(t, "tcp-route", tcpMarkers[0].Obj.Name)
+	routes.ProcessRouteStatusMarkers(krt.TestingDummyContext{}, reportMap)
 
-	tlsMarkers := krt.Fetch(krt.TestingDummyContext{}, routes.GetTLSRouteStatusMarkers())
-	require.Len(t, tlsMarkers, 1)
-	require.Equal(t, "tls-route", tlsMarkers[0].Obj.Name)
+	require.Same(t, before, reportMap.GRPCRoutes[routeKey])
+	require.NotEmpty(t, reportMap.GRPCRoutes[routeKey].Parents)
 }
 
 func TestRoutesFor(t *testing.T) {
