@@ -103,23 +103,11 @@ type StagedFilter[WellKnown ~int, FilterType Filter] struct {
 
 type StagedFilterList[WellKnown ~int, FilterType Filter] []StagedFilter[WellKnown, FilterType]
 
-func (s StagedFilterList[WellKnown, FilterType]) Len() int {
-	return len(s)
-}
-
-// filters by Relative Stage, Weighting, Name, Config Type-Url, and Config Value.
+// CompareStagedFilters compares two staged filters for sorting.
+// It orders filters by Relative Stage, Weighting, Name, Config Type-Url, and Config Value.
 // The assumption is that if two filters are in the same stage, their order doesn't matter, and we
 // just need to make sure it is stable.
-func (s StagedFilterList[WellKnown, FilterType]) Less(i, j int) bool {
-	return CompareStagedFilters(s[i], s[j]) < 0
-}
-
-func (s StagedFilterList[WellKnown, FilterType]) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-// CompareStagedFilters compares two staged filters for sorting.
-// Filters are ordered by stage, then weight (descending for same type), then name, type URL, and config value.
+// Filters of the same type are ordered by weight descending; otherwise ascending by name, type URL, and config value.
 func CompareStagedFilters[WellKnown ~int, FilterType Filter](a, b StagedFilter[WellKnown, FilterType]) int {
 	if compare := FilterStageComparison(a.Stage, b.Stage); compare != 0 {
 		return compare
@@ -151,11 +139,6 @@ func CompareStagedFilters[WellKnown ~int, FilterType Filter](a, b StagedFilter[W
 // Sort sorts the StagedFilterList in place using slices.SortStableFunc to preserve
 // the relative order of equal elements.
 func (s StagedFilterList[WellKnown, FilterType]) Sort() {
-	slices.SortStableFunc(s, CompareStagedFilters[WellKnown, FilterType])
-}
-
-// SortStable sorts the StagedFilterList in place using slices.SortStableFunc.
-func (s StagedFilterList[WellKnown, FilterType]) SortStable() {
 	slices.SortStableFunc(s, CompareStagedFilters[WellKnown, FilterType])
 }
 

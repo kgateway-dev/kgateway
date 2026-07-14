@@ -16,24 +16,6 @@ type SortableRoute struct {
 
 type SortableRoutes []*SortableRoute
 
-func (a SortableRoutes) Len() int {
-	return len(a)
-}
-
-func (a SortableRoutes) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-
-func (a SortableRoutes) Less(i, j int) bool {
-	// If weights are different, use weight to determine order
-	if a[i].Route.PrecedenceWeight != a[j].Route.PrecedenceWeight {
-		return a[i].Route.PrecedenceWeight > a[j].Route.PrecedenceWeight
-	}
-
-	// If weights are equal, use the existing comparison logic
-	return !routeWrapperLessFunc(a[i], a[j])
-}
-
 // CompareTo compares two SortableRoutes for ordering.
 // Returns -1 if a should sort before b, 1 if after, 0 if equal.
 // Higher precedence weight sorts first; for equal weight, route specificity is compared.

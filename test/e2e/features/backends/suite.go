@@ -50,8 +50,13 @@ var (
 		"TestBackendWithRuntimeError": {
 			Manifests: []string{backendErrorManifest},
 		},
+		// http-echo and httpbin live in the suite-level setup, not here: per-test
+		// manifest files are applied in parallel, and the priority-groups Backend's
+		// DNS-based cluster must not be created before the Services it references
+		// exist (a negative DNS lookup keeps the Envoy cluster warming while coredns
+		// caches the miss, returning 500s in the meantime).
 		"TestPriorityGroupsFailover": {
-			Manifests: []string{defaults.HttpEchoPodManifest, defaults.HttpbinManifest, priorityGroupManifest},
+			Manifests: []string{priorityGroupManifest},
 		},
 	}
 )
@@ -62,7 +67,9 @@ type testingSuite struct {
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{
+			Manifests: []string{defaults.HttpEchoPodManifest, defaults.HttpbinManifest},
+		}, testCases),
 	}
 }
 
@@ -74,23 +81,26 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 		},
 	}
 
-	common.BaseGateway.Send(
-		s.T(),
-		&matchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Body:       gomega.ContainSubstring(defaults.NginxResponse),
-		},
-		curl.WithHostHeader("example.com"),
-		curl.WithPath("/"),
-		curl.WithPort(80),
-	)
-
 	s.assertStatus(backend, metav1.Condition{
 		Type:    "Accepted",
 		Status:  metav1.ConditionTrue,
 		Reason:  "Accepted",
 		Message: "Backend accepted",
 	})
+
+	// Give envoy a window to receive and apply the xDS update when asserting the route is reachable.
+	common.BaseGateway.SendWithRetry(
+		s.Ctx,
+		s.T(),
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring(defaults.NginxResponse),
+		},
+		[]retry.Option{retry.Timeout(30 * time.Second), retry.Delay(time.Second)},
+		curl.WithHostHeader("example.com"),
+		curl.WithPath("/"),
+		curl.WithPort(80),
+	)
 }
 
 // TestBackendWithRuntimeError tests if backend condition is updated with error
@@ -165,16 +175,17 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 	// and pod restarts add latency; give the eventual matches a generous window
 	failoverRetry := []retry.Option{retry.Timeout(2 * time.Minute)}
 
-	// group 0 (nginx) serves all traffic
-	common.BaseGateway.SendEventuallyConsistent(
-		s.Ctx,
-		s.T(),
-		&matchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Body:       gomega.ContainSubstring(defaults.NginxResponse),
-		},
-		curlOpts...,
-	)
+	nginxResponse := &matchers.HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       gomega.ContainSubstring(defaults.NginxResponse),
+	}
+
+	// group 0 (nginx) serves all traffic. Wait out the Envoy cluster warming
+	// (DNS resolution + initial health check round) with the generous retry
+	// before asserting consistency: SendEventuallyConsistent alone only retries
+	// for a few seconds.
+	common.BaseGateway.SendWithRetry(s.Ctx, s.T(), nginxResponse, failoverRetry, curlOpts...)
+	common.BaseGateway.SendEventuallyConsistent(s.Ctx, s.T(), nginxResponse, curlOpts...)
 
 	// kill group 0 by deleting the shared nginx pod. Its Service keeps the
 	// ClusterIP, so the priority-0 endpoint stays resolvable but the health
@@ -217,15 +228,8 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, common.SharedNginxNamespace, metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
-	common.BaseGateway.SendEventuallyConsistent(
-		s.Ctx,
-		s.T(),
-		&matchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Body:       gomega.ContainSubstring(defaults.NginxResponse),
-		},
-		curlOpts...,
-	)
+	common.BaseGateway.SendWithRetry(s.Ctx, s.T(), nginxResponse, failoverRetry, curlOpts...)
+	common.BaseGateway.SendEventuallyConsistent(s.Ctx, s.T(), nginxResponse, curlOpts...)
 }
 
 func (s *testingSuite) assertStatus(backend *kgateway.Backend, expected metav1.Condition) {
