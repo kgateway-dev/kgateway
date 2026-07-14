@@ -1,6 +1,6 @@
 module github.com/solo-io/ext-proc-examples/basic-sink
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/envoyproxy/go-control-plane/envoy v1.36.0
