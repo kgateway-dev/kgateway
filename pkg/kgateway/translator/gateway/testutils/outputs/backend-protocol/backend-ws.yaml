@@ -63,6 +63,14 @@ Routes:
         upgradeConfigs:
         - upgradeType: websocket
 Statuses:
+  backends:
+    default/example-backend:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:

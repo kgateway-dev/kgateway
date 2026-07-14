@@ -93,6 +93,7 @@ routes:
         value: '{"response":{"add":[{"name":"original-greatness","value":"{{request_headers(\"x-greatness\")}}"}],"body":{"parseAs":"AsJson","value":"{{
           body }}"}}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - www.example-gateway-only.com
@@ -129,3 +130,4 @@ routes:
             value: '{"request":{"add":[{"name":"x-greatness","value":"{{ length(headers(\":path\"))
               }}"}]}}'
           filterName: rustformation
+          perRouteConfigName: rustformation

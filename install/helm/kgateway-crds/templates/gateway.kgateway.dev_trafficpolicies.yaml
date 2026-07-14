@@ -1216,7 +1216,7 @@ spec:
                         description: |-
                           Remove the given header(s) from the HTTP request before the action. The
                           value of Remove is a list of HTTP header names. Note that header names are
-                          case-insensitive (see https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+                          case-insensitive (see [RFC 2616, Section 4.2](https://datatracker.ietf.org/doc/html/rfc2616#section-4.2)).
 
                           Input:
                             GET /foo HTTP/1.1
@@ -1423,7 +1423,7 @@ spec:
                         description: |-
                           Remove the given header(s) from the HTTP request before the action. The
                           value of Remove is a list of HTTP header names. Note that header names are
-                          case-insensitive (see https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+                          case-insensitive (see [RFC 2616, Section 4.2](https://datatracker.ietf.org/doc/html/rfc2616#section-4.2)).
 
                           Input:
                             GET /foo HTTP/1.1
@@ -1879,7 +1879,11 @@ spec:
               retry:
                 description: |-
                   Retry defines the policy for retrying requests.
-                  It is applicable to HTTPRoutes, Gateway listeners and ListenerSets, and ignored for other targeted kinds.
+                  It is applicable to HTTPRoutes, GRPCRoutes, Gateways, Gateway listeners, and
+                  ListenerSets, and ignored for other targeted kinds.
+                  When attached above the route level, the retry policy applies to all routes it
+                  covers; a route-level retry policy (from a more specific TrafficPolicy or the
+                  built-in HTTPRoute retry) takes precedence.
                 properties:
                   attempts:
                     default: 1
@@ -2073,8 +2077,12 @@ spec:
                     || r.kind == 'GRPCRoute' || r.kind.endsWith('ListenerSet')))
               timeouts:
                 description: |-
-                  Timeouts defines the timeouts for requests
-                  It is applicable to HTTPRoutes and ignored for other targeted kinds.
+                  Timeouts defines the timeouts for requests.
+                  It is applicable to HTTPRoutes, GRPCRoutes, and Gateways (including individual
+                  Gateway listeners via sectionName), and ignored for other targeted kinds.
+                  When attached above the route level, the timeouts apply to all routes it
+                  covers; a route-level timeout (from a more specific TrafficPolicy or the
+                  built-in HTTPRoute timeouts) takes precedence.
                 properties:
                   request:
                     description: |-
@@ -2542,6 +2550,10 @@ spec:
               rule: '!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r,
                 r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
                 r.kind == ''HTTPRoute'')))'
+            - message: urlRewrite can only be used when targeting HTTPRoute resources
+              rule: '!has(self.urlRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
+                r.kind == ''HTTPRoute'')))'
             - message: tracing can only be used when targeting HTTPRoute or GRPCRoute
                 resources
               rule: '!has(self.tracing) || ((has(self.targetRefs) && self.targetRefs.all(r,
@@ -2552,14 +2564,6 @@ spec:
               rule: 'has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout)
                 && has(self.timeouts.request) ? duration(self.retry.perTryTimeout)
                 < duration(self.timeouts.request) : true) : true'
-            - message: targetRefs[].sectionName must be set when targeting Gateway
-                resources with retry policy
-              rule: 'has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r,
-                (r.kind == ''Gateway'' ? has(r.sectionName) : true )) : true'
-            - message: targetSelectors[].sectionName must be set when targeting Gateway
-                resources with retry policy
-              rule: 'has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r,
-                (r.kind == ''Gateway'' ? has(r.sectionName) : true )) : true'
           status:
             description: |-
               PolicyStatus defines the common attributes that all Policies should include within

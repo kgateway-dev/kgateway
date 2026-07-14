@@ -1390,6 +1390,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Priority groups backend", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backends/priority_groups.yaml"},
+			outputFile: "backends/priority_groups.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Priority groups backend with non-static member reports error", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backends/priority_groups_aws_error.yaml"},
+			outputFile: "backends/priority_groups_aws_error.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("DFP Backend with TLS", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"dfp/tls.yaml"},
@@ -1583,6 +1605,32 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("attach xRoute source metadata to Envoy routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"route-source-metadata/basic.yaml"},
+			outputFile: "route-source-metadata/basic.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.EnableRouteSourceMetadata = true
+		})
+	})
+
+	t.Run("attach xRoute source metadata to direct response routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"route-source-metadata/direct-response.yaml"},
+			outputFile: "route-source-metadata/direct-response.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.EnableRouteSourceMetadata = true
+		})
+	})
+
 	t.Run("HTTPRoutes with builtin timeout and retry", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"httproute-timeout-retry/builtin.yaml"},
@@ -1616,6 +1664,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy HTTP retry", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/http-retry.yaml"},
+			outputFile: "traffic-policy/http-retry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy listener retry fans out to routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/listener-retry.yaml"},
+			outputFile: "traffic-policy/listener-retry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy timeout attached to GRPCRoute", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/grpcroute-timeout.yaml"},
@@ -1637,6 +1707,40 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("TrafficPolicy timeout targeting whole Gateway (HTTP and HTTPS listeners)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/timeout-gateway-whole.yaml"},
+			outputFile: "traffic-policy/timeout-gateway-whole.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy timeout targeting Gateway HTTP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/timeout-gateway-http-listener.yaml"},
+			outputFile: "traffic-policy/timeout-gateway-http-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy timeout targeting Gateway HTTPS listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/timeout-gateway-https-listener.yaml"},
+			outputFile: "traffic-policy/timeout-gateway-https-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("http gateway with session persistence (cookie)", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"session-persistence/cookie.yaml"},
@@ -3022,19 +3126,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "test",
 			},
-		})
-	})
-
-	t.Run("Gateway with metrics port 9091 allowed when DisableStatsOnProxy", func(t *testing.T) {
-		test(t, translatorTestCase{
-			inputFiles: []string{"validation/gateway-reserved-port.yaml"},
-			outputFile: "validation/gateway-proxy-stats-disabled.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "test",
-			},
-		}, func(s *apisettings.Settings) {
-			s.DisableStatsOnProxy = true
 		})
 	})
 

@@ -2,7 +2,7 @@ package endpoints
 
 import (
 	"log/slog"
-	"sort"
+	"slices"
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/api/label"
 	"istio.io/api/networking/v1alpha3"
-	"istio.io/istio/pkg/slices"
+	istioslices "istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -158,7 +158,7 @@ func prioritizeWithLbInfo(logger *slog.Logger, ep ir.EndpointsForBackend, lbInfo
 
 // ensure we don't send invalid endpoints to envoy and cause NACKs
 func filterInvalidEps(eps []ir.EndpointWithMd) []ir.EndpointWithMd {
-	return slices.Filter(eps, func(ewm ir.EndpointWithMd) bool {
+	return istioslices.Filter(eps, func(ewm ir.EndpointWithMd) bool {
 		sock := ewm.GetEndpoint().GetAddress().GetSocketAddress()
 		if sock != nil && sock.GetAddress() == "" {
 			return false
@@ -205,7 +205,7 @@ func applyFailoverPriorityPerLocality(
 	for priority := range priorityMap {
 		priorities = append(priorities, priority)
 	}
-	sort.Ints(priorities)
+	slices.Sort(priorities)
 
 	out := make([]*envoyendpointv3.LocalityLbEndpoints, len(priorityMap))
 	for i, priority := range priorities {
@@ -273,7 +273,7 @@ func applyLocalityFailover(
 	for priority := range priorityMap {
 		priorities = append(priorities, priority)
 	}
-	sort.Ints(priorities)
+	slices.Sort(priorities)
 	// 2.2 adjust LocalityLbEndpoints priority
 	// if the index and value of priorities array is not equal.
 	for i, priority := range priorities {

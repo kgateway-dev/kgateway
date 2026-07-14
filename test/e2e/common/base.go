@@ -15,6 +15,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // SharedNginxNamespace is the namespace of the shared nginx backend applied by
@@ -25,6 +26,12 @@ func SetupBaseConfig(ctx context.Context, t *testing.T, installation *e2e.TestIn
 	for _, s := range log.Scopes() {
 		s.SetOutputLevel(log.DebugLevel)
 	}
+	// Register cleanup before applying so partially applied manifests are still removed.
+	testutils.Cleanup(t, func() {
+		if err := installation.ClusterContext.IstioClient.DeleteYAMLFiles("", manifests...); err != nil {
+			t.Logf("failed to delete base config manifests %v: %v", manifests, err)
+		}
+	})
 	err := installation.ClusterContext.IstioClient.ApplyYAMLFiles("", manifests...)
 	assert.NoError(t, err)
 }

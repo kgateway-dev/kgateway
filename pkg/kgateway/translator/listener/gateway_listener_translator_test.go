@@ -704,15 +704,6 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			Expect(translatedListener.TcpFilterChain[0].FilterChainName).To(ContainSubstring(olderRoute.Name))
 			Expect(translatedListener.TcpFilterChain[0].FilterChainName).NotTo(ContainSubstring(newerRoute.Name))
 
-			findAccepted := func(conds []metav1.Condition) *metav1.Condition {
-				for i := range conds {
-					if conds[i].Type == string(gwv1.RouteConditionAccepted) {
-						return &conds[i]
-					}
-				}
-				return nil
-			}
-
 			findProgrammed := func(conds []metav1.Condition) *metav1.Condition {
 				for i := range conds {
 					if conds[i].Type == conditions.KgatewayConditionProgrammed {
@@ -726,19 +717,19 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			olderStatus := rm.BuildRouteStatus(ctx, olderRoute, wellknown.DefaultGatewayControllerName)
 			Expect(olderStatus).NotTo(BeNil())
 			Expect(olderStatus.Parents).To(HaveLen(1))
-			olderAccepted := findAccepted(olderStatus.Parents[0].Conditions)
-			Expect(olderAccepted).NotTo(BeNil(), "Expected Accepted condition on older route")
-			Expect(olderAccepted.Status).To(Equal(metav1.ConditionTrue))
-			Expect(olderAccepted.Reason).To(Equal(string(gwv1.RouteReasonAccepted)))
+			olderProgrammed := findProgrammed(olderStatus.Parents[0].Conditions)
+			Expect(olderProgrammed).NotTo(BeNil(), "Expected Programmed condition on older route")
+			Expect(olderProgrammed.Status).To(Equal(metav1.ConditionTrue))
+			Expect(olderProgrammed.Reason).To(Equal(conditions.KgatewayReasonProgrammed))
 
 			By("Validating that the newer conflicting TCPRoute is rejected")
 			newerStatus := rm.BuildRouteStatus(ctx, newerRoute, wellknown.DefaultGatewayControllerName)
 			Expect(newerStatus).NotTo(BeNil())
 			Expect(newerStatus.Parents).To(HaveLen(1))
-			newerAccepted := findProgrammed(newerStatus.Parents[0].Conditions)
-			Expect(newerAccepted).NotTo(BeNil(), "Expected Programmed condition on newer route")
-			Expect(newerAccepted.Status).To(Equal(metav1.ConditionFalse))
-			Expect(newerAccepted.Reason).To(Equal("Conflicted"))
+			newerProgrammed := findProgrammed(newerStatus.Parents[0].Conditions)
+			Expect(newerProgrammed).NotTo(BeNil(), "Expected Programmed condition on newer route")
+			Expect(newerProgrammed.Status).To(Equal(metav1.ConditionFalse))
+			Expect(newerProgrammed.Reason).To(Equal("Conflicted"))
 		})
 	})
 	Context("TLS", func() {

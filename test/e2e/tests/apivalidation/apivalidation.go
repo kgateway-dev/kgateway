@@ -54,7 +54,7 @@ spec:
     - host: example.com
       port: 80
 `,
-			wantErrors: []string{`exactly one of the fields in \[aws static dynamicForwardProxy gcp\] must be set`},
+			wantErrors: []string{`exactly one of the fields in \[aws static dynamicForwardProxy gcp priorityGroups\] must be set`},
 		},
 		{
 			name: "Backend: empty lambda qualifier does not match pattern",
@@ -346,6 +346,10 @@ spec:
   tcpKeepalive:
     keepAliveTime: 0s
     keepAliveInterval: "0"
+  http2ProtocolOptions:
+    connectionKeepalive:
+      timeout: 0s
+      interval: 1x
   healthCheck:
     timeout: a
     interval: b
@@ -367,6 +371,9 @@ spec:
 				"spec.connectTimeout: Invalid value: .*: invalid duration value",
 				"spec.healthCheck.interval: Invalid value: .*: invalid duration value",
 				"spec.healthCheck.timeout: Invalid value: .*: invalid duration value",
+				"spec.http2ProtocolOptions.connectionKeepalive.interval: Invalid value: .*: invalid duration value",
+				"spec.http2ProtocolOptions.connectionKeepalive.interval: Invalid value: .*: type conversion error from 'string' to 'google.protobuf.Duration' evaluating rule: interval must be at least 1ms",
+				"spec.http2ProtocolOptions.connectionKeepalive.timeout: Invalid value: .*: timeout must be at least 1ms",
 				"spec.loadBalancer.updateMergeWindow: Invalid value: .*: invalid duration value",
 				"spec.tcpKeepalive.keepAliveInterval: Invalid value: .*: invalid duration value",
 				"spec.tcpKeepalive.keepAliveInterval: Invalid value: .*: keepAliveInterval must be at least 1 second",
@@ -431,6 +438,25 @@ spec:
   autoHostRewrite: true
 `,
 			wantErrors: []string{"autoHostRewrite can only be used when targeting HTTPRoute resources"},
+		},
+		{
+			name: "TrafficPolicy: policy with urlRewrite can only target HTTPRoute",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-url-rewrite-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  urlRewrite:
+    pathRegex:
+      pattern: "^/foo"
+      substitution: "/bar"
+`,
+			wantErrors: []string{"urlRewrite can only be used when targeting HTTPRoute resources"},
 		},
 		{
 			name: "HTTPListenerPolicy: valid target references",
@@ -617,7 +643,7 @@ spec:
 			},
 		},
 		{
-			name: "TrafficPolicy: targetRefs[].sectionName must be set when targeting Gateway resources with retry policy",
+			name: "TrafficPolicy: retry may target a whole Gateway without a sectionName",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -632,30 +658,6 @@ spec:
     retryOn:
     - gateway-error
 `,
-			wantErrors: []string{
-				`targetRefs\[\].sectionName must be set when targeting Gateway resources with retry policy`,
-			},
-		},
-		{
-			name: "TrafficPolicy: targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: test
-spec:
-  targetSelectors:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    matchLabels:
-      foo: bar
-  retry:
-    retryOn:
-    - gateway-error
-`,
-			wantErrors: []string{
-				`targetSelectors\[\].sectionName must be set when targeting Gateway resources with retry policy`,
-			},
 		},
 		{
 			name: "TrafficPolicy: timeouts.request must be a valid duration value",

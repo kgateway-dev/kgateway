@@ -10,6 +10,10 @@ nameOverride: ""
 # -- Override the full name of resources created by the Helm chart, which is 'kgateway'. If you set 'fullnameOverride: "foo", the full name of the resources that the Helm release creates become 'foo', such as the deployment, service, and service account for the kgateway control plane in the kgateway-system namespace.
 fullnameOverride: ""
 
+# -- Configure RBAC resources (ClusterRole and ClusterRoleBinding) for the deployment.
+rbac:
+  create: true
+
 # -- Configure the service account for the deployment.
 serviceAccount:
   # -- Specify whether a service account should be created.
@@ -193,8 +197,6 @@ controller:
     tls:
       # -- Enable TLS encryption for xDS communication. When enabled, the xDS server (port 9977) uses TLS. You must create a Secret named 'kgateway-xds-cert' in the kgateway installation namespace. The Secret must be of type 'kubernetes.io/tls' with 'tls.crt', 'tls.key', and 'ca.crt' data fields present.
       enabled: false
-  # -- Disable the Envoy proxy stats/metrics server (port 9091 will no longer be reserved).
-  disableStatsOnProxy: false
   # -- Enable dynamic discovery of AWS EC2 instances for `Backend` resources.
   enableAwsEc2Discovery: false
   # -- Set how often the controller refreshes discovered AWS EC2 instances for `Backend` resources.
@@ -296,3 +298,10 @@ validation:
   #    Strict adds xDS preflight validation and blocks snapshots that would NACK in Envoy.
   #    Default is "standard".
   level: standard
+
+# -- Enable attaching dev.kgateway.route_source filter metadata to every Envoy route.
+# This metadata includes the Kubernetes source object (kind, group, name, namespace, rule)
+# for each route, which helps correlate Envoy routes with their originating Kubernetes resources.
+# Default is false (disabled).
+# Note: This feature is experimental and subject to breaking changes in future releases.
+enableRouteSourceMetadata: false

@@ -23,8 +23,9 @@ func TestRustformationIREquals(t *testing.T) {
 			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 				Name: RustformationModuleName,
 			},
-			FilterName:   RustformationFilterName,
-			FilterConfig: filterCfg,
+			FilterName:         RustformationFilterName,
+			PerRouteConfigName: RustformationFilterName,
+			FilterConfig:       filterCfg,
 		}
 	}
 
@@ -90,7 +91,8 @@ func TestRustformationIREquals(t *testing.T) {
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 					Name: RustformationModuleName,
 				},
-				FilterName: RustformationFilterName,
+				FilterName:         RustformationFilterName,
+				PerRouteConfigName: RustformationFilterName,
 			},
 		}
 		assert.True(t, transformation.Equals(transformation), "transformation should equal itself")
