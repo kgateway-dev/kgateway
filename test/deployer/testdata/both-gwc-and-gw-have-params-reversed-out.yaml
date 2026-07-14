@@ -165,7 +165,6 @@ data:
                           resource_api_version: V3
                       header_value_prefix: "Bearer "
                   overwrite: true
-                  overwrite: true
               - name: envoy.filters.http.upstream_codec
                 typed_config:
                   "@type": type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
