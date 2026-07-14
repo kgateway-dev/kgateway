@@ -69,6 +69,11 @@ role_yaml="$(cat "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml")"
 printf '{{- if .Values.rbac.create }}\n%s\n{{- end }}\n' "${role_yaml}" \
   > "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
 sed_in_place "s|AllowHeaders cannot contain '\\*' alongside other methods|AllowHeaders cannot contain '\\*' alongside other headers|g" "${ROOT_DIR}/${KGATEWAY_CRD_DIR}/gateway.kgateway.dev_trafficpolicies.yaml"
+# Helm renders files under templates/ as Go templates, so any literal `{{ ... }}`
+# in a CRD description (e.g. the TrafficPolicy statPrefix template syntax) would
+# be parsed as a template action and break `helm lint`. Escape such tokens as
+# Helm string literals so they render back to the original `{{ ... }}` text.
+sed_in_place 's|\({{[^}]*}}\)|{{ "\1" }}|g' "${ROOT_DIR}/${KGATEWAY_CRD_DIR}/gateway.kgateway.dev_trafficpolicies.yaml"
 
 # throw away
 new_report="$(mktemp -t "$(basename "$0").api_violations.XXXXXX")"

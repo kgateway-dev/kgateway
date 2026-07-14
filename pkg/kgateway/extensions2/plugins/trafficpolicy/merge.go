@@ -67,6 +67,7 @@ func MergeTrafficPolicies(
 		mergeRouteTracing,
 		mergeFaultInjection,
 		mergeHttpACL,
+		mergeStatPrefix,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -536,6 +537,21 @@ func mergeAutoHostRewrite(
 		Set: func(spec *trafficPolicySpecIr, val *autoHostRewriteIR) { spec.autoHostRewrite = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "autoHostRewrite")
+}
+
+func mergeStatPrefix(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[statPrefixIR]{
+		Get: func(spec *trafficPolicySpecIr) *statPrefixIR { return spec.statPrefix },
+		Set: func(spec *trafficPolicySpecIr, val *statPrefixIR) { spec.statPrefix = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "statPrefix")
 }
 
 func mergeTimeouts(

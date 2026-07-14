@@ -106,6 +106,7 @@ type trafficPolicySpecIr struct {
 	tracing          *routeTracingIR
 	faultInjection   *faultInjectionIR
 	httpACL          *httpACLIR
+	statPrefix       *statPrefixIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -193,6 +194,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.httpACL.Equals(d2.spec.httpACL) {
 		return false
 	}
+	if !d.spec.statPrefix.Equals(d2.spec.statPrefix) {
+		return false
+	}
 	return true
 }
 
@@ -225,6 +229,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.faultInjection.Validate)
 	validators = append(validators, p.spec.httpACL.Validate)
 	validators = append(validators, p.spec.internalRedirect.Validate)
+	validators = append(validators, p.spec.statPrefix.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -429,6 +434,10 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 	}
 
 	p.handlePerRoutePolicies(policy.spec, outputRoute)
+	// Stat prefix is set on the Route itself (not the RouteAction) and needs the
+	// route metadata from pCtx to resolve its template, so it is applied here
+	// rather than in handlePerRoutePolicies.
+	applyStatPrefix(policy.spec.statPrefix, pCtx, outputRoute)
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 
 	return nil
