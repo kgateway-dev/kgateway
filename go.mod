@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2
 
-go 1.26.4
+go 1.26.5
 
 godebug x509negativeserial=1
 
