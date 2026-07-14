@@ -2565,6 +2565,7 @@ var _ = Describe("DeployObjs", func() {
 			fc,
 			nil,
 			deployer.WithPatcher(patcher),
+			deployer.WithManagedBy(wellknown.DefaultManagedByValue),
 		)
 		Expect(err).ToNot(HaveOccurred())
 		return d
@@ -2595,7 +2596,7 @@ var _ = Describe("DeployObjs", func() {
 				Name:      name,
 				Namespace: ns,
 				Labels: map[string]string{
-					"app.kubernetes.io/managed-by":  "kgateway",
+					wellknown.ManagedByLabel:        wellknown.DefaultManagedByValue,
 					wellknown.GatewayClassNameLabel: wellknown.DefaultGatewayClassName,
 					wellknown.GatewayNameLabel:      name,
 				},
