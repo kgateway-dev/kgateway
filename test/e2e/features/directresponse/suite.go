@@ -7,96 +7,38 @@ import (
 	"net/http"
 
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 type testingSuite struct {
-	suite.Suite
-	ctx context.Context
-	ti  *e2e.TestInstallation
-	// maps test name to a list of manifests to apply before the test
-	manifests map[string][]string
+	*base.BaseTestingSuite
 }
 
 func NewTestingSuite(
 	ctx context.Context,
 	testInst *e2e.TestInstallation,
 ) suite.TestingSuite {
-	return &testingSuite{
-		ctx: ctx,
-		ti:  testInst,
+	setup := base.TestCase{
+		Manifests: []string{setupManifest},
 	}
-}
-
-func (s *testingSuite) SetupSuite() {
-	// Apply the httpbin setup manifest
-	err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.NoError(err, "can apply "+setupManifest)
-
-	// Check that httpbin is running
-	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, httpbinDeployment)
-	// httpbin can take a while to start up with Istio sidecar
-	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, httpbinDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=httpbin",
-	})
-
 	// Only include functional test manifests - negative test cases moved to gateway translator suite
-	s.manifests = map[string][]string{
-		"TestBasicDirectResponse":   {basicDirectResponseManifests},
-		"TestDelegation":            {basicDelegationManifests},
-		"TestBodyFormatText":        {bodyFormatTextManifests},
-		"TestBodyFormatJSON":        {bodyFormatJSONManifests},
-		"TestBodyFormatContentType": {bodyFormatContentTypeManifests},
-		// "TestInvalidDelegationConflictingFilters": {invalidDelegationConflictingFiltersManifests},
-		// "TestInvalidMultipleRouteActions":         {invalidMultipleRouteActionsManifests},
+	testCases := map[string]*base.TestCase{
+		"TestBasicDirectResponse":   {Manifests: []string{basicDirectResponseManifests}},
+		"TestDelegation":            {Manifests: []string{basicDelegationManifests}},
+		"TestBodyFormatText":        {Manifests: []string{bodyFormatTextManifests}},
+		"TestBodyFormatJSON":        {Manifests: []string{bodyFormatJSONManifests}},
+		"TestBodyFormatContentType": {Manifests: []string{bodyFormatContentTypeManifests}},
 	}
-}
-
-func (s *testingSuite) TearDownSuite() {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
+	return &testingSuite{
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
-	err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
-	s.NoError(err, "can delete setup manifest")
-	s.ti.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
-}
-
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	manifests, ok := s.manifests[testName]
-	if !ok {
-		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
-	}
-	for _, manifest := range manifests {
-		err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Assert().NoError(err, "can apply manifest "+manifest)
-	}
-}
-
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	manifests, ok := s.manifests[testName]
-	if !ok {
-		s.FailNow("no manifests found for " + testName)
-	}
-
-	for _, manifest := range manifests {
-		output, err := s.ti.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
-		s.ti.AssertionsT(s.T()).ExpectObjectDeleted(manifest, err, output)
-	}
-
-	s.ti.AssertionsT(s.T()).EventuallyObjectTypesNotExist(s.ctx, &gwv1.HTTPRouteList{}, &kgateway.DirectResponseList{})
 }
 
 func (s *testingSuite) TestBasicDirectResponse() {
@@ -198,8 +140,8 @@ func (s *testingSuite) TestBodyFormatContentType() {
 // func (s *testingSuite) TestInvalidDelegationConflictingFilters() {
 // 	// the parent httproute both 1) specifies a direct response and 2) delegates to another httproute which routes to a service.
 // 	// since these route actions are conflicting, we should get a 500 here
-// 	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
-// 		s.ctx,
+// 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+// 		s.Ctx,
 // 		defaults.CurlPodExecOpt,
 // 		[]curl.Option{
 // 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -213,7 +155,7 @@ func (s *testingSuite) TestBodyFormatContentType() {
 // 	)
 
 // 	// the parent should show an error in its status
-// 	s.ti.AssertionsT(s.T()).EventuallyHTTPRouteStatusContainsReason(s.ctx, gwRouteMeta.Name, gwRouteMeta.Namespace,
+// 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteStatusContainsReason(s.Ctx, gwRouteMeta.Name, gwRouteMeta.Namespace,
 // 		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
 // }
 
@@ -224,8 +166,8 @@ func (s *testingSuite) TestBodyFormatContentType() {
 // 	// the route specifies both a request redirect and a direct response, which is invalid.
 // 	// verify the route was replaced with a 500 direct response due to the
 // 	// invalid configuration.
-// 	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
-// 		s.ctx,
+// 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+// 		s.Ctx,
 // 		defaults.CurlPodExecOpt,
 // 		[]curl.Option{
 // 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -237,6 +179,6 @@ func (s *testingSuite) TestBodyFormatContentType() {
 // 		},
 // 		time.Minute,
 // 	)
-// 	s.ti.AssertionsT(s.T()).EventuallyHTTPRouteStatusContainsReason(s.ctx, httpbinMeta.Name, httpbinMeta.Namespace,
+// 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteStatusContainsReason(s.Ctx, httpbinMeta.Name, httpbinMeta.Namespace,
 // 		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
 // }

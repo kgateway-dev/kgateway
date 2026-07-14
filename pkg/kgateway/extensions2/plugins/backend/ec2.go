@@ -22,6 +22,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"golang.org/x/sync/singleflight"
 	"istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -130,6 +131,8 @@ type ec2TagFilter struct {
 
 type ec2BackendConfig struct {
 	resourceName string
+	namespace    string
+	name         string
 	region       string
 	roleArn      string
 	port         uint32
@@ -458,6 +461,25 @@ func newEc2EndpointsCollection(
 		return c.discoveryStatusForBackend(kctx, backend)
 	}, commoncol.KrtOpts.ToOptions("AwsEc2DiscoveryStatus")...)
 
+	// Drop per-Backend discovery metric series when a Backend is deleted so stale
+	// gauges don't remain visible indefinitely. Registered unconditionally (not via
+	// metrics.RegisterEvents, which skips registration when metrics are inactive at
+	// setup): the per-poll recording in the discovery loop is guarded dynamically by
+	// metrics.Active(), so cleanup must stay symmetric with it rather than gated once
+	// at startup. deleteEc2DiscoveryMetrics is a harmless no-op when no series exist.
+	backends.Register(func(o krt.Event[ir.BackendObjectIR]) {
+		if o.Event != controllers.EventDelete {
+			return
+		}
+		// Delete by object-source identity rather than inspecting the deleted Obj:
+		// the identity is always populated, and deleteEc2DiscoveryMetrics is a no-op
+		// for non-EC2 backends (which never recorded any series). Every backend is
+		// uniquely keyed by namespace/name, so this only ever clears the series of
+		// the backend being removed.
+		src := o.Latest().GetObjectSource()
+		deleteEc2DiscoveryMetrics(src.Namespace, src.Name)
+	})
+
 	go c.run(ctx)
 
 	return c
@@ -640,7 +662,9 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 			if len(groupedBackends) > 0 {
 				source.secret = groupedBackends[0].secret
 			}
+			start := time.Now()
 			instances, err := c.lister.ListInstances(ctx, source)
+			pollSeconds := time.Since(start).Seconds()
 			if err != nil {
 				reason, message := classifyEc2DiscoveryError(err)
 				nextStateMu.Lock()
@@ -665,6 +689,11 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 						message: ec2DiscoveryFailureMessage(message, carried),
 					}
 					nextState[cfg.resourceName] = backendState
+					// Record the poll outcome with the underlying classification
+					// reason (not the Degraded override) so the counter always
+					// attributes a concrete failure cause.
+					recordEc2PollError(cfg.namespace, cfg.name, reason)
+					recordEc2PollDuration(cfg.namespace, cfg.name, ec2PollResultError, pollSeconds)
 				}
 				nextStateMu.Unlock()
 				return
@@ -679,14 +708,17 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 			)
 			resolved := make(map[string]ec2ResolvedBackend, len(groupedBackends))
 			for _, cfg := range groupedBackends {
-				resolved[cfg.resourceName] = selectResolvedEc2Backend(cfg, instances)
+				backendState := selectResolvedEc2Backend(cfg, instances)
+				resolved[cfg.resourceName] = backendState
+				recordEc2PollSuccess(cfg.namespace, cfg.name, len(backendState.endpoints))
+				recordEc2PollDuration(cfg.namespace, cfg.name, ec2PollResultSuccess, pollSeconds)
 				logger.Debug(
 					"resolved EC2 backend endpoints",
 					"backend", cfg.resourceName,
 					"region", cfg.region,
 					"address_type", cfg.addressType,
 					"filters", len(cfg.filters),
-					"resolved_endpoints", len(resolved[cfg.resourceName].endpoints),
+					"resolved_endpoints", len(backendState.endpoints),
 				)
 			}
 			nextStateMu.Lock()
@@ -762,6 +794,11 @@ func (c *ec2EndpointsCollection) discoveryStatusForBackend(kctx krt.HandlerConte
 	// filtered out before the discovery loop builds a pollable config. Surface a
 	// CredentialError here so the failure is never silent (FR-8, NFR-2).
 	if message, unresolved := ec2UnresolvedSecretCredential(backend, obj); unresolved {
+		// This backend never enters the poll loop, so reflect its error state in the
+		// metrics here; otherwise an unresolvable secret (the most common
+		// misconfiguration) would be invisible to error_state alerting.
+		src := backend.GetObjectSource()
+		recordEc2CredentialErrorState(src.Namespace, src.Name)
 		return ec2DiscoveryStatusUpdate(backend, ec2DiscoveryStatus{
 			status:  metav1.ConditionFalse,
 			reason:  string(kgateway.BackendReasonCredentialError),
@@ -834,14 +871,17 @@ func ec2ConfigFromBackend(backend ir.BackendObjectIR) *ec2BackendConfig {
 	if !ok || backendIR.awsIr == nil || backendIR.awsIr.ec2Ir == nil {
 		return nil
 	}
+	// An EC2 backend with a secret-auth credential that could not be resolved never
+	// builds an ec2Ir (translation records the error and leaves awsIr nil), so a
+	// non-nil ec2Ir here implies the secret resolved; no missing-secret guard is
+	// needed. Such backends are surfaced as CredentialError via discoveryStatusForBackend.
 	ec2Ir := backendIR.awsIr.ec2Ir
-	if obj.Spec.Aws.Auth != nil && obj.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret && ec2Ir.secret == nil {
-		logger.Debug("skipping EC2 backend discovery due to missing secret credentials", "backend", backend.ResourceName())
-		return nil
-	}
 
+	src := backend.GetObjectSource()
 	cfg := &ec2BackendConfig{
 		resourceName: backend.ResourceName(),
+		namespace:    src.Namespace,
+		name:         src.Name,
 		region:       ec2Ir.region,
 		roleArn:      ec2Ir.roleArn,
 		port:         ec2Ir.port,

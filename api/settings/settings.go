@@ -323,6 +323,8 @@ type Settings struct {
 	// to every Envoy route. This metadata includes the Kubernetes source object (kind, group,
 	// name, namespace, rule) for each route, which can be useful for debugging and observability.
 	// Disabled by default.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
 	EnableRouteSourceMetadata bool `split_words:"true" default:"false"`
 
 	// GatewayClassParametersRefs configures the GatewayParameters references to set on the default GatewayClasses.

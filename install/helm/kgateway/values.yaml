@@ -10,6 +10,10 @@ nameOverride: ""
 # -- Override the full name of resources created by the Helm chart, which is 'kgateway'. If you set 'fullnameOverride: "foo", the full name of the resources that the Helm release creates become 'foo', such as the deployment, service, and service account for the kgateway control plane in the kgateway-system namespace.
 fullnameOverride: ""
 
+# -- Configure RBAC resources (ClusterRole and ClusterRoleBinding) for the deployment.
+rbac:
+  create: true
+
 # -- Configure the service account for the deployment.
 serviceAccount:
   # -- Specify whether a service account should be created.
@@ -299,4 +303,5 @@ validation:
 # This metadata includes the Kubernetes source object (kind, group, name, namespace, rule)
 # for each route, which helps correlate Envoy routes with their originating Kubernetes resources.
 # Default is false (disabled).
+# Note: This feature is experimental and subject to breaking changes in future releases.
 enableRouteSourceMetadata: false

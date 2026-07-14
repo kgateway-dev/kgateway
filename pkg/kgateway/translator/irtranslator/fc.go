@@ -549,6 +549,9 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 	if len(tlsConfig.EcdhCurves) > 0 {
 		common.TlsParams.EcdhCurves = tlsConfig.EcdhCurves
 	}
+	if len(tlsConfig.SignatureAlgorithms) > 0 {
+		common.TlsParams.SignatureAlgorithms = tlsConfig.SignatureAlgorithms
+	}
 
 	// TODO: add verify subject alt names (validation context) https://github.com/kgateway-dev/kgateway/issues/12955
 
