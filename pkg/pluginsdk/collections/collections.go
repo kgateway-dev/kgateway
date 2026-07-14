@@ -2,6 +2,7 @@ package collections
 
 import (
 	"context"
+	"fmt"
 
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -11,6 +12,7 @@ import (
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -36,6 +38,10 @@ type CommonCollections struct {
 	GatewayExtensions krt.Collection[ir.GatewayExtension]
 	Services          krt.Collection[*corev1.Service]
 	ServiceEntries    krt.Collection[*networkingclient.ServiceEntry]
+
+	// ServiceEntriesExclusionLabelSelectors is parsed from Settings.ServiceEntriesExclusionLabelSelectors.
+	// Keep it with CommonCollections so ServiceEntry exclusion config has one validated source of truth.
+	ServiceEntriesExclusionLabelSelectors []labels.Selector
 
 	WrappedPods  krt.Collection[krtcollections.WrappedPod]
 	LocalityPods krt.Collection[krtcollections.LocalityPod]
@@ -139,7 +145,13 @@ func NewCommonCollections(
 	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
 
 	var serviceEntries krt.Collection[*networkingclient.ServiceEntry]
+	var serviceEntriesExclusionLabelSelectors []labels.Selector
 	if settings.EnableIstioIntegration {
+		var err error
+		serviceEntriesExclusionLabelSelectors, err = ParseExclusionLabelSelectors(settings.ServiceEntriesExclusionLabelSelectors)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing ServiceEntry exclusion label selectors: %w", err)
+		}
 		seInformer := kclient.NewDelayedInformer[*networkingclient.ServiceEntry](
 			client, gvr.ServiceEntry,
 			kubetypes.StandardInformer, kclient.Filter{ObjectFilter: client.ObjectFilter()},
@@ -164,18 +176,19 @@ func NewCommonCollections(
 	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, krtOptions)
 
 	return &CommonCollections{
-		Client:            client,
-		KrtOpts:           krtOptions,
-		Secrets:           krtcollections.NewSecretIndex(secrets, refgrants),
-		ConfigMaps:        krtcollections.NewConfigMapIndex(cfgmaps, refgrants),
-		LocalityPods:      localityPods,
-		WrappedPods:       wrappedPods,
-		RefGrants:         refgrants,
-		Settings:          settings,
-		Namespaces:        namespaces,
-		Services:          services,
-		ServiceEntries:    serviceEntries,
-		GatewayExtensions: gwExts,
+		Client:                                client,
+		KrtOpts:                               krtOptions,
+		Secrets:                               krtcollections.NewSecretIndex(secrets, refgrants),
+		ConfigMaps:                            krtcollections.NewConfigMapIndex(cfgmaps, refgrants),
+		LocalityPods:                          localityPods,
+		WrappedPods:                           wrappedPods,
+		RefGrants:                             refgrants,
+		Settings:                              settings,
+		Namespaces:                            namespaces,
+		Services:                              services,
+		ServiceEntries:                        serviceEntries,
+		ServiceEntriesExclusionLabelSelectors: serviceEntriesExclusionLabelSelectors,
+		GatewayExtensions:                     gwExts,
 
 		DiscoveryNamespacesFilter: discoveryNamespacesFilter,
 

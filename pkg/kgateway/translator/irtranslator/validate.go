@@ -10,8 +10,10 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
@@ -42,18 +44,18 @@ var (
 	ErrInvalidRoute = errors.New("invalid route configuration")
 )
 
-// validateRoute performs RDS validation against the given route that's been translated from the IR.
+// validateRoute performs RDS validation against a single route that's been translated from the IR.
 // It provides validation checks that prevent invalid routes from being sent to the xDS server.
 //
 // The validation pipeline runs lightweight checks regardless of route replacement mode.
 // These include basic Envoy route property validation such as paths, prefixes, and weighted clusters,
 // along with quick checks for common issues that could cause problems.
 //
-// In strict mode, the full route is validated against envoy in a single invocation. If that
-// invocation fails, a second matcher-only invocation disambiguates whether the failure
-// originates in the route's match block (drop the route) or in its action (replace with a
-// direct response). Valid routes, the common case, pay only one envoy invocation; invalid
-// routes pay two.
+// In strict mode, generated Gateway API matchers are checked in-process where possible. The full route
+// is then validated against Envoy in a single invocation. If that invocation fails, matcher validation
+// disambiguates whether the failure originates in the route's match block (drop the route) or in its
+// action (replace with a direct response). Matcher shapes this code cannot prove safe fall back to Envoy
+// matcher-only validation.
 //
 // This two-tiered approach is necessary because Envoy validate mode output does not provide
 // enough information to determine if the error is due to an invalid matcher (drop route)
@@ -64,6 +66,16 @@ func validateRoute(
 	v validator.Validator,
 	mode apisettings.ValidationMode,
 ) error {
+	if err := validateRoutePreEnvoy(route, mode); err != nil {
+		return err
+	}
+	if mode != apisettings.ValidationStrict {
+		return nil
+	}
+	return validateRouteWithEnvoy(ctx, route, v)
+}
+
+func validateRoutePreEnvoy(route *envoyroutev3.Route, mode apisettings.ValidationMode) error {
 	if route == nil {
 		return fmt.Errorf("route cannot be nil for RDS validation")
 	}
@@ -73,13 +85,27 @@ func validateRoute(
 	if mode != apisettings.ValidationStrict {
 		return nil
 	}
-	fullErr := validateFullRoute(ctx, route, v)
+	if handled, err := validateGeneratedMatcher(route.GetMatch()); handled && err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidMatcher, err)
+	}
+	return nil
+}
+
+func validateRouteWithEnvoy(
+	ctx context.Context,
+	route *envoyroutev3.Route,
+	v validator.Validator,
+) error {
+	if route == nil {
+		return fmt.Errorf("route cannot be nil for RDS validation")
+	}
+	fullErr := validateFullRoutes(ctx, []*envoyroutev3.Route{route}, v)
 	if fullErr == nil {
 		return nil
 	}
 	// Only run the matcher-only validation when the full route already failed,
 	// purely to attribute the failure to ErrInvalidMatcher vs ErrInvalidRoute.
-	if matcherErr := validateMatcherOnly(ctx, route, v); matcherErr != nil {
+	if matcherErr := validateMatcherOnlyEnvoy(ctx, route, v); matcherErr != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidMatcher, matcherErr)
 	}
 	return fmt.Errorf("%w: %w", ErrInvalidRoute, fullErr)
@@ -186,7 +212,7 @@ func runValidation(
 	return nil
 }
 
-func validateMatcherOnly(ctx context.Context, route *envoyroutev3.Route, v validator.Validator) error {
+func validateMatcherOnlyEnvoy(ctx context.Context, route *envoyroutev3.Route, v validator.Validator) error {
 	clusterName := "dummy-cluster"
 	builder := bootstrap.New()
 	builder.AddRoute(&envoyroutev3.Route{
@@ -206,16 +232,140 @@ func validateMatcherOnly(ctx context.Context, route *envoyroutev3.Route, v valid
 	return runValidation(ctx, v, builder, validator.CallerRouteMatcher)
 }
 
-// validateFullRoute validates the complete route configuration.
-func validateFullRoute(ctx context.Context, route *envoyroutev3.Route, v validator.Validator) error {
+// validateFullRoutes validates a set of complete route configurations in one Envoy invocation.
+func validateFullRoutes(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {
 	builder := bootstrap.New()
-	builder.AddRoute(route)
-	stubClusters := createStubClusters(extractClusterNames(route))
+	clusterNames := make([]string, 0)
+	// A batched route bootstrap can reference the same backend cluster from many routes.
+	// Track names here so validation adds only one stub Cluster per unique Envoy cluster name.
+	seenClusterNames := make(map[string]struct{})
+	for _, route := range routes {
+		builder.AddRoute(route)
+		clusterNames = appendClusterNames(clusterNames, seenClusterNames, route)
+	}
+	stubClusters := createStubClusters(clusterNames)
 	for _, cluster := range stubClusters {
 		builder.AddCluster(cluster)
 	}
 
 	return runValidation(ctx, v, builder, validator.CallerRouteFull)
+}
+
+func validateGeneratedMatcher(match *envoyroutev3.RouteMatch) (bool, error) {
+	if match == nil {
+		return false, nil
+	}
+	if match.GetRuntimeFraction() != nil || match.GetGrpc() != nil || match.GetTlsContext() != nil || match.GetDynamicMetadata() != nil {
+		return false, nil
+	}
+
+	if handled, err := validateGeneratedPathMatcher(match); !handled || err != nil {
+		return handled, err
+	}
+	for _, header := range match.GetHeaders() {
+		if handled, err := validateGeneratedHeaderMatcher(header); !handled || err != nil {
+			return handled, err
+		}
+	}
+	for _, query := range match.GetQueryParameters() {
+		if handled, err := validateGeneratedQueryMatcher(query); !handled || err != nil {
+			return handled, err
+		}
+	}
+
+	return true, nil
+}
+
+func validateGeneratedPathMatcher(match *envoyroutev3.RouteMatch) (bool, error) {
+	switch path := match.GetPathSpecifier().(type) {
+	case *envoyroutev3.RouteMatch_Path:
+		return true, nil
+	case *envoyroutev3.RouteMatch_Prefix:
+		return true, nil
+	case *envoyroutev3.RouteMatch_PathSeparatedPrefix:
+		if !isValidPathSeparated(path.PathSeparatedPrefix) {
+			return true, fmt.Errorf("path separated prefix %q is invalid", path.PathSeparatedPrefix)
+		}
+		return true, nil
+	case *envoyroutev3.RouteMatch_SafeRegex:
+		return true, validateRegexMatcher(path.SafeRegex, "path regex")
+	default:
+		return false, nil
+	}
+}
+
+func validateGeneratedHeaderMatcher(header *envoyroutev3.HeaderMatcher) (bool, error) {
+	if header == nil {
+		return false, nil
+	}
+	switch matcher := header.GetHeaderMatchSpecifier().(type) {
+	case *envoyroutev3.HeaderMatcher_PresentMatch:
+		return true, nil
+	case *envoyroutev3.HeaderMatcher_StringMatch:
+		return validateGeneratedStringMatcher(matcher.StringMatch, fmt.Sprintf("header %q", header.GetName()))
+	default:
+		return false, nil
+	}
+}
+
+func validateGeneratedQueryMatcher(query *envoyroutev3.QueryParameterMatcher) (bool, error) {
+	if query == nil {
+		return false, nil
+	}
+	switch matcher := query.GetQueryParameterMatchSpecifier().(type) {
+	case *envoyroutev3.QueryParameterMatcher_PresentMatch:
+		return true, nil
+	case *envoyroutev3.QueryParameterMatcher_StringMatch:
+		return validateGeneratedStringMatcher(matcher.StringMatch, fmt.Sprintf("query parameter %q", query.GetName()))
+	default:
+		return false, nil
+	}
+}
+
+func validateGeneratedStringMatcher(matcher *envoy_type_matcher_v3.StringMatcher, field string) (bool, error) {
+	if matcher == nil {
+		return false, nil
+	}
+	switch pattern := matcher.GetMatchPattern().(type) {
+	case *envoy_type_matcher_v3.StringMatcher_Exact:
+		return true, nil
+	case *envoy_type_matcher_v3.StringMatcher_SafeRegex:
+		return true, validateRegexMatcher(pattern.SafeRegex, field+" regex")
+	default:
+		return false, nil
+	}
+}
+
+// validateRegexMatcher checks RE2 *syntax* only. Envoy's RE2 max_program_size
+// (default 100) is the compiled-instruction count, which Go's regexp cannot
+// reproduce, so an oversized-but-syntactically-valid regex passes here and is
+// caught by the authoritative Envoy validation in validateFullRoutes.
+func validateRegexMatcher(matcher *envoy_type_matcher_v3.RegexMatcher, field string) error {
+	if matcher == nil {
+		return fmt.Errorf("%s is missing", field)
+	}
+	if err := regexutils.CheckRegexString(matcher.GetRegex()); err != nil {
+		return fmt.Errorf(
+			"validation failed: %w: error initializing configuration '/dev/fd/0': %s",
+			validator.ErrInvalidXDS,
+			envoyRegexError(matcher.GetRegex(), err),
+		)
+	}
+	return nil
+}
+
+func envoyRegexError(pattern string, err error) string {
+	errText := err.Error()
+	if strings.Contains(errText, "missing closing ]") {
+		if bracket := strings.Index(pattern, "["); bracket >= 0 {
+			pattern = pattern[bracket:]
+		}
+		return "missing ]: " + pattern
+	}
+	if strings.Contains(errText, "invalid named capture") {
+		return "invalid named capture group: " + pattern
+	}
+	return errText
 }
 
 // createStubClusters creates minimal cluster definitions for validation purposes.
@@ -232,36 +382,34 @@ func createStubClusters(clusterNames []string) []*envoyclusterv3.Cluster {
 	return clusters
 }
 
-// extractClusterNames extracts all cluster names referenced by a route,
-// handling both single cluster routes and weighted cluster routes.
-// Returns a slice of unique cluster names to prevent redundant stub cluster creation.
-func extractClusterNames(route *envoyroutev3.Route) []string {
-	clusterNameSet := make(map[string]struct{})
+func appendClusterNames(clusterNames []string, seen map[string]struct{}, route *envoyroutev3.Route) []string {
 	if route == nil {
-		return []string{}
+		return clusterNames
+	}
+	appendClusterName := func(name string) {
+		if name == "" {
+			return
+		}
+		if _, ok := seen[name]; ok {
+			return
+		}
+		seen[name] = struct{}{}
+		clusterNames = append(clusterNames, name)
 	}
 	switch action := route.GetAction().(type) {
 	case *envoyroutev3.Route_Route:
 		if action.Route != nil {
 			switch clusterSpec := action.Route.GetClusterSpecifier().(type) {
 			case *envoyroutev3.RouteAction_Cluster:
-				if clusterSpec.Cluster != "" {
-					clusterNameSet[clusterSpec.Cluster] = struct{}{}
-				}
+				appendClusterName(clusterSpec.Cluster)
 			case *envoyroutev3.RouteAction_WeightedClusters:
 				if clusterSpec.WeightedClusters != nil {
 					for _, weightedCluster := range clusterSpec.WeightedClusters.GetClusters() {
-						if weightedCluster.GetName() != "" {
-							clusterNameSet[weightedCluster.GetName()] = struct{}{}
-						}
+						appendClusterName(weightedCluster.GetName())
 					}
 				}
 			}
 		}
-	}
-	clusterNames := make([]string, 0, len(clusterNameSet))
-	for name := range clusterNameSet {
-		clusterNames = append(clusterNames, name)
 	}
 	return clusterNames
 }

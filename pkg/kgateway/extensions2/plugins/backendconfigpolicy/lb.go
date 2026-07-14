@@ -36,16 +36,11 @@ const (
 )
 
 type LoadBalancerConfigIR struct {
-	commonLbConfig        *envoyclusterv3.Cluster_CommonLbConfig
-	loadBalancingPolicy   *envoyclusterv3.LoadBalancingPolicy
-	useHostnameForHashing bool
-	hasZoneAware          bool
-	zoneAwareForce        *ZoneAwareForceIR
-}
-
-// ZoneAwareForceIR stores configuration for forced zone-local routing.
-type ZoneAwareForceIR struct {
-	minEndpointsInZoneThreshold uint32
+	commonLbConfig             *envoyclusterv3.Cluster_CommonLbConfig
+	loadBalancingPolicy        *envoyclusterv3.LoadBalancingPolicy
+	useHostnameForHashing      bool
+	hasZoneAware               bool
+	zoneAwareForceMinEndpoints *uint32
 }
 
 func translateLoadBalancerConfig(config *kgateway.LoadBalancer, policyName, policyNamespace string) (*LoadBalancerConfigIR, error) {
@@ -72,7 +67,10 @@ func translateLoadBalancerConfig(config *kgateway.LoadBalancer, policyName, poli
 
 	if config.ZoneAware != nil && config.ZoneAware.PreferLocal != nil {
 		out.hasZoneAware = true
-		out.zoneAwareForce = zoneAwareForceIR(config.ZoneAware)
+		if force := config.ZoneAware.PreferLocal.Force; force != nil {
+			threshold := zoneAwareForceThreshold(force)
+			out.zoneAwareForceMinEndpoints = &threshold
+		}
 	}
 
 	var err error
@@ -96,16 +94,11 @@ func translateLoadBalancerConfig(config *kgateway.LoadBalancer, policyName, poli
 	return out, nil
 }
 
-func zoneAwareForceIR(zoneAware *kgateway.ZoneAwareLoadBalancer) *ZoneAwareForceIR {
-	if zoneAware == nil || zoneAware.PreferLocal == nil || zoneAware.PreferLocal.Force == nil {
-		return nil
+func zoneAwareForceThreshold(force *kgateway.ZoneAwareForce) uint32 {
+	if force.MinEndpointsInZoneThreshold != nil {
+		return *force.MinEndpointsInZoneThreshold
 	}
-
-	threshold := defaultZoneAwareForceLocalZoneMinSize
-	if zoneAware.PreferLocal.Force.MinEndpointsInZoneThreshold != nil {
-		threshold = *zoneAware.PreferLocal.Force.MinEndpointsInZoneThreshold
-	}
-	return &ZoneAwareForceIR{minEndpointsInZoneThreshold: threshold}
+	return defaultZoneAwareForceLocalZoneMinSize
 }
 
 func buildTypedLocalityLbConfig(config *kgateway.LoadBalancer) *envoycommonv3.LocalityLbConfig {
@@ -150,9 +143,9 @@ func buildTypedZoneAwareLbConfig(zoneAware *kgateway.ZoneAwareLoadBalancer) *env
 		RoutingEnabled: &typev3.Percent{Value: routingEnabled},
 		MinClusterSize: &wrapperspb.UInt64Value{Value: minClusterSize},
 	}
-	if force := zoneAwareForceIR(zoneAware); force != nil {
+	if force := zoneAware.PreferLocal.Force; force != nil {
 		zoneAwareConfig.ForceLocalZone = &envoycommonv3.LocalityLbConfig_ZoneAwareLbConfig_ForceLocalZone{
-			MinSize: &wrapperspb.UInt32Value{Value: force.minEndpointsInZoneThreshold},
+			MinSize: &wrapperspb.UInt32Value{Value: zoneAwareForceThreshold(force)},
 		}
 	}
 	return &envoycommonv3.LocalityLbConfig_ZoneAwareLbConfig_{
@@ -424,21 +417,14 @@ func (a *LoadBalancerConfigIR) Equals(b *LoadBalancerConfigIR) bool {
 	if !proto.Equal(a.loadBalancingPolicy, b.loadBalancingPolicy) {
 		return false
 	}
-	if !a.zoneAwareForce.Equals(b.zoneAwareForce) {
+	if (a.zoneAwareForceMinEndpoints == nil) != (b.zoneAwareForceMinEndpoints == nil) {
+		return false
+	}
+	if a.zoneAwareForceMinEndpoints != nil && *a.zoneAwareForceMinEndpoints != *b.zoneAwareForceMinEndpoints {
 		return false
 	}
 
 	return true
-}
-
-func (a *ZoneAwareForceIR) Equals(b *ZoneAwareForceIR) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-	return a.minEndpointsInZoneThreshold == b.minEndpointsInZoneThreshold
 }
 
 // constructHashPolicy constructs the hash policies from the policy specification.

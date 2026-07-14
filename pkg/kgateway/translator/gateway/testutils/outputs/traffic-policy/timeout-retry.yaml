@@ -49,11 +49,6 @@ Routes:
           retry:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~builtin_com
-    retryPolicy:
-      numRetries: 3
-      retryBackOff:
-        baseInterval: 0.025s
-      retryOn: gateway-error
     routes:
     - match:
         prefix: /
@@ -76,7 +71,7 @@ Routes:
           - 503
           retryBackOff:
             baseInterval: 5s
-          retryOn: cancelled,connect-failure,refused-stream,retriable-headers,retriable-status-codes,unavailable
+          retryOn: cancelled,connect-failure,refused-stream,reset,retriable-headers,retriable-status-codes,unavailable
         timeout: 5s
   - domains:
     - example-retry-and-timeouts.com
@@ -86,11 +81,6 @@ Routes:
           retry:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~example-retry-and-timeouts_com
-    retryPolicy:
-      numRetries: 3
-      retryBackOff:
-        baseInterval: 0.025s
-      retryOn: gateway-error
     routes:
     - match:
         safeRegex:
@@ -146,11 +136,6 @@ Routes:
           retry:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~example-retry_com
-    retryPolicy:
-      numRetries: 3
-      retryBackOff:
-        baseInterval: 0.025s
-      retryOn: gateway-error
     routes:
     - match:
         prefix: /
@@ -180,11 +165,6 @@ Routes:
           retry:
           - gateway.kgateway.dev/TrafficPolicy/default/example-gateway-retry-and-timeout
     name: listener~80~example_com
-    retryPolicy:
-      numRetries: 3
-      retryBackOff:
-        baseInterval: 0.025s
-      retryOn: gateway-error
     routes:
     - match:
         prefix: /
@@ -198,6 +178,11 @@ Routes:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
         idleTimeout: 5s
+        retryPolicy:
+          numRetries: 3
+          retryBackOff:
+            baseInterval: 0.025s
+          retryOn: gateway-error
         timeout: 9s
 Statuses:
   gateways:
@@ -261,6 +246,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -280,6 +270,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -298,6 +293,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -316,6 +316,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -334,6 +339,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

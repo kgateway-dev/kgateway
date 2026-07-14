@@ -61,6 +61,14 @@ Routes:
         cluster: blackhole-cluster
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
+  backends:
+    default/example-backend:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:
@@ -124,6 +132,11 @@ Statuses:
           reason: Accepted
           status: "True"
           type: Accepted
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
