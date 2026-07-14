@@ -38,6 +38,9 @@ var (
 	stripHostPortAnyPortManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-strip-host-port-any-port.yaml")
 	stripHostPortMatchingPortManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-strip-host-port-matching-port.yaml")
 
+	localReplyConfigManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-local-reply-config.yaml")
+	localReplyHttpRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "local-reply-httproute.yaml")
+
 	// RequestID test manifests for testing the new RequestID configuration feature
 	listenerPolicyRequestIdManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-request-id.yaml")
 	requestIdEchoManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "request-id-echo.yaml")
@@ -63,12 +66,6 @@ var (
 		Namespace: "curl",
 		Container: "curl",
 	}
-	curlMtlsPod = &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "curl-mtls",
-			Namespace: "curl",
-		},
-	}
 
 	// When we apply the setup file, we expect resources to be created with this metadata
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -79,42 +76,6 @@ var (
 	proxyDeployment = &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gw",
-			Namespace: "default",
-		},
-	}
-	nginxPod = &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx",
-			Namespace: "default",
-		},
-	}
-	exampleSvc = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-svc",
-			Namespace: "default",
-		},
-	}
-	echoService = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "raw-header-echo",
-			Namespace: "default",
-		},
-	}
-	echoDeployment = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "raw-header-echo",
-			Namespace: "default",
-		},
-	}
-	requestIdEchoService = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "request-id-echo",
-			Namespace: "default",
-		},
-	}
-	requestIdEchoDeployment = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "request-id-echo",
 			Namespace: "default",
 		},
 	}

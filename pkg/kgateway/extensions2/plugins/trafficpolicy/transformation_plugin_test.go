@@ -23,6 +23,7 @@ func TestRustformationIREquals(t *testing.T) {
 			DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 				Name: RustformationModuleName,
 			},
+			FilterName:         RustformationFilterName,
 			PerRouteConfigName: RustformationFilterName,
 			FilterConfig:       filterCfg,
 		}
@@ -90,6 +91,7 @@ func TestRustformationIREquals(t *testing.T) {
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 					Name: RustformationModuleName,
 				},
+				FilterName:         RustformationFilterName,
 				PerRouteConfigName: RustformationFilterName,
 			},
 		}

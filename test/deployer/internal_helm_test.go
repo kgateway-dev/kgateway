@@ -26,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -147,6 +148,17 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 		{
 			Name:      "basic gateway with default gatewayclass and no gwparams",
 			InputFile: "base-gateway",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "cluster_manager:",
+					"envoy bootstrap should configure cluster_manager")
+				assert.Contains(t, outputYaml, "local_cluster_name:",
+					"envoy bootstrap should set local_cluster_name for zone-aware routing")
+				assert.Contains(t, outputYaml, "type: EDS",
+					"envoy bootstrap local cluster should use EDS for multi-zone locality distribution")
+				assert.Contains(t, outputYaml, "eds_cluster_config:",
+					"envoy bootstrap local cluster should request endpoints over ADS")
+			},
 		},
 		{
 			// Pinning the envoy image by digest without specifying a tag must
@@ -914,7 +926,9 @@ func parseClusterRoleRules(t *testing.T, rolePath string) []rbacv1.PolicyRule {
 	require.NoError(t, err, "failed to read role file: %s", rolePath)
 
 	// Replace Helm template expressions to make it parseable as plain YAML
-	yamlStr := strings.ReplaceAll(string(data), "{{ .Release.Namespace }}", "test")
+	// Remove all Helm template expressions {{ ... }}
+	re := regexp.MustCompile(`\{\{[^}]*\}\}`)
+	yamlStr := re.ReplaceAllString(string(data), "")
 
 	var role rbacv1.ClusterRole
 	err = yaml.Unmarshal([]byte(yamlStr), &role)

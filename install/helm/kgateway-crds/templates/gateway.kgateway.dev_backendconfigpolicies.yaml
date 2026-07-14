@@ -305,6 +305,48 @@ spec:
                   Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
                   See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
                 properties:
+                  connectionKeepalive:
+                    description: |-
+                      ConnectionKeepalive enables HTTP/2 keepalive PINGs on upstream connections,
+                      actively detecting half-dead connections: if a PING is not acknowledged
+                      within the timeout, the connection is closed.
+                      See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-keepalivesettings) for more details.
+                    properties:
+                      connectionIdleInterval:
+                        description: |-
+                          If set, a PING is sent before dispatching new streams on a connection that
+                          has been idle for at least this duration, verifying the connection is
+                          still alive before reusing it.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: connectionIdleInterval must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
+                      interval:
+                        description: |-
+                          Interval between keepalive PINGs. If unset, PINGs are only sent when
+                          triggered by ConnectionIdleInterval.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: interval must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
+                      timeout:
+                        description: |-
+                          Timeout after which the connection is closed if no response to a keepalive
+                          PING is received. A PING response is considered received if any frame
+                          arrives on the connection while the PING is outstanding.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: timeout must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
+                    required:
+                    - timeout
+                    type: object
                   initialConnectionWindowSize:
                     anyOf:
                     - type: integer
@@ -682,8 +724,75 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  zoneAware:
+                    description: |-
+                      ZoneAware configures zone-aware routing behavior for the load balancer.
+                      When enabled, traffic is preferentially routed to endpoints in the same
+                      availability zone as the Envoy proxy.
+                      This is mutually exclusive with localityType.
+
+                      Note: This feature is experimental and subject to breaking changes in future releases.
+                    properties:
+                      preferLocal:
+                        description: |-
+                          PreferLocal enables Envoy's zone-aware routing which prefers sending traffic
+                          to local zone endpoints while maintaining overall traffic balance across zones.
+                          On Kubernetes 1.35+, the zone is automatically derived from node label.
+                          The KGATEWAY_NODE_* environment variables on the proxy pod can be set as an explicit override.
+                          See https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/zone_aware
+                        properties:
+                          force:
+                            description: |-
+                              Force enables Envoy forced zone-local routing. Envoy routes to same-zone
+                              endpoints while the local endpoint threshold is met. If there are not enough
+                              local endpoints, traffic falls back to standard zone-aware routing behavior.
+                            properties:
+                              minEndpointsInZoneThreshold:
+                                default: 1
+                                description: |-
+                                  MinEndpointsInZoneThreshold is the minimum number of endpoints that must
+                                  exist in the local zone for forced zone-local routing to be active.
+                                  If the local zone has fewer endpoints than this threshold, the system
+                                  falls back to standard zone-aware routing behavior.
+                                  Defaults to 1.
+                                format: int32
+                                minimum: 1
+                                type: integer
+                            type: object
+                          minEndpointsThreshold:
+                            default: 6
+                            description: |-
+                              MinEndpointsThreshold is the minimum number of total endpoints in the cluster
+                              that must exist for zone-aware routing to be enabled. If the total number
+                              of endpoints is below this threshold, zone-aware routing is disabled.
+                              This maps to Envoy's min_cluster_size setting.
+                              Defaults to 6.
+                            format: int64
+                            minimum: 1
+                            type: integer
+                          routingEnabled:
+                            default: 100
+                            description: |-
+                              RoutingEnabled is the percentage of requests for which Envoy applies
+                              zone-aware routing once the minEndpointsThreshold is met.
+                              Defaults to 100.
+                            format: int32
+                            maximum: 100
+                            minimum: 0
+                            type: integer
+                        type: object
+                    type: object
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [preferLocal] must be
+                        set
+                      rule: '[has(self.preferLocal)].filter(x,x==true).size() >= 1'
                 type: object
                 x-kubernetes-validations:
+                - message: localityType and zoneAware are mutually exclusive
+                  rule: '!(has(self.localityType) && has(self.zoneAware))'
+                - message: zoneAware is not supported with ringHash or maglev load
+                    balancers
+                  rule: '!((has(self.ringHash) || has(self.maglev)) && has(self.zoneAware))'
                 - message: exactly one of the fields in [leastRequest roundRobin ringHash
                     maglev random] must be set
                   rule: '[has(self.leastRequest),has(self.roundRobin),has(self.ringHash),has(self.maglev),has(self.random)].filter(x,x==true).size()
@@ -928,6 +1037,10 @@ spec:
                         - "1.2"
                         - "1.3"
                         type: string
+                      signatureAlgorithms:
+                        items:
+                          type: string
+                        type: array
                     type: object
                   secretRef:
                     description: Reference to the TLS secret containing the certificate,

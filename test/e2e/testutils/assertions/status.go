@@ -242,10 +242,9 @@ func (p *Provider) EventuallyTCPRouteCondition(
 	ginkgo.GinkgoHelper()
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		route := &gwv1a2.TCPRoute{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		status, err := p.getTCPRouteStatus(ctx, routeName, routeNamespace)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get TCPRoute %s/%s", routeNamespace, routeName))
-		g.Expect(extractParentConditions(route.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
+		g.Expect(extractParentConditions(status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -371,7 +370,7 @@ func (p *Provider) getTLSRouteStatus(ctx context.Context, name string, namespace
 	route := &gwv1.TLSRoute{}
 	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, route); err == nil {
 		return route.Status.RouteStatus, nil
-	} else if !shouldFallbackTLSRouteStatusLookup(err) {
+	} else if !shouldFallbackRouteStatusLookup(err) {
 		return gwv1.RouteStatus{}, err
 	}
 
@@ -382,7 +381,22 @@ func (p *Provider) getTLSRouteStatus(ctx context.Context, name string, namespace
 	return legacyRoute.Status.RouteStatus, nil
 }
 
-func shouldFallbackTLSRouteStatusLookup(err error) bool {
+func (p *Provider) getTCPRouteStatus(ctx context.Context, name string, namespace string) (gwv1.RouteStatus, error) {
+	route := &gwv1.TCPRoute{}
+	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, route); err == nil {
+		return route.Status.RouteStatus, nil
+	} else if !shouldFallbackRouteStatusLookup(err) {
+		return gwv1.RouteStatus{}, err
+	}
+
+	legacyRoute := &gwv1a2.TCPRoute{}
+	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, legacyRoute); err != nil {
+		return gwv1.RouteStatus{}, err
+	}
+	return legacyRoute.Status.RouteStatus, nil
+}
+
+func shouldFallbackRouteStatusLookup(err error) bool {
 	return apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err)
 }
 

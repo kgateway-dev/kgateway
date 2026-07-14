@@ -65,5 +65,5 @@ func testUpgrade(t *testing.T, fromVersion string) {
 	// Install the released version from the remote OCI registry.
 	testInstallation.InstallKgatewayFromRelease(ctx, t, fromVersion)
 
-	UpgradeSuiteRunner().Run(ctx, t, testInstallation)
+	UpgradeSuiteRunner(fromVersion).Run(ctx, t, testInstallation)
 }

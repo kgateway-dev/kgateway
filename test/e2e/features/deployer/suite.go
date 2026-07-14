@@ -594,8 +594,8 @@ func xdsClusterAssertion(t *testing.T, testInstallation *e2e.TestInstallation) f
 			g.Expect(xdsSocketAddress).NotTo(gomega.BeNil())
 
 			g.Expect(xdsSocketAddress.GetAddress()).To(gomega.Equal(
-				fmt.Sprintf("%s.%s.svc.cluster.local", wellknown.DefaultXdsService, testInstallation.Metadata.InstallNamespace),
-			), "xds socket address points to kgateway service, in installation namespace")
+				fmt.Sprintf("%s.%s.svc.cluster.local.", wellknown.DefaultXdsService, testInstallation.Metadata.InstallNamespace),
+			), "xds socket address points to kgateway service, in installation namespace, as a rooted FQDN")
 
 			g.Expect(xdsSocketAddress.GetPortValue()).To(gomega.Equal(wellknown.DefaultXdsPort),
 				"xds socket port points to kgateway service, in installation namespace")

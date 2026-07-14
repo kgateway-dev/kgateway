@@ -1,8 +1,9 @@
 package proxy_syncer
 
 import (
+	"cmp"
 	"hash/fnv"
-	"sort"
+	"slices"
 	"strconv"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -27,6 +28,7 @@ func newFinalBackendEndpoints(
 		}
 
 		final := raw.EmptyCopy()
+		final.AttachedPolicies = backend.AttachedPolicies
 		final.ClusterName = backend.ClusterName()
 		final.UpstreamResourceName = backend.ResourceName()
 		for locality, endpoints := range raw.LbEps {
@@ -53,11 +55,11 @@ func backendEndpointVersionHash(backend *ir.BackendObjectIR) uint64 {
 	for groupKind := range backend.AttachedPolicies.Policies {
 		groupKinds = append(groupKinds, groupKind)
 	}
-	sort.Slice(groupKinds, func(i, j int) bool {
-		if groupKinds[i].Group == groupKinds[j].Group {
-			return groupKinds[i].Kind < groupKinds[j].Kind
+	slices.SortFunc(groupKinds, func(a, b schema.GroupKind) int {
+		if a.Group != b.Group {
+			return cmp.Compare(a.Group, b.Group)
 		}
-		return groupKinds[i].Group < groupKinds[j].Group
+		return cmp.Compare(a.Kind, b.Kind)
 	})
 
 	for _, groupKind := range groupKinds {

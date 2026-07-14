@@ -1,0 +1,74 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: HTTP
+      port: 80
+      targetPort: test
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: local-reply-config
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  default:
+    httpSettings:
+      localReplies:
+        defaultBodyFormat:
+          contentType: "text/html"
+          text: <p>%LOCAL_REPLY_BODY%</p>
+        mappers:
+          - filter:
+              statusCodeFilter:
+                op: EQ
+                value: 404
+            statusCode: 200
+            bodyFormatOverride:
+              json:
+                originalBody: "%LOCAL_REPLY_BODY%"
+          - filter:
+              responseFlagFilter:
+                flags:
+                  - NoHealthyUpstream
+            statusCode: 503
+            body: Didn't find healthy upstream
+            headers:
+              add:
+                - name: X-Error-Type
+                  value: NoHealthyUpstream
+              set:
+                - name: X-Error-Status
+                  value: "503"

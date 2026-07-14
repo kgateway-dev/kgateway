@@ -41,10 +41,9 @@ type TrafficPolicyList struct {
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
 // +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.urlRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="urlRewrite can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
-// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetRefs[].sectionName must be set when targeting Gateway resources with retry policy"
-// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
@@ -92,7 +91,7 @@ type TrafficPolicySpec struct {
 
 	// AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
 	// NOTE: This field is only honored for HTTPRoute targets.
-	// NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
+	// NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/api-spec/main/spec/#httpurlrewritefilter)
 	// configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
 	// +optional
 	AutoHostRewrite *bool `json:"autoHostRewrite,omitempty"`
@@ -102,15 +101,28 @@ type TrafficPolicySpec struct {
 	// +optional
 	Buffer *Buffer `json:"buffer,omitempty"`
 
-	// Timeouts defines the timeouts for requests
-	// It is applicable to HTTPRoutes and ignored for other targeted kinds.
+	// Timeouts defines the timeouts for requests.
+	// It is applicable to HTTPRoutes, GRPCRoutes, and Gateways (including individual
+	// Gateway listeners via sectionName), and ignored for other targeted kinds.
+	// When attached above the route level, the timeouts apply to all routes it
+	// covers; a route-level timeout (from a more specific TrafficPolicy or the
+	// built-in HTTPRoute timeouts) takes precedence.
 	// +optional
 	Timeouts *shared.Timeouts `json:"timeouts,omitempty"`
 
 	// Retry defines the policy for retrying requests.
-	// It is applicable to HTTPRoutes, Gateway listeners and ListenerSets, and ignored for other targeted kinds.
+	// It is applicable to HTTPRoutes, GRPCRoutes, Gateways, Gateway listeners, and
+	// ListenerSets, and ignored for other targeted kinds.
+	// When attached above the route level, the retry policy applies to all routes it
+	// covers; a route-level retry policy (from a more specific TrafficPolicy or the
+	// built-in HTTPRoute retry) takes precedence.
 	// +optional
 	Retry *Retry `json:"retry,omitempty"`
+
+	// InternalRedirect handles upstream 3xx redirects inside the gateway.
+	// Applies only to routes that forward traffic to a backend.
+	// +optional
+	InternalRedirect *InternalRedirect `json:"internalRedirect,omitempty"`
 
 	// RBAC specifies the role-based access control configuration for the policy.
 	// This defines the rules for authorization based on roles and permissions.

@@ -50,7 +50,7 @@ func TestGenerateBackendStatusReport(t *testing.T) {
 		{BackendSource: backendSource("translation-error"), BackendGeneration: 5, Error: errors.New("policy is invalid")},
 	}
 
-	rm := GenerateBackendStatusReport(backends, clusters)
+	rm := GenerateBackendStatusReport(backends, clusters, nil)
 	a.Len(rm.Backends, 3)
 
 	acc := rm.Backends[types.NamespacedName{Namespace: "default", Name: "accepted"}]
@@ -89,10 +89,40 @@ func TestGenerateBackendStatusReportIRErrorsTakePrecedence(t *testing.T) {
 		{BackendSource: backendSource("both"), BackendGeneration: 1, Error: errors.New("ir boom")},
 	}
 
-	rm := GenerateBackendStatusReport(backends, clusters)
+	rm := GenerateBackendStatusReport(backends, clusters, nil)
 	report := rm.Backends[types.NamespacedName{Namespace: "default", Name: "both"}]
 	a.NotNil(report)
 	cond := meta.FindStatusCondition(report.GetConditions(), "Accepted")
 	a.NotNil(cond)
 	a.Equal(`Backend error: "ir boom"`, cond.Message, "IR error reported once, not duplicated")
+}
+
+func TestGenerateBackendStatusReportMergesExtraConditions(t *testing.T) {
+	a := assert.New(t)
+
+	backends := []ir.BackendObjectIR{kgwBackend("ec2", 7)}
+	extraConditions := []ir.BackendObjectStatus{{
+		Source: backendSource("ec2"),
+		Conditions: []metav1.Condition{{
+			Type:    "EndpointsDiscovered",
+			Status:  metav1.ConditionTrue,
+			Reason:  "Discovered",
+			Message: "3 endpoints active",
+		}},
+	}}
+
+	rm := GenerateBackendStatusReport(backends, nil, extraConditions)
+	report := rm.Backends[types.NamespacedName{Namespace: "default", Name: "ec2"}]
+	a.NotNil(report)
+
+	// The Accepted condition is still written alongside the contributed condition.
+	accepted := meta.FindStatusCondition(report.GetConditions(), "Accepted")
+	a.NotNil(accepted)
+	a.Equal(metav1.ConditionTrue, accepted.Status)
+
+	discovered := meta.FindStatusCondition(report.GetConditions(), "EndpointsDiscovered")
+	a.NotNil(discovered)
+	a.Equal(metav1.ConditionTrue, discovered.Status)
+	a.Equal("Discovered", discovered.Reason)
+	a.Equal("3 endpoints active", discovered.Message)
 }

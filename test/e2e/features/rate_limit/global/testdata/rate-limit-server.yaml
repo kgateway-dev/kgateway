@@ -85,6 +85,8 @@ spec:
     metadata:
       labels:
         app: redis
+        # required by the e2e framework's pod readiness wait
+        app.kubernetes.io/name: redis
     spec:
       containers:
       - name: redis

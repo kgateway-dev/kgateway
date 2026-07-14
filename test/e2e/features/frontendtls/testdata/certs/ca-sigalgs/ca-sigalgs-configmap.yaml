@@ -1,0 +1,34 @@
+
+# CA certificate for validating client certificates in signature-algorithms tests
+# This CA is used to sign the client certificates for supported signature algorithms testing
+# Generated with:
+#   openssl genrsa -out ca-sigalgs-key.pem 2048
+#   openssl req -new -x509 -days 365 -key ca-sigalgs-key.pem -out ca-sigalgs-cert.pem -subj "/CN=Test CA Sig Algs/O=Test Org"
+#   # Then the certificate content below is from ca-sigalgs-cert.pem
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ca-sigalgs-cert
+  namespace: default
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDPTCCAiWgAwIBAgIUFthhyZWT1FM7oPfP8kYpt+L7YW8wDQYJKoZIhvcNAQEL
+    BQAwLjEZMBcGA1UEAwwQVGVzdCBDQSBTaWcgQWxnczERMA8GA1UECgwIVGVzdCBP
+    cmcwHhcNMjYwNjIzMTMwNTQ3WhcNMjcwNjIzMTMwNTQ3WjAuMRkwFwYDVQQDDBBU
+    ZXN0IENBIFNpZyBBbGdzMREwDwYDVQQKDAhUZXN0IE9yZzCCASIwDQYJKoZIhvcN
+    AQEBBQADggEPADCCAQoCggEBANiWHWP1/nHR75Uxs4aGzt/lfBfpgkyajEUmL1nt
+    X6XxMO2Go4Lmr2Dk3EZXrMXCLQdgmE7bIuFUz3eszV2QvuCSw7+BrNDGsnGuLMpZ
+    bDBe/M607x3NMs9mnaUnSwDrIrQWNQ+hJV/MYSvyMN1P7Tf5zhrSU/6y56SKBtdf
+    zb8mfTRmQxFvQpLvoCVXoirY1AlOLWcw6sh5cnp23rcwwMljJz2QIXNjrAcAQDmA
+    rI7SSbcTkkC00teSl9vpOuSzhZp9/af4efLkw81Zjy27BNyLxUNgiSniynfHc5kJ
+    GvhhNIt8L9k5sQGGx2lzIeIWLsMw4yI5qIlVw7z5Ky9Cew0CAwEAAaNTMFEwHQYD
+    VR0OBBYEFG3lAc1zIvJpI36siFjBHMjHn4SeMB8GA1UdIwQYMBaAFG3lAc1zIvJp
+    I36siFjBHMjHn4SeMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEB
+    AIsvR1JX/Wy33QaLHyFcfeU5kPGdQWK7uTeTiJIw07+2nDzz7fo6uL93G5CpptF8
+    kGOuJIVt/eNQD2CacYssn5dTZbG6GaslexiuZZBp3p/UYTmJgzIvCisI8lP3GA6w
+    ySHEXKHgY14JLPLMLB36XN4OaqVqxoeMdp5/Bj3V7k7Pnv/s0T/A/+KiRYrp/NKu
+    lhDlGrt/x6qsLSvCoa+ZH/c2if49HNIIm1JWVTMvykHiyRUcpbEaFaqNMfqN5ow8
+    DSJvZTOQXEP72q4UZjknzfcCYDIEdqD5eSJBXjAflUonjvWkvjkyALWVIh+Smmlh
+    Zn8CmSKj5nj9IPEuIt02u/8=
+    -----END CERTIFICATE-----
