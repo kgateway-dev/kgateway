@@ -440,6 +440,25 @@ spec:
 			wantErrors: []string{"autoHostRewrite can only be used when targeting HTTPRoute resources"},
 		},
 		{
+			name: "TrafficPolicy: policy with urlRewrite can only target HTTPRoute",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-url-rewrite-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  urlRewrite:
+    pathRegex:
+      pattern: "^/foo"
+      substitution: "/bar"
+`,
+			wantErrors: []string{"urlRewrite can only be used when targeting HTTPRoute resources"},
+		},
+		{
 			name: "HTTPListenerPolicy: valid target references",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -624,7 +643,7 @@ spec:
 			},
 		},
 		{
-			name: "TrafficPolicy: targetRefs[].sectionName must be set when targeting Gateway resources with retry policy",
+			name: "TrafficPolicy: retry may target a whole Gateway without a sectionName",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -639,30 +658,6 @@ spec:
     retryOn:
     - gateway-error
 `,
-			wantErrors: []string{
-				`targetRefs\[\].sectionName must be set when targeting Gateway resources with retry policy`,
-			},
-		},
-		{
-			name: "TrafficPolicy: targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: test
-spec:
-  targetSelectors:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    matchLabels:
-      foo: bar
-  retry:
-    retryOn:
-    - gateway-error
-`,
-			wantErrors: []string{
-				`targetSelectors\[\].sectionName must be set when targeting Gateway resources with retry policy`,
-			},
 		},
 		{
 			name: "TrafficPolicy: timeouts.request must be a valid duration value",

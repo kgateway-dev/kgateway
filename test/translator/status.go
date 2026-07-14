@@ -3,7 +3,7 @@ package translator
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -298,7 +298,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	for k := range statuses.Gateways {
 		gatewayKeys = append(gatewayKeys, k)
 	}
-	sort.Strings(gatewayKeys)
+	slices.Sort(gatewayKeys)
 	for _, k := range gatewayKeys {
 		sorted.Gateways[k] = statuses.Gateways[k]
 	}
@@ -308,7 +308,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	for k := range statuses.ListenerSets {
 		listenerSetKeys = append(listenerSetKeys, k)
 	}
-	sort.Strings(listenerSetKeys)
+	slices.Sort(listenerSetKeys)
 	for _, k := range listenerSetKeys {
 		sorted.ListenerSets[k] = statuses.ListenerSets[k]
 	}
@@ -318,7 +318,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	for k := range statuses.HTTPRoutes {
 		httpRouteKeys = append(httpRouteKeys, k)
 	}
-	sort.Strings(httpRouteKeys)
+	slices.Sort(httpRouteKeys)
 	for _, k := range httpRouteKeys {
 		sorted.HTTPRoutes[k] = statuses.HTTPRoutes[k]
 	}
@@ -328,7 +328,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	for k := range statuses.TCPRoutes {
 		tcpRouteKeys = append(tcpRouteKeys, k)
 	}
-	sort.Strings(tcpRouteKeys)
+	slices.Sort(tcpRouteKeys)
 	for _, k := range tcpRouteKeys {
 		sorted.TCPRoutes[k] = statuses.TCPRoutes[k]
 	}
@@ -338,7 +338,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	for k := range statuses.TLSRoutes {
 		tlsRouteKeys = append(tlsRouteKeys, k)
 	}
-	sort.Strings(tlsRouteKeys)
+	slices.Sort(tlsRouteKeys)
 	for _, k := range tlsRouteKeys {
 		sorted.TLSRoutes[k] = statuses.TLSRoutes[k]
 	}
@@ -348,7 +348,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	for k := range statuses.GRPCRoutes {
 		grpcRouteKeys = append(grpcRouteKeys, k)
 	}
-	sort.Strings(grpcRouteKeys)
+	slices.Sort(grpcRouteKeys)
 	for _, k := range grpcRouteKeys {
 		sorted.GRPCRoutes[k] = statuses.GRPCRoutes[k]
 	}
@@ -358,7 +358,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	for k := range statuses.Policies {
 		policyKeys = append(policyKeys, k)
 	}
-	sort.Strings(policyKeys)
+	slices.Sort(policyKeys)
 	for _, k := range policyKeys {
 		sorted.Policies[k] = statuses.Policies[k]
 	}
@@ -368,7 +368,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	for k := range statuses.Backends {
 		backendKeys = append(backendKeys, k)
 	}
-	sort.Strings(backendKeys)
+	slices.Sort(backendKeys)
 	for _, k := range backendKeys {
 		sorted.Backends[k] = statuses.Backends[k]
 	}

@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -30,58 +31,48 @@ import (
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
-	manifests = []string{
-		filepath.Join(fsutils.MustGetThisDir(), "testdata/base.yaml"),
-		// backend in separate manifest to allow creation independently of routing config
-		filepath.Join(fsutils.MustGetThisDir(), "testdata/backend.yaml"),
-	}
+	baseManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "base.yaml")
+	// backend in separate manifest to allow creation independently of routing config
+	backendManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backend.yaml")
+	backendErrorManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backend-error.yaml")
+	backendUpdateManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backend-update-error.yaml")
+	priorityGroupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "priority-groups.yaml")
 
 	proxyObjMeta = metav1.ObjectMeta{
 		Name:      "gateway",
 		Namespace: "kgateway-base",
 	}
+
+	testCases = map[string]*base.TestCase{
+		"TestConfigureBackingDestinationsWithUpstream": {
+			Manifests: []string{baseManifest, backendManifest},
+		},
+		"TestBackendWithRuntimeError": {
+			Manifests: []string{backendErrorManifest},
+		},
+		"TestPriorityGroupsFailover": {
+			Manifests: []string{defaults.HttpEchoPodManifest, defaults.HttpbinManifest, priorityGroupManifest},
+		},
+	}
 )
 
 type testingSuite struct {
-	suite.Suite
-	ctx              context.Context
-	testInstallation *e2e.TestInstallation
+	*base.BaseTestingSuite
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, testCases),
 	}
 }
 
 func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
-	backendMeta := metav1.ObjectMeta{
-		Name:      "nginx-static",
-		Namespace: "kgateway-base",
-	}
 	backend := &kgateway.Backend{
-		ObjectMeta: backendMeta,
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nginx-static",
+			Namespace: proxyObjMeta.GetNamespace(),
+		},
 	}
-
-	testutils.Cleanup(s.T(), func() {
-		for _, manifest := range manifests {
-			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-			s.Require().NoError(err)
-		}
-		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, backend)
-	})
-
-	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err)
-	}
-
-	// assert the expected resources are created and running before attempting to send traffic
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, backend)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=gateway",
-	})
 
 	common.BaseGateway.Send(
 		s.T(),
@@ -104,24 +95,12 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 
 // TestBackendWithRuntimeError tests if backend condition is updated with error
 func (s *testingSuite) TestBackendWithRuntimeError() {
-	errorManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/backend-error.yaml")
-
-	testutils.Cleanup(s.T(), func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, errorManifest)
-		s.Require().NoError(err)
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, errorManifest)
-	s.Require().NoError(err)
-
 	backendWithError := &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-aws-backend",
-			Namespace: "kgateway-base",
+			Namespace: proxyObjMeta.GetNamespace(),
 		},
 	}
-
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, backendWithError)
 
 	s.assertStatus(backendWithError, metav1.Condition{
 		Type:    "Accepted",
@@ -130,14 +109,14 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 		Message: `Backend error: "Secret kgateway-base/lambda-secret not found"`,
 	})
 
-	updateErrorManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/backend-update-error.yaml")
-
+	// apply the secret mid-test: it must not exist during the first assertion,
+	// and its unsupported key surfaces a different status update error
 	testutils.Cleanup(s.T(), func() {
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, updateErrorManifest)
+		err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, backendUpdateManifest)
 		s.Require().NoError(err)
 	})
 
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, updateErrorManifest)
+	err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, backendUpdateManifest)
 	s.Require().NoError(err)
 
 	s.assertStatus(backendWithError, metav1.Condition{
@@ -157,45 +136,16 @@ secret_key is not a valid string"`,
 // backends' endpoints are merged into the cluster's load assignment, so the
 // health checks probe the real services directly.
 func (s *testingSuite) TestPriorityGroupsFailover() {
-	pgManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/priority-groups.yaml")
-
 	pgBackend := &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{Name: "priority-groups", Namespace: proxyObjMeta.GetNamespace()},
 	}
-	referencedBackends := []client.Object{
-		&kgateway.Backend{ObjectMeta: metav1.ObjectMeta{Name: "primary-nginx", Namespace: proxyObjMeta.GetNamespace()}},
-		&kgateway.Backend{ObjectMeta: metav1.ObjectMeta{Name: "failover-echo", Namespace: proxyObjMeta.GetNamespace()}},
-		&kgateway.Backend{ObjectMeta: metav1.ObjectMeta{Name: "failover-httpbin", Namespace: proxyObjMeta.GetNamespace()}},
-	}
 
 	testutils.Cleanup(s.T(), func() {
-		s.Require().NoError(s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, pgManifest))
-		s.Require().NoError(s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, defaults.HttpbinManifest))
-		s.Require().NoError(s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, defaults.HttpEchoPodManifest))
 		// restore the shared nginx backend for the suites that run after this one
-		s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.NginxPodManifest))
-		s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, common.SharedNginxNamespace, metav1.ListOptions{
+		s.Require().NoError(s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, defaults.NginxPodManifest))
+		s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, common.SharedNginxNamespace, metav1.ListOptions{
 			LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 		})
-		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, pgBackend)
-	})
-
-	s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.HttpEchoPodManifest))
-	s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.HttpbinManifest))
-	s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, pgManifest))
-
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, append(referencedBackends, pgBackend)...)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=gateway",
-	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.HttpbinLabelSelector,
-	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, "http-echo", metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=http-echo",
-	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, common.SharedNginxNamespace, metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
 
 	// all backendRefs resolve
@@ -213,11 +163,11 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 	}
 	// the health check needs a couple of intervals to observe a state change,
 	// and pod restarts add latency; give the eventual matches a generous window
-	failoverRetry := []retry.Option{retry.Timeout(1 * time.Minute)}
+	failoverRetry := []retry.Option{retry.Timeout(2 * time.Minute)}
 
 	// group 0 (nginx) serves all traffic
 	common.BaseGateway.SendEventuallyConsistent(
-		s.ctx,
+		s.Ctx,
 		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -232,8 +182,8 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 	nginxPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "nginx", Namespace: common.SharedNginxNamespace},
 	}
-	s.Require().NoError(s.testInstallation.ClusterContext.Client.Delete(s.ctx, nginxPod))
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.ctx, common.SharedNginxNamespace, metav1.ListOptions{
+	s.Require().NoError(s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, nginxPod))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.Ctx, common.SharedNginxNamespace, metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
 
@@ -241,7 +191,7 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 	// Both group members share priority 1 and are load balanced together, so
 	// both response signatures must be observed.
 	common.BaseGateway.SendWithRetry(
-		s.ctx,
+		s.Ctx,
 		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -251,7 +201,7 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 		curlOpts...,
 	)
 	common.BaseGateway.SendWithRetry(
-		s.ctx,
+		s.Ctx,
 		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -263,12 +213,12 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 
 	// restore group 0; one passing health check marks it healthy again and
 	// traffic drains back to the higher priority group
-	s.Require().NoError(s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, defaults.NginxPodManifest))
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, common.SharedNginxNamespace, metav1.ListOptions{
+	s.Require().NoError(s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, defaults.NginxPodManifest))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, common.SharedNginxNamespace, metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
 	common.BaseGateway.SendEventuallyConsistent(
-		s.ctx,
+		s.Ctx,
 		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -280,11 +230,11 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 
 func (s *testingSuite) assertStatus(backend *kgateway.Backend, expected metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	p := s.testInstallation.AssertionsT(s.T())
+	p := s.TestInstallation.AssertionsT(s.T())
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		be := &kgateway.Backend{}
 		objKey := client.ObjectKeyFromObject(backend)
-		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, be)
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, be)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get Backend %s", objKey)
 
 		actual := be.Status.Conditions

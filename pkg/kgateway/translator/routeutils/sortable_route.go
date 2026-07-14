@@ -34,6 +34,26 @@ func (a SortableRoutes) Less(i, j int) bool {
 	return !routeWrapperLessFunc(a[i], a[j])
 }
 
+// CompareTo compares two SortableRoutes for ordering.
+// Returns -1 if a should sort before b, 1 if after, 0 if equal.
+// Higher precedence weight sorts first; for equal weight, route specificity is compared.
+func (a *SortableRoute) CompareTo(b *SortableRoute) int {
+	if a.Route.PrecedenceWeight != b.Route.PrecedenceWeight {
+		if a.Route.PrecedenceWeight > b.Route.PrecedenceWeight {
+			return -1
+		}
+		return 1
+	}
+	// routeWrapperLessFunc returns true if a is lower priority than b
+	if routeWrapperLessFunc(a, b) {
+		return 1
+	}
+	if routeWrapperLessFunc(b, a) {
+		return -1
+	}
+	return 0
+}
+
 func (a SortableRoutes) ToRoutes() []ir.HttpRouteRuleMatchIR {
 	routes := make([]ir.HttpRouteRuleMatchIR, 0, len(a))
 	for _, route := range a {

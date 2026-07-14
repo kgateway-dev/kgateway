@@ -407,6 +407,15 @@ type ListenerHTTP2ProtocolOptions struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=2147483647
 	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
+
+	// AllowConnect allows proxying of WebSocket and other upgrades over HTTP/2 by
+	// enabling Envoy to handle Extended CONNECT requests (RFC 8441) on the downstream
+	// connection. This is required for WebSocket-over-HTTP/2 when the listener advertises
+	// h2 in its ALPN; otherwise user agents that use Extended CONNECT (e.g. Firefox) fail
+	// to establish WebSocket connections.
+	// Defaults to false.
+	// +optional
+	AllowConnect *bool `json:"allowConnect,omitempty"`
 }
 
 // FileSink represents the file sink configuration for access logs.

@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -639,7 +639,7 @@ func formatValidationCallerMetrics(byCaller map[string]ValidationCallerMetrics) 
 	for caller := range byCaller {
 		callers = append(callers, caller)
 	}
-	sort.Strings(callers)
+	slices.Sort(callers)
 
 	parts := make([]string, 0, len(callers))
 	for _, caller := range callers {

@@ -193,6 +193,11 @@ func (c *requestConfig) buildHTTPClient() *http.Client {
 			// Similar to ciphers, this would require parsing and mapping
 		}
 
+		// Configure signature algorithms (simplified)
+		if c.signatureAlgorithms != "" {
+			// Similar to ciphers, this would require parsing and mapping
+		}
+
 		transport.TLSClientConfig = tlsConfig
 	}
 
