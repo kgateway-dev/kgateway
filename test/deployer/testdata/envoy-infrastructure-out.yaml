@@ -169,7 +169,7 @@ data:
                           path_config_source:
                             path: "/etc/envoy/xds_service_account_token.json"
                           resource_api_version: V3
-                      header_value_prefix: Bearer
+                      header_value_prefix: "Bearer "
                   overwrite: true
               - name: envoy.filters.http.upstream_codec
                 typed_config:
