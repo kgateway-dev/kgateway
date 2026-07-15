@@ -41,10 +41,9 @@ type TrafficPolicyList struct {
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
 // +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.urlRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="urlRewrite can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
-// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetRefs[].sectionName must be set when targeting Gateway resources with retry policy"
-// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
@@ -102,13 +101,21 @@ type TrafficPolicySpec struct {
 	// +optional
 	Buffer *Buffer `json:"buffer,omitempty"`
 
-	// Timeouts defines the timeouts for requests
-	// It is applicable to HTTPRoutes and ignored for other targeted kinds.
+	// Timeouts defines the timeouts for requests.
+	// It is applicable to HTTPRoutes, GRPCRoutes, and Gateways (including individual
+	// Gateway listeners via sectionName), and ignored for other targeted kinds.
+	// When attached above the route level, the timeouts apply to all routes it
+	// covers; a route-level timeout (from a more specific TrafficPolicy or the
+	// built-in HTTPRoute timeouts) takes precedence.
 	// +optional
 	Timeouts *shared.Timeouts `json:"timeouts,omitempty"`
 
 	// Retry defines the policy for retrying requests.
-	// It is applicable to HTTPRoutes, Gateway listeners and ListenerSets, and ignored for other targeted kinds.
+	// It is applicable to HTTPRoutes, GRPCRoutes, Gateways, Gateway listeners, and
+	// ListenerSets, and ignored for other targeted kinds.
+	// When attached above the route level, the retry policy applies to all routes it
+	// covers; a route-level retry policy (from a more specific TrafficPolicy or the
+	// built-in HTTPRoute retry) takes precedence.
 	// +optional
 	Retry *Retry `json:"retry,omitempty"`
 

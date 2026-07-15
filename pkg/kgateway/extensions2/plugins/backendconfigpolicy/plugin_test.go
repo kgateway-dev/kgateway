@@ -232,6 +232,56 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "http2 connection keepalive applied to http2 backend",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					Http2ProtocolOptions: &kgateway.Http2ProtocolOptions{
+						ConnectionKeepalive: &kgateway.ConnectionKeepalive{
+							Timeout:                metav1.Duration{Duration: 5 * time.Second},
+							Interval:               new(metav1.Duration{Duration: 30 * time.Second}),
+							ConnectionIdleInterval: new(metav1.Duration{Duration: 60 * time.Second}),
+						},
+					},
+				},
+			},
+			backend: &ir.BackendObjectIR{
+				AppProtocol: ir.HTTP2AppProtocol,
+			},
+			cluster: &envoyclusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{},
+								},
+							},
+						},
+					}),
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{
+										ConnectionKeepalive: &envoycorev3.KeepaliveSettings{
+											Timeout:                durationpb.New(5 * time.Second),
+											Interval:               durationpb.New(30 * time.Second),
+											ConnectionIdleInterval: durationpb.New(60 * time.Second),
+										},
+									},
+								},
+							},
+						},
+					}),
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "http2 protocol options not applied to non-http2 backend",
 			policy: &kgateway.BackendConfigPolicy{
 				Spec: kgateway.BackendConfigPolicySpec{

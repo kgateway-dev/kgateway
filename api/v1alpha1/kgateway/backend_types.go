@@ -75,6 +75,8 @@ type BackendSpec struct {
 	// group is only used when the backends of all preceding groups are
 	// unhealthy. The health check can be configured via the BackendConfigPolicy
 	// that targets this Backend
+	//
+	// Note: This field is part of an experimental API and subject to breaking changes in future releases.
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
@@ -82,6 +84,8 @@ type BackendSpec struct {
 }
 
 // PriorityGroup defines one failover priority level of a priority groups backend.
+//
+// Note: This struct is part of an experimental API and subject to breaking changes in future releases.
 type PriorityGroup struct {
 	// BackendRefs references the Backends that make up this priority group.
 	// Referenced Backends must be in the same namespace and must not be

@@ -2,6 +2,7 @@ package setup_test
 
 import (
 	"bytes"
+	stdcmp "cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -1041,8 +1041,8 @@ func anyJsonRoundTrip[T any, PT interface {
 func sortResource[T fmt.Stringer](resources []T) []T {
 	// clone the slice
 	resources = append([]T(nil), resources...)
-	sort.Slice(resources, func(i, j int) bool {
-		return resources[i].String() < resources[j].String()
+	slices.SortFunc(resources, func(a, b T) int {
+		return stdcmp.Compare(a.String(), b.String())
 	})
 	return resources
 }
@@ -1053,21 +1053,21 @@ func sortResource[T fmt.Stringer](resources []T) []T {
 // output. The comparison logic (equalset) is order-independent, so this only
 // affects serialization, not correctness.
 func sortLocalityLbEndpoints(eps []*envoyendpointv3.LocalityLbEndpoints) {
-	sort.SliceStable(eps, func(i, j int) bool {
-		li, lj := eps[i].GetLocality(), eps[j].GetLocality()
-		if li.GetRegion() != lj.GetRegion() {
-			return li.GetRegion() < lj.GetRegion()
+	slices.SortStableFunc(eps, func(a, b *envoyendpointv3.LocalityLbEndpoints) int {
+		la, lb := a.GetLocality(), b.GetLocality()
+		if la.GetRegion() != lb.GetRegion() {
+			return stdcmp.Compare(la.GetRegion(), lb.GetRegion())
 		}
-		if li.GetZone() != lj.GetZone() {
-			return li.GetZone() < lj.GetZone()
+		if la.GetZone() != lb.GetZone() {
+			return stdcmp.Compare(la.GetZone(), lb.GetZone())
 		}
-		if li.GetSubZone() != lj.GetSubZone() {
-			return li.GetSubZone() < lj.GetSubZone()
+		if la.GetSubZone() != lb.GetSubZone() {
+			return stdcmp.Compare(la.GetSubZone(), lb.GetSubZone())
 		}
-		if eps[i].GetPriority() != eps[j].GetPriority() {
-			return eps[i].GetPriority() < eps[j].GetPriority()
+		if a.GetPriority() != b.GetPriority() {
+			return stdcmp.Compare(a.GetPriority(), b.GetPriority())
 		}
-		return localityLbEndpointAddrs(eps[i]) < localityLbEndpointAddrs(eps[j])
+		return stdcmp.Compare(localityLbEndpointAddrs(a), localityLbEndpointAddrs(b))
 	})
 }
 
@@ -1078,7 +1078,7 @@ func localityLbEndpointAddrs(e *envoyendpointv3.LocalityLbEndpoints) string {
 	for _, lb := range e.GetLbEndpoints() {
 		addrs = append(addrs, lb.GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
 	}
-	sort.Strings(addrs)
+	slices.Sort(addrs)
 	return strings.Join(addrs, ",")
 }
 

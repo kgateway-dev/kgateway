@@ -1,12 +1,12 @@
 package listener
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -793,7 +793,9 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		}
 
 		// ensure we sort the routes before creating the vhost
-		sort.Stable(vhostRoutes)
+		slices.SortStableFunc(vhostRoutes, func(a, b *routeutils.SortableRoute) int {
+			return a.CompareTo(b)
+		})
 
 		// ensure we don't create duplicate vhosts
 		vhostName := makeVhostName(ctx, parentName, host)
@@ -811,8 +813,8 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		})
 	}
 	// sort vhosts, to make sure the resource is stable
-	sort.Slice(virtualHosts, func(i, j int) bool {
-		return virtualHosts[i].Name < virtualHosts[j].Name
+	slices.SortFunc(virtualHosts, func(a, b *ir.VirtualHost) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 
 	// TODO: Make a similar change for other filter chains ???
@@ -865,7 +867,9 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		virtualHosts     = []*ir.VirtualHost{}
 	)
 	for host, vhostRoutes := range routesByHost {
-		sort.Stable(vhostRoutes)
+		slices.SortStableFunc(vhostRoutes, func(a, b *routeutils.SortableRoute) int {
+			return a.CompareTo(b)
+		})
 		vhostName := makeVhostName(ctx, hfc.gatewayListenerName, host)
 		if !virtualHostNames[vhostName] {
 			virtualHostNames[vhostName] = true
@@ -910,8 +914,8 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 			return nil, err
 		}
 	}
-	sort.Slice(virtualHosts, func(i, j int) bool {
-		return virtualHosts[i].Name < virtualHosts[j].Name
+	slices.SortFunc(virtualHosts, func(a, b *ir.VirtualHost) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 
 	return &ir.HttpFilterChainIR{

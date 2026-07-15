@@ -26,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -925,7 +926,9 @@ func parseClusterRoleRules(t *testing.T, rolePath string) []rbacv1.PolicyRule {
 	require.NoError(t, err, "failed to read role file: %s", rolePath)
 
 	// Replace Helm template expressions to make it parseable as plain YAML
-	yamlStr := strings.ReplaceAll(string(data), "{{ .Release.Namespace }}", "test")
+	// Remove all Helm template expressions {{ ... }}
+	re := regexp.MustCompile(`\{\{[^}]*\}\}`)
+	yamlStr := re.ReplaceAllString(string(data), "")
 
 	var role rbacv1.ClusterRole
 	err = yaml.Unmarshal([]byte(yamlStr), &role)

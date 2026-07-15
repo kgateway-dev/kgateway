@@ -1,9 +1,10 @@
 package pluginutils
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 
 	mutation_rulesv3 "github.com/envoyproxy/go-control-plane/envoy/config/common/mutation_rules/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -146,7 +147,9 @@ func resolveHeader(
 		for k, v := range secret.Data {
 			pairs = append(pairs, gwv1.HTTPHeader{Name: gwv1.HTTPHeaderName(k), Value: string(v)})
 		}
-		sort.Slice(pairs, func(i, j int) bool { return pairs[i].Name < pairs[j].Name })
+		slices.SortFunc(pairs, func(a, b gwv1.HTTPHeader) int {
+			return cmp.Compare(string(a.Name), string(b.Name))
+		})
 		return pairs, nil
 	}
 
