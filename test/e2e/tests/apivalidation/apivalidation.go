@@ -526,6 +526,28 @@ spec:
 			wantErrors: []string{"tracing can only be used when targeting HTTPRoute or GRPCRoute resources"},
 		},
 		{
+			name: "TrafficPolicy: policy with tracing rejects a Gateway targetRefs alongside a valid targetSelectors",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-tracing-mixed-targets-inverse
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: GRPCRoute
+    matchLabels:
+      route: example
+  tracing:
+    clientSampling: 100
+`,
+			wantErrors: []string{"tracing can only be used when targeting HTTPRoute or GRPCRoute resources"},
+		},
+		{
 			name: "TrafficPolicy: policy with statPrefix can only target HTTPRoute or GRPCRoute",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
