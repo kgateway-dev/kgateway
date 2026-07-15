@@ -47,18 +47,16 @@ const (
 // we return partially translated configs. As these configs are of different types, we return an list of interfaces
 // that is stored in the IR to be fully translated during translation.
 func convertAccessLogConfig(
-	policy *kgateway.HTTPSettings,
+	configs []kgateway.AccessLog,
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
 ) ([]proto.Message, error) {
-	configs := policy.AccessLog
-
-	if configs != nil && len(configs) == 0 {
+	if len(configs) == 0 {
 		return nil, nil
 	}
 
-	grpcBackends := make(map[string]*ir.BackendObjectIR, len(policy.AccessLog))
+	grpcBackends := make(map[string]*ir.BackendObjectIR, len(configs))
 	for idx, log := range configs {
 		if log.GrpcService != nil {
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
@@ -342,7 +340,7 @@ func newAccessLogWithConfig(name string, config proto.Message) *envoyaccesslogv3
 	return s
 }
 
-func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog, configs []proto.Message) ([]*envoyaccesslogv3.AccessLog, error) {
+func generateAccessLogConfig(gateway ir.GatewayIR, policies []kgateway.AccessLog, configs []proto.Message) ([]*envoyaccesslogv3.AccessLog, error) {
 	accessLogs := make([]*envoyaccesslogv3.AccessLog, len(configs))
 	if len(configs) == 0 {
 		return accessLogs, nil
@@ -356,7 +354,7 @@ func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog,
 		case *envoygrpc.HttpGrpcAccessLogConfig:
 			cfg = newAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, t)
 		case *envoy_open_telemetry.OpenTelemetryAccessLogConfig:
-			addDefaultResourceAttributes(pCtx, t)
+			addDefaultResourceAttributes(gateway, t)
 			cfg = newAccessLogWithConfig("envoy.access_loggers.open_telemetry", t)
 		}
 		// Add filter if specified
@@ -372,9 +370,9 @@ func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog,
 	return accessLogs, nil
 }
 
-func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_telemetry.OpenTelemetryAccessLogConfig) {
-	gatewayName := pCtx.Gateway.SourceObject.GetName()
-	gatewayNamespace := pCtx.Gateway.SourceObject.GetNamespace()
+func addDefaultResourceAttributes(gateway ir.GatewayIR, config *envoy_open_telemetry.OpenTelemetryAccessLogConfig) {
+	gatewayName := gateway.SourceObject.GetName()
+	gatewayNamespace := gateway.SourceObject.GetNamespace()
 
 	// Set default resource attributes if not already present
 	addResourceAttributeIfMissing(config, serviceNameKey, GenerateDefaultServiceName(gatewayName, gatewayNamespace))

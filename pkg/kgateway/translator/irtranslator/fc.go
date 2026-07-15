@@ -461,9 +461,48 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 		}
 	}
 
+	// Allow any TcpProxy plugins (e.g. ListenerPolicy access logging) to make their changes.
+	h.applyTcpProxyPolicies(cfg, listenerReporter)
+
 	tcpFilter, _ := NewFilterWithTypedConfig(wellknown.TCPProxy, cfg)
 
 	return append(networkFilters, tcpFilter)
+}
+
+// applyTcpProxyPolicies runs the ApplyTcpProxy hook of every plugin whose policy is attached to
+// the listener (or to the gateway), mirroring the HCM path in computeNetworkFilters. Policy
+// acceptance/attachment status is already reported by runListenerPlugins for all listeners, so it
+// is not re-reported here.
+func (h *filterChainTranslator) applyTcpProxyPolicies(
+	cfg *envoytcp.TcpProxy,
+	listenerReporter sdkreporter.ListenerReporter,
+) {
+	var attachedPolicies ir.AttachedPolicies
+	// Listener policies take precedence over gateway policies, so they are ordered first
+	attachedPolicies.Append(h.listener.AttachedPolicies, h.gateway.AttachedHttpPolicies)
+	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+		pols := attachedPolicies.Policies[gk]
+		pass := h.pluginPass[gk]
+		if pass == nil {
+			continue
+		}
+		policies, _ := mergePolicies(pass, pols)
+		for _, pol := range policies {
+			pctx := &ir.TcpContext{
+				ListenerPort: h.listener.BindPort,
+				Policy:       pol.PolicyIr,
+				Gateway:      h.gateway,
+			}
+			if err := pass.ApplyTcpProxy(pctx, cfg); err != nil {
+				listenerReporter.SetCondition(sdkreporter.ListenerCondition{
+					Type:    gwv1.ListenerConditionProgrammed,
+					Reason:  gwv1.ListenerReasonInvalid,
+					Status:  metav1.ConditionFalse,
+					Message: "Error processing TcpProxy plugin: " + err.Error(),
+				})
+			}
+		}
+	}
 }
 
 func NewFilterWithTypedConfig(name string, config proto.Message) (*envoylistenerv3.Filter, error) {

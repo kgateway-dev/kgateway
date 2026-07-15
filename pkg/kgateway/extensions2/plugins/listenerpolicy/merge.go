@@ -92,6 +92,7 @@ func mergeListenerPolicy(
 		mergeTransportSocketConnectTimeout,
 		mergeClientCertificateValidation,
 		mergeHttpSettings,
+		mergeTcpSettings,
 	}
 
 	for _, mergeFunc := range mergeFuncs {

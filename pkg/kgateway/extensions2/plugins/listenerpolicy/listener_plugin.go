@@ -11,6 +11,7 @@ import (
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	proxy_protocol "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/proxy_protocol/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
@@ -61,6 +62,8 @@ type listenerPolicy struct {
 	clientCertificateValidation *ir.ClientCertificateValidationIR
 	// +noKrtEquals
 	http *HttpListenerPolicyIr
+	// +noKrtEquals
+	tcp *TcpListenerPolicyIr
 }
 
 func newListenerPolicy(
@@ -80,12 +83,16 @@ func newListenerPolicy(
 	}
 	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
 
+	tcp, tcpErrs := NewTcpListenerPolicy(krtctx, commoncol, i.TCPSettings, objSrc)
+	errs = append(errs, tcpErrs...)
+
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
 		tcpKeepalive:                  backendconfigpolicy.TranslateTCPKeepalive(i.TCPKeepalive),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 		transportSocketConnectTimeout: tsct,
 		http:                          http,
+		tcp:                           tcp,
 	}, errs
 }
 
@@ -165,6 +172,13 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 		return false
 	}
 	if d.http != nil && !d.http.Equals(d2.http) {
+		return false
+	}
+
+	if (d.tcp == nil) != (d2.tcp == nil) {
+		return false
+	}
+	if d.tcp != nil && !d.tcp.Equals(d2.tcp) {
 		return false
 	}
 
@@ -416,7 +430,7 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	}
 
 	// translate access logging configuration
-	accessLogs, err := generateAccessLogConfig(pCtx, policy.accessLogPolicies, policy.accessLogConfig)
+	accessLogs, err := generateAccessLogConfig(pCtx.Gateway, policy.accessLogPolicies, policy.accessLogConfig)
 	if err != nil {
 		return err
 	}
@@ -582,6 +596,28 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 			out.StripPortMode = &envoy_hcm.HttpConnectionManager_StripAnyHostPort{StripAnyHostPort: true}
 		}
 	}
+
+	return nil
+}
+
+// ApplyTcpProxy wires TcpSettings.AccessLog into the TcpProxy network filter that backs
+// non-HTTP (L4) listeners. It is the L4 sibling of ApplyHCM.
+func (p *listenerPolicyPluginGwPass) ApplyTcpProxy(
+	pCtx *ir.TcpContext,
+	out *envoytcp.TcpProxy,
+) error {
+	cfg := p.getPolicy(pCtx.Policy, pCtx.ListenerPort)
+	policy := cfg.tcp
+	if policy == nil {
+		return nil
+	}
+
+	// translate access logging configuration
+	accessLogs, err := generateAccessLogConfig(pCtx.Gateway, policy.accessLogPolicies, policy.accessLogConfig)
+	if err != nil {
+		return err
+	}
+	out.AccessLog = append(out.GetAccessLog(), accessLogs...)
 
 	return nil
 }

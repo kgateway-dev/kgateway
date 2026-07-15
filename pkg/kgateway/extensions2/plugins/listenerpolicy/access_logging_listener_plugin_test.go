@@ -1305,18 +1305,16 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					},
 				)
 				require.NoError(t, err, "failed to convert access log config")
-				result, err := generateAccessLogConfig(&ir.HcmContext{
-					Gateway: ir.GatewayIR{
-						SourceObject: &ir.Gateway{
-							ObjectSource: ir.ObjectSource{
-								Namespace: "default",
-								Name:      "gw",
-							},
-							Obj: &gwv1.Gateway{
-								ObjectMeta: metav1.ObjectMeta{
-									UID:        "test-uid-1234",
-									Generation: 7,
-								},
+				result, err := generateAccessLogConfig(ir.GatewayIR{
+					SourceObject: &ir.Gateway{
+						ObjectSource: ir.ObjectSource{
+							Namespace: "default",
+							Name:      "gw",
+						},
+						Obj: &gwv1.Gateway{
+							ObjectMeta: metav1.ObjectMeta{
+								UID:        "test-uid-1234",
+								Generation: 7,
 							},
 						},
 					},
@@ -1514,13 +1512,11 @@ func TestAccessLogFilters(t *testing.T) {
 			}}, nil)
 			require.NoError(t, err)
 
-			hcmCtx := &ir.HcmContext{
-				Gateway: ir.GatewayIR{
-					SourceObject: &ir.Gateway{
-						ObjectSource: ir.ObjectSource{
-							Name:      "gw",
-							Namespace: "default",
-						},
+			gateway := ir.GatewayIR{
+				SourceObject: &ir.Gateway{
+					ObjectSource: ir.ObjectSource{
+						Name:      "gw",
+						Namespace: "default",
 					},
 				},
 			}
@@ -1530,7 +1526,7 @@ func TestAccessLogFilters(t *testing.T) {
 				FileSink: &kgateway.FileSink{Path: "/dev/stdout"},
 			}}
 
-			got, err := generateAccessLogConfig(hcmCtx, accessLogs, cfgs)
+			got, err := generateAccessLogConfig(gateway, accessLogs, cfgs)
 			require.NoError(t, err)
 			require.Len(t, got, 1)
 			require.NotNil(t, got[0].GetFilter())

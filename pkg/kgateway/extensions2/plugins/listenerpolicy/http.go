@@ -235,7 +235,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		return nil, nil
 	}
 	errs := []error{}
-	accessLog, err := convertAccessLogConfig(h, commoncol, krtctx, objSrc)
+	accessLog, err := convertAccessLogConfig(h.AccessLog, commoncol, krtctx, objSrc)
 	if err != nil {
 		logger.Error("error translating access log", "error", err)
 		errs = append(errs, err)
