@@ -127,6 +127,25 @@ type ListenerConfig struct {
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	TransportSocketConnectTimeout *metav1.Duration `json:"transportSocketConnectTimeout,omitempty"`
+
+	// TCPSettings is intended to be used for configuring the Envoy `TcpProxy` network filter that backs
+	// non-HTTP listeners, i.e. listeners serving TCPRoute traffic and TLSRoute traffic (both terminated
+	// and passthrough). It is the L4 sibling of HTTPSettings.
+	// +optional
+	TCPSettings *TCPSettings `json:"tcpSettings,omitempty"`
+}
+
+// TCPSettings configures the Envoy `TcpProxy` network filter for listeners that terminate or forward
+// non-HTTP (L4) traffic, such as those backing TCPRoute and TLSRoute resources.
+type TCPSettings struct {
+	// AccessLog contains settings for Envoy's access logging service for the TCP/TLS listener.
+	// The configuration is rendered into the `access_log` field of the `TcpProxy` network filter.
+	// HTTP-specific access log filters (e.g. headerFilter, statusCodeFilter, grpcStatusFilter) are not
+	// meaningful in an L4 context and are rejected by Envoy if set.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto
+	// +kubebuilder:validation:MaxItems=16
+	// +optional
+	AccessLog []AccessLog `json:"accessLog,omitempty"`
 }
 
 type ListenerDefaultConfig struct {
