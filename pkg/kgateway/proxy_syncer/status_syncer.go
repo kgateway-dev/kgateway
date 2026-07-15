@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	utilretry "k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -159,16 +160,16 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 		getRouteFunc func(context.Context, client.ObjectKey) (client.Object, error),
 		statusUpdater func(route client.Object) (*gwv1.RouteStatus, error),
 	) error {
-		return retry.Do(
+		err := retry.Do(
 			func() (rErr error) {
 				route, err := getRouteFunc(ctx, routeKey)
 				if err != nil {
-					if apierrors.IsNotFound(err) {
-						// the route is not found, we can't report status on it
-						// if it's recreated, we'll retranslate it anyway
-						return nil
+					// NotFound is retried too: for a just-created route the report can
+					// arrive before the object shows up in the manager's informer cache,
+					// and nothing retriggers this sync if the write is dropped.
+					if !apierrors.IsNotFound(err) {
+						logger.Error("error getting route", "error", err, "resource_ref", routeKey, "route_type", routeType)
 					}
-					logger.Error("error getting route", "error", err, "resource_ref", routeKey, "route_type", routeType)
 					return err
 				}
 
@@ -291,7 +292,13 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 			retry.Attempts(5),
 			retry.Delay(100*time.Millisecond),
 			retry.DelayType(retry.BackOffDelay),
+			retry.LastErrorOnly(true),
 		)
+		if apierrors.IsNotFound(err) {
+			// the route is gone; if it's recreated we'll retranslate it
+			return nil
+		}
+		return err
 	}
 
 	// Helper function to build route status and update if needed
@@ -487,11 +494,21 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 
 		var statusErr error
 
-		err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
+		// NotFound is retried in addition to conflicts: for a just-created Gateway the
+		// report can arrive before the object shows up in the manager's informer cache,
+		// and nothing retriggers this sync if the write is dropped. The backoff matches
+		// the retry budget of the other status syncers (~1.5s total).
+		retriable := func(err error) bool {
+			return apierrors.IsConflict(err) || apierrors.IsNotFound(err)
+		}
+		backoff := wait.Backoff{Duration: 100 * time.Millisecond, Factor: 2, Steps: 5}
+		err := utilretry.OnError(backoff, retriable, func() error {
 			// Fetch the latest Gateway
 			var gw gwv1.Gateway
 			if err := s.mgr.GetClient().Get(ctx, gwnn, &gw); err != nil {
-				logger.Info("error getting gateway", "error", err, "gateway", gwnn.String())
+				if !apierrors.IsNotFound(err) {
+					logger.Info("error getting gateway", "error", err, "gateway", gwnn.String())
+				}
 				return err
 			}
 
@@ -559,7 +576,14 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 			return nil
 		})
 		if err != nil {
-			logger.Error("failed to update gateway status after retries", "error", err, "gateway", gwnn.String())
+			if apierrors.IsNotFound(err) {
+				// the gateway is gone; if it's recreated we'll retranslate it. Fall
+				// through so the sync is still recorded as completed, keeping the
+				// started/completed status-sync metrics balanced.
+				err = nil
+			} else {
+				logger.Error("failed to update gateway status after retries", "error", err, "gateway", gwnn.String())
+			}
 		}
 
 		// Record metrics for this gateway
@@ -645,9 +669,15 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 		retry.Attempts(5),
 		retry.Delay(100*time.Millisecond),
 		retry.DelayType(retry.BackOffDelay),
+		retry.LastErrorOnly(true),
 	)
 	if err != nil {
-		logger.Error("all attempts failed at updating listener set statuses", "error", err)
+		if apierrors.IsNotFound(err) {
+			// a listener set is gone; if it's recreated we'll retranslate it
+			logger.Debug("listener set not found during status sync", "error", err)
+		} else {
+			logger.Error("all attempts failed at updating listener set statuses", "error", err)
+		}
 	}
 	logger.Debug("synced listener sets status for listener set", "count", len(rm.ListenerSets))
 }
@@ -767,8 +797,28 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			logger.Debug("PatchPolicyStatus handler not registered for policy", "group_kind", gk, "resource", nsName) //nolint:sloglint // ignore PascalCase at start
 			continue
 		}
-		currentStatus, err := plugin.GetPolicyStatus(ctx, nsName)
+		// NotFound is retried: for a just-created policy the report can arrive before
+		// the object shows up in the informer cache, and nothing retriggers this sync
+		// if the write is dropped.
+		var currentStatus gwv1.PolicyStatus
+		err := retry.Do(
+			func() error {
+				var getErr error
+				currentStatus, getErr = plugin.GetPolicyStatus(ctx, nsName)
+				return getErr
+			},
+			retry.Attempts(5),
+			retry.Delay(100*time.Millisecond),
+			retry.DelayType(retry.BackOffDelay),
+			retry.LastErrorOnly(true),
+		)
 		if err != nil {
+			// Policy plugins surface a missing object as the pluginsdk.ErrNotFound
+			// sentinel rather than a k8s apierror, so check both.
+			if errors.Is(err, plug.ErrNotFound) || apierrors.IsNotFound(err) {
+				// the policy is gone; if it's recreated we'll retranslate it
+				continue
+			}
 			logger.Error("error getting policy status", "error", err, "resource_ref", nsName)
 			continue
 		}
@@ -813,11 +863,20 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			retry.Attempts(5),
 			retry.Delay(100*time.Millisecond),
 			retry.DelayType(retry.BackOffDelay),
+			retry.LastErrorOnly(true),
 		)
 		if err != nil {
-			logger.Error("error updating policy status", "error", err, "group_kind", gk, "resource_ref", nsName)
-			finishMetrics(errors.Join(err, statusErr))
-			continue
+			// Policy plugins surface a missing object as the pluginsdk.ErrNotFound
+			// sentinel rather than a k8s apierror, so check both.
+			if !errors.Is(err, plug.ErrNotFound) && !apierrors.IsNotFound(err) {
+				logger.Error("error updating policy status", "error", err, "group_kind", gk, "resource_ref", nsName)
+				finishMetrics(errors.Join(err, statusErr))
+				continue
+			}
+			// the policy is gone; if it's recreated we'll retranslate it. Fall through
+			// so the sync is still recorded as completed, keeping the started/completed
+			// status-sync metrics balanced.
+			statusErr = nil
 		}
 
 		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
@@ -843,11 +902,12 @@ func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportM
 			func() error {
 				backend := new(kgateway.Backend)
 				if err := s.mgr.GetClient().Get(ctx, nsName, backend); err != nil {
-					if apierrors.IsNotFound(err) {
-						// the backend is gone; if it's recreated we'll retranslate it
-						return nil
+					// NotFound is retried too: for a just-created Backend the report can
+					// arrive before the object shows up in the manager's informer cache,
+					// and nothing retriggers this sync if the write is dropped.
+					if !apierrors.IsNotFound(err) {
+						logger.Error("error getting backend", "error", err, "resource_ref", nsName)
 					}
-					logger.Error("error getting backend", "error", err, "resource_ref", nsName)
 					return err
 				}
 				status := rm.BuildBackendStatus(ctx, backend, backend.Status)
@@ -860,12 +920,16 @@ func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportM
 			retry.Attempts(5),
 			retry.Delay(100*time.Millisecond),
 			retry.DelayType(retry.BackOffDelay),
+			retry.LastErrorOnly(true),
 		)
-		if err != nil {
+		if err != nil && !apierrors.IsNotFound(err) {
 			logger.Error("all attempts failed at updating Backend status", "error", err, "backend", nsName)
 			finishMetrics(err)
 			continue
 		}
+		// A NotFound here means the backend is gone. If it's recreated we'll retranslate
+		// it. Fall through so the sync is still recorded as completed, keeping the
+		// started/completed status-sync metrics balanced.
 
 		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 			Namespace:    nsName.Namespace,

@@ -688,11 +688,13 @@ type Buffer struct {
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
 }
 
-// Compression configures HTTP gzip compression and decompression behavior.
+// Compression configures HTTP response compression and request decompression behavior.
 // +kubebuilder:validation:AtLeastOneOf=responseCompression;requestDecompression
 type Compression struct {
 	// ResponseCompression controls response compression to the downstream.
-	// If set, responses with the appropriate `Accept-Encoding` header with certain textual content types will be compressed using gzip.
+	// If set, responses with a matching `Accept-Encoding` header and certain textual content types will be compressed.
+	// The compression codecs default to gzip and can be selected via `responseCompression.libraries`,
+	// which Envoy negotiates against the request's `Accept-Encoding` header.
 	// The content-types that will be compressed are:
 	// - `application/javascript`
 	// - `application/json`
@@ -711,8 +713,35 @@ type Compression struct {
 	RequestDecompression *RequestDecompression `json:"requestDecompression,omitempty"`
 }
 
+// CompressionLibrary identifies the codec used to compress responses.
+// +kubebuilder:validation:Enum=Gzip;Brotli;Zstd
+type CompressionLibrary string
+
+const (
+	// CompressionGzip selects the gzip compressor.
+	CompressionGzip CompressionLibrary = "Gzip"
+	// CompressionBrotli selects the brotli compressor.
+	CompressionBrotli CompressionLibrary = "Brotli"
+	// CompressionZstd selects the zstd compressor.
+	CompressionZstd CompressionLibrary = "Zstd"
+)
+
 // ResponseCompression configures response compression.
 type ResponseCompression struct {
+	// Libraries lists the compression codecs to offer for responses.
+	// Envoy negotiates the codec based on the downstream request's `Accept-Encoding` header,
+	// picking the highest-quality codec the client accepts. On equal quality the client's
+	// ordering decides. If the client accepts none of the offered codecs, the response is
+	// sent uncompressed.
+	// Defaults to [Gzip].
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=3
+	// +kubebuilder:validation:XValidation:rule="self.all(x, self.exists_one(y, y == x))",message="libraries must not contain duplicates"
+	// +kubebuilder:default={Gzip}
+	Libraries []CompressionLibrary `json:"libraries,omitempty"`
+
 	// Disables compression.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`

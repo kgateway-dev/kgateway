@@ -324,7 +324,7 @@ func (s *setup) Start(ctx context.Context) error {
 	// Only create Envoy control plane if Envoy controller is enabled
 	var cache envoycache.SnapshotCache
 	if s.globalSettings.EnableEnvoy {
-		cache = NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher)
+		cache = NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds)
 	}
 
 	setupOpts := &controller.SetupOpts{

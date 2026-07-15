@@ -136,6 +136,9 @@ func convertTLSRouteV1ToV1Alpha2(in *gwv1.TLSRoute) *gwv1a2.TLSRoute {
 			Hostnames: convertTLSRouteHostnamesV1ToV1Alpha2(in.Spec.Hostnames),
 			Rules:     convertTLSRouteRulesV1ToV1Alpha2(in.Spec.Rules),
 		},
+		Status: gwv1a2.TLSRouteStatus{
+			RouteStatus: in.Status.RouteStatus,
+		},
 	}
 }
 

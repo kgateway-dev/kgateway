@@ -105,6 +105,7 @@ jobs:
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
             localstack: 'false'
+            ordered-ads: 'true'
           # May 29, 2026: ~4 minutes
           - cluster-name: 'cluster-seven'
             go-test-args: '-timeout=25m'
@@ -185,6 +186,13 @@ jobs:
           CLUSTER_NAME: ${{ matrix.test.cluster-name }}
           CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
         run: make cluster-load-extproc-server
+      - name: Enable ordered ADS soak
+        if: ${{ matrix.test.ordered-ads == 'true' }}
+        shell: bash
+        run: |
+          yq -i '.controller.extraEnv.KGW_ENABLE_ORDERED_ADS = "true"' \
+            test/e2e/tests/manifests/common-recommendations.yaml
+          echo "Set controller.extraEnv.KGW_ENABLE_ORDERED_ADS=true for ${{ matrix.test.cluster-name }}"
       - id: run-tests
         uses: ./.github/actions/kubernetes-e2e-tests
         env:
