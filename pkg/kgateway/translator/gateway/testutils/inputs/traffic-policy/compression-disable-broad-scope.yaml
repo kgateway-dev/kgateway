@@ -1,0 +1,71 @@
+# A Gateway-level policy enables compression with custom settings (a hashed compressor filter),
+# and a route-level policy disables compression on the route it covers. The route's disable must
+# turn off the hashed filter too, not just the base codec names, or the broader-scope enable would
+# leak compression onto the opted-out route.
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+---
+# Gateway-level compression with custom settings -> hashed compressor filter on the chain.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-compression
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: example-gateway
+  compression:
+    responseCompression:
+      libraries:
+        - Gzip
+      contentTypes:
+        - application/json
+---
+# Route-level disable must override the broader-scope enable, including the hashed filter.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-compression-off
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: example-route
+  compression:
+    responseCompression:
+      disable: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test
