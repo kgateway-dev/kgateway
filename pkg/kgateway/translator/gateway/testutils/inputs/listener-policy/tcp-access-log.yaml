@@ -1,0 +1,63 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-tcp-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: tcp
+    protocol: TCP
+    port: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tcp-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: test
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: example-tcp-route
+spec:
+  parentRefs:
+  - name: example-tcp-gateway
+  rules:
+  - backendRefs:
+    - name: tcp-svc
+      port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: tcp-access-log
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-tcp-gateway
+  default:
+    tcpSettings:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          jsonFormat:
+            start_time: "%START_TIME%"
+            client_addr: "%DOWNSTREAM_REMOTE_ADDRESS%"
+            upstream_host: "%UPSTREAM_HOST%"
+            upstream_cluster: "%UPSTREAM_CLUSTER%"
+            bytes_received: "%BYTES_RECEIVED%"
+            bytes_sent: "%BYTES_SENT%"
+            duration: "%DURATION%"
+            response_flags: "%RESPONSE_FLAGS%"
+        filter:
+          responseFlagFilter:
+            flags:
+            - UF
+            - UO
