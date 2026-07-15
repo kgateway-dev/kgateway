@@ -927,7 +927,7 @@ func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportM
 			finishMetrics(err)
 			continue
 		}
-		// A NotFound here means the backend is gone; if it's recreated we'll retranslate
+		// A NotFound here means the backend is gone. If it's recreated we'll retranslate
 		// it. Fall through so the sync is still recorded as completed, keeping the
 		// started/completed status-sync metrics balanced.
 
