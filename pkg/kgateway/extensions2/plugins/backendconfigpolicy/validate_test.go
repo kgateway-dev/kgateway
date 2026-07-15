@@ -96,6 +96,26 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "invalid TLS policy with failed signature algorithm validation in strict mode",
+			policyIR: &BackendConfigPolicyIR{
+				ct: time.Now(),
+				tlsConfig: &envoytlsv3.UpstreamTlsContext{
+					CommonTlsContext: &envoytlsv3.CommonTlsContext{
+						TlsParams: &envoytlsv3.TlsParameters{
+							SignatureAlgorithms: []string{"rsa_unknown_algo", "ecdsa_bogus"},
+						},
+					},
+				},
+			},
+			validator: &mockValidator{
+				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
+					return errors.New("Failed to initialize signature algorithms")
+				},
+			},
+			mode:    apisettings.ValidationStrict,
+			wantErr: true,
+		},
+		{
 			name: "invalid policy but validation skipped in standard mode",
 			policyIR: &BackendConfigPolicyIR{
 				ct: time.Now(),

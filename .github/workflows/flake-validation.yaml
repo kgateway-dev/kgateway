@@ -1,0 +1,158 @@
+name: Flake Validation
+
+# Run a single E2E test suite N times in parallel (no gotestsum retries) to
+# confirm a flake fix is solid before merging. Trigger manually and point it at
+# whichever suite is under scrutiny.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-regex:
+        description: "go -run regex for the test suite to validate (e.g. '^TestKgateway$$/^Backends$$')"
+        required: true
+        type: string
+      repetitions:
+        description: "Number of parallel cluster runs"
+        required: false
+        default: '5'
+        type: choice
+        options:
+          - '3'
+          - '5'
+          - '10'
+
+env:
+  VERSION: 'v1.0.0-ci1'
+  GITHUB_TOKEN: ${{ github.token }}
+  # Intentionally 0: retries hide flakes; we want raw pass/fail.
+  GO_TEST_RETRIES: 0
+  ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
+  CONTROLLER_CACHE_REF: ghcr.io/${{ github.repository_owner }}/kgateway-cache
+  SDS_CACHE_REF: ghcr.io/${{ github.repository_owner }}/sds-cache
+
+jobs:
+  build_e2e_images:
+    name: Build End-to-End Images
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+      - name: Restore envoyinit BuildKit cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: /tmp/.buildx-cache-envoyinit
+          key: ${{ runner.os }}-buildx-envoyinit-v1-${{ hashFiles('internal/envoy_modules/Cargo.lock', 'internal/envoy_modules/**/Cargo.toml', 'cmd/envoyinit/Dockerfile.tmpl', 'cmd/envoyinit/generate-dockerfile.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-envoyinit-v1-
+      - name: Build shared e2e images
+        env:
+          ENVOYINIT_LOCAL_CACHE_FROM: /tmp/.buildx-cache-envoyinit
+          ENVOYINIT_LOCAL_CACHE_TO: /tmp/.buildx-cache-envoyinit-new
+        run: |
+          mkdir -p /tmp/.buildx-cache-envoyinit
+          make save-e2e-shared-images
+      - name: Rotate envoyinit BuildKit cache
+        if: always()
+        run: |
+          if [ -d /tmp/.buildx-cache-envoyinit-new ]; then
+            rm -rf /tmp/.buildx-cache-envoyinit
+            mv /tmp/.buildx-cache-envoyinit-new /tmp/.buildx-cache-envoyinit
+          fi
+      - name: Upload shared e2e images
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-shared-images
+          path: _output/e2e-images/shared-images.tar
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  generate-matrix:
+    name: Generate repetition matrix
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - id: matrix
+        shell: bash
+        run: |
+          COUNT=${{ inputs.repetitions }}
+          echo "matrix=$(seq 1 "$COUNT" | jq -cs '.')" >> "$GITHUB_OUTPUT"
+
+  flake_validation:
+    name: Flake Validation (run ${{ matrix.run-number }})
+    needs: [build_e2e_images, generate-matrix]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        run-number: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+        version-files:
+          - file: './.github/workflows/.env/pr-tests/versions.env'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
+      - name: Dotenv Action
+        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        id: dotenv
+        with:
+          path: ${{ matrix.version-files.file }}
+          log-variables: true
+      - name: Download shared e2e images
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: e2e-shared-images
+          path: _output/e2e-images
+      - name: Load shared e2e images
+        shell: bash
+        run: docker load --input _output/e2e-images/shared-images.tar
+      - id: setup-kind-cluster
+        name: Setup KinD Cluster
+        if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
+        uses: ./.github/actions/setup-kind-cluster
+        env:
+          SKIP_DOCKER: "true"
+          LOAD_DOCKER_IMAGES: "true"
+        with:
+          cluster-name: flake-${{ matrix.run-number }}
+          kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          localstack: 'false'
+      - id: setup-k3d-cluster
+        name: Setup k3d Cluster
+        if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}
+        uses: ./.github/actions/setup-k3d-cluster
+        env:
+          SKIP_DOCKER: "true"
+          LOAD_DOCKER_IMAGES: "true"
+        with:
+          cluster-name: flake-${{ matrix.run-number }}
+          node-version: ${{ steps.dotenv.outputs.node_version }}
+          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          localstack: 'false'
+          github-token: ${{ github.token }}
+      - name: Load shared extproc server
+        shell: bash
+        env:
+          CLUSTER_NAME: flake-${{ matrix.run-number }}
+          CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
+        run: make cluster-load-extproc-server
+      - id: run-tests
+        uses: ./.github/actions/kubernetes-e2e-tests
+        env:
+          SKIP_EXTPROC_SERVER_SETUP: "true"
+        with:
+          cluster-name: flake-${{ matrix.run-number }}
+          cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
+          test-args: '-timeout=25m'
+          run-regex: ${{ inputs.run-regex }}
+          istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          matrix-label: flake-${{ matrix.run-number }}

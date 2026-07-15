@@ -1,0 +1,88 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: priority-groups-route
+  namespace: kgateway-base
+spec:
+  parentRefs:
+    - name: gateway
+  hostnames:
+    - "failover.example.com"
+  rules:
+    - backendRefs:
+        - name: priority-groups
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+# Group 0: the primary backend (shared nginx)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: primary-nginx
+  namespace: kgateway-base
+spec:
+  static:
+    hosts:
+      - host: nginx.nginx-shared.svc
+        port: 8080
+---
+# Group 1, member 1: failover backend (shared http-echo)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: failover-echo
+  namespace: kgateway-base
+spec:
+  static:
+    hosts:
+      - host: http-echo.http-echo.svc
+        port: 3000
+---
+# Group 1, member 2: failover backend (shared httpbin); shares group 1's
+# priority with failover-echo and is load balanced together with it
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: failover-httpbin
+  namespace: kgateway-base
+spec:
+  static:
+    hosts:
+      - host: httpbin.default.svc
+        port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: priority-groups
+  namespace: kgateway-base
+spec:
+  priorityGroups:
+    - backendRefs:
+        - name: primary-nginx
+    - backendRefs:
+        - name: failover-echo
+        - name: failover-httpbin
+---
+# Active health check on the priority-groups Backend. The referenced
+# backends' endpoints are merged into the cluster's load assignment, so the
+# health check probes them directly: a dead nginx marks priority 0 unhealthy
+# and Envoy spills traffic to priority 1.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: priority-groups-health
+  namespace: kgateway-base
+spec:
+  targetRefs:
+    - name: priority-groups
+      group: gateway.kgateway.dev
+      kind: Backend
+  healthCheck:
+    timeout: 1s
+    interval: 1s
+    unhealthyThreshold: 1
+    healthyThreshold: 1
+    http:
+      path: /
+---

@@ -28,6 +28,12 @@ const (
 	CurvePrime256v1 = "prime256v1"
 )
 
+// Signature algorithms constants for use with WithSignatureAlgorithms
+const (
+	SignatureAlgorithmRSAPSSRSAESHA256     = "rsa_pss_rsae_sha256"
+	SignatureAlgorithmECDSASECP256R1SHA256 = "ecdsa_secp256r1_sha256"
+)
+
 // Option represents an option for a curl request.
 type Option func(config *requestConfig)
 
@@ -318,6 +324,14 @@ func WithCiphers(cipherList string) Option {
 func WithCurves(curveList string) Option {
 	return func(config *requestConfig) {
 		config.curves = curveList
+	}
+}
+
+// WithSignatureAlgorithms returns the Option to configure signature algorithms to use in TLS certificate validation
+// https://curl.se/docs/manpage.html#--sigalgs
+func WithSignatureAlgorithms(algorithmList string) Option {
+	return func(config *requestConfig) {
+		config.signatureAlgorithms = algorithmList
 	}
 }
 

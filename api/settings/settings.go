@@ -210,6 +210,12 @@ type Settings struct {
 	// any of these label keys will be excluded from kgateway's endpoint discovery.
 	WorkloadEntriesExclusionLabels string `split_words:"true"`
 
+	// ServiceEntriesExclusionLabelSelectors is a JSON representation of a list of metav1.LabelSelector.
+	// ServiceEntries matching any of these selectors will be excluded from kgateway's ServiceEntry backend
+	// and endpoint discovery. Unlike WorkloadEntriesExclusionLabels, this uses full selectors so exclusions
+	// can match specific label values.
+	ServiceEntriesExclusionLabelSelectors string `split_words:"true" default:"[]"`
+
 	// XdsServiceHost is the host that serves xDS config.
 	// It overrides xdsServiceName if set.
 	XdsServiceHost string `split_words:"true"`
@@ -312,6 +318,14 @@ type Settings struct {
 
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
+
+	// EnableRouteSourceMetadata enables attaching dev.kgateway.route_source filter metadata
+	// to every Envoy route. This metadata includes the Kubernetes source object (kind, group,
+	// name, namespace, rule) for each route, which can be useful for debugging and observability.
+	// Disabled by default.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
+	EnableRouteSourceMetadata bool `split_words:"true" default:"false"`
 
 	// GatewayClassParametersRefs configures the GatewayParameters references to set on the default GatewayClasses.
 	// Format: JSON map where keys are GatewayClass names and values are objects with "name" (required),

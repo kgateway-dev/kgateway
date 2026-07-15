@@ -152,4 +152,68 @@ type RemoteJWKS struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="cacheDuration must be at least 1ms."
 	CacheDuration *metav1.Duration `json:"cacheDuration,omitempty"`
+
+	// AsyncFetch configures fetching the JWKS asynchronously and caching it on a timer,
+	// instead of fetching it on demand during request handling.
+	// +optional
+	AsyncFetch *JWKSAsyncFetch `json:"asyncFetch,omitempty"`
+
+	// RetryPolicy configures how the JWKS fetch is retried (with exponential backoff)
+	// when the remote JWKS server is unavailable.
+	// +optional
+	RetryPolicy *JWKSRetryPolicy `json:"retryPolicy,omitempty"`
+}
+
+// JWKSAsyncFetch configures asynchronous fetching of the remote JWKS.
+type JWKSAsyncFetch struct {
+	// FastListener controls when the listener is considered ready relative to the
+	// initial JWKS fetch.
+	// If false or unset, the listener waits for the first JWKS fetch to complete before
+	// it starts serving traffic, so requests are never validated against an empty key set.
+	// If true, the listener starts immediately and the first fetch happens in the background.
+	// +optional
+	FastListener *bool `json:"fastListener,omitempty"`
+
+	// FailedRefetchDuration is how long to wait before retrying the fetch after a failure.
+	// If unspecified, Envoy default of 1 second is used.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="failedRefetchDuration must be at least 1ms."
+	FailedRefetchDuration *metav1.Duration `json:"failedRefetchDuration,omitempty"`
+}
+
+// JWKSRetryPolicy configures retries with an exponential backoff for fetching
+// the remote JWKS when the server is unavailable.
+// Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-retrypolicy
+type JWKSRetryPolicy struct {
+	// NumRetries is the allowed number of retries when fetching the JWKS fails.
+	// Defaults to 1 if unset.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	NumRetries *int32 `json:"numRetries,omitempty"`
+
+	// BackOff configures the exponential backoff strategy between retries.
+	// If unset, the default base interval is 1000ms and the default maximum interval is
+	// 10 times the base interval.
+	// +optional
+	BackOff *JWKSRetryBackOff `json:"backOff,omitempty"`
+}
+
+// JWKSRetryBackOff configures an exponential backoff strategy.
+// Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/backoff.proto#envoy-v3-api-msg-config-core-v3-backoffstrategy
+// +kubebuilder:validation:XValidation:rule="!has(self.maxInterval) || duration(self.maxInterval) >= duration(self.baseInterval)",message="maxInterval must be greater than or equal to baseInterval"
+type JWKSRetryBackOff struct {
+	// BaseInterval is the base interval for the exponential backoff computation.
+	// It must be greater than zero and less than or equal to MaxInterval.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="baseInterval must be at least 1ms."
+	BaseInterval metav1.Duration `json:"baseInterval"`
+
+	// MaxInterval is the maximum interval between retries. If set, it must be greater than
+	// or equal to BaseInterval. Defaults to 10 times the BaseInterval.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="maxInterval must be at least 1ms."
+	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
 }

@@ -38,6 +38,7 @@ metadata:
   namespace: curl
   labels:
     app: curl
+    app.kubernetes.io/name: curl
     version: v1
 spec:
   terminationGracePeriodSeconds: 0
@@ -67,6 +68,7 @@ metadata:
   namespace: curl
   labels:
     app: curl-mtls
+    app.kubernetes.io/name: curl-mtls
     version: v1
 spec:
   terminationGracePeriodSeconds: 0

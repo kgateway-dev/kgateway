@@ -87,6 +87,7 @@ type TLSConfig struct {
 	Certificates          []TLSCertificate
 	CipherSuites          []string
 	EcdhCurves            []string
+	SignatureAlgorithms   []string
 	MinTLSVersion         *envoytlsv3.TlsParameters_TlsProtocol
 	MaxTLSVersion         *envoytlsv3.TlsParameters_TlsProtocol
 	VerifySubjectAltNames []string

@@ -388,6 +388,9 @@ spec:
         - mountPath: /var/run/secrets/tokens
           name: xds-token
           readOnly: true
+        - mountPath: /etc/podinfo
+          name: podinfo
+          readOnly: true
       serviceAccountName: gw
       terminationGracePeriodSeconds: 60
       volumes:
@@ -404,4 +407,10 @@ spec:
               audience: kgateway
               expirationSeconds: 43200
               path: xds-token
+      - downwardAPI:
+          items:
+          - fieldRef:
+              fieldPath: metadata.labels
+            path: labels
+        name: podinfo
 status: {}

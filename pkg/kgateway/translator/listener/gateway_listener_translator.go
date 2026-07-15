@@ -1,12 +1,12 @@
 package listener
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -16,6 +16,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/httproute"
@@ -646,7 +647,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 // attachment of a route that lost the oldest-wins selection.
 func rejectConflictingRoute(ri *query.RouteInfo, reporter reports.Reporter) {
 	condition := reports.RouteCondition{
-		Type:   gwv1.RouteConditionAccepted,
+		Type:   conditions.KgatewayConditionProgrammed,
 		Status: metav1.ConditionFalse,
 		Reason: gwv1.RouteConditionReason("Conflicted"),
 	}
@@ -792,7 +793,9 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		}
 
 		// ensure we sort the routes before creating the vhost
-		sort.Stable(vhostRoutes)
+		slices.SortStableFunc(vhostRoutes, func(a, b *routeutils.SortableRoute) int {
+			return a.CompareTo(b)
+		})
 
 		// ensure we don't create duplicate vhosts
 		vhostName := makeVhostName(ctx, parentName, host)
@@ -810,8 +813,8 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		})
 	}
 	// sort vhosts, to make sure the resource is stable
-	sort.Slice(virtualHosts, func(i, j int) bool {
-		return virtualHosts[i].Name < virtualHosts[j].Name
+	slices.SortFunc(virtualHosts, func(a, b *ir.VirtualHost) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 
 	// TODO: Make a similar change for other filter chains ???
@@ -864,7 +867,9 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		virtualHosts     = []*ir.VirtualHost{}
 	)
 	for host, vhostRoutes := range routesByHost {
-		sort.Stable(vhostRoutes)
+		slices.SortStableFunc(vhostRoutes, func(a, b *routeutils.SortableRoute) int {
+			return a.CompareTo(b)
+		})
 		vhostName := makeVhostName(ctx, hfc.gatewayListenerName, host)
 		if !virtualHostNames[vhostName] {
 			virtualHostNames[vhostName] = true
@@ -909,8 +914,8 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 			return nil, err
 		}
 	}
-	sort.Slice(virtualHosts, func(i, j int) bool {
-		return virtualHosts[i].Name < virtualHosts[j].Name
+	slices.SortFunc(virtualHosts, func(a, b *ir.VirtualHost) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 
 	return &ir.HttpFilterChainIR{

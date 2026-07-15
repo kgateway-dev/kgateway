@@ -2,7 +2,6 @@ package irtranslator
 
 import (
 	"fmt"
-	"sort"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -180,7 +179,7 @@ func convertCustomNetworkFilters(customNetworkFilters []ir.CustomEnvoyFilter) []
 }
 
 func sortNetworkFilters(filters filters.StagedNetworkFilterList) []*envoylistenerv3.Filter {
-	sort.Sort(filters)
+	filters.Sort()
 	var sortedFilters []*envoylistenerv3.Filter
 	for _, filter := range filters {
 		sortedFilters = append(sortedFilters, filter.Filter)
@@ -405,7 +404,7 @@ func convertCustomHttpFilters(customHttpFilters []ir.CustomEnvoyFilter) []filter
 }
 
 func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilter {
-	sort.Sort(filters)
+	filters.Sort()
 	var sortedFilters []*envoyhttp.HttpFilter
 	for _, filter := range filters {
 		if len(sortedFilters) > 0 && proto.Equal(sortedFilters[len(sortedFilters)-1], filter.Filter) {
@@ -418,7 +417,7 @@ func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilt
 }
 
 func sortUpstreamHttpFilters(filters filters.StagedUpstreamHttpFilterList) []*envoyhttp.HttpFilter {
-	sort.Sort(filters)
+	filters.Sort()
 	var sortedFilters []*envoyhttp.HttpFilter
 	for _, filter := range filters {
 		if len(sortedFilters) > 0 && proto.Equal(sortedFilters[len(sortedFilters)-1], filter.Filter) {
@@ -450,7 +449,7 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 		for _, route := range l.BackendRefs {
 			w := route.Weight
 			if w == 0 {
-				w = 1
+				continue
 			}
 			wc.Clusters = append(wc.GetClusters(), &envoytcp.TcpProxy_WeightedCluster_ClusterWeight{
 				Name:   route.ClusterName,
@@ -549,6 +548,9 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 	}
 	if len(tlsConfig.EcdhCurves) > 0 {
 		common.TlsParams.EcdhCurves = tlsConfig.EcdhCurves
+	}
+	if len(tlsConfig.SignatureAlgorithms) > 0 {
+		common.TlsParams.SignatureAlgorithms = tlsConfig.SignatureAlgorithms
 	}
 
 	// TODO: add verify subject alt names (validation context) https://github.com/kgateway-dev/kgateway/issues/12955

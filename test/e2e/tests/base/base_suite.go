@@ -70,6 +70,8 @@ var (
 	GwApiV1_4_0 = GwApiVersionMustParse("1.4.0")
 	// ListenerSet was promoted to gateway.networking.k8s.io/v1 in 1.5.0 and is available in the standard channel.
 	GwApiV1_5_0 = GwApiVersionMustParse("1.5.0")
+	// TCPRoutes was promoted to gateway.networking.k8s.io/v1 in 1.6.0 and is available in the standard channel.
+	GwApiV1_6_0 = GwApiVersionMustParse("1.6.0")
 
 	GwApiRequireRouteNames = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_2_0,
@@ -95,7 +97,8 @@ var (
 	}
 
 	GwApiRequireTcpRoutes = map[GwApiChannel]*GwApiVersion{
-		GwApiChannelExperimental: &GwApiV0_3_0,
+		GwApiChannelExperimental: &GwApiV1_6_0,
+		GwApiChannelStandard:     &GwApiV1_6_0,
 	}
 
 	GwApiRequireSessionPersistence = map[GwApiChannel]*GwApiVersion{

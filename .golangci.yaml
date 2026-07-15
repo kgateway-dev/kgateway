@@ -13,6 +13,7 @@ linters:
   enable:
     - bodyclose
     - copyloopvar
+    - depguard
     - forbidigo
     - ginkgolinter
     - gomodguard
@@ -63,6 +64,14 @@ linters:
               isFirstField: Ignore
               useProtobuf: Forbid
               usePatchStrategy: Ignore
+    depguard:
+      rules:
+        default:
+          files:
+            - "$all"
+          deny:
+            - pkg: "sort"
+              desc: "Should be replaced with slices package"
     forbidigo:
       forbid:
         - pattern: anypb.New

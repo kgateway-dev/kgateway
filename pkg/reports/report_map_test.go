@@ -307,3 +307,73 @@ func TestEqualReportMaps_NilReportPointers(t *testing.T) {
 	d.Gateways[testGatewayKey] = nil
 	assert.False(t, EqualReportMaps(c, d), "nil vs populated report must not be equal")
 }
+
+// TestMergeReportMaps_ListenerSetsSameGVK is a regression test for a shallow-merge
+// bug where copying the per-GVK ListenerSet map by reference caused a second proxy's
+// reports under the same GVK to clobber the first proxy's reports. MergeReportMaps
+// must merge ListenerSet reports per GVK so reports from every proxy survive, and the
+// merged map and reports must be owned copies fully decoupled from the per-proxy
+// inputs (no aliasing of the inner per-GVK map or of nested condition/listener slices).
+func TestMergeReportMaps_ListenerSetsSameGVK(t *testing.T) {
+	ls1 := types.NamespacedName{Namespace: "default", Name: "ls-1"}
+	ls2 := types.NamespacedName{Namespace: "default", Name: "ls-2"}
+	now := time.Now()
+
+	lsReport := func(gen int64) *ListenerSetReport {
+		return &ListenerSetReport{
+			observedGeneration: gen,
+			conditions: []metav1.Condition{
+				testCondition(string(gwv1.GatewayConditionAccepted), metav1.ConditionTrue, "Accepted", "accepted", gen, now),
+			},
+			listeners: map[string]*ListenerReport{
+				"http": {Status: gwv1.ListenerStatus{
+					Name: "http",
+					Conditions: []metav1.Condition{
+						testCondition(string(gwv1.ListenerConditionProgrammed), metav1.ConditionTrue, "Programmed", "programmed", gen, now),
+					},
+				}},
+			},
+		}
+	}
+
+	first := NewReportMap()
+	first.ListenerSets[wellknown.ListenerSetGVK] = map[types.NamespacedName]*ListenerSetReport{
+		ls1: lsReport(1),
+	}
+	second := NewReportMap()
+	second.ListenerSets[wellknown.ListenerSetGVK] = map[types.NamespacedName]*ListenerSetReport{
+		ls2: lsReport(2),
+	}
+
+	merged := MergeReportMaps(first, second)
+
+	// Both ListenerSet reports under the same GVK must survive the merge.
+	gvkReports := merged.ListenerSets[wellknown.ListenerSetGVK]
+	assert.Len(t, gvkReports, 2, "both ListenerSet reports under the same GVK must survive the merge")
+	assert.Contains(t, gvkReports, ls1)
+	assert.Contains(t, gvkReports, ls2)
+
+	// The merged reports must be owned copies, not aliases of the per-proxy reports.
+	assert.NotSame(t, first.ListenerSets[wellknown.ListenerSetGVK][ls1], gvkReports[ls1])
+	assert.NotSame(t, second.ListenerSets[wellknown.ListenerSetGVK][ls2], gvkReports[ls2])
+
+	// Mutating a per-proxy report's nested fields after the merge must not affect the
+	// merged report (guards against shallow-copied condition/listener slices).
+	firstLS := first.ListenerSets[wellknown.ListenerSetGVK][ls1]
+	firstLS.conditions[0].Reason = "MutatedReason"
+	firstLS.listeners["http"].Status.Conditions[0].Reason = "MutatedListenerReason"
+	assert.Equal(t, "Accepted", gvkReports[ls1].conditions[0].Reason,
+		"merged ListenerSet conditions must not alias per-proxy conditions")
+	assert.Equal(t, "Programmed", gvkReports[ls1].listeners["http"].Status.Conditions[0].Reason,
+		"merged listener conditions must not alias per-proxy listener conditions")
+
+	// Mutating a per-proxy per-GVK inner map after the merge must not affect the merged
+	// map (guards against aliasing the inner map by reference).
+	first.ListenerSets[wellknown.ListenerSetGVK][types.NamespacedName{Namespace: "default", Name: "ls-3"}] = lsReport(3)
+	assert.Len(t, gvkReports, 2, "merged per-GVK map must not alias the per-proxy inner map")
+
+	// Conversely, mutating the merged reports must not affect the per-proxy reports.
+	gvkReports[ls2].conditions[0].Reason = "MergedMutation"
+	assert.Equal(t, "Accepted", second.ListenerSets[wellknown.ListenerSetGVK][ls2].conditions[0].Reason,
+		"per-proxy ListenerSet conditions must not alias merged conditions")
+}

@@ -86,14 +86,6 @@ type GatewayXdsResources struct {
 
 	// Secrets are items in the SDS response payload.
 	Secrets envoycache.Resources
-
-	// ReferencedClusters is the set of cluster names referenced by Routes and
-	// Listeners. It is derived from the proto contents, so it is a pure function
-	// of Routes.Version and Listeners.Version (already covered by Equals). Used
-	// by per-client snapshotting to avoid redundantly walking protos for every
-	// connected client on each update.
-	// +noKrtEquals
-	ReferencedClusters map[string]struct{}
 }
 
 func (r GatewayXdsResources) ResourceName() string {
@@ -129,20 +121,17 @@ func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 
 func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *GatewayXdsResources {
 	c, ch := sliceToResourcesHash(xdsSnap.ExtraClusters)
-	routes := sliceToResources(xdsSnap.Routes)
-	listeners := sliceToResources(xdsSnap.Listeners)
 	return &GatewayXdsResources{
 		NamespacedName: types.NamespacedName{
 			Namespace: gw.Obj.GetNamespace(),
 			Name:      gw.Obj.GetName(),
 		},
-		reports:            r,
-		ClustersHash:       ch,
-		Clusters:           c,
-		Routes:             routes,
-		Listeners:          listeners,
-		Secrets:            sliceToResources(xdsSnap.Secrets),
-		ReferencedClusters: collectReferencedClusters(routes, listeners),
+		reports:      r,
+		ClustersHash: ch,
+		Clusters:     c,
+		Routes:       sliceToResources(xdsSnap.Routes),
+		Listeners:    sliceToResources(xdsSnap.Listeners),
+		Secrets:      sliceToResources(xdsSnap.Secrets),
 	}
 }
 
@@ -414,14 +403,13 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				s.proxyTranslator.syncXds(ctx, snapWrap)
 			} else {
 				// Intentional no-op. When snapshotPerClient returns nil (its
-				// readiness guards deferred publishing), KRT surfaces a Delete
-				// for this UCC. Clearing the xDS cache here would withdraw
-				// Envoy's last coherent Snapshot for the duration of the defer,
-				// causing 500/NC on valid routes. Leaving the cache alone means
-				// Envoy keeps serving its previously-published config until a
-				// new coherent snapshot overwrites it — the "retain last good"
-				// behavior that prevents unresolvable cluster references from
-				// stranding live traffic.
+				// per-client inputs weren't derived yet, so it deferred
+				// publishing), KRT surfaces a Delete for this UCC. Clearing
+				// the xDS cache here would withdraw Envoy's last coherent
+				// Snapshot for the duration of the defer, causing 500/NC on
+				// valid routes. Leaving the cache alone means Envoy keeps
+				// serving its previously-published config until a new
+				// snapshot overwrites it — "retain last good".
 				//
 				// Known leak: this branch also fires when a UCC truly goes
 				// away (Envoy pod replaced on rollout, scaled down, etc.),
