@@ -440,6 +440,27 @@ spec:
 			wantErrors: []string{"autoHostRewrite can only be used when targeting HTTPRoute resources"},
 		},
 		{
+			name: "TrafficPolicy: policy with autoHostRewrite rejects a Gateway targetSelectors alongside a valid targetRefs",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-ahr-mixed-targets
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    matchLabels:
+      gateway: example
+  autoHostRewrite: true
+`,
+			wantErrors: []string{"autoHostRewrite can only be used when targeting HTTPRoute resources"},
+		},
+		{
 			name: "TrafficPolicy: policy with urlRewrite can only target HTTPRoute",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -457,6 +478,52 @@ spec:
       substitution: "/bar"
 `,
 			wantErrors: []string{"urlRewrite can only be used when targeting HTTPRoute resources"},
+		},
+		{
+			name: "TrafficPolicy: policy with urlRewrite rejects a Gateway targetRefs alongside a valid targetSelectors",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-url-rewrite-mixed-targets
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    matchLabels:
+      route: example
+  urlRewrite:
+    pathRegex:
+      pattern: "^/foo"
+      substitution: "/bar"
+`,
+			wantErrors: []string{"urlRewrite can only be used when targeting HTTPRoute resources"},
+		},
+		{
+			name: "TrafficPolicy: policy with tracing rejects a Gateway targetSelectors alongside a valid targetRefs",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-tracing-mixed-targets
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: GRPCRoute
+    name: test-grpc-route
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    matchLabels:
+      gateway: example
+  tracing:
+    clientSampling: 100
+`,
+			wantErrors: []string{"tracing can only be used when targeting HTTPRoute or GRPCRoute resources"},
 		},
 		{
 			name: "TrafficPolicy: policy with statPrefix can only target HTTPRoute or GRPCRoute",
