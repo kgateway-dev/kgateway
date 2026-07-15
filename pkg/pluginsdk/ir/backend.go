@@ -128,14 +128,13 @@ type BackendObjectIR struct {
 	// cannot mutate cluster-name-relevant fields after construction.
 	objectSource ObjectSource
 	// optional port for if ObjectSource is a service that can have multiple ports.
-	// +krtEqualsTodo propagate backend port differences in equality
+	// Encoded into resourceName and clusterName, so equality is covered by those comparisons.
+	// +noKrtEquals
 	port int32
 	// optional port name for the backend (e.g., "https", "http"). Used for sectionName based
 	// policy attachment (e.g., BackendTLSPolicy targeting a specific port by name).
-	// +krtEqualsTodo propagate backend port name differences in equality
 	PortName string
 	// optional application protocol for the backend. Can be used to enable http2.
-	// +krtEqualsTodo include AppProtocol in backend equality
 	AppProtocol AppProtocol
 
 	// prefix the cluster name with this string to distinguish it from other GVKs.
@@ -144,7 +143,6 @@ type BackendObjectIR struct {
 	// +noKrtEquals gvPrefix is compared in ClusterName()
 	gvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
-	// +krtEqualsTodo evaluate canonical hostname equality
 	CanonicalHostname string
 	// original object. Opaque to us other than metadata.
 	Obj metav1.Object
@@ -154,7 +152,6 @@ type BackendObjectIR struct {
 	ObjIr interface{ Equals(any) bool }
 
 	// Aliases that we can key by when referencing this backend from policy or routes.
-	// +krtEqualsTodo ensure alias list is compared
 	Aliases []ObjectSource
 
 	// ExtraKey allows ensuring uniqueness in the KRT key
@@ -162,15 +159,15 @@ type BackendObjectIR struct {
 	// TODO this is a hack for ServiceEntry to workaround only having one
 	// CanonicalHostname. We should see if it's possible to have multiple
 	// CanonicalHostnames.
-	// +krtEqualsTodo determine equality semantics for extra key
+	// Encoded into resourceName and clusterName, so equality is covered by those comparisons.
+	// +noKrtEquals
 	extraKey string
 
-	// RequiresPolicyStatus indicates if this Backend may require updating status of an attached policy
-	// This is essentially a precomputation of whether there are any 'AttachedPolicies' that are objects
-	// +krtEqualsTodo compare RequiresPolicyStatus or document ignoring
+	// RequiresPolicyStatus indicates if this Backend may require updating status of an attached policy.
+	// This is a precomputation derived from AttachedPolicies, which is already compared in Equals.
+	// +noKrtEquals
 	RequiresPolicyStatus bool
 
-	// +krtEqualsTodo include attached policies in equality diff
 	AttachedPolicies AttachedPolicies
 
 	// Errors is a list of errors, if any, encountered while constructing this BackendObject
@@ -237,6 +234,21 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	if !c.objectSource.Equals(in.objectSource) {
 		return false
 	}
+	if c.resourceName != in.resourceName {
+		return false
+	}
+	if c.PortName != in.PortName {
+		return false
+	}
+	if c.AppProtocol != in.AppProtocol {
+		return false
+	}
+	if c.CanonicalHostname != in.CanonicalHostname {
+		return false
+	}
+	if !slices.EqualFunc(c.Aliases, in.Aliases, ObjectSource.Equals) {
+		return false
+	}
 	if !versionEquals(c.Obj, in.Obj) {
 		return false
 	}
@@ -244,9 +256,6 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		return false
 	}
 	if !c.AttachedPolicies.Equals(in.AttachedPolicies) {
-		return false
-	}
-	if c.resourceName != in.resourceName {
 		return false
 	}
 	if c.ClusterName() != in.ClusterName() {
