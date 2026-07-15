@@ -142,8 +142,6 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
-            - name: KGW_ENABLE_ENVOY
-              value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
             {{- if .Values.waypoint.enabled }}
