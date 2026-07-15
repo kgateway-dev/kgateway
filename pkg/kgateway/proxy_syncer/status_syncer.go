@@ -577,11 +577,13 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 		})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				// the gateway is gone; if it's recreated we'll retranslate it
-				finishMetrics(nil)
-				continue
+				// the gateway is gone; if it's recreated we'll retranslate it. Fall
+				// through so the sync is still recorded as completed, keeping the
+				// started/completed status-sync metrics balanced.
+				err = nil
+			} else {
+				logger.Error("failed to update gateway status after retries", "error", err, "gateway", gwnn.String())
 			}
-			logger.Error("failed to update gateway status after retries", "error", err, "gateway", gwnn.String())
 		}
 
 		// Record metrics for this gateway
@@ -811,7 +813,9 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			retry.LastErrorOnly(true),
 		)
 		if err != nil {
-			if apierrors.IsNotFound(err) {
+			// Policy plugins surface a missing object as the pluginsdk.ErrNotFound
+			// sentinel rather than a k8s apierror, so check both.
+			if errors.Is(err, plug.ErrNotFound) || apierrors.IsNotFound(err) {
 				// the policy is gone; if it's recreated we'll retranslate it
 				continue
 			}
@@ -862,14 +866,17 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			retry.LastErrorOnly(true),
 		)
 		if err != nil {
-			if apierrors.IsNotFound(err) {
-				// the policy is gone; if it's recreated we'll retranslate it
-				finishMetrics(nil)
+			// Policy plugins surface a missing object as the pluginsdk.ErrNotFound
+			// sentinel rather than a k8s apierror, so check both.
+			if !errors.Is(err, plug.ErrNotFound) && !apierrors.IsNotFound(err) {
+				logger.Error("error updating policy status", "error", err, "group_kind", gk, "resource_ref", nsName)
+				finishMetrics(errors.Join(err, statusErr))
 				continue
 			}
-			logger.Error("error updating policy status", "error", err, "group_kind", gk, "resource_ref", nsName)
-			finishMetrics(errors.Join(err, statusErr))
-			continue
+			// the policy is gone; if it's recreated we'll retranslate it. Fall through
+			// so the sync is still recorded as completed, keeping the started/completed
+			// status-sync metrics balanced.
+			statusErr = nil
 		}
 
 		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
@@ -915,16 +922,14 @@ func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportM
 			retry.DelayType(retry.BackOffDelay),
 			retry.LastErrorOnly(true),
 		)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				// the backend is gone; if it's recreated we'll retranslate it
-				finishMetrics(nil)
-				continue
-			}
+		if err != nil && !apierrors.IsNotFound(err) {
 			logger.Error("all attempts failed at updating Backend status", "error", err, "backend", nsName)
 			finishMetrics(err)
 			continue
 		}
+		// A NotFound here means the backend is gone; if it's recreated we'll retranslate
+		// it. Fall through so the sync is still recorded as completed, keeping the
+		// started/completed status-sync metrics balanced.
 
 		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 			Namespace:    nsName.Namespace,
