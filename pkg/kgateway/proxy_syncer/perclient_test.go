@@ -5,28 +5,16 @@ import (
 	"testing"
 	"time"
 
-	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoygrpcaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-	envoyextauthzv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
-	envoyjwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
-	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/onsi/gomega"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -156,185 +144,11 @@ func TestFilterEndpointResourcesForStaticClusters_MixedStaticAndNonStatic(t *tes
 	}
 }
 
-func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T) {
-	g := gomega.NewWithT(t)
-
-	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
-	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
-
-	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
-	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
-		{
-			Name: "route-config",
-			VirtualHosts: []*envoyroutev3.VirtualHost{
-				{
-					Name:    "vhost",
-					Domains: []string{"*"},
-					Routes: []*envoyroutev3.Route{
-						{
-							Name: "weighted-route",
-							Action: &envoyroutev3.Route_Route{
-								Route: &envoyroutev3.RouteAction{
-									ClusterSpecifier: &envoyroutev3.RouteAction_WeightedClusters{
-										WeightedClusters: &envoyroutev3.WeightedCluster{
-											Clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{
-												{Name: "cluster-a", Weight: wrapperspb.UInt32(1)},
-												{Name: "cluster-b", Weight: wrapperspb.UInt32(1)},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes:             routes,
-		Listeners:          listeners,
-		ReferencedClusters: collectReferencedClusters(routes, listeners),
-	}})
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
-		{
-			Client:         ucc,
-			Name:           "cluster-a",
-			Cluster:        &envoyclusterv3.Cluster{Name: "cluster-a"},
-			ClusterVersion: 1,
-		},
-	})
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
-
-	snapshots := snapshotPerClient(
-		krtutil.KrtOptions{},
-		uccs,
-		mostXdsSnapshots,
-		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
-				return []string{ep.Client.ResourceName()}
-			}),
-		},
-		PerClientEnvoyClusters{
-			clusters: clusterCol,
-			index: krtpkg.UnnamedIndex(clusterCol, func(cluster uccWithCluster) []string {
-				return []string{cluster.Client.ResourceName()}
-			}),
-		},
-	)
-
-	g.Consistently(func() int {
-		return len(snapshots.List())
-	}, 200*time.Millisecond, 20*time.Millisecond).Should(gomega.Equal(0))
-
-	clusterCol.UpdateObject(uccWithCluster{
-		Client:         ucc,
-		Name:           "cluster-b",
-		Cluster:        &envoyclusterv3.Cluster{Name: "cluster-b"},
-		ClusterVersion: 2,
-	})
-
-	g.Eventually(func() int {
-		return len(snapshots.List())
-	}, time.Second, 20*time.Millisecond).Should(gomega.Equal(1))
-
-	snap := snapshots.List()[0].snap
-	g.Expect(snap.Resources[envoycachetypes.Cluster].Items).To(gomega.HaveKey("cluster-a"))
-	g.Expect(snap.Resources[envoycachetypes.Cluster].Items).To(gomega.HaveKey("cluster-b"))
-}
-
-func TestSnapshotPerClientDefersUntilReferencedEDSClustersHaveEndpoints(t *testing.T) {
-	g := gomega.NewWithT(t)
-
-	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
-	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
-
-	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
-	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
-		{
-			Name: "route-config",
-			VirtualHosts: []*envoyroutev3.VirtualHost{
-				{
-					Name:    "vhost",
-					Domains: []string{"*"},
-					Routes: []*envoyroutev3.Route{
-						{
-							Name: "eds-route",
-							Action: &envoyroutev3.Route_Route{
-								Route: &envoyroutev3.RouteAction{
-									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-a"},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes:             routes,
-		Listeners:          listeners,
-		ReferencedClusters: collectReferencedClusters(routes, listeners),
-	}})
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
-		{
-			Client: ucc,
-			Name:   "cluster-a",
-			Cluster: &envoyclusterv3.Cluster{
-				Name: "cluster-a",
-				ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
-					Type: envoyclusterv3.Cluster_EDS,
-				},
-			},
-			ClusterVersion: 1,
-		},
-	})
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
-
-	snapshots := snapshotPerClient(
-		krtutil.KrtOptions{},
-		uccs,
-		mostXdsSnapshots,
-		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
-				return []string{ep.Client.ResourceName()}
-			}),
-		},
-		PerClientEnvoyClusters{
-			clusters: clusterCol,
-			index: krtpkg.UnnamedIndex(clusterCol, func(cluster uccWithCluster) []string {
-				return []string{cluster.Client.ResourceName()}
-			}),
-		},
-	)
-
-	g.Consistently(func() int {
-		return len(snapshots.List())
-	}, 200*time.Millisecond, 20*time.Millisecond).Should(gomega.Equal(0))
-
-	endpointCol.UpdateObject(UccWithEndpoints{
-		Client: ucc,
-		Endpoints: &envoyendpointv3.ClusterLoadAssignment{
-			ClusterName: "cluster-a",
-		},
-		EndpointsHash: 3,
-		endpointsName: "cluster-a",
-	})
-
-	g.Eventually(func() int {
-		return len(snapshots.List())
-	}, time.Second, 20*time.Millisecond).Should(gomega.Equal(1))
-
-	snap := snapshots.List()[0].snap
-	g.Expect(snap.Resources[envoycachetypes.Endpoint].Items).To(gomega.HaveKey("cluster-a"))
-}
-
+// TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored pins the
+// fail-closed behavior for errored clusters: a cluster whose backend
+// translation failed is excluded from the CDS payload (routes to it get
+// 500/NC in Envoy) but does not prevent the rest of the snapshot from
+// publishing.
 func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -373,10 +187,9 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 	})
 	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
 	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes:             routes,
-		Listeners:          listeners,
-		ReferencedClusters: collectReferencedClusters(routes, listeners),
+		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:         routes,
+		Listeners:      listeners,
 	}})
 	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
 		{
@@ -422,150 +235,11 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 	g.Expect(snap.snap.Resources[envoycachetypes.Cluster].Items).ToNot(gomega.HaveKey("cluster-b"))
 }
 
-// TestCollectReferencedClusters_ExcludesAncillaryReferences verifies that
-// cluster names reachable only through ancillary / control-plane
-// typed_config (access-log GrpcService, JWT jwks HttpUri, etc.) are
-// deliberately NOT treated as gated dataplane targets. The plugin that
-// emits these filters is responsible for also emitting the referenced
-// cluster in the same per-gateway snapshot's ExtraClusters, so there is
-// no reconnect race between them. Gating on ancillary references would
-// starve the gateway forever on a plugin bug — which is not what this
-// readiness guard is for.
-func TestCollectReferencedClusters_ExcludesAncillaryReferences(t *testing.T) {
-	g := gomega.NewWithT(t)
-
-	hcm := &envoyhttpv3.HttpConnectionManager{
-		AccessLog: []*envoyaccesslogv3.AccessLog{
-			{
-				Name: "envoy.access_loggers.http_grpc",
-				ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
-					TypedConfig: mustMessageToAny(t, &envoygrpcaccesslogv3.HttpGrpcAccessLogConfig{
-						CommonConfig: &envoygrpcaccesslogv3.CommonGrpcAccessLogConfig{
-							TransportApiVersion: envoycorev3.ApiVersion_V3,
-							LogName:             "grpc-log",
-							GrpcService: &envoycorev3.GrpcService{
-								TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
-									EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
-										ClusterName: "access-log-cluster",
-									},
-								},
-							},
-						},
-					}),
-				},
-			},
-		},
-		HttpFilters: []*envoyhttpv3.HttpFilter{
-			{
-				Name: "envoy.filters.http.jwt_authn",
-				ConfigType: &envoyhttpv3.HttpFilter_TypedConfig{
-					TypedConfig: mustMessageToAny(t, &envoyjwtauthnv3.JwtAuthentication{
-						Providers: map[string]*envoyjwtauthnv3.JwtProvider{
-							"provider": {
-								JwksSourceSpecifier: &envoyjwtauthnv3.JwtProvider_RemoteJwks{
-									RemoteJwks: &envoyjwtauthnv3.RemoteJwks{
-										HttpUri: &envoycorev3.HttpUri{
-											Uri: "https://example.com/jwks",
-											HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
-												Cluster: "jwks-cluster",
-											},
-											Timeout: durationpb.New(time.Second),
-										},
-									},
-								},
-							},
-						},
-					}),
-				},
-			},
-		},
-	}
-
-	listeners := sliceToResources([]*envoylistenerv3.Listener{
-		{
-			Name: "listener",
-			FilterChains: []*envoylistenerv3.FilterChain{
-				{
-					Filters: []*envoylistenerv3.Filter{
-						{
-							Name: envoywellknown.HTTPConnectionManager,
-							ConfigType: &envoylistenerv3.Filter_TypedConfig{
-								TypedConfig: mustMessageToAny(t, hcm),
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-
-	referenced := collectReferencedClusters(envoycache.Resources{}, listeners)
-
-	g.Expect(referenced).ToNot(gomega.HaveKey("access-log-cluster"),
-		"ancillary access-log cluster must not be treated as a gated dataplane target")
-	g.Expect(referenced).ToNot(gomega.HaveKey("jwks-cluster"),
-		"ancillary JWT jwks cluster must not be treated as a gated dataplane target")
-}
-
-// TestFindMissingReferencedClusters_HandlesScalarValueMaps verifies that the
-// protoreflect walker does not panic when it encounters a proto field of type
-// map<string, scalar> (e.g. map<string, string>). Without the IsMap/IsList
-// guard on the fall-through branch, such fields fall through to a code path
-// that calls v.Message() on a Map-kind Value and panics with
-// "type mismatch: cannot convert map to message".
-func TestFindMissingReferencedClusters_HandlesScalarValueMaps(t *testing.T) {
-	g := gomega.NewWithT(t)
-
-	hcm := &envoyhttpv3.HttpConnectionManager{
-		HttpFilters: []*envoyhttpv3.HttpFilter{
-			{
-				Name: "envoy.filters.http.ext_authz",
-				ConfigType: &envoyhttpv3.HttpFilter_TypedConfig{
-					TypedConfig: mustMessageToAny(t, &envoyextauthzv3.ExtAuthzPerRoute{
-						Override: &envoyextauthzv3.ExtAuthzPerRoute_CheckSettings{
-							CheckSettings: &envoyextauthzv3.CheckSettings{
-								ContextExtensions: map[string]string{
-									"key1": "value1",
-									"key2": "value2",
-								},
-							},
-						},
-					}),
-				},
-			},
-		},
-	}
-
-	listeners := sliceToResources([]*envoylistenerv3.Listener{
-		{
-			Name: "listener",
-			FilterChains: []*envoylistenerv3.FilterChain{
-				{
-					Filters: []*envoylistenerv3.Filter{
-						{
-							Name: envoywellknown.HTTPConnectionManager,
-							ConfigType: &envoylistenerv3.Filter_TypedConfig{
-								TypedConfig: mustMessageToAny(t, hcm),
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-
-	g.Expect(func() {
-		referenced := collectReferencedClusters(envoycache.Resources{}, listeners)
-		findMissingReferencedClusters(referenced, nil, nil)
-	}).ToNot(gomega.Panic())
-}
-
 // TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef verifies that
 // a user BackendRef typo — e.g. an HTTPRoute pointing at a Service that does
-// not exist — does not starve the readiness gate on startup. IR-time
+// not exist — does not prevent the snapshot from publishing. IR-time
 // resolution substitutes wellknown.BlackholeClusterName for the unresolved
-// target, and the gate explicitly skips blackhole so valid routes still
-// reach Envoy.
+// target, so valid routes still reach Envoy.
 func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -606,10 +280,9 @@ func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) 
 	})
 	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
 	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes:             routes,
-		Listeners:          listeners,
-		ReferencedClusters: collectReferencedClusters(routes, listeners),
+		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:         routes,
+		Listeners:      listeners,
 	}})
 
 	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
@@ -650,10 +323,9 @@ func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) 
 // verifies that a BackendRef pointing at a nonexistent Service arriving after
 // the control plane is already serving does not cause the per-client snapshot
 // to be withdrawn. IR translation substitutes blackhole for the unresolved
-// target, which the gate skips, so the snapshot re-publishes with the new
-// route set rather than being withdrawn. The existing good route keeps
-// flowing; the typo'd route blackholes in Envoy — no 500/NC for valid
-// traffic.
+// target, so the snapshot re-publishes with the new route set rather than
+// being withdrawn. The existing good route keeps flowing; the typo'd route
+// blackholes in Envoy — no 500/NC for valid traffic.
 func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRuntime(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -680,10 +352,9 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 	})
 	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
 	initial := GatewayXdsResources{
-		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes:             goodRoutes,
-		Listeners:          listeners,
-		ReferencedClusters: collectReferencedClusters(goodRoutes, listeners),
+		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:         goodRoutes,
+		Listeners:      listeners,
 	}
 	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
@@ -750,7 +421,6 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 	})
 	updated := initial
 	updated.Routes = badRoutes
-	updated.ReferencedClusters = collectReferencedClusters(badRoutes, listeners)
 	mostXdsSnapshots.UpdateObject(updated)
 
 	g.Consistently(func() int {
@@ -759,104 +429,10 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 		"snapshot must stay published after an unresolvable BackendRef arrives; withdrawing it strands Envoy on restart")
 }
 
-// TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly pins the
-// defensive behaviour of snapshotPerClient when the per-client clusters
-// collection is empty for a UCC. In production this is hard to reach because
-// finalBackends emits a BackendObjectIR for every Service port in the
-// cluster, so the per-client clusters collection is non-empty even for a
-// gateway whose HTTPRoutes only use RequestRedirect or DirectResponse. The
-// test constructs that condition synthetically — zero entries in the cluster
-// collection and zero referenced clusters in the route config — to exercise
-// the branch that treats a nil clusterSnapshot entry as "zero clusters"
-// rather than "not yet computed". Without that branch the snapshot would
-// stall indefinitely whenever the path is reached (controller starting
-// before Service informers sync, or a deployment whose only backends are
-// non-K8s and all fail translation); with it, publishing proceeds because
-// the referenced-cluster gate has nothing to wait for.
-func TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly(t *testing.T) {
-	g := gomega.NewWithT(t)
-
-	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
-	ucc := ir.NewUniqlyConnectedClient(role, "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection[ir.UniqlyConnectedClient](nil, []ir.UniqlyConnectedClient{ucc})
-
-	// Routes with only a Redirect action — no cluster references.
-	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
-		{
-			Name: "route-config",
-			VirtualHosts: []*envoyroutev3.VirtualHost{{
-				Name:    "vhost",
-				Domains: []string{"*"},
-				Routes: []*envoyroutev3.Route{{
-					Name: "redirect-only",
-					Action: &envoyroutev3.Route_Redirect{
-						Redirect: &envoyroutev3.RedirectAction{
-							SchemeRewriteSpecifier: &envoyroutev3.RedirectAction_HttpsRedirect{HttpsRedirect: true},
-						},
-					},
-				}},
-			}},
-		},
-	})
-	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
-	referencedClusters := collectReferencedClusters(routes, listeners)
-	g.Expect(referencedClusters).To(gomega.BeEmpty(), "redirect-only routes must not produce cluster references")
-
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes:             routes,
-		Listeners:          listeners,
-		ReferencedClusters: referencedClusters,
-	}})
-
-	// No per-client clusters at all for this UCC — simulates a deployment with
-	// only redirect-only routes and no Service-backed backends contributing
-	// clusters. clusterSnapshot's collection handler returns nil for this UCC.
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, nil)
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
-
-	snapshots := snapshotPerClient(
-		krtutil.KrtOptions{},
-		uccs,
-		mostXdsSnapshots,
-		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
-				return []string{ep.Client.ResourceName()}
-			}),
-		},
-		PerClientEnvoyClusters{
-			clusters: clusterCol,
-			index: krtpkg.UnnamedIndex(clusterCol, func(cluster uccWithCluster) []string {
-				return []string{cluster.Client.ResourceName()}
-			}),
-		},
-	)
-
-	g.Eventually(func() int {
-		return len(snapshots.List())
-	}, 2*time.Second, 20*time.Millisecond).Should(gomega.Equal(1),
-		"a snapshot must publish even when there are zero per-client clusters and zero referenced clusters")
-
-	snap := snapshots.List()[0].snap
-	g.Expect(snap.Resources[envoycachetypes.Cluster].Items).To(gomega.BeEmpty())
-	g.Expect(snap.Resources[envoycachetypes.Listener].Items).To(gomega.HaveKey("listener"))
-}
-
 func mapKeys[M ~map[K]V, K comparable, V any](m M) []K {
 	keys := make([]K, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
 	}
 	return keys
-}
-
-func mustMessageToAny(t *testing.T, msg proto.Message) *anypb.Any {
-	t.Helper()
-
-	out, err := utils.MessageToAny(msg)
-	if err != nil {
-		t.Fatalf("marshal Any: %v", err)
-	}
-	return out
 }

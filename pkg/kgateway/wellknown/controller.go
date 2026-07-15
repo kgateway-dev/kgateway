@@ -15,6 +15,9 @@ const (
 	// parametersRef to the GatewayClass.
 	DefaultGatewayParametersName = "kgateway"
 
+	// ManagedByLabel is the label key for the tool being used to manage the operation of an application
+	ManagedByLabel = "app.kubernetes.io/managed-by"
+
 	// GatewayNameLabel is a label on GW pods to indicate the name of the gateway
 	// they are associated with. For gateway names > 63 chars, this contains a
 	// truncated name with hash suffix. Use GatewayNameAnnotation for the full name.
@@ -29,4 +32,7 @@ const (
 
 	// LeaderElectionID is the name of the lease that leader election will use for holding the leader lock.
 	LeaderElectionID = "kgateway-envoy"
+
+	// DefaultManagedByValue represents the default value of the app.kubernetes.io/managed-by label
+	DefaultManagedByValue = "kgateway"
 )
