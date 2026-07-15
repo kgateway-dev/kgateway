@@ -226,9 +226,11 @@ jobs:
                 && "${GW_API_CHANNEL}" == "experimental" && "${VERSIONS_LABEL}" == "min" ]]; then
             run=false
           fi
-          echo "run=${run}" >> "${GITHUB_OUTPUT}"
-          echo "bypass_version_check=${bypass_version_check}" >> "${GITHUB_OUTPUT}"
-          echo "run_regex=${run_regex}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "run=${run}"
+            echo "bypass_version_check=${bypass_version_check}"
+            echo "run_regex=${run_regex}"
+          } >> "${GITHUB_OUTPUT}"
           echo "ref=${REF} gw-api=${GW_API_VERSION}-${GW_API_CHANNEL} versions=${VERSIONS_LABEL} -> run=${run} bypass_version_check=${bypass_version_check} run_regex=${run_regex}"
       # Bake KGW_SKIP_GATEWAY_API_VERSION_CHECK into the chart before setup-kind-cluster
       # packages it (hack/kind/setup-kind.sh runs `make package-kgateway-charts` from source),
