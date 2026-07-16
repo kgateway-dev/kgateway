@@ -171,17 +171,8 @@ data:
                           path_config_source:
                             path: "/etc/envoy/xds_service_account_token.json"
                           resource_api_version: V3
+                      header_value_prefix: "Bearer "
                   overwrite: true
-              - name: envoy.filters.http.header_mutation
-                typed_config:
-                  "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
-                  mutations:
-                    request_mutations:
-                      - append:
-                          append_action: OVERWRITE_IF_EXISTS
-                          header:
-                            key: "Authorization"
-                            value: "Bearer %REQ(Authorization)%"
               - name: envoy.filters.http.upstream_codec
                 typed_config:
                   "@type": type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
