@@ -16,6 +16,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
@@ -153,10 +154,18 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				ProcessPolicyStaleStatusMarkers: processMarkers,
 				ProcessBackend:                  processBackend,
 				MergePolicies:                   MergePolicies,
-				GetPolicyStatus:                 getPolicyStatusFn(cli),
-				PatchPolicyStatus:               patchPolicyStatusFn(cli),
-				BuildPolicyStatus:               buildPolicyStatusFn(),
-				PolicyStatusFromGatewayReports:  true,
+				RegisterPolicyStatus: tlsutils.RegisterPolicyStatus(
+					kgwellknown.BackendTLSPolicyGVK,
+					col,
+					cli,
+					commoncol.ControllerName,
+					func(o *gwv1.BackendTLSPolicy) gwv1.PolicyStatus { return o.Status },
+					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *gwv1.BackendTLSPolicy {
+						return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
+					},
+					BuildDesiredPolicyStatus,
+				),
+				PolicyStatusFromGatewayReports: true,
 			},
 		},
 	}

@@ -308,7 +308,7 @@ func TestTranslationWithExtraPlugins(
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
 		Secrets:       result.Proxy.Secrets,
-		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets, result.PolicyPlugins),
+		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
 	outputYaml, err := testutils.MarshalAnyYaml(output)
 	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
@@ -524,7 +524,7 @@ func GetPolicyStatusError(
 		if policy != nil && *policy != key {
 			continue
 		}
-		status := buildPolicyStatus(reportsMap, policyPlugins, key, gwv1.PolicyStatus{})
+		status := buildPolicyStatus(reportsMap, key, gwv1.PolicyStatus{})
 		for ancestor, report := range status.Ancestors {
 			for _, c := range report.Conditions {
 				if c.Status != metav1.ConditionTrue {

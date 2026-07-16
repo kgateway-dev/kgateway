@@ -136,7 +136,10 @@ func TestBuildPolicyStatusFn(t *testing.T) {
 		},
 	}
 
-	status := buildPolicyStatusFn()(t.Context(), rm, key, "kgateway.dev/kgateway", currentStatus)
+	status := BuildDesiredPolicyStatus(rm, &gwv1.BackendTLSPolicy{
+		ObjectMeta: metav1.ObjectMeta{Namespace: key.Namespace, Name: key.Name},
+		Status:     currentStatus,
+	}, "kgateway.dev/kgateway")
 	require.NotNil(t, status)
 	require.Len(t, status.Ancestors, 2)
 
@@ -178,7 +181,9 @@ func TestBuildPolicyStatusFnCapsAncestorsAtAPILimit(t *testing.T) {
 		}
 	}
 
-	status := buildPolicyStatusFn()(t.Context(), rm, key, "kgateway.dev/kgateway", gwv1.PolicyStatus{})
+	status := BuildDesiredPolicyStatus(rm, &gwv1.BackendTLSPolicy{
+		ObjectMeta: metav1.ObjectMeta{Namespace: key.Namespace, Name: key.Name},
+	}, "kgateway.dev/kgateway")
 	require.NotNil(t, status)
 	require.Len(t, status.Ancestors, reports.MaxPolicyStatusAncestors)
 	for _, ancestor := range status.Ancestors {

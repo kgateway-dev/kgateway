@@ -11,19 +11,18 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
-
-var logger = logging.New("plugin/directresponse")
 
 type directResponse struct {
 	// +noKrtEquals
@@ -84,10 +83,19 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.DirectResponseGVK.GroupKind(): {
-				Name:                      "directresponse",
-				Policies:                  policyCol,
-				GetPolicyStatus:           getPolicyStatusFn(cli),
-				PatchPolicyStatus:         patchPolicyStatusFn(cli),
+				Name:     "directresponse",
+				Policies: policyCol,
+				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
+					wellknown.DirectResponseGVK,
+					col,
+					cli,
+					commoncol.ControllerName,
+					func(o *kgateway.DirectResponse) gwv1.PolicyStatus { return o.Status },
+					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.DirectResponse {
+						return &kgateway.DirectResponse{ObjectMeta: om, Status: st}
+					},
+					nil,
+				),
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 			},
 		},

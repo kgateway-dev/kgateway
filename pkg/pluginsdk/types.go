@@ -10,13 +10,14 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -46,14 +47,23 @@ type PerClientProcessBackend func(
 	out *envoyclusterv3.Cluster,
 )
 
-type (
-	// GetPolicyStatusFn is a type that plugins can implement to get the PolicyStatus for the given policy
-	GetPolicyStatusFn func(context.Context, types.NamespacedName) (gwv1.PolicyStatus, error)
-	// PatchPolicyStatusFn is a type that plugins can implement to patch the PolicyStatus for the given policy
-	PatchPolicyStatusFn func(context.Context, types.NamespacedName, gwv1.PolicyStatus) error
-	// BuildPolicyStatusFn is a type that plugins can implement to build a PolicyStatus from a report map.
-	BuildPolicyStatusFn func(context.Context, reports.ReportMap, reporter.PolicyKey, string, gwv1.PolicyStatus) *gwv1.PolicyStatus
-)
+// PolicyStatusInputs is provided to a PolicyPlugin's RegisterPolicyStatus hook. The plugin
+// derives a per-object desired-status collection from PolicyReports and registers it (via
+// statussync.RegisterStatus) on Collections, along with a status writer for its GVK.
+type PolicyStatusInputs struct {
+	// Collections is where the plugin registers its desired-status collection.
+	Collections *StatusCollections
+	// PolicyReports is a singleton collection holding the merged report map (gateway and
+	// backend report paths combined) from which policy statuses are built.
+	PolicyReports krt.Collection[statussync.ReportsWrapper]
+	// RegisterWriter registers the writer that persists this plugin's policy status.
+	RegisterWriter func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer)
+	// KrtOpts are the standard krt collection options.
+	KrtOpts krtutil.KrtOptions
+}
+
+// StatusCollections aliases the statussync type for plugin convenience.
+type StatusCollections = statussync.StatusCollections
 
 type PolicyPlugin struct {
 	Name                      string
@@ -73,9 +83,11 @@ type PolicyPlugin struct {
 	PoliciesFetch func(n, ns string) ir.PolicyIR
 	MergePolicies func(pols []ir.PolicyAtt) ir.PolicyAtt
 
-	GetPolicyStatus   GetPolicyStatusFn
-	PatchPolicyStatus PatchPolicyStatusFn
-	BuildPolicyStatus BuildPolicyStatusFn
+	// RegisterPolicyStatus, when set, is called once by the proxy syncer after the report
+	// collections are built. The plugin derives its per-object desired-status collection
+	// from the provided report collection and registers it, along with a status writer
+	// for its GVK. Plugins that do not report status may leave this unset.
+	RegisterPolicyStatus func(inputs PolicyStatusInputs)
 
 	// PolicyStatusFromGatewayReports indicates that policy status should be reported from the
 	// Gateway translation report path rather than the backend-only report path.

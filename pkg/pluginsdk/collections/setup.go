@@ -70,6 +70,9 @@ func (c *CommonCollections) InitCollections(
 	}
 	metrics.RegisterEvents(kubeRawListenerSets, kmetrics.GetResourceMetricEventHandler[*gwv1.ListenerSet]())
 
+	c.RawGateways = kubeRawGateways
+	c.RawListenerSets = kubeRawListenerSets
+
 	policies := krtcollections.NewPolicyIndex(c.KrtOpts, plugins.ContributesPolicies, globalSettings)
 	for _, plugin := range plugins.ContributesPolicies {
 		if plugin.Policies != nil {
@@ -193,6 +196,21 @@ func (c *CommonCollections) InitCollections(
 
 	grpcRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GRPCRoute](c.Client, wellknown.GRPCRouteGVR, filter), c.KrtOpts.ToOptions("GRPCRoute")...)
 	metrics.RegisterEvents(grpcRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.GRPCRoute]())
+
+	c.RawHTTPRoutes = httpRoutes
+	c.RawGRPCRoutes = grpcRoutes
+	c.RawTCPRoutes = tcproutes
+	c.RawTLSRoutes = tlsRoutes
+
+	// Resolve which served API versions status writes should go through.
+	c.TCPRouteWriteGVR = wellknown.TCPRouteGVR
+	if servedTCPRouteVersions.Promoted {
+		c.TCPRouteWriteGVR = promotedTCPRouteGVR
+	}
+	c.TLSRouteWriteGVR = servedTLSRouteVersions.PreferredPreV1GVR
+	if servedTLSRouteVersions.Promoted || c.TLSRouteWriteGVR.Empty() {
+		c.TLSRouteWriteGVR = promotedTLSRouteGVR
+	}
 
 	backendIndex := krtcollections.NewBackendIndex(c.KrtOpts, policies, c.RefGrants)
 	initBackends(plugins, backendIndex)
