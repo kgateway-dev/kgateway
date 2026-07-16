@@ -14,6 +14,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -46,6 +48,25 @@ type CommonCollections struct {
 	WrappedPods  krt.Collection[krtcollections.WrappedPod]
 	LocalityPods krt.Collection[krtcollections.LocalityPod]
 	RefGrants    *krtcollections.RefGrantIndex
+
+	// Raw informer-backed collections of the Gateway API resources kgateway writes status
+	// for. These share informers with the IR collections above; they are exposed so the
+	// status syncer can derive per-object desired-status collections that see live status
+	// changes (the IR collections may not re-emit on status-only updates).
+	// TCP and TLS routes are normalized to their v1alpha2 representation; legacy
+	// XListenerSets are normalized to gwv1.ListenerSet with their GroupVersionKind
+	// preserved as XListenerSet.
+	RawGateways     krt.Collection[*gwv1.Gateway]
+	RawListenerSets krt.Collection[*gwv1.ListenerSet]
+	RawHTTPRoutes   krt.Collection[*gwv1.HTTPRoute]
+	RawGRPCRoutes   krt.Collection[*gwv1.GRPCRoute]
+	RawTCPRoutes    krt.Collection[*gwv1a2.TCPRoute]
+	RawTLSRoutes    krt.Collection[*gwv1a2.TLSRoute]
+
+	// TCPRouteWriteGVR and TLSRouteWriteGVR identify which served API version status
+	// writes should go through, resolved from CRD discovery at startup.
+	TCPRouteWriteGVR schema.GroupVersionResource
+	TLSRouteWriteGVR schema.GroupVersionResource
 
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
 

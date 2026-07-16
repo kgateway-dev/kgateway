@@ -162,14 +162,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 
 	statusSyncer := proxy_syncer.NewStatusSyncer(proxy_syncer.StatusSyncerConfig{
-		Mgr:                      cfg.Manager,
-		Plugins:                  mergedPlugins,
-		ControllerName:           cfg.ControllerName,
-		Client:                   cfg.Client,
-		ReportQueue:              proxySyncer.ReportQueue(),
-		BackendPolicyReportQueue: proxySyncer.BackendPolicyReportQueue(),
-		BackendStatusReportQueue: proxySyncer.BackendStatusReportQueue(),
-		CacheSyncs:               proxySyncer.CacheSyncs(),
+		Plugins:           mergedPlugins,
+		ControllerName:    cfg.ControllerName,
+		Client:            cfg.Client,
+		StatusCollections: proxySyncer.StatusCollections(),
+		StatusWriters:     proxySyncer.StatusWriters(),
+		GatewayReports:    proxySyncer.GatewayReports(),
+		CacheSyncs:        proxySyncer.CacheSyncs(),
 	}, cfg.StatusSyncerOptions...)
 	if err := cfg.Manager.Add(statusSyncer); err != nil {
 		setupLog.Error(err, "unable to add statusSyncer runnable")

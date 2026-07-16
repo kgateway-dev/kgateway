@@ -10,6 +10,7 @@ import (
 	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 )
 
 const (
@@ -29,12 +30,11 @@ func TestCollectStatusSyncMetrics_Success(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	finishFunc := CollectStatusSyncMetrics(StatusSyncMetricLabels{
+	statussync.RecordStatusSync(statussync.SyncMetricLabels{
 		Name:      testGatewayName,
 		Namespace: testNamespace,
 		Syncer:    testSyncerName,
-	})
-	finishFunc(nil)
+	}, time.Millisecond, nil)
 
 	currentMetrics := metricstest.MustGatherMetricsContext(ctx, t,
 		"kgateway_status_syncer_status_syncs_total",
@@ -67,12 +67,11 @@ func TestCollectStatusSyncMetrics_Error(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	finishFunc := CollectStatusSyncMetrics(StatusSyncMetricLabels{
+	statussync.RecordStatusSync(statussync.SyncMetricLabels{
 		Name:      testGatewayName,
 		Namespace: testNamespace,
 		Syncer:    testSyncerName,
-	})
-	finishFunc(assert.AnError)
+	}, time.Millisecond, assert.AnError)
 
 	currentMetrics := metricstest.MustGatherMetricsContext(ctx, t,
 		"kgateway_status_syncer_status_syncs_total",
