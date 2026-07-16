@@ -10,6 +10,7 @@ import (
 
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/test/util/assert"
+	"istio.io/istio/pkg/test/util/retry"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -32,7 +33,12 @@ func SetupBaseConfig(ctx context.Context, t *testing.T, installation *e2e.TestIn
 			t.Logf("failed to delete base config manifests %v: %v", manifests, err)
 		}
 	})
-	err := installation.ClusterContext.IstioClient.ApplyYAMLFiles("", manifests...)
+	// Retry the apply: a gotestsum rerun starts a fresh process while the previous
+	// process's cleanup may still be deleting the namespaces these manifests create,
+	// and applying into a terminating namespace is rejected by the API server.
+	err := retry.UntilSuccess(func() error {
+		return installation.ClusterContext.IstioClient.ApplyYAMLFiles("", manifests...)
+	}, retry.Timeout(2*time.Minute), retry.Delay(2*time.Second))
 	assert.NoError(t, err)
 }
 

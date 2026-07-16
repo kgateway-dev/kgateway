@@ -1,0 +1,72 @@
+# This test contains a route targeted by two TrafficPolicies that select different
+# compression codecs. The higher-priority policy (referenced via the route's extensionRef
+# filter) selects Brotli and must win over the Gzip policy attached via targetRefs.
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    hostname: "www.example.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.kgateway.dev
+            kind: TrafficPolicy
+            name: brotli-policy
+---
+# Higher priority: referenced directly by the route's extensionRef filter.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: brotli-policy
+spec:
+  compression:
+    responseCompression:
+      libraries:
+        - Brotli
+---
+# Lower priority: attached via targetRefs. Its Gzip codec must be ignored in favor of Brotli.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gzip-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: example-route
+  compression:
+    responseCompression:
+      libraries:
+        - Gzip
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test

@@ -2649,6 +2649,12 @@ spec:
                 - AppendIfAbsent
                 - PassThrough
                 type: string
+              serverName:
+                description: |-
+                  ServerName determines the value of the server header.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-name
+                minLength: 1
+                type: string
               skipXFFAppend:
                 description: |-
                   SkipXffAppend specifies whether to skip adding the downstream's remote IP address to the X-Forwarded-For HTTP header.

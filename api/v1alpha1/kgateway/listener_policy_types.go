@@ -119,6 +119,14 @@ type ListenerConfig struct {
 	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
+
+	// TransportSocketConnectTimeout is the timeout for the transport socket to complete after a new connection is accepted.
+	// If the timeout fires, the connection is closed. Setting this protects Envoy from clients that open connections and
+	// then never complete the TLS handshake. Applied to every filter chain on the listener.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#envoy-v3-api-field-config-listener-v3-filterchain-transport-socket-connect-timeout
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	TransportSocketConnectTimeout *metav1.Duration `json:"transportSocketConnectTimeout,omitempty"`
 }
 
 type ListenerDefaultConfig struct {
@@ -231,6 +239,12 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:Enum=Overwrite;AppendIfAbsent;PassThrough
 	// +optional
 	ServerHeaderTransformation *ServerHeaderTransformation `json:"serverHeaderTransformation,omitempty"`
+
+	// ServerName determines the value of the server header.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-name
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	ServerName *string `json:"serverName,omitempty"`
 
 	// StreamIdleTimeout is the idle timeout for HTTP streams.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-stream-idle-timeout

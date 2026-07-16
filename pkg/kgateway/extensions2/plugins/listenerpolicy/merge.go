@@ -89,6 +89,7 @@ func mergeListenerPolicy(
 		mergeProxyProtocol,
 		mergeTCPKeepalive,
 		mergePerConnectionBufferLimitBytes,
+		mergeTransportSocketConnectTimeout,
 		mergeClientCertificateValidation,
 		mergeHttpSettings,
 	}
@@ -128,6 +129,22 @@ func mergePerConnectionBufferLimitBytes(
 
 	p1.perConnectionBufferLimitBytes = p2.perConnectionBufferLimitBytes
 	mergeOrigins.SetOne(origin+"perConnectionBufferLimitBytes", p2Ref, p2MergeOrigins)
+}
+
+func mergeTransportSocketConnectTimeout(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.transportSocketConnectTimeout, p2.transportSocketConnectTimeout, opts) {
+		return
+	}
+
+	p1.transportSocketConnectTimeout = p2.transportSocketConnectTimeout
+	mergeOrigins.SetOne(origin+"transportSocketConnectTimeout", p2Ref, p2MergeOrigins)
 }
 
 func mergeTCPKeepalive(

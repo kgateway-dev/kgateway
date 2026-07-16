@@ -55,6 +55,65 @@ func (s *testingSuite) TestNoCompressionWithoutAcceptEncoding() {
 	s.assertHeaders("/html", nil, nil, []string{"Content-Encoding"})
 }
 
+// Verifies the route compresses with brotli when the TrafficPolicy selects the brotli codec
+func (s *testingSuite) TestBrotliResponseCompression() {
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "br"},
+		map[string]any{"Content-Encoding": "br"},
+		nil,
+	)
+}
+
+// Verifies the route compresses with zstd when the TrafficPolicy selects the zstd codec
+func (s *testingSuite) TestZstdResponseCompression() {
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "zstd"},
+		map[string]any{"Content-Encoding": "zstd"},
+		nil,
+	)
+}
+
+// Verifies Accept-Encoding negotiation when the TrafficPolicy offers all three codecs
+// (libraries: [Brotli, Gzip, Zstd]). Selection is client-driven, so the codec the client lists
+// first wins the tie, a single accepted codec is used as-is, and an unsupported encoding yields
+// no compression.
+func (s *testingSuite) TestResponseCompressionNegotiation() {
+	// Client lists brotli first, so brotli wins the tie.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "br, gzip, zstd"},
+		map[string]any{"Content-Encoding": "br"},
+		nil,
+	)
+
+	// Same codecs, reversed client order: zstd now wins. Confirms the tie follows the client.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "zstd, gzip, br"},
+		map[string]any{"Content-Encoding": "zstd"},
+		nil,
+	)
+
+	// Client accepts only gzip.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "gzip"},
+		map[string]any{"Content-Encoding": "gzip"},
+		nil,
+	)
+
+	// Client accepts only zstd.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "zstd"},
+		map[string]any{"Content-Encoding": "zstd"},
+		nil,
+	)
+
+	// Client accepts only an unsupported codec, so the response is not compressed.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "deflate"},
+		nil,
+		[]string{"Content-Encoding"},
+	)
+}
+
 func (s *testingSuite) assertHeaders(path string, reqHeaders map[string]string, expectedHeaders map[string]any, notExpectedHeaders []string) {
 	common.BaseGateway.Send(
 		s.T(),

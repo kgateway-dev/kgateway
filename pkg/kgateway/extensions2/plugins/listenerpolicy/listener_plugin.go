@@ -56,6 +56,7 @@ type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
 	tcpKeepalive                  *envoycorev3.TcpKeepalive
 	perConnectionBufferLimitBytes *uint32
+	transportSocketConnectTimeout *durationpb.Duration
 	// only for default policy
 	clientCertificateValidation *ir.ClientCertificateValidationIR
 	// +noKrtEquals
@@ -73,12 +74,17 @@ func newListenerPolicy(
 	if i.PerConnectionBufferLimitBytes != nil {
 		perConnectionBufferLimitBytes = new(uint32(*i.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
 	}
+	var tsct *durationpb.Duration
+	if i.TransportSocketConnectTimeout != nil {
+		tsct = durationpb.New(i.TransportSocketConnectTimeout.Duration)
+	}
 	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
 		tcpKeepalive:                  backendconfigpolicy.TranslateTCPKeepalive(i.TCPKeepalive),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
+		transportSocketConnectTimeout: tsct,
 		http:                          http,
 	}, errs
 }
@@ -141,6 +147,10 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	}
 
 	if !cmputils.PointerValsEqual(d.perConnectionBufferLimitBytes, d2.perConnectionBufferLimitBytes) {
+		return false
+	}
+
+	if !proto.Equal(d.transportSocketConnectTimeout, d2.transportSocketConnectTimeout) {
 		return false
 	}
 
@@ -356,6 +366,25 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	}
 }
 
+// ApplyPostListener runs after FilterChains have been built so the plugin can set
+// FilterChain level fields like transport_socket_connect_timeout. It is invoked once per
+// FilterChain on the listener.
+func (p *listenerPolicyPluginGwPass) ApplyPostListener(
+	pCtx *ir.ListenerContext,
+	out *envoylistenerv3.Listener,
+) {
+	cfg := p.getPolicy(pCtx.Policy, pCtx.Port)
+	if cfg.transportSocketConnectTimeout == nil {
+		return
+	}
+	for _, fc := range out.GetFilterChains() {
+		if pCtx.FilterChainName != "" && fc.GetName() != pCtx.FilterChainName {
+			continue
+		}
+		fc.TransportSocketConnectTimeout = cfg.transportSocketConnectTimeout
+	}
+}
+
 func (p *listenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	healthCheckPolicy := p.healthCheckPolicy[hCtx.ListenerPort]
 	if healthCheckPolicy == nil {
@@ -444,6 +473,11 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	// translate serverHeaderTransformation
 	if policy.serverHeaderTransformation != nil {
 		out.ServerHeaderTransformation = *policy.serverHeaderTransformation
+	}
+
+	// translate serverName
+	if policy.serverName != nil {
+		out.ServerName = *policy.serverName
 	}
 
 	// translate streamIdleTimeout

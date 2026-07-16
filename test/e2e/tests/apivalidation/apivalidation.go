@@ -459,6 +459,60 @@ spec:
 			wantErrors: []string{"urlRewrite can only be used when targeting HTTPRoute resources"},
 		},
 		{
+			name: "TrafficPolicy: policy with statPrefix can only target HTTPRoute or GRPCRoute",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-stat-prefix-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  statPrefix: "{{route_namespace}}.{{route_name}}"
+`,
+			wantErrors: []string{"statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"},
+		},
+		{
+			name: "TrafficPolicy: policy with statPrefix may target HTTPRoute",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-stat-prefix-valid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  statPrefix: "{{route_namespace}}.{{route_name}}"
+`,
+		},
+		{
+			// A valid targetRefs must not let a Gateway targetSelectors slip through:
+			// every populated targeting mechanism must be a route kind.
+			name: "TrafficPolicy: statPrefix rejects a Gateway targetSelectors alongside a valid targetRefs",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-stat-prefix-mixed-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    matchLabels:
+      gateway: example
+  statPrefix: "{{route_namespace}}.{{route_name}}"
+`,
+			wantErrors: []string{"statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"},
+		},
+		{
 			name: "HTTPListenerPolicy: valid target references",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

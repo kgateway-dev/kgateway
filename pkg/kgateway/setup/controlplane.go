@@ -15,6 +15,8 @@ import (
 	envoy_service_route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoylog "github.com/envoyproxy/go-control-plane/pkg/log"
+	serverconfig "github.com/envoyproxy/go-control-plane/pkg/server/config"
+	sotwv3 "github.com/envoyproxy/go-control-plane/pkg/server/sotw/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -95,6 +97,7 @@ func NewControlPlane(
 	authenticators []security.Authenticator,
 	xdsAuth bool,
 	certWatcher *certwatcher.CertWatcher,
+	orderedADS bool,
 ) envoycache.SnapshotCache {
 	baseLogger := slog.Default().With("component", "envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
@@ -107,7 +110,11 @@ func NewControlPlane(
 
 	snapshotCache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), envoyLoggerAdapter)
 
-	xdsServer := xdsserver.NewServer(ctx, snapshotCache, allCallbacks)
+	var xdsOpts []serverconfig.XDSOption
+	if orderedADS {
+		xdsOpts = append(xdsOpts, sotwv3.WithOrderedADS())
+	}
+	xdsServer := xdsserver.NewServer(ctx, snapshotCache, allCallbacks, xdsOpts...)
 
 	// Register reflection and services on both servers
 	reflection.Register(kgwGRPCServer)
