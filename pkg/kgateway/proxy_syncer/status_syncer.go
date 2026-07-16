@@ -118,13 +118,54 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 				logger.Error("failed to dequeue gateway reports", "error", err)
 				return
 			}
+			// DEBUG: instrumentation to confirm/refute the theory that NotFound-retry
+			// backoff added in #14414 head-of-line-blocks this loop during delete churn.
+			// Remove once the flake investigation is done.
+			passStart := time.Now()
+
+			start := time.Now()
 			s.syncGatewayStatus(ctx, gatewayStatusLogger, latestReport)
+			gatewayDur := time.Since(start)
+
+			start = time.Now()
 			s.syncListenerSetStatus(ctx, listenerSetStatusLogger, latestReport)
+			listenerSetDur := time.Since(start)
+
+			start = time.Now()
 			s.syncRouteStatus(ctx, routeStatusLogger, latestReport)
+			routeDur := time.Since(start)
+
+			start = time.Now()
 			s.syncPolicyStatus(ctx, latestReport)
+			policyDur := time.Since(start)
+
 			if s.customStatusSync != nil {
 				s.customStatusSync(ctx, latestReport)
 			}
+
+			totalDur := time.Since(passStart)
+			lsCount := 0
+			for _, m := range latestReport.ListenerSets {
+				lsCount += len(m)
+			}
+			logLevel := slog.LevelDebug
+			if totalDur > time.Second {
+				// A pass this long during delete churn is the head-of-line-blocking
+				// signature we're looking for; surface it at Info so it's visible
+				// without cranking the whole controller to Debug.
+				logLevel = slog.LevelInfo
+			}
+			logger.Log(ctx, logLevel, "status sync pass complete",
+				"total", totalDur,
+				"gateway", gatewayDur,
+				"listenerset", listenerSetDur,
+				"route", routeDur,
+				"policy", policyDur,
+				"gateways", len(latestReport.Gateways),
+				"listenersets", lsCount,
+				"routes", len(latestReport.HTTPRoutes)+len(latestReport.TCPRoutes)+len(latestReport.TLSRoutes)+len(latestReport.GRPCRoutes),
+				"policies", len(latestReport.Policies),
+			)
 		}
 	}()
 	go func() {
@@ -160,6 +201,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 		getRouteFunc func(context.Context, client.ObjectKey) (client.Object, error),
 		statusUpdater func(route client.Object) (*gwv1.RouteStatus, error),
 	) error {
+		retryStart := time.Now()
 		err := retry.Do(
 			func() (rErr error) {
 				route, err := getRouteFunc(ctx, routeKey)
@@ -293,9 +335,17 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 			retry.Delay(100*time.Millisecond),
 			retry.DelayType(retry.BackOffDelay),
 			retry.LastErrorOnly(true),
+			// DEBUG: surface otherwise-silent NotFound retries to confirm/refute the
+			// head-of-line-blocking theory. Remove once the flake investigation is done.
+			retry.OnRetry(func(n uint, err error) {
+				if apierrors.IsNotFound(err) {
+					logger.Debug("retrying route status sync after NotFound", "route_type", routeType, "resource_ref", routeKey, "attempt", n+1, "elapsed", time.Since(retryStart))
+				}
+			}),
 		)
 		if apierrors.IsNotFound(err) {
 			// the route is gone; if it's recreated we'll retranslate it
+			logger.Debug("route not found after retries", "route_type", routeType, "resource_ref", routeKey, "elapsed", time.Since(retryStart))
 			return nil
 		}
 		return err
@@ -498,8 +548,21 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 		// report can arrive before the object shows up in the manager's informer cache,
 		// and nothing retriggers this sync if the write is dropped. The backoff matches
 		// the retry budget of the other status syncers (~1.5s total).
+		//
+		// DEBUG: retryStart/retryAttempt track/log otherwise-silent NotFound retries to
+		// confirm/refute the head-of-line-blocking theory. Remove once the flake
+		// investigation is done.
+		retryStart := time.Now()
+		retryAttempt := 0
 		retriable := func(err error) bool {
-			return apierrors.IsConflict(err) || apierrors.IsNotFound(err)
+			retryable := apierrors.IsConflict(err) || apierrors.IsNotFound(err)
+			if retryable {
+				retryAttempt++
+				if apierrors.IsNotFound(err) {
+					logger.Debug("retrying gateway status sync after NotFound", "gateway", gwnn.String(), "attempt", retryAttempt, "elapsed", time.Since(retryStart))
+				}
+			}
+			return retryable
 		}
 		backoff := wait.Backoff{Duration: 100 * time.Millisecond, Factor: 2, Steps: 5}
 		err := utilretry.OnError(backoff, retriable, func() error {
@@ -580,6 +643,7 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 				// the gateway is gone; if it's recreated we'll retranslate it. Fall
 				// through so the sync is still recorded as completed, keeping the
 				// started/completed status-sync metrics balanced.
+				logger.Debug("gateway not found after retries", "gateway", gwnn.String(), "attempts", retryAttempt, "elapsed", time.Since(retryStart))
 				err = nil
 			} else {
 				logger.Error("failed to update gateway status after retries", "error", err, "gateway", gwnn.String())
@@ -603,12 +667,13 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 // syncListenerSetStatus will build and update status for all Listener Sets in a reportMap
 func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
 	// TODO: retry within loop per LS rather than as a full block
+	retryStart := time.Now()
 	err := retry.Do(func() (rErr error) {
 		for gvk, listenerSetsForGVK := range rm.ListenerSets {
 			for lsnn := range listenerSetsForGVK {
 				ls, legacyListenerSet, err := s.getListenerSetForStatus(ctx, lsnn, gvk)
 				if err != nil {
-					logger.Info("error getting ls", "error", err.Error())
+					logger.Info("error getting ls", "error", err.Error(), "listenerset", lsnn.String(), "not_found", apierrors.IsNotFound(err), "elapsed", time.Since(retryStart))
 					return err
 				}
 
@@ -670,11 +735,16 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 		retry.Delay(100*time.Millisecond),
 		retry.DelayType(retry.BackOffDelay),
 		retry.LastErrorOnly(true),
+		// DEBUG: surface retry cadence to confirm/refute the head-of-line-blocking
+		// theory. Remove once the flake investigation is done.
+		retry.OnRetry(func(n uint, err error) {
+			logger.Debug("retrying listener set status sync", "attempt", n+1, "elapsed", time.Since(retryStart), "not_found", apierrors.IsNotFound(err))
+		}),
 	)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// a listener set is gone; if it's recreated we'll retranslate it
-			logger.Debug("listener set not found during status sync", "error", err)
+			logger.Debug("listener set not found during status sync", "error", err, "elapsed", time.Since(retryStart))
 		} else {
 			logger.Error("all attempts failed at updating listener set statuses", "error", err)
 		}
@@ -800,6 +870,7 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 		// NotFound is retried: for a just-created policy the report can arrive before
 		// the object shows up in the informer cache, and nothing retriggers this sync
 		// if the write is dropped.
+		getRetryStart := time.Now()
 		var currentStatus gwv1.PolicyStatus
 		err := retry.Do(
 			func() error {
@@ -811,12 +882,20 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			retry.Delay(100*time.Millisecond),
 			retry.DelayType(retry.BackOffDelay),
 			retry.LastErrorOnly(true),
+			// DEBUG: surface otherwise-silent NotFound retries to confirm/refute the
+			// head-of-line-blocking theory. Remove once the flake investigation is done.
+			retry.OnRetry(func(n uint, err error) {
+				if errors.Is(err, plug.ErrNotFound) || apierrors.IsNotFound(err) {
+					logger.Debug("retrying GetPolicyStatus after not-found", "group_kind", gk, "resource_ref", nsName, "attempt", n+1, "elapsed", time.Since(getRetryStart))
+				}
+			}),
 		)
 		if err != nil {
 			// Policy plugins surface a missing object as the pluginsdk.ErrNotFound
 			// sentinel rather than a k8s apierror, so check both.
 			if errors.Is(err, plug.ErrNotFound) || apierrors.IsNotFound(err) {
 				// the policy is gone; if it's recreated we'll retranslate it
+				logger.Debug("policy not found after retries", "group_kind", gk, "resource_ref", nsName, "elapsed", time.Since(getRetryStart))
 				continue
 			}
 			logger.Error("error getting policy status", "error", err, "resource_ref", nsName)
@@ -856,6 +935,7 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			Syncer:    "PolicyStatusSyncer",
 		})
 
+		patchRetryStart := time.Now()
 		err = retry.Do(
 			func() error {
 				return plugin.PatchPolicyStatus(ctx, nsName, *status)
@@ -864,6 +944,13 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			retry.Delay(100*time.Millisecond),
 			retry.DelayType(retry.BackOffDelay),
 			retry.LastErrorOnly(true),
+			// DEBUG: surface otherwise-silent NotFound retries to confirm/refute the
+			// head-of-line-blocking theory. Remove once the flake investigation is done.
+			retry.OnRetry(func(n uint, err error) {
+				if errors.Is(err, plug.ErrNotFound) || apierrors.IsNotFound(err) {
+					logger.Debug("retrying PatchPolicyStatus after not-found", "group_kind", gk, "resource_ref", nsName, "attempt", n+1, "elapsed", time.Since(patchRetryStart))
+				}
+			}),
 		)
 		if err != nil {
 			// Policy plugins surface a missing object as the pluginsdk.ErrNotFound
@@ -876,6 +963,7 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			// the policy is gone; if it's recreated we'll retranslate it. Fall through
 			// so the sync is still recorded as completed, keeping the started/completed
 			// status-sync metrics balanced.
+			logger.Debug("policy not found after PatchPolicyStatus retries", "group_kind", gk, "resource_ref", nsName, "elapsed", time.Since(patchRetryStart))
 			statusErr = nil
 		}
 
@@ -898,6 +986,7 @@ func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportM
 			Syncer:    "BackendStatusSyncer",
 		})
 
+		backendRetryStart := time.Now()
 		err := retry.Do(
 			func() error {
 				backend := new(kgateway.Backend)
@@ -921,6 +1010,13 @@ func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportM
 			retry.Delay(100*time.Millisecond),
 			retry.DelayType(retry.BackOffDelay),
 			retry.LastErrorOnly(true),
+			// DEBUG: surface otherwise-silent NotFound retries to confirm/refute the
+			// head-of-line-blocking theory. Remove once the flake investigation is done.
+			retry.OnRetry(func(n uint, err error) {
+				if apierrors.IsNotFound(err) {
+					logger.Debug("retrying backend status sync after NotFound", "resource_ref", nsName, "attempt", n+1, "elapsed", time.Since(backendRetryStart))
+				}
+			}),
 		)
 		if err != nil && !apierrors.IsNotFound(err) {
 			logger.Error("all attempts failed at updating Backend status", "error", err, "backend", nsName)
@@ -930,6 +1026,9 @@ func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportM
 		// A NotFound here means the backend is gone. If it's recreated we'll retranslate
 		// it. Fall through so the sync is still recorded as completed, keeping the
 		// started/completed status-sync metrics balanced.
+		if err != nil {
+			logger.Debug("backend not found after retries", "resource_ref", nsName, "elapsed", time.Since(backendRetryStart))
+		}
 
 		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 			Namespace:    nsName.Namespace,
