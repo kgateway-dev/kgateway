@@ -19,13 +19,13 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -171,40 +171,6 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	return true
 }
 
-func getPolicyStatusFn(
-	cl kclient.Client[*kgateway.ListenerPolicy],
-) sdk.GetPolicyStatusFn {
-	return func(ctx context.Context, nn types.NamespacedName) (gwv1.PolicyStatus, error) {
-		res := cl.Get(nn.Name, nn.Namespace)
-		if res == nil {
-			return gwv1.PolicyStatus{}, sdk.ErrNotFound
-		}
-		return res.Status, nil
-	}
-}
-
-func patchPolicyStatusFn(
-	cl kclient.Client[*kgateway.ListenerPolicy],
-) sdk.PatchPolicyStatusFn {
-	return func(ctx context.Context, nn types.NamespacedName, policyStatus gwv1.PolicyStatus) error {
-		cur := cl.Get(nn.Name, nn.Namespace)
-		if cur == nil {
-			return sdk.ErrNotFound
-		}
-		if _, err := cl.UpdateStatus(&kgateway.ListenerPolicy{
-			ObjectMeta: sdk.CloneObjectMetaForStatus(cur.ObjectMeta),
-			Status:     policyStatus,
-		}); err != nil {
-			if errors.IsConflict(err) {
-				logger.Debug("error updating stale status", "ref", nn, "error", err)
-				return nil // let the conflicting Status update trigger a KRT event to requeue the updated object
-			}
-			return fmt.Errorf("error updating status for ListenerPolicy %s: %w", nn.String(), err)
-		}
-		return nil
-	}
-}
-
 var _ ir.PolicyIR = &ListenerPolicyIR{}
 
 type listenerPolicyPluginGwPass struct {
@@ -308,8 +274,17 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				NewGatewayTranslationPass:       NewGatewayTranslationPass,
 				Policies:                        policyCol,
 				ProcessPolicyStaleStatusMarkers: processMarkers,
-				GetPolicyStatus:                 getPolicyStatusFn(cli),
-				PatchPolicyStatus:               patchPolicyStatusFn(cli),
+				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
+					kgwwellknown.ListenerPolicyGVK,
+					col,
+					cli,
+					commoncol.ControllerName,
+					func(o *kgateway.ListenerPolicy) gwv1.PolicyStatus { return o.Status },
+					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.ListenerPolicy {
+						return &kgateway.ListenerPolicy{ObjectMeta: om, Status: st}
+					},
+					nil,
+				),
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, MergePolicies, "" /*no merge settings*/)
 				},
