@@ -436,11 +436,34 @@ spec:
                   requestDecompression:
                     description: |-
                       RequestDecompression controls request decompression.
-                      If set, gzip requests will be decompressed.
+                      If set, request bodies in the configured codecs are decompressed before forwarding.
                     properties:
                       disable:
                         description: Disables decompression.
                         type: object
+                      libraries:
+                        default:
+                        - Gzip
+                        description: |-
+                          Libraries lists the codecs to decompress on request bodies. Envoy selects the decompressor
+                          by the request's `Content-Encoding` header, so the list order is not significant. Request
+                          bodies encoded with a codec not in this list are passed through to the backend unchanged.
+                          Defaults to [Gzip].
+                        items:
+                          description: CompressionLibrary identifies a compression
+                            codec used to compress responses or decompress requests.
+                          enum:
+                          - Gzip
+                          - Brotli
+                          - Zstd
+                          type: string
+                        maxItems: 3
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-type: atomic
+                        x-kubernetes-validations:
+                        - message: libraries must not contain duplicates
+                          rule: self.all(x, self.exists_one(y, y == x))
                     type: object
                   responseCompression:
                     description: |-
@@ -472,8 +495,8 @@ spec:
                           sent uncompressed.
                           Defaults to [Gzip].
                         items:
-                          description: CompressionLibrary identifies the codec used
-                            to compress responses.
+                          description: CompressionLibrary identifies a compression
+                            codec used to compress responses or decompress requests.
                           enum:
                           - Gzip
                           - Brotli
