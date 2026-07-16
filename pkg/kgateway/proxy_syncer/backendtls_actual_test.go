@@ -126,7 +126,7 @@ func TestPerClientClustersUpdateWhenActualBackendTLSPolicyAddedLater(t *testing.
 	configMap := newActualBackendTLSTestConfigMap()
 
 	fakeClient := apifake.NewClient(t, service, configMap)
-	settings := apisettings.Settings{EnableEnvoy: true}
+	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	commoncol, err := collections.NewCommonCollections(
@@ -217,7 +217,7 @@ func TestPerClientClustersUseActualBackendTLSPolicyWhenConflictsExistAtStartup(t
 		newActualBackendTLSPolicy("backend-tls-older", "other.example.com", older),
 		newActualBackendTLSPolicy("backend-tls-newer", "abc.example.com", older.Add(time.Second)),
 	)
-	settings := apisettings.Settings{EnableEnvoy: true}
+	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	commoncol, err := collections.NewCommonCollections(

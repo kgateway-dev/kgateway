@@ -20,7 +20,6 @@ func TestGetDefaultClassInfoAppliesParametersRefs(t *testing.T) {
 
 	ns := gwv1.Namespace("control-plane")
 	settings := &apisettings.Settings{
-		EnableEnvoy:    true,
 		EnableWaypoint: true,
 		GatewayClassParametersRefs: apisettings.GatewayClassParametersRefs{
 			standardClass: {
