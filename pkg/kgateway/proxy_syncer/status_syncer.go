@@ -339,13 +339,13 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 			// head-of-line-blocking theory. Remove once the flake investigation is done.
 			retry.OnRetry(func(n uint, err error) {
 				if apierrors.IsNotFound(err) {
-					logger.Debug("retrying route status sync after NotFound", "route_type", routeType, "resource_ref", routeKey, "attempt", n+1, "elapsed", time.Since(retryStart))
+					logger.Info("retrying route status sync after NotFound", "route_type", routeType, "resource_ref", routeKey, "attempt", n+1, "elapsed", time.Since(retryStart))
 				}
 			}),
 		)
 		if apierrors.IsNotFound(err) {
 			// the route is gone; if it's recreated we'll retranslate it
-			logger.Debug("route not found after retries", "route_type", routeType, "resource_ref", routeKey, "elapsed", time.Since(retryStart))
+			logger.Info("route not found after retries", "route_type", routeType, "resource_ref", routeKey, "elapsed", time.Since(retryStart))
 			return nil
 		}
 		return err
@@ -559,7 +559,7 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 			if retryable {
 				retryAttempt++
 				if apierrors.IsNotFound(err) {
-					logger.Debug("retrying gateway status sync after NotFound", "gateway", gwnn.String(), "attempt", retryAttempt, "elapsed", time.Since(retryStart))
+					logger.Info("retrying gateway status sync after NotFound", "gateway", gwnn.String(), "attempt", retryAttempt, "elapsed", time.Since(retryStart))
 				}
 			}
 			return retryable
@@ -643,7 +643,7 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 				// the gateway is gone; if it's recreated we'll retranslate it. Fall
 				// through so the sync is still recorded as completed, keeping the
 				// started/completed status-sync metrics balanced.
-				logger.Debug("gateway not found after retries", "gateway", gwnn.String(), "attempts", retryAttempt, "elapsed", time.Since(retryStart))
+				logger.Info("gateway not found after retries", "gateway", gwnn.String(), "attempts", retryAttempt, "elapsed", time.Since(retryStart))
 				err = nil
 			} else {
 				logger.Error("failed to update gateway status after retries", "error", err, "gateway", gwnn.String())
@@ -738,13 +738,13 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 		// DEBUG: surface retry cadence to confirm/refute the head-of-line-blocking
 		// theory. Remove once the flake investigation is done.
 		retry.OnRetry(func(n uint, err error) {
-			logger.Debug("retrying listener set status sync", "attempt", n+1, "elapsed", time.Since(retryStart), "not_found", apierrors.IsNotFound(err))
+			logger.Info("retrying listener set status sync", "attempt", n+1, "elapsed", time.Since(retryStart), "not_found", apierrors.IsNotFound(err))
 		}),
 	)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// a listener set is gone; if it's recreated we'll retranslate it
-			logger.Debug("listener set not found during status sync", "error", err, "elapsed", time.Since(retryStart))
+			logger.Info("listener set not found during status sync", "error", err, "elapsed", time.Since(retryStart))
 		} else {
 			logger.Error("all attempts failed at updating listener set statuses", "error", err)
 		}
@@ -886,7 +886,7 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			// head-of-line-blocking theory. Remove once the flake investigation is done.
 			retry.OnRetry(func(n uint, err error) {
 				if errors.Is(err, plug.ErrNotFound) || apierrors.IsNotFound(err) {
-					logger.Debug("retrying GetPolicyStatus after not-found", "group_kind", gk, "resource_ref", nsName, "attempt", n+1, "elapsed", time.Since(getRetryStart))
+					logger.Info("retrying GetPolicyStatus after not-found", "group_kind", gk, "resource_ref", nsName, "attempt", n+1, "elapsed", time.Since(getRetryStart))
 				}
 			}),
 		)
@@ -895,7 +895,7 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			// sentinel rather than a k8s apierror, so check both.
 			if errors.Is(err, plug.ErrNotFound) || apierrors.IsNotFound(err) {
 				// the policy is gone; if it's recreated we'll retranslate it
-				logger.Debug("policy not found after retries", "group_kind", gk, "resource_ref", nsName, "elapsed", time.Since(getRetryStart))
+				logger.Info("policy not found after retries", "group_kind", gk, "resource_ref", nsName, "elapsed", time.Since(getRetryStart))
 				continue
 			}
 			logger.Error("error getting policy status", "error", err, "resource_ref", nsName)
@@ -948,7 +948,7 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			// head-of-line-blocking theory. Remove once the flake investigation is done.
 			retry.OnRetry(func(n uint, err error) {
 				if errors.Is(err, plug.ErrNotFound) || apierrors.IsNotFound(err) {
-					logger.Debug("retrying PatchPolicyStatus after not-found", "group_kind", gk, "resource_ref", nsName, "attempt", n+1, "elapsed", time.Since(patchRetryStart))
+					logger.Info("retrying PatchPolicyStatus after not-found", "group_kind", gk, "resource_ref", nsName, "attempt", n+1, "elapsed", time.Since(patchRetryStart))
 				}
 			}),
 		)
@@ -963,7 +963,7 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			// the policy is gone; if it's recreated we'll retranslate it. Fall through
 			// so the sync is still recorded as completed, keeping the started/completed
 			// status-sync metrics balanced.
-			logger.Debug("policy not found after PatchPolicyStatus retries", "group_kind", gk, "resource_ref", nsName, "elapsed", time.Since(patchRetryStart))
+			logger.Info("policy not found after PatchPolicyStatus retries", "group_kind", gk, "resource_ref", nsName, "elapsed", time.Since(patchRetryStart))
 			statusErr = nil
 		}
 
@@ -1014,7 +1014,7 @@ func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportM
 			// head-of-line-blocking theory. Remove once the flake investigation is done.
 			retry.OnRetry(func(n uint, err error) {
 				if apierrors.IsNotFound(err) {
-					logger.Debug("retrying backend status sync after NotFound", "resource_ref", nsName, "attempt", n+1, "elapsed", time.Since(backendRetryStart))
+					logger.Info("retrying backend status sync after NotFound", "resource_ref", nsName, "attempt", n+1, "elapsed", time.Since(backendRetryStart))
 				}
 			}),
 		)
@@ -1027,7 +1027,7 @@ func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportM
 		// it. Fall through so the sync is still recorded as completed, keeping the
 		// started/completed status-sync metrics balanced.
 		if err != nil {
-			logger.Debug("backend not found after retries", "resource_ref", nsName, "elapsed", time.Since(backendRetryStart))
+			logger.Info("backend not found after retries", "resource_ref", nsName, "elapsed", time.Since(backendRetryStart))
 		}
 
 		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
