@@ -144,9 +144,9 @@ jobs:
           - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
             label: min
         gateway-api-version:
-          - version: 'v1.6.0'
+          - version: 'v1.6.1'
             channel: experimental
-          - version: 'v1.6.0'
+          - version: 'v1.6.1'
             channel: standard
           - version: 'v1.5.1'
             channel: experimental

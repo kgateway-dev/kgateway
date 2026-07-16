@@ -46,7 +46,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20260501160325-927ab1f70cd6 // indirect
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
 	sigs.k8s.io/controller-runtime v0.24.1
-	sigs.k8s.io/gateway-api v1.6.0
+	sigs.k8s.io/gateway-api v1.6.1
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -64,7 +64,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	k8s.io/apiserver v0.36.1
 	k8s.io/cli-runtime v0.36.1
-	sigs.k8s.io/gateway-api/conformance v1.6.0
+	sigs.k8s.io/gateway-api/conformance v1.6.1
 )
 
 require (
