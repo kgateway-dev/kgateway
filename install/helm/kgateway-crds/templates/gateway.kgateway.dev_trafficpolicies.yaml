@@ -2337,14 +2337,14 @@ spec:
             type: object
             x-kubernetes-validations:
             - message: autoHostRewrite can only be used when targeting HTTPRoute resources
-              rule: '!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r,
-                r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
+              rule: '!has(self.autoHostRewrite) || ((!has(self.targetRefs) || self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'')) && (!has(self.targetSelectors) || self.targetSelectors.all(r,
                 r.kind == ''HTTPRoute'')))'
             - message: tracing can only be used when targeting HTTPRoute or GRPCRoute
                 resources
-              rule: '!has(self.tracing) || ((has(self.targetRefs) && self.targetRefs.all(r,
-                r.kind == ''HTTPRoute'' || r.kind == ''GRPCRoute'')) || (has(self.targetSelectors)
-                && self.targetSelectors.all(r, r.kind == ''HTTPRoute'' || r.kind ==
+              rule: '!has(self.tracing) || ((!has(self.targetRefs) || self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'' || r.kind == ''GRPCRoute'')) && (!has(self.targetSelectors)
+                || self.targetSelectors.all(r, r.kind == ''HTTPRoute'' || r.kind ==
                 ''GRPCRoute'')))'
             - message: retry.perTryTimeout must be less than timeouts.request
               rule: 'has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout)
