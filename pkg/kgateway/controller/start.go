@@ -146,7 +146,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	proxySyncer := proxy_syncer.NewProxySyncer(
 		ctx,
 		cfg.ControllerName,
-		cfg.Manager,
 		cfg.Client,
 		cfg.UniqueClients,
 		mergedPlugins,
