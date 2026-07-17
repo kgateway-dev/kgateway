@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"istio.io/istio/pkg/config/schema/gvr"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -100,14 +99,14 @@ func TestPreV1TCPRouteWatchGVRs(t *testing.T) {
 	})
 
 	t.Run("returns the pre-v1 watch when promoted v1 is not served", func(t *testing.T) {
-		require.Equal(t, []schema.GroupVersionResource{gvr.TCPRoute}, preV1TCPRouteWatchGVRs(servedTCPRouteVersions{
+		require.Equal(t, []schema.GroupVersionResource{wellknown.TCPRouteGVR}, preV1TCPRouteWatchGVRs(servedTCPRouteVersions{
 			PreV1:         true,
 			Authoritative: true,
 		}))
 	})
 
 	t.Run("returns the pre-v1 fallback when discovery is non-authoritative", func(t *testing.T) {
-		require.Equal(t, []schema.GroupVersionResource{gvr.TCPRoute}, preV1TCPRouteWatchGVRs(servedTCPRouteVersions{
+		require.Equal(t, []schema.GroupVersionResource{wellknown.TCPRouteGVR}, preV1TCPRouteWatchGVRs(servedTCPRouteVersions{
 			Promoted: true,
 			PreV1:    true,
 		}))

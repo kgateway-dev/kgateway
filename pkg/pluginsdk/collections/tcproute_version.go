@@ -3,7 +3,6 @@ package collections
 import (
 	"context"
 
-	"istio.io/istio/pkg/config/schema/gvr"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -36,7 +35,7 @@ func preV1TCPRouteWatchGVRs(versions servedTCPRouteVersions) []schema.GroupVersi
 	if !versions.PreV1 || (versions.Authoritative && versions.Promoted) {
 		return nil
 	}
-	return []schema.GroupVersionResource{gvr.TCPRoute}
+	return []schema.GroupVersionResource{wellknown.TCPRouteGVR}
 }
 
 // getServedTCPRouteVersions resolves which TCPRoute API versions are currently
