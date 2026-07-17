@@ -11,11 +11,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// Resource identifies a single object whose status should be written.
+// Resource identifies a single object whose status should be written. It is used as the
+// queue's coalescing key, so it must contain only the object's identity: including
+// anything update-specific (e.g. resourceVersion) would defeat coalescing and break the
+// at-most-one-in-flight-write-per-resource guarantee. Writers read the current object
+// (including its resourceVersion) from the informer cache at write time.
 type Resource struct {
 	schema.GroupVersionKind
 	types.NamespacedName
-	ResourceVersion string
 }
 
 // WorkerQueue implements an expandable goroutine pool which executes at most one concurrent routine per target

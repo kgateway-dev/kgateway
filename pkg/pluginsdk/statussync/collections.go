@@ -132,7 +132,6 @@ func RegisterStatus[I controllers.Object, IS any](
 			res := Resource{
 				GroupVersionKind: gvk,
 				NamespacedName:   config.NamespacedName(l.Obj),
-				ResourceVersion:  l.Obj.GetResourceVersion(),
 			}
 			if og := l.Obj.GetObjectKind().GroupVersionKind(); !og.Empty() {
 				res.GroupVersionKind = og
