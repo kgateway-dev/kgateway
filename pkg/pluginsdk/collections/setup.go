@@ -203,14 +203,8 @@ func (c *CommonCollections) InitCollections(
 	c.RawTLSRoutes = tlsRoutes
 
 	// Resolve which served API versions status writes should go through.
-	c.TCPRouteWriteGVR = wellknown.TCPRouteGVR
-	if servedTCPRouteVersions.Promoted {
-		c.TCPRouteWriteGVR = promotedTCPRouteGVR
-	}
-	c.TLSRouteWriteGVR = servedTLSRouteVersions.PreferredPreV1GVR
-	if servedTLSRouteVersions.Promoted || c.TLSRouteWriteGVR.Empty() {
-		c.TLSRouteWriteGVR = promotedTLSRouteGVR
-	}
+	c.TCPRouteWriteGVR = tcpRouteWriteGVR(servedTCPRouteVersions)
+	c.TLSRouteWriteGVR = tlsRouteWriteGVR(servedTLSRouteVersions)
 
 	backendIndex := krtcollections.NewBackendIndex(c.KrtOpts, policies, c.RefGrants)
 	initBackends(plugins, backendIndex)
