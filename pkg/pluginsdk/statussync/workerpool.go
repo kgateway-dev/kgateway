@@ -27,8 +27,6 @@ type Resource struct {
 type WorkerQueue interface {
 	// Push a task.
 	Push(target Resource, data any)
-	// Run the loop until a signal on the context
-	Run(ctx context.Context)
 }
 
 type WorkQueue struct {
@@ -84,7 +82,9 @@ func (p *WorkQueue) Dequeue() (r Resource, d any, ok bool) {
 	}
 
 	con := p.queue[0]
-	// The underlying array will still exist, despite the slice changing, so the object may not GC without this
+	// Zero the removed slot: the underlying array outlives the reslice, so a stale
+	// Resource would otherwise keep its strings reachable.
+	p.queue[0] = Resource{}
 	p.queue = p.queue[1:]
 
 	data := p.pending[con]
@@ -160,14 +160,6 @@ type WorkerPool struct {
 func (wp *WorkerPool) Push(target Resource, data any) {
 	wp.q.Enqueue(target, data)
 	wp.maybeAddWorker()
-}
-
-func (wp *WorkerPool) Run(ctx context.Context) {
-	context.AfterFunc(ctx, func() {
-		wp.lock.Lock()
-		wp.closing = true
-		wp.lock.Unlock()
-	})
 }
 
 // maybeAddWorker adds a worker unless we are at maxWorkers. Workers exit when there are no more tasks.
