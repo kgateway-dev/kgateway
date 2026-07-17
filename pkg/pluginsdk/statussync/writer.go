@@ -98,17 +98,12 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource, statusObj a
 			return nil
 		}
 
-		// Prefer the latest resourceVersion to avoid avoidable conflicts.
-		// Conflicts are still handled (and expected), but using the latest RV reduces churn.
-		rv := obj.ResourceVersion
-		if crv := current.GetResourceVersion(); crv != "" {
-			rv = crv
-		}
-
+		// Write with the informer's current resourceVersion so stale data is rejected;
+		// conflicts are expected and self-heal via re-enqueue.
 		_, err := w.Client.UpdateStatus(w.Build(metav1.ObjectMeta{
 			Name:            obj.Name,
 			Namespace:       obj.Namespace,
-			ResourceVersion: rv,
+			ResourceVersion: current.GetResourceVersion(),
 		}, merged))
 		if err != nil {
 			if apierrors.IsConflict(err) {
