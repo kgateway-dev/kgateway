@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 
@@ -14,12 +13,11 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/encoding/protojson"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/localstack"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -126,40 +124,11 @@ func (s *testingSuite) TestEc2BackendDiscovery() {
 }
 
 func (s *testingSuite) extractLocalstackEndpoint() {
-	c := s.testInstallation.ClusterContext.Client
+	endpoint, found, err := localstack.EndpointURL(s.ctx, s.testInstallation.ClusterContext.Client)
+	s.Require().NoError(err, "can resolve localstack endpoint")
+	s.Require().True(found, "localstack service must exist")
 
-	var nodes corev1.NodeList
-	err := c.List(s.ctx, &nodes)
-	s.Require().NoError(err, "can list nodes")
-	s.Require().NotEmpty(nodes.Items, "cluster has at least one node")
-
-	var nodeIP string
-	for _, node := range nodes.Items {
-		for _, addr := range node.Status.Addresses {
-			if addr.Type == corev1.NodeInternalIP {
-				nodeIP = addr.Address
-				break
-			}
-		}
-		if nodeIP != "" {
-			break
-		}
-	}
-	s.Require().NotEmpty(nodeIP, "node has internal IP")
-
-	var svc corev1.Service
-	err = c.Get(s.ctx, client.ObjectKeyFromObject(&localstackService), &svc)
-	s.Require().NoError(err, "can get localstack service")
-	s.Require().NotEmpty(svc.Spec.Ports, "localstack service has ports")
-
-	port := svc.Spec.Ports[0].NodePort
-	s.Require().NotZero(port, "localstack service has node port")
-
-	endpoint := fmt.Sprintf("http://%s:%d", nodeIP, port)
-	parsed, err := url.Parse(endpoint)
-	s.Require().NoError(err, "can parse localstack endpoint")
-
-	s.localstackURL = parsed.String()
+	s.localstackURL = endpoint
 }
 
 func (s *testingSuite) cleanupEc2Instances() {
