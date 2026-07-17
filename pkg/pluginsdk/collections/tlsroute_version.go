@@ -63,6 +63,16 @@ func preV1TLSRouteWatchGVRs(versions servedTLSRouteVersions) []schema.GroupVersi
 	return []schema.GroupVersionResource{tlsRouteV1Alpha3GVR, tlsRouteV1Alpha2GVR}
 }
 
+// tlsRouteWriteGVR returns the API version status writes should go through: the
+// promoted v1 version when it is served (or when no served pre-v1 version was
+// resolved), otherwise the preferred served pre-v1 version.
+func tlsRouteWriteGVR(versions servedTLSRouteVersions) schema.GroupVersionResource {
+	if versions.Promoted || versions.PreferredPreV1GVR.Empty() {
+		return promotedTLSRouteGVR
+	}
+	return versions.PreferredPreV1GVR
+}
+
 // getServedTLSRouteVersions resolves which TLSRoute API versions are currently
 // served by the cluster. When discovery is unavailable, or the CRD is not yet
 // installed, we conservatively allow both promoted and pre-v1 watches so
