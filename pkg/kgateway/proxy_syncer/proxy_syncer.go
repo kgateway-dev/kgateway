@@ -2,7 +2,6 @@ package proxy_syncer
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync/atomic"
 
@@ -46,7 +45,6 @@ var _ manager.LeaderElectionRunnable = &ProxySyncer{}
 type ProxySyncer struct {
 	controllerName string
 
-	mgr        manager.Manager
 	commonCols *collections.CommonCollections
 	translator *translator.CombinedTranslator
 	plugins    plug.Plugin
@@ -141,7 +139,6 @@ func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r report
 func NewProxySyncer(
 	ctx context.Context,
 	controllerName string,
-	mgr manager.Manager,
 	client apiclient.Client,
 	uniqueClients krt.Collection[ir.UniquelyConnectedClient],
 	mergedPlugins plug.Plugin,
@@ -152,7 +149,6 @@ func NewProxySyncer(
 	return &ProxySyncer{
 		controllerName:  controllerName,
 		commonCols:      commonCols,
-		mgr:             mgr,
 		apiClient:       client,
 		proxyTranslator: NewProxyTranslator(xdsCache),
 		uniqueClients:   uniqueClients,
@@ -366,10 +362,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		s.waitForSync...,
 	)
 
-	// wait for ctrl-rtime caches to sync before accepting events
-	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
-		return errors.New("kube gateway proxy syncer sync loop waiting for all caches to sync failed")
-	}
+	// Note: the controller-runtime manager cache is deliberately not waited on here.
+	// Nothing reads through it anymore (status syncing uses the istio/krt cache), so
+	// it holds no informers.
 	logger.Info("caches warm!")
 
 	// caches are warm, now we can do registrations
