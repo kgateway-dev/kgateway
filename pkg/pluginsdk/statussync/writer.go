@@ -123,6 +123,7 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource, statusObj a
 		log.Debug("updated status")
 		return nil
 	},
+		retry.Context(ctx),
 		retry.Attempts(maxRetryAttempts),
 		retry.Delay(retryDelay),
 		retry.DelayType(retry.BackOffDelay),
