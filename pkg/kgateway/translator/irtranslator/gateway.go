@@ -200,6 +200,8 @@ func (t *Translator) ComputeListener(
 		ret.ListenerFilters = append(ret.GetListenerFilters(), tlsInspectorFilter())
 	}
 
+	t.runPostListenerPlugins(pass, gw, lis, ret)
+
 	return ret, routes
 }
 
@@ -237,6 +239,63 @@ func (t *Translator) runListenerPlugins(
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, mergeOrigins, pols...)
+	}
+}
+
+// runPostListenerPlugins is called after a listener's FilterChains are built so that
+// plugins can mutate FilterChain-level fields via ApplyPostListener.
+// It is invoked once per FilterChain on the listener: section-specific policies attached to
+// an HttpFilterChain or TcpFilterChain are merged with gateway-wide policies before the hook
+// fires, and ListenerContext.FilterChainName carries the target chain name so plugins can
+// mutate only the matching FilterChain.
+func (t *Translator) runPostListenerPlugins(
+	pass TranslationPassPlugins,
+	gw ir.GatewayIR,
+	l ir.ListenerIR,
+	out *envoylistenerv3.Listener,
+) {
+	chains := make([]struct {
+		name             string
+		attachedPolicies ir.AttachedPolicies
+	}, 0, len(l.HttpFilterChain)+len(l.TcpFilterChain))
+	for _, hfc := range l.HttpFilterChain {
+		chains = append(chains, struct {
+			name             string
+			attachedPolicies ir.AttachedPolicies
+		}{name: hfc.FilterChainName, attachedPolicies: hfc.AttachedPolicies})
+	}
+	for _, tfc := range l.TcpFilterChain {
+		chains = append(chains, struct {
+			name             string
+			attachedPolicies ir.AttachedPolicies
+		}{name: tfc.FilterChainName, attachedPolicies: ir.AttachedPolicies{}})
+	}
+
+	for _, chain := range chains {
+		var attachedPolicies ir.AttachedPolicies
+		attachedPolicies.Append(chain.attachedPolicies, l.AttachedPolicies, gw.AttachedHttpPolicies)
+		for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+			pols := attachedPolicies.Policies[gk]
+			pass := pass[gk]
+			if pass == nil {
+				continue
+			}
+			policies, _ := mergePolicies(pass, pols)
+			for _, pol := range policies {
+				pctx := &ir.ListenerContext{
+					Port:            l.BindPort,
+					Policy:          pol.PolicyIr,
+					FilterChainName: chain.name,
+					PolicyAncestorRef: gwv1.ParentReference{
+						Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
+						Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+						Namespace: new(gwv1.Namespace(gw.SourceObject.GetNamespace())),
+						Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
+					},
+				}
+				pass.ApplyPostListener(pctx, out)
+			}
+		}
 	}
 }
 

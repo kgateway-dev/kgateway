@@ -43,6 +43,7 @@ type TrafficPolicyList struct {
 // +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.urlRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="urlRewrite can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.statPrefix) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
@@ -194,6 +195,34 @@ type TrafficPolicySpec struct {
 	// a route-level ACL completely replaces the gateway-level ACL for that route.
 	// +optional
 	ACL *shared.ACLPolicy `json:"acl,omitempty"`
+
+	// StatPrefix sets a custom prefix on the Envoy route so that per-route
+	// statistics are emitted for the targeted routes. When set, Envoy emits stats under
+	// `vhost.<vhost>.route.<statPrefix>.*`.
+	//
+	// The value is composed of stat-safe literal characters (letters, digits,
+	// and `_ % . -`) and/or `{{ ... }}` template tokens that are substituted at
+	// translation time with metadata from the route the policy is applied to.
+	// The supported template variables are:
+	//   - `{{route_name}}`: the name of the route resource (e.g. HTTPRoute).
+	//   - `{{route_namespace}}`: the namespace of the route resource.
+	//   - `{{rule_name}}`: the name of the matched route rule, or empty if the
+	//     rule is unnamed.
+	//
+	// For example, `{{route_namespace}}.{{route_name}}` renders to
+	// `my-ns.my-route`. Whitespace is permitted only inside the braces of a
+	// template token; unmatched braces, unsupported variable names, and any
+	// other characters are rejected.
+	//
+	// Recommended value: `{{route_namespace}}.{{route_name}}.{{rule_name}}`,
+	// which uniquely identifies each route rule.
+	//
+	// NOTE: This field is only honored for HTTPRoute and GRPCRoute targets.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	// +kubebuilder:validation:Pattern=`^([a-zA-Z0-9_%.-]|\{\{\s*(route_name|route_namespace|rule_name)\s*\}\})+$`
+	StatPrefix *string `json:"statPrefix,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
@@ -659,11 +688,13 @@ type Buffer struct {
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
 }
 
-// Compression configures HTTP gzip compression and decompression behavior.
+// Compression configures HTTP response compression and request decompression behavior.
 // +kubebuilder:validation:AtLeastOneOf=responseCompression;requestDecompression
 type Compression struct {
 	// ResponseCompression controls response compression to the downstream.
-	// If set, responses with the appropriate `Accept-Encoding` header with certain textual content types will be compressed using gzip.
+	// If set, responses with a matching `Accept-Encoding` header and certain textual content types will be compressed.
+	// The compression codecs default to gzip and can be selected via `responseCompression.libraries`,
+	// which Envoy negotiates against the request's `Accept-Encoding` header.
 	// The content-types that will be compressed are:
 	// - `application/javascript`
 	// - `application/json`
@@ -682,8 +713,35 @@ type Compression struct {
 	RequestDecompression *RequestDecompression `json:"requestDecompression,omitempty"`
 }
 
+// CompressionLibrary identifies the codec used to compress responses.
+// +kubebuilder:validation:Enum=Gzip;Brotli;Zstd
+type CompressionLibrary string
+
+const (
+	// CompressionGzip selects the gzip compressor.
+	CompressionGzip CompressionLibrary = "Gzip"
+	// CompressionBrotli selects the brotli compressor.
+	CompressionBrotli CompressionLibrary = "Brotli"
+	// CompressionZstd selects the zstd compressor.
+	CompressionZstd CompressionLibrary = "Zstd"
+)
+
 // ResponseCompression configures response compression.
 type ResponseCompression struct {
+	// Libraries lists the compression codecs to offer for responses.
+	// Envoy negotiates the codec based on the downstream request's `Accept-Encoding` header,
+	// picking the highest-quality codec the client accepts. On equal quality the client's
+	// ordering decides. If the client accepts none of the offered codecs, the response is
+	// sent uncompressed.
+	// Defaults to [Gzip].
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=3
+	// +kubebuilder:validation:XValidation:rule="self.all(x, self.exists_one(y, y == x))",message="libraries must not contain duplicates"
+	// +kubebuilder:default={Gzip}
+	Libraries []CompressionLibrary `json:"libraries,omitempty"`
+
 	// Disables compression.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`

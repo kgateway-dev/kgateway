@@ -11,7 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *ir.HttpRouteIR {
+func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRoute, controllerName string) (*StatusMarker, *ir.HttpRouteIR) {
 	src := ir.ObjectSource{
 		Group:     gwv1.GroupVersion.Group,
 		Kind:      wellknown.GRPCRouteKind,
@@ -19,7 +19,15 @@ func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRo
 		Name:      i.Name,
 	}
 
-	return &ir.HttpRouteIR{
+	var statusMarker *StatusMarker
+	for _, parentStatus := range i.Status.Parents {
+		if string(parentStatus.ControllerName) == controllerName {
+			statusMarker = &StatusMarker{}
+			break
+		}
+	}
+
+	return statusMarker, &ir.HttpRouteIR{
 		ObjectSource:     src,
 		SourceObject:     i,
 		ParentRefs:       i.Spec.ParentRefs,

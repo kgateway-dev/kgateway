@@ -264,8 +264,12 @@ type Settings struct {
 	// E.g., [{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]
 	DiscoveryNamespaceSelectors string `split_words:"true" default:"[]"`
 
-	// EnableEnvoy enables kgateway to send config to Envoy
-	EnableEnvoy bool `split_words:"true" default:"true"`
+	// EnableOrderedAds delivers ADS responses to each Envoy strictly in the
+	// snapshot cache's type order (CDS, EDS, LDS, RDS) instead of the default
+	// randomized drain, closing the busy-stream reordering window on additions.
+	// It does not change ACK-skew or removal ordering, because those depend on
+	// when resource-type watches are open.
+	EnableOrderedAds bool `split_words:"true" default:"false"`
 
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.

@@ -162,9 +162,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	}
 	mock := krttest.NewMock(t, anys)
 
-	settings := apisettings.Settings{
-		EnableEnvoy: true,
-	}
+	settings := apisettings.Settings{}
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, settings)
 	kubeRawGateways := krttest.GetMockCollection[*gwv1.Gateway](mock)
