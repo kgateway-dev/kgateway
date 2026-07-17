@@ -1817,8 +1817,8 @@ spec:
             type: object
             x-kubernetes-validations:
             - message: autoHostRewrite can only be used when targeting HTTPRoute resources
-              rule: '!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r,
-                r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
+              rule: '!has(self.autoHostRewrite) || ((!has(self.targetRefs) || self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'')) && (!has(self.targetSelectors) || self.targetSelectors.all(r,
                 r.kind == ''HTTPRoute'')))'
             - message: retry.perTryTimeout must be less than timeouts.request
               rule: 'has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout)
