@@ -39,6 +39,15 @@ func preV1TCPRouteWatchGVRs(versions servedTCPRouteVersions) []schema.GroupVersi
 	return []schema.GroupVersionResource{gvr.TCPRoute}
 }
 
+// tcpRouteWriteGVR returns the API version status writes should go through:
+// the promoted v1 version when it is served, otherwise v1alpha2.
+func tcpRouteWriteGVR(versions servedTCPRouteVersions) schema.GroupVersionResource {
+	if versions.Promoted {
+		return promotedTCPRouteGVR
+	}
+	return wellknown.TCPRouteGVR
+}
+
 // getServedTCPRouteVersions resolves which TCPRoute API versions are currently
 // served by the cluster. When discovery is unavailable, or the CRD is not yet
 // installed, we conservatively allow both promoted and pre-v1 watches so
@@ -90,6 +99,12 @@ func convertTCPRouteV1ToV1Alpha2(in *gwv1.TCPRoute) *gwv1a2.TCPRoute {
 		Spec: gwv1a2.TCPRouteSpec{
 			CommonRouteSpec: in.Spec.CommonRouteSpec,
 			Rules:           convertTCPRouteRulesV1ToV1Alpha2(in.Spec.Rules),
+		},
+		// Status must be carried over: the declarative status writer compares the live
+		// status on this converted object against the desired status to decide whether
+		// a write is needed.
+		Status: gwv1a2.TCPRouteStatus{
+			RouteStatus: in.Status.RouteStatus,
 		},
 	}
 }

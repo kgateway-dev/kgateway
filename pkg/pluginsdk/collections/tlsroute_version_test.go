@@ -295,3 +295,61 @@ func TestConvertUnstructuredTLSRouteToV1Alpha2(t *testing.T) {
 	require.Equal(t, gwv1a2.ObjectName("backend"), converted.Spec.Rules[0].BackendRefs[0].Name)
 	require.Equal(t, gwv1a2.PortNumber(443), ptr.Deref(converted.Spec.Rules[0].BackendRefs[0].Port, 0))
 }
+
+func TestTLSRouteWriteGVR(t *testing.T) {
+	testCases := []struct {
+		name     string
+		versions servedTLSRouteVersions
+		want     schema.GroupVersionResource
+	}{
+		{
+			name:     "promoted v1 served",
+			versions: servedTLSRouteVersions{Promoted: true, Authoritative: true},
+			want:     wellknown.TLSRouteV1GVR,
+		},
+		{
+			name: "promoted and pre-v1 served prefers v1",
+			versions: servedTLSRouteVersions{
+				Promoted:          true,
+				PreV1:             true,
+				PreferredPreV1GVR: tlsRouteV1Alpha3GVR,
+				Authoritative:     true,
+			},
+			want: wellknown.TLSRouteV1GVR,
+		},
+		{
+			name: "only v1alpha3 served",
+			versions: servedTLSRouteVersions{
+				PreV1:             true,
+				PreferredPreV1GVR: tlsRouteV1Alpha3GVR,
+				Authoritative:     true,
+			},
+			want: wellknown.TLSRouteV1Alpha3GVR,
+		},
+		{
+			name: "only v1alpha2 served",
+			versions: servedTLSRouteVersions{
+				PreV1:             true,
+				PreferredPreV1GVR: tlsRouteV1Alpha2GVR,
+				Authoritative:     true,
+			},
+			want: wellknown.TLSRouteGVR,
+		},
+		{
+			name:     "discovery fallback prefers v1",
+			versions: fallbackTLSRouteVersions(),
+			want:     wellknown.TLSRouteV1GVR,
+		},
+		{
+			name:     "no served versions falls back to v1",
+			versions: servedTLSRouteVersions{Authoritative: true},
+			want:     wellknown.TLSRouteV1GVR,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, tlsRouteWriteGVR(tc.versions))
+		})
+	}
+}

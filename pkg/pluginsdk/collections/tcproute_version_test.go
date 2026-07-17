@@ -138,6 +138,19 @@ func TestConvertTCPRouteV1ToV1Alpha2(t *testing.T) {
 				}},
 			}},
 		},
+		Status: gwv1.TCPRouteStatus{
+			RouteStatus: gwv1.RouteStatus{
+				Parents: []gwv1.RouteParentStatus{{
+					ParentRef:      gwv1.ParentReference{Name: "gateway"},
+					ControllerName: "test-controller",
+					Conditions: []metav1.Condition{{
+						Type:   string(gwv1.RouteConditionAccepted),
+						Status: metav1.ConditionTrue,
+						Reason: string(gwv1.RouteReasonAccepted),
+					}},
+				}},
+			},
+		},
 	}
 
 	converted := convertTCPRouteV1ToV1Alpha2(route)
@@ -152,8 +165,50 @@ func TestConvertTCPRouteV1ToV1Alpha2(t *testing.T) {
 	require.Len(t, converted.Spec.Rules[0].BackendRefs, 1)
 	require.Equal(t, gwv1a2.ObjectName("backend"), converted.Spec.Rules[0].BackendRefs[0].Name)
 	require.Equal(t, gwv1a2.PortNumber(8080), ptr.Deref(converted.Spec.Rules[0].BackendRefs[0].Port, 0))
+	require.Equal(t, route.Status.RouteStatus, converted.Status.RouteStatus,
+		"status must be preserved: the declarative status writer diffs live status on the converted object")
 }
 
 func TestConvertTCPRouteV1ToV1Alpha2Nil(t *testing.T) {
 	require.Nil(t, convertTCPRouteV1ToV1Alpha2(nil))
+}
+
+func TestTCPRouteWriteGVR(t *testing.T) {
+	testCases := []struct {
+		name     string
+		versions servedTCPRouteVersions
+		want     schema.GroupVersionResource
+	}{
+		{
+			name:     "promoted v1 served",
+			versions: servedTCPRouteVersions{Promoted: true, Authoritative: true},
+			want:     wellknown.TCPRouteV1GVR,
+		},
+		{
+			name:     "both versions served prefers v1",
+			versions: servedTCPRouteVersions{Promoted: true, PreV1: true, Authoritative: true},
+			want:     wellknown.TCPRouteV1GVR,
+		},
+		{
+			name:     "only pre-v1 served",
+			versions: servedTCPRouteVersions{PreV1: true, Authoritative: true},
+			want:     wellknown.TCPRouteGVR,
+		},
+		{
+			name:     "discovery fallback prefers v1",
+			versions: fallbackTCPRouteVersions(),
+			want:     wellknown.TCPRouteV1GVR,
+		},
+		{
+			name:     "no served versions falls back to pre-v1",
+			versions: servedTCPRouteVersions{Authoritative: true},
+			want:     wellknown.TCPRouteGVR,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, tcpRouteWriteGVR(tc.versions))
+		})
+	}
 }
