@@ -191,7 +191,7 @@ jobs:
           run=true
           bypass_version_check=false
           run_regex="${BASE_REGEX}"
-          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.6.0" ]]; then
+          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.6.1" ]]; then
             case "${GW_API_CHANNEL}" in
               standard)     run=false ;;
               experimental) bypass_version_check=true ;;
@@ -220,9 +220,9 @@ jobs:
             run_regex="${run_regex//^TestListenerSet|/}"
           fi
           # v2.3.x's min lane runs a Kubernetes version that lacks the format.dns1123Label()
-          # CEL function the Gateway API 1.6.0 experimental CRDs use, so those CRDs fail to
+          # CEL function the Gateway API 1.6.1 experimental CRDs use, so those CRDs fail to
           # install. Skip that one combination; main's min lane runs a newer k8s and is fine.
-          if [[ "${REF}" == "v2.3.x" && "${GW_API_VERSION}" == "v1.6.0" \
+          if [[ "${REF}" == "v2.3.x" && "${GW_API_VERSION}" == "v1.6.1" \
                 && "${GW_API_CHANNEL}" == "experimental" && "${VERSIONS_LABEL}" == "min" ]]; then
             run=false
           fi
