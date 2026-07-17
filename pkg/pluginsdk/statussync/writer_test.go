@@ -1,11 +1,14 @@
 package statussync
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 const (
@@ -144,4 +147,61 @@ func TestCompareParentReferenceCanonicalizesDefaults(t *testing.T) {
 
 	require.Zero(t, compareParentReference(explicit, implicit),
 		"nil group/kind must compare equal to their explicit defaults")
+}
+
+func TestMergePolicyAncestorStatusesCapsAtGatewayAPILimit(t *testing.T) {
+	// The API server enforces MaxItems=16 on PolicyStatus.ancestors; a merged list that
+	// exceeds it would be rejected on every write and never self-heal.
+	existing := make([]gwv1.PolicyAncestorStatus, 0, reports.MaxPolicyStatusAncestors)
+	for i := range reports.MaxPolicyStatusAncestors {
+		existing = append(existing, ancestor(otherController, fmt.Sprintf("their-gw-%02d", i)))
+	}
+	desired := []gwv1.PolicyAncestorStatus{ancestor(ourController, "our-gw")}
+
+	merged := MergePolicyAncestorStatuses(ourController, existing, desired)
+
+	require.Len(t, merged, reports.MaxPolicyStatusAncestors,
+		"merged list must not exceed the Gateway API ancestors limit")
+	for _, a := range merged {
+		require.Equal(t, gwv1.GatewayController(otherController), a.ControllerName,
+			"other controllers' entries must never be dropped in favor of ours")
+	}
+}
+
+func TestMergePolicyAncestorStatusesCapKeepsOursWhileRoomRemains(t *testing.T) {
+	existing := make([]gwv1.PolicyAncestorStatus, 0, reports.MaxPolicyStatusAncestors-1)
+	for i := range reports.MaxPolicyStatusAncestors - 1 {
+		existing = append(existing, ancestor(otherController, fmt.Sprintf("their-gw-%02d", i)))
+	}
+	desired := []gwv1.PolicyAncestorStatus{
+		ancestor(ourController, "our-gw-b"),
+		ancestor(ourController, "our-gw-a"),
+	}
+
+	merged := MergePolicyAncestorStatuses(ourController, existing, desired)
+
+	require.Len(t, merged, reports.MaxPolicyStatusAncestors)
+	last := merged[len(merged)-1]
+	require.Equal(t, gwv1.GatewayController(ourController), last.ControllerName,
+		"our first sorted entry should fill the remaining slot")
+	require.Equal(t, gwv1.ObjectName("our-gw-a"), last.AncestorRef.Name,
+		"truncation must drop our entries from the sorted tail")
+}
+
+func TestMergeRouteParentStatusesCapsAtGatewayAPILimit(t *testing.T) {
+	// The API server enforces MaxItems=32 on RouteStatus.parents.
+	existing := make([]gwv1.RouteParentStatus, 0, reports.MaxRouteStatusParents)
+	for i := range reports.MaxRouteStatusParents {
+		existing = append(existing, routeParent(otherController, fmt.Sprintf("their-gw-%02d", i)))
+	}
+	desired := []gwv1.RouteParentStatus{routeParent(ourController, "our-gw")}
+
+	merged := MergeRouteParentStatuses(ourController, existing, desired)
+
+	require.Len(t, merged, reports.MaxRouteStatusParents,
+		"merged list must not exceed the Gateway API parents limit")
+	for _, p := range merged {
+		require.Equal(t, gwv1.GatewayController(otherController), p.ControllerName,
+			"other controllers' entries must never be dropped in favor of ours")
+	}
 }

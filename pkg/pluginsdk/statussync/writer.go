@@ -16,6 +16,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 const (
@@ -140,6 +142,10 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource, statusObj a
 // MergePolicyAncestorStatuses preserves PolicyStatus ancestors owned by other controllers,
 // replacing only the entries owned by ourControllerName with the desired entries.
 // Publishing an empty desired list therefore clears our stale entries without touching others.
+//
+// The merged list is capped at the Gateway API limit (16 ancestors), which the API server
+// enforces via CRD schema. Entries owned by other controllers are never dropped in favor
+// of ours: our entries are truncated first.
 func MergePolicyAncestorStatuses(ourControllerName string, existing, desired []gwv1.PolicyAncestorStatus) []gwv1.PolicyAncestorStatus {
 	out := make([]gwv1.PolicyAncestorStatus, 0, len(existing)+len(desired))
 
@@ -167,12 +173,16 @@ func MergePolicyAncestorStatuses(ourControllerName string, existing, desired []g
 	})
 
 	out = append(out, ours...)
-	return out
+	return capMergedStatusEntries(out, reports.MaxPolicyStatusAncestors, "PolicyStatus.ancestors")
 }
 
 // MergeRouteParentStatuses preserves RouteStatus parents owned by other controllers,
 // replacing only the entries owned by ourControllerName with the desired entries.
 // Publishing an empty desired list therefore clears our stale entries without touching others.
+//
+// The merged list is capped at the Gateway API limit (32 parents), which the API server
+// enforces via CRD schema. Entries owned by other controllers are never dropped in favor
+// of ours: our entries are truncated first.
 func MergeRouteParentStatuses(ourControllerName string, existing, desired []gwv1.RouteParentStatus) []gwv1.RouteParentStatus {
 	out := make([]gwv1.RouteParentStatus, 0, len(existing)+len(desired))
 
@@ -200,7 +210,27 @@ func MergeRouteParentStatuses(ourControllerName string, existing, desired []gwv1
 	})
 
 	out = append(out, ours...)
-	return out
+	return capMergedStatusEntries(out, reports.MaxRouteStatusParents, "RouteStatus.parents")
+}
+
+// capMergedStatusEntries truncates a merged status list to the Gateway API schema limit,
+// so writes are not rejected by the API server when entries owned by other controllers
+// already fill (or nearly fill) the list. Merged lists place other controllers' entries
+// first, so truncating the tail drops our entries before anyone else's. This must be
+// applied by the merge itself (not at the write site only) so desired-status
+// normalization stays byte-identical to the written result.
+func capMergedStatusEntries[T any](entries []T, limit int, field string) []T {
+	if len(entries) <= limit {
+		return entries
+	}
+	// We cannot represent the surplus entries within the API limit, so log the
+	// truncation explicitly.
+	logger.Warn("truncating merged status entries to Gateway API limit",
+		"field", field,
+		"total_entries", len(entries),
+		"dropped_entries", len(entries)-limit,
+	)
+	return entries[:limit]
 }
 
 // MergeGatewayAddresses preserves the current Gateway status addresses unless the desired
