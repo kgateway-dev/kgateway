@@ -64,6 +64,23 @@ type Writer[O controllers.ComparableObject, S any] struct {
 
 var _ ResourceStatusSyncer = Writer[*gwv1.Gateway, *gwv1.GatewayStatus]{}
 
+// RetryStatusWrite runs attempt with the standard status-write retry policy: 5 attempts
+// with exponential backoff, aborted on ctx cancellation. attempt must re-read the current
+// object each time and swallow (return nil for) conflicts and NotFound, which self-heal
+// via re-enqueue; only transient errors (throttling, 5xx, network) should be returned.
+// Custom ResourceStatusSyncer implementations should wrap their write in this so transient
+// failures are not silently dropped: after a failed write nothing changes on the informer,
+// so no event is guaranteed to re-enqueue the resource.
+func RetryStatusWrite(ctx context.Context, attempt func() error) error {
+	return retry.Do(attempt,
+		retry.Context(ctx),
+		retry.Attempts(maxRetryAttempts),
+		retry.Delay(retryDelay),
+		retry.DelayType(retry.BackOffDelay),
+		retry.LastErrorOnly(true),
+	)
+}
+
 func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource, statusObj any) {
 	desired, ok := statusObj.(S)
 	if !ok {
@@ -78,7 +95,7 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource, statusObj a
 	start := time.Now()
 	var lastCurrent O
 	lastMerged := desired
-	err := retry.Do(func() error {
+	err := RetryStatusWrite(ctx, func() error {
 		// Fetch the current object so we can preserve status written by other controllers or
 		// subsystems, and suppress writes that would be no-ops.
 		current := w.Client.Get(obj.Name, obj.Namespace)
@@ -124,13 +141,7 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource, statusObj a
 		}
 		log.Debug("updated status")
 		return nil
-	},
-		retry.Context(ctx),
-		retry.Attempts(maxRetryAttempts),
-		retry.Delay(retryDelay),
-		retry.DelayType(retry.BackOffDelay),
-		retry.LastErrorOnly(true),
-	)
+	})
 	if err != nil {
 		log.Error("failed to sync status after retries", "error", err)
 	}

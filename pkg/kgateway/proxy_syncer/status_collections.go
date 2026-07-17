@@ -441,7 +441,10 @@ func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussyn
 	start := time.Now()
 
 	var current *gwv1.ListenerSet
-	err := func() error {
+	// Retry transient write failures: after a failed write nothing changes on the
+	// informer, so no event is guaranteed to re-enqueue this resource. Each attempt
+	// re-reads the current object; conflicts and NotFound self-heal via re-enqueue.
+	err := statussync.RetryStatusWrite(ctx, func() error {
 		cur := s.col.GetKey(res.Namespace + "/" + res.Name)
 		if cur == nil || *cur == nil {
 			logger.Debug("listener set not found, skipping status update", "resource", res.NamespacedName.String())
@@ -474,7 +477,7 @@ func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussyn
 			return err
 		}
 		return nil
-	}()
+	})
 	if err != nil {
 		logger.Error("error updating listener set status", "resource", res.NamespacedName.String(), "error", err)
 	}
