@@ -40,7 +40,7 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 // RunFromVersion installs the given released version and runs the upgrade
 // suite against it.
 func RunFromVersion(t *testing.T, factory e2e.InstallationFactory, fromVersion string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-upgrade")
 	testInstallation := factory(
 		t,
@@ -58,6 +58,7 @@ func RunFromVersion(t *testing.T, factory e2e.InstallationFactory, fromVersion s
 
 	// Register cleanup before installation so partial installs are also cleaned up.
 	testutils.Cleanup(t, func() {
+		ctx := context.Background() // t.Context() is canceled before t's cleanup runs
 		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
 		}

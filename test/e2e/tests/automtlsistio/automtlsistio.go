@@ -48,7 +48,7 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 
 	err := testInstallation.Underlying().AddIstioctl(ctx)
 	if err != nil {
-		t.Errorf("failed to add istioctl: %v\n", err)
+		t.Fatalf("failed to add istioctl: %v", err)
 	}
 
 	// Set the env to the install namespace if it is not already set
@@ -82,7 +82,7 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 	// Install Istio before kgateway to make sure istiod is present before kgateway for sds
 	err = testInstallation.Underlying().InstallMinimalIstio(ctx)
 	if err != nil {
-		t.Errorf("failed to install istio: %v\n", err)
+		t.Fatalf("failed to install istio: %v", err)
 	}
 
 	// Install kgateway
