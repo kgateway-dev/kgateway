@@ -1,6 +1,8 @@
 package statussync
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -204,4 +206,29 @@ func TestMergeRouteParentStatusesCapsAtGatewayAPILimit(t *testing.T) {
 		require.Equal(t, gwv1.GatewayController(otherController), p.ControllerName,
 			"other controllers' entries must never be dropped in favor of ours")
 	}
+}
+
+func TestRetryStatusWriteRetriesTransientErrors(t *testing.T) {
+	attempts := 0
+	err := RetryStatusWrite(context.Background(), func() error {
+		attempts++
+		if attempts < 3 {
+			return errors.New("transient")
+		}
+		return nil
+	})
+	require.NoError(t, err, "a write succeeding within the retry budget must not surface an error")
+	require.Equal(t, 3, attempts, "transient failures must be retried")
+}
+
+func TestRetryStatusWriteStopsOnContextCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	attempts := 0
+	err := RetryStatusWrite(ctx, func() error {
+		attempts++
+		cancel()
+		return errors.New("transient")
+	})
+	require.Error(t, err)
+	require.Equal(t, 1, attempts, "retries must stop once the context is canceled")
 }
