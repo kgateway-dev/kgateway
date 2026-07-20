@@ -63,7 +63,7 @@ comma := ,
 # where actual semver is desired.
 VERSION ?= v1.0.1-dev
 export VERSION
-ROLLING_MAIN_VERSION ?= v2.4.0-main
+ROLLING_MAIN_VERSION ?= v2.5.0-main
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
@@ -1233,7 +1233,7 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
 # This test uses port 9091 which is reserved for the metrics port. The test passes if the port in the conformance test is changed
-CONFORMANCE_SKIP_TESTS := 
+CONFORMANCE_SKIP_TESTS :=
 CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SKIP_TESTS) $(CONFORMANCE_REPORT_ARGS)
 
 CONFORMANCE_TEST_DIR ?= ./test/conformance/...
