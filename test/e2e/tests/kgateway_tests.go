@@ -38,6 +38,7 @@ import (
 	global_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/rate_limit/global"
 	local_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/rate_limit/local"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/rbac"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/requestmirror"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/route_delegation"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/services/grpcroute"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/services/httproute"
@@ -107,6 +108,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("WebSocket", websocket.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("XdsStarvation", xds_starvation.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("RequestMirror", requestmirror.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }
