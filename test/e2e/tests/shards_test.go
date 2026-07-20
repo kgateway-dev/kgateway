@@ -54,18 +54,21 @@ func TestAllE2ETestsInShards(t *testing.T) {
 }
 
 // discoverE2ETestPaths finds all E2E test paths by parsing source files.
-// It looks for top-level test functions in *_test.go files and suite runner
-// calls that link to Register calls in *_tests.go files, all with the
-// //go:build e2e build tag.
+// It looks for top-level test functions in *_test.go files and resolves the
+// suites they run, all with the //go:build e2e build tag.
 //
-// In kgateway, suite registration is split across files:
-//   - *_test.go files define Test* functions that call suite runners
-//   - *_tests.go files define suite runner functions with Register calls
+// In kgateway, each test is split between a thin wrapper and a sub-package:
+//   - *_test.go wrapper files define Test* functions that delegate to a
+//     sub-package body (e.g., kgateway.Run(t, ...))
+//   - the sub-package (e.g., kgateway/) holds the test body and its suite
+//     runner with Register calls
 //
-// For test functions that call a suite runner (e.g., KubeGatewaySuiteRunner().Run()),
-// individual suite paths are returned (e.g., "TestKgateway/JWT").
-// For test functions with no suite runner call, the top-level function
-// name is returned (e.g., "TestAPIValidation").
+// For test functions whose sub-package registers suites, individual suite
+// paths are returned (e.g., "TestKgateway/JWT"). For test functions with no
+// registered suites, the top-level function name is returned (e.g.,
+// "TestAPIValidation"). Suite runner calls in the wrapper file itself
+// (e.g., FooSuiteRunner().Run()) are still resolved for tests that haven't
+// been split into a sub-package.
 func discoverE2ETestPaths(t *testing.T) []string {
 	t.Helper()
 
@@ -73,11 +76,17 @@ func discoverE2ETestPaths(t *testing.T) []string {
 	if err != nil {
 		t.Fatalf("failed to glob go files: %v", err)
 	}
+	subPkgGoFiles, err := filepath.Glob("*/*.go")
+	if err != nil {
+		t.Fatalf("failed to glob sub-package go files: %v", err)
+	}
 
 	buildTagRe := regexp.MustCompile(`(?m)^//go:build e2e\b`)
 	testFuncRe := regexp.MustCompile(`func (Test\w+)\(t \*testing\.T\)`)
 	// Match direct runner calls: SuiteRunnerFunc().Run( or SuiteRunnerFunc(args).Run(
 	runnerCallRe := regexp.MustCompile(`(\w+)\([^)]*\)\.Run\(`)
+	// Match delegation calls to a sub-package body: pkgname.Run(t, ...)
+	delegateCallRe := regexp.MustCompile(`(\w+)\.Run\(t\b`)
 	// Only match static string Register calls (no string concatenation).
 	// Requiring "," after the closing quote ensures we capture the full
 	// suite name and skip dynamic constructions like Register("Basic/"+ns, ...).
@@ -85,17 +94,38 @@ func discoverE2ETestPaths(t *testing.T) []string {
 	// Match non-method function definitions (methods start with a receiver: func (r Type))
 	funcDefRe := regexp.MustCompile(`(?m)^func (\w+)\(`)
 
-	// Read all e2e-tagged files
-	fileContents := make(map[string]string)
-	for _, f := range allGoFiles {
-		data, err := os.ReadFile(f)
-		if err != nil {
-			t.Fatalf("failed to read %s: %v", f, err)
+	readTaggedFiles := func(files []string) map[string]string {
+		contents := make(map[string]string)
+		for _, f := range files {
+			data, err := os.ReadFile(f)
+			if err != nil {
+				t.Fatalf("failed to read %s: %v", f, err)
+			}
+			content := string(data)
+			if buildTagRe.MatchString(content) {
+				contents[f] = content
+			}
 		}
-		content := string(data)
-		if buildTagRe.MatchString(content) {
-			fileContents[f] = content
+		return contents
+	}
+
+	fileContents := readTaggedFiles(allGoFiles)
+	subPkgContents := readTaggedFiles(subPkgGoFiles)
+
+	// registerCalls returns the statically-registered suite names in a file,
+	// skipping comment lines (e.g., commented-out Register calls).
+	registerCalls := func(content string) []string {
+		var suites []string
+		for line := range strings.SplitSeq(content, "\n") {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "//") {
+				continue
+			}
+			if m := registerRe.FindStringSubmatch(line); m != nil {
+				suites = append(suites, m[1])
+			}
 		}
+		return suites
 	}
 
 	// Build map: function name -> registered suite names.
@@ -115,6 +145,13 @@ func discoverE2ETestPaths(t *testing.T) []string {
 				funcSuites[currentFunc] = append(funcSuites[currentFunc], m[1])
 			}
 		}
+	}
+
+	// Build map: sub-package directory name -> registered suite names.
+	pkgSuites := make(map[string][]string)
+	for f, content := range subPkgContents {
+		dir := filepath.Dir(f)
+		pkgSuites[dir] = append(pkgSuites[dir], registerCalls(content)...)
 	}
 
 	// Process _test.go files to discover test paths
@@ -146,6 +183,15 @@ func discoverE2ETestPaths(t *testing.T) []string {
 		for _, rc := range runnerCalls {
 			runnerName := rc[1]
 			if s, ok := funcSuites[runnerName]; ok {
+				suites = append(suites, s...)
+			}
+		}
+
+		// Find delegation calls to a sub-package body (e.g., kgateway.Run(t, ...))
+		// and pull in the suites that sub-package registers.
+		delegateCalls := delegateCallRe.FindAllStringSubmatch(content, -1)
+		for _, dc := range delegateCalls {
+			if s, ok := pkgSuites[dc[1]]; ok {
 				suites = append(suites, s...)
 			}
 		}

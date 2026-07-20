@@ -7,7 +7,6 @@ import (
 	"net"
 	"sync"
 
-	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
 	"istio.io/istio/pkg/kube/krt"
@@ -264,7 +263,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 		s.krtDebugger = new(krt.DebugHandler)
 	}
 
-	if s.globalSettings.EnableEnvoy && s.xdsListener == nil {
+	if s.xdsListener == nil {
 		var err error
 		s.xdsListener, err = newXDSListener("0.0.0.0", s.globalSettings.XdsServicePort)
 		if err != nil {
@@ -321,11 +320,7 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	// Only create Envoy control plane if Envoy controller is enabled
-	var cache envoycache.SnapshotCache
-	if s.globalSettings.EnableEnvoy {
-		cache = NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds)
-	}
+	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,

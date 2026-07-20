@@ -8,21 +8,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/localstack"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -257,35 +255,12 @@ func (s *testingSuite) TestLambdaBackendQualifier() {
 
 func (s *testingSuite) extractLocalstackEndpoint() {
 	s.T().Log("extracting localstack endpoint URL from cluster")
-	c := s.ti.ClusterContext.Client
 
-	var nodes corev1.NodeList
-	err := c.List(s.ctx, &nodes)
-	s.Require().NoError(err, "can list nodes")
-	s.Require().NotEmpty(nodes.Items, "cluster has at least one node")
+	endpoint, found, err := localstack.EndpointURL(s.ctx, s.ti.ClusterContext.Client)
+	s.Require().NoError(err, "can resolve localstack endpoint")
+	s.Require().True(found, "localstack service must exist")
 
-	var nodeIP string
-	for _, node := range nodes.Items {
-		for _, addr := range node.Status.Addresses {
-			if addr.Type == "InternalIP" {
-				nodeIP = addr.Address
-				break
-			}
-		}
-	}
-	s.Require().NotEmpty(nodeIP, "node has internal IP")
-
-	var svc corev1.Service
-	err = c.Get(s.ctx, client.ObjectKeyFromObject(&localstackService), &svc)
-	s.Require().NoError(err, "can get localstack service")
-	s.Require().Greater(len(svc.Spec.Ports), 0, "localstack service has ports")
-	port := svc.Spec.Ports[0].NodePort
-	s.Require().NotZero(port, "localstack service has node port")
-
-	s.endpointURL = fmt.Sprintf("http://%s:%d", nodeIP, port)
-	u, err := url.Parse(s.endpointURL)
-	s.Require().NoError(err, "can parse localstack endpoint URL")
-	s.endpointURL = u.String()
+	s.endpointURL = endpoint
 	s.T().Logf("localstack endpoint URL: %s", s.endpointURL)
 }
 

@@ -135,55 +135,49 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 
 	globalSettings := *cfg.SetupOpts.GlobalSettings
-	var mergedPlugins sdk.Plugin
-	if cfg.SetupOpts.GlobalSettings.EnableEnvoy {
-		mergedPlugins = pluginFactoryWithBuiltin(cfg)(ctx, cfg.CommonCollections)
-	}
+	mergedPlugins := pluginFactoryWithBuiltin(cfg)(ctx, cfg.CommonCollections)
 	cfg.CommonCollections.InitPlugins(ctx, mergedPlugins, globalSettings)
 
 	// Begin background processing of resource sync metrics.
 	// This only effects metrics in the resources subsystem and is not required for other metrics.
 	metrics.StartResourceSyncMetricsProcessing(ctx)
 
-	var proxySyncer *proxy_syncer.ProxySyncer
-	if cfg.SetupOpts.GlobalSettings.EnableEnvoy {
-		// Create the proxy syncer for the Gateway API resources
-		setupLog.Info("initializing proxy syncer")
-		proxySyncer = proxy_syncer.NewProxySyncer(
-			ctx,
-			cfg.ControllerName,
-			cfg.Manager,
-			cfg.Client,
-			cfg.UniqueClients,
-			mergedPlugins,
-			cfg.CommonCollections,
-			cfg.SetupOpts.Cache,
-			cfg.Validator,
-		)
-		proxySyncer.Init(ctx, cfg.KrtOptions)
-		if err := cfg.Manager.Add(proxySyncer); err != nil {
-			setupLog.Error(err, "unable to add proxySyncer runnable")
-			return nil, err
-		}
+	// Create the proxy syncer for the Gateway API resources
+	setupLog.Info("initializing proxy syncer")
+	proxySyncer := proxy_syncer.NewProxySyncer(
+		ctx,
+		cfg.ControllerName,
+		cfg.Manager,
+		cfg.Client,
+		cfg.UniqueClients,
+		mergedPlugins,
+		cfg.CommonCollections,
+		cfg.SetupOpts.Cache,
+		cfg.Validator,
+	)
+	proxySyncer.Init(ctx, cfg.KrtOptions)
+	if err := cfg.Manager.Add(proxySyncer); err != nil {
+		setupLog.Error(err, "unable to add proxySyncer runnable")
+		return nil, err
+	}
 
-		statusSyncer := proxy_syncer.NewStatusSyncer(proxy_syncer.StatusSyncerConfig{
-			Mgr:                      cfg.Manager,
-			Plugins:                  mergedPlugins,
-			ControllerName:           cfg.ControllerName,
-			Client:                   cfg.Client,
-			ReportQueue:              proxySyncer.ReportQueue(),
-			BackendPolicyReportQueue: proxySyncer.BackendPolicyReportQueue(),
-			BackendStatusReportQueue: proxySyncer.BackendStatusReportQueue(),
-			CacheSyncs:               proxySyncer.CacheSyncs(),
-		}, cfg.StatusSyncerOptions...)
-		if err := cfg.Manager.Add(statusSyncer); err != nil {
-			setupLog.Error(err, "unable to add statusSyncer runnable")
-			return nil, err
-		}
-		if err := cfg.Manager.Add(bootstrap.NewController(cfg.Client)); err != nil {
-			setupLog.Error(err, "unable to add bootstrap controller runnable")
-			return nil, err
-		}
+	statusSyncer := proxy_syncer.NewStatusSyncer(proxy_syncer.StatusSyncerConfig{
+		Mgr:                      cfg.Manager,
+		Plugins:                  mergedPlugins,
+		ControllerName:           cfg.ControllerName,
+		Client:                   cfg.Client,
+		ReportQueue:              proxySyncer.ReportQueue(),
+		BackendPolicyReportQueue: proxySyncer.BackendPolicyReportQueue(),
+		BackendStatusReportQueue: proxySyncer.BackendStatusReportQueue(),
+		CacheSyncs:               proxySyncer.CacheSyncs(),
+	}, cfg.StatusSyncerOptions...)
+	if err := cfg.Manager.Add(statusSyncer); err != nil {
+		setupLog.Error(err, "unable to add statusSyncer runnable")
+		return nil, err
+	}
+	if err := cfg.Manager.Add(bootstrap.NewController(cfg.Client)); err != nil {
+		setupLog.Error(err, "unable to add bootstrap controller runnable")
+		return nil, err
 	}
 
 	setupLog.Info("starting controller builder")
@@ -253,7 +247,6 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		Client:         c.cfg.Client,
 		Mgr:            c.mgr,
 		ControllerName: c.cfg.ControllerName,
-		EnableEnvoy:    globalSettings.EnableEnvoy,
 		ControlPlane: deployer.ControlPlaneInfo{
 			XdsHost:      xdsHost,
 			XdsPort:      xdsPort,
@@ -310,17 +303,15 @@ func GetDefaultClassInfo(
 ) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{}
 	refOverrides := globalSettings.GatewayClassParametersRefs
-	if globalSettings.EnableEnvoy {
-		logger.Info("enabling envoy gateway class")
-		classInfos[gatewayClassName] = &deployer.GatewayClassInfo{
-			Description:       "Standard class for managing Gateway API ingress traffic.",
-			Labels:            map[string]string{},
-			Annotations:       map[string]string{},
-			ControllerName:    controllerName,
-			SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(globalSettings.EnableExperimentalGatewayAPIFeatures),
-		}
-		applyGatewayClassParametersRef(classInfos[gatewayClassName], gatewayClassName, refOverrides)
+	logger.Info("enabling envoy gateway class")
+	classInfos[gatewayClassName] = &deployer.GatewayClassInfo{
+		Description:       "Standard class for managing Gateway API ingress traffic.",
+		Labels:            map[string]string{},
+		Annotations:       map[string]string{},
+		ControllerName:    controllerName,
+		SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(globalSettings.EnableExperimentalGatewayAPIFeatures),
 	}
+	applyGatewayClassParametersRef(classInfos[gatewayClassName], gatewayClassName, refOverrides)
 	// Only enable waypoint gateway class if it's enabled in the settings and the name isn't empty
 	if globalSettings.EnableWaypoint && waypointGatewayClassName != "" {
 		classInfos[waypointGatewayClassName] = &deployer.GatewayClassInfo{
