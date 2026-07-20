@@ -109,7 +109,7 @@ func constructCompression(spec kgateway.TrafficPolicySpec, out *trafficPolicySpe
 		}
 		var minContentLength *uint32
 		if rc.MinContentLengthBytes != nil {
-			v := uint32(*rc.MinContentLengthBytes)
+			v := uint32(*rc.MinContentLengthBytes) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 			minContentLength = &v
 		}
 		out.compression = &compressionIR{
@@ -165,7 +165,9 @@ func (p *trafficPolicyPluginGwPass) handleCompression(fcn string, pCtxTypedFilte
 	//
 	// Envoy has no per-route override for min_content_length or content_type, so those settings
 	// live on the listener-level compressor filter. Routes that compress the same codec with
-	// different settings therefore need distinct filters, keyed by codec and settings.
+	// different settings therefore need distinct filters, keyed by codec and settings. A Gateway
+	// with many routes each using distinct minContentLengthBytes/contentTypes combinations will
+	// grow one compressor filter per combination per codec on its filter chain.
 	for _, library := range comp.libraries {
 		filterName := compressorFilterNameForConfig(library, comp.minContentLength, comp.contentTypes)
 		pCtxTypedFilterConfig.AddTypedConfig(filterName, EnableFilterPerRoute())
@@ -191,6 +193,7 @@ func (p *trafficPolicyPluginGwPass) disableBroadScopeCompressionOnOptedOutRoutes
 	}
 	disableAny, err := utils.MessageToAny(DisableFilterPerRouteOptional())
 	if err != nil {
+		logger.Error("failed to marshal compressor disable-per-route config", "error", err)
 		return
 	}
 	for _, route := range routes {

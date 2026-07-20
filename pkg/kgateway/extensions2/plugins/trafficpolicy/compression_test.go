@@ -61,13 +61,13 @@ func TestCompressionIREquals(t *testing.T) {
 		},
 		{
 			name: "different min content length is not equal",
-			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: u32(100)},
-			b:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: u32(200)},
+			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: new(100)},
+			b:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: new(200)},
 			want: false,
 		},
 		{
 			name: "set vs unset min content length is not equal",
-			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: u32(100)},
+			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: new(100)},
 			b:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}},
 			want: false,
 		},
@@ -79,8 +79,8 @@ func TestCompressionIREquals(t *testing.T) {
 		},
 		{
 			name: "same content types and min length are equal",
-			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: u32(100), contentTypes: []string{"text/html"}},
-			b:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: u32(100), contentTypes: []string{"text/html"}},
+			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: new(100), contentTypes: []string{"text/html"}},
+			b:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: new(100), contentTypes: []string{"text/html"}},
 			want: true,
 		},
 		{
@@ -101,21 +101,22 @@ func TestCompressionIREquals(t *testing.T) {
 func TestSettingsHash(t *testing.T) {
 	// Content-type order must not affect the hash, so equivalent allowlists share a filter.
 	assert.Equal(t,
-		settingsHash(u32(100), []string{"text/html", "application/json"}),
-		settingsHash(u32(100), []string{"application/json", "text/html"}),
+		settingsHash(new(100), []string{"text/html", "application/json"}),
+		settingsHash(new(100), []string{"application/json", "text/html"}),
 	)
 	// Different settings must produce different hashes so routes get distinct filters.
 	assert.NotEqual(t,
-		settingsHash(u32(100), []string{"text/html"}),
-		settingsHash(u32(200), []string{"text/html"}),
+		settingsHash(new(100), []string{"text/html"}),
+		settingsHash(new(200), []string{"text/html"}),
 	)
 	assert.NotEqual(t,
-		settingsHash(u32(100), nil),
+		settingsHash(new(100), nil),
 		settingsHash(nil, []string{"text/html"}),
 	)
 }
 
-func u32(v uint32) *uint32 { return &v }
+//go:fix inline
+func new(v uint32) *uint32 { return new(v) }
 
 func TestConstructCompressionLibraries(t *testing.T) {
 	tests := []struct {

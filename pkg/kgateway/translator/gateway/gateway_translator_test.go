@@ -1189,6 +1189,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy compression with multiple libraries and custom settings", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/compression-multi-library-settings.yaml"},
+			outputFile: "traffic-policy/compression-multi-library-settings.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy route disable overrides broader-scope compression settings", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/compression-disable-broad-scope.yaml"},
