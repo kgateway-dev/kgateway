@@ -137,6 +137,12 @@ data:
             eds_config:
               ads: {}
               resource_api_version: V3
+              # The control plane cannot answer this EDS request before the first CDS
+              # response (go-control-plane ADS mode only responds once the request names
+              # cover every CLA in the snapshot), so cluster-manager init always waits
+              # the full initial_fetch_timeout. Keep it short to avoid delaying startup
+              # by the 15s default; the endpoints arrive right after CDS regardless.
+              initial_fetch_timeout: 1s
         - name: xds_cluster
           alt_stat_name: xds_cluster
           connect_timeout: 5.000s

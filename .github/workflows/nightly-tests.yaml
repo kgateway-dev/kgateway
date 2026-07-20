@@ -185,11 +185,13 @@ jobs:
           GW_API_VERSION: ${{ matrix.gateway-api-version.version }}
           GW_API_CHANNEL: ${{ matrix.gateway-api-version.channel }}
           VERSIONS_LABEL: ${{ matrix.env-versions.label }}
+          BASE_REGEX: ${{ matrix.controllers.regex }}
         shell: bash
         run: |
           run=true
           bypass_version_check=false
-          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.6.0" ]]; then
+          run_regex="${BASE_REGEX}"
+          if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.6.1" ]]; then
             case "${GW_API_CHANNEL}" in
               standard)     run=false ;;
               experimental) bypass_version_check=true ;;
@@ -209,9 +211,27 @@ jobs:
                 ;;
             esac
           fi
-          echo "run=${run}" >> "${GITHUB_OUTPUT}"
-          echo "bypass_version_check=${bypass_version_check}" >> "${GITHUB_OUTPUT}"
-          echo "ref=${REF} gw-api=${GW_API_VERSION}-${GW_API_CHANNEL} versions=${VERSIONS_LABEL} -> run=${run} bypass_version_check=${bypass_version_check}"
+          # v2.2.x's chart predates ListenerSet support, so TestListenerSet fails at apply time
+          # ("the server could not find the requested resource") even with the version check
+          # bypassed. Drop it from the regex on v2.2.x while keeping the rest of the
+          # forward-compat signal. (ListenerSet only runs on the experimental channel; the
+          # standard v2.2.x lanes are skipped above.)
+          if [[ "${REF}" == "v2.2.x" ]]; then
+            run_regex="${run_regex//^TestListenerSet|/}"
+          fi
+          # v2.3.x's min lane runs a Kubernetes version that lacks the format.dns1123Label()
+          # CEL function the Gateway API 1.6.1 experimental CRDs use, so those CRDs fail to
+          # install. Skip that one combination; main's min lane runs a newer k8s and is fine.
+          if [[ "${REF}" == "v2.3.x" && "${GW_API_VERSION}" == "v1.6.1" \
+                && "${GW_API_CHANNEL}" == "experimental" && "${VERSIONS_LABEL}" == "min" ]]; then
+            run=false
+          fi
+          {
+            echo "run=${run}"
+            echo "bypass_version_check=${bypass_version_check}"
+            echo "run_regex=${run_regex}"
+          } >> "${GITHUB_OUTPUT}"
+          echo "ref=${REF} gw-api=${GW_API_VERSION}-${GW_API_CHANNEL} versions=${VERSIONS_LABEL} -> run=${run} bypass_version_check=${bypass_version_check} run_regex=${run_regex}"
       # Bake KGW_SKIP_GATEWAY_API_VERSION_CHECK into the chart before setup-kind-cluster
       # packages it (hack/kind/setup-kind.sh runs `make package-kgateway-charts` from source),
       # so the controller starts despite the unsupported Gateway API version.
@@ -266,7 +286,7 @@ jobs:
           cluster-name: "kgw-api-e2e-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
           cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
           test-args: '-timeout=120m'
-          run-regex: ${{ matrix.controllers.regex }}
+          run-regex: ${{ steps.guard.outputs.run_regex }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           matrix-label: "nightly-kgw-api-${{ matrix.env-versions.label }}-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
           envtest-k8s-version: ${{ steps.dotenv.outputs.envtest_k8s_version }}
