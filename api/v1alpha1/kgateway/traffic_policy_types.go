@@ -90,6 +90,12 @@ type TrafficPolicySpec struct {
 	// +optional
 	HeaderModifiers *shared.HeaderModifiers `json:"headerModifiers,omitempty"`
 
+	// RequestMirror configures the behavior of request mirrors defined by
+	// HTTPRoute or GRPCRoute RequestMirror filters. It does not create request mirrors.
+	// If a targeted route has no request mirrors, this configuration has no effect.
+	// +optional
+	RequestMirror *RequestMirrorPolicy `json:"requestMirror,omitempty"`
+
 	// AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
 	// NOTE: This field is only honored for HTTPRoute targets.
 	// NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/api-spec/main/spec/#httpurlrewritefilter)
@@ -223,6 +229,18 @@ type TrafficPolicySpec struct {
 	// +kubebuilder:validation:MaxLength=256
 	// +kubebuilder:validation:Pattern=`^([a-zA-Z0-9_%.-]|\{\{\s*(route_name|route_namespace|rule_name)\s*\}\})+$`
 	StatPrefix *string `json:"statPrefix,omitempty"`
+}
+
+// RequestMirrorPolicy configures implementation-specific behavior for request mirrors.
+// +kubebuilder:validation:MinProperties=1
+type RequestMirrorPolicy struct {
+	// DisableShadowHostSuffixAppend controls whether Envoy appends the "-shadow"
+	// suffix to the Host or :authority header of mirrored requests.
+	// When true, the original Host or :authority header is preserved.
+	// When false, Envoy appends the suffix. When unset, the existing mirror
+	// behavior is not modified.
+	// +optional
+	DisableShadowHostSuffixAppend *bool `json:"disableShadowHostSuffixAppend,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.

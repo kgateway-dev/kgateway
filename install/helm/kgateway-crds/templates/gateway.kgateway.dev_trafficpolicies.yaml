@@ -1903,6 +1903,22 @@ spec:
                 required:
                 - policy
                 type: object
+              requestMirror:
+                description: |-
+                  RequestMirror configures the behavior of request mirrors defined by
+                  HTTPRoute or GRPCRoute RequestMirror filters. It does not create request mirrors.
+                  If a targeted route has no request mirrors, this configuration has no effect.
+                minProperties: 1
+                properties:
+                  disableShadowHostSuffixAppend:
+                    description: |-
+                      DisableShadowHostSuffixAppend controls whether Envoy appends the "-shadow"
+                      suffix to the Host or :authority header of mirrored requests.
+                      When true, the original Host or :authority header is preserved.
+                      When false, Envoy appends the suffix. When unset, the existing mirror
+                      behavior is not modified.
+                    type: boolean
+                type: object
               retry:
                 description: |-
                   Retry defines the policy for retrying requests.

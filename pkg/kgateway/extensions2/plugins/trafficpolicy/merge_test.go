@@ -53,6 +53,33 @@ func TestMergePoliciesPreservesErrors(t *testing.T) {
 	assert.True(t, errors.Is(byName["p2"], err2))
 }
 
+func TestMergeRequestMirror(t *testing.T) {
+	p2Ref := &ir.AttachedPolicyRef{Name: "p2", Namespace: "default"}
+	mergeOptions := policy.MergeOptions{Strategy: policy.AugmentedShallowMerge}
+
+	t.Run("higher priority false wins over lower priority true", func(t *testing.T) {
+		p1 := &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithValue(false)}}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithValue(true)}}
+
+		MergeTrafficPolicies(p1, p2, p2Ref, nil, mergeOptions, ir.MergeOrigins{}, TrafficPolicyMergeOpts{})
+
+		require.NotNil(t, p1.spec.requestMirror)
+		require.NotNil(t, p1.spec.requestMirror.disableShadowHostSuffixAppend)
+		assert.False(t, *p1.spec.requestMirror.disableShadowHostSuffixAppend)
+	})
+
+	t.Run("lower priority value fills an unset field", func(t *testing.T) {
+		p1 := &TrafficPolicy{}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithValue(true)}}
+
+		MergeTrafficPolicies(p1, p2, p2Ref, nil, mergeOptions, ir.MergeOrigins{}, TrafficPolicyMergeOpts{})
+
+		require.NotNil(t, p1.spec.requestMirror)
+		require.NotNil(t, p1.spec.requestMirror.disableShadowHostSuffixAppend)
+		assert.True(t, *p1.spec.requestMirror.disableShadowHostSuffixAppend)
+	})
+}
+
 func TestMergeHttpACL(t *testing.T) {
 	p2Ref := &ir.AttachedPolicyRef{Name: "p2", Namespace: "default"}
 
