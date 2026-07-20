@@ -1,7 +1,7 @@
+---
 # Two mirror routes shadow to the mirror-sink Gateway, which only ever receives mirrored
 # traffic and access-logs the received :authority. keep-host sets disableShadowHostSuffixAppend;
 # default-host keeps Envoy's default "-shadow" suffix as the control.
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:

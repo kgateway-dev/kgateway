@@ -37,13 +37,16 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 
-	// Wait for the sink access-log policy and the mirror routes to be programmed before sending.
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(
-		s.Ctx, "mirror-sink-logs", "kgateway-base", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
-		s.Ctx, "mirror-keep-host", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
-		s.Ctx, "mirror-default-host", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	a := s.TestInstallation.AssertionsT(s.T())
+	// Gate on the mirror-sink being fully ready before sending. A freshly deployed sink that only
+	// reports Accepted may not be serving or logging yet, so wait for its Envoy Programmed condition,
+	// its route accepted, and its pods running.
+	a.EventuallyGatewayCondition(s.Ctx, "mirror-sink", "kgateway-base", gwv1.GatewayConditionProgrammed, metav1.ConditionTrue)
+	a.EventuallyHTTPRouteCondition(s.Ctx, "mirror-sink-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	a.EventuallyHTTPListenerPolicyCondition(s.Ctx, "mirror-sink-logs", "kgateway-base", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+	a.EventuallyPodsRunning(s.Ctx, mirrorSinkObjectMeta.GetNamespace(), metav1.ListOptions{LabelSelector: s.mirrorSinkLabel()})
+	a.EventuallyHTTPRouteCondition(s.Ctx, "mirror-keep-host", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	a.EventuallyHTTPRouteCondition(s.Ctx, "mirror-default-host", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
 }
 
 // TestMirrorPreservesHostWhenDisabled verifies that with disableShadowHostSuffixAppend=true the
@@ -57,13 +60,11 @@ func (s *testingSuite) TestMirrorAppendsShadowByDefault() {
 	s.assertMirroredAuthority("/anything/default-host", `"authority":"mirror.example.com-shadow"`)
 }
 
-// assertMirroredAuthority sends a request to path and asserts that a single mirror-sink access-log
-// record has both the mirrored path and wantAuthority. Requiring one record (rather than the two
-// substrings independently) avoids matching unrelated entries, and logs are aggregated across all
-// sink pods so the mirrored request isn't missed if more than one proxy pod exists. Mirroring is
-// fire-and-forget, so the request is re-sent each poll until the record appears.
+// assertMirroredAuthority requires one mirror-sink access-log record with both the mirrored path and
+// wantAuthority, so unrelated records can't satisfy the two matches separately. Mirroring is
+// fire-and-forget, so each poll re-sends the request and re-lists the sink pods (which can be
+// replaced).
 func (s *testingSuite) assertMirroredAuthority(path, wantAuthority string) {
-	pods := s.mirrorSinkPods()
 	wantPath := fmt.Sprintf(`"path":"%s"`, path)
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
@@ -74,6 +75,10 @@ func (s *testingSuite) assertMirroredAuthority(path, wantAuthority string) {
 			curl.WithPath(path),
 			curl.WithPort(80),
 		)
+
+		pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
+			s.Ctx, mirrorSinkObjectMeta.GetNamespace(), s.mirrorSinkLabel())
+		assert.NoError(c, err)
 
 		var found bool
 		for _, pod := range pods {
@@ -87,16 +92,9 @@ func (s *testingSuite) assertMirroredAuthority(path, wantAuthority string) {
 			}
 		}
 		assert.True(c, found, "want an access-log record with %s and %s", wantPath, wantAuthority)
-	}, 30*time.Second, 1*time.Second)
+	}, 90*time.Second, 2*time.Second)
 }
 
-func (s *testingSuite) mirrorSinkPods() []string {
-	label := fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, mirrorSinkObjectMeta.GetName())
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(
-		s.Ctx, mirrorSinkObjectMeta.GetNamespace(), metav1.ListOptions{LabelSelector: label})
-	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
-		s.Ctx, mirrorSinkObjectMeta.GetNamespace(), label)
-	s.Require().NoError(err)
-	s.Require().NotEmpty(pods)
-	return pods
+func (s *testingSuite) mirrorSinkLabel() string {
+	return fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, mirrorSinkObjectMeta.GetName())
 }
