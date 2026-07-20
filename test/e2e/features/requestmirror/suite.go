@@ -80,7 +80,7 @@ func (s *testingSuite) assertMirroredAuthority(path, wantAuthority string) {
 			logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(
 				s.Ctx, mirrorSinkObjectMeta.GetNamespace(), pod)
 			assert.NoError(c, err)
-			for _, line := range strings.Split(logs, "\n") {
+			for line := range strings.SplitSeq(logs, "\n") {
 				if strings.Contains(line, wantPath) && strings.Contains(line, wantAuthority) {
 					found = true
 				}
