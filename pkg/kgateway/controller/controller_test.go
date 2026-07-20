@@ -733,7 +733,6 @@ func (s *ControllerSuite) startController(
 		Client:         kubeClient,
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
-		EnableEnvoy:    true,
 		ImageInfo: &deployer.ImageInfo{
 			Registry: "ghcr.io/kgateway-dev",
 			Tag:      "latest",

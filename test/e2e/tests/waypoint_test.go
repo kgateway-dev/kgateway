@@ -1,99 +1,15 @@
 //go:build e2e
 
-package tests_test
+package tests
 
 import (
-	"context"
-	"os"
 	"testing"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
-	testruntime "github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/runtime"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/waypoint"
 )
 
-var minWaypointIstioVersion = "1.25.1"
-
+// TestKgatewayWaypoint tests kgateway acting as an ambient mesh waypoint.
 func TestKgatewayWaypoint(t *testing.T) {
-	ctx := context.Background()
-
-	// Set Istio version if not already set
-	if os.Getenv(testruntime.IstioVersionEnv) == "" {
-		os.Setenv(testruntime.IstioVersionEnv, testruntime.DefaultIstioVersion) // Using minimum required version that supports multiple TargetRef types for Istio Authz policies.
-	}
-
-	if testruntime.ShouldSkipIstioVersion(t, minWaypointIstioVersion) {
-		t.Skip("Skipping waypoint tests due to istio version requirements")
-		return
-	}
-
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-waypoint-test")
-	testInstallation := e2e.CreateTestInstallation(
-		t,
-		&install.Context{
-			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.ManifestPath("waypoint-enabled-helm.yaml"),
-		},
-	)
-
-	// Set the env to the install namespace if it is not already set
-	if !nsEnvPredefined {
-		os.Setenv(testutils.InstallNamespace, installNs)
-	}
-
-	// We register the cleanup function _before_ we actually perform the installation.
-	// This allows us to uninstall kgateway, in case the original installation only completed partially
-	testutils.Cleanup(t, func() {
-		if !nsEnvPredefined {
-			os.Unsetenv(testutils.InstallNamespace)
-		}
-		if t.Failed() {
-			testInstallation.PreFailHandler(ctx, t)
-		}
-
-		testInstallation.UninstallKgateway(ctx, t)
-		testInstallation.UninstallIstio()
-	})
-
-	// Download the latest Istio
-	err := testInstallation.AddIstioctl(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Install the ambient profile to enable zTunnel
-	istioArgs := []string{
-		// required for ServiceEntry usage
-		// enabled by default in 1.25; we test as far back as 1.23
-		"--set", "values.cni.ambient.dnsCapture=true",
-	}
-	// k3s stores CNI config and binaries in non-standard locations. In recent
-	// k3s releases the CNI bin directory is /var/lib/rancher/k3s/data/cni
-	// (not the /var/lib/rancher/k3s/data/current/bin path documented by Istio,
-	// which is where the bundled node binaries live). The kubelet looks in
-	// /var/lib/rancher/k3s/data/cni for CNI plugins, so istio-cni must install
-	// itself there or pod sandbox creation fails with
-	// `failed to find plugin "istio-cni" in path [/var/lib/rancher/k3s/data/cni]`.
-	if os.Getenv("CLUSTER_TYPE") == "k3d" {
-		istioArgs = append(istioArgs,
-			"--set", "values.cni.cniConfDir=/var/lib/rancher/k3s/agent/etc/cni/net.d",
-			"--set", "values.cni.cniBinDir=/var/lib/rancher/k3s/data/cni",
-		)
-	}
-	err = testInstallation.InstallRevisionedIstio(
-		ctx, "kgateway-waypoint-rev", "ambient",
-		istioArgs...,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
-
-	WaypointSuiteRunner().Run(ctx, t, testInstallation)
+	waypoint.Run(t, e2e.DefaultInstallationFactory)
 }
