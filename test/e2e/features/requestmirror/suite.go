@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -56,11 +57,14 @@ func (s *testingSuite) TestMirrorAppendsShadowByDefault() {
 	s.assertMirroredAuthority("/anything/default-host", `"authority":"mirror.example.com-shadow"`)
 }
 
-// assertMirroredAuthority sends a request to path and asserts the mirror-sink log records
-// wantAuthority. Mirroring is fire-and-forget, so the request is re-sent each poll until the log
-// records it.
+// assertMirroredAuthority sends a request to path and asserts that a single mirror-sink access-log
+// record has both the mirrored path and wantAuthority. Requiring one record (rather than the two
+// substrings independently) avoids matching unrelated entries, and logs are aggregated across all
+// sink pods so the mirrored request isn't missed if more than one proxy pod exists. Mirroring is
+// fire-and-forget, so the request is re-sent each poll until the record appears.
 func (s *testingSuite) assertMirroredAuthority(path, wantAuthority string) {
 	pods := s.mirrorSinkPods()
+	wantPath := fmt.Sprintf(`"path":"%s"`, path)
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		common.BaseGateway.Send(
@@ -71,11 +75,18 @@ func (s *testingSuite) assertMirroredAuthority(path, wantAuthority string) {
 			curl.WithPort(80),
 		)
 
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(
-			s.Ctx, mirrorSinkObjectMeta.GetNamespace(), pods[0])
-		assert.NoError(c, err)
-		assert.Contains(c, logs, fmt.Sprintf(`"path":"%s"`, path))
-		assert.Contains(c, logs, wantAuthority)
+		var found bool
+		for _, pod := range pods {
+			logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(
+				s.Ctx, mirrorSinkObjectMeta.GetNamespace(), pod)
+			assert.NoError(c, err)
+			for _, line := range strings.Split(logs, "\n") {
+				if strings.Contains(line, wantPath) && strings.Contains(line, wantAuthority) {
+					found = true
+				}
+			}
+		}
+		assert.True(c, found, "want an access-log record with %s and %s", wantPath, wantAuthority)
 	}, 30*time.Second, 1*time.Second)
 }
 
