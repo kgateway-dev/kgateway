@@ -166,18 +166,19 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: ${{ matrix.ref.checkout_ref }}
-      # v2.2.x is built against Gateway API 1.4 and refuses to start on 1.5 (#13872), so the
-      # v2.2.x x v1.5+ lanes need special handling: skip the standard channel entirely, and
-      # run the experimental channel with the version check bypassed to keep forward-compat
-      # signal. The experimental channel is further limited to the max lane: the Gateway API
-      # 1.5.1 experimental CRDs use the isIP() CEL function (added in Kubernetes 1.31), but
-      # v2.2.x's min lane currently runs k8s 1.30, so those CRDs fail to install there.
-      # (main/v2.3.x min lanes run k8s 1.31+, which is why only v2.2.x is skipped.) The
-      # per-lane Kubernetes versions live in .github/workflows/.env/nightly-tests/; the guard
-      # keys off the min/max label, so if v2.2.x's min lane is bumped to >=1.31 this skip can
-      # be dropped. This is done with step guards rather than a matrix `exclude:` because every
-      # dimension here is object-valued and object-valued excludes are unreliable
-      # (actions/runner#1512).
+      # Runs before the guard step below so the guard can key its Kubernetes-version check off
+      # the real kubectl_version output instead of guessing from the min/max label.
+      - name: Dotenv Action
+        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        id: dotenv
+        with:
+          path: ${{ matrix.env-versions.file }}
+          log-variables: true
+      # v2.2.x is built against Gateway API 1.4 and refuses to start on 1.5+ (#13872), so the
+      # v2.2.x x v1.5+ lanes need special handling: skip the standard channel entirely, and run
+      # the experimental channel with the version check bypassed to keep forward-compat signal.
+      # This is done with step guards rather than a matrix `exclude:` because every dimension
+      # here is object-valued and object-valued excludes are unreliable (actions/runner#1512).
       - name: Determine run plan
         id: guard
         env:
@@ -185,6 +186,7 @@ jobs:
           GW_API_VERSION: ${{ matrix.gateway-api-version.version }}
           GW_API_CHANNEL: ${{ matrix.gateway-api-version.channel }}
           VERSIONS_LABEL: ${{ matrix.env-versions.label }}
+          KUBE_VERSION: ${{ steps.dotenv.outputs.kubectl_version }}
           BASE_REGEX: ${{ matrix.controllers.regex }}
         shell: bash
         run: |
@@ -200,15 +202,7 @@ jobs:
           if [[ "${REF}" == "v2.2.x" && "${GW_API_VERSION}" == "v1.5.1" ]]; then
             case "${GW_API_CHANNEL}" in
               standard)     run=false ;;
-              experimental)
-                if [[ "${VERSIONS_LABEL}" == "min" ]]; then
-                  # v2.2.x's min lane currently runs k8s 1.30, which lacks the isIP() CEL
-                  # function (added in k8s 1.31) the 1.5.1 experimental CRDs require.
-                  run=false
-                else
-                  bypass_version_check=true
-                fi
-                ;;
+              experimental) bypass_version_check=true ;;
             esac
           fi
           # v2.2.x's chart predates ListenerSet support, so TestListenerSet fails at apply time
@@ -219,19 +213,34 @@ jobs:
           if [[ "${REF}" == "v2.2.x" ]]; then
             run_regex="${run_regex//^TestListenerSet|/}"
           fi
-          # v2.3.x's min lane runs a Kubernetes version that lacks the format.dns1123Label()
-          # CEL function the Gateway API 1.6.1 experimental CRDs use, so those CRDs fail to
-          # install. Skip that one combination; main's min lane runs a newer k8s and is fine.
-          if [[ "${REF}" == "v2.3.x" && "${GW_API_VERSION}" == "v1.6.1" \
-                && "${GW_API_CHANNEL}" == "experimental" && "${VERSIONS_LABEL}" == "min" ]]; then
-            run=false
+          # The Gateway API experimental-channel CRDs rely on CEL library functions that
+          # Kubernetes only ships starting at specific minor versions: the 1.5+ CRDs use
+          # isIP() (added in k8s 1.31), and the 1.6+ CRDs additionally use the `format`
+          # library, e.g. format.dns1123Label() (only reliably available from k8s 1.33).
+          # Skip experimental-channel lanes whose Kubernetes version predates what the CRDs
+          # need, based on the actual version pin rather than a hardcoded ref/label -- a
+          # hardcoded list silently goes stale as per-ref version pins drift (this is what
+          # let the v2.2.x min lane start failing once its pin moved under a 1.6.1 CRD without
+          # anyone updating this guard).
+          if [[ "${GW_API_CHANNEL}" == "experimental" ]]; then
+            gwapi_minor="${GW_API_VERSION#v}"
+            gwapi_minor="${gwapi_minor#*.}"
+            gwapi_minor="${gwapi_minor%%.*}"
+            kube_minor="${KUBE_VERSION#v}"
+            kube_minor="${kube_minor#*.}"
+            kube_minor="${kube_minor%%.*}"
+            if (( gwapi_minor >= 6 && kube_minor < 33 )); then
+              run=false
+            elif (( gwapi_minor == 5 && kube_minor < 31 )); then
+              run=false
+            fi
           fi
           {
             echo "run=${run}"
             echo "bypass_version_check=${bypass_version_check}"
             echo "run_regex=${run_regex}"
           } >> "${GITHUB_OUTPUT}"
-          echo "ref=${REF} gw-api=${GW_API_VERSION}-${GW_API_CHANNEL} versions=${VERSIONS_LABEL} -> run=${run} bypass_version_check=${bypass_version_check} run_regex=${run_regex}"
+          echo "ref=${REF} gw-api=${GW_API_VERSION}-${GW_API_CHANNEL} versions=${VERSIONS_LABEL} k8s=${KUBE_VERSION} -> run=${run} bypass_version_check=${bypass_version_check} run_regex=${run_regex}"
       # Bake KGW_SKIP_GATEWAY_API_VERSION_CHECK into the chart before setup-kind-cluster
       # packages it (hack/kind/setup-kind.sh runs `make package-kgateway-charts` from source),
       # so the controller starts despite the unsupported Gateway API version.
@@ -244,12 +253,6 @@ jobs:
           echo "Set controller.extraEnv.KGW_SKIP_GATEWAY_API_VERSION_CHECK=true in install/helm/kgateway/values.yaml"
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
-      - name: Dotenv Action
-        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
-        id: dotenv
-        with:
-          path: ${{ matrix.env-versions.file }}
-          log-variables: true
       - name: Setup KinD Cluster
         if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' && steps.guard.outputs.run == 'true' }}
         uses: ./.github/actions/setup-kind-cluster

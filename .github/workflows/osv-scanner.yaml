@@ -14,6 +14,7 @@ on:
           - main
           - v2.2.x
           - v2.3.x
+          - v2.4.x
 
 permissions:
   actions: read
@@ -42,7 +43,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          branches='["main","v2.2.x","v2.3.x"]'
+          branches='["main","v2.2.x","v2.3.x","v2.4.x"]'
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             case "${{ inputs.branches }}" in
@@ -56,6 +57,9 @@ jobs:
                 ;;
               v2.3.x)
                 branches='["v2.3.x"]'
+                ;;
+              v2.4.x)
+                branches='["v2.4.x"]'
                 ;;
               *)
                 echo "::error::Unsupported branch selection: ${{ inputs.branches }}"
