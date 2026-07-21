@@ -708,12 +708,12 @@ type Compression struct {
 	ResponseCompression *ResponseCompression `json:"responseCompression,omitempty"`
 
 	// RequestDecompression controls request decompression.
-	// If set, gzip requests will be decompressed.
+	// If set, request bodies in the configured codecs are decompressed before forwarding.
 	// +optional
 	RequestDecompression *RequestDecompression `json:"requestDecompression,omitempty"`
 }
 
-// CompressionLibrary identifies the codec used to compress responses.
+// CompressionLibrary identifies a compression codec used to compress responses or decompress requests.
 // +kubebuilder:validation:Enum=Gzip;Brotli;Zstd
 type CompressionLibrary string
 
@@ -747,8 +747,20 @@ type ResponseCompression struct {
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
 }
 
-// RequestDecompression enables request gzip decompression.
+// RequestDecompression enables request decompression.
 type RequestDecompression struct {
+	// Libraries lists the codecs to decompress on request bodies. Envoy selects the decompressor
+	// by the request's `Content-Encoding` header, so the list order is not significant. Request
+	// bodies encoded with a codec not in this list are passed through to the backend unchanged.
+	// Defaults to [Gzip].
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=3
+	// +kubebuilder:validation:XValidation:rule="self.all(x, self.exists_one(y, y == x))",message="libraries must not contain duplicates"
+	// +kubebuilder:default={Gzip}
+	Libraries []CompressionLibrary `json:"libraries,omitempty"`
+
 	// Disables decompression.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`

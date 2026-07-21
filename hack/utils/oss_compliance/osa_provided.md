@@ -47,18 +47,18 @@ Name|Version|License
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260427160629-7cedc36a6bc4|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.81.1|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.12-0.20260120151049-f2248ac996af|BSD 3-clause "New" or "Revised" License
-[helm/v3](https://helm.sh/helm/v3)|v3.20.2|Apache License 2.0
+[helm/v3](https://helm.sh/helm/v3)|v3.21.3|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.30.0-alpha.1.0.20260603032543-7eca3b2aa271|Apache License 2.0
 [istio.io/client-go](https://istio.io/client-go)|v1.30.0-alpha.1.0.20260603032842-2edf997e399d|Apache License 2.0
 [istio.io/istio](https://istio.io/istio)|v0.0.0-20260605182440-f18fd540c0e8|Apache License 2.0
-[k8s.io/api](https://k8s.io/api)|v0.36.1|Apache License 2.0
-[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.36.1|Apache License 2.0
-[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.36.1|Apache License 2.0
-[k8s.io/apiserver](https://k8s.io/apiserver)|v0.36.1|Apache License 2.0
-[k8s.io/cli-runtime](https://k8s.io/cli-runtime)|v0.36.1|Apache License 2.0
-[k8s.io/client-go](https://k8s.io/client-go)|v0.36.1|Apache License 2.0
+[k8s.io/api](https://k8s.io/api)|v0.36.2|Apache License 2.0
+[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.36.2|Apache License 2.0
+[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.36.2|Apache License 2.0
+[k8s.io/apiserver](https://k8s.io/apiserver)|v0.36.2|Apache License 2.0
+[k8s.io/cli-runtime](https://k8s.io/cli-runtime)|v0.36.2|Apache License 2.0
+[k8s.io/client-go](https://k8s.io/client-go)|v0.36.2|Apache License 2.0
 [klog/v2](https://k8s.io/klog/v2)|v2.140.0|Apache License 2.0
-[k8s.io/kubectl](https://k8s.io/kubectl)|v0.36.1|Apache License 2.0
+[k8s.io/kubectl](https://k8s.io/kubectl)|v0.36.2|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20260319190234-28399d86e0b5|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.24.1|Apache License 2.0
 [sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.6.1|Apache License 2.0
