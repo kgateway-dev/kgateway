@@ -44,3 +44,46 @@ reason = "False positive: istio.io/istio pseudo-version v0.0.0-20251218162427-60
 [[IgnoredVulns]]
 id = "CVE-2026-35206"
 reason = "Not exploitable: kgateway uses helm as a library to render its own bundled charts; it never invokes `helm pull --untar` or extracts attacker-controlled chart archives. Cannot bump to 3.20.2 because that forces k8s.io/client-go v0.35+, which is incompatible with the pinned istio fake client used in unit tests."
+
+# The following three advisories are flagged against github.com/containerd/containerd
+# v1.7.33, pulled in only transitively via helm's OCI registry client
+# (helm.sh/helm/v3/pkg/registry -> containerd/remotes -> containerd/content).
+#
+# All three live in containerd's CRI (Container Runtime Interface) checkpoint/restore
+# subsystem (github.com/containerd/containerd/.../cri). kgateway compiles in only
+# containerd's OCI content/registry packages (content, remotes, images,
+# archive/compression, labels, filters, errdefs, pkg/randutil) -- verified via
+# `go list -deps` over ./cmd/kgateway and ./cmd/sds; no CRI package is present in any
+# kgateway binary. The vulnerable checkpoint/restore code is therefore never built or
+# reachable.
+#
+# There is also no upstream fix on the containerd v1.x line -- the CVEs are only
+# resolved by dropping containerd, which for kgateway requires bumping helm. That bump
+# triggers a coordinated dependency chain that is out of scope for this LTS branch:
+#
+#   1. helm.sh/helm/v3 3.19.5 -> 3.21.x drops the containerd dependency entirely, but
+#      helm 3.21.x requires k8s.io 0.36, so MVS raises k8s.io 0.34 -> 0.36.
+#   2. k8s.io 0.36 adds a HasSyncedChecker method to client-go's
+#      cache.ResourceEventHandlerRegistration interface. The istio (1.28-alpha) and
+#      sigs.k8s.io/controller-runtime (0.22.x) versions pinned on this branch do not
+#      implement it, so the build fails until istio and controller-runtime are bumped.
+#   3. The istio versions that support k8s.io 0.36 in turn require
+#      sigs.k8s.io/gateway-api 1.5.1 -- i.e. the k8s bump forces an istio bump, and the
+#      istio bump forces a Gateway API conformance-contract bump (1.4 -> 1.5).
+#
+# So clearing these unreachable CVEs would drag k8s.io, istio, controller-runtime, and
+# gateway-api forward together -- the coordinated uplift that shipped as v2.3.x, not a
+# security patch. This branch stays on gateway-api 1.4, so they are ignored here as not
+# exploitable instead.
+
+[[IgnoredVulns]]
+id = "GO-2026-5622"
+reason = "Not exploitable (CVE-2026-53489 / GHSA-rgh6-rfwx-v388): arbitrary host CRI log file read via symlink following in containerd's CRI checkpoint restore. containerd is pulled only via helm's OCI registry client; kgateway builds none of containerd's CRI packages (verified via `go list -deps`), so the checkpoint-restore path is unreachable. No fix on the containerd v1.x line."
+
+[[IgnoredVulns]]
+id = "GO-2026-5338"
+reason = "Not exploitable (CVE-2026-50195 / GHSA-cvxm-645q-p574): local image tag poisoning via containerd's CRI checkpoint import. containerd is pulled only via helm's OCI registry client; kgateway builds none of containerd's CRI packages (verified via `go list -deps`), so the checkpoint-import path is unreachable. No fix on the containerd v1.x line."
+
+[[IgnoredVulns]]
+id = "GO-2026-5064"
+reason = "Not exploitable (CVE-2026-53492 / GHSA-33vj-92qq-66hc): CDI annotation smuggling via containerd's CRI checkpoint restore. containerd is pulled only via helm's OCI registry client; kgateway builds none of containerd's CRI packages (verified via `go list -deps`), so the checkpoint-restore path is unreachable. No fix on the containerd v1.x line."
