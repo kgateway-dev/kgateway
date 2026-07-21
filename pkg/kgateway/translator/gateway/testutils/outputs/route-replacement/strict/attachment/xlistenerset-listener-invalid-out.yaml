@@ -271,7 +271,6 @@ Statuses:
           kind: ListenerSet
           name: test-listenerset
           namespace: gwtest
-          sectionName: http-9090
         conditions:
         - lastTransitionTime: null
           message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':

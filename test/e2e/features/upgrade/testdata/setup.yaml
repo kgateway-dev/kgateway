@@ -9,16 +9,8 @@ spec:
   gatewayClassName: kgateway
   listeners:
     - protocol: HTTP
-      hostname: listener-1.com
       port: 8080
-      name: listener-1
-      allowedRoutes:
-        namespaces:
-          from: Same
-    - protocol: HTTP
-      hostname: listener-2.com
-      port: 8080
-      name: listener-2
+      name: http
       allowedRoutes:
         namespaces:
           from: Same
@@ -31,8 +23,8 @@ metadata:
 spec:
   parentRefs:
     - name: gateway
-  # hostnames:
-  #   - "example.com"
+  hostnames:
+    - "example.com"
   rules:
     - backendRefs:
       - name: httpbin
@@ -46,9 +38,8 @@ metadata:
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: gateway
-      sectionName: listener-2
+      kind: HTTPRoute
+      name: example-route
   transformation:
     response:
       set:

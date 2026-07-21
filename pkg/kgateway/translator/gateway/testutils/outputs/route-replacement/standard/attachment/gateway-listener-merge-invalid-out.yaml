@@ -392,7 +392,6 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: gwtest
-          sectionName: http-a
         conditions:
         - lastTransitionTime: null
           message: Policy accepted

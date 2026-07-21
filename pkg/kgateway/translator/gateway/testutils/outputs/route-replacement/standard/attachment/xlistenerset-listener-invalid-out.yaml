@@ -293,7 +293,6 @@ Statuses:
           kind: ListenerSet
           name: test-listenerset
           namespace: gwtest
-          sectionName: http-9090
         conditions:
         - lastTransitionTime: null
           message: Policy accepted
