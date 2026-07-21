@@ -277,6 +277,27 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: gwtest
+          sectionName: http
+        conditions:
+        - lastTransitionTime: null
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            Failed to create pre-route filter config: Failed to initialize per-route
+            dynamic module'
+          reason: Invalid
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: ""
+          reason: Pending
+          status: "False"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: gwtest
+          sectionName: https
         conditions:
         - lastTransitionTime: null
           message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':

@@ -222,7 +222,7 @@ func (t *Translator) runListenerPlugins(
 			// TODO: report user error - they attached a non http policy
 			continue
 		}
-		reportPolicyAcceptanceStatus(reporter, l.PolicyAncestorRef, pols...)
+		reportPolicyAcceptanceStatus(reporter, l.PolicyAncestorRef, true, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			pctx := &ir.ListenerContext{
@@ -238,7 +238,7 @@ func (t *Translator) runListenerPlugins(
 			pass.ApplyListenerPlugin(pctx, out)
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
-		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, mergeOrigins, pols...)
+		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, true, mergeOrigins, pols...)
 	}
 }
 

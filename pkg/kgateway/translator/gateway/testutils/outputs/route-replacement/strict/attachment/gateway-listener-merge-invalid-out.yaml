@@ -340,6 +340,7 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: gwtest
+          sectionName: http-a
         conditions:
         - lastTransitionTime: null
           message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':

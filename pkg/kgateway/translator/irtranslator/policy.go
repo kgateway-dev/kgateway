@@ -16,9 +16,26 @@ import (
 
 const mergeMetadataKeyPrefix = "merge."
 
+// ancestorRefForPolicy returns ancestorRef with SectionName set to the policy's own
+// target sectionName, when stampSectionName is true and the policy was attached with
+// one. Only callers processing listener-scoped AttachedPolicies (where SectionName, if
+// set, names a Gateway/ListenerSet listener) should pass stampSectionName=true.
+// Callers processing route- or rule-scoped AttachedPolicies must pass false: there,
+// PolicyRef.SectionName names an HTTPRoute rule, not a listener, and stamping it onto
+// a Gateway/ListenerSet ancestorRef would misrepresent the target.
+func ancestorRefForPolicy(ancestorRef gwv1.ParentReference, policyRef *ir.AttachedPolicyRef, stampSectionName bool) gwv1.ParentReference {
+	if !stampSectionName || policyRef == nil || policyRef.SectionName == "" {
+		return ancestorRef
+	}
+	sectionName := gwv1.SectionName(policyRef.SectionName)
+	ancestorRef.SectionName = &sectionName
+	return ancestorRef
+}
+
 func reportPolicyAcceptanceStatus(
 	rp reporter.Reporter,
 	ancestorRef gwv1.ParentReference,
+	stampSectionName bool,
 	policies ...ir.PolicyAtt,
 ) {
 	for _, policy := range policies {
@@ -34,7 +51,7 @@ func reportPolicyAcceptanceStatus(
 			Name:      policy.PolicyRef.Name,
 		}
 		// Update the initial status
-		r := rp.Policy(key, policy.Generation).AncestorRef(ancestorRef)
+		r := rp.Policy(key, policy.Generation).AncestorRef(ancestorRefForPolicy(ancestorRef, policy.PolicyRef, stampSectionName))
 
 		if len(policy.Errors) > 0 {
 			r.SetCondition(reporter.PolicyCondition{
@@ -60,6 +77,7 @@ func reportPolicyAcceptanceStatus(
 func reportPolicyAttachmentStatus(
 	rp reporter.Reporter,
 	ancestorRef gwv1.ParentReference,
+	stampSectionName bool,
 	mergeOrigins ir.MergeOrigins,
 	policies ...ir.PolicyAtt,
 ) {
@@ -80,7 +98,7 @@ func reportPolicyAttachmentStatus(
 			Namespace: policy.PolicyRef.Namespace,
 			Name:      policy.PolicyRef.Name,
 		}
-		r := rp.Policy(key, policy.Generation).AncestorRef(ancestorRef)
+		r := rp.Policy(key, policy.Generation).AncestorRef(ancestorRefForPolicy(ancestorRef, policy.PolicyRef, stampSectionName))
 
 		if !mergeOrigins.IsSet() {
 			// Not a merged policy so this should be a direct attachment

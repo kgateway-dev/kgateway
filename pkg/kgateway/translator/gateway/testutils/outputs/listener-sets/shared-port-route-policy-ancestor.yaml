@@ -7,61 +7,21 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  name: kube_gwtest_example-svc_80
+  name: kube_default_a-svc_8080
+  type: EDS
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: kube_default_b-svc_8080
   type: EDS
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
-      portValue: 8080
-  filterChains:
-  - filters:
-    - name: envoy.filters.network.http_connection_manager
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-        httpFilters:
-        - name: envoy.filters.http.router
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-        mergeSlashes: true
-        normalizePath: true
-        rds:
-          configSource:
-            ads: {}
-            resourceApiVersion: V3
-          routeConfigName: listener~8080
-        statPrefix: http
-        useRemoteAddress: true
-    name: listener~8080
-  name: listener~8080
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
-      portValue: 8443
-  filterChains:
-  - filters:
-    - name: envoy.filters.network.http_connection_manager
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-        httpFilters:
-        - name: envoy.filters.http.router
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-        mergeSlashes: true
-        normalizePath: true
-        rds:
-          configSource:
-            ads: {}
-            resourceApiVersion: V3
-          routeConfigName: gwtest/test-listenerset/https-8443
-        statPrefix: http
-        useRemoteAddress: true
-    name: gwtest/test-listenerset/https-8443
-  name: listener~8443
 - address:
     socketAddress:
       address: '::'
@@ -89,38 +49,38 @@ Listeners:
   name: listener~9090
 Routes:
 - ignorePortInHostMatching: true
-  name: gwtest/test-listenerset/https-8443
-  virtualHosts:
-  - domains:
-    - www.example.com
-    name: gwtest/test-listenerset/https-8443~www_example_com
-    routes:
-    - match:
-        prefix: /
-      name: gwtest/test-listenerset/https-8443~www_example_com-route-0-httproute-test-route-gwtest-0-0-matcher-0
-      route:
-        cluster: kube_gwtest_example-svc_80
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-- ignorePortInHostMatching: true
-  name: listener~8080
-- ignorePortInHostMatching: true
   name: listener~9090
   virtualHosts:
   - domains:
-    - www.example.com
-    name: listener~9090~www_example_com
+    - a.example.com
+    name: listener~9090~a_example_com
     routes:
-    - directResponse:
-        body:
-          inlineString: invalid route configuration detected and replaced with a direct
-            response.
-        status: 500
-      match:
+    - match:
         prefix: /
+      name: listener~9090~a_example_com-route-0-httproute-a-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_a-svc_8080
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+  - domains:
+    - b.example.com
+    name: listener~9090~b_example_com
+    routes:
+    - match:
+        prefix: /
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            statPrefix:
+            - gateway.kgateway.dev/TrafficPolicy/default/b-route-policy
+      name: listener~9090~b_example_com-route-0-httproute-b-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_b-svc_8080
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      statPrefix: b-route-policy
 Statuses:
   gateways:
-    gwtest/example-gateway:
-      attachedListenerSets: 1
+    default/example-gateway:
+      attachedListenerSets: 2
       conditions:
       - lastTransitionTime: null
         message: Successfully accepted Gateway
@@ -137,37 +97,8 @@ Statuses:
         reason: ResolvedRefs
         status: "True"
         type: ResolvedRefs
-      listeners:
-      - attachedRoutes: 0
-        conditions:
-        - lastTransitionTime: null
-          message: Successfully accepted Listener
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Successfully verified that Listener has no conflicts
-          reason: NoConflicts
-          status: "False"
-          type: Conflicted
-        - lastTransitionTime: null
-          message: Successfully resolved all references
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Successfully programmed Listener
-          reason: Programmed
-          status: "True"
-          type: Programmed
-        name: http-8080
-        supportedKinds:
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
-        - group: gateway.networking.k8s.io
-          kind: GRPCRoute
   httpRoutes:
-    gwtest/test-route:
+    default/a-route:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -189,9 +120,32 @@ Statuses:
         parentRef:
           group: gateway.networking.k8s.io
           kind: ListenerSet
-          name: test-listenerset
+          name: a-listenerset
+    default/b-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
+        controllerName: kgateway
+        parentRef:
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
+          name: b-listenerset
   listenerSets:
-    gwtest/test-listenerset:
+    default/a-listenerset:
       conditions:
       - lastTransitionTime: null
         message: Successfully accepted ListenerSet
@@ -207,12 +161,9 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-traffic-policy/http-9090:
-            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to create pre-route filter config: Failed to initialize per-route
-            dynamic module'
-          reason: ListenerReplaced
-          status: "False"
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully verified that Listener has no conflicts
@@ -235,6 +186,19 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
+    default/b-listenerset:
+      conditions:
+      - lastTransitionTime: null
+        message: Successfully accepted ListenerSet
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed ListenerSet
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
@@ -257,32 +221,29 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: https-8443
+        name: http-9090
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   policies:
-    TrafficPolicy/gwtest/invalid-traffic-policy:
+    TrafficPolicy/default/b-route-policy:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
           kind: ListenerSet
-          name: test-listenerset
-          namespace: gwtest
-          sectionName: http-9090
+          name: b-listenerset
+          namespace: default
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to create pre-route filter config: Failed to initialize per-route
-            dynamic module'
-          reason: Invalid
-          status: "False"
+          message: Policy accepted
+          reason: Valid
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: ""
-          reason: Pending
-          status: "False"
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway

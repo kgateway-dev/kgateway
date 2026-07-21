@@ -916,6 +916,25 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: infra
+          sectionName: http1
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: infra
+          sectionName: tls1
         conditions:
         - lastTransitionTime: null
           message: Policy accepted

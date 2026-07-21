@@ -509,6 +509,7 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: infra
+          sectionName: http1
         conditions:
         - lastTransitionTime: null
           message: Policy accepted
