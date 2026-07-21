@@ -128,7 +128,7 @@ func testBackendObjectIR(name string, port int32) ir.BackendObjectIR {
 		Kind:      "Service",
 		Namespace: "default",
 		Name:      name,
-	}, port, "")
+	}, port, "", "kube")
 	backend.Obj = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
@@ -137,6 +137,5 @@ func testBackendObjectIR(name string, port int32) ir.BackendObjectIR {
 			Generation:      1,
 		},
 	}
-	backend.GvPrefix = "kube"
 	return backend
 }

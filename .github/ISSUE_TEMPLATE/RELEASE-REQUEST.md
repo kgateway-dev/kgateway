@@ -19,16 +19,17 @@ PRs and/or issues that need to land before this release is cut. List the headlin
 
 - [ ] You are a kgateway maintainer (have push permissions to `kgateway-dev/kgateway`)
 - [ ] All required backports are merged to the `v<MAJOR>.<MINOR>.x` release branch (the merge queue wouldn't allow any CI failures)
-- [ ] You are aware that nightly tests run nightly only on `main`, and that they are the only thing that runs against a vector of Kubernetes versions and a vector of Gateway API versions.
-  - [ ] And you have [run them manually](https://github.com/kgateway-dev/kgateway/actions/workflows/nightly-tests.yaml) against the tip of `v<MAJOR>.<MINOR>.x`, and it passed or had irrelevant failures
-  - [ ] Or you have decided not to run them manually
+- [ ] You are aware that nightly tests run nightly on `main` and the LTS branches listed in [`.github/workflows/nightly-tests.yaml`](/.github/workflows/nightly-tests.yaml), and that they are the only thing that runs against a vector of Kubernetes versions and a vector of Gateway API versions, and thus are critical to ensuring that we actually support the versions that we document support for.
+  - [ ] If this release branch is not listed there, you have added it.
+  - [ ] You are releasing the exact commit that most recently was tested and passed ([workflow is here](https://github.com/kgateway-dev/kgateway/actions/workflows/nightly-tests.yaml)), even if you had to manually run the nightly test workflow because the commit you are releasing is new since the last scheduled run.
 - [ ] osv-scanner's scan from last night is acceptably clean for this branch (see `https://github.com/kgateway-dev/kgateway/security/code-scanning?query=is%3Aopen+branch%3Av<MAJOR>.<MINOR>.x` substituting MAJOR and MINOR). If not, fix things and run the OSV scan GitHub Action manually to confirm that you've fixed things.
 
 ### First-time setup for a new minor release branch (skip for patch releases)
 
 - [ ] Create and push the `v<MAJOR>.<MINOR>.x` branch from `main` (see [`devel/contributing/releasing.md`](/devel/contributing/releasing.md))
 - [ ] Create a branch protection ruleset, or ask a maintainer to do so, for the `v<MAJOR>.<MINOR>.x` branch
-- [ ] Add the new release branch to [`.github/workflows/osv-scanner.yaml`](/.github/workflows/osv-scanner.yaml) (both the scheduled scan matrix and the `workflow_dispatch` branch options)
+- [ ] On `main`, bump `ROLLING_MAIN_VERSION` in the [`Makefile`](/Makefile) to the next minor's rolling tag via PR (e.g. after cutting `v2.3.x`, set it to `v2.4.0-main`), since `main` now tracks the next minor
+- [ ] Add the new release branch to [`.github/workflows/osv-scanner.yaml`](/.github/workflows/osv-scanner.yaml) (both the scheduled scan matrix and the `workflow_dispatch` branch options), and drop any branch that is no longer LTS. This list is the single source of truth for which branches get scanned; tooling such as `hack/osvtool` and the `cve-bump` skill reads it rather than hardcoding branches
 
 ## Publish the release
 

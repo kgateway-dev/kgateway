@@ -1,15 +1,15 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_test_80
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -70,6 +70,7 @@ Routes:
       filterConfig:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"set":[{"name":"source","value":"gateway-attachment-1"},{"name":"source","value":"gateway-attachment-2"}]},"response":{"set":[{"name":"source","value":"gateway-attachment-1"},{"name":"source","value":"gateway-attachment-2"}]}}'
+      filterName: rustformation
       perRouteConfigName: rustformation
   virtualHosts:
   - domains:
@@ -102,6 +103,7 @@ Routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"source","value":"route-attachment-2"},{"name":"source","value":"route-attachment-1"}]},"response":{"set":[{"name":"source","value":"route-attachment-2"},{"name":"source","value":"route-attachment-1"}]}}'
+          filterName: rustformation
           perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-1
@@ -123,6 +125,7 @@ Routes:
         filterConfig:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"set":[{"name":"source","value":"listener-attachment-1"},{"name":"source","value":"listener-attachment-2"}]},"response":{"set":[{"name":"source","value":"listener-attachment-1"},{"name":"source","value":"listener-attachment-2"}]}}'
+        filterName: rustformation
         perRouteConfigName: rustformation
 Statuses:
   gateways:
@@ -186,6 +189,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

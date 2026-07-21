@@ -13,6 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
@@ -32,8 +33,6 @@ type GatewayConfig struct {
 	// ControllerName is the name of the Envoy controller. Any GatewayClass objects
 	// managed by this controller must have this name as their ControllerName.
 	ControllerName string
-	// EnableEnvoy indicates if the Envoy controller is enabled
-	EnableEnvoy bool
 	// ControlPlane sets the default control plane information the deployer will use.
 	ControlPlane deployer.ControlPlaneInfo
 	// IstioAutoMtlsEnabled enables istio auto mtls mode for the controller,
@@ -110,6 +109,7 @@ func watchGw(
 		cfg.Mgr.GetScheme(),
 		cfg.Client,
 		gwParams,
+		deployer.WithManagedBy(wellknown.DefaultManagedByValue),
 	)
 	if err != nil {
 		return err

@@ -110,7 +110,7 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 		},
 		apisettings.Settings{},
 	)
-	refgrants := krtcollections.NewRefGrantIndex(krt.NewStaticCollection[*gwv1b1.ReferenceGrant](nil, nil, krtopts.ToOptions("RefGrants")...))
+	refgrants := krtcollections.NewRefGrantIndex(krt.NewStaticCollection[*gwv1b1.ReferenceGrant](nil, nil, krtopts.ToOptions("RefGrants")...), apisettings.ReferenceGrantPermissive)
 	backends := krtcollections.NewBackendIndex(krtopts, policies, refgrants)
 	serviceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		out := make([]ir.BackendObjectIR, 0, len(svc.Spec.Ports))
@@ -120,7 +120,7 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 				Kind:      "Service",
 				Namespace: svc.Namespace,
 				Name:      svc.Name,
-			}, port.Port, "")
+			}, port.Port, "", "")
 			backend.Obj = svc
 			backend.PortName = port.Name
 			out = append(out, backend)
@@ -129,8 +129,8 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 	}, krtopts.ToOptions("ServiceBackends")...)
 	backends.AddBackends(schema.GroupKind{Group: "", Kind: "Service"}, serviceBackends)
 
-	ucc := ir.NewUniqlyConnectedClient("test-role", "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection(nil, []ir.UniqlyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
+	ucc := ir.NewUniquelyConnectedClient("test-role", "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
 	finalBackends := krt.JoinCollection(backends.BackendsWithPolicy(), krtopts.ToOptions("FinalBackends")...)
 	translator := &irtranslator.BackendTranslator{
 		ContributedBackends: map[schema.GroupKind]ir.BackendInit{

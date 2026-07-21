@@ -61,5 +61,6 @@ spec:
   - "example2-ls.com"
   rules:
     - backendRefs:
-        - name: example-svc
+        - name: nginx
+          namespace: nginx-shared
           port: 8080

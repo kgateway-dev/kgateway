@@ -55,7 +55,6 @@ type gatewayReconciler struct {
 	gwParams       *internaldeployer.GatewayParameters
 	scheme         *runtime.Scheme
 	controllerName string
-	enableEnvoy    bool
 
 	gwClient         kclient.Client[*gwv1.Gateway]
 	gwClassClient    kclient.Client[*gwv1.GatewayClass]
@@ -83,7 +82,6 @@ func NewGatewayReconciler(
 		gwParams:            gwParams,
 		scheme:              cfg.Mgr.GetScheme(),
 		controllerName:      cfg.ControllerName,
-		enableEnvoy:         cfg.CommonCollections.Settings.EnableEnvoy,
 		controllerExtension: controllerExtension,
 
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
@@ -95,8 +93,7 @@ func NewGatewayReconciler(
 		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, filter),
 	}
 
-	// Reuse the parameter client from the deployer to avoid duplicate watches
-	// This client is only created when the controller is enabled
+	// Reuse the parameter client from the deployer to avoid duplicate watches.
 	r.gwParamClient = gwParams.GetGatewayParametersClient()
 
 	r.queue = controllers.NewQueue("GatewayController", controllers.WithReconciler(r.Reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
@@ -195,9 +192,7 @@ func NewGatewayReconciler(
 			}
 		}
 	})
-	if r.gwParamClient != nil {
-		r.gwParamClient.AddEventHandler(gwParamEventHandler)
-	}
+	r.gwParamClient.AddEventHandler(gwParamEventHandler)
 
 	// Custom event handler for ListenerSet changes
 	cfg.CommonCollections.GatewayIndex.GatewaysForDeployer.Register(func(o krt.Event[ir.GatewayForDeployer]) {
@@ -257,14 +252,12 @@ func (r *gatewayReconciler) Start(ctx context.Context) error {
 	clients := []controllers.Shutdowner{
 		r.gwClient,
 		r.gwClassClient,
+		r.gwParamClient,
 		r.nsClient,
 		r.deploymentClient,
 		r.svcAccountClient,
 		r.svcClient,
 		r.configMapClient,
-	}
-	if r.gwParamClient != nil {
-		clients = append(clients, r.gwParamClient)
 	}
 	controllers.ShutdownAll(clients...)
 	if r.controllerExtension != nil {
@@ -292,14 +285,8 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 		return fmt.Errorf("gatewayclass %s not found for gateway %s", gw.Spec.GatewayClassName, req)
 	}
 
-	// Only reconcile Gateways for enabled controllers
-	isEnvoyGateway := gwc.Spec.ControllerName == gwv1.GatewayController(r.controllerName)
-
-	if isEnvoyGateway && !r.enableEnvoy {
-		logger.Debug("skipping gateway for disabled envoy controller", "gateway", req, "controllerName", gwc.Spec.ControllerName)
-		return nil
-	}
-	if !isEnvoyGateway {
+	// Only reconcile Gateways for our controller
+	if gwc.Spec.ControllerName != gwv1.GatewayController(r.controllerName) {
 		// Not our GatewayClass at all
 		return nil
 	}

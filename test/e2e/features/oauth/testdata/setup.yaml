@@ -93,6 +93,7 @@ spec:
           CLIENT_SECRET=kgateway-client-secret
           REDIRECT_URL=https://example.com/oauth2/redirect # must match the HTTPRoute/oauth host and path
           REDIRECT_URL_SECOND=https://example.com/anything/second/oauth2/redirect # must match the HTTPRoute/oauth-2 host and path
+          REDIRECT_URL_SPLIT=https://example.com/split/oauth2/redirect # must match the HTTPRoute/oauth-split host and path
 
           until /opt/keycloak/bin/kcadm.sh get realms --server "${KEYCLOAK_SERVER}" --realm master --user "${KEYCLOAK_ADMIN}" --password "${KEYCLOAK_ADMIN_PASSWORD}"; do
             echo "Waiting for Keycloak admin to be ready..."
@@ -120,7 +121,7 @@ spec:
           /opt/keycloak/bin/kcreg.sh create \
           -s clientId="${CLIENT_ID}" \
           -s secret="${CLIENT_SECRET}" \
-          -s "redirectUris=[\"${REDIRECT_URL}\",\"${REDIRECT_URL_SECOND}\"]" \
+          -s "redirectUris=[\"${REDIRECT_URL}\",\"${REDIRECT_URL_SECOND}\",\"${REDIRECT_URL_SPLIT}\"]" \
           -s consentRequired=false \
           --server "${KEYCLOAK_SERVER}" \
           --realm "${REALM}" \
@@ -309,6 +310,38 @@ spec:
         claimsToHeaders:
           - name: email
             header: x-oauth2-email
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-jwks
+  labels:
+    app.kubernetes.io/name: keycloak
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9443
+    targetPort: 8443
+    name: https
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: keycloak
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: keycloak-jwks-tls
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: keycloak-jwks
+  validation:
+    hostname: example.com
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: keycloak-tls-ca
 ---
 apiVersion: v1
 kind: Secret

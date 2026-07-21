@@ -17,7 +17,6 @@ Clusters:
           healthCheckConfig:
             hostname: example.com
           hostname: example.com
-  metadata: {}
   name: backend_default_backend1_0
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -72,7 +71,6 @@ Clusters:
           healthCheckConfig:
             hostname: example2.com
           hostname: example2.com
-  metadata: {}
   name: backend_default_backend2_0
   transportSocket:
     name: envoy.transport_sockets.tls
@@ -92,7 +90,6 @@ Clusters:
             name: SYSTEM_CA_CERT
       sni: example2.com
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -140,6 +137,21 @@ Routes:
           - name: backend_default_backend2_0
             weight: 1
 Statuses:
+  backends:
+    default/backend1:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    default/backend2:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:
@@ -201,6 +213,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

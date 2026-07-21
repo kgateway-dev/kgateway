@@ -289,7 +289,7 @@ type Pod struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 
 	// A selector which must be true for the pod to fit on a node. See
-	// https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
+	// https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/ for
 	// details.
 	//
 	// +optional
@@ -302,7 +302,6 @@ type Pod struct {
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
-	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
 	// If specified, the pod's tolerations. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core
 	// for details.

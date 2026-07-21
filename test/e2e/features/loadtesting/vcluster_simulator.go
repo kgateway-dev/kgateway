@@ -25,7 +25,6 @@ type VClusterSimulator struct {
 	ctx              context.Context
 	testInstallation *e2e.TestInstallation
 	config           *VClusterConfig
-	createdResources []client.Object
 	metrics          *SimulationMetrics
 }
 
@@ -42,7 +41,6 @@ func NewVClusterSimulator(ctx context.Context, testInstallation *e2e.TestInstall
 	return &VClusterSimulator{
 		ctx:              ctx,
 		testInstallation: testInstallation,
-		createdResources: []client.Object{},
 		metrics:          &SimulationMetrics{},
 	}
 }
@@ -142,7 +140,6 @@ func (vcs *VClusterSimulator) createResource(resource client.Object) error {
 	if err := client.IgnoreAlreadyExists(err); err != nil {
 		return err
 	}
-	vcs.createdResources = append(vcs.createdResources, resource)
 	return nil
 }
 
@@ -263,19 +260,18 @@ func (vcs *VClusterSimulator) GetMetrics() SimulationMetrics {
 }
 
 func (vcs *VClusterSimulator) Cleanup() error {
-	deleteOptions := &client.DeleteOptions{
-		GracePeriodSeconds: func() *int64 { i := int64(0); return &i }(),
-		PropagationPolicy:  func() *metav1.DeletionPropagation { p := metav1.DeletePropagationBackground; return &p }(),
+	if vcs.config == nil || vcs.config.Namespace == "" {
+		return nil
 	}
 
-	for i := len(vcs.createdResources) - 1; i >= 0; i-- {
-		resource := vcs.createdResources[i]
-		if err := vcs.testInstallation.ClusterContext.Client.Delete(vcs.ctx, resource, deleteOptions); err != nil && client.IgnoreNotFound(err) != nil {
-			fmt.Printf("Warning: failed to delete simulation resource %v: %v\n", resource, err)
-		}
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: vcs.config.Namespace},
 	}
-
-	time.Sleep(2 * time.Second)
+	if err := vcs.testInstallation.ClusterContext.Client.Delete(vcs.ctx, namespace); err != nil && client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("failed to delete simulation namespace %s: %w", vcs.config.Namespace, err)
+	}
+	vcs.config = nil
+	vcs.metrics = &SimulationMetrics{}
 	return nil
 }
 

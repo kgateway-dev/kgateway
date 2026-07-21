@@ -23,6 +23,7 @@ func MergeHttpPolicies(
 	mergeFuncs := []func(string, *HttpListenerPolicyIr, *HttpListenerPolicyIr, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
 		mergeAccessLog,
 		mergeTracing,
+		mergeLocalReplyConfig,
 		mergeUpgradeConfigs,
 		mergeUseRemoteAddress,
 		mergePreserveExternalRequestId,
@@ -31,6 +32,7 @@ func MergeHttpPolicies(
 		mergeXffConfig,
 		mergeSkipXffAppend,
 		mergeServerHeaderTransformation,
+		mergeServerNameTransformation,
 		mergeStreamIdleTimeout,
 		mergeIdleTimeout,
 		mergeHttp2ProtocolOptions,
@@ -41,6 +43,7 @@ func MergeHttpPolicies(
 		mergeEarlyHeaderMutation,
 		mergeMaxRequestHeadersKb,
 		mergeMaxRequestsPerConnection,
+		mergeMaxHeadersCount,
 		mergeUuidRequestIdConfig,
 		mergeForwardClientCertDetails,
 		mergeStripHostPortMode,
@@ -89,6 +92,22 @@ func mergeTracing(
 	p1.tracingProvider = p2.tracingProvider
 	p1.tracingConfig = p2.tracingConfig
 	mergeOrigins.SetOne(origin+"tracing", p2Ref, p2MergeOrigins)
+}
+
+func mergeLocalReplyConfig(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.localReplyConfig, p2.localReplyConfig, opts) {
+		return
+	}
+
+	p1.localReplyConfig = p2.localReplyConfig
+	mergeOrigins.SetOne(origin+"localReplyConfig", p2Ref, p2MergeOrigins)
 }
 
 func mergeUpgradeConfigs(
@@ -267,6 +286,22 @@ func mergeServerHeaderTransformation(
 	mergeOrigins.SetOne(origin+"serverHeaderTransformation", p2Ref, p2MergeOrigins)
 }
 
+func mergeServerNameTransformation(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.serverName, p2.serverName, opts) {
+		return
+	}
+
+	p1.serverName = p2.serverName
+	mergeOrigins.SetOne(origin+"serverName", p2Ref, p2MergeOrigins)
+}
+
 func mergeStreamIdleTimeout(
 	origin string,
 	p1, p2 *HttpListenerPolicyIr,
@@ -393,6 +428,22 @@ func mergeMaxRequestsPerConnection(
 
 	p1.maxRequestsPerConnection = p2.maxRequestsPerConnection
 	mergeOrigins.SetOne(origin+"maxRequestsPerConnection", p2Ref, p2MergeOrigins)
+}
+
+func mergeMaxHeadersCount(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.maxHeadersCount, p2.maxHeadersCount, opts) {
+		return
+	}
+
+	p1.maxHeadersCount = p2.maxHeadersCount
+	mergeOrigins.SetOne(origin+"maxHeadersCount", p2Ref, p2MergeOrigins)
 }
 
 // mergeForwardClientCertDetails merges the mode and details sub fields

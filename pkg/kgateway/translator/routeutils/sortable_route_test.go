@@ -2,7 +2,6 @@ package routeutils
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -73,10 +72,17 @@ func defaultRtB() *gwv1.HTTPRoute {
 	}
 }
 
-var _ = DescribeTable("SortableRoutes Less()",
+var _ = DescribeTable("SortableRoute CompareTo()",
 	func(first, second *SortableRoute, shouldSwap bool) {
-		in := SortableRoutes{first, second}
-		Expect(in.Less(0, 1)).ToNot(Equal(shouldSwap), "failed swap=%t", shouldSwap)
+		// CompareTo is the canonical comparator used by the production sort path
+		// (slices.SortStableFunc). A positive result means first sorts after second
+		// (the pair would be swapped relative to input order); a non-positive result
+		// means first sorts before or equal to second.
+		if shouldSwap {
+			Expect(first.CompareTo(second)).To(BeNumerically(">", 0), "failed swap=%t", shouldSwap)
+		} else {
+			Expect(first.CompareTo(second)).To(BeNumerically("<=", 0), "failed swap=%t", shouldSwap)
+		}
 	},
 	Entry(
 		"equal will not swap",
@@ -203,7 +209,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 			Route: ir.HttpRouteRuleMatchIR{
 				Match: gwv1.HTTPRouteMatch{
 					Path:   prefixMatch("/"),
-					Method: ptr.To(gwv1.HTTPMethod("GET")),
+					Method: new(gwv1.HTTPMethod("GET")),
 				},
 			},
 		},
@@ -335,7 +341,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 					Path: prefixMatch("/"),
 					QueryParams: []gwv1.HTTPQueryParamMatch{
 						{
-							Type:  ptr.To(gwv1.QueryParamMatchExact),
+							Type:  new(gwv1.QueryParamMatchExact),
 							Name:  "test",
 							Value: "hello",
 						},

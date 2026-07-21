@@ -60,7 +60,10 @@ spec:
                 description: Aws is the AWS backend configuration.
                 properties:
                   accountId:
-                    description: AccountId is the AWS account ID to use for the backend.
+                    description: |-
+                      AccountId is the AWS account ID to use for the backend.
+                      Deprecated: Set accountId on spec.aws.lambda instead. This field is kept for backward compatibility.
+                      When both fields are set, spec.aws.lambda.accountId takes precedence.
                     maxLength: 12
                     minLength: 1
                     pattern: ^[0-9]{12}$
@@ -77,10 +80,33 @@ spec:
                       See the Envoy docs for more info:
                       https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
                     properties:
+                      assumeRole:
+                        description: |-
+                          AssumeRole configures STS role chaining. The backend's ambient credentials
+                          (the gateway ServiceAccount's IRSA identity for Lambda request signing, or the
+                          controller's identity for EC2 discovery; more generally any credential resolved
+                          by the default provider chain) are used to assume the target role. The resulting
+                          temporary credentials are then used to sign requests to the backend (Lambda) or
+                          to list instances (EC2). This enables per-backend, least-privilege roles without
+                          granting the gateway/controller role direct access to every target.
+                          Required when type is 'AssumeRole'.
+                        properties:
+                          roleArn:
+                            description: |-
+                              RoleArn is the ARN of the IAM role to assume, e.g.
+                              "arn:aws:iam::123456789012:role/my-invoke-role".
+                            maxLength: 2048
+                            minLength: 1
+                            pattern: ^arn:aws[a-z-]*:iam::[0-9]{12}:role/.+$
+                            type: string
+                        required:
+                        - roleArn
+                        type: object
                       secretRef:
                         description: |-
                           SecretRef references a Kubernetes Secret containing the AWS credentials.
                           The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
+                          Required when type is 'Secret'.
                         properties:
                           name:
                             default: ""
@@ -98,6 +124,7 @@ spec:
                           for the backend.
                         enum:
                         - Secret
+                        - AssumeRole
                         type: string
                     required:
                     - type
@@ -107,9 +134,83 @@ spec:
                       rule: '!(has(self.secretRef) && self.type != ''Secret'')'
                     - message: secretRef must be specified when type is 'Secret'
                       rule: '!(!has(self.secretRef) && self.type == ''Secret'')'
-                  lambda:
-                    description: Lambda configures the AWS lambda service.
+                    - message: assumeRole must be nil if the type is not 'AssumeRole'
+                      rule: '!(has(self.assumeRole) && self.type != ''AssumeRole'')'
+                    - message: assumeRole must be specified when type is 'AssumeRole'
+                      rule: '!(!has(self.assumeRole) && self.type == ''AssumeRole'')'
+                  ec2:
+                    description: Ec2 configures dynamic discovery of AWS EC2 instances.
                     properties:
+                      addressType:
+                        default: PrivateIP
+                        description: |-
+                          AddressType selects whether to route to the instance private or public IP.
+                          Defaults to PrivateIP.
+                        enum:
+                        - PrivateIP
+                        - PublicIP
+                        type: string
+                      filters:
+                        description: |-
+                          Filters select which instances should be associated with this backend.
+                          When multiple filters are provided, an instance must match all of them.
+                          If this list is omitted or empty, all running instances in the configured
+                          region are selected. Be careful: an accidentally empty filter list broadens
+                          the backend to the whole regional fleet rather than matching nothing.
+                        items:
+                          description: AwsTagFilter matches EC2 instances by tag.
+                          properties:
+                            key:
+                              description: Key matches instances that contain the
+                                given tag key, regardless of value.
+                              maxLength: 128
+                              minLength: 1
+                              type: string
+                            keyValue:
+                              description: KeyValue matches instances that contain
+                                the given tag key/value pair.
+                              properties:
+                                key:
+                                  description: Key is the tag key to match.
+                                  maxLength: 128
+                                  minLength: 1
+                                  type: string
+                                value:
+                                  description: Value is the tag value to match.
+                                  maxLength: 256
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - key
+                              - value
+                              type: object
+                          type: object
+                          x-kubernetes-validations:
+                          - message: exactly one of the fields in [key keyValue] must
+                              be set
+                            rule: '[has(self.key),has(self.keyValue)].filter(x,x==true).size()
+                              == 1'
+                        maxItems: 16
+                        type: array
+                      port:
+                        default: 80
+                        description: |-
+                          Port is the port to use for discovered instances.
+                          Defaults to 80.
+                        format: int32
+                        type: integer
+                    type: object
+                  lambda:
+                    description: Lambda configures the AWS Lambda service.
+                    properties:
+                      accountId:
+                        description: |-
+                          AccountId is the AWS account ID to use for the backend.
+                          This is the preferred location for Lambda backends.
+                        maxLength: 12
+                        minLength: 1
+                        pattern: ^[0-9]{12}$
+                        type: string
                       endpointURL:
                         description: |-
                           EndpointURL is the URL or domain for the Lambda service. This is primarily
@@ -161,10 +262,14 @@ spec:
                     minLength: 1
                     pattern: ^[a-z0-9-]+$
                     type: string
-                required:
-                - accountId
-                - lambda
                 type: object
+                x-kubernetes-validations:
+                - message: accountId must be specified on aws or aws.lambda for lambda
+                    backends
+                  rule: '!has(self.lambda) || has(self.accountId) || has(self.lambda.accountId)'
+                - message: exactly one of the fields in [lambda ec2] must be set
+                  rule: '[has(self.lambda),has(self.ec2)].filter(x,x==true).size()
+                    == 1'
               dynamicForwardProxy:
                 description: DynamicForwardProxy is the dynamic forward proxy backend
                   configuration.
@@ -194,6 +299,57 @@ spec:
                 required:
                 - host
                 type: object
+              priorityGroups:
+                description: |-
+                  PriorityGroups is an ordered list of backend groups used for failover.
+                  Traffic is sent to the backends of the first group; each subsequent
+                  group is only used when the backends of all preceding groups are
+                  unhealthy. The health check can be configured via the BackendConfigPolicy
+                  that targets this Backend
+
+                  Note: This field is part of an experimental API and subject to breaking changes in future releases.
+                items:
+                  description: |-
+                    PriorityGroup defines one failover priority level of a priority groups backend.
+
+                    Note: This struct is part of an experimental API and subject to breaking changes in future releases.
+                  properties:
+                    backendRefs:
+                      description: |-
+                        BackendRefs references the Backends that make up this priority group.
+                        Referenced Backends must be in the same namespace and must not be
+                        priority groups backends themselves.
+                      items:
+                        description: |-
+                          LocalObjectReference contains enough information to let you locate the
+                          referenced object inside the same namespace.
+                        properties:
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      maxItems: 16
+                      minItems: 1
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - name
+                      x-kubernetes-list-type: map
+                      x-kubernetes-validations:
+                      - message: backend reference name must not be empty
+                        rule: self.all(r, size(r.name) > 0)
+                  required:
+                  - backendRefs
+                  type: object
+                maxItems: 16
+                minItems: 1
+                type: array
               static:
                 description: Static is the static backend configuration.
                 properties:
@@ -239,22 +395,27 @@ spec:
                 - Static
                 - DynamicForwardProxy
                 - GCP
+                - PriorityGroups
                 type: string
             type: object
             x-kubernetes-validations:
             - message: aws backend must be specified when type is 'AWS'
-              rule: 'self.type == ''AWS'' ? has(self.aws) : true'
+              rule: '!has(self.type) || (self.type == ''AWS'' ? has(self.aws) : true)'
             - message: static backend must be specified when type is 'Static'
-              rule: 'self.type == ''Static'' ? has(self.static) : true'
+              rule: '!has(self.type) || (self.type == ''Static'' ? has(self.static)
+                : true)'
             - message: dynamicForwardProxy backend must be specified when type is
                 'DynamicForwardProxy'
-              rule: 'self.type == ''DynamicForwardProxy'' ? has(self.dynamicForwardProxy)
-                : true'
+              rule: '!has(self.type) || (self.type == ''DynamicForwardProxy'' ? has(self.dynamicForwardProxy)
+                : true)'
             - message: gcp backend must be specified when type is 'GCP'
-              rule: 'self.type == ''GCP'' ? has(self.gcp) : true'
+              rule: '!has(self.type) || (self.type == ''GCP'' ? has(self.gcp) : true)'
+            - message: priorityGroups backend must be specified when type is 'PriorityGroups'
+              rule: '!has(self.type) || (self.type == ''PriorityGroups'' ? has(self.priorityGroups)
+                : true)'
             - message: exactly one of the fields in [aws static dynamicForwardProxy
-                gcp] must be set
-              rule: '[has(self.aws),has(self.static),has(self.dynamicForwardProxy),has(self.gcp)].filter(x,x==true).size()
+                gcp priorityGroups] must be set
+              rule: '[has(self.aws),has(self.static),has(self.dynamicForwardProxy),has(self.gcp),has(self.priorityGroups)].filter(x,x==true).size()
                 == 1'
           status:
             description: BackendStatus defines the observed state of Backend.

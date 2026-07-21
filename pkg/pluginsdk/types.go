@@ -29,19 +29,19 @@ type (
 	EndpointPlugin  func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
-		ucc ir.UniqlyConnectedClient,
+		ucc ir.UniquelyConnectedClient,
 		out *EndpointsInputs,
 	) uint64
 )
 
 // TODO: consider changing PerClientProcessBackend to look like this:
-// PerClientProcessBackend  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR)
+// PerClientProcessBackend  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR)
 // so that it only attaches the policy to the backend, and doesn't modify the backend (except for attached policies) or the cluster itself.
 // leaving as is for now as this requires better understanding of how krt would handle this.
 type PerClientProcessBackend func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	ucc ir.UniqlyConnectedClient,
+	ucc ir.UniquelyConnectedClient,
 	in ir.BackendObjectIR,
 	out *envoyclusterv3.Cluster,
 )
@@ -87,6 +87,10 @@ type BackendPlugin struct {
 	AliasKinds []schema.GroupKind
 	Backends   krt.Collection[ir.BackendObjectIR]
 	Endpoints  krt.Collection[ir.EndpointsForBackend]
+	// ExtraConditions, when set, contributes additional status conditions to the
+	// Backend resource beyond the Accepted condition (e.g. the EC2 EndpointsDiscovered
+	// condition produced by runtime endpoint discovery). May be nil.
+	ExtraConditions krt.Collection[ir.BackendObjectStatus]
 }
 
 type KGwTranslator interface {
@@ -139,6 +143,9 @@ func (p Plugin) HasSynced() bool {
 			return false
 		}
 		if up.Endpoints != nil && !up.Endpoints.HasSynced() {
+			return false
+		}
+		if up.ExtraConditions != nil && !up.ExtraConditions.HasSynced() {
 			return false
 		}
 	}

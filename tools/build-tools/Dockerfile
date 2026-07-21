@@ -13,7 +13,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Pinned tool versions (not tracked in go.mod)
 # RUST_VERSION is sourced from internal/envoy_modules/rust-toolchain.toml (see below).
-ENV KUBECTL_VERSION=1.35.0
+ENV KUBECTL_VERSION=1.36.1
 ENV PROTOC_VERSION=33.2
 ENV BUF_VERSION=v1.62.1
 ENV YQ_VERSION=4.50.1

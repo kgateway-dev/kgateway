@@ -71,7 +71,10 @@ func (c *requestConfig) executeNative() (*http.Response, error) {
 	}
 
 	// Create context with timeout
-	ctx := context.Background()
+	ctx := c.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if c.connectionTimeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.connectionTimeout)*time.Second)
@@ -187,6 +190,11 @@ func (c *requestConfig) buildHTTPClient() *http.Client {
 
 		// Configure curves (simplified)
 		if c.curves != "" {
+			// Similar to ciphers, this would require parsing and mapping
+		}
+
+		// Configure signature algorithms (simplified)
+		if c.signatureAlgorithms != "" {
 			// Similar to ciphers, this would require parsing and mapping
 		}
 

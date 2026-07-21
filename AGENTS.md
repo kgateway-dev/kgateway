@@ -106,7 +106,7 @@ See `/api/README.md` for full guidelines.
 6. For non-trivial changes, also add unit tests.
 7. Consider also adding E2E tests using the framework. You can look at `test/e2e/features/cors/suite.go` as an example for an E2E test.
    When writing an E2E test, prefer to use `base.NewBaseTestingSuite` as the base suite, as it provides many useful utilities.
-   If you are adding a new test suite, remember to register it in `test/e2e/tests/kgateway_tests.go`.
+   If you are adding a new test suite, remember to register it in `test/e2e/tests/kgateway/suite_runner.go`.
    Additionally add it to one of the test kind clusters in `.github/workflows/e2e.yaml`.
 
 ### Directory Conventions

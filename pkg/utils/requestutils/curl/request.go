@@ -1,6 +1,7 @@
 package curl
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 )
@@ -88,16 +89,21 @@ type requestConfig struct {
 	http2  bool
 
 	// TLS-specific options
-	ciphers       string
-	curves        string
-	tlsVersion    string
-	tlsMaxVersion string
+	ciphers             string
+	curves              string
+	signatureAlgorithms string
+	tlsVersion          string
+	tlsMaxVersion       string
 
 	// Client certificate options
 	clientCert string
 	clientKey  string
 
 	additionalArgs []string
+
+	// ctx is used by ExecuteRequest to build the http.Request and aborts the
+	// in-flight call when ctx cancels. Set via WithContext.
+	ctx context.Context
 }
 
 func (c *requestConfig) generateArgs() []string {
@@ -164,6 +170,9 @@ func (c *requestConfig) generateArgs() []string {
 	}
 	if c.curves != "" {
 		args = append(args, "--curves", c.curves)
+	}
+	if c.signatureAlgorithms != "" {
+		args = append(args, "--sigalgs", c.signatureAlgorithms)
 	}
 	if c.tlsVersion != "" {
 		args = append(args, fmt.Sprintf("--tlsv%s", c.tlsVersion))

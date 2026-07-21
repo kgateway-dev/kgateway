@@ -20,6 +20,7 @@ type properties struct {
 	localAddress      string
 	stdout            io.Writer
 	stderr            io.Writer
+	quiet             bool
 }
 
 func WithKindCluster(kindClusterName string) Option {
@@ -88,6 +89,14 @@ func WithWriters(out, err io.Writer) Option {
 	return func(config *properties) {
 		config.stdout = out
 		config.stderr = err
+	}
+}
+
+// WithQuiet suppresses the "+ kubectl port-forward ..." trace line that is
+// otherwise printed to stderr when running under the e2e build tag.
+func WithQuiet() Option {
+	return func(config *properties) {
+		config.quiet = true
 	}
 }
 

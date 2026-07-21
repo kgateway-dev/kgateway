@@ -12,7 +12,7 @@ import (
 )
 
 type UccWithEndpoints struct {
-	Client ir.UniqlyConnectedClient
+	Client ir.UniquelyConnectedClient
 	// +krtEqualsTodo compare load assignments when equality matters
 	Endpoints     *envoyendpointv3.ClusterLoadAssignment
 	EndpointsHash uint64
@@ -34,15 +34,15 @@ type PerClientEnvoyEndpoints struct {
 	index     krt.Index[string, UccWithEndpoints]
 }
 
-func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) []UccWithEndpoints {
+func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) []UccWithEndpoints {
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
 }
 
 func NewPerClientEnvoyEndpoints(
 	krtopts krtutil.KrtOptions,
-	uccs krt.Collection[ir.UniqlyConnectedClient],
+	uccs krt.Collection[ir.UniquelyConnectedClient],
 	kgatewayEndpoints krt.Collection[ir.EndpointsForBackend],
-	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64),
+	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64),
 ) PerClientEnvoyEndpoints {
 	eps := krt.NewManyCollection(kgatewayEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForBackend) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)

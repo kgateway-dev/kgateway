@@ -70,6 +70,8 @@ var (
 	GwApiV1_4_0 = GwApiVersionMustParse("1.4.0")
 	// ListenerSet was promoted to gateway.networking.k8s.io/v1 in 1.5.0 and is available in the standard channel.
 	GwApiV1_5_0 = GwApiVersionMustParse("1.5.0")
+	// TCPRoutes was promoted to gateway.networking.k8s.io/v1 in 1.6.0 and is available in the standard channel.
+	GwApiV1_6_0 = GwApiVersionMustParse("1.6.0")
 
 	GwApiRequireRouteNames = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_2_0,
@@ -95,7 +97,8 @@ var (
 	}
 
 	GwApiRequireTcpRoutes = map[GwApiChannel]*GwApiVersion{
-		GwApiChannelExperimental: &GwApiV0_3_0,
+		GwApiChannelExperimental: &GwApiV1_6_0,
+		GwApiChannelStandard:     &GwApiV1_6_0,
 	}
 
 	GwApiRequireSessionPersistence = map[GwApiChannel]*GwApiVersion{
@@ -284,7 +287,7 @@ func getChannelRequirements(requirements map[GwApiChannel]*GwApiVersion, channel
 }
 
 // checkCompatibleWithApiVersion checks if the requirements for a test are satisfied by the current channel/version.
-func (s *BaseTestingSuite) checkCompatibleWithApiVersion(minRequirements, maxRequirements map[GwApiChannel]*GwApiVersion, currentChannel GwApiChannel, currentVersion GwApiVersion) bool {
+func checkCompatibleWithApiVersion(minRequirements, maxRequirements map[GwApiChannel]*GwApiVersion, currentChannel GwApiChannel, currentVersion GwApiVersion) bool {
 	minChecker := func(current, required GwApiVersion) bool {
 		return current.GreaterThan(&required.Version) || current.Equal(&required.Version) // >=
 	}
@@ -347,11 +350,16 @@ func (s *BaseTestingSuite) SetupSuite() {
 	// Detect and cache Gateway API version and channel once
 	s.detectAndCacheGwApiInfo()
 
-	// Check suite-level version requirements before proceeding
+	// Check suite-level version requirements before proceeding.
+	// Skipping here skips the entire suite: testify calls SetupSuite on the
+	// suite-level T before running any test method, so t.Skip aborts the whole
+	// suite with a single SKIP rather than skipping each test individually.
+	// This must stay above any setup so no (potentially incompatible) resources
+	// are applied; TearDownSuite does not run after a SetupSuite skip, which is
+	// fine here because nothing was set up.
 	if s.SkipSuite() {
-		// There isn't a way to skip the whole suite, but still need to check here to avoid the setup of potentially incompatible resources.
-		s.T().Logf("Suite requires Gateway API %s, but current is %s/%s", s.MinGwApiVersion, s.getCurrentGwApiChannel(), s.getCurrentGwApiVersion())
-		return
+		s.T().Skipf("Suite requires Gateway API %s, but current is %s/%s",
+			s.MinGwApiVersion, s.getCurrentGwApiChannel(), s.getCurrentGwApiVersion())
 	}
 
 	// set up the helpers once and store them on the suite
@@ -373,11 +381,6 @@ func (s *BaseTestingSuite) TearDownSuite() {
 }
 
 func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
-	// Check first if the suite should be skipped due to version requirements to cover cases when the testcase is not defined.
-	if s.SkipSuite() {
-		s.T().Skip("Skipping all tests in suite due to gateway API version requirements")
-	}
-
 	// apply test-specific manifests
 	testCase, ok := s.TestCases[testName]
 	if !ok {
@@ -589,7 +592,8 @@ func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
 
 var decUnstructured = yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
-// Deleting namespaces is super super super slow. Avoid deleting them, ever
+// stripNamespaceResources returns the concatenated manifest contents with any Namespace
+// resources removed.
 func stripNamespaceResources(t *testing.T, manifests ...string) string {
 	cfgs := []string{}
 	for _, manifest := range manifests {
@@ -597,36 +601,39 @@ func stripNamespaceResources(t *testing.T, manifests ...string) string {
 		assert.NoError(t, err)
 		cfgs = append(cfgs, stripNamespaceResourcesFromContent(t, string(d)))
 	}
-
 	return strings.Join(cfgs, "\n---\n")
 }
 
+// stripNamespaceResourcesFromContent returns the manifest content with any Namespace
+// resources removed.
 func stripNamespaceResourcesFromContent(t *testing.T, content string) string {
 	cfgs := []string{}
-	for _, yml := range yml.SplitString(content) {
+	for _, y := range yml.SplitString(content) {
 		obj := &unstructured.Unstructured{}
-		_, gvk, err := decUnstructured.Decode([]byte(yml), nil, obj)
+		_, gvk, err := decUnstructured.Decode([]byte(y), nil, obj)
 		if runtime.IsMissingKind(err) {
-			// Not a k8s object, skip
 			continue
 		}
 		assert.NoError(t, err)
 		if gvk.Kind != "Namespace" {
-			cfgs = append(cfgs, yml)
+			cfgs = append(cfgs, y)
 		}
 	}
-
 	return strings.Join(cfgs, "\n---\n")
 }
 
-// DeleteManifests deletes the manifests and waits until the resources are deleted.
+// DeleteManifests deletes the non-namespace resources in the manifests (fire-and-forget, no wait).
+// Namespace resources are intentionally skipped: namespaces are slow to delete, and deleting one
+// here would race the follow-up apply on a test retry. Namespaces belong to the base-level
+// manifests applied by SetupBaseConfig, whose teardown deletes and waits for them.
+//
+// Deletion goes through the Istio client (not client.Delete on parsed objects) so that resources
+// whose manifests omit metadata.namespace are resolved to the same default namespace the apply used.
 func (s *BaseTestingSuite) DeleteManifests(testCase *TestCase) {
 	nf := stripNamespaceResources(s.T(), testCase.Manifests...)
 	fp := filepath.Join(s.TestInstallation.GeneratedFiles.TempDir, "delete_manifests.yaml")
 	s.Require().NoError(os.WriteFile(fp, []byte(nf), 0o600))
-
-	err := s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", fp)
-	s.Require().NoError(err)
+	s.Require().NoError(s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", fp))
 
 	if len(testCase.ManifestsWithTransform) == 0 {
 		return
@@ -636,14 +643,11 @@ func (s *BaseTestingSuite) DeleteManifests(testCase *TestCase) {
 	for manifest, transform := range testCase.ManifestsWithTransform {
 		d, err := os.ReadFile(manifest)
 		s.Require().NoError(err)
-
 		transformedCfgs = append(transformedCfgs, stripNamespaceResourcesFromContent(s.T(), transform(string(d))))
 	}
-
-	transformedDeleteManifest := filepath.Join(s.TestInstallation.GeneratedFiles.TempDir, "delete_transformed_manifests.yaml")
-	s.Require().NoError(os.WriteFile(transformedDeleteManifest, []byte(strings.Join(transformedCfgs, "\n---\n")), 0o600))
-	err = s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", transformedDeleteManifest)
-	s.Require().NoError(err)
+	transformedFp := filepath.Join(s.TestInstallation.GeneratedFiles.TempDir, "delete_transformed_manifests.yaml")
+	s.Require().NoError(os.WriteFile(transformedFp, []byte(strings.Join(transformedCfgs, "\n---\n")), 0o600))
+	s.Require().NoError(s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", transformedFp))
 }
 
 func (s *BaseTestingSuite) setupHelpers() {
@@ -720,25 +724,49 @@ func IsSelfManagedGateway(gw *gwv1.Gateway) bool {
 	return ok && strings.EqualFold(val, "true")
 }
 
+// DetectGwApiInfo reads the installed Gateway CRD annotations to determine the Gateway API
+// channel and version. It is the standalone form of the detection cached during suite setup,
+// so callers that run before any suite (e.g. base config setup in TestKgateway) can select
+// version-appropriate manifests.
+func DetectGwApiInfo(ctx context.Context, c client.Client) (GwApiChannel, GwApiVersion, error) {
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	if err := c.Get(ctx, client.ObjectKey{Name: "gateways.gateway.networking.k8s.io"}, crd); err != nil {
+		return "", GwApiVersion{}, fmt.Errorf("failed to get Gateway CRD to detect Gateway API version/channel: %w", err)
+	}
+
+	channel, hasChannel := crd.Annotations["gateway.networking.k8s.io/channel"]
+	if !hasChannel {
+		return "", GwApiVersion{}, fmt.Errorf("Gateway CRD missing 'gateway.networking.k8s.io/channel' annotation")
+	}
+
+	versionStr, hasVersion := crd.Annotations["gateway.networking.k8s.io/bundle-version"]
+	if !hasVersion {
+		return "", GwApiVersion{}, fmt.Errorf("Gateway CRD missing 'gateway.networking.k8s.io/bundle-version' annotation")
+	}
+
+	version, err := semver.NewVersion(versionStr)
+	if err != nil {
+		return "", GwApiVersion{}, fmt.Errorf("failed to parse Gateway API version %q: %w", versionStr, err)
+	}
+
+	return GwApiChannel(channel), GwApiVersion{Version: *version}, nil
+}
+
+// SupportsListenerSets reports whether the given Gateway API channel/version implements ListenerSets
+func SupportsListenerSets(channel GwApiChannel, version GwApiVersion) bool {
+	return checkCompatibleWithApiVersion(GwApiRequireListenerSets, nil, channel, version)
+}
+
 // detectAndCacheGwApiInfo detects the Gateway API version and channel from installed CRDs
 // and caches the results. This is called once during suite setup.
 func (s *BaseTestingSuite) detectAndCacheGwApiInfo() {
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{Name: "gateways.gateway.networking.k8s.io"}, crd)
-	s.Require().NoError(err, "failed to get Gateway CRD to detect Gateway API version/channel")
+	channel, version, err := DetectGwApiInfo(s.Ctx, s.TestInstallation.ClusterContext.Client)
+	s.Require().NoError(err)
 
-	channel, hasChannel := crd.Annotations["gateway.networking.k8s.io/channel"]
-	s.Require().True(hasChannel, "Gateway CRD missing 'gateway.networking.k8s.io/channel' annotation")
-	s.gwApiChannel = GwApiChannel(channel)
-
-	versionStr, hasVersion := crd.Annotations["gateway.networking.k8s.io/bundle-version"]
-	s.Require().True(hasVersion, "Gateway CRD missing 'gateway.networking.k8s.io/bundle-version' annotation")
-
-	version, err := semver.NewVersion(versionStr)
-	s.Require().NoError(err, "failed to parse Gateway API version '%s'", versionStr)
-	s.gwApiVersion = version
-	currentGwApiVersion = version
-	currentGwApiChannel = s.gwApiChannel
+	s.gwApiChannel = channel
+	s.gwApiVersion = &version.Version
+	currentGwApiVersion = &version.Version
+	currentGwApiChannel = channel
 }
 
 // getCurrentGwApiChannel returns the cached Gateway API channel
@@ -766,7 +794,7 @@ func (s *BaseTestingSuite) skipTest(testCase *TestCase) bool {
 	}
 
 	// Use checkCompatibleWithApiVersion and invert the result
-	return !s.checkCompatibleWithApiVersion(testCase.MinGwApiVersion, testCase.MaxGwApiVersion, currentChannel, currentVersion)
+	return !checkCompatibleWithApiVersion(testCase.MinGwApiVersion, testCase.MaxGwApiVersion, currentChannel, currentVersion)
 }
 
 // SkipSuite determines if the entire suite should be skipped based on suite-level minimum version requirements.
@@ -783,5 +811,17 @@ func (s *BaseTestingSuite) SkipSuite() bool {
 	}
 
 	// Use checkCompatibleWithApiVersion with empty max requirements (only check min)
-	return !s.checkCompatibleWithApiVersion(s.MinGwApiVersion, nil, currentChannel, currentVersion)
+	return !checkCompatibleWithApiVersion(s.MinGwApiVersion, nil, currentChannel, currentVersion)
+}
+
+// CheckSkipSuiteBeforeSetup detects and caches the Gateway API version/channel,
+// then reports whether the suite should be skipped due to unmet minimum-version
+// requirements. SetupSuite performs the same detection and skip check, but a
+// suite that overrides SetupSuite to apply resources before delegating must run
+// the check first: TearDownSuite does not run after a SetupSuite skip, so any
+// resources applied ahead of the skip would leak. Detection is idempotent, so
+// the subsequent base SetupSuite call repeats it harmlessly.
+func (s *BaseTestingSuite) CheckSkipSuiteBeforeSetup() bool {
+	s.detectAndCacheGwApiInfo()
+	return s.SkipSuite()
 }

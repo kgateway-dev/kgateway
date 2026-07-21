@@ -1,6 +1,7 @@
 package curl
 
 import (
+	"context"
 	"encoding/base64"
 	"net/http"
 	"strconv"
@@ -27,8 +28,23 @@ const (
 	CurvePrime256v1 = "prime256v1"
 )
 
+// Signature algorithms constants for use with WithSignatureAlgorithms
+const (
+	SignatureAlgorithmRSAPSSRSAESHA256     = "rsa_pss_rsae_sha256"
+	SignatureAlgorithmECDSASECP256R1SHA256 = "ecdsa_secp256r1_sha256"
+)
+
 // Option represents an option for a curl request.
 type Option func(config *requestConfig)
+
+// WithContext returns the Option to set a context on the curl request. The context
+// is used by ExecuteRequest to build the http.Request and aborts the in-flight
+// call when ctx cancels.
+func WithContext(ctx context.Context) Option {
+	return func(config *requestConfig) {
+		config.ctx = ctx
+	}
+}
 
 // VerboseOutput returns the Option to emit a verbose output for the  curl request
 // https://curl.se/docs/manpage.html#-v
@@ -308,6 +324,14 @@ func WithCiphers(cipherList string) Option {
 func WithCurves(curveList string) Option {
 	return func(config *requestConfig) {
 		config.curves = curveList
+	}
+}
+
+// WithSignatureAlgorithms returns the Option to configure signature algorithms to use in TLS certificate validation
+// https://curl.se/docs/manpage.html#--sigalgs
+func WithSignatureAlgorithms(algorithmList string) Option {
+	return func(config *requestConfig) {
+		config.signatureAlgorithms = algorithmList
 	}
 }
 

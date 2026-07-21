@@ -3,84 +3,272 @@ package reports_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-func TestGatewayStatusRefreshesObservedGenerationFromCurrentObject(t *testing.T) {
+func TestBuildBackendStatusMergesAndPreservesConditions(t *testing.T) {
 	rm := reports.NewReportMap()
 	statusReporter := reports.NewReporter(&rm)
 
-	gw := &gwv1.Gateway{
+	backend := &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:       "example-gateway",
+			Name:       "example-backend",
 			Namespace:  "default",
-			Generation: 1,
+			Generation: 7,
 		},
-		Spec: gwv1.GatewaySpec{
-			Listeners: []gwv1.Listener{
-				{Name: "http"},
+	}
+
+	statusReporter.Backend(backend).SetCondition(pluginreporter.BackendCondition{
+		Type:    string(kgateway.BackendConditionAccepted),
+		Status:  metav1.ConditionFalse,
+		Reason:  string(kgateway.BackendReasonInvalid),
+		Message: "translation failed",
+	})
+
+	// current status carries a condition owned by us (with an existing
+	// LastTransitionTime) and a condition owned by another controller.
+	existingTransition := metav1.NewTime(time.Now().Add(-time.Minute).Truncate(time.Second))
+	currentStatus := kgateway.BackendStatus{
+		Conditions: []metav1.Condition{
+			{
+				Type:               string(kgateway.BackendConditionAccepted),
+				Status:             metav1.ConditionFalse,
+				Reason:             string(kgateway.BackendReasonInvalid),
+				Message:            "translation failed",
+				LastTransitionTime: existingTransition,
+			},
+			{
+				Type:    "ForeignCondition",
+				Status:  metav1.ConditionTrue,
+				Reason:  "SomethingElse",
+				Message: "owned by another controller",
 			},
 		},
 	}
 
-	statusReporter.Gateway(gw)
-
-	gw.Generation = 2
-	status := rm.BuildGWStatus(context.Background(), *gw, nil)
+	status := rm.BuildBackendStatus(context.Background(), backend, currentStatus)
 	require.NotNil(t, status)
 
+	accepted := requireConditionExists(t, status.Conditions, string(kgateway.BackendConditionAccepted))
+	require.Equal(t, metav1.ConditionFalse, accepted.Status)
+	require.Equal(t, int64(7), accepted.ObservedGeneration)
+	// unchanged condition should preserve its original LastTransitionTime
+	require.Equal(t, existingTransition, accepted.LastTransitionTime)
+
+	// foreign condition must be preserved
+	requireConditionExists(t, status.Conditions, "ForeignCondition")
+}
+
+func TestBuildBackendStatusDropsStaleManagedCondition(t *testing.T) {
+	rm := reports.NewReportMap()
+	statusReporter := reports.NewReporter(&rm)
+
+	backend := &kgateway.Backend{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "example-backend",
+			Namespace:  "default",
+			Generation: 3,
+		},
+	}
+
+	// The fresh report only contains Accepted; the backend no longer contributes an
+	// EndpointsDiscovered condition (e.g. it stopped being an EC2 backend).
+	statusReporter.Backend(backend).SetCondition(pluginreporter.BackendCondition{
+		Type:    string(kgateway.BackendConditionAccepted),
+		Status:  metav1.ConditionTrue,
+		Reason:  string(kgateway.BackendReasonAccepted),
+		Message: "ok",
+	})
+
+	currentStatus := kgateway.BackendStatus{
+		Conditions: []metav1.Condition{
+			{
+				Type:    string(kgateway.BackendConditionEndpointsDiscovered),
+				Status:  metav1.ConditionTrue,
+				Reason:  string(kgateway.BackendReasonDiscovered),
+				Message: "3 endpoints active",
+			},
+			{
+				Type:    "ForeignCondition",
+				Status:  metav1.ConditionTrue,
+				Reason:  "SomethingElse",
+				Message: "owned by another controller",
+			},
+		},
+	}
+
+	status := rm.BuildBackendStatus(context.Background(), backend, currentStatus)
+	require.NotNil(t, status)
+
+	// A kgateway-managed condition absent from the fresh report must be dropped rather
+	// than carried forward forever.
+	for _, c := range status.Conditions {
+		require.NotEqual(t, string(kgateway.BackendConditionEndpointsDiscovered), c.Type,
+			"stale managed EndpointsDiscovered condition should have been dropped")
+	}
+	// Conditions owned by other controllers are still preserved.
+	requireConditionExists(t, status.Conditions, "ForeignCondition")
+}
+
+func requireConditionExists(t *testing.T, conditions []metav1.Condition, condType string) metav1.Condition {
+	t.Helper()
+	for _, c := range conditions {
+		if c.Type == condType {
+			return c
+		}
+	}
+	t.Fatalf("expected condition %q to exist", condType)
+	return metav1.Condition{}
+}
+
+// BuildGWStatus must stamp the generation the report was built for, not the
+// live object's generation. The status syncer is triggered only by report
+// changes and reads the live Gateway from a separate (controller-runtime)
+// cache than the one translation uses (the istio KRT cache). If it stamped the
+// live generation, a skew between those two caches could freeze
+// observedGeneration: the report-change trigger fires once, the stale live read
+// stamps the wrong generation, and nothing re-triggers the sync. Sourcing the
+// generation from the report keeps the trigger and the stamp consistent.
+func TestGatewayStatusStampsObservedGenerationFromReport(t *testing.T) {
+	newGateway := func(generation int64) *gwv1.Gateway {
+		return &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "example-gateway",
+				Namespace:  "default",
+				Generation: generation,
+			},
+			Spec: gwv1.GatewaySpec{
+				Listeners: []gwv1.Listener{
+					{Name: "http"},
+				},
+			},
+		}
+	}
+
+	// Report ahead of the live object: translation observed generation 2 but the
+	// syncer's cache still sees generation 1. This is the freeze case that
+	// regressed in #14295 - the published status must reflect the report's
+	// generation (2), not the stale live read (1).
+	t.Run("report ahead of stale live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		gw := newGateway(2)
+		statusReporter.Gateway(gw)
+
+		// Simulate the syncer's cache lagging behind translation's.
+		gw.Generation = 1
+		status := rm.BuildGWStatus(context.Background(), *gw, nil)
+		require.NotNil(t, status)
+
+		requireAllObservedGenerations(t, status, 2)
+	})
+
+	// Report behind the live object: the syncer's cache already sees generation
+	// 2, but translation has only processed generation 1. observedGeneration must
+	// stay at the generation actually translated (1) rather than prematurely
+	// claiming a generation whose status has not been computed yet.
+	t.Run("report behind live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		gw := newGateway(1)
+		statusReporter.Gateway(gw)
+
+		gw.Generation = 2
+		status := rm.BuildGWStatus(context.Background(), *gw, nil)
+		require.NotNil(t, status)
+
+		requireAllObservedGenerations(t, status, 1)
+	})
+}
+
+func requireAllObservedGenerations(t *testing.T, status *gwv1.GatewayStatus, want int64) {
+	t.Helper()
+
 	for _, condition := range status.Conditions {
-		require.Equal(t, int64(2), condition.ObservedGeneration)
+		require.Equal(t, want, condition.ObservedGeneration)
 	}
 	for _, listenerStatus := range status.Listeners {
 		for _, condition := range listenerStatus.Conditions {
-			require.Equal(t, int64(2), condition.ObservedGeneration)
+			require.Equal(t, want, condition.ObservedGeneration)
 		}
 	}
 }
 
-func TestRouteStatusRefreshesObservedGenerationFromCurrentObject(t *testing.T) {
-	rm := reports.NewReportMap()
-	statusReporter := reports.NewReporter(&rm)
-
-	route := &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "example-route",
-			Namespace:  "default",
-			Generation: 1,
-		},
-		Spec: gwv1.HTTPRouteSpec{
-			CommonRouteSpec: gwv1.CommonRouteSpec{
-				ParentRefs: []gwv1.ParentReference{
-					{
-						Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
-						Kind:      ptr.To(gwv1.Kind("Gateway")),
-						Name:      "example-gateway",
-						Namespace: ptr.To(gwv1.Namespace("default")),
+// BuildRouteStatus must stamp the generation the report was built for, not the
+// live object's generation, for the same cross-cache reason as Gateway status:
+// the route is re-read by the syncer from a separate cache than translation
+// used, and stamping the live read can freeze observedGeneration on a skew.
+func TestRouteStatusStampsObservedGenerationFromReport(t *testing.T) {
+	newRoute := func(generation int64) *gwv1.HTTPRoute {
+		return &gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "example-route",
+				Namespace:  "default",
+				Generation: generation,
+			},
+			Spec: gwv1.HTTPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
+						{
+							Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Name:      "example-gateway",
+							Namespace: new(gwv1.Namespace("default")),
+						},
 					},
 				},
 			},
-		},
+		}
 	}
 
-	statusReporter.Route(route).ParentRef(&route.Spec.ParentRefs[0])
-
-	route.Generation = 2
-	status := rm.BuildRouteStatus(context.Background(), route, "kgateway.dev/kgateway")
-	require.NotNil(t, status)
-	require.Len(t, status.Parents, 1)
-
-	for _, condition := range status.Parents[0].Conditions {
-		require.Equal(t, int64(2), condition.ObservedGeneration)
+	requireParentObservedGeneration := func(t *testing.T, status *gwv1.RouteStatus, want int64) {
+		t.Helper()
+		require.NotNil(t, status)
+		require.Len(t, status.Parents, 1)
+		for _, condition := range status.Parents[0].Conditions {
+			require.Equal(t, want, condition.ObservedGeneration)
+		}
 	}
+
+	// Report ahead of a stale live read: translation observed generation 2 but
+	// the syncer's cache still returns generation 1. The published status must
+	// reflect the report's generation (2).
+	t.Run("report ahead of stale live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		route := newRoute(2)
+		statusReporter.Route(route).ParentRef(&route.Spec.ParentRefs[0])
+
+		route.Generation = 1
+		status := rm.BuildRouteStatus(context.Background(), route, "kgateway.dev/kgateway")
+		requireParentObservedGeneration(t, status, 2)
+	})
+
+	// Report behind the live read: observedGeneration must stay at the generation
+	// actually translated (1) rather than prematurely claiming generation 2.
+	t.Run("report behind live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		route := newRoute(1)
+		statusReporter.Route(route).ParentRef(&route.Spec.ParentRefs[0])
+
+		route.Generation = 2
+		status := rm.BuildRouteStatus(context.Background(), route, "kgateway.dev/kgateway")
+		requireParentObservedGeneration(t, status, 1)
+	})
 }
 
 func TestPolicyStatusRefreshesObservedGenerationOnReporterReuse(t *testing.T) {
@@ -95,9 +283,9 @@ func TestPolicyStatusRefreshesObservedGenerationOnReporterReuse(t *testing.T) {
 	}
 	ancestorRef := gwv1.ParentReference{
 		Group:     new(gwv1.Group(gwv1.GroupVersion.Group)),
-		Kind:      ptr.To(gwv1.Kind("Gateway")),
+		Kind:      new(gwv1.Kind("Gateway")),
 		Name:      "example-gateway",
-		Namespace: ptr.To(gwv1.Namespace("default")),
+		Namespace: new(gwv1.Namespace("default")),
 	}
 
 	statusReporter.Policy(key, 1).AncestorRef(ancestorRef)
@@ -137,4 +325,125 @@ func metaFindStatusCondition(conditions []metav1.Condition, conditionType string
 		}
 	}
 	return nil
+}
+
+// BuildBackendStatus must stamp the generation the report was built for, not
+// the live object's, for the same cross-cache reason as Gateway and Route
+// status.
+func TestBackendStatusStampsObservedGenerationFromReport(t *testing.T) {
+	newBackend := func(generation int64) *kgateway.Backend {
+		return &kgateway.Backend{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "example-backend",
+				Namespace:  "default",
+				Generation: generation,
+			},
+		}
+	}
+
+	reportBackend := func(statusReporter pluginreporter.Reporter, backend *kgateway.Backend) {
+		statusReporter.Backend(backend).SetCondition(pluginreporter.BackendCondition{
+			Type:    string(kgateway.BackendConditionAccepted),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(kgateway.BackendReasonInvalid),
+			Message: "translation failed",
+		})
+	}
+
+	requireObservedGeneration := func(t *testing.T, status *kgateway.BackendStatus, want int64) {
+		t.Helper()
+		require.NotNil(t, status)
+		require.NotEmpty(t, status.Conditions)
+		for _, condition := range status.Conditions {
+			require.Equal(t, want, condition.ObservedGeneration)
+		}
+	}
+
+	// Report ahead of a stale live read: the published status must reflect the
+	// report's generation (2), not the stale live read (1).
+	t.Run("report ahead of stale live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		backend := newBackend(2)
+		reportBackend(statusReporter, backend)
+
+		backend.Generation = 1
+		status := rm.BuildBackendStatus(context.Background(), backend, kgateway.BackendStatus{})
+		requireObservedGeneration(t, status, 2)
+	})
+
+	// Report behind the live read: observedGeneration must stay at the generation
+	// actually translated (1).
+	t.Run("report behind live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		backend := newBackend(1)
+		reportBackend(statusReporter, backend)
+
+		backend.Generation = 2
+		status := rm.BuildBackendStatus(context.Background(), backend, kgateway.BackendStatus{})
+		requireObservedGeneration(t, status, 1)
+	})
+}
+
+// BuildListenerSetStatus must stamp the generation the report was built for, not
+// the live object's, for the same cross-cache reason as Gateway and Route
+// status.
+func TestListenerSetStatusStampsObservedGenerationFromReport(t *testing.T) {
+	newListenerSet := func(generation int64) *gwv1.ListenerSet {
+		ls := &gwv1.ListenerSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "test",
+				Namespace:  "default",
+				Generation: generation,
+			},
+		}
+		ls.Spec.Listeners = []gwv1.ListenerEntry{
+			{Name: "http"},
+		}
+		return ls
+	}
+
+	requireAllObservedGenerations := func(t *testing.T, status *gwv1.ListenerSetStatus, want int64) {
+		t.Helper()
+		require.NotNil(t, status)
+		for _, condition := range status.Conditions {
+			require.Equal(t, want, condition.ObservedGeneration)
+		}
+		for _, listenerStatus := range status.Listeners {
+			for _, condition := range listenerStatus.Conditions {
+				require.Equal(t, want, condition.ObservedGeneration)
+			}
+		}
+	}
+
+	// Report ahead of a stale live read: the published status must reflect the
+	// report's generation (2), not the stale live read (1).
+	t.Run("report ahead of stale live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		ls := newListenerSet(2)
+		statusReporter.ListenerSet(ls)
+
+		ls.Generation = 1
+		status := rm.BuildListenerSetStatus(context.Background(), *ls)
+		requireAllObservedGenerations(t, status, 2)
+	})
+
+	// Report behind the live read: observedGeneration must stay at the generation
+	// actually translated (1).
+	t.Run("report behind live object", func(t *testing.T) {
+		rm := reports.NewReportMap()
+		statusReporter := reports.NewReporter(&rm)
+
+		ls := newListenerSet(1)
+		statusReporter.ListenerSet(ls)
+
+		ls.Generation = 2
+		status := rm.BuildListenerSetStatus(context.Background(), *ls)
+		requireAllObservedGenerations(t, status, 1)
+	})
 }

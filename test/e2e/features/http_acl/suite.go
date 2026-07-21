@@ -29,6 +29,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -110,7 +111,7 @@ func (s *testingSuite) TestHttpACLHolePunchNamedRules() {
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 
-	s.T().Log("10.1.2.3 matches block-rogue-host (/32 beats /8 and /16) → denied")
+	s.T().Log("10.1.2.3 matches block-rogue-host (/32 beats /8 and /16): denied")
 	common.BaseGateway.Send(
 		s.T(),
 		expectDenied,
@@ -120,7 +121,7 @@ func (s *testingSuite) TestHttpACLHolePunchNamedRules() {
 		curl.WithHeader("X-Forwarded-For", "10.1.2.3"),
 	)
 
-	s.T().Log("10.1.2.4 matches allow-trusted-subnet (/16 beats /8) → allowed")
+	s.T().Log("10.1.2.4 matches allow-trusted-subnet (/16 beats /8): allowed")
 	common.BaseGateway.Send(
 		s.T(),
 		expectAllowed,
@@ -130,7 +131,7 @@ func (s *testingSuite) TestHttpACLHolePunchNamedRules() {
 		curl.WithHeader("X-Forwarded-For", "10.1.2.4"),
 	)
 
-	s.T().Log("10.2.0.1 matches block-internal-range (/8) → denied")
+	s.T().Log("10.2.0.1 matches block-internal-range (/8): denied")
 	common.BaseGateway.Send(
 		s.T(),
 		expectDenied,
@@ -140,7 +141,7 @@ func (s *testingSuite) TestHttpACLHolePunchNamedRules() {
 		curl.WithHeader("X-Forwarded-For", "10.2.0.1"),
 	)
 
-	s.T().Log("8.8.8.8 matches no rule → allowed by defaultAction=allow")
+	s.T().Log("8.8.8.8 matches no rule: allowed by defaultAction=allow")
 	common.BaseGateway.Send(
 		s.T(),
 		expectAllowed,
@@ -181,7 +182,7 @@ func (s *testingSuite) TestHttpACLBlockedByHeader() {
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 
-	s.T().Log("10.5.5.5 matches named rule block-internal-range → X-Blocked-By: block-internal-range")
+	s.T().Log("10.5.5.5 matches named rule block-internal-range: X-Blocked-By: block-internal-range")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -194,7 +195,7 @@ func (s *testingSuite) TestHttpACLBlockedByHeader() {
 		curl.WithHeader("X-Forwarded-For", "10.5.5.5"),
 	)
 
-	s.T().Log("192.168.1.1 matches unnamed rule → X-Blocked-By: rule")
+	s.T().Log("192.168.1.1 matches unnamed rule: X-Blocked-By: rule")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -207,7 +208,7 @@ func (s *testingSuite) TestHttpACLBlockedByHeader() {
 		curl.WithHeader("X-Forwarded-For", "192.168.1.1"),
 	)
 
-	s.T().Log("8.8.8.8 matches no rule, defaultAction=deny → X-Blocked-By: default")
+	s.T().Log("8.8.8.8 matches no rule, defaultAction=deny: X-Blocked-By: default")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -220,7 +221,7 @@ func (s *testingSuite) TestHttpACLBlockedByHeader() {
 		curl.WithHeader("X-Forwarded-For", "8.8.8.8"),
 	)
 
-	s.T().Log("203.0.113.5 matches allow rule → 200 OK, no X-Blocked-By header")
+	s.T().Log("203.0.113.5 matches allow rule: 200 OK, no X-Blocked-By header")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -449,15 +450,24 @@ func (s *testingSuite) TestHttpACLDynamicMetadata() {
 		curl.WithHeader("X-Forwarded-For", "8.8.8.8"),
 	)
 
+	// Aggregate logs across all gateway pods: any of the three requests may have
+	// been served by a different replica, so we must not assume pods[0] saw all of
+	// them. A 30s window (matching the config dump check above) gives Envoy enough
+	// time to flush its access logs.
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(
-			s.Ctx, proxyObjectMeta.GetNamespace(), pods[0],
-		)
-		s.Require().NoError(err)
-		assert.Contains(c, logs, `"blocked_by":"block-internal-range"`)
-		assert.Contains(c, logs, `"blocked_by":"rule"`)
-		assert.Contains(c, logs, `"blocked_by":"default"`)
-	}, 5*time.Second, 100*time.Millisecond)
+		var allLogs strings.Builder
+		for _, pod := range pods {
+			logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(
+				s.Ctx, proxyObjectMeta.GetNamespace(), pod,
+			)
+			assert.NoError(c, err)
+			allLogs.WriteString(logs)
+		}
+		combined := allLogs.String()
+		assert.Contains(c, combined, `"blocked_by":"block-internal-range"`)
+		assert.Contains(c, combined, `"blocked_by":"rule"`)
+		assert.Contains(c, combined, `"blocked_by":"default"`)
+	}, 30*time.Second, time.Second)
 }
 
 // TestHttpACLLargeRuleset verifies the control plane can accept and apply a TrafficPolicy
@@ -472,7 +482,7 @@ func (s *testingSuite) TestHttpACLLargeRuleset() {
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 
-	s.T().Log("10.0.0.1 matches rule-00000 (allow, 10.0.0.0/24) → allowed")
+	s.T().Log("10.0.0.1 matches rule-00000 (allow, 10.0.0.0/24): allowed")
 	common.BaseGateway.Send(
 		s.T(),
 		expectAllowed,
@@ -482,7 +492,7 @@ func (s *testingSuite) TestHttpACLLargeRuleset() {
 		curl.WithHeader("X-Forwarded-For", "10.0.0.1"),
 	)
 
-	s.T().Log("8.8.8.8 matches no rule → denied by defaultAction=deny")
+	s.T().Log("8.8.8.8 matches no rule: denied by defaultAction=deny")
 	common.BaseGateway.Send(
 		s.T(),
 		expectDenied,
@@ -527,16 +537,14 @@ func (s *testingSuite) TestHttpACLValidWithInvalidCIDRPolicy() {
 	// ── Phase 2: add the invalid ACL policy ──────────────────────────────────
 
 	s.T().Log("Phase 2 — applying invalid-cidr-acl-policy (172.18.0.0/12 has host bits set)")
-	s.Require().NoError(
-		s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, invalidACLPolicyManifest),
-		"apply invalid-acl-policy.yaml",
-	)
-	defer func() {
-		_ = s.TestInstallation.Actions.Kubectl().RunCommand(
-			s.Ctx, "delete", "trafficpolicy", "invalid-cidr-acl-policy",
-			"-n", "kgateway-base", "--ignore-not-found",
-		)
-	}()
+	testutils.Cleanup(s.T(), func() {
+		s.DeleteManifests(&base.TestCase{
+			Manifests: []string{invalidACLPolicyManifest},
+		})
+	})
+	s.ApplyManifests(&base.TestCase{
+		Manifests: []string{invalidACLPolicyManifest},
+	})
 
 	// The invalid policy must be rejected with a clear CIDR error in its status.
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
@@ -585,7 +593,7 @@ func (s *testingSuite) TestHttpACLGatewayLevel() {
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 
-	s.T().Log("10.2.0.1 matches block-internal-range (/8) → denied with X-Blocked-By: block-internal-range")
+	s.T().Log("10.2.0.1 matches block-internal-range (/8): denied with X-Blocked-By: block-internal-range")
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -598,7 +606,7 @@ func (s *testingSuite) TestHttpACLGatewayLevel() {
 		curl.WithHeader("X-Forwarded-For", "10.2.0.1"),
 	)
 
-	s.T().Log("10.1.0.5 matches allow-trusted-subnet (/16, beats /8) → allowed")
+	s.T().Log("10.1.0.5 matches allow-trusted-subnet (/16, beats /8): allowed")
 	common.BaseGateway.Send(
 		s.T(),
 		expectAllowed,
@@ -608,7 +616,7 @@ func (s *testingSuite) TestHttpACLGatewayLevel() {
 		curl.WithHeader("X-Forwarded-For", "10.1.0.5"),
 	)
 
-	s.T().Log("8.8.8.8 matches no rule → allowed by defaultAction=allow")
+	s.T().Log("8.8.8.8 matches no rule: allowed by defaultAction=allow")
 	common.BaseGateway.Send(
 		s.T(),
 		expectAllowed,
@@ -616,5 +624,47 @@ func (s *testingSuite) TestHttpACLGatewayLevel() {
 		curl.WithPort(80),
 		curl.WithPath("/status/200"),
 		curl.WithHeader("X-Forwarded-For", "8.8.8.8"),
+	)
+}
+
+func (s *testingSuite) TestHttpACLMerge() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
+	)
+
+	s.T().Log("10.0.0.1 matches block-internal-range (/8): denied with X-Blocked-By: block-internal-range")
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusForbidden,
+			Headers:    map[string]any{"X-Blocked-By": "block-internal-range"},
+		},
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "10.0.0.1"),
+	)
+
+	s.T().Log("10.1.0.5 matches allow-trusted-subnet (/16, beats /8): allowed")
+	common.BaseGateway.Send(
+		s.T(),
+		expectAllowed,
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "10.1.0.5"),
+	)
+
+	s.T().Log("192.168.0.2 matches block-private-range: denied with X-Blocked-By: block-private-range")
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusForbidden,
+			Headers:    map[string]any{"X-Blocked-By": "block-private-range"},
+		},
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+		curl.WithHeader("X-Forwarded-For", "192.168.0.2"),
 	)
 }

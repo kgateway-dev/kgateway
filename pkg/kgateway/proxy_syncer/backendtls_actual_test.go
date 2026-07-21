@@ -126,7 +126,7 @@ func TestPerClientClustersUpdateWhenActualBackendTLSPolicyAddedLater(t *testing.
 	configMap := newActualBackendTLSTestConfigMap()
 
 	fakeClient := apifake.NewClient(t, service, configMap)
-	settings := apisettings.Settings{EnableEnvoy: true}
+	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	commoncol, err := collections.NewCommonCollections(
@@ -154,8 +154,8 @@ func TestPerClientClustersUpdateWhenActualBackendTLSPolicyAddedLater(t *testing.
 		translator.ContributedBackends[gk] = backendPlugin.BackendInit
 	}
 
-	ucc := ir.NewUniqlyConnectedClient("test-role", "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection(nil, []ir.UniqlyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
+	ucc := ir.NewUniquelyConnectedClient("test-role", "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
 	finalBackends := krt.JoinCollection(
 		commoncol.BackendIndex.BackendsWithPolicy(),
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...,
@@ -217,7 +217,7 @@ func TestPerClientClustersUseActualBackendTLSPolicyWhenConflictsExistAtStartup(t
 		newActualBackendTLSPolicy("backend-tls-older", "other.example.com", older),
 		newActualBackendTLSPolicy("backend-tls-newer", "abc.example.com", older.Add(time.Second)),
 	)
-	settings := apisettings.Settings{EnableEnvoy: true}
+	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	commoncol, err := collections.NewCommonCollections(
@@ -245,8 +245,8 @@ func TestPerClientClustersUseActualBackendTLSPolicyWhenConflictsExistAtStartup(t
 		translator.ContributedBackends[gk] = backendPlugin.BackendInit
 	}
 
-	ucc := ir.NewUniqlyConnectedClient("test-role", "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection(nil, []ir.UniqlyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
+	ucc := ir.NewUniquelyConnectedClient("test-role", "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
 	finalBackends := krt.JoinCollection(
 		commoncol.BackendIndex.BackendsWithPolicy(),
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...,

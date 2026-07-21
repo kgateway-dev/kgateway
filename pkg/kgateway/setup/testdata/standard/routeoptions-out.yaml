@@ -1,20 +1,22 @@
 clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_gwtest_reviews_8080
   type: EDS
 endpoints:
@@ -91,6 +93,7 @@ routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"x-foo-req","value":"abc"}]},"response":{"set":[{"name":"x-foo-resp","value":"xyz"}]}}'
+          filterName: rustformation
           perRouteConfigName: rustformation
   - domains:
     - www.example.com
@@ -115,4 +118,5 @@ routes:
           filterConfig:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"x-foo-req","value":"abc"}]},"response":{"set":[{"name":"x-foo-resp","value":"xyz"}]}}'
+          filterName: rustformation
           perRouteConfigName: rustformation

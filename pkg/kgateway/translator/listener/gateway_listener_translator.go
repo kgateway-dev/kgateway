@@ -1,12 +1,12 @@
 package listener
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -16,6 +16,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/httproute"
@@ -366,6 +367,7 @@ func (ml *MergedListener) TranslateListener(
 			queries,
 			reporter,
 			ml.gateway.FrontendTLSConfig,
+			ml.gateway.Namespace,
 		)
 		if err != nil {
 			// Log and skip invalid HTTPS filter chains
@@ -379,7 +381,7 @@ func (ml *MergedListener) TranslateListener(
 	// Translate TCP listeners (if any exist)
 	var matchedTcpListeners []ir.TcpIR
 	for _, tfc := range ml.TcpFilterChains {
-		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, queries, ml.name, reporter, ml.gateway.FrontendTLSConfig); tcpListener != nil {
+		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, queries, ml.name, reporter, ml.gateway.FrontendTLSConfig, ml.gateway.Namespace); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
 		}
 	}
@@ -440,6 +442,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	parentName string,
 	reporter reports.Reporter,
 	frontendTLSConfig *ir.FrontendTLSConfigIR,
+	gatewayNamespace string,
 ) *ir.TcpIR {
 	parent := tc.parents
 	if len(parent.routesWithHosts) == 0 {
@@ -527,7 +530,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			}
 		}
 
-		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation, gatewayNamespace)
 		if err != nil {
 			// An error and a non-nil tlsConfig means that the listener is partially valid,
 			// and we should continue to translate the listener after writing the error to status
@@ -610,7 +613,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			}
 		}
 
-		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation)
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation, gatewayNamespace)
 		if err != nil {
 			// An error and a non-nil tlsConfig means that the listener is partially valid,
 			// and we should continue to translate the listener after writing the error to status
@@ -644,7 +647,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 // attachment of a route that lost the oldest-wins selection.
 func rejectConflictingRoute(ri *query.RouteInfo, reporter reports.Reporter) {
 	condition := reports.RouteCondition{
-		Type:   gwv1.RouteConditionAccepted,
+		Type:   conditions.KgatewayConditionProgrammed,
 		Status: metav1.ConditionFalse,
 		Reason: gwv1.RouteConditionReason("Conflicted"),
 	}
@@ -683,6 +686,66 @@ type httpFilterChainParent struct {
 	listenerReporter    reports.ListenerReporter
 }
 
+func filterHTTPListenerIsolationHostnames(parent httpFilterChainParent, parents []httpFilterChainParent, hostnames []string) []string {
+	filteredHostnames := make([]string, 0, len(hostnames))
+	for _, hostname := range hostnames {
+		if hostnameOwnedByMoreSpecificHTTPListener(parent, parents, hostname) {
+			continue
+		}
+		filteredHostnames = append(filteredHostnames, hostname)
+	}
+	return filteredHostnames
+}
+
+func hostnameOwnedByMoreSpecificHTTPListener(parent httpFilterChainParent, parents []httpFilterChainParent, routeHostname string) bool {
+	for _, candidate := range parents {
+		if candidate.gatewayListenerName == parent.gatewayListenerName {
+			continue
+		}
+		if !listenerHostnameCoversRouteHostname(candidate.gatewayListener.Hostname, routeHostname) {
+			continue
+		}
+		if listenerHostnamePrecedes(parent.gatewayListener.Hostname, candidate.gatewayListener.Hostname) {
+			return true
+		}
+	}
+	return false
+}
+
+func listenerHostnameCoversRouteHostname(listenerHostname *gwv1.Hostname, routeHostname string) bool {
+	if listenerHostname == nil || *listenerHostname == "" {
+		return true
+	}
+	if routeHostname == "*" {
+		return false
+	}
+
+	intersection, ok := query.IntersectHostnames(string(*listenerHostname), routeHostname)
+	return ok && intersection == routeHostname
+}
+
+func listenerHostnamePrecedes(current, candidate *gwv1.Hostname) bool {
+	currentRank, currentSpecificity := listenerHostnamePrecedence(current)
+	candidateRank, candidateSpecificity := listenerHostnamePrecedence(candidate)
+	if currentRank != candidateRank {
+		return candidateRank > currentRank
+	}
+	return candidateSpecificity > currentSpecificity
+}
+
+func listenerHostnamePrecedence(hostname *gwv1.Hostname) (int, int) {
+	if hostname == nil || *hostname == "" {
+		return 0, 0
+	}
+
+	hostnameString := string(*hostname)
+	if after, ok := strings.CutPrefix(hostnameString, "*."); ok {
+		return 1, strings.Count(after, ".")
+	}
+
+	return 2, 0
+}
+
 func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	ctx context.Context,
 	parentName string,
@@ -690,11 +753,14 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 ) ir.HttpFilterChainIR {
 	routesByHost := map[string]routeutils.SortableRoutes{}
 	for _, parent := range httpFilterChain.parents {
-		buildRoutesPerHost(
+		buildRoutesPerHostWithHostnamesFilter(
 			ctx,
 			routesByHost,
 			parent.routesWithHosts,
 			reporter,
+			func(hostnames []string) []string {
+				return filterHTTPListenerIsolationHostnames(parent, httpFilterChain.parents, hostnames)
+			},
 		)
 	}
 
@@ -727,7 +793,9 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		}
 
 		// ensure we sort the routes before creating the vhost
-		sort.Stable(vhostRoutes)
+		slices.SortStableFunc(vhostRoutes, func(a, b *routeutils.SortableRoute) int {
+			return a.CompareTo(b)
+		})
 
 		// ensure we don't create duplicate vhosts
 		vhostName := makeVhostName(ctx, parentName, host)
@@ -745,8 +813,8 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		})
 	}
 	// sort vhosts, to make sure the resource is stable
-	sort.Slice(virtualHosts, func(i, j int) bool {
-		return virtualHosts[i].Name < virtualHosts[j].Name
+	slices.SortFunc(virtualHosts, func(a, b *ir.VirtualHost) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 
 	// TODO: Make a similar change for other filter chains ???
@@ -783,6 +851,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 	frontendTLSConfig *ir.FrontendTLSConfigIR,
+	gatewayNamespace string,
 ) (*ir.HttpFilterChainIR, error) {
 	// process routes first, so any route related errors are reported on the httproute.
 	routesByHost := map[string]routeutils.SortableRoutes{}
@@ -798,7 +867,9 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		virtualHosts     = []*ir.VirtualHost{}
 	)
 	for host, vhostRoutes := range routesByHost {
-		sort.Stable(vhostRoutes)
+		slices.SortStableFunc(vhostRoutes, func(a, b *routeutils.SortableRoute) int {
+			return a.CompareTo(b)
+		})
 		vhostName := makeVhostName(ctx, hfc.gatewayListenerName, host)
 		if !virtualHostNames[vhostName] {
 			virtualHostNames[vhostName] = true
@@ -833,6 +904,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		hfc.tls,
 		queries,
 		resolvedValidation,
+		gatewayNamespace,
 	)
 	if err != nil {
 		// An error and a non-nil tlsConfig means that the listener is partially valid,
@@ -842,8 +914,8 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 			return nil, err
 		}
 	}
-	sort.Slice(virtualHosts, func(i, j int) bool {
-		return virtualHosts[i].Name < virtualHosts[j].Name
+	slices.SortFunc(virtualHosts, func(a, b *ir.VirtualHost) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 
 	return &ir.HttpFilterChainIR{
@@ -863,6 +935,18 @@ func buildRoutesPerHost(
 	routes []*query.RouteInfo,
 	reporter reports.Reporter,
 ) {
+	buildRoutesPerHostWithHostnamesFilter(ctx, routesByHost, routes, reporter, nil)
+}
+
+type routeHostnamesFilter func([]string) []string
+
+func buildRoutesPerHostWithHostnamesFilter(
+	ctx context.Context,
+	routesByHost map[string]routeutils.SortableRoutes,
+	routes []*query.RouteInfo,
+	reporter reports.Reporter,
+	filter routeHostnamesFilter,
+) {
 	for _, routeWithHosts := range routes {
 		parentRefReporter := reporter.Route(routeWithHosts.Object.GetSourceObject()).ParentRef(&routeWithHosts.ParentRef)
 		routes := route.TranslateGatewayHTTPRouteRules(
@@ -876,14 +960,25 @@ func buildRoutesPerHost(
 			continue
 		}
 
-		hostnames := routeWithHosts.Hostnames()
+		hostnames := routeHostnamesOrCatchAll(routeWithHosts)
+		if filter != nil {
+			hostnames = filter(hostnames)
+		}
 		if len(hostnames) == 0 {
-			hostnames = []string{"*"}
+			continue
 		}
 		for _, host := range hostnames {
 			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object.GetSourceObject(), routes)...)
 		}
 	}
+}
+
+func routeHostnamesOrCatchAll(routeWithHosts *query.RouteInfo) []string {
+	hostnames := routeWithHosts.Hostnames()
+	if len(hostnames) == 0 {
+		return []string{"*"}
+	}
+	return hostnames
 }
 
 // resolveFrontendTLSConfig resolves the FrontendTLSConfig for a specific port.
@@ -922,6 +1017,7 @@ func translateTLSConfig(
 	tls *gwv1.ListenerTLSConfig,
 	queries query.GatewayQueries,
 	resolvedValidation *ir.ClientCertificateValidationIR,
+	gatewayNamespace string,
 ) (*ir.TLSConfig, error) {
 	if tls == nil {
 		return nil, nil
@@ -1004,7 +1100,7 @@ func translateTLSConfig(
 	if hasTrustedCA {
 		// For AllowInsecureFallback mode, if CA cert fetching fails, skip validation rather than failing the listener
 		// This allows the listener to work without client certs even if the CA cert ConfigMap is missing
-		generated, caErr = applyClientCertificateValidation(kctx, ctx, queries, listener, resolvedValidation, tlsConfig)
+		generated, caErr = applyClientCertificateValidation(kctx, ctx, queries, resolvedValidation, tlsConfig, wellknown.GatewayGVK, gatewayNamespace)
 		if !generated {
 			if resolvedValidation.RequireClientCertificate {
 				// If client certs are required (AllowValidOnly), fail the listener
@@ -1029,7 +1125,18 @@ func translateTLSConfig(
 	// Check if ListenerPolicy has clientCertificateValidation override
 	if listenerPolCertVal := getCertValidationFromAttached(listener); listenerPolCertVal != nil {
 		// Apply ListenerPolicy override, which takes precedence over Gateway-level config
-		generated, caErr := applyClientCertificateValidation(kctx, ctx, queries, listener, listenerPolCertVal, tlsConfig)
+		listenerParentGVK := listener.Parent.GetObjectKind().GroupVersionKind()
+		if listenerParentGVK.Empty() {
+			switch listener.Parent.(type) {
+			case *gwv1.Gateway:
+				listenerParentGVK = wellknown.GatewayGVK
+			case *gwv1.ListenerSet:
+				listenerParentGVK = wellknown.XListenerSetGVK
+			default:
+				return nil, fmt.Errorf("unsupported parent type for ListenerPolicy clientCertificateValidation: %T", listener.Parent)
+			}
+		}
+		generated, caErr = applyClientCertificateValidation(kctx, ctx, queries, listenerPolCertVal, tlsConfig, listenerParentGVK, listener.Parent.GetNamespace())
 		if !generated {
 			if !listenerPolCertVal.RequireClientCertificate {
 				logger.Warn("failed to fetch CA certificate for ListenerPolicy client validation override, skipping validation",
@@ -1189,9 +1296,10 @@ func applyClientCertificateValidation(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	queries query.GatewayQueries,
-	listener ir.Listener,
 	validationConfig *ir.ClientCertificateValidationIR,
 	tlsConfig *ir.TLSConfig,
+	parentGVK schema.GroupVersionKind,
+	parentNamespace string,
 ) (bool, error) {
 	if validationConfig == nil {
 		return true, nil
@@ -1199,17 +1307,6 @@ func applyClientCertificateValidation(
 
 	// Fetch CA certificates from ConfigMaps or Secrets
 	var caCertificates [][]byte
-	parentGVK := listener.Parent.GetObjectKind().GroupVersionKind()
-	if parentGVK.Empty() {
-		switch listener.Parent.(type) {
-		case *gwv1.Gateway:
-			parentGVK = wellknown.GatewayGVK
-		case *gwv1.ListenerSet:
-			parentGVK = wellknown.XListenerSetGVK
-		default:
-			return false, fmt.Errorf("unsupported parent type: %T", listener.Parent)
-		}
-	}
 
 	var certErr error
 	for _, caCertRef := range validationConfig.CACertificateRefs {
@@ -1219,7 +1316,7 @@ func applyClientCertificateValidation(
 			queries,
 			caCertRef,
 			parentGVK,
-			listener.Parent.GetNamespace(),
+			parentNamespace,
 		)
 		if err != nil {
 			certErr = errors.Join(certErr, err)

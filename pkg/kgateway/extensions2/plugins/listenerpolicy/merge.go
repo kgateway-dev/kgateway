@@ -89,7 +89,8 @@ func mergeListenerPolicy(
 		mergeProxyProtocol,
 		mergeTCPKeepalive,
 		mergePerConnectionBufferLimitBytes,
-		// Not merging ClientCertificateValidation since its only used for tls config.
+		mergeTransportSocketConnectTimeout,
+		mergeClientCertificateValidation,
 		mergeHttpSettings,
 	}
 
@@ -130,6 +131,22 @@ func mergePerConnectionBufferLimitBytes(
 	mergeOrigins.SetOne(origin+"perConnectionBufferLimitBytes", p2Ref, p2MergeOrigins)
 }
 
+func mergeTransportSocketConnectTimeout(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.transportSocketConnectTimeout, p2.transportSocketConnectTimeout, opts) {
+		return
+	}
+
+	p1.transportSocketConnectTimeout = p2.transportSocketConnectTimeout
+	mergeOrigins.SetOne(origin+"transportSocketConnectTimeout", p2Ref, p2MergeOrigins)
+}
+
 func mergeTCPKeepalive(
 	origin string,
 	p1, p2 *listenerPolicy,
@@ -144,6 +161,22 @@ func mergeTCPKeepalive(
 
 	p1.tcpKeepalive = p2.tcpKeepalive
 	mergeOrigins.SetOne(origin+"tcpKeepalive", p2Ref, p2MergeOrigins)
+}
+
+func mergeClientCertificateValidation(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.clientCertificateValidation, p2.clientCertificateValidation, opts) {
+		return
+	}
+
+	p1.clientCertificateValidation = p2.clientCertificateValidation
+	mergeOrigins.SetOne(origin+"clientCertificateValidation", p2Ref, p2MergeOrigins)
 }
 
 func mergeHttpSettings(

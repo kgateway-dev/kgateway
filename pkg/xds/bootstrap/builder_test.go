@@ -7,9 +7,14 @@ import (
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/google/go-cmp/cmp"
+
+	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
 func TestConfigBuilder_Build(t *testing.T) {
@@ -100,6 +105,90 @@ func TestConfigBuilder_Build(t *testing.T) {
 				}
 				if clusters[0].GetName() != "test_cluster_2" {
 					t.Fatalf("expected cluster name 'test_cluster_2', got %q", clusters[0].GetName())
+				}
+			},
+		},
+		{
+			name: "with secret",
+			setup: func(b *ConfigBuilder) {
+				b.AddSecret(&envoytlsv3.Secret{Name: "test_secret"})
+			},
+			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
+				secrets := got.GetStaticResources().GetSecrets()
+				if len(secrets) != 1 {
+					t.Fatalf("expected 1 secret, got %d", len(secrets))
+				}
+				if secrets[0].GetName() != "test_secret" {
+					t.Fatalf("expected secret name 'test_secret', got %q", secrets[0].GetName())
+				}
+			},
+		},
+		{
+			name: "auto-adds system ca placeholder secret when cluster references it",
+			setup: func(b *ConfigBuilder) {
+				tlsContextAny, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
+					CommonTlsContext: &envoytlsv3.CommonTlsContext{
+						ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContextSdsSecretConfig{
+							ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+								Name: eiutils.SystemCaSecretName,
+							},
+						},
+					},
+				})
+				if err != nil {
+					t.Fatalf("failed to marshal tls context: %v", err)
+				}
+				b.AddCluster(&envoyclusterv3.Cluster{
+					Name: "test_cluster_system_ca",
+					TransportSocket: &envoycorev3.TransportSocket{
+						ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+							TypedConfig: tlsContextAny,
+						},
+					},
+				})
+			},
+			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
+				secrets := got.GetStaticResources().GetSecrets()
+				if len(secrets) != 1 {
+					t.Fatalf("expected 1 secret, got %d", len(secrets))
+				}
+				if secrets[0].GetName() != eiutils.SystemCaSecretName {
+					t.Fatalf("expected secret name %q, got %q", eiutils.SystemCaSecretName, secrets[0].GetName())
+				}
+			},
+		},
+		{
+			name: "does not duplicate provided system ca secret",
+			setup: func(b *ConfigBuilder) {
+				tlsContextAny, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
+					CommonTlsContext: &envoytlsv3.CommonTlsContext{
+						ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContextSdsSecretConfig{
+							ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+								Name: eiutils.SystemCaSecretName,
+							},
+						},
+					},
+				})
+				if err != nil {
+					t.Fatalf("failed to marshal tls context: %v", err)
+				}
+				b.AddCluster(&envoyclusterv3.Cluster{
+					Name: "test_cluster_system_ca_existing_secret",
+					TransportSocket: &envoycorev3.TransportSocket{
+						ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+							TypedConfig: tlsContextAny,
+						},
+					},
+				})
+				b.AddSecret(&envoytlsv3.Secret{Name: eiutils.SystemCaSecretName})
+			},
+			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
+				secrets := got.GetStaticResources().GetSecrets()
+				if len(secrets) != 1 {
+					t.Fatalf("expected 1 secret, got %d", len(secrets))
+				}
+				if secrets[0].GetName() != eiutils.SystemCaSecretName {
+					t.Fatalf("expected secret name %q, got %q", eiutils.SystemCaSecretName, secrets[0].GetName())
 				}
 			},
 		},

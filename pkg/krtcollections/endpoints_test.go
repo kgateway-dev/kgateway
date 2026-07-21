@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	. "github.com/onsi/gomega"
@@ -25,19 +24,34 @@ import (
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
-func newBackendObjectIR(in ir.BackendObjectIR) ir.BackendObjectIR {
-	src := in.ObjectSource
-	port := in.Port
-	extraKey := in.ExtraKey
-	b := ir.NewBackendObjectIR(src, port, extraKey)
+type backendObjectIRInput struct {
+	ObjectSource      ir.ObjectSource
+	Port              int32
+	ExtraKey          string
+	GvPrefix          string
+	Obj               metav1.Object
+	CanonicalHostname string
+	AppProtocol       ir.AppProtocol
+	PortName          string
+	Aliases           []ir.ObjectSource
+	AttachedPolicies  ir.AttachedPolicies
+}
+
+func newBackendObjectIR(in backendObjectIRInput) ir.BackendObjectIR {
+	b := ir.NewBackendObjectIR(in.ObjectSource, in.Port, in.ExtraKey, in.GvPrefix)
 	b.Obj = in.Obj
+	b.CanonicalHostname = in.CanonicalHostname
+	b.AppProtocol = in.AppProtocol
+	b.PortName = in.PortName
+	b.Aliases = in.Aliases
+	b.AttachedPolicies = in.AttachedPolicies
 	return b
 }
 
 func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 	g := NewWithT(t)
 
-	us := newBackendObjectIR(ir.BackendObjectIR{
+	us := newBackendObjectIR(backendObjectIRInput{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
@@ -160,7 +174,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 	g := NewWithT(t)
 
-	us := newBackendObjectIR(ir.BackendObjectIR{
+	us := newBackendObjectIR(backendObjectIRInput{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
@@ -183,7 +197,7 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 			},
 		},
 	})
-	usd := newBackendObjectIR(ir.BackendObjectIR{
+	usd := newBackendObjectIR(backendObjectIRInput{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "discovered-name",
@@ -290,7 +304,7 @@ func TestEndpointsForUpstreamWithDifferentTrafficDistributionButSameEndpoints(t 
 	g := NewWithT(t)
 
 	// Create base backend object
-	baseObj := ir.BackendObjectIR{
+	baseObj := backendObjectIRInput{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
@@ -443,14 +457,15 @@ func TestFindPortInEndpointSliceMatchesNamedTargetPortWhenEndpointPortNameDiffer
 func TestEndpointsForGatewayScopedBackendsWithSameEndpointsHaveDifferentHashes(t *testing.T) {
 	g := NewWithT(t)
 
-	baseBackend := newBackendObjectIR(ir.BackendObjectIR{
+	baseBackend := newBackendObjectIR(backendObjectIRInput{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
 			Group:     "",
 			Kind:      "Service",
 		},
-		Port: 8080,
+		Port:     8080,
+		GvPrefix: "kube",
 		Obj: &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "svc",
@@ -458,8 +473,6 @@ func TestEndpointsForGatewayScopedBackendsWithSameEndpointsHaveDifferentHashes(t
 			},
 		},
 	})
-	baseBackend.GvPrefix = "kube"
-
 	clientCertificate := &ir.GatewayBackendClientCertificateIR{}
 	gateway1 := ir.ObjectSource{
 		Group:     gwv1.GroupVersion.Group,
@@ -573,13 +586,13 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
 			},
 
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -642,7 +655,7 @@ func TestEndpoints(t *testing.T) {
 			name: "no endpoint slices returns empty endpoints",
 			// no EndpointSlice objects in inputs; only the Service backend is present
 			inputs: []any{},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -695,12 +708,12 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("not-second-port"),
 							Port:     new(int32(3001)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
 			},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -822,13 +835,13 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
 			},
 
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -973,12 +986,12 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
 			},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -1093,7 +1106,7 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
@@ -1123,12 +1136,12 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
 			},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -1243,12 +1256,12 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("http"),
 							Port:     new(int32(8080)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
 			},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -1329,22 +1342,22 @@ func TestEndpoints(t *testing.T) {
 						{
 							Name:     new("third-port"),
 							Port:     new(int32(3000)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 						{
 							Name:     new("first-port"),
 							Port:     new(int32(3000)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 						{
 							Name:     new("second-port"),
 							Port:     new(int32(3001)),
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
 			},
-			upstream: newBackendObjectIR(ir.BackendObjectIR{
+			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",

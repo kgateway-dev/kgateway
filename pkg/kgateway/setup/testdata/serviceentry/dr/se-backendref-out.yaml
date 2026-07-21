@@ -7,25 +7,34 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
-  metadata: {}
   name: istio-se_gwtest_example-se_se.example.com_80
   outlierDetection:
     baseEjectionTime: 900s
     consecutive5xx: 7
     interval: 300s
   type: EDS
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
 endpoints:
 - clusterName: istio-se_gwtest_example-se_se.example.com_80
   endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 255.0.0.1
+            portValue: 80
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    priority: 3
   - lbEndpoints:
     - endpoint:
         address:
@@ -76,15 +85,6 @@ endpoints:
       region: r2
       subZone: r2z1s1
       zone: r2z1
-    priority: 3
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 255.0.0.1
-            portValue: 80
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
     priority: 3
 listeners:
 - address:

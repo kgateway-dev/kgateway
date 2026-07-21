@@ -11,7 +11,6 @@ clusters:
               portValue: 80
         loadBalancingWeight: 1
       loadBalancingWeight: 1
-  metadata: {}
   name: istio-se_gwtest_httpbin-se_se.example.com_80
   type: STATIC
   typedExtensionProtocolOptions:
@@ -22,13 +21,14 @@ clusters:
         maxRequestsPerConnection: 100
       explicitHttpConfig:
         httpProtocolOptions: {}
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_kubernetes_443
   type: EDS
 listeners:

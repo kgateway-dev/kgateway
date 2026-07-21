@@ -35,6 +35,10 @@ type ListenerContext struct {
 	Port              uint32
 	Policy            PolicyIR
 	PolicyAncestorRef gwv1.ParentReference
+	// FilterChainName identifies the FilterChain this hook is targeting.
+	// Empty when the hook is not scoped to a specific FilterChain (e.g. ApplyListenerPlugin).
+	// Plugins implementing ApplyPostListener should mutate only the FilterChain whose Name matches.
+	FilterChainName string
 }
 
 type HttpFiltersContext struct {
@@ -113,6 +117,10 @@ type RouteContext struct {
 	TypedFilterConfig TypedFilterConfigMap
 	// ListenerPort is the port of the Gateway listener that this route is attached to
 	ListenerPort uint32
+	// ListenerHasTLS reports whether the Gateway listener terminates TLS (i.e. is
+	// an HTTPS listener). Used by request-redirect post-processing to infer the
+	// effective scheme when the redirect filter doesn't set one.
+	ListenerHasTLS bool
 
 	InheritedPolicyPriority apiannotations.InheritedPolicyPriorityValue
 }
@@ -127,7 +135,7 @@ type HcmContext struct {
 // for the duration of the translation.
 // Each of the functions here will be called in the order they appear in the interface.
 type ProxyTranslationPass interface {
-	// ApplyListenerPlugin is called 1 time for each listener
+	// ApplyListenerPlugin is called 1 time per listener, before FilterChains are built.
 	ApplyListenerPlugin(
 		pCtx *ListenerContext,
 		out *envoylistenerv3.Listener,
@@ -185,10 +193,22 @@ type ProxyTranslationPass interface {
 	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
 	HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error)
 
+	// called 1 time per filter-chain.
+	// If a plugin emits new filters, they must be with a plugin unique name.
+	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
+	UpstreamHttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error)
+
 	// called 1 time per filter chain after listeners and allows tweaking HCM settings.
 	ApplyHCM(
 		pCtx *HcmContext,
 		out *envoy_hcm.HttpConnectionManager) error
+
+	// ApplyPostListener is called 1 time per listener, after FilterChains are built.
+	// Use this to mutate FilterChain-level fields that depend on the assembled chains.
+	ApplyPostListener(
+		pCtx *ListenerContext,
+		out *envoylistenerv3.Listener,
+	)
 
 	// called 1 time (per envoy proxy). replaces GeneratedResources and allows adding clusters to the envoy.
 	ResourcesToAdd() Resources
@@ -201,21 +221,7 @@ var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
 func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
-	return nil
-}
-
 func (s UnimplementedProxyTranslationPass) ApplyForBackend(pCtx *RouteBackendContext, in HttpBackend, out *envoyroutev3.Route) error {
-	return nil
-}
-
-func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
-}
-
-func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(pCtx *VirtualHostContext, out *envoyroutev3.VirtualHost) {
-}
-
-func (s UnimplementedProxyTranslationPass) ApplyForRoute(pCtx *RouteContext, out *envoyroutev3.Route) error {
 	return nil
 }
 
@@ -223,12 +229,33 @@ func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(policy PolicyIR,
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+func (s UnimplementedProxyTranslationPass) ApplyForRoute(pCtx *RouteContext, out *envoyroutev3.Route) error {
+	return nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(pCtx *VirtualHostContext, out *envoyroutev3.VirtualHost) {
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
+}
+
+func (s UnimplementedProxyTranslationPass) UpstreamHttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 
 func (s UnimplementedProxyTranslationPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
 	return nil, nil
+}
+
+func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+	return nil, nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
+	return nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyPostListener(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }
 
 func (s UnimplementedProxyTranslationPass) ResourcesToAdd() Resources {

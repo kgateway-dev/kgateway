@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -223,7 +222,7 @@ func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
 
 	// modify the number of replicas in the GatewayParameters
 	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *kgateway.GatewayParameters) {
-		parameters.Spec.Kube.Deployment.Replicas = ptr.To[int32](2)
+		parameters.Spec.Kube.Deployment.Replicas = new(int32(2))
 	})
 
 	// the GatewayParameters modification should cause the deployer to re-run and update the
@@ -317,7 +316,7 @@ func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
 		}
 
 		// This is valid, but should be ignored, because another part of this patch is invalid
-		parameters.Spec.Kube.Deployment.Replicas = ptr.To[int32](2)
+		parameters.Spec.Kube.Deployment.Replicas = new(int32(2))
 	})
 
 	// We keep checking for some amount of time (30s) to account for the time it might take for
@@ -595,8 +594,8 @@ func xdsClusterAssertion(t *testing.T, testInstallation *e2e.TestInstallation) f
 			g.Expect(xdsSocketAddress).NotTo(gomega.BeNil())
 
 			g.Expect(xdsSocketAddress.GetAddress()).To(gomega.Equal(
-				fmt.Sprintf("%s.%s.svc.cluster.local", wellknown.DefaultXdsService, testInstallation.Metadata.InstallNamespace),
-			), "xds socket address points to kgateway service, in installation namespace")
+				fmt.Sprintf("%s.%s.svc.cluster.local.", wellknown.DefaultXdsService, testInstallation.Metadata.InstallNamespace),
+			), "xds socket address points to kgateway service, in installation namespace, as a rooted FQDN")
 
 			g.Expect(xdsSocketAddress.GetPortValue()).To(gomega.Equal(wellknown.DefaultXdsPort),
 				"xds socket port points to kgateway service, in installation namespace")

@@ -21,26 +21,22 @@ Allow setting the perConnectionBufferLimitBytes for each individual listener on 
 
 ## Implementation Details
 
-We'll check the gateway for the annotation `kgateway.dev/per-connection-buffer-limit`, which should specify a value in the [resource quantity format](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/).
+This capability is configured through `ListenerPolicy` using the listener config under `spec.default`.
 
-The perConnectionBufferLimitBytes for all listeners on the gateway will be set to this value.
+The `spec.default.perConnectionBufferLimitBytes` value is applied to all listeners on the targeted Gateway.
 
 ```
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
 metadata:
-  name: example-gateway
-  annotations:
-    kgateway.dev/per-connection-buffer-limit: 64Ki
+  name: example-listener-policy
 spec:
-  gatewayClassName: example-gateway-class
-  listeners:
-  - name: http
-    protocol: HTTP
-    port: 80
-  - name: http2
-    protocol: HTTP
-    port: 3000
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  default:
+    perConnectionBufferLimitBytes: 65536
 ```
 
 ### Test Plan
@@ -55,7 +51,7 @@ We discussed several options for setting perConnectionBufferLimitBytes.
 - adding this option to GatewayParameters
   - while this makes sense, it will require a lot of up front work to refactor it out of deployer and into krt collections
   
-We decided using an annotation on the gateway made sense and was straightforward to implement.
+We ended up supporting this through `ListenerPolicy`, which provides a more explicit home for listener-scoped settings.
 
 ## Open Questions
 

@@ -1,61 +1,16 @@
 //go:build e2e
 
-package tests_test
+package tests
 
 import (
-	"context"
-	"os"
-	"path/filepath"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
-	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/kgateway"
 )
 
+// TestKgateway runs the main kgateway feature suites against a single
+// installation.
 func TestKgateway(t *testing.T) {
-	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
-	testInstallation := e2e.CreateTestInstallation(
-		t,
-		&install.Context{
-			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
-			ExtraHelmArgs: []string{
-				"--set", "controller.extraEnv.KGW_GLOBAL_POLICY_NAMESPACE=" + installNs,
-			},
-		},
-	)
-
-	// Set the env to the install namespace if it is not already set
-	if !nsEnvPredefined {
-		os.Setenv(testutils.InstallNamespace, installNs)
-	}
-
-	// We register the cleanup function _before_ we actually perform the installation.
-	// This allows us to uninstall kgateway, in case the original installation only completed partially
-	testutils.Cleanup(t, func() {
-		if !nsEnvPredefined {
-			os.Unsetenv(testutils.InstallNamespace)
-		}
-
-		testInstallation.UninstallKgateway(ctx, t)
-	})
-
-	// Install kgateway
-	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
-
-	common.SetupBaseConfig(ctx, t, testInstallation, filepath.Join("manifests", "kgateway-base.yaml"))
-	common.SetupBaseGateway(ctx, t, testInstallation, types.NamespacedName{
-		Namespace: "kgateway-base",
-		Name:      "gateway",
-	})
-
-	KubeGatewaySuiteRunner().Run(ctx, t, testInstallation)
+	kgateway.Run(t, e2e.DefaultInstallationFactory)
 }

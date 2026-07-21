@@ -152,19 +152,29 @@ func TestConvertTLSRouteV1ToV1Alpha2(t *testing.T) {
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{
 					Name:        "gateway",
-					SectionName: ptr.To(gwv1.SectionName("listener-443")),
+					SectionName: new(gwv1.SectionName("listener-443")),
 				}},
 			},
 			Hostnames: []gwv1.Hostname{"example.com"},
 			Rules: []gwv1.TLSRouteRule{{
-				Name: ptr.To(gwv1.SectionName("rule-1")),
+				Name: new(gwv1.SectionName("rule-1")),
 				BackendRefs: []gwv1.BackendRef{{
 					BackendObjectReference: gwv1.BackendObjectReference{
 						Name: "backend",
-						Port: ptr.To(gwv1.PortNumber(443)),
+						Port: new(gwv1.PortNumber(443)),
 					},
 				}},
 			}},
+		},
+		Status: gwv1.TLSRouteStatus{
+			RouteStatus: gwv1.RouteStatus{
+				Parents: []gwv1.RouteParentStatus{{
+					ControllerName: "kgateway.dev/kgateway",
+					ParentRef: gwv1.ParentReference{
+						Name: "gateway",
+					},
+				}},
+			},
 		},
 	}
 
@@ -176,6 +186,7 @@ func TestConvertTLSRouteV1ToV1Alpha2(t *testing.T) {
 	require.Equal(t, gwv1a2.GroupVersion.String(), converted.APIVersion)
 	require.Equal(t, route.Spec.ParentRefs, converted.Spec.ParentRefs)
 	require.Equal(t, []gwv1a2.Hostname{"example.com"}, converted.Spec.Hostnames)
+	require.Equal(t, route.Status.RouteStatus, converted.Status.RouteStatus)
 	require.Len(t, converted.Spec.Rules, 1)
 	require.Equal(t, gwv1a2.SectionName("rule-1"), ptr.Deref(converted.Spec.Rules[0].Name, ""))
 	require.Len(t, converted.Spec.Rules[0].BackendRefs, 1)
@@ -194,16 +205,16 @@ func TestConvertTLSRouteV1Alpha3ToV1Alpha2(t *testing.T) {
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{
 					Name:        "gateway",
-					SectionName: ptr.To(gwv1.SectionName("listener-443")),
+					SectionName: new(gwv1.SectionName("listener-443")),
 				}},
 			},
 			Hostnames: []gwv1.Hostname{"example.com"},
 			Rules: []gwv1.TLSRouteRule{{
-				Name: ptr.To(gwv1.SectionName("rule-1")),
+				Name: new(gwv1.SectionName("rule-1")),
 				BackendRefs: []gwv1.BackendRef{{
 					BackendObjectReference: gwv1.BackendObjectReference{
 						Name: "backend",
-						Port: ptr.To(gwv1.PortNumber(443)),
+						Port: new(gwv1.PortNumber(443)),
 					},
 				}},
 			}},

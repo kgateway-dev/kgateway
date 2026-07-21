@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
@@ -42,7 +41,7 @@ func TestResolveBackendClientCertificate(t *testing.T) {
 
 	t.Run("rejects non-secret refs", func(t *testing.T) {
 		gateway := testGatewayWithClientCertificateRef(gwv1.SecretObjectReference{
-			Kind: ptr.To(gwv1.Kind("ConfigMap")),
+			Kind: new(gwv1.Kind("ConfigMap")),
 			Name: "client-cert",
 		})
 

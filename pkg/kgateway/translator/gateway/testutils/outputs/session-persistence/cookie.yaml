@@ -1,15 +1,15 @@
 Clusters:
-- connectTimeout: 5s
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  metadata: {}
   name: kube_default_backend_3000
   type: EDS
 - connectTimeout: 5s
-  metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
@@ -67,6 +67,7 @@ Routes:
                 '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
                 cookie:
                   name: Session-A
+                  path: /
                   ttl: 10s
     - match:
         safeRegex:
@@ -86,6 +87,7 @@ Routes:
                 '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
                 cookie:
                   name: Session-B
+                  path: /
                   ttl: 31536000s
     - match:
         safeRegex:
@@ -105,6 +107,7 @@ Routes:
                 '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
                 cookie:
                   name: Session-B
+                  path: /
     - match:
         pathSeparatedPrefix: /c1
       name: listener~80~*-route-3-httproute-example-route-default-0-0-matcher-0
@@ -121,6 +124,7 @@ Routes:
                 '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
                 cookie:
                   name: Session-A
+                  path: /
                   ttl: 10s
     - match:
         pathSeparatedPrefix: /c2
@@ -138,6 +142,7 @@ Routes:
                 '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
                 cookie:
                   name: Session-B
+                  path: /
                   ttl: 31536000s
     - match:
         pathSeparatedPrefix: /c3
@@ -155,6 +160,7 @@ Routes:
                 '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
                 cookie:
                   name: Session-B
+                  path: /
 Statuses:
   gateways:
     default/example-gateway:
@@ -217,6 +223,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -236,6 +247,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

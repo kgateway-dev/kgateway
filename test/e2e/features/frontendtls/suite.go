@@ -19,16 +19,22 @@ import (
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
 	// manifests for verify-certificate-hash tests (TestVerifyCertificateHash)
-	gatewayManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gw.yaml")
-	tlsSecretManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-secret.yaml")
-	clientCertsSecret = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "client-certs-8443-9443-secret.yaml")
-	curlPodWithCerts  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl-pod-with-certs.yaml")
+	gatewayManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gw.yaml")
+	tlsRSASecretManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-rsa-secret.yaml")
+	tlsECDSAP256SecretManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-ecdsa-p256-secret.yaml")
+	clientCertsSecret          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "client-certs-8443-9443-secret.yaml")
+	curlPodWithCerts           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl-pod-with-certs.yaml")
+	// curlNamespaceManifest creates the 'curl' namespace. The curl pod and its
+	// mounted client-cert Secrets live in this namespace, so it must exist before
+	// either is applied. It is applied first (and sequentially) by SetupSuite.
+	curlNamespaceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl-namespace.yaml")
 
 	// client certificate paths inside the curl pod (for verify-certificate-hash tests)
 	clientCertPath8443   = "/etc/client-certs/client-8443.crt"
@@ -44,6 +50,12 @@ var (
 	nonMatchingSanCertPath = "/etc/client-non-matching-san/tls.crt"
 	nonMatchingSanKeyPath  = "/etc/client-non-matching-san/tls.key"
 
+	// client certificate paths for signature-algorithms tests
+	matchingSignatureCertPath    = "/etc/client-matching-signature/tls.crt"
+	matchingSignatureKeyPath     = "/etc/client-matching-signature/tls.key"
+	nonMatchingSignatureCertPath = "/etc/client-non-matching-signature/tls.crt"
+	nonMatchingSignatureKeyPath  = "/etc/client-non-matching-signature/tls.key"
+
 	// manifests for FrontendTLSConfig tests (TestFrontendTLSConfig)
 	// Note: gatewayManifest and curlPodWithCerts are shared with verify-certificate-hash tests
 	caCertConfigMapManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "ca-cert-configmap.yaml")
@@ -58,6 +70,11 @@ var (
 	clientMatchingSanSecret     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-alt-names", "client-matching-san-secret.yaml")
 	clientNonMatchingSanSecret  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-alt-names", "client-non-matching-san-secret.yaml")
 
+	// manifests for signature-algorithms tests (TestClientSignatureAlgorithms)
+	caSigAlgsConfigMapManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-sigalgs", "ca-sigalgs-configmap.yaml")
+	clientMatchingSignatureSecret    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-sigalgs", "client-matching-signature-secret.yaml")
+	clientNonMatchingSignatureSecret = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-sigalgs", "client-non-matching-signature-secret.yaml")
+
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -65,38 +82,106 @@ var (
 	}
 )
 
+// prerequisiteManifests contains the Secrets and ConfigMaps the curl pod mounts
+// (plus the CA ConfigMaps and server cert the Gateway references). The mounted
+// Secrets must exist before the curl pod is scheduled, otherwise kubelet can
+// fail the volume mount and enter exponential backoff, leaving the pod stuck in
+// ContainerCreating past the base suite's 60s readiness timeout. SetupSuite
+// applies these before the pod, and TearDownSuite removes them; see those
+// methods below.
+func prerequisiteManifests() []string {
+	return []string{
+		clientCertsSecret,
+		clientCertSecretManifest,
+		caCertConfigMapManifest,
+		caCert2ConfigMapManifest,
+		clientCert2SecretManifest,
+		caAltNamesConfigMapManifest,
+		clientMatchingSanSecret,
+		clientNonMatchingSanSecret,
+		caSigAlgsConfigMapManifest,
+		clientMatchingSignatureSecret,
+		clientNonMatchingSignatureSecret,
+		tlsRSASecretManifest,
+		tlsECDSAP256SecretManifest,
+	}
+}
+
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	// The base setup holds only the Pod/Gateway/httpbin. The prerequisite Secrets
+	// and ConfigMaps are kept in a separate TestCase that SetupSuite applies (and
+	// TearDownSuite deletes) explicitly, so they are ordered before the pod
+	// without being applied twice.
 	setup := base.TestCase{
 		Manifests: []string{
 			curlPodWithCerts,
 			testdefaults.HttpbinManifest,
-			clientCertsSecret,
-			clientCertSecretManifest,    // Include client-cert secret so pod can start
-			caCertConfigMapManifest,     // Required for FrontendTLSConfig per-port configs
-			caCert2ConfigMapManifest,    // Required for multiple CA certificates test
-			clientCert2SecretManifest,   // Required for multiple CA certificates test
-			caAltNamesConfigMapManifest, // Required for verify-subject-alt-names test
-			clientMatchingSanSecret,     // Required for verify-subject-alt-names test
-			clientNonMatchingSanSecret,  // Required for verify-subject-alt-names test
-			tlsSecretManifest,
 			gatewayManifest,
 		},
 	}
 
 	testCases := map[string]*base.TestCase{
-		"TestALPNProtocol":           {},
-		"TestCipherSuites":           {},
-		"TestECDHCurves":             {},
-		"TestMinTLSVersion":          {},
-		"TestMaxTLSVersion":          {},
-		"TestVerifyCertificateHash":  {},
-		"TestFrontendTLSConfig":      {}, // All required resources are already in setup
-		"TestMultipleCACertificates": {}, // All required resources are already in setup
-		"TestVerifySubjectAltNames":  {}, // All required resources are already in setup
+		"TestALPNProtocol":              {},
+		"TestCipherSuites":              {},
+		"TestECDHCurves":                {},
+		"TestSignatureAlgorithms":       {},
+		"TestMinTLSVersion":             {},
+		"TestMaxTLSVersion":             {},
+		"TestVerifyCertificateHash":     {},
+		"TestFrontendTLSConfig":         {}, // All required resources are already in setup
+		"TestMultipleCACertificates":    {}, // All required resources are already in setup
+		"TestVerifySubjectAltNames":     {}, // All required resources are already in setup
+		"TestClientSignatureAlgorithms": {}, // All required resources are already in setup
 	}
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireFrontendTLSConfig)),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireFrontendTLSConfig)),
+		prerequisites:    base.TestCase{Manifests: prerequisiteManifests()},
 	}
+}
+
+// SetupSuite establishes the ordered prerequisites the curl pod depends on, then
+// delegates to the base SetupSuite (which applies the Pod/Gateway/httpbin). The
+// base suite applies a TestCase's manifests in parallel via errgroup, so the
+// ordering below cannot be expressed as a single manifest list:
+//  1. The 'curl' namespace must exist before its namespaced Secrets, so it is
+//     applied first and on its own.
+//  2. The mounted Secrets/ConfigMaps must exist before the pod is scheduled,
+//     otherwise kubelet can fail the volume mount and back off past the 60s
+//     readiness timeout.
+//
+// The prerequisites are applied with raw ApplyYAMLFiles rather than the base
+// ApplyManifests: they are Secrets/ConfigMaps that exist immediately after a
+// server-side apply returns (no readiness to wait on), and ApplyManifests parses
+// manifests using helpers the base SetupSuite has not initialized at this point.
+// They are gated behind the suite-level Gateway API compatibility check so an
+// unsupported cluster skips without leaving these resources behind (TearDownSuite
+// does not run after a SetupSuite skip). The base SetupSuite below repeats the
+// idempotent detection and emits the standard skip when applicable.
+func (s *testingSuite) SetupSuite() {
+	if !s.CheckSkipSuiteBeforeSetup() {
+		err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", curlNamespaceManifest)
+		s.Require().NoError(err, "failed to create curl namespace")
+
+		err = s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", s.prerequisites.Manifests...)
+		s.Require().NoError(err, "failed to apply frontendtls prerequisite manifests")
+	}
+
+	s.BaseTestingSuite.SetupSuite()
+}
+
+// TearDownSuite removes the Pod/Gateway/httpbin via the base teardown, then the
+// prerequisite Secrets/ConfigMaps. The prerequisites are not part of the base
+// setup TestCase, so they are deleted here explicitly. DeleteManifests strips
+// Namespace resources, so the 'ca-cert-2' namespace is preserved; the 'curl'
+// namespace is likewise never deleted, consistent with the framework's
+// avoid-deleting-namespaces rule.
+func (s *testingSuite) TearDownSuite() {
+	s.BaseTestingSuite.TearDownSuite()
+
+	if testutils.ShouldSkipCleanup(s.T()) || s.SkipSuite() {
+		return
+	}
+	s.DeleteManifests(&s.prerequisites)
 }
 
 // commonCurlOpts returns the common curl options used across all TLS tests for the default gateway
@@ -125,6 +210,10 @@ func commonCurlOptsForMTLS(hostname string, port int) []curl.Option {
 
 type testingSuite struct {
 	*base.BaseTestingSuite
+	// prerequisites are the Secrets/ConfigMaps the curl pod mounts and the Gateway
+	// references. They are applied (ordered, before the pod) by SetupSuite and
+	// deleted by TearDownSuite, kept separate from the base setup TestCase.
+	prerequisites base.TestCase
 }
 
 func (s *testingSuite) TestALPNProtocol() {
@@ -189,6 +278,20 @@ func (s *testingSuite) TestECDHCurves() {
 			curl.WithTLSVersion(curl.TLSVersion12),
 			curl.WithTLSMaxVersion(curl.TLSVersion12),
 			curl.WithCurves("secp384r1"),
+		)
+	})
+}
+
+func (s *testingSuite) TestSignatureAlgorithms() {
+	s.Run("RSA signature succeeds", func() {
+		s.assertEventualCurlResponse(
+			curl.WithSignatureAlgorithms(curl.SignatureAlgorithmRSAPSSRSAESHA256),
+		)
+	})
+
+	s.Run("disallowed signature fails despite certificate present", func() {
+		s.assertEventualCurlError(
+			curl.WithSignatureAlgorithms(curl.SignatureAlgorithmECDSASECP256R1SHA256),
 		)
 	})
 }
@@ -328,7 +431,7 @@ func (s *testingSuite) assertEventualCurlErrorForMTLS(hostname string, port int,
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		curlOpts,
-		16, // CURLE_SSL_CACERT_BADFILE
+		55, // CURLE_SEND_ERROR
 		10*time.Second,
 	)
 }
@@ -336,13 +439,13 @@ func (s *testingSuite) assertEventualCurlErrorForMTLS(hostname string, port int,
 func (s *testingSuite) TestFrontendTLSConfig() {
 	s.Run("AllowValidOnly requires client cert", func() {
 		// Should fail without client cert on port 8445 (per-port config with AllowValidOnly)
-		// Use error code 16 (CURLE_SSL_CACERT_BADFILE) which is what we get when client cert is required
+		// Use error code 55 (CURLE_SEND_ERROR) which is what we get when client cert is required
 		curlOpts := append(commonCurlOpts(), curl.WithPort(8445))
 		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			curlOpts,
-			16, // CURLE_SSL_CACERT_BADFILE
+			55, // CURLE_SEND_ERROR
 			10*time.Second,
 		)
 	})
@@ -419,7 +522,7 @@ func (s *testingSuite) TestMultipleCACertificates() {
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			curlOpts,
-			16, // CURLE_SSL_CACERT_BADFILE
+			55, // CURLE_SEND_ERROR
 			10*time.Second,
 		)
 	})
@@ -451,7 +554,39 @@ func (s *testingSuite) TestVerifySubjectAltNames() {
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			append(curlOpts8447, curl.WithClientCert(nonMatchingSanCertPath, nonMatchingSanKeyPath)),
-			16, // CURLE_SSL_CACERT_BADFILE - client cert rejected due to SAN mismatch
+			55, // CURLE_SEND_ERROR - client cert rejected due to SAN mismatch
+			10*time.Second,
+		)
+	})
+}
+
+func (s *testingSuite) TestClientSignatureAlgorithms() {
+	// Custom curl options for port 8448
+	curlOpts8448 := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+		curl.WithPort(8448),
+		curl.WithScheme("https"),
+		curl.IgnoreServerCert(),
+		curl.WithHeader("Host", "example.com"),
+		curl.VerboseOutput(),
+	}
+
+	s.Run("signature-algorithms for client with matching RSA signature should work", func() {
+		// Port 8448 requires RSA+SHA256 signature
+		// client-matching-signature.crt was signed that way - should succeed
+		s.assertEventualCurlResponse(
+			append(curlOpts8448, curl.WithClientCert(matchingSignatureCertPath, matchingSignatureKeyPath))...,
+		)
+	})
+
+	s.Run("signature-algorithms for client with non-matching ECDSA signature should fail", func() {
+		// Port 8448 requires RSA+SHA256 signature
+		// client-non-matching-signature.crt was signed with ECDSA - should fail
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
+			s.Ctx,
+			testdefaults.CurlPodExecOpt,
+			append(curlOpts8448, curl.WithClientCert(nonMatchingSignatureCertPath, nonMatchingSignatureKeyPath)),
+			55, // CURLE_SEND_ERROR - client cert rejected due to signature mismatch
 			10*time.Second,
 		)
 	})

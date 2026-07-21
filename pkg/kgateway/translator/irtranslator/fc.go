@@ -2,11 +2,11 @@ package irtranslator
 
 import (
 	"fmt"
-	"sort"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
+	codecv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/upstream_codec/v3"
 	envoy_tls_inspector "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	DefaultHttpStatPrefix  = "http"
-	UpstreamCodeFilterName = "envoy.filters.http.upstream_codec"
+	DefaultHttpStatPrefix   = "http"
+	UpstreamCodecFilterName = "envoy.filters.http.upstream_codec"
 )
 
 var defaultDownstreamAlpnProtocols = []string{"h2", "http/1.1"}
@@ -179,7 +179,7 @@ func convertCustomNetworkFilters(customNetworkFilters []ir.CustomEnvoyFilter) []
 }
 
 func sortNetworkFilters(filters filters.StagedNetworkFilterList) []*envoylistenerv3.Filter {
-	sort.Sort(filters)
+	filters.Sort()
 	var sortedFilters []*envoylistenerv3.Filter
 	for _, filter := range filters {
 		sortedFilters = append(sortedFilters, filter.Filter)
@@ -280,7 +280,8 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(l ir.HttpFilterChainIR) 
 	hCtx := ir.HttpFiltersContext{
 		ListenerPort: h.lis.BindPort,
 	}
-	// run the HttpFilter Plugins
+
+	// 1. Generate the HTTP Filters
 	for _, plug := range h.pluginPass {
 		stagedFilters, err := plug.HttpFilters(hCtx, l.FilterChainCommon)
 		if err != nil {
@@ -306,15 +307,56 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(l ir.HttpFilterChainIR) 
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_filters#filter-ordering
 	// HttpFilter ordering determines the order in which the HCM will execute the filter.
 
-	// 1. Sort filters by stage
+	// 2. Sort http filters by stage
 	// "Stage" is the type we use to specify when a filter should be run
 	envoyHttpFilters := sortHttpFilters(httpFilters)
 
-	// 2. Configure the router filter
+	// 3. Generate the Upstream HTTP Filters
+	var upstreamHttpFilters filters.StagedUpstreamHttpFilterList
+	for _, plug := range h.pluginPass {
+		stagedUpstreamFilters, err := plug.UpstreamHttpFilters(hCtx, l.FilterChainCommon)
+		if err != nil {
+			// what to do with errors here? ignore the listener??
+			h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Reason:  gwv1.ListenerReasonInvalid,
+				Status:  metav1.ConditionFalse,
+				Message: "Error processing http plugin: " + err.Error(),
+			})
+		}
+
+		for _, upstreamHttpFilter := range stagedUpstreamFilters {
+			if upstreamHttpFilter.Filter == nil {
+				logger.Warn("got nil Filter from UpstreamHttpFilters()", "plugin", plug.Name)
+				continue
+			}
+			upstreamHttpFilters = append(upstreamHttpFilters, upstreamHttpFilter)
+		}
+	}
+
+	// 4. Sort upstream HTTP filters by stage
+	// "Stage" is the type we use to specify when a filter should be run
+	envoyUpstreamHttpFilters := sortUpstreamHttpFilters(upstreamHttpFilters)
+
+	// 5. Configure the router filter
 	// As outlined by the Envoy docs, the last configured filter has to be a terminal filter.
 	// We set the Router filter (https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router)
 	// as the terminal filter in kgateway.
 	routerV3 := routerv3.Router{}
+
+	// 6. Set the upstream HTTP filters on the router
+	if len(upstreamHttpFilters) > 0 {
+		routerV3.UpstreamHttpFilters = envoyUpstreamHttpFilters
+
+		// Add the Upstream Codec filter at the end since it is a terminal filter and must be added if any other upstream filters exist
+		// Ref: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/upstream_codec_filter
+		routerV3.UpstreamHttpFilters = append(routerV3.GetUpstreamHttpFilters(), &envoyhttp.HttpFilter{
+			Name: UpstreamCodecFilterName,
+			ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+				TypedConfig: utils.MustMessageToAny(&codecv3.UpstreamCodec{}),
+			},
+		})
+	}
 
 	//	// TODO it would be ideal of SuppressEnvoyHeaders and DynamicStats could be moved out of here set
 	//	// in a separate router plugin
@@ -362,7 +404,7 @@ func convertCustomHttpFilters(customHttpFilters []ir.CustomEnvoyFilter) []filter
 }
 
 func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilter {
-	sort.Sort(filters)
+	filters.Sort()
 	var sortedFilters []*envoyhttp.HttpFilter
 	for _, filter := range filters {
 		if len(sortedFilters) > 0 && proto.Equal(sortedFilters[len(sortedFilters)-1], filter.Filter) {
@@ -374,15 +416,30 @@ func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilt
 	return sortedFilters
 }
 
-func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
-	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, reporter))
+func sortUpstreamHttpFilters(filters filters.StagedUpstreamHttpFilterList) []*envoyhttp.HttpFilter {
+	filters.Sort()
+	var sortedFilters []*envoyhttp.HttpFilter
+	for _, filter := range filters {
+		if len(sortedFilters) > 0 && proto.Equal(sortedFilters[len(sortedFilters)-1], filter.Filter) {
+			// skip repeated equal filters
+			continue
+		}
+		sortedFilters = append(sortedFilters, filter.Filter)
+	}
+	return sortedFilters
+}
+
+func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
+	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, listenerReporter))
 
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix: l.FilterChainName,
 	}
-	// TODO(#13908): Emit BackendTLSPolicy Gateway-ancestor status for TCP/TLS
-	// BackendRefs here, matching the HTTP/GRPC path in route.go. This is
-	// primarily needed for terminated TLSRoute backends on the shared path.
+	if h.reporter != nil {
+		for _, backend := range l.BackendRefs {
+			reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, h.pluginPass, backend.BackendObject)
+		}
+	}
 	if len(l.BackendRefs) == 1 {
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
 			Cluster: l.BackendRefs[0].ClusterName,
@@ -392,7 +449,7 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, reporter sdkreport
 		for _, route := range l.BackendRefs {
 			w := route.Weight
 			if w == 0 {
-				w = 1
+				continue
 			}
 			wc.Clusters = append(wc.GetClusters(), &envoytcp.TcpProxy_WeightedCluster_ClusterWeight{
 				Name:   route.ClusterName,
@@ -491,6 +548,9 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 	}
 	if len(tlsConfig.EcdhCurves) > 0 {
 		common.TlsParams.EcdhCurves = tlsConfig.EcdhCurves
+	}
+	if len(tlsConfig.SignatureAlgorithms) > 0 {
+		common.TlsParams.SignatureAlgorithms = tlsConfig.SignatureAlgorithms
 	}
 
 	// TODO: add verify subject alt names (validation context) https://github.com/kgateway-dev/kgateway/issues/12955

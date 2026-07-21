@@ -5,7 +5,6 @@ import (
 
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -56,6 +55,24 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "signature_algorithms",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "ecdsa_secp256r1_sha256,rsa_pss_rsae_sha256,rsa_pkcs1_sha256",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"ecdsa_secp256r1_sha256", "rsa_pss_rsae_sha256", "rsa_pkcs1_sha256"},
+			},
+		},
+		{
+			name: "signature_algorithms_with_whitespace",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "ecdsa_secp256r1_sha256, rsa_pss_rsae_sha256, rsa_pkcs1_sha256",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"ecdsa_secp256r1_sha256", "rsa_pss_rsae_sha256", "rsa_pkcs1_sha256"},
+			},
+		},
+		{
 			name: "subject_alt_names",
 			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},
@@ -94,7 +111,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 		{
 			name: "tls_max_version",
 			out: &ir.TLSConfig{
-				MaxTLSVersion: ptr.To(envoytlsv3.TlsParameters_TLSv1_2),
+				MaxTLSVersion: new(envoytlsv3.TlsParameters_TLSv1_2),
 			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.MaxTLSVersion: "1.2",
@@ -103,7 +120,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 		{
 			name: "tls_min_version",
 			out: &ir.TLSConfig{
-				MinTLSVersion: ptr.To(envoytlsv3.TlsParameters_TLSv1_3),
+				MinTLSVersion: new(envoytlsv3.TlsParameters_TLSv1_3),
 			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.MinTLSVersion: "1.3",
@@ -125,8 +142,8 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			name: "maximum_tls_version_less_than_minimum",
 			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},
-				MinTLSVersion:         ptr.To(envoytlsv3.TlsParameters_TLSv1_3),
-				MaxTLSVersion:         ptr.To(envoytlsv3.TlsParameters_TLSv1_2),
+				MinTLSVersion:         new(envoytlsv3.TlsParameters_TLSv1_3),
+				MaxTLSVersion:         new(envoytlsv3.TlsParameters_TLSv1_2),
 			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.MinTLSVersion:         "1.3",
@@ -141,8 +158,8 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			name: "multiple_options",
 			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},
-				MaxTLSVersion:         ptr.To(envoytlsv3.TlsParameters_TLSv1_3),
-				MinTLSVersion:         ptr.To(envoytlsv3.TlsParameters_TLSv1_2),
+				MaxTLSVersion:         new(envoytlsv3.TlsParameters_TLSv1_3),
+				MinTLSVersion:         new(envoytlsv3.TlsParameters_TLSv1_2),
 				CipherSuites:          []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"},
 				EcdhCurves:            []string{"X25519MLKEM768", "X25519", "P-256"},
 			},

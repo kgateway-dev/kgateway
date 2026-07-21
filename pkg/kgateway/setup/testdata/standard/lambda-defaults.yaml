@@ -42,6 +42,6 @@ metadata:
 spec:
   type: AWS
   aws:
-    accountId: "000000000000"
     lambda:
+      accountId: "000000000000"
       functionName: my-lambda-function

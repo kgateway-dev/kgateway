@@ -42,6 +42,7 @@ type HttpListenerPolicyIr struct {
 	xffConfig                  *envoyxffv3.XffConfig
 	skipXffAppend              *bool
 	serverHeaderTransformation *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation
+	serverName                 *string
 	streamIdleTimeout          *time.Duration
 	idleTimeout                *time.Duration
 	http2ProtocolOptions       *envoycorev3.Http2ProtocolOptions
@@ -61,11 +62,13 @@ type HttpListenerPolicyIr struct {
 	// and the final config is then marshalled.
 	tracingProvider               *envoytracev3.OpenTelemetryConfig
 	tracingConfig                 *envoy_hcm.HttpConnectionManager_Tracing
+	localReplyConfig              *envoy_hcm.LocalReplyConfig
 	acceptHttp10                  *bool
 	defaultHostForHttp10          *string
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 	maxRequestHeadersKb           *uint32
 	maxRequestsPerConnection      *uint32
+	maxHeadersCount               *uint32
 	uuidRequestIdConfig           *envoyuuidv3.UuidRequestIdConfig
 	forwardClientCertMode         *envoy_hcm.HttpConnectionManager_ForwardClientCertDetails
 	setCurrentClientCertDetails   *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
@@ -95,6 +98,11 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 	if !proto.Equal(d.tracingConfig, d2.tracingConfig) {
+		return false
+	}
+
+	// Check local reply
+	if !proto.Equal(d.localReplyConfig, d2.localReplyConfig) {
 		return false
 	}
 
@@ -134,7 +142,12 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	// Check serverHeaderTransformation
-	if d.serverHeaderTransformation != d2.serverHeaderTransformation {
+	if !cmputils.PointerValsEqual(d.serverHeaderTransformation, d2.serverHeaderTransformation) {
+		return false
+	}
+
+	// Check serverName
+	if !cmputils.PointerValsEqual(d.serverName, d2.serverName) {
 		return false
 	}
 
@@ -194,6 +207,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 
+	if !cmputils.PointerValsEqual(d.maxHeadersCount, d2.maxHeadersCount) {
+		return false
+	}
+
 	if !proto.Equal(d.uuidRequestIdConfig, d2.uuidRequestIdConfig) {
 		return false
 	}
@@ -230,8 +247,15 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		errs = append(errs, err)
 	}
 
+	localReplyConfig, err := convertLocalReplyConfig(h, commoncol, krtctx, objSrc)
+	if err != nil {
+		logger.Error("error translating local reply config", "error", err)
+		errs = append(errs, err)
+	}
+
 	upgradeConfigs := convertUpgradeConfig(h)
 	serverHeaderTransformation := convertServerHeaderTransformation(h.ServerHeaderTransformation)
+	serverName := h.ServerName
 
 	// Convert streamIdleTimeout from metav1.Duration to time.Duration
 	var streamIdleTimeout *time.Duration
@@ -311,6 +335,11 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		maxRequestsPerConnection = new(uint32(*h.MaxRequestsPerConnection)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
+	var maxHeadersCount *uint32
+	if h.MaxHeadersCount != nil {
+		maxHeadersCount = new(uint32(*h.MaxHeadersCount)) // nolint:gosec // G115: kubebuilder validation ensures value >= 1, safe for uint32
+	}
+
 	var uuidRequestIdConfig *envoyuuidv3.UuidRequestIdConfig
 	if h.UuidRequestIdConfig != nil {
 		uuidRequestIdConfig = &envoyuuidv3.UuidRequestIdConfig{
@@ -325,15 +354,15 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		if fccd.Mode != nil {
 			switch *fccd.Mode {
 			case kgateway.ForwardClientCertModeSanitize:
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_SANITIZE)
 			case kgateway.ForwardClientCertModeForwardOnly:
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_FORWARD_ONLY)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_FORWARD_ONLY)
 			case kgateway.ForwardClientCertModeAppendForward:
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_APPEND_FORWARD)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_APPEND_FORWARD)
 			case kgateway.ForwardClientCertModeSanitizeSet:
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
 			case kgateway.ForwardClientCertModeAlwaysForwardOnly:
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_ALWAYS_FORWARD_ONLY)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_ALWAYS_FORWARD_ONLY)
 			}
 		}
 		if d := fccd.Details; d != nil {
@@ -349,7 +378,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 			// If Details is set but Mode is not, default to SANITIZE_SET so the
 			// configuration has effect (Envoy's default SANITIZE strips XFCC).
 			if forwardClientCertMode == nil {
-				forwardClientCertMode = ptr.To(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
+				forwardClientCertMode = new(envoy_hcm.HttpConnectionManager_SANITIZE_SET)
 			}
 		}
 	}
@@ -359,6 +388,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		accessLogPolicies:             h.AccessLog,
 		tracingProvider:               tracingProvider,
 		tracingConfig:                 tracingConfig,
+		localReplyConfig:              localReplyConfig,
 		upgradeConfigs:                upgradeConfigs,
 		useRemoteAddress:              h.UseRemoteAddress,
 		preserveExternalRequestId:     h.PreserveExternalRequestId,
@@ -367,6 +397,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		xffConfig:                     xffConfig,
 		skipXffAppend:                 h.SkipXffAppend,
 		serverHeaderTransformation:    serverHeaderTransformation,
+		serverName:                    serverName,
 		streamIdleTimeout:             streamIdleTimeout,
 		idleTimeout:                   idleTimeout,
 		http2ProtocolOptions:          http2ProtocolOptions,
@@ -377,6 +408,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
 		maxRequestHeadersKb:           maxRequestHeadersKb,
 		maxRequestsPerConnection:      maxRequestsPerConnection,
+		maxHeadersCount:               maxHeadersCount,
 		uuidRequestIdConfig:           uuidRequestIdConfig,
 		forwardClientCertMode:         forwardClientCertMode,
 		setCurrentClientCertDetails:   setCurrentClientCertDetails,
@@ -428,6 +460,9 @@ func translateHttp2ProtocolOptions(http2ProtocolOptions *kgateway.ListenerHTTP2P
 	}
 	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
 		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.Value())} //nolint:gosec // G115: plugin validation ensures 65535-2147483647 range, safe for uint32
+	}
+	if http2ProtocolOptions.AllowConnect != nil {
+		out.AllowConnect = *http2ProtocolOptions.AllowConnect
 	}
 	return out
 }
