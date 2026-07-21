@@ -1,17 +1,18 @@
 ARG ENVOY_IMAGE
-FROM --platform=$TARGETPLATFORM ${ENVOY_IMAGE}
-ENV DEBIAN_FRONTEND=noninteractive
+ARG BASE_IMAGE=cgr.dev/chainguard/glibc-dynamic:latest
 
-# Update our deps to make cve toil lower
-# install wget for our default probes
-RUN (sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list 2>/dev/null || true) \
-    && (sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true) \
-    && apt-get -o Acquire::Retries=5 update \
-    && apt-get -o Acquire::Retries=5 upgrade -y \
-    && apt-get -o Acquire::Retries=5 install --no-install-recommends -y ca-certificates wget \
-    && rm -rf  /var/log/*log /var/lib/apt/lists/* /var/log/apt/* /var/lib/dpkg/*-old /var/cache/debconf/*-old
+FROM ${ENVOY_IMAGE} AS envoy
+
+FROM busybox:1.36.1-glibc AS busybox
+
+FROM ${BASE_IMAGE}
 
 ARG GOARCH=amd64
+
+COPY --from=busybox /bin/busybox /bin/sh
+COPY --from=busybox /bin/busybox /usr/bin/wget
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
+COPY --from=envoy /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY envoyinit-linux-$GOARCH /usr/local/bin/envoyinit
 
 ENV ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib
@@ -24,5 +25,5 @@ COPY $ENTRYPOINT_SCRIPT /
 
 USER 10101
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]
 CMD []
