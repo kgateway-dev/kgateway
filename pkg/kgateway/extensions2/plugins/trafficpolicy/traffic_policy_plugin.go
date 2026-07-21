@@ -267,14 +267,17 @@ type trafficPolicyPluginGwPass struct {
 	corsInChain              map[string]*corsv3.Cors
 	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
 	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
-	requestMirrorConfigured  map[*envoyroutev3.Route]struct{}
-	bufferInChain            map[string]*bufferv3.Buffer
-	compressorInChain        map[string][]compressorEntry
-	decompressorInChain      map[string][]decompressorEntry
-	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
-	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
-	faultInChain             map[string]*faulthttpv3.HTTPFault
-	httpACLInChain           map[string]bool
+	// Routes we've already set the mirror shadow-suffix on this pass, so the first (most-specific)
+	// policy wins and later ones skip. Keying by *Route is safe because a pass is per-translation,
+	// so the pointers are unique across routes and gateways.
+	requestMirrorConfigured map[*envoyroutev3.Route]struct{}
+	bufferInChain           map[string]*bufferv3.Buffer
+	compressorInChain       map[string][]compressorEntry
+	decompressorInChain     map[string][]decompressorEntry
+	basicAuthInChain        map[string]*envoy_basic_auth_v3.BasicAuth
+	apiKeyAuthInChain       map[string]*envoy_api_key_auth_v3.ApiKeyAuth
+	faultInChain            map[string]*faulthttpv3.HTTPFault
+	httpACLInChain          map[string]bool
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }

@@ -92,7 +92,10 @@ type TrafficPolicySpec struct {
 
 	// RequestMirror configures the behavior of request mirrors defined by
 	// HTTPRoute or GRPCRoute RequestMirror filters. It does not create request mirrors.
-	// If a targeted route has no request mirrors, this configuration has no effect.
+	// It can target HTTPRoutes, GRPCRoutes, or Gateways (including individual Gateway listeners
+	// via sectionName). When attached above the route level it applies to every mirror on the
+	// routes it covers, and a more-specific policy wins. If a covered route has no request mirror,
+	// this has no effect.
 	// +optional
 	RequestMirror *RequestMirrorPolicy `json:"requestMirror,omitempty"`
 
@@ -234,11 +237,11 @@ type TrafficPolicySpec struct {
 // RequestMirrorPolicy configures implementation-specific behavior for request mirrors.
 // +kubebuilder:validation:MinProperties=1
 type RequestMirrorPolicy struct {
-	// DisableShadowHostSuffixAppend controls whether Envoy appends the "-shadow"
-	// suffix to the Host or :authority header of mirrored requests.
-	// When true, the original Host or :authority header is preserved.
-	// When false, Envoy appends the suffix. When unset, the existing mirror
-	// behavior is not modified.
+	// DisableShadowHostSuffixAppend controls whether Envoy appends the "-shadow" suffix to the
+	// Host/:authority header of mirrored requests. When true, the original Host/:authority is
+	// preserved. When false, Envoy appends the suffix and overrides a true inherited from a
+	// less-specific policy. When unset, this policy leaves the behavior untouched, so an inherited
+	// value may apply, and if none does, Envoy's default of appending the suffix is used.
 	// +optional
 	DisableShadowHostSuffixAppend *bool `json:"disableShadowHostSuffixAppend,omitempty"`
 }

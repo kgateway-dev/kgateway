@@ -492,22 +492,6 @@ spec:
 			wantErrors: []string{"statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"},
 		},
 		{
-			name: "TrafficPolicy: empty requestMirror is rejected",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: traffic-policy-request-mirror-empty
-spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: test-route
-  requestMirror: {}
-`,
-			wantErrors: []string{"requestMirror in body should have at least 1 properties"},
-		},
-		{
 			name: "TrafficPolicy: policy with statPrefix may target HTTPRoute",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

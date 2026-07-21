@@ -86,6 +86,7 @@ spec:
     - name: primary
       port: 80
 ---
+# No route-level policy: this route inherits the gateway-level setting.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -111,6 +112,33 @@ spec:
     - name: primary
       port: 80
 ---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: grpc-mirror-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - example.com
+  rules:
+  - matches:
+    - method:
+        type: Exact
+        service: example.Service
+        method: Mirror
+    filters:
+    - type: RequestMirror
+      requestMirror:
+        backendRef:
+          name: mirror-one
+          port: 80
+    backendRefs:
+    - name: primary
+      port: 80
+---
+# Gateway-scoped: sets the default for every mirror under this gateway.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
@@ -124,6 +152,7 @@ spec:
   requestMirror:
     disableShadowHostSuffixAppend: true
 ---
+# Route-scoped false: overrides the gateway-level true on this route.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
@@ -147,6 +176,19 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: multi-rule-route
+  requestMirror:
+    disableShadowHostSuffixAppend: true
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: grpc-mirror-request-mirror
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: GRPCRoute
+    name: grpc-mirror-route
   requestMirror:
     disableShadowHostSuffixAppend: true
 ---

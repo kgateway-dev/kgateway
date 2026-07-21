@@ -76,13 +76,27 @@ Routes:
     name: listener~80~example_com
     routes:
     - match:
+        path: /example.Service/Mirror
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            requestMirror:
+            - gateway.kgateway.dev/TrafficPolicy/default/grpc-mirror-request-mirror
+      name: listener~80~example_com-route-0-grpcroute-grpc-mirror-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_primary_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        requestMirrorPolicies:
+        - cluster: kube_default_mirror-one_80
+          disableShadowHostSuffixAppend: true
+    - match:
         pathSeparatedPrefix: /multi/two-mirrors
       metadata:
         filterMetadata:
           merge.TrafficPolicy.gateway.kgateway.dev:
             requestMirror:
             - gateway.kgateway.dev/TrafficPolicy/default/multi-rule-request-mirror
-      name: listener~80~example_com-route-0-httproute-multi-rule-route-default-0-0-matcher-0
+      name: listener~80~example_com-route-1-httproute-multi-rule-route-default-0-0-matcher-0
       route:
         cluster: kube_default_primary_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -98,7 +112,7 @@ Routes:
           merge.TrafficPolicy.gateway.kgateway.dev:
             requestMirror:
             - gateway.kgateway.dev/TrafficPolicy/default/multi-rule-request-mirror
-      name: listener~80~example_com-route-1-httproute-multi-rule-route-default-1-0-matcher-0
+      name: listener~80~example_com-route-2-httproute-multi-rule-route-default-1-0-matcher-0
       route:
         cluster: kube_default_primary_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -112,7 +126,7 @@ Routes:
           merge.TrafficPolicy.gateway.kgateway.dev:
             requestMirror:
             - gateway.kgateway.dev/TrafficPolicy/default/multi-rule-request-mirror
-      name: listener~80~example_com-route-2-httproute-multi-rule-route-default-2-0-matcher-0
+      name: listener~80~example_com-route-3-httproute-multi-rule-route-default-2-0-matcher-0
       route:
         cluster: kube_default_primary_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -123,7 +137,7 @@ Routes:
           merge.TrafficPolicy.gateway.kgateway.dev:
             requestMirror:
             - gateway.kgateway.dev/TrafficPolicy/default/override-route-request-mirror
-      name: listener~80~example_com-route-3-httproute-override-route-default-0-0-matcher-0
+      name: listener~80~example_com-route-4-httproute-override-route-default-0-0-matcher-0
       route:
         cluster: kube_default_primary_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -131,7 +145,7 @@ Routes:
         - cluster: kube_default_mirror-one_80
     - match:
         pathSeparatedPrefix: /inherit
-      name: listener~80~example_com-route-4-httproute-inherit-route-default-0-0-matcher-0
+      name: listener~80~example_com-route-5-httproute-inherit-route-default-0-0-matcher-0
       route:
         cluster: kube_default_primary_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -158,7 +172,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 3
+      - attachedRoutes: 4
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
@@ -186,6 +200,30 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
+  grpcRoutes:
+    default/grpc-mirror-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
   httpRoutes:
     default/inherit-route:
       parents:
@@ -258,6 +296,25 @@ Statuses:
           name: example-gateway
   policies:
     TrafficPolicy/default/gateway-request-mirror:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    TrafficPolicy/default/grpc-mirror-request-mirror:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
