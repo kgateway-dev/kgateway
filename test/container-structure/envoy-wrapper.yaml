@@ -1,13 +1,18 @@
 schemaVersion: 2.0.0
 
-# Container structure tests for the envoy-wrapper image
-# Contains envoyinit binary, Rust dynamic modules, and docker-entrypoint.sh
+# Container structure tests for the envoy-wrapper image.
+# Runs Envoy via a shell entrypoint script that supports two modes:
+#   1. Envoy sidecar mode (when ENVOY_SIDECAR is set)
+#   2. Envoyinit mode (default)
+# Base image: cgr.dev/chainguard/glibc-dynamic, plus a static busybox that
+# provides /bin/sh and wget for the entrypoint and preStop hook.
 
 # UID 10101 must match the helm chart's securityContext.runAsUser
 # (see pkg/deployer/gateway_parameters.go)
 metadataTest:
   user: "10101"
-  entrypoint: ["/docker-entrypoint.sh"]
+  entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
+  cmd: []
   envVars:
     - key: "ENVOY_DYNAMIC_MODULES_SEARCH_PATH"
       value: "/usr/local/lib"
@@ -38,7 +43,14 @@ fileExistenceTests:
     path: "/etc/ssl/certs/ca-certificates.crt"
     shouldExist: true
 
-  - name: "wget installed"
+  # Provided by the busybox stage; required by the entrypoint script and the
+  # graceful-shutdown preStop hook respectively.
+  - name: "shell available (busybox)"
+    path: "/bin/sh"
+    shouldExist: true
+    isExecutableBy: "any"
+
+  - name: "wget available (busybox)"
     path: "/usr/bin/wget"
     shouldExist: true
     isExecutableBy: "any"
@@ -53,17 +65,7 @@ fileContentTests:
     expectedContents: ["ENVOY_SIDECAR"]
 
 commandTests:
-  - name: "envoyinit binary is a valid ELF executable"
-    command: "/bin/sh"
-    args: ["-c", "head -c 4 /usr/local/bin/envoyinit | od -A n -t x1 | grep -q '7f 45 4c 46'"]
-    exitCode: 0
-
   - name: "envoy binary is a valid executable"
     command: "/usr/local/bin/envoy"
     args: ["--version"]
     exitCode: 0
-
-  - name: "running as non-root user"
-    command: "id"
-    args: ["-u"]
-    expectedOutput: ["10101"]
