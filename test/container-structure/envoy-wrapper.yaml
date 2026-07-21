@@ -65,6 +65,16 @@ fileContentTests:
     expectedContents: ["ENVOY_SIDECAR"]
 
 commandTests:
+  # envoyinit reads its bootstrap config (default /etc/envoy/envoy.yaml) on
+  # startup; that file is mounted at runtime and is absent from the image, so the
+  # binary exits 1 with "initializer failed". Reaching its own error path proves
+  # the binary is a loadable ELF for the target arch. The "initializer failed"
+  # string is defined in pkg/envoyinit/run.go -- keep the two in sync.
+  - name: "envoyinit binary is a valid executable"
+    command: "/usr/local/bin/envoyinit"
+    exitCode: 1
+    expectedError: ["initializer failed"]
+
   - name: "envoy binary is a valid executable"
     command: "/usr/local/bin/envoy"
     args: ["--version"]
