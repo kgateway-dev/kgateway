@@ -496,6 +496,7 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: default
+          sectionName: http
         conditions:
         - lastTransitionTime: null
           message: Policy accepted
@@ -515,6 +516,7 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: default
+          sectionName: http
         conditions:
         - lastTransitionTime: null
           message: 'extauth: failed to resolve ExtAuth gRPC backend: missing reference

@@ -233,7 +233,7 @@ Statuses:
       - ancestorRef:
           group: gateway.networking.k8s.io
           kind: ListenerSet
-          name: wildcard-listenerset
+          name: specific-listenerset
           namespace: default
         conditions:
         - lastTransitionTime: null
