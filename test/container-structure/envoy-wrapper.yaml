@@ -4,7 +4,7 @@ schemaVersion: 2.0.0
 # Runs Envoy via a shell entrypoint script that supports two modes:
 #   1. Envoy sidecar mode (when ENVOY_SIDECAR is set)
 #   2. Envoyinit mode (default)
-# Base image: cgr.dev/chainguard/glibc-dynamic, plus a static busybox that
+# Base image: cgr.dev/chainguard/glibc-dynamic, plus a busybox binary that
 # provides /bin/sh and wget for the entrypoint and preStop hook.
 
 # UID 10101 must match the helm chart's securityContext.runAsUser
@@ -65,13 +65,18 @@ fileContentTests:
     expectedContents: ["ENVOY_SIDECAR"]
 
 commandTests:
-  # envoyinit reads its bootstrap config (default /etc/envoy/envoy.yaml) on
-  # startup; that file is mounted at runtime and is absent from the image, so the
-  # binary exits 1 with "initializer failed". Reaching its own error path proves
-  # the binary is a loadable ELF for the target arch. The "initializer failed"
-  # string is defined in pkg/envoyinit/run.go -- keep the two in sync.
+  # Prove the binary is a loadable ELF for the target arch by running it:
+  # envoyinit reads its bootstrap config on startup and exits 1 with
+  # "initializer failed" when the file is missing. INPUT_CONF is pointed at a
+  # path that cannot exist so the fast exit holds regardless of what config the
+  # image ships (no long-running envoy process, so the test cannot hang). The
+  # "initializer failed" string is defined in pkg/envoyinit/run.go -- keep the
+  # two in sync.
   - name: "envoyinit binary is a valid executable"
     command: "/usr/local/bin/envoyinit"
+    envVars:
+      - key: "INPUT_CONF"
+        value: "/nonexistent/envoy.yaml"
     exitCode: 1
     expectedError: ["initializer failed"]
 
