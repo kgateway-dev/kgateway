@@ -217,7 +217,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 			// TODO: report user error - they attached a non http policy
 			continue
 		}
-		reportPolicyAcceptanceStatus(h.reporter, h.policyAncestorRef, true, pols...)
+		reportPolicyAcceptanceStatus(h.reporter, h.policyAncestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			pctx := &ir.HcmContext{
@@ -234,7 +234,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 				})
 			}
 		}
-		reportPolicyAttachmentStatus(h.reporter, h.policyAncestorRef, true, mergeOrigins, pols...)
+		reportPolicyAttachmentStatus(h.reporter, h.policyAncestorRef, mergeOrigins, pols...)
 	}
 
 	// TODO: should we enable websockets by default?

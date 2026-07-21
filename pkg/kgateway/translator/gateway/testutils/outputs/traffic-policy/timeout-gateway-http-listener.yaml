@@ -243,7 +243,6 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: default
-          sectionName: http
         conditions:
         - lastTransitionTime: null
           message: Policy accepted

@@ -87,10 +87,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 			continue
 		}
 		policies, mergeOrigins := mergePolicies(pass, pols)
-		// h.attachedPolicies is populated from HttpFilterChainIR.AttachedPolicies, which
-		// for HTTPS chains carries per-listener sectioned policies (see gateway.go:137);
-		// h.gw.AttachedHttpPolicies is always section-less, so stamping is a no-op there.
-		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, true, pols...)
+		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.routeConfigName, pols...)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
@@ -105,7 +102,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 			}, cfg)
 		}
 		cfg.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, cfg.GetMetadata())
-		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, true, mergeOrigins, pols...)
+		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
 	}
 	if len(errs) > 0 {
 		// Anytime we encounter any errors while computing the RC or there's invalid policy
@@ -455,7 +452,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 		if pass == nil {
 			continue
 		}
-		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, true, pols...)
+		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
@@ -471,7 +468,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 			pass.ApplyVhostPlugin(pctx, out)
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
-		reportPolicyAttachmentStatus(h.reporter, ancestorRef, true, mergeOrigins, pols...)
+		reportPolicyAttachmentStatus(h.reporter, ancestorRef, mergeOrigins, pols...)
 	}
 	return errors.Join(errs...)
 }
@@ -524,7 +521,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			ListenerHasTLS:    h.fc.TLS != nil,
 		}
 		ancestorRef := routeAncestorRef(in, h.listener.PolicyAncestorRef)
-		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, false, pols...)
+		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			// Builtin policies use InheritedPolicyPriority
@@ -544,7 +541,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			}
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
-		reportPolicyAttachmentStatus(h.reporter, ancestorRef, false, mergeOrigins, pols...)
+		reportPolicyAttachmentStatus(h.reporter, ancestorRef, mergeOrigins, pols...)
 	}
 
 	return errors.Join(errs...)
@@ -584,7 +581,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 			// TODO: should never happen, log error and report condition
 			continue
 		}
-		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, false, pols...)
+		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, _ := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			// Policy on extension ref

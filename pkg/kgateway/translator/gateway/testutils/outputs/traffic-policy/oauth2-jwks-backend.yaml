@@ -284,7 +284,6 @@ Statuses:
           kind: Gateway
           name: test
           namespace: default
-          sectionName: http
         conditions:
         - lastTransitionTime: null
           message: Policy accepted

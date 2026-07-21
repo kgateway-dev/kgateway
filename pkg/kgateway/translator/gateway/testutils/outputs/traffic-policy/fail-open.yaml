@@ -507,7 +507,6 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: infra
-          sectionName: tls2
         conditions:
         - lastTransitionTime: null
           message: Policy accepted
