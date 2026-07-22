@@ -579,6 +579,61 @@ spec:
 			wantErrors: []string{"targetRefs may only reference Gateway resource"},
 		},
 		{
+			name: "HTTPListenerPolicy: grpcStats rejects both statsForAllMethods and methodAllowlist",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: http-listener-policy-grpcstats-both
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  httpSettings:
+    grpcStats:
+      statsForAllMethods: true
+      methodAllowlist:
+      - /pkg.Service/Method
+`,
+			wantErrors: []string{"exactly one of statsForAllMethods or methodAllowlist must be set"},
+		},
+		{
+			name: "HTTPListenerPolicy: grpcStats accepts statsForAllMethods only",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: http-listener-policy-grpcstats-all
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  httpSettings:
+    grpcStats:
+      statsForAllMethods: true
+`,
+		},
+		{
+			name: "HTTPListenerPolicy: grpcStats accepts methodAllowlist only",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: http-listener-policy-grpcstats-allowlist
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  httpSettings:
+    grpcStats:
+      methodAllowlist:
+      - /pkg.Service/Method
+`,
+		},
+		{
 			name: "DirectResponse: empty body not allowed",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

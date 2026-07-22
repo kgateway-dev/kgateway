@@ -8,6 +8,7 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	grpcstatsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_stats/v3"
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	proxy_protocol "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/proxy_protocol/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -209,6 +210,7 @@ type listenerPolicyPluginGwPass struct {
 	reporter reporter.Reporter
 
 	healthCheckPolicy map[uint32]*healthcheckv3.HealthCheck
+	grpcStats         map[uint32]*grpcstatsv3.FilterConfig
 }
 
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
@@ -319,6 +321,7 @@ func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Repor
 	return &listenerPolicyPluginGwPass{
 		reporter:          reporter,
 		healthCheckPolicy: map[uint32]*healthcheckv3.HealthCheck{},
+		grpcStats:         map[uint32]*grpcstatsv3.FilterConfig{},
 	}
 }
 
@@ -360,6 +363,7 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	}
 	if http := cfg.http; http != nil {
 		p.healthCheckPolicy[pCtx.Port] = http.healthCheckPolicy
+		p.grpcStats[pCtx.Port] = http.grpcStats
 	}
 }
 
@@ -383,23 +387,37 @@ func (p *listenerPolicyPluginGwPass) ApplyPostListener(
 }
 
 func (p *listenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
-	healthCheckPolicy := p.healthCheckPolicy[hCtx.ListenerPort]
-	if healthCheckPolicy == nil {
-		return nil, nil
+	var stagedFilters []filters.StagedHttpFilter
+
+	if healthCheckPolicy := p.healthCheckPolicy[hCtx.ListenerPort]; healthCheckPolicy != nil {
+		// Add the health check filter after the authz filter but before the rate limit filter
+		// This allows the health check filter to be secured by authz if needed, but ensures it won't be rate limited
+		stagedFilter, err := filters.NewStagedFilter(
+			"envoy.filters.http.health_check",
+			healthCheckPolicy,
+			filters.AfterStage(filters.AuthZStage),
+		)
+		if err != nil {
+			return nil, err
+		}
+		stagedFilters = append(stagedFilters, stagedFilter)
 	}
 
-	// Add the health check filter after the authz filter but before the rate limit filter
-	// This allows the health check filter to be secured by authz if needed, but ensures it won't be rate limited
-	stagedFilter, err := filters.NewStagedFilter(
-		"envoy.filters.http.health_check",
-		healthCheckPolicy,
-		filters.AfterStage(filters.AuthZStage),
-	)
-	if err != nil {
-		return nil, err
+	if grpcStats := p.grpcStats[hCtx.ListenerPort]; grpcStats != nil {
+		// Place the gRPC stats filter just before the router so it observes the
+		// final request/response and can emit per-method grpc-status metrics.
+		stagedFilter, err := filters.NewStagedFilter(
+			"envoy.filters.http.grpc_stats",
+			grpcStats,
+			filters.BeforeStage(filters.RouteStage),
+		)
+		if err != nil {
+			return nil, err
+		}
+		stagedFilters = append(stagedFilters, stagedFilter)
 	}
 
-	return []filters.StagedHttpFilter{stagedFilter}, nil
+	return stagedFilters, nil
 }
 
 func (p *listenerPolicyPluginGwPass) ApplyHCM(
