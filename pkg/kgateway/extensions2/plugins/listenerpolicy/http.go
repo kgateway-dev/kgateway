@@ -65,6 +65,7 @@ type HttpListenerPolicyIr struct {
 	localReplyConfig              *envoy_hcm.LocalReplyConfig
 	acceptHttp10                  *bool
 	defaultHostForHttp10          *string
+	proxy100Continue              *bool
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 	maxRequestHeadersKb           *uint32
 	maxRequestsPerConnection      *uint32
@@ -190,6 +191,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	if !cmputils.PointerValsEqual(d.defaultHostForHttp10, d2.defaultHostForHttp10) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.proxy100Continue, d2.proxy100Continue) {
 		return false
 	}
 
@@ -405,6 +410,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		preserveHttp1HeaderCase:       h.PreserveHttp1HeaderCase,
 		acceptHttp10:                  h.AcceptHttp10,
 		defaultHostForHttp10:          h.DefaultHostForHttp10,
+		proxy100Continue:              h.Proxy100Continue,
 		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
 		maxRequestHeadersKb:           maxRequestHeadersKb,
 		maxRequestsPerConnection:      maxRequestsPerConnection,

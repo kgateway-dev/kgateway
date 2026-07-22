@@ -40,6 +40,7 @@ func MergeHttpPolicies(
 		mergePreserveHttp1HeaderCase,
 		mergeAcceptHttp10,
 		mergeDefaultHostForHttp10,
+		mergeProxy100Continue,
 		mergeEarlyHeaderMutation,
 		mergeMaxRequestHeadersKb,
 		mergeMaxRequestsPerConnection,
@@ -220,6 +221,22 @@ func mergeDefaultHostForHttp10(
 
 	p1.defaultHostForHttp10 = p2.defaultHostForHttp10
 	mergeOrigins.SetOne(origin+"defaultHostForHttp10", p2Ref, p2MergeOrigins)
+}
+
+func mergeProxy100Continue(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.proxy100Continue, p2.proxy100Continue, opts) {
+		return
+	}
+
+	p1.proxy100Continue = p2.proxy100Continue
+	mergeOrigins.SetOne(origin+"proxy100Continue", p2Ref, p2MergeOrigins)
 }
 
 func mergeXffNumTrustedHops(

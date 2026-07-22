@@ -55,6 +55,7 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		localReplyConfig:     &envoy_hcm.LocalReplyConfig{},
 		acceptHttp10:         new(true),
 		defaultHostForHttp10: new("example.com"),
+		proxy100Continue:     new(true),
 		earlyHeaderMutationExtensions: []*envoycorev3.TypedExtensionConfig{
 			{Name: "ext"},
 		},
@@ -172,6 +173,10 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		{
 			Field:  "defaultHostForHttp10",
 			Mutate: func(d **HttpListenerPolicyIr) { (*d).defaultHostForHttp10 = new("other.com") },
+		},
+		{
+			Field:  "proxy100Continue",
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).proxy100Continue = new(false) },
 		},
 		{
 			Field: "earlyHeaderMutationExtensions",
