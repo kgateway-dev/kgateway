@@ -3043,8 +3043,8 @@ func TestBasic(t *testing.T) {
 
 	t.Run("listener policy isolation across listeners on the same Gateway sharing a port", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFiles: []string{"listener-sets/shared-port-policy-isolation-same-parent.yaml"},
-			outputFile: "listener-sets/shared-port-policy-isolation-same-parent.yaml",
+			inputFiles: []string{"traffic-policy/shared-port-policy-isolation-same-parent.yaml"},
+			outputFile: "traffic-policy/shared-port-policy-isolation-same-parent.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
