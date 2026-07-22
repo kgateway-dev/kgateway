@@ -13,10 +13,6 @@
 # "0.0.0 < 1.x", firing a false positive. In reality that pinned commit is
 # an Istio dev (main) build -its `VERSION` file reads "1.31" at the time
 # this entry was added, which is many minor releases past every fix below.
-#
-# Each reason records the fixed Istio version and the version we were pinned
-# to at the time the entry was added, so a future reader can re-verify against
-# whatever pin is current then.
 
 [[IgnoredVulns]]
 id = "CVE-2019-14993"
