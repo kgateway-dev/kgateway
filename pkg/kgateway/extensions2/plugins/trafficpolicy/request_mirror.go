@@ -48,16 +48,18 @@ func (p *trafficPolicyPluginGwPass) applyRequestMirror(requestMirror *requestMir
 		return
 	}
 
-	// Route policies run before listener and Gateway policies. Track explicitly configured routes so a
-	// less-specific policy cannot overwrite an explicit false. We track it out-of-band because the Envoy
-	// field is a plain bool with no unset state to gate on, unlike the other route-action fields.
+	// Route policies run before listener and Gateway policies. Track routes (by name) that a policy has
+	// already configured so a less-specific policy cannot overwrite an explicit false. We track it
+	// out-of-band because the Envoy field is a plain bool with no unset state to gate on, unlike the
+	// other route-action fields.
+	routeName := out.GetName()
 	if p.requestMirrorConfigured == nil {
-		p.requestMirrorConfigured = make(map[*envoyroutev3.Route]struct{})
+		p.requestMirrorConfigured = make(map[string]struct{})
 	}
-	if _, configured := p.requestMirrorConfigured[out]; configured {
+	if _, configured := p.requestMirrorConfigured[routeName]; configured {
 		return
 	}
-	p.requestMirrorConfigured[out] = struct{}{}
+	p.requestMirrorConfigured[routeName] = struct{}{}
 
 	for _, mirror := range out.GetRoute().GetRequestMirrorPolicies() {
 		if mirror != nil {

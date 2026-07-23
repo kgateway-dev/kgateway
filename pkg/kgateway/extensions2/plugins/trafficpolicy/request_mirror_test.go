@@ -108,7 +108,7 @@ func TestApplyRequestMirror(t *testing.T) {
 		plugin.applyRequestMirror(requestMirrorIRWithValue(true), route)
 
 		assert.Empty(t, route.GetRoute().GetRequestMirrorPolicies())
-		assert.Contains(t, plugin.requestMirrorConfigured, route)
+		assert.Contains(t, plugin.requestMirrorConfigured, route.GetName())
 	})
 
 	t.Run("unset value does not modify mirrors", func(t *testing.T) {
@@ -132,6 +132,21 @@ func TestApplyRequestMirror(t *testing.T) {
 
 		assert.False(t, mirror.DisableShadowHostSuffixAppend)
 	})
+
+	t.Run("distinct routes are tracked independently", func(t *testing.T) {
+		plugin := &trafficPolicyPluginGwPass{}
+		mirrorA := &envoyroutev3.RouteAction_RequestMirrorPolicy{}
+		mirrorB := &envoyroutev3.RouteAction_RequestMirrorPolicy{}
+		routeA := namedRouteWithMirrors("route-a", mirrorA)
+		routeB := namedRouteWithMirrors("route-b", mirrorB)
+
+		// Configuring route-a must not mark route-b, so route-b still takes its own value.
+		plugin.applyRequestMirror(requestMirrorIRWithValue(false), routeA)
+		plugin.applyRequestMirror(requestMirrorIRWithValue(true), routeB)
+
+		assert.False(t, mirrorA.DisableShadowHostSuffixAppend)
+		assert.True(t, mirrorB.DisableShadowHostSuffixAppend)
+	})
 }
 
 func requestMirrorIRWithValue(value bool) *requestMirrorIR {
@@ -139,7 +154,12 @@ func requestMirrorIRWithValue(value bool) *requestMirrorIR {
 }
 
 func routeWithMirrors(mirrors ...*envoyroutev3.RouteAction_RequestMirrorPolicy) *envoyroutev3.Route {
+	return namedRouteWithMirrors("test-route", mirrors...)
+}
+
+func namedRouteWithMirrors(name string, mirrors ...*envoyroutev3.RouteAction_RequestMirrorPolicy) *envoyroutev3.Route {
 	return &envoyroutev3.Route{
+		Name: name,
 		Action: &envoyroutev3.Route_Route{
 			Route: &envoyroutev3.RouteAction{RequestMirrorPolicies: mirrors},
 		},
