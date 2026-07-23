@@ -42,9 +42,6 @@ func (o TrafficPolicyMergeOpts) Merge(other TrafficPolicyMergeOpts) TrafficPolic
 	if merged.Transformation == "" {
 		merged.Transformation = other.Transformation
 	}
-	if merged.ACL == "" {
-		merged.ACL = other.ACL
-	}
 
 	return merged
 }
