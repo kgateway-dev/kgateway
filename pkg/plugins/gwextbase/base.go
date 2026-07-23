@@ -43,7 +43,8 @@ func NewTrafficPolicyConstructor(
 }
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter, enableAuthSucceededMetadata bool) ir.ProxyTranslationPass {
-	return trafficpolicy.NewGatewayTranslationPass(tctx, reporter, enableAuthSucceededMetadata)
+	// Gateway extensions do not set a server-side compression preference, so leave it empty.
+	return trafficpolicy.NewGatewayTranslationPass(tctx, reporter, enableAuthSucceededMetadata, "")
 }
 
 // ResolveExtGrpcService resolves a gateway extension gRPC service by looking up the backend reference
