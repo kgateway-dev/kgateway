@@ -101,7 +101,7 @@ dockers:
     build_flag_templates:
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
-      - "--build-arg=BASE_IMAGE={{ .Env.ALPINE_BASE_IMAGE }}"
+      - "--build-arg=BASE_IMAGE={{ .Env.DISTROLESS_BASE_IMAGE }}"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:arm64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:arm64,mode=max,ignore-error=true"
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
@@ -115,7 +115,7 @@ dockers:
     build_flag_templates:
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
-      - "--build-arg=BASE_IMAGE={{ .Env.ALPINE_BASE_IMAGE }}"
+      - "--build-arg=BASE_IMAGE={{ .Env.DISTROLESS_BASE_IMAGE }}"
       - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:amd64"
       - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/sds-cache:amd64,mode=max,ignore-error=true"
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
