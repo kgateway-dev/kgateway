@@ -202,7 +202,7 @@ func hasCompressorNamed(entries []compressorEntry, filterName string) bool {
 // token clients use in Accept-Encoding.
 func parseCompressionPreference(pref string) []kgateway.CompressionLibrary {
 	var out []kgateway.CompressionLibrary
-	for _, tok := range strings.Split(pref, ",") {
+	for tok := range strings.SplitSeq(pref, ",") {
 		switch strings.ToLower(strings.TrimSpace(tok)) {
 		case "gzip":
 			out = append(out, kgateway.CompressionGzip)
@@ -218,10 +218,10 @@ func parseCompressionPreference(pref string) []kgateway.CompressionLibrary {
 // orderCompressorsByPreference returns a copy of entries ordered so the most preferred codec is
 // last, and sets choose_first on every codec named in the preference. Envoy picks the last
 // choose_first codec the client accepts, so the most preferred accepted codec wins when
-// Accept-Encoding weights are equal. Codecs absent from the preference keep choose_first unset and
+// Accept-Encoding weights are equal. Missing codecs from the preference keep choose_first unset and
 // sort first, so they fall back to the client's order.
 func orderCompressorsByPreference(entries []compressorEntry, pref []kgateway.CompressionLibrary) []compressorEntry {
-	// rank is higher for more preferred codecs. Codecs absent from the preference get 0 and sort first.
+	// rank is higher for more preferred codecs. Missing codecs get 0 and sort first.
 	rank := make(map[kgateway.CompressionLibrary]int, len(pref))
 	for i, l := range pref {
 		rank[l] = len(pref) - i

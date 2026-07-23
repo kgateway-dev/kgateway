@@ -265,7 +265,7 @@ type trafficPolicyPluginGwPass struct {
 	bufferInChain            map[string]*bufferv3.Buffer
 	compressorInChain        map[string][]compressorEntry
 	decompressorInChain      map[string][]decompressorEntry
-	// determines the gateway-wide response codec order used in case of tie in client side.
+	// determines the gateway-wide response codec order used in case of codec weight tie in client side.
 	// Empty means no server preference.
 	compressionPreference []kgateway.CompressionLibrary
 	basicAuthInChain      map[string]*envoy_basic_auth_v3.BasicAuth
