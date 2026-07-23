@@ -11,17 +11,16 @@ var _ = Describe("Regex", func() {
 	It("should create regex with default program size", func() {
 		regex := NewRegexWithProgramSize("foo", nil)
 		Expect(regex.GetRegex()).To(Equal("foo"))
-		Expect(regex.GetGoogleRe2().GetMaxProgramSize()).To(BeNil()) //nolint:staticcheck // GetGoogleRe2 and GetMaxProgramSize are deprecated
-
-		// regex = NewRegex(nil, "foo")
-		// Expect(regex.GetRegex()).To(Equal("foo"))
-		// Expect(regex.GetGoogleRe2().GetMaxProgramSize()).To(BeNil())
+		// GoogleRe2 is no longer set; Envoy defaults to RE2 engine
+		Expect(regex.GetEngineType()).To(BeNil())
 	})
 	It("should create regex with a specific program size", func() {
 		var number uint32
 		number = 123
+		// programsize is accepted for API compatibility but ignored (MaxProgramSize is deprecated by Envoy)
 		regex := NewRegexWithProgramSize("foo", &number)
 		Expect(regex.GetRegex()).To(Equal("foo"))
-		Expect(regex.GetGoogleRe2().GetMaxProgramSize().GetValue()).To(Equal(number)) //nolint:staticcheck // GetGoogleRe2 and GetMaxProgramSize are deprecated
+		// GoogleRe2 is no longer set; Envoy defaults to RE2 engine
+		Expect(regex.GetEngineType()).To(BeNil())
 	})
 })
