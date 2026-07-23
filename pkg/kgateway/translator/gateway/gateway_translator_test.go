@@ -2377,7 +2377,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("listener policy isolation across ListenerSets sharing a port", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFiles: "listener-sets/shared-port-policy-isolation.yaml",
+			inputFile:  "listener-sets/shared-port-policy-isolation.yaml",
 			outputFile: "listener-sets/shared-port-policy-isolation.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -2388,7 +2388,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("route-attached policy ancestor across ListenerSets sharing a port", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFiles: "listener-sets/shared-port-route-policy-ancestor.yaml",
+			inputFile:  "listener-sets/shared-port-route-policy-ancestor.yaml",
 			outputFile: "listener-sets/shared-port-route-policy-ancestor.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -2399,7 +2399,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("listener policy isolation across listeners on the same Gateway sharing a port", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFiles: "traffic-policy/shared-port-policy-isolation-same-parent.yaml",
+			inputFile:  "traffic-policy/shared-port-policy-isolation-same-parent.yaml",
 			outputFile: "traffic-policy/shared-port-policy-isolation-same-parent.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
