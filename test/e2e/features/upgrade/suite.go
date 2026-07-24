@@ -87,18 +87,22 @@ func (s *testingSuite) applyManifests() func() {
 		Manifests: []string{setupManifest, defaults.HttpbinManifest},
 	})
 
-	// Scale httpbin up to 2 replicas so the #14471 churn check (below, in TestUpgrade) restarts
-	// a Deployment that actually has more than one endpoint -- scoped to this suite only, since
-	// defaults.HttpbinManifest is shared by many other suites that assume a single replica.
-	err := s.TestInstallation.Actions.Kubectl().Scale(
-		s.Ctx, defaults.HttpbinDeployment.GetNamespace(), "deployment/"+defaults.HttpbinDeployment.GetName(), 2)
-	s.Require().NoError(err, "failed to scale httpbin to 2 replicas")
-
 	return func() {
 		s.DeleteManifests(&base.TestCase{
 			Manifests: []string{setupManifest, defaults.HttpbinManifest},
 		})
 	}
+}
+
+// scaleHttpbin scales httpbin to the given replica count. Called just before the #14471 churn
+// check (not from applyManifests) so it never adds latency to the earlier baseline
+// connectivity check -- and scoped to this suite only, since defaults.HttpbinManifest is
+// shared by many other suites that assume a single replica.
+func (s *testingSuite) scaleHttpbin(replicas uint) {
+	s.T().Helper()
+	err := s.TestInstallation.Actions.Kubectl().Scale(
+		s.Ctx, defaults.HttpbinDeployment.GetNamespace(), "deployment/"+defaults.HttpbinDeployment.GetName(), replicas)
+	s.Require().NoError(err, "failed to scale httpbin to %d replicas", replicas)
 }
 
 // verifyRequestWithTransformation verifies that the TrafficPolicy in setup.yaml is being applied.
@@ -234,6 +238,7 @@ func (s *testingSuite) TestUpgrade() {
 	// logs) actually converged on the new endpoints and dropped the old ones. If the control
 	// plane withheld the whole EDS response, this config dump would keep showing the
 	// pre-churn IPs and never show the post-churn ones.
+	s.scaleHttpbin(2)
 	s.T().Logf("restarting httpbin backend...")
 	beforeIPs := s.httpbinPodIPs()
 	err = s.TestInstallation.Actions.Kubectl().RestartDeploymentAndWait(
