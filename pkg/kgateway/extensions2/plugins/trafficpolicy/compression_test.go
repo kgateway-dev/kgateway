@@ -115,6 +115,7 @@ func TestSettingsHash(t *testing.T) {
 	)
 }
 
+//nolint:modernize
 func u32(v uint32) *uint32 { return &v }
 
 func TestDecompressionIREquals(t *testing.T) {
