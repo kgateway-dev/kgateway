@@ -25,6 +25,9 @@ kind: Deployment
 metadata:
   name: httpbin
   namespace: default
+  labels:
+    app.kubernetes.io/name: httpbin
+    version: v1
 spec:
   replicas: 1
   selector:
