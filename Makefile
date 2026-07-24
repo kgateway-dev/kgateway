@@ -47,6 +47,7 @@ OSV_SCAN_IMAGE_PLATFORM ?= linux/$(GOARCH)
 # Set to any value to read images from the local Docker daemon (docker save) instead of pulling from a registry.
 # Used by osv-scan-local-images; not set by default so osv-scan always pulls fresh remote images.
 OSV_SCAN_LOCAL ?=
+ROLLING_MAIN_VERSION ?= v2.3.0-main
 
 .PHONY: build-tools-image
 build-tools-image: ## Build the devcontainer build-tools image locally (override BUILD_TOOLS_IMAGE=... to change tag)
@@ -350,7 +351,7 @@ osv-scan: ## Run OSV-Scanner locally for the current branch and write JSON/SARIF
 		-v "$(OUTPUT_DIR):/output" \
 		"$(OSV_SCANNER_IMAGE)" \
 		-R "$$(id -u):$$(id -g)" "/output/osv/$$safe_branch" > /dev/null; \
-	if [[ "$$scanner_status" -ne 0 || "$$reporter_status" -ne 0 ]]; then \
+	if [[ "$$scanner_status" -ne 0 || "$$reporter_status" -ne 0 || "$$image_scanner_status" -ne 0 || "$$image_reporter_status" -ne 0 ]]; then \
 		echo "OSV scan completed and wrote results despite non-zero scanner/reporter exit status."; \
 	fi; \
 	echo "JSON: $$out_dir/results.json"; \
