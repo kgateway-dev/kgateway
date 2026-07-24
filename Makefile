@@ -47,7 +47,6 @@ OSV_SCAN_IMAGE_PLATFORM ?= linux/$(GOARCH)
 # Set to any value to read images from the local Docker daemon (docker save) instead of pulling from a registry.
 # Used by osv-scan-local-images; not set by default so osv-scan always pulls fresh remote images.
 OSV_SCAN_LOCAL ?=
-ROLLING_MAIN_VERSION ?= v2.3.0-main
 
 .PHONY: build-tools-image
 build-tools-image: ## Build the devcontainer build-tools image locally (override BUILD_TOOLS_IMAGE=... to change tag)
@@ -356,10 +355,6 @@ osv-scan: ## Run OSV-Scanner locally for the current branch and write JSON/SARIF
 	fi; \
 	echo "JSON: $$out_dir/results.json"; \
 	echo "SARIF: $$out_dir/results.sarif"
-
-.PHONY: osv-scan-latest-main-images
-osv-scan-latest-main-images:
-	$(MAKE) osv-scan OSV_SCAN_IMAGES="ghcr.io/kgateway-dev/kgateway:$(ROLLING_MAIN_VERSION) ghcr.io/kgateway-dev/sds:$(ROLLING_MAIN_VERSION) ghcr.io/kgateway-dev/envoy-wrapper:$(ROLLING_MAIN_VERSION)"
 
 .PHONY: osv-scan-local-images
 osv-scan-local-images: ## Build images from the current branch and run OSV-Scanner against them
