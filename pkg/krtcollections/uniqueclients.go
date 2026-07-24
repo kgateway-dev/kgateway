@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -13,6 +14,7 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -88,7 +90,13 @@ type callbacksCollection struct {
 	clients          map[int64]ConnectedClient
 	uniqClientsCount map[string]uint64
 	uniqClients      map[string]ir.UniquelyConnectedClient
-	stateLock        sync.RWMutex
+	// knownLocalCluster records, per unique client resource name, whether that client's own
+	// EDS subscription has named its expected local-cluster resource (see
+	// ir.UniquelyConnectedClient.LocalClusterInfo). Old Envoys never name it (no matching
+	// static bootstrap cluster), so entries only ever go false -> true as real requests are
+	// observed; see NewPerClientLocalClusterEndpoints for why this must never be assumed true.
+	knownLocalCluster map[string]bool
+	stateLock         sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
 }
@@ -163,12 +171,13 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
 	return func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniquelyConnectedClient] {
 		trigger := krt.NewRecomputeTrigger(true)
 		col := &callbacksCollection{
-			logger:           logger,
-			augmentedPods:    augmentedPods,
-			clients:          make(map[int64]ConnectedClient),
-			uniqClientsCount: make(map[string]uint64),
-			uniqClients:      make(map[string]ir.UniquelyConnectedClient),
-			trigger:          trigger,
+			logger:            logger,
+			augmentedPods:     augmentedPods,
+			clients:           make(map[int64]ConnectedClient),
+			uniqClientsCount:  make(map[string]uint64),
+			uniqClients:       make(map[string]ir.UniquelyConnectedClient),
+			knownLocalCluster: make(map[string]bool),
+			trigger:           trigger,
 		}
 
 		callbacks.collection.Store(col)
@@ -231,6 +240,7 @@ func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 			ucc := x.uniqClients[resourceName]
 			delete(x.uniqClientsCount, resourceName)
 			delete(x.uniqClients, resourceName)
+			delete(x.knownLocalCluster, resourceName)
 			return &ucc
 		}
 	}
@@ -339,6 +349,7 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	if ucc == "" {
 		return fmt.Errorf("got empty unique client name for sid %d", sid)
 	}
+	x.observeLocalClusterRequest(ucc, r)
 
 	nodeMd := r.GetNode().GetMetadata()
 	if nodeMd == nil {
@@ -369,10 +380,41 @@ func (x *callbacksCollection) getClients() []ir.UniquelyConnectedClient {
 	x.stateLock.RLock()
 	defer x.stateLock.RUnlock()
 	clients := make([]ir.UniquelyConnectedClient, 0, len(x.uniqClients))
-	for _, c := range x.uniqClients {
+	for name, c := range x.uniqClients {
+		c.KnowsLocalCluster = x.knownLocalCluster[name]
 		clients = append(clients, c)
 	}
 	return clients
+}
+
+// observeLocalClusterRequest records whether ucc's own EDS subscription has named its
+// expected local-cluster resource (see ir.UniquelyConnectedClient.LocalClusterInfo). It only
+// ever transitions a client from unknown to known, and only triggers recomputation on that
+// transition — repeat ACKs on an already-known client are a no-op.
+func (x *callbacksCollection) observeLocalClusterRequest(uccName string, r *envoy_service_discovery_v3.DiscoveryRequest) {
+	if r.GetTypeUrl() != resource.EndpointType {
+		return
+	}
+
+	x.stateLock.Lock()
+	defer x.stateLock.Unlock()
+
+	if x.knownLocalCluster[uccName] {
+		return
+	}
+	ucc, ok := x.uniqClients[uccName]
+	if !ok {
+		return
+	}
+	localClusterName, _, _ := ucc.LocalClusterInfo()
+	if localClusterName == "" {
+		return
+	}
+	if !slices.Contains(r.GetResourceNames(), localClusterName) {
+		return
+	}
+	x.knownLocalCluster[uccName] = true
+	x.trigger.TriggerRecomputation()
 }
 
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the

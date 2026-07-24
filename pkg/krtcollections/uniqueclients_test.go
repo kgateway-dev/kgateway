@@ -7,6 +7,7 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -246,6 +247,83 @@ func TestUniqueClients(t *testing.T) {
 			}, "5s").Should(BeEmpty())
 		})
 	}
+}
+
+// TestUniqueClientsLocalClusterCapabilityGating guards against #14471: kgateway must not
+// assume a connected client (Envoy) knows about the per-gateway "local cluster" EDS resource
+// until that client's own EDS subscription actually names it. Old Envoys never do (no matching
+// static bootstrap cluster), and handing them the resource anyway makes go-control-plane's ADS
+// "superset" check withhold their entire EDS response, not just the local cluster.
+func TestUniqueClientsLocalClusterCapabilityGating(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+
+	inputs := []any{
+		&corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "podname",
+				Namespace: "ns",
+				Labels: map[string]string{
+					wellknown.GatewayNameLabel: "gw",
+				},
+			},
+			Spec: corev1.PodSpec{NodeName: "node"},
+		},
+		&corev1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "node",
+				Labels: map[string]string{
+					corev1.LabelTopologyRegion: "region",
+					corev1.LabelTopologyZone:   "zone",
+				},
+			},
+		},
+	}
+	mock := krttest.NewMock(t, inputs)
+	nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
+	pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
+	nodes.WaitUntilSynced(context.Background().Done())
+	pods.WaitUntilSynced(context.Background().Done())
+
+	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	uccCol := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
+	uccCol.WaitUntilSynced(context.Background().Done())
+
+	node := &envoycorev3.Node{
+		Id: "podname.ns",
+		Metadata: &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				xds.RoleKey: structpb.NewStringValue(wellknown.GatewayApiProxyValue + "~best-proxy-role"),
+			},
+		},
+	}
+
+	// Old-style client: its EDS subscription names its normal backend cluster, but never the
+	// local-cluster resource (its bootstrap has no matching static cluster to ask for).
+	err := cb.OnStreamRequest(1, &envoy_service_discovery_v3.DiscoveryRequest{
+		Node:          node,
+		TypeUrl:       resource.EndpointType,
+		ResourceNames: []string{"some-backend-cluster"},
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	g.Eventually(uccCol.List).Should(HaveLen(1))
+	g.Consistently(func() bool {
+		return uccCol.List()[0].KnowsLocalCluster
+	}).Should(BeFalse(), "must not assume support before the client actually asks for the resource")
+
+	// New-style client on the same stream now also names the local cluster resource.
+	err = cb.OnStreamRequest(1, &envoy_service_discovery_v3.DiscoveryRequest{
+		Node:          node,
+		TypeUrl:       resource.EndpointType,
+		ResourceNames: []string{"some-backend-cluster", "gw.ns"},
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	g.Eventually(func() bool {
+		list := uccCol.List()
+		return len(list) == 1 && list[0].KnowsLocalCluster
+	}).Should(BeTrue())
 }
 
 func TestNormalizeGatewayRole(t *testing.T) {
