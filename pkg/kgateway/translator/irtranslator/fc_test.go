@@ -202,3 +202,65 @@ func TestFilterChainsInvalidIP(t *testing.T) {
 	)
 	assert.Nil(t, envoyListener, "expected nil listener for invalid IP bind address")
 }
+
+func TestFilterChains_UnsupportedAttachedPolicyStatus(t *testing.T) {
+	ctx := context.Background()
+
+	translator := irtranslator.Translator{}
+
+	unsupportedGK := schema.GroupKind{
+		Group: "unsupported.kgateway.dev",
+		Kind:  "UnsupportedPolicy",
+	}
+
+	policyRef := &ir.AttachedPolicyRef{
+		Group:     unsupportedGK.Group,
+		Kind:      unsupportedGK.Kind,
+		Namespace: "default",
+		Name:      "my-unsupported-policy",
+	}
+
+	attachedPolicies := ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			unsupportedGK: {
+				{
+					PolicyRef: policyRef,
+				},
+			},
+		},
+	}
+
+	gateway := ir.GatewayIR{SourceObject: &ir.Gateway{Obj: &gwv1.Gateway{}}}
+	listener := ir.ListenerIR{
+		BindAddress:      "0.0.0.0",
+		BindPort:         8080,
+		AttachedPolicies: attachedPolicies,
+		HttpFilterChain: []ir.HttpFilterChainIR{{
+			FilterChainCommon: ir.FilterChainCommon{
+				FilterChainName: "httpchain",
+			},
+		}},
+	}
+
+	reportMap := reports.NewReportMap()
+	rpt := reports.NewReporter(&reportMap)
+
+	_, _ = translator.ComputeListener(
+		ctx,
+		irtranslator.TranslationPassPlugins{},
+		gateway,
+		listener,
+		rpt,
+	)
+
+	key := reporter.PolicyKey{
+		Group:     unsupportedGK.Group,
+		Kind:      unsupportedGK.Kind,
+		Namespace: "default",
+		Name:      "my-unsupported-policy",
+	}
+	policyStatus := reportMap.BuildPolicyStatus(ctx, key, "kgateway", gwv1.PolicyStatus{})
+	require.NotNil(t, policyStatus, "policy status should be generated")
+	require.NotEmpty(t, policyStatus.Ancestors, "policy status should have ancestor entry")
+	require.NotEmpty(t, policyStatus.Ancestors[0].Conditions, "policy status should set Condition on ancestor")
+}

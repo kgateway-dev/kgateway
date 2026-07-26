@@ -219,7 +219,7 @@ func (t *Translator) runListenerPlugins(
 		pols := attachedPolicies.Policies[gk]
 		pass := pass[gk]
 		if pass == nil {
-			// TODO: report user error - they attached a non http policy
+			reportUnsupportedPolicyAcceptanceStatus(reporter, l.PolicyAncestorRef, pols...)
 			continue
 		}
 		reportPolicyAcceptanceStatus(reporter, l.PolicyAncestorRef, pols...)

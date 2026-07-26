@@ -214,7 +214,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 		pols := attachedPolicies.Policies[gk]
 		pass := h.pluginPass[gk]
 		if pass == nil {
-			// TODO: report user error - they attached a non http policy
+			reportUnsupportedPolicyAcceptanceStatus(h.reporter, h.policyAncestorRef, pols...)
 			continue
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.policyAncestorRef, pols...)

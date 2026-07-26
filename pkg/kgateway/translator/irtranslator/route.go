@@ -509,7 +509,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		pols := attachedPolicies.Policies[gk]
 		pass := h.pluginPass[gk]
 		if pass == nil {
-			// TODO: should never happen, log error and report condition
+			reportUnsupportedPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 			continue
 		}
 		pctx := &ir.RouteContext{
@@ -578,7 +578,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 		pols := in.AttachedPolicies.Policies[gk]
 		pass := h.pluginPass[gk]
 		if pass == nil {
-			// TODO: should never happen, log error and report condition
+			reportUnsupportedPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 			continue
 		}
 		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)

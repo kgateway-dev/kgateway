@@ -57,6 +57,33 @@ func reportPolicyAcceptanceStatus(
 	}
 }
 
+func reportUnsupportedPolicyAcceptanceStatus(
+	rp reporter.Reporter,
+	ancestorRef gwv1.ParentReference,
+	policies ...ir.PolicyAtt,
+) {
+	for _, policy := range policies {
+		if policy.PolicyRef == nil {
+			continue
+		}
+
+		key := reporter.PolicyKey{
+			Group:     policy.PolicyRef.Group,
+			Kind:      policy.PolicyRef.Kind,
+			Namespace: policy.PolicyRef.Namespace,
+			Name:      policy.PolicyRef.Name,
+		}
+		r := rp.Policy(key, policy.Generation).AncestorRef(ancestorRef)
+		r.SetCondition(reporter.PolicyCondition{
+			Type:               string(shared.PolicyConditionAccepted),
+			Status:             metav1.ConditionFalse,
+			Reason:             string(shared.PolicyReasonInvalid),
+			Message:            "Attached policy type is not supported for this attachment target",
+			ObservedGeneration: policy.Generation,
+		})
+	}
+}
+
 func reportPolicyAttachmentStatus(
 	rp reporter.Reporter,
 	ancestorRef gwv1.ParentReference,
