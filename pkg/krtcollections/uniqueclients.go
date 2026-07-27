@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -14,7 +13,6 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -90,13 +88,7 @@ type callbacksCollection struct {
 	clients          map[int64]ConnectedClient
 	uniqClientsCount map[string]uint64
 	uniqClients      map[string]ir.UniquelyConnectedClient
-	// knownLocalCluster records, per unique client resource name, whether that client's own
-	// EDS subscription has named its expected local-cluster resource (see
-	// ir.UniquelyConnectedClient.LocalClusterInfo). Old Envoys never name it (no matching
-	// static bootstrap cluster), so entries only ever go false -> true as real requests are
-	// observed; see NewPerClientLocalClusterEndpoints for why this must never be assumed true.
-	knownLocalCluster map[string]bool
-	stateLock         sync.RWMutex
+	stateLock        sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
 }
@@ -171,13 +163,12 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
 	return func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniquelyConnectedClient] {
 		trigger := krt.NewRecomputeTrigger(true)
 		col := &callbacksCollection{
-			logger:            logger,
-			augmentedPods:     augmentedPods,
-			clients:           make(map[int64]ConnectedClient),
-			uniqClientsCount:  make(map[string]uint64),
-			uniqClients:       make(map[string]ir.UniquelyConnectedClient),
-			knownLocalCluster: make(map[string]bool),
-			trigger:           trigger,
+			logger:           logger,
+			augmentedPods:    augmentedPods,
+			clients:          make(map[int64]ConnectedClient),
+			uniqClientsCount: make(map[string]uint64),
+			uniqClients:      make(map[string]ir.UniquelyConnectedClient),
+			trigger:          trigger,
 		}
 
 		callbacks.collection.Store(col)
@@ -240,7 +231,6 @@ func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 			ucc := x.uniqClients[resourceName]
 			delete(x.uniqClientsCount, resourceName)
 			delete(x.uniqClients, resourceName)
-			delete(x.knownLocalCluster, resourceName)
 			return &ucc
 		}
 	}
@@ -302,6 +292,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 		x.logger.Debug("adding xds client", "locality", locality, "ns", ns, "labels", labels, "role", peer.role)
 		// TODO: modify request to include the label that are relevant for the client?
 		ucc := ir.NewUniquelyConnectedClient(peer.role, ns, labels, locality)
+		ucc.KnowsLocalCluster = envoyKnowsLocalCluster(r.GetNode())
 		c = newConnectedClient(ucc.ResourceName())
 		x.clients[sid] = c
 		currentUnique := x.uniqClientsCount[ucc.ResourceName()]
@@ -349,7 +340,6 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	if ucc == "" {
 		return fmt.Errorf("got empty unique client name for sid %d", sid)
 	}
-	x.observeLocalClusterRequest(ucc, r)
 
 	nodeMd := r.GetNode().GetMetadata()
 	if nodeMd == nil {
@@ -380,41 +370,10 @@ func (x *callbacksCollection) getClients() []ir.UniquelyConnectedClient {
 	x.stateLock.RLock()
 	defer x.stateLock.RUnlock()
 	clients := make([]ir.UniquelyConnectedClient, 0, len(x.uniqClients))
-	for name, c := range x.uniqClients {
-		c.KnowsLocalCluster = x.knownLocalCluster[name]
+	for _, c := range x.uniqClients {
 		clients = append(clients, c)
 	}
 	return clients
-}
-
-// observeLocalClusterRequest records whether ucc's own EDS subscription has named its
-// expected local-cluster resource (see ir.UniquelyConnectedClient.LocalClusterInfo). It only
-// ever transitions a client from unknown to known, and only triggers recomputation on that
-// transition — repeat ACKs on an already-known client are a no-op.
-func (x *callbacksCollection) observeLocalClusterRequest(uccName string, r *envoy_service_discovery_v3.DiscoveryRequest) {
-	if r.GetTypeUrl() != resource.EndpointType {
-		return
-	}
-
-	x.stateLock.Lock()
-	defer x.stateLock.Unlock()
-
-	if x.knownLocalCluster[uccName] {
-		return
-	}
-	ucc, ok := x.uniqClients[uccName]
-	if !ok {
-		return
-	}
-	localClusterName, _, _ := ucc.LocalClusterInfo()
-	if localClusterName == "" {
-		return
-	}
-	if !slices.Contains(r.GetResourceNames(), localClusterName) {
-		return
-	}
-	x.knownLocalCluster[uccName] = true
-	x.trigger.TriggerRecomputation()
 }
 
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
@@ -487,15 +446,19 @@ const (
 	minEnvoyPatchVersion = 2
 )
 
-func logAndCheckEnvoyVersion(logger *slog.Logger, node *envoycorev3.Node) error {
-	if node == nil {
-		return nil
-	}
+// localClusterMinEnvoyMinor is the minimum Envoy minor version (under major 1) whose bootstrap
+// is expected to declare the static "local cluster" (see ir.UniquelyConnectedClient.KnowsLocalCluster).
+//
+// NOTE: this is a weaker signal than it looks. It assumes Envoy's own version and kgateway's
+// bootstrap-rendering version always move together, which only holds for deployer-managed
+// gateways on the exact version pairing this constant was tuned for. It breaks for
+// self-managed gateways (operator can run any Envoy binary against any hand-authored
+// bootstrap, independent of this version), and silently goes stale if a future kgateway
+// release changes what the bootstrap declares without bumping the pinned Envoy version.
+const localClusterMinEnvoyMinor = 38
 
-	versionStr := "unknown"
-	var major, minor, patch uint32
-	knownVersion := false
-
+func parseEnvoyVersion(node *envoycorev3.Node) (major, minor, patch uint32, versionStr string, known bool) {
+	versionStr = "unknown"
 	switch v := node.GetUserAgentVersionType().(type) {
 	case *envoycorev3.Node_UserAgentBuildVersion:
 		sv := v.UserAgentBuildVersion.GetVersion()
@@ -504,12 +467,20 @@ func logAndCheckEnvoyVersion(logger *slog.Logger, node *envoycorev3.Node) error 
 			minor = sv.GetMinorNumber()
 			patch = sv.GetPatch()
 			versionStr = fmt.Sprintf("%d.%d.%d", major, minor, patch)
-			knownVersion = true
+			known = true
 		}
 	case *envoycorev3.Node_UserAgentVersion:
 		versionStr = v.UserAgentVersion
 	}
+	return major, minor, patch, versionStr, known
+}
 
+func logAndCheckEnvoyVersion(logger *slog.Logger, node *envoycorev3.Node) error {
+	if node == nil {
+		return nil
+	}
+
+	major, minor, patch, versionStr, knownVersion := parseEnvoyVersion(node)
 	logger.Info("envoy proxy connected", "version", versionStr, "node_id", node.GetId(), "user_agent", node.GetUserAgentName())
 
 	if !knownVersion {
@@ -521,6 +492,17 @@ func logAndCheckEnvoyVersion(logger *slog.Logger, node *envoycorev3.Node) error 
 			versionStr, minEnvoyMinorVersion, minEnvoyPatchVersion)
 	}
 	return nil
+}
+
+// envoyKnowsLocalCluster reports whether the connecting Envoy's own reported version is new
+// enough that its bootstrap is expected to declare the local-cluster static cluster (see
+// localClusterMinEnvoyMinor for the caveats behind this signal).
+func envoyKnowsLocalCluster(node *envoycorev3.Node) bool {
+	major, minor, _, _, known := parseEnvoyVersion(node)
+	if !known {
+		return false
+	}
+	return major > 1 || (major == 1 && minor >= localClusterMinEnvoyMinor)
 }
 
 func getRef(node *envoycorev3.Node) types.NamespacedName {

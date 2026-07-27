@@ -34,12 +34,12 @@ type UniquelyConnectedClient struct {
 	Locality  PodLocality
 	Namespace string
 
-	// KnowsLocalCluster reports whether this client's own EDS subscription has
-	// named its expected LocalClusterName() resource at least once. Old Envoys
-	// have no matching static cluster in their bootstrap and can never name it,
-	// so this must default to false and only ever be set by observing a real
-	// request (see pkg/krtcollections/uniqueclients.go) — never assume support.
-	// Without this gate, go-control-plane's ADS "superset" check
+	// KnowsLocalCluster reports whether this client's Envoy build is new enough to have
+	// LocalClusterName() declared as a static cluster in its bootstrap (see
+	// pkg/krtcollections/uniqueclients.go's envoyKnowsLocalCluster, which derives this from
+	// the connecting Node's reported Envoy version at connect time). Old Envoys have no
+	// matching static cluster in their bootstrap and can never subscribe to it, so this must
+	// default to false. Without this gate, go-control-plane's ADS "superset" check
 	// (github.com/envoyproxy/go-control-plane pkg/cache/v3/simple.go) withholds
 	// the *entire* EDS response to a client that doesn't ask for every resource
 	// in the snapshot, breaking all endpoint updates for that client, not just

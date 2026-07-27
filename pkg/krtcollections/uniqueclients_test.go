@@ -7,7 +7,7 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -249,81 +249,58 @@ func TestUniqueClients(t *testing.T) {
 	}
 }
 
-// TestUniqueClientsLocalClusterCapabilityGating guards against #14471: kgateway must not
-// assume a connected client (Envoy) knows about the per-gateway "local cluster" EDS resource
-// until that client's own EDS subscription actually names it. Old Envoys never do (no matching
-// static bootstrap cluster), and handing them the resource anyway makes go-control-plane's ADS
-// "superset" check withhold their entire EDS response, not just the local cluster.
-func TestUniqueClientsLocalClusterCapabilityGating(t *testing.T) {
+// TestUniqueClientsLocalClusterVersionGating guards against #14471: kgateway must not assume a
+// connected client (Envoy) knows about the per-gateway "local cluster" EDS resource unless its
+// reported Envoy version is new enough to have that static cluster in its bootstrap. Handing an
+// old Envoy the resource anyway makes go-control-plane's ADS "superset" check withhold its
+// entire EDS response, not just the local cluster.
+func TestUniqueClientsLocalClusterVersionGating(t *testing.T) {
 	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
 	g := NewWithT(t)
 
-	inputs := []any{
-		&corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "podname",
-				Namespace: "ns",
-				Labels: map[string]string{
-					wellknown.GatewayNameLabel: "gw",
-				},
-			},
-			Spec: corev1.PodSpec{NodeName: "node"},
-		},
-		&corev1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "node",
-				Labels: map[string]string{
-					corev1.LabelTopologyRegion: "region",
-					corev1.LabelTopologyZone:   "zone",
-				},
-			},
-		},
-	}
-	mock := krttest.NewMock(t, inputs)
-	nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-	pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
-	nodes.WaitUntilSynced(context.Background().Done())
-	pods.WaitUntilSynced(context.Background().Done())
-
 	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
-	uccCol := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
+	uccCol := uccBuilder(context.Background(), krtutil.KrtOptions{}, nil)
 	uccCol.WaitUntilSynced(context.Background().Done())
 
-	node := &envoycorev3.Node{
-		Id: "podname.ns",
-		Metadata: &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				xds.RoleKey: structpb.NewStringValue(wellknown.GatewayApiProxyValue + "~best-proxy-role"),
+	nodeWithVersion := func(role string, major, minor, patch uint32) *envoycorev3.Node {
+		return &envoycorev3.Node{
+			Id: role + ".ns",
+			Metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					xds.RoleKey: structpb.NewStringValue(wellknown.GatewayApiProxyValue + "~" + role),
+				},
 			},
-		},
+			UserAgentVersionType: &envoycorev3.Node_UserAgentBuildVersion{
+				UserAgentBuildVersion: &envoycorev3.BuildVersion{
+					Version: &typev3.SemanticVersion{MajorNumber: major, MinorNumber: minor, Patch: patch},
+				},
+			},
+		}
 	}
 
-	// Old-style client: its EDS subscription names its normal backend cluster, but never the
-	// local-cluster resource (its bootstrap has no matching static cluster to ask for).
+	// Old-style client: its Envoy version predates the local-cluster feature (no matching
+	// static bootstrap cluster to ask for).
 	err := cb.OnStreamRequest(1, &envoy_service_discovery_v3.DiscoveryRequest{
-		Node:          node,
-		TypeUrl:       resource.EndpointType,
-		ResourceNames: []string{"some-backend-cluster"},
+		Node: nodeWithVersion("old-proxy", 1, 37, 5),
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 
-	g.Eventually(uccCol.List).Should(HaveLen(1))
-	g.Consistently(func() bool {
-		return uccCol.List()[0].KnowsLocalCluster
-	}).Should(BeFalse(), "must not assume support before the client actually asks for the resource")
-
-	// New-style client on the same stream now also names the local cluster resource.
-	err = cb.OnStreamRequest(1, &envoy_service_discovery_v3.DiscoveryRequest{
-		Node:          node,
-		TypeUrl:       resource.EndpointType,
-		ResourceNames: []string{"some-backend-cluster", "gw.ns"},
+	// New-style client: its Envoy version is new enough to have the local-cluster resource in
+	// its bootstrap.
+	err = cb.OnStreamRequest(2, &envoy_service_discovery_v3.DiscoveryRequest{
+		Node: nodeWithVersion("new-proxy", 1, 38, 0),
 	})
 	g.Expect(err).NotTo(HaveOccurred())
 
-	g.Eventually(func() bool {
-		list := uccCol.List()
-		return len(list) == 1 && list[0].KnowsLocalCluster
-	}).Should(BeTrue())
+	g.Eventually(uccCol.List).Should(HaveLen(2))
+	byRole := map[string]bool{}
+	for _, ucc := range uccCol.List() {
+		byRole[ucc.Role] = ucc.KnowsLocalCluster
+	}
+	g.Expect(byRole[wellknown.GatewayApiProxyValue+"~old-proxy"]).To(BeFalse(),
+		"an old Envoy version must not be assumed to know about the local cluster resource")
+	g.Expect(byRole[wellknown.GatewayApiProxyValue+"~new-proxy"]).To(BeTrue(),
+		"a new Envoy version should be recognized as knowing about the local cluster resource")
 }
 
 func TestNormalizeGatewayRole(t *testing.T) {
