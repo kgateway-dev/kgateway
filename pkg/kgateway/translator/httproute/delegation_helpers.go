@@ -134,10 +134,7 @@ func mergeParentChildRouteMatch(
 	childPathType, childPathValue := routeutils.ParsePath(child.Path)
 
 	if child.Path == nil {
-		child.Path = &gwv1.HTTPPathMatch{
-			Type:  new(childPathType),
-			Value: new(childPathValue),
-		}
+		child.Path = &gwv1.HTTPPathMatch{}
 	}
 	if parentPathType == gwv1.PathMatchRegularExpression {
 		// path.Join would mangle a regex (it normalizes slashes and strips
@@ -146,6 +143,7 @@ func mergeParentChildRouteMatch(
 		child.Path.Type = new(gwv1.PathMatchRegularExpression)
 	} else {
 		child.Path.Value = new(path.Join(parentPathValue, childPathValue))
+		child.Path.Type = new(childPathType)
 	}
 
 	// Inherit parent and child headers and query parameters while augmenting the merge

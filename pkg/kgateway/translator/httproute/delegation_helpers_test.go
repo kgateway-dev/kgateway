@@ -44,6 +44,38 @@ func TestMergeParentChildRouteMatchPath(t *testing.T) {
 			expectedType: gwv1.PathMatchExact,
 		},
 		{
+			name:         "nil parent path defaults to root PathPrefix",
+			parent:       &gwv1.HTTPRouteMatch{},
+			child:        pathMatch(gwv1.PathMatchPathPrefix, "/api"),
+			expectedPath: "/api",
+			expectedType: gwv1.PathMatchPathPrefix,
+		},
+		{
+			name: "nil parent path fields default to root PathPrefix",
+			parent: &gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{},
+			},
+			child:        pathMatch(gwv1.PathMatchExact, "/api"),
+			expectedPath: "/api",
+			expectedType: gwv1.PathMatchExact,
+		},
+		{
+			name:         "nil child path defaults to root PathPrefix",
+			parent:       pathMatch(gwv1.PathMatchPathPrefix, "/api"),
+			child:        &gwv1.HTTPRouteMatch{},
+			expectedPath: "/api",
+			expectedType: gwv1.PathMatchPathPrefix,
+		},
+		{
+			name:   "nil child path fields default to root PathPrefix",
+			parent: pathMatch(gwv1.PathMatchPathPrefix, "/api"),
+			child: &gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{},
+			},
+			expectedPath: "/api",
+			expectedType: gwv1.PathMatchPathPrefix,
+		},
+		{
 			name:         "RegularExpression parent and PathPrefix child stay open-ended",
 			parent:       pathMatch(gwv1.PathMatchRegularExpression, "^/teams/[^/]+(?:/.*)?$"),
 			child:        pathMatch(gwv1.PathMatchPathPrefix, "/members"),
