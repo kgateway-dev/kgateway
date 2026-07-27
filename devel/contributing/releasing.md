@@ -53,6 +53,8 @@ If the release branch **does not** exist, create one:
 - Update the OSV security scan workflow branch allowlist in [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml) to include the new release branch, and drop any branch that is no longer LTS.
   This workflow only scans an explicit set of branches, so each newly cut release branch must be added to both the scheduled scan matrix and the `workflow_dispatch` branch options.
   This allowlist is the single source of truth for which branches get scanned: tooling such as [`hack/osvtool`](../../hack/osvtool) and the `cve-bump` skill reads it rather than hardcoding the branch list, so keeping it current is all that is needed.
+  An allowlisted branch that does not exist in the repository being scanned, and a release image that has not been published to its registry, are reported as annotations and skipped rather than failing the run.
+  That keeps the scan green on forks, which carry only a subset of the release branches and publish no release images; on `kgateway-dev/kgateway` the same gaps are annotated at error level, so a newly cut branch that is missing a scan target is still visible in the run summary.
 
 ### OSV scan and CVE triage
 
