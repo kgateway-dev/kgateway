@@ -264,14 +264,7 @@ func roleFromRequest(r *envoy_service_discovery_v3.DiscoveryRequest) string {
 // derived from the namespace and gateway name in labels.
 // If no gateway name is found, it returns originalRole unchanged.
 func NormalizeGatewayRole(originalRole, namespace string, labels map[string]string) string {
-	if labels == nil {
-		return originalRole
-	}
-
-	gwName := labels[wellknown.GatewayNameAnnotation]
-	if gwName == "" {
-		gwName = labels[wellknown.GatewayNameLabel]
-	}
+	gwName := ir.GatewayNameFromLabels(labels)
 	if gwName == "" {
 		return originalRole
 	}
@@ -279,20 +272,19 @@ func NormalizeGatewayRole(originalRole, namespace string, labels map[string]stri
 	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, namespace, gwName)
 }
 
-func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (ucName string, newStream, newUCC bool, err error) {
+func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (ucName string, newStream bool, err error) {
 	var pod *LocalityPod
 	// see if user wants to use pod locality info; this is only possible when podRef is set in getPeerInfo
 	if peer.podRef != nil {
 		k := krt.Named{Name: peer.podRef.Name, Namespace: peer.podRef.Namespace}.ResourceName()
 		pod = x.augmentedPods.GetKey(k)
 	}
-	addedNew := false
 	x.stateLock.Lock()
 	defer x.stateLock.Unlock()
 	c, ok := x.clients[sid]
 	if !ok {
 		if err := logAndCheckEnvoyVersion(x.logger, r.GetNode()); err != nil {
-			return "", false, false, err
+			return "", false, err
 		}
 		var locality ir.PodLocality
 		var ns string
@@ -300,7 +292,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 		if peer.podRef != nil {
 			if pod == nil {
 				// we need to use the pod locality info, so it's an error if we can't get the pod
-				return "", false, false, fmt.Errorf("pod not found for node %v", r.GetNode())
+				return "", false, fmt.Errorf("pod not found for node %v", r.GetNode())
 			} else {
 				locality = pod.Locality
 				ns = pod.Namespace
@@ -317,10 +309,9 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 		x.uniqClientsCount[ucc.ResourceName()] = currentUnique + 1
 		if currentUnique == 0 {
 			x.uniqClients[ucc.ResourceName()] = ucc
-			addedNew = true
 		}
 	}
-	return c.uniqueClientName, !ok, addedNew, nil
+	return c.uniqueClientName, !ok, nil
 }
 
 // OnStreamRequest is called once a request is received on a stream.
@@ -350,7 +341,7 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 }
 
 func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) error {
-	ucc, isNewStream, _, err := x.add(sid, r, peer)
+	ucc, isNewStream, err := x.add(sid, r, peer)
 	if err != nil {
 		x.logger.Debug("error processing xds client", "error", err)
 		return err
@@ -394,20 +385,20 @@ func (x *callbacksCollection) getClients() []ir.UniquelyConnectedClient {
 
 	// A bucket knows about the local cluster only if EVERY stream currently mapped to it has
 	// individually confirmed support -- a single un-confirmed sibling stream (sharing the
-	// bucket because pod-locality tracking is disabled) holds the whole bucket back.
-	bucketKnows := make(map[string]bool, len(x.uniqClients))
-	for name := range x.uniqClients {
-		bucketKnows[name] = true
-	}
+	// bucket because pod-locality tracking is disabled) holds the whole bucket back. Track
+	// only the buckets held back, so the (usually much larger) uniqClients map only needs one
+	// pass below instead of two.
+	unconfirmedBuckets := make(map[string]struct{})
 	for sid, c := range x.clients {
 		if !x.knownLocalClusterBySid[sid] {
-			bucketKnows[c.uniqueClientName] = false
+			unconfirmedBuckets[c.uniqueClientName] = struct{}{}
 		}
 	}
 
 	clients := make([]ir.UniquelyConnectedClient, 0, len(x.uniqClients))
 	for name, c := range x.uniqClients {
-		c.KnowsLocalCluster = bucketKnows[name]
+		_, unconfirmed := unconfirmedBuckets[name]
+		c.KnowsLocalCluster = !unconfirmed
 		clients = append(clients, c)
 	}
 	return clients
@@ -421,26 +412,37 @@ func (x *callbacksCollection) observeLocalClusterRequest(sid int64, uccName stri
 	if r.GetTypeUrl() != resource.EndpointType {
 		return
 	}
+	// tryConfirmLocalCluster's lock must be released before triggering recomputation: the
+	// registered collection handler (getClients) takes stateLock.RLock, and since
+	// sync.RWMutex isn't reentrant, calling TriggerRecomputation while still holding the
+	// write lock here would deadlock if it's ever invoked synchronously on this goroutine.
+	if x.tryConfirmLocalCluster(sid, uccName, r) {
+		x.trigger.TriggerRecomputation()
+	}
+}
 
+// tryConfirmLocalCluster marks sid as knowing about the local cluster if this request proves
+// it, returning whether a false -> true transition actually happened.
+func (x *callbacksCollection) tryConfirmLocalCluster(sid int64, uccName string, r *envoy_service_discovery_v3.DiscoveryRequest) bool {
 	x.stateLock.Lock()
 	defer x.stateLock.Unlock()
 
 	if x.knownLocalClusterBySid[sid] {
-		return
+		return false
 	}
 	ucc, ok := x.uniqClients[uccName]
 	if !ok {
-		return
+		return false
 	}
 	localClusterName, _, _ := ucc.LocalClusterInfo()
 	if localClusterName == "" {
-		return
+		return false
 	}
 	if !slices.Contains(r.GetResourceNames(), localClusterName) {
-		return
+		return false
 	}
 	x.knownLocalClusterBySid[sid] = true
-	x.trigger.TriggerRecomputation()
+	return true
 }
 
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the

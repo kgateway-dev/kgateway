@@ -47,15 +47,15 @@ func NewPerClientLocalClusterEndpoints(
 	})
 
 	endpoints := krt.NewCollection(uccs, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *UccWithEndpoints {
-		localClusterName, gatewayName, gatewayNamespace := ucc.LocalClusterInfo()
-		if localClusterName == "" || gatewayName == "" || gatewayNamespace == "" {
-			return nil
-		}
 		if !ucc.KnowsLocalCluster {
 			// Client's own EDS subscription has never named this resource (old Envoy with
 			// no matching static bootstrap cluster). Never emit it for this client: an
 			// unrequested resource in the snapshot makes go-control-plane's ADS "superset"
 			// check withhold the client's *entire* EDS response. See issue #14471.
+			return nil
+		}
+		localClusterName, gatewayName, gatewayNamespace := ucc.LocalClusterInfo()
+		if localClusterName == "" || gatewayName == "" || gatewayNamespace == "" {
 			return nil
 		}
 
