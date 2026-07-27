@@ -50,11 +50,10 @@ func init() {
 }
 
 // testingSuite validates that kgateway can be upgraded from a released version to the
-// locally-built chart. Each Test* method installs the released version fresh for itself in
-// SetupTest (and tears it back down via a registered cleanup) rather than sharing one
-// installation across every method in the suite -- otherwise whichever test method runs
-// second would actually be upgrading from whatever the first test method left behind, not
-// from the released version.
+// locally-built chart. The suite currently has a single Test* method (TestUpgrade); SetupTest
+// (rather than SetupSuite) installs the released version so that any future Test* method added
+// here gets its own fresh install and teardown instead of inheriting whatever the previous
+// method left behind.
 type testingSuite struct {
 	*base.BaseTestingSuite
 	fromVersion string

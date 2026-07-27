@@ -326,6 +326,94 @@ func TestUniqueClientsLocalClusterCapabilityGating(t *testing.T) {
 	}).Should(BeTrue())
 }
 
+// TestUniqueClientsLocalClusterCapabilityGatingSharedBucket guards against a narrower case of
+// #14471: when pod-locality tracking is disabled (DISABLE_POD_LOCALITY_XDS=true), every stream
+// for a given role shares a single UCC bucket/snapshot, so KnowsLocalCluster must reflect
+// whether ALL streams currently in that bucket have confirmed support -- not just one of them.
+// A single un-confirmed sibling must hold the whole bucket back, even if another sibling
+// already proved support; and a brand-new sibling connecting (even one that will go on to
+// confirm) transiently un-confirms an already-confirmed bucket until it too proves support,
+// since the bucket's single shared snapshot can't offer the resource to a subset of its
+// streams. This is expected: the alternative (assuming a newcomer supports it before it says
+// so) is exactly the bug #14471 was filed for.
+func TestUniqueClientsLocalClusterCapabilityGatingSharedBucket(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+
+	// role is deliberately 3 parts (prefix~ns~gateway) so ir.UniquelyConnectedClient.
+	// LocalClusterInfo can fall back to deriving namespace/gateway from the role when there's
+	// no pod (and therefore no namespace/labels) to derive them from directly.
+	role := wellknown.GatewayApiProxyValue + "~ns~gw"
+	nodeFor := func(id string) *envoycorev3.Node {
+		return &envoycorev3.Node{
+			Id: id,
+			Metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					xds.RoleKey: structpb.NewStringValue(role),
+				},
+			},
+		}
+	}
+
+	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	var pods krt.Collection[LocalityPod] // nil: pod-locality tracking disabled, so all streams for this role share one bucket
+	uccCol := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
+	uccCol.WaitUntilSynced(context.Background().Done())
+
+	// sid 1 connects and immediately confirms support for the local cluster resource.
+	err := cb.OnStreamRequest(1, &envoy_service_discovery_v3.DiscoveryRequest{
+		Node:          nodeFor("sid1.ns"),
+		TypeUrl:       resource.EndpointType,
+		ResourceNames: []string{"some-backend-cluster", "gw.ns"},
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Eventually(func() []ir.UniquelyConnectedClient {
+		return uccCol.List()
+	}).Should(HaveLen(1))
+	g.Eventually(func() bool {
+		return uccCol.List()[0].KnowsLocalCluster
+	}).Should(BeTrue(), "the only stream in the bucket has confirmed support")
+
+	// sid 2 joins the same bucket (same role) but hasn't sent an EDS request yet. The still-
+	// shared bucket must go back to un-confirmed, even though sid 1 already proved support --
+	// the single snapshot they share can't offer the resource to sid 1 alone.
+	err = cb.OnStreamRequest(2, &envoy_service_discovery_v3.DiscoveryRequest{
+		Node:    nodeFor("sid2.ns"),
+		TypeUrl: resource.ClusterType,
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Eventually(func() []ir.UniquelyConnectedClient {
+		return uccCol.List()
+	}).Should(HaveLen(1), "sid 1 and sid 2 must share a single bucket")
+	g.Eventually(func() bool {
+		return uccCol.List()[0].KnowsLocalCluster
+	}).Should(BeFalse(), "sid 2 hasn't confirmed support yet, so the shared bucket must be held back")
+	g.Consistently(func() bool {
+		return uccCol.List()[0].KnowsLocalCluster
+	}).Should(BeFalse(), "sid 2 still hasn't confirmed; the bucket must not flip back on its own")
+
+	// sid 2 now also confirms support via its own EDS request; the bucket should flip back to
+	// confirmed since every stream sharing it now supports the resource.
+	err = cb.OnStreamRequest(2, &envoy_service_discovery_v3.DiscoveryRequest{
+		Node:          nodeFor("sid2.ns"),
+		TypeUrl:       resource.EndpointType,
+		ResourceNames: []string{"gw.ns"},
+	})
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Eventually(func() bool {
+		list := uccCol.List()
+		return len(list) == 1 && list[0].KnowsLocalCluster
+	}).Should(BeTrue(), "every stream sharing the bucket has now confirmed support")
+
+	// sid 2 disconnects; the bucket must stay confirmed since the one remaining stream (sid 1)
+	// already confirmed support.
+	cb.OnStreamClosed(2, nil)
+	g.Consistently(func() bool {
+		list := uccCol.List()
+		return len(list) == 1 && list[0].KnowsLocalCluster
+	}).Should(BeTrue(), "the remaining stream already confirmed support")
+}
+
 func TestNormalizeGatewayRole(t *testing.T) {
 	testCases := []struct {
 		name         string
