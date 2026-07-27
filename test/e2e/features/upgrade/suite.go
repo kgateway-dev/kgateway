@@ -11,7 +11,9 @@ import (
 	"strings"
 
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kgateway "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -47,10 +49,11 @@ func init() {
 	version = envutils.GetOrDefault("VERSION", "v1.0.0-ci1", false)
 }
 
-// testingSuite validates that kgateway can be upgraded from a released version to the locally-built chart.
-// The parent test function (TestUpgrade) is responsible for:
-//   - Installing kgateway from the remote release before this suite runs.
-//   - Uninstalling kgateway after this suite completes.
+// testingSuite validates that kgateway can be upgraded from a released version to the
+// locally-built chart. The suite currently has a single Test* method (TestUpgrade); SetupTest
+// (rather than SetupSuite) installs the released version so that any future Test* method added
+// here gets its own fresh install and teardown instead of inheriting whatever the previous
+// method left behind.
 type testingSuite struct {
 	*base.BaseTestingSuite
 	fromVersion string
@@ -65,10 +68,16 @@ func NewTestingSuite(fromVersion string) e2e.NewSuiteFunc {
 	}
 }
 
-func (s *testingSuite) SetupSuite() {
-	s.BaseTestingSuite.SetupSuite()
-	// kgateway was installed from a released version by the parent test function.
-	// Verify it is healthy before attempting the upgrade.
+// SetupTest installs the released fromVersion fresh before every Test* method and registers
+// its teardown. The teardown is registered here, before the test body applies its own
+// manifests, so that testify.T's LIFO cleanup order runs manifest deletion first and only
+// then uninstalls kgateway -- reversing that would try to delete kgateway-CRD-backed
+// resources (e.g. TrafficPolicy) after the CRDs themselves are already gone.
+func (s *testingSuite) SetupTest() {
+	s.TestInstallation.InstallKgatewayFromRelease(s.Ctx, s.T(), s.fromVersion)
+	testutils.Cleanup(s.T(), func() {
+		s.TestInstallation.UninstallKgateway(s.Ctx, s.T())
+	})
 	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayInstallSucceeded(s.Ctx)
 }
 
@@ -82,6 +91,17 @@ func (s *testingSuite) applyManifests() func() {
 			Manifests: []string{setupManifest, defaults.HttpbinManifest},
 		})
 	}
+}
+
+// scaleHttpbin scales httpbin to the given replica count. Called just before the #14471 churn
+// check (not from applyManifests) so it never adds latency to the earlier baseline
+// connectivity check -- and scoped to this suite only, since defaults.HttpbinManifest is
+// shared by many other suites that assume a single replica.
+func (s *testingSuite) scaleHttpbin(replicas uint) {
+	s.T().Helper()
+	err := s.TestInstallation.Actions.Kubectl().Scale(
+		s.Ctx, defaults.HttpbinDeployment.GetNamespace(), "deployment/"+defaults.HttpbinDeployment.GetName(), replicas)
+	s.Require().NoError(err, "failed to scale httpbin to %d replicas", replicas)
 }
 
 // verifyRequestWithTransformation verifies that the TrafficPolicy in setup.yaml is being applied.
@@ -116,6 +136,22 @@ func (s *testingSuite) updateTransformationHeader(value string) {
 	policy.Spec.Transformation.Response.Set[0].Value = kgateway.InjaTemplate(value)
 	err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, policy, client.MergeFrom(original))
 	s.Require().NoError(err, "failed to update upgrade TrafficPolicy")
+}
+
+// httpbinPodIPs returns the current httpbin pod IPs, so a caller can confirm a "churn" of the
+// backend actually replaced its pods (and thus its endpoint IPs) rather than being a no-op.
+func (s *testingSuite) httpbinPodIPs() sets.Set[string] {
+	s.T().Helper()
+	pods, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().
+		Pods(defaults.HttpbinDeployment.GetNamespace()).
+		List(s.Ctx, metav1.ListOptions{LabelSelector: defaults.HttpbinLabelSelector})
+	s.Require().NoError(err, "failed to list httpbin pods")
+	ips := sets.New[string]()
+	for _, pod := range pods.Items {
+		s.Require().NotEmpty(pod.Status.PodIP, "httpbin pod %s has no IP yet", pod.Name)
+		ips.Insert(pod.Status.PodIP)
+	}
+	return ips
 }
 
 func (s *testingSuite) localChartValuesFiles() []string {
@@ -160,6 +196,16 @@ func (s *testingSuite) TestUpgrade() {
 	s.verifyRequestWithTransformation(initialTransformationValue)
 	s.T().Logf(" ok")
 
+	// Pause the proxy Deployment's rollout before touching the control plane. Without this,
+	// the deployer (once the new controller wins leader election, ~seconds later) reconciles
+	// the Gateway and replaces this pod with a freshly-rendered one -- image.tag stays pinned
+	// to s.fromVersion below, but the new pod's bootstrap ConfigMap is written by the NEW
+	// controller code regardless of that pinned tag, so it isn't actually the same released
+	// proxy anymore by the time later assertions run. Pausing keeps the originally-connected
+	// proxy in place through the version-skew window that follows (see #14471).
+	err := s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "-n", proxyNamespace, "rollout", "pause", "deployment/gateway")
+	s.Require().NoError(err, "failed to pause proxy rollout")
+
 	// First upgrade the CRDs and control plane while keeping the released data-plane image.
 	// This exercises the supported version-skew window: the new control plane must continue
 	// producing xDS that the released Envoy can accept.
@@ -183,6 +229,36 @@ func (s *testingSuite) TestUpgrade() {
 	s.T().Logf("checking released data plane against the upgraded control plane...")
 	s.verifyRequestWithTransformation(skewedTransformationValue)
 	s.T().Logf(" ok")
+
+	// Guard against https://github.com/kgateway-dev/kgateway/issues/14471: the control plane
+	// must not withhold endpoint (EDS) updates from a proxy that hasn't upgraded yet. Churn the
+	// backend's pods (forcing new EDS endpoints) while the released proxy is still connected,
+	// then check Envoy's OWN live EDS-resolved state (not app-level traffic, not controller
+	// logs) actually converged on the new endpoints and dropped the old ones. If the control
+	// plane withheld the whole EDS response, this config dump would keep showing the
+	// pre-churn IPs and never show the post-churn ones.
+	s.scaleHttpbin(2)
+	s.T().Logf("restarting httpbin backend...")
+	beforeIPs := s.httpbinPodIPs()
+	err = s.TestInstallation.Actions.Kubectl().RestartDeploymentAndWait(
+		s.Ctx, defaults.HttpbinDeployment.GetName(), "-n", defaults.HttpbinDeployment.GetNamespace())
+	s.Require().NoError(err)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyDeploymentsRolledOut(
+		s.Ctx, defaults.HttpbinDeployment.GetNamespace(), defaults.HttpbinLabelSelector)
+	afterIPs := s.httpbinPodIPs()
+	s.Require().NotEmpty(afterIPs, "expected httpbin pods to be running after the restart")
+	s.Require().Empty(beforeIPs.Intersection(afterIPs),
+		"httpbin pods should have new IPs after the restart, not reuse the old ones (churn was a no-op): before=%v after=%v", beforeIPs, afterIPs)
+	s.T().Logf(" ok")
+
+	s.T().Logf("checking the still-released proxy reaches the churned backend...")
+	s.verifyRequestWithTransformation(skewedTransformationValue)
+	s.T().Logf(" ok")
+
+	// Resume the paused rollout so the deployer can actually replace this pod with the
+	// upgraded data-plane image below.
+	err = s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "-n", proxyNamespace, "rollout", "resume", "deployment/gateway")
+	s.Require().NoError(err, "failed to resume proxy rollout")
 
 	// Remove the version skew by upgrading the default data-plane image to the local build.
 	s.upgradeDataPlane()

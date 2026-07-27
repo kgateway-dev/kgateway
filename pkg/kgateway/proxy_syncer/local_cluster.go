@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"slices"
-	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -13,12 +12,10 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 // localClusterEndpointPort is the port used in local-cluster CLA endpoints.
@@ -42,7 +39,7 @@ func NewPerClientLocalClusterEndpoints(
 	localityPods krt.Collection[krtcollections.LocalityPod],
 ) PerClientEnvoyEndpoints {
 	podsByGateway := krtpkg.UnnamedIndex(localityPods, func(pod krtcollections.LocalityPod) []string {
-		gwName := gatewayNameFromLabels(pod.AugmentedLabels)
+		gwName := ir.GatewayNameFromLabels(pod.AugmentedLabels)
 		if gwName == "" {
 			return nil
 		}
@@ -50,7 +47,14 @@ func NewPerClientLocalClusterEndpoints(
 	})
 
 	endpoints := krt.NewCollection(uccs, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *UccWithEndpoints {
-		localClusterName, gatewayName, gatewayNamespace := localClusterInfo(ucc)
+		if !ucc.KnowsLocalCluster {
+			// Client's own EDS subscription has never named this resource (old Envoy with
+			// no matching static bootstrap cluster). Never emit it for this client: an
+			// unrequested resource in the snapshot makes go-control-plane's ADS "superset"
+			// check withhold the client's *entire* EDS response. See issue #14471.
+			return nil
+		}
+		localClusterName, gatewayName, gatewayNamespace := ucc.LocalClusterInfo()
 		if localClusterName == "" || gatewayName == "" || gatewayNamespace == "" {
 			return nil
 		}
@@ -74,34 +78,6 @@ func NewPerClientLocalClusterEndpoints(
 		endpoints: endpoints,
 		index:     idx,
 	}
-}
-
-func localClusterInfo(ucc ir.UniquelyConnectedClient) (clusterName, gatewayName, gatewayNamespace string) {
-	gatewayNamespace = ucc.Namespace
-	gatewayName = gatewayNameFromLabels(ucc.Labels)
-
-	roleParts := strings.Split(ucc.Role, ir.KeyDelimiter)
-	if len(roleParts) == 3 {
-		if gatewayNamespace == "" {
-			gatewayNamespace = roleParts[1]
-		}
-		if gatewayName == "" {
-			gatewayName = roleParts[2]
-		}
-	}
-
-	if gatewayName == "" || gatewayNamespace == "" {
-		return "", gatewayName, gatewayNamespace
-	}
-	return LocalClusterName(gatewayName, gatewayNamespace), gatewayName, gatewayNamespace
-}
-
-// LocalClusterName returns the name of the per-gateway "local cluster" EDS resource that
-// kgateway programs for native zone-aware routing. It is the single source of truth for this
-// name and must stay in sync with the bootstrap config produced by the Helm template
-// (see kgateway.gateway.fullname in pkg/kgateway/helm/envoy/templates/_helpers.tpl).
-func LocalClusterName(gatewayName, gatewayNamespace string) string {
-	return fmt.Sprintf("%s.%s", kubeutils.SafeGatewayLabelValue(gatewayName), gatewayNamespace)
 }
 
 func buildLocalClusterLoadAssignment(
@@ -179,16 +155,6 @@ func buildLocalClusterLoadAssignment(
 	}
 
 	return cla
-}
-
-func gatewayNameFromLabels(labels map[string]string) string {
-	if labels == nil {
-		return ""
-	}
-	if gatewayName := labels[wellknown.GatewayNameAnnotation]; gatewayName != "" {
-		return gatewayName
-	}
-	return labels[wellknown.GatewayNameLabel]
 }
 
 func hashLocalClusterLoadAssignment(cla *envoyendpointv3.ClusterLoadAssignment) uint64 {
