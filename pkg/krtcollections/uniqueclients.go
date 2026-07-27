@@ -90,13 +90,21 @@ type callbacksCollection struct {
 	clients          map[int64]ConnectedClient
 	uniqClientsCount map[string]uint64
 	uniqClients      map[string]ir.UniquelyConnectedClient
-	// knownLocalCluster records, per unique client resource name, whether that client's own
-	// EDS subscription has named its expected local-cluster resource (see
+	// knownLocalClusterBySid records, per STREAM (not per UCC resource name), whether that
+	// stream's own EDS subscription has named its expected local-cluster resource (see
 	// ir.UniquelyConnectedClient.LocalClusterInfo). Old Envoys never name it (no matching
 	// static bootstrap cluster), so entries only ever go false -> true as real requests are
-	// observed; see NewPerClientLocalClusterEndpoints for why this must never be assumed true.
-	knownLocalCluster map[string]bool
-	stateLock         sync.RWMutex
+	// observed.
+	//
+	// This must be tracked per stream rather than per UCC resource name: when pod-locality
+	// tracking is disabled (DISABLE_POD_LOCALITY_XDS=true), every replica of a gateway shares
+	// one UCC bucket/snapshot (see the augmentedPods-nil branch in add()). During a rolling
+	// upgrade some of those replicas' streams may confirm support while sibling streams on the
+	// same bucket haven't -- getClients() must only report the bucket as knowing the local
+	// cluster once every stream currently in that bucket has confirmed it, or the same
+	// full-EDS-withholding this file exists to prevent reappears for the still-old siblings.
+	knownLocalClusterBySid map[int64]bool
+	stateLock              sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
 }
@@ -171,13 +179,13 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
 	return func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniquelyConnectedClient] {
 		trigger := krt.NewRecomputeTrigger(true)
 		col := &callbacksCollection{
-			logger:            logger,
-			augmentedPods:     augmentedPods,
-			clients:           make(map[int64]ConnectedClient),
-			uniqClientsCount:  make(map[string]uint64),
-			uniqClients:       make(map[string]ir.UniquelyConnectedClient),
-			knownLocalCluster: make(map[string]bool),
-			trigger:           trigger,
+			logger:                 logger,
+			augmentedPods:          augmentedPods,
+			clients:                make(map[int64]ConnectedClient),
+			uniqClientsCount:       make(map[string]uint64),
+			uniqClients:            make(map[string]ir.UniquelyConnectedClient),
+			knownLocalClusterBySid: make(map[int64]bool),
+			trigger:                trigger,
 		}
 
 		callbacks.collection.Store(col)
@@ -220,10 +228,11 @@ func (x *callbacks) OnStreamClosed(sid int64, node *envoycorev3.Node) {
 }
 
 func (x *callbacksCollection) streamClosed(sid int64) {
-	ucc := x.del(sid)
-	if ucc != nil {
-		x.trigger.TriggerRecomputation()
-	}
+	x.del(sid)
+	// A disconnecting stream can change its bucket's derived KnowsLocalCluster (e.g. it may
+	// have been the only sibling still holding a shared bucket back from "all confirmed"), so
+	// always recompute -- not just when the whole bucket disappears.
+	x.trigger.TriggerRecomputation()
 }
 
 func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
@@ -232,6 +241,7 @@ func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 
 	c, ok := x.clients[sid]
 	delete(x.clients, sid)
+	delete(x.knownLocalClusterBySid, sid)
 	if ok {
 		resourceName := c.uniqueClientName
 		current := x.uniqClientsCount[resourceName]
@@ -240,7 +250,6 @@ func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 			ucc := x.uniqClients[resourceName]
 			delete(x.uniqClientsCount, resourceName)
 			delete(x.uniqClients, resourceName)
-			delete(x.knownLocalCluster, resourceName)
 			return &ucc
 		}
 	}
@@ -341,7 +350,7 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 }
 
 func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) error {
-	ucc, isNewStream, isNewUCC, err := x.add(sid, r, peer)
+	ucc, isNewStream, _, err := x.add(sid, r, peer)
 	if err != nil {
 		x.logger.Debug("error processing xds client", "error", err)
 		return err
@@ -349,7 +358,7 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	if ucc == "" {
 		return fmt.Errorf("got empty unique client name for sid %d", sid)
 	}
-	x.observeLocalClusterRequest(ucc, r)
+	x.observeLocalClusterRequest(sid, ucc, r)
 
 	nodeMd := r.GetNode().GetMetadata()
 	if nodeMd == nil {
@@ -365,7 +374,10 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	// the unique client resource name as well.
 	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc)
 	r.GetNode().Metadata = nodeMd
-	if isNewUCC {
+	if isNewStream {
+		// A new stream joining an existing bucket (not just a brand new bucket) can change
+		// that bucket's derived KnowsLocalCluster (it starts as an unconfirmed member), so
+		// recompute on every new stream, not only isNewUCC.
 		x.trigger.TriggerRecomputation()
 	}
 	if delay := xdsFirstConnectDelay(); isNewStream && delay > 0 {
@@ -379,19 +391,33 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 func (x *callbacksCollection) getClients() []ir.UniquelyConnectedClient {
 	x.stateLock.RLock()
 	defer x.stateLock.RUnlock()
+
+	// A bucket knows about the local cluster only if EVERY stream currently mapped to it has
+	// individually confirmed support -- a single un-confirmed sibling stream (sharing the
+	// bucket because pod-locality tracking is disabled) holds the whole bucket back.
+	bucketKnows := make(map[string]bool, len(x.uniqClients))
+	for name := range x.uniqClients {
+		bucketKnows[name] = true
+	}
+	for sid, c := range x.clients {
+		if !x.knownLocalClusterBySid[sid] {
+			bucketKnows[c.uniqueClientName] = false
+		}
+	}
+
 	clients := make([]ir.UniquelyConnectedClient, 0, len(x.uniqClients))
 	for name, c := range x.uniqClients {
-		c.KnowsLocalCluster = x.knownLocalCluster[name]
+		c.KnowsLocalCluster = bucketKnows[name]
 		clients = append(clients, c)
 	}
 	return clients
 }
 
-// observeLocalClusterRequest records whether ucc's own EDS subscription has named its
+// observeLocalClusterRequest records whether this STREAM's own EDS subscription has named its
 // expected local-cluster resource (see ir.UniquelyConnectedClient.LocalClusterInfo). It only
-// ever transitions a client from unknown to known, and only triggers recomputation on that
-// transition — repeat ACKs on an already-known client are a no-op.
-func (x *callbacksCollection) observeLocalClusterRequest(uccName string, r *envoy_service_discovery_v3.DiscoveryRequest) {
+// ever transitions a stream from unknown to known, and only triggers recomputation on that
+// transition — repeat ACKs on an already-known stream are a no-op.
+func (x *callbacksCollection) observeLocalClusterRequest(sid int64, uccName string, r *envoy_service_discovery_v3.DiscoveryRequest) {
 	if r.GetTypeUrl() != resource.EndpointType {
 		return
 	}
@@ -399,7 +425,7 @@ func (x *callbacksCollection) observeLocalClusterRequest(uccName string, r *envo
 	x.stateLock.Lock()
 	defer x.stateLock.Unlock()
 
-	if x.knownLocalCluster[uccName] {
+	if x.knownLocalClusterBySid[sid] {
 		return
 	}
 	ucc, ok := x.uniqClients[uccName]
@@ -413,7 +439,7 @@ func (x *callbacksCollection) observeLocalClusterRequest(uccName string, r *envo
 	if !slices.Contains(r.GetResourceNames(), localClusterName) {
 		return
 	}
-	x.knownLocalCluster[uccName] = true
+	x.knownLocalClusterBySid[sid] = true
 	x.trigger.TriggerRecomputation()
 }
 
