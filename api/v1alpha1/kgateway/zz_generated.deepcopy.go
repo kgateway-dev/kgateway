@@ -2666,6 +2666,11 @@ func (in *HTTPSettings) DeepCopyInto(out *HTTPSettings) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.Proxy100Continue != nil {
+		in, out := &in.Proxy100Continue, &out.Proxy100Continue
+		*out = new(bool)
+		**out = **in
+	}
 	if in.EarlyRequestHeaderModifier != nil {
 		in, out := &in.EarlyRequestHeaderModifier, &out.EarlyRequestHeaderModifier
 		*out = new(apisv1.HTTPHeaderFilter)

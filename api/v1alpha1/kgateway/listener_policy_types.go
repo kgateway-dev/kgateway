@@ -302,6 +302,12 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:MinLength=1
 	DefaultHostForHttp10 *string `json:"defaultHostForHttp10,omitempty"`
 
+	// Proxy100Continue configures Envoy to proxy 100-Continue and other 1xx informational
+	// responses from the upstream, such as 103 Early Hints, instead of handling them locally.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-proxy-100-continue
+	// +optional
+	Proxy100Continue *bool `json:"proxy100Continue,omitempty"`
+
 	// EarlyRequestHeaderModifier defines header modifications to be applied early in the request processing,
 	// before route selection.
 	// For example, if you use ExternalAuthz to add a header, you may want to remove it here, to make
