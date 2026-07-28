@@ -68,3 +68,7 @@ spec:
       kind: Service
   outlierDetection:
     maxEjectionPercent: 95
+    splitExternalLocalOriginErrors: true
+    consecutiveLocalOriginFailure: 10
+    enforcingConsecutiveLocalOriginFailure: 100
+    enforcingConsecutive5xx: 0
