@@ -216,6 +216,7 @@ type HTTPSettings struct {
 	// Proxy100Continue determines whether Envoy forwards requests with an
 	// Expect: 100-continue header upstream and proxies upstream 100 Continue
 	// responses downstream. When unset or false, Envoy handles the response locally.
+	// +optional
 	Proxy100Continue *bool `json:"proxy100Continue,omitempty"`
 
 	// XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.
