@@ -2596,6 +2596,11 @@ func (in *HTTPSettings) DeepCopyInto(out *HTTPSettings) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.Proxy100Continue != nil {
+		in, out := &in.Proxy100Continue, &out.Proxy100Continue
+		*out = new(bool)
+		**out = **in
+	}
 	if in.XffNumTrustedHops != nil {
 		in, out := &in.XffNumTrustedHops, &out.XffNumTrustedHops
 		*out = new(int32)
