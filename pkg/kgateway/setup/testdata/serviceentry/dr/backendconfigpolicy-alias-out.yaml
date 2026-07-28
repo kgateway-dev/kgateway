@@ -9,7 +9,6 @@ clusters:
             socketAddress:
               address: 1.1.1.1
               portValue: 80
-        loadBalancingWeight: 1
       loadBalancingWeight: 1
   name: istio-se_gwtest_httpbin-se_se.example.com_80
   type: STATIC

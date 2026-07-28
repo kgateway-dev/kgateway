@@ -6,7 +6,6 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -226,8 +225,11 @@ func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, 
 	metadata := istioAutomtlsMetadata(podLabels, enableAutoMtls)
 
 	return &envoyendpointv3.LbEndpoint{
-		Metadata:            metadata,
-		LoadBalancingWeight: wrapperspb.UInt32(1),
+		Metadata: metadata,
+		// LoadBalancingWeight is left unset: Envoy treats an unset per-endpoint
+		// weight as 1, so omitting the wrapper avoids one protobuf wrapper
+		// allocation per endpoint. Readers must treat nil as weight 1
+		// (see kgateway/endpoints.lbWeight).
 		HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
 			Endpoint: &envoyendpointv3.Endpoint{
 				Address: &envoycorev3.Address{

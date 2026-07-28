@@ -6,7 +6,6 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
@@ -619,7 +618,6 @@ func TestEndpoints(t *testing.T) {
 				// output
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &envoyendpointv3.LbEndpoint{
-						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
 							Endpoint: &envoyendpointv3.Endpoint{
 								Address: &envoycorev3.Address{
@@ -872,7 +870,6 @@ func TestEndpoints(t *testing.T) {
 					Zone:   "zone",
 				}, ir.EndpointWithMd{
 					LbEndpoint: &envoyendpointv3.LbEndpoint{
-						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
 							Endpoint: &envoyendpointv3.Endpoint{
 								Address: &envoycorev3.Address{
@@ -901,7 +898,6 @@ func TestEndpoints(t *testing.T) {
 					Zone:   "zone2",
 				}, ir.EndpointWithMd{
 					LbEndpoint: &envoyendpointv3.LbEndpoint{
-						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
 							Endpoint: &envoyendpointv3.Endpoint{
 								Address: &envoycorev3.Address{
@@ -1018,7 +1014,6 @@ func TestEndpoints(t *testing.T) {
 				// output
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &envoyendpointv3.LbEndpoint{
-						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
 							Endpoint: &envoyendpointv3.Endpoint{
 								Address: &envoycorev3.Address{
@@ -1168,7 +1163,6 @@ func TestEndpoints(t *testing.T) {
 				// Only one endpoint should be present after deduplication
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &envoyendpointv3.LbEndpoint{
-						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
 							Endpoint: &envoyendpointv3.Endpoint{
 								Address: &envoycorev3.Address{
@@ -1398,7 +1392,6 @@ func TestEndpoints(t *testing.T) {
 				// output
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &envoyendpointv3.LbEndpoint{
-						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
 							Endpoint: &envoyendpointv3.Endpoint{
 								Address: &envoycorev3.Address{
@@ -1494,5 +1487,19 @@ func TestCreateLBEndpointAutoMtls(t *testing.T) {
 	}
 	if got := tsm.GetFields()[wellknown.TLSModeLabelShortname].GetStringValue(); got != wellknown.IstioMutualTLSModeLabel {
 		t.Fatalf("unexpected tlsMode: %q", got)
+	}
+}
+
+func TestCreateLBEndpointNoWeightWrapper(t *testing.T) {
+	ep := CreateLBEndpoint("10.0.0.1", 8080, nil, false)
+	if ep.GetLoadBalancingWeight() != nil {
+		t.Fatal("expected no LoadBalancingWeight wrapper; unset weight defaults to 1 in Envoy")
+	}
+	if ep.GetMetadata() != nil {
+		t.Fatal("expected nil Metadata when automtls disabled")
+	}
+	sock := ep.GetEndpoint().GetAddress().GetSocketAddress()
+	if sock.GetAddress() != "10.0.0.1" || sock.GetPortValue() != 8080 {
+		t.Fatalf("unexpected socket address: %v:%d", sock.GetAddress(), sock.GetPortValue())
 	}
 }
