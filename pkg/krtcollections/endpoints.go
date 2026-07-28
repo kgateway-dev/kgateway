@@ -217,17 +217,13 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, enableAutoMtls bool) *envoyendpointv3.LbEndpoint {
 	// Don't get the metadata labels and filter metadata for the envoy load balancer based on the backend, as this is not used
 	// metadata := getLbMetadata(upstream, labels, "")
-	// Get the metadata labels for the transport socket match if Istio auto mtls is enabled
-	metadata := &envoycorev3.Metadata{
-		FilterMetadata: map[string]*structpb.Struct{},
-	}
-	metadata = addIstioAutomtlsMetadata(metadata, podLabels, enableAutoMtls)
+	// Get the metadata labels for the transport socket match if Istio auto mtls is enabled.
+	// Only allocate the Metadata proto when it will actually be populated: this
+	// function runs once per endpoint per backend and dominates control-plane
+	// heap in large clusters.
 	// Don't add the annotations to the metadata - it's not documented so it's not coming
 	// metadata = addAnnotations(metadata, addr.GetMetadata().GetAnnotations())
-
-	if len(metadata.GetFilterMetadata()) == 0 {
-		metadata = nil
-	}
+	metadata := istioAutomtlsMetadata(podLabels, enableAutoMtls)
 
 	return &envoyendpointv3.LbEndpoint{
 		Metadata:            metadata,
@@ -250,11 +246,21 @@ func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, 
 	}
 }
 
-func addIstioAutomtlsMetadata(metadata *envoycorev3.Metadata, labels map[string]string, enableAutoMtls bool) *envoycorev3.Metadata {
+// istioAutomtlsMetadata returns the filter metadata enabling the Istio
+// transport socket match for the endpoint, or nil when auto-mTLS is disabled
+// or the pod is not Istio-managed. Returning nil avoids allocating an empty
+// Metadata proto (and its FilterMetadata map) for every endpoint.
+func istioAutomtlsMetadata(labels map[string]string, enableAutoMtls bool) *envoycorev3.Metadata {
 	const EnvoyTransportSocketMatch = "envoy.transport_socket_match"
-	if enableAutoMtls {
-		if _, ok := labels[wellknown.IstioTlsModeLabel]; ok {
-			metadata.GetFilterMetadata()[EnvoyTransportSocketMatch] = &structpb.Struct{
+	if !enableAutoMtls {
+		return nil
+	}
+	if _, ok := labels[wellknown.IstioTlsModeLabel]; !ok {
+		return nil
+	}
+	return &envoycorev3.Metadata{
+		FilterMetadata: map[string]*structpb.Struct{
+			EnvoyTransportSocketMatch: {
 				Fields: map[string]*structpb.Value{
 					wellknown.TLSModeLabelShortname: {
 						Kind: &structpb.Value_StringValue{
@@ -262,10 +268,9 @@ func addIstioAutomtlsMetadata(metadata *envoycorev3.Metadata, labels map[string]
 						},
 					},
 				},
-			}
-		}
+			},
+		},
 	}
-	return metadata
 }
 
 func findPortForService(svc *corev1.Service, svcPort uint32) (*corev1.ServicePort, bool) {

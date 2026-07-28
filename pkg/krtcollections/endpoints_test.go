@@ -1473,3 +1473,26 @@ func TestEndpoints(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateLBEndpointAutoMtls(t *testing.T) {
+	labels := map[string]string{wellknown.IstioTlsModeLabel: "istio"}
+
+	// automtls disabled -> no metadata even for istio pods
+	if ep := CreateLBEndpoint("10.0.0.1", 8080, labels, false); ep.GetMetadata() != nil {
+		t.Fatal("expected nil Metadata when automtls disabled")
+	}
+	// automtls enabled but pod not istio-managed -> no metadata
+	if ep := CreateLBEndpoint("10.0.0.1", 8080, map[string]string{"app": "x"}, true); ep.GetMetadata() != nil {
+		t.Fatal("expected nil Metadata for non-istio pod")
+	}
+	// automtls enabled + istio pod -> transport socket match metadata
+	ep := CreateLBEndpoint("10.0.0.1", 8080, labels, true)
+	fm := ep.GetMetadata().GetFilterMetadata()
+	tsm, ok := fm["envoy.transport_socket_match"]
+	if !ok {
+		t.Fatalf("expected transport_socket_match metadata, got %v", fm)
+	}
+	if got := tsm.GetFields()[wellknown.TLSModeLabelShortname].GetStringValue(); got != wellknown.IstioMutualTLSModeLabel {
+		t.Fatalf("unexpected tlsMode: %q", got)
+	}
+}
