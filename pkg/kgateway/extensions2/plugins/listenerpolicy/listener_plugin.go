@@ -445,6 +445,9 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	if policy.generateRequestId != nil {
 		out.GenerateRequestId = wrapperspb.Bool(*policy.generateRequestId)
 	}
+	if policy.proxy100Continue != nil {
+		out.Proxy_100Continue = *policy.proxy100Continue
+	}
 
 	// translate xffNumTrustedHops
 	if policy.xffNumTrustedHops != nil {
