@@ -120,7 +120,7 @@ func validateEnvoyRoute(r *envoyroutev3.Route) error {
 	validatePath(match.GetPath(), &errs)
 	validatePath(match.GetPrefix(), &errs)
 	validatePath(match.GetPathSeparatedPrefix(), &errs)
-	validatePath(re.GetPathRedirect(), &errs)
+	validateRedirectPath(re.GetPathRedirect(), &errs)
 	validatePath(re.GetHostRedirect(), &errs)
 	validatePath(re.GetSchemeRedirect(), &errs)
 	validatePrefixRewrite(route.GetPrefixRewrite(), &errs)
@@ -152,6 +152,16 @@ func validateWeightedClusters(clusters []*envoyroutev3.WeightedCluster_ClusterWe
 
 func validatePath(path string, errs *[]error) {
 	if err := ValidateRoutePath(path); err != nil {
+		*errs = append(*errs, fmt.Errorf("the \"%s\" path is invalid: %w", path, err))
+	}
+}
+
+func validateRedirectPath(path string, errs *[]error) {
+	if path == "" {
+		return
+	}
+	parts := strings.SplitN(path, "?", 2)
+	if err := ValidateRoutePath(parts[0]); err != nil {
 		*errs = append(*errs, fmt.Errorf("the \"%s\" path is invalid: %w", path, err))
 	}
 }
