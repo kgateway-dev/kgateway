@@ -438,6 +438,13 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 	// this is the isolation boundary: failures here replace only this vhost with
 	// a 500 direct response (preserving Name and Domains). Policies that require
 	// HCM/global knobs must be handled at RouteConfiguration scope instead.
+	//
+	// Use virtualHost.ParentRef.PolicyAncestorRef, not h.listener.PolicyAncestorRef:
+	// on a shared HTTP port, h.listener represents the whole merged filter chain and
+	// its PolicyAncestorRef is fixed to whichever Gateway/ListenerSet happened to be
+	// first in the merge, which misattributes status for every other parent sharing
+	// the port. virtualHost.ParentRef is the listener that actually won this vhost.
+	ancestorRef := virtualHost.ParentRef.PolicyAncestorRef
 	var errs []error
 	for _, gk := range virtualHost.AttachedPolicies.ApplyOrderedGroupKinds() {
 		pols := virtualHost.AttachedPolicies.Policies[gk]
@@ -445,7 +452,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 		if pass == nil {
 			continue
 		}
-		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
@@ -461,7 +468,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 			pass.ApplyVhostPlugin(pctx, out)
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
-		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
+		reportPolicyAttachmentStatus(h.reporter, ancestorRef, mergeOrigins, pols...)
 	}
 	return errors.Join(errs...)
 }
@@ -513,7 +520,8 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			ListenerPort:      h.listener.BindPort,
 			ListenerHasTLS:    h.fc.TLS != nil,
 		}
-		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		ancestorRef := routeAncestorRef(in, h.listener.PolicyAncestorRef)
+		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			// Builtin policies use InheritedPolicyPriority
@@ -533,10 +541,25 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			}
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
-		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
+		reportPolicyAttachmentStatus(h.reporter, ancestorRef, mergeOrigins, pols...)
 	}
 
 	return errors.Join(errs...)
+}
+
+// routeAncestorRef returns the ancestor to report route-attached policy status
+// against: the route's own ListenerParentRef (the Gateway/ListenerSet it actually
+// attaches to, taken from its own spec.parentRefs and already defaulted at the
+// query layer -- see query.defaultParentRef), not fallbackRef
+// (h.listener.PolicyAncestorRef), which is fixed to whichever Gateway/ListenerSet
+// happened to build the merged HTTP filter chain first and misattributes status
+// for every other parent sharing the port. Falls back when ListenerParentRef is
+// unset, e.g. for synthetic routes that have no source HTTPRoute.
+func routeAncestorRef(in ir.HttpRouteRuleMatchIR, fallbackRef gwv1.ParentReference) gwv1.ParentReference {
+	if in.ListenerParentRef.Name == "" {
+		return fallbackRef
+	}
+	return in.ListenerParentRef
 }
 
 func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) ([]ir.PolicyAtt, ir.MergeOrigins) {
@@ -549,7 +572,7 @@ func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) ([]ir.PolicyA
 	return policies, nil
 }
 
-func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend, pCtx *ir.RouteBackendContext) error {
+func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend, ancestorRef gwv1.ParentReference, pCtx *ir.RouteBackendContext) error {
 	var errs []error
 	for _, gk := range in.AttachedPolicies.ApplyOrderedGroupKinds() {
 		pols := in.AttachedPolicies.Policies[gk]
@@ -558,7 +581,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 			// TODO: should never happen, log error and report condition
 			continue
 		}
-		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, _ := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			// Policy on extension ref
@@ -614,7 +637,8 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			TypedFilterConfig: backendConfigCtx.typedPerFilterConfigRoute,
 		}
 
-		reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, h.pluginPass, backend.Backend.BackendObject)
+		ancestorRef := routeAncestorRef(in, h.listener.PolicyAncestorRef)
+		reportBackendObjectPolicyStatus(h.reporter, ancestorRef, h.pluginPass, backend.Backend.BackendObject)
 
 		// non attached policy translation
 		err := h.runBackend(
@@ -628,6 +652,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		}
 		err = h.runBackendPolicies(
 			backend,
+			ancestorRef,
 			&pCtx,
 		)
 		if err != nil {

@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"hash/fnv"
 	"maps"
+	"strings"
 
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 const KeyDelimiter = "~"
@@ -32,6 +34,18 @@ type UniquelyConnectedClient struct {
 	Locality  PodLocality
 	Namespace string
 
+	// KnowsLocalCluster reports whether this client's own EDS subscription has
+	// named its expected LocalClusterName() resource at least once. Old Envoys
+	// have no matching static cluster in their bootstrap and can never name it,
+	// so this must default to false and only ever be set by observing a real
+	// request (see pkg/krtcollections/uniqueclients.go) — never assume support.
+	// Without this gate, go-control-plane's ADS "superset" check
+	// (github.com/envoyproxy/go-control-plane pkg/cache/v3/simple.go) withholds
+	// the *entire* EDS response to a client that doesn't ask for every resource
+	// in the snapshot, breaking all endpoint updates for that client, not just
+	// the local cluster (see https://github.com/kgateway-dev/kgateway/issues/14471).
+	KnowsLocalCluster bool
+
 	// modified role that includes the namespace and the hash of the labels.
 	// we set the client's role to this value in the node metadata. so the snapshot key in the cache
 	// should also be set to this value.
@@ -45,7 +59,51 @@ func (c UniquelyConnectedClient) ResourceName() string {
 var _ krt.Equaler[UniquelyConnectedClient] = new(UniquelyConnectedClient)
 
 func (c UniquelyConnectedClient) Equals(k UniquelyConnectedClient) bool {
-	return c.Role == k.Role && c.Namespace == k.Namespace && c.Locality == k.Locality && maps.Equal(c.Labels, k.Labels) && c.resourceName == k.resourceName
+	return c.Role == k.Role && c.Namespace == k.Namespace && c.Locality == k.Locality &&
+		c.KnowsLocalCluster == k.KnowsLocalCluster && maps.Equal(c.Labels, k.Labels) && c.resourceName == k.resourceName
+}
+
+// GatewayNameFromLabels returns the Gateway name recorded on a pod or client,
+// preferring the full (untruncated) name annotation over the possibly-hashed label.
+func GatewayNameFromLabels(labels map[string]string) string {
+	if labels == nil {
+		return ""
+	}
+	if gatewayName := labels[wellknown.GatewayNameAnnotation]; gatewayName != "" {
+		return gatewayName
+	}
+	return labels[wellknown.GatewayNameLabel]
+}
+
+// LocalClusterName returns the name of the per-gateway "local cluster" EDS resource that
+// kgateway programs for native zone-aware routing. It is the single source of truth for this
+// name and must stay in sync with the bootstrap config produced by the Helm template
+// (see kgateway.gateway.fullname in pkg/kgateway/helm/envoy/templates/_helpers.tpl).
+func LocalClusterName(gatewayName, gatewayNamespace string) string {
+	return fmt.Sprintf("%s.%s", kubeutils.SafeGatewayLabelValue(gatewayName), gatewayNamespace)
+}
+
+// LocalClusterInfo derives this client's expected local-cluster resource name (see
+// LocalClusterName), along with the gateway name/namespace it was derived from. Returns ""
+// for clusterName if this client isn't associated with a single gateway.
+func (c UniquelyConnectedClient) LocalClusterInfo() (clusterName, gatewayName, gatewayNamespace string) {
+	gatewayNamespace = c.Namespace
+	gatewayName = GatewayNameFromLabels(c.Labels)
+
+	roleParts := strings.Split(c.Role, KeyDelimiter)
+	if len(roleParts) == 3 {
+		if gatewayNamespace == "" {
+			gatewayNamespace = roleParts[1]
+		}
+		if gatewayName == "" {
+			gatewayName = roleParts[2]
+		}
+	}
+
+	if gatewayName == "" || gatewayNamespace == "" {
+		return "", gatewayName, gatewayNamespace
+	}
+	return LocalClusterName(gatewayName, gatewayNamespace), gatewayName, gatewayNamespace
 }
 
 // note: if "ns" is empty, we assume the user doesn't want to use pod locality info, so we won't modify the role.

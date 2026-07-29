@@ -127,7 +127,7 @@ jobs:
             go-test-args: '-timeout=10m'
             go-test-run-regex: '^TestUpgrade'
             localstack: 'false'
-            gateway-api-version: 'v1.4.1'
+            gateway-api-version: 'v1.5.1'
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://kgateway.dev/docs/reference/versions/
         version-files:
