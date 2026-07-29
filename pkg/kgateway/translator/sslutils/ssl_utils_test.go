@@ -73,6 +73,26 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "signature_algorithms_with_unsupported_algorithm",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "rsa_pss_rsae_sha256,rsa_pss_rsae_sha255",
+			},
+			out: &ir.TLSConfig{},
+			errors: []string{
+				"unsupported TLS signature algorithm: rsa_pss_rsae_sha255",
+			},
+		},
+		{
+			name: "signature_algorithms_with_trailing_comma",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "rsa_pss_rsae_sha256,",
+			},
+			out: &ir.TLSConfig{},
+			errors: []string{
+				"signature algorithms must not contain empty values",
+			},
+		},
+		{
 			name: "subject_alt_names",
 			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},

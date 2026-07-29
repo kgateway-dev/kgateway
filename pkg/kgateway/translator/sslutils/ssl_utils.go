@@ -25,6 +25,21 @@ const (
 	ListenerReasonNoValidCACertificate     gwv1.ListenerConditionReason = "NoValidCACertificate"
 )
 
+var supportedSignatureAlgorithms = map[string]bool{
+	"rsa_pkcs1_sha256":       true,
+	"rsa_pkcs1_sha384":       true,
+	"rsa_pkcs1_sha512":       true,
+	"ecdsa_secp256r1_sha256": true,
+	"ecdsa_secp384r1_sha384": true,
+	"ecdsa_secp521r1_sha512": true,
+	"rsa_pss_rsae_sha256":    true,
+	"rsa_pss_rsae_sha384":    true,
+	"rsa_pss_rsae_sha512":    true,
+	"ed25519":                true,
+	"rsa_pkcs1_sha1":         true,
+	"ecdsa_sha1":             true,
+}
+
 var (
 	ErrInvalidTlsSecret = errors.New("invalid TLS secret")
 
@@ -173,9 +188,21 @@ func ApplyEcdhCurves(in string, out *ir.TLSConfig) error {
 
 func ApplySignatureAlgorithms(in string, out *ir.TLSConfig) error {
 	signatureAlgorithms := strings.Split(in, ",")
-	for i, suite := range signatureAlgorithms {
-		signatureAlgorithms[i] = strings.TrimSpace(suite)
+
+	for i, algorithm := range signatureAlgorithms {
+		algorithm = strings.TrimSpace(algorithm)
+
+		if algorithm == "" {
+			return errors.New("signature algorithms must not contain empty values")
+		}
+
+		if !supportedSignatureAlgorithms[algorithm] {
+			return fmt.Errorf("unsupported TLS signature algorithm: %s", algorithm)
+		}
+
+		signatureAlgorithms[i] = algorithm
 	}
+
 	out.SignatureAlgorithms = signatureAlgorithms
 	return nil
 }
