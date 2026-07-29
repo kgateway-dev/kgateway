@@ -46,6 +46,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestassets"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
@@ -644,7 +645,7 @@ func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string)
 		conn: conn,
 		// Build the local cluster name with the exact same helper the control plane uses, so the
 		// dumper subscribes to the resource that actually exists in the snapshot.
-		localClusterName: proxy_syncer.LocalClusterName(gwname, gwNamespace),
+		localClusterName: ir.LocalClusterName(gwname, gwNamespace),
 		dr: &envoy_service_discovery_v3.DiscoveryRequest{
 			Node: &envoycorev3.Node{
 				Id: "gateway." + gwNamespace,

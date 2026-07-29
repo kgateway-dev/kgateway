@@ -4446,6 +4446,26 @@ func (in *OutlierDetection) DeepCopyInto(out *OutlierDetection) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.EnforcingConsecutive5xx != nil {
+		in, out := &in.EnforcingConsecutive5xx, &out.EnforcingConsecutive5xx
+		*out = new(int32)
+		**out = **in
+	}
+	if in.SplitExternalLocalOriginErrors != nil {
+		in, out := &in.SplitExternalLocalOriginErrors, &out.SplitExternalLocalOriginErrors
+		*out = new(bool)
+		**out = **in
+	}
+	if in.ConsecutiveLocalOriginFailure != nil {
+		in, out := &in.ConsecutiveLocalOriginFailure, &out.ConsecutiveLocalOriginFailure
+		*out = new(int32)
+		**out = **in
+	}
+	if in.EnforcingConsecutiveLocalOriginFailure != nil {
+		in, out := &in.EnforcingConsecutiveLocalOriginFailure, &out.EnforcingConsecutiveLocalOriginFailure
+		*out = new(int32)
+		**out = **in
+	}
 	if in.Interval != nil {
 		in, out := &in.Interval, &out.Interval
 		*out = new(v1.Duration)

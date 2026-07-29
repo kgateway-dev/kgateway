@@ -11,8 +11,12 @@ Clusters:
   outlierDetection:
     baseEjectionTime: 30s
     consecutive5xx: 5
+    consecutiveLocalOriginFailure: 10
+    enforcingConsecutive5xx: 0
+    enforcingConsecutiveLocalOriginFailure: 100
     interval: 10s
     maxEjectionPercent: 95
+    splitExternalLocalOriginErrors: true
   type: EDS
 - commonLbConfig:
     localityWeightedLbConfig: {}
