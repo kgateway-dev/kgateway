@@ -1367,6 +1367,9 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		reason = sslutils.ListenerReasonInvalidCACertificateKind
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		message = err.Error()
+	case errors.Is(err, sslutils.ErrUnknownTLSExtensionOption):
+		reason = gwv1.ListenerReasonInvalid
+		message = err.Error()
 	}
 
 	var notFoundErr *krtcollections.NotFoundError
