@@ -1368,8 +1368,28 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrUnknownTLSExtensionOption):
-		reason = gwv1.ListenerReasonInvalid
-		message = err.Error()
+		// Unknown TLS extension options are not a certificate reference problem;
+		// the cert refs resolved fine. Per the Gateway API spec, this is an
+		// Invalid condition on Programmed/Accepted, not a ResolvedRefs issue.
+		listenerReporter.SetCondition(reports.ListenerCondition{
+			Type:    gwv1.ListenerConditionResolvedRefs,
+			Status:  metav1.ConditionTrue,
+			Reason:  gwv1.ListenerReasonResolvedRefs,
+			Message: "Successfully resolved all references",
+		})
+		listenerReporter.SetCondition(reports.ListenerCondition{
+			Type:    gwv1.ListenerConditionProgrammed,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: err.Error(),
+		})
+		listenerReporter.SetCondition(reports.ListenerCondition{
+			Type:    gwv1.ListenerConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: err.Error(),
+		})
+		return
 	}
 
 	var notFoundErr *krtcollections.NotFoundError
