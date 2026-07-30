@@ -21,17 +21,18 @@ import (
 func TestKgateway(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
-	testInstallation := e2e.CreateTestInstallation(
-		t,
-		&install.Context{
-			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
-			ExtraHelmArgs: []string{
-				"--set", "controller.extraEnv.KGW_GLOBAL_POLICY_NAMESPACE=" + installNs,
-			},
+	installContext := &install.Context{
+		InstallNamespace:          installNs,
+		ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
+		ValuesManifestFile:        e2e.EmptyValuesManifestPath,
+		ExtraHelmArgs: []string{
+			"--set", "controller.extraEnv.KGW_GLOBAL_POLICY_NAMESPACE=" + installNs,
 		},
-	)
+	}
+	if validationMode := os.Getenv("VALIDATION_MODE"); validationMode != "" {
+		installContext.ExtraHelmArgs = append(installContext.ExtraHelmArgs, "--set", "validation.level="+validationMode)
+	}
+	testInstallation := e2e.CreateTestInstallation(t, installContext)
 
 	// Set the env to the install namespace if it is not already set
 	if !nsEnvPredefined {

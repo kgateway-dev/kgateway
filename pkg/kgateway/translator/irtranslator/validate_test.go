@@ -74,7 +74,7 @@ func TestValidateRoute_StrictValidSinglecall(t *testing.T) {
 }
 
 func TestValidateRoute_StrictRouteActionFailure(t *testing.T) {
-	// First call (validateFullRoute) fails; second call (validateMatcherOnly) succeeds
+	// First call (validateFullRoutes) fails; second call (validateMatcherOnlyEnvoy) succeeds
 	// -> classify as ErrInvalidRoute.
 	v := &countingValidator{
 		failureFunc: func(call int) error {
@@ -92,7 +92,7 @@ func TestValidateRoute_StrictRouteActionFailure(t *testing.T) {
 }
 
 func TestValidateRoute_StrictMatcherFailure(t *testing.T) {
-	// Both calls fail (matcher-only also fails) -> classify as ErrInvalidMatcher.
+	// Both calls fail (matcher-only Envoy validation also fails) -> classify as ErrInvalidMatcher.
 	v := &countingValidator{
 		failureFunc: func(call int) error {
 			return errors.New("matcher rejected")
