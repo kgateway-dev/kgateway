@@ -25,6 +25,11 @@ permissions:
 env:
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner-action:v2.3.5
+  # Severity used to report a scan target that this repository does not have.
+  # Forks routinely track a subset of the release branches and do not publish
+  # release images, so a gap there is expected; on the repository that cuts
+  # releases it is worth flagging.
+  ANNOTATION_LEVEL: ${{ github.event.repository.fork && 'warning' || 'error' }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -40,33 +45,67 @@ jobs:
       - name: Determine branch matrix
         id: determine
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          BRANCH_SELECTION: ${{ inputs.branches }}
         run: |
           set -euo pipefail
 
+          # Branch allowlist, and the single source of truth for which branches
+          # get scanned: hack/osvtool parses this assignment out of this file, so
+          # keep it a one-line JSON array literal in single quotes.
           branches='["main","v2.2.x","v2.3.x","v2.4.x"]'
 
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            case "${{ inputs.branches }}" in
-              all)
-                ;;
-              main)
-                branches='["main"]'
-                ;;
-              v2.2.x)
-                branches='["v2.2.x"]'
-                ;;
-              v2.3.x)
-                branches='["v2.3.x"]'
-                ;;
-              v2.4.x)
-                branches='["v2.4.x"]'
-                ;;
-              *)
-                echo "::error::Unsupported branch selection: ${{ inputs.branches }}"
-                exit 1
-                ;;
-            esac
+          candidates=()
+          while IFS= read -r branch; do
+            candidates+=("${branch}")
+          done < <(jq -r '.[]' <<<"${branches}")
+
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" && "${BRANCH_SELECTION}" != "all" ]]; then
+            matched=false
+            for branch in "${candidates[@]}"; do
+              if [[ "${branch}" == "${BRANCH_SELECTION}" ]]; then
+                matched=true
+                break
+              fi
+            done
+            if [[ "${matched}" != "true" ]]; then
+              echo "::error::Unsupported branch selection: ${BRANCH_SELECTION}"
+              exit 1
+            fi
+            candidates=("${BRANCH_SELECTION}")
           fi
+
+          # Not every repository carries every release branch. Scan the ones that
+          # are present instead of failing the checkout of the ones that are not.
+          selected=()
+          missing=()
+          for branch in "${candidates[@]}"; do
+            if gh api "repos/${REPO}/branches/${branch}" >/dev/null 2>&1; then
+              selected+=("${branch}")
+            else
+              missing+=("${branch}")
+              echo "::${ANNOTATION_LEVEL}::Skipping ${branch}: no such branch in ${REPO}."
+            fi
+          done
+
+          if [[ "${#selected[@]}" -eq 0 ]]; then
+            echo "::error::None of the requested branches exist in ${REPO}: ${candidates[*]}"
+            exit 1
+          fi
+
+          branches="$(printf '%s\n' "${selected[@]}" | jq -Rsc 'split("\n") | map(select(length > 0))')"
+
+          {
+            echo "### OSV scan targets"
+            echo
+            echo "- Scanning: \`${selected[*]}\`"
+            if [[ "${#missing[@]}" -gt 0 ]]; then
+              echo "- Skipped, no such branch in \`${REPO}\`: \`${missing[*]}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
           {
             echo "branches=${branches}"
@@ -181,8 +220,19 @@ jobs:
       - name: Resolve image scan target
         id: image-target
         shell: bash
+        env:
+          OSV_DOCKER_PLATFORM: ${{ matrix.platform }}
         run: |
           set -euo pipefail
+
+          image_os="${OSV_DOCKER_PLATFORM%%/*}"
+          image_arch="${OSV_DOCKER_PLATFORM#*/}"
+          image_arch="${image_arch%%/*}"
+
+          {
+            echo "image_os=${image_os}"
+            echo "image_arch=${image_arch}"
+          } >> "$GITHUB_OUTPUT"
 
           branch="${{ matrix.branch }}"
           case "${branch}" in
@@ -200,8 +250,12 @@ jobs:
                   | tail -n 1 || true
               )"
               if [[ -z "${image_version}" ]]; then
-                echo "::error::No stable patch release tag found for ${branch}"
-                exit 1
+                # A release branch carries no image until it is tagged, which is
+                # the normal state for a freshly cut branch.
+                echo "::${ANNOTATION_LEVEL}::Skipping image scan for ${branch}: no stable patch release tag found."
+                echo "- Skipped \`${{ matrix.image }}\` on \`${branch}\`: no stable patch release tag." >> "$GITHUB_STEP_SUMMARY"
+                echo "found=false" >> "$GITHUB_OUTPUT"
+                exit 0
               fi
               ;;
             *)
@@ -211,6 +265,7 @@ jobs:
           esac
 
           {
+            echo "found=true"
             echo "image_version=${image_version}"
             echo "image=${IMAGE_REGISTRY}/${{ matrix.image }}:${image_version}"
           } >> "$GITHUB_OUTPUT"
@@ -218,23 +273,64 @@ jobs:
           echo "Resolved image for ${branch}: ${IMAGE_REGISTRY}/${{ matrix.image }}:${image_version}"
 
       - name: Log in to GHCR for image scans
+        if: ${{ steps.image-target.outputs.found == 'true' }}
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Install skopeo
+      - name: Verify skopeo is available
+        if: ${{ steps.image-target.outputs.found == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y skopeo
+
+          # skopeo ships with the GitHub-hosted Ubuntu images (1.4.1 on 22.04,
+          # 1.13.3 on 24.04), so there is nothing to install. Deliberately no
+          # `apt-get update`: it exits non-zero when any third-party repository
+          # preinstalled on the runner serves a stale index, which has failed
+          # this job for reasons that have nothing to do with the scan.
+          if ! command -v skopeo >/dev/null 2>&1; then
+            echo "::error::skopeo is not available on this runner image; cannot scan ${{ matrix.image }}."
+            exit 1
+          fi
+
+          skopeo --version
+
+      - name: Check image is published
+        id: image-probe
+        if: ${{ steps.image-target.outputs.found == 'true' }}
+        shell: bash
+        env:
+          OSV_DOCKER_IMAGE: ${{ steps.image-target.outputs.image }}
+          OSV_DOCKER_IMAGE_OS: ${{ steps.image-target.outputs.image_os }}
+          OSV_DOCKER_IMAGE_ARCH: ${{ steps.image-target.outputs.image_arch }}
+          OSV_DOCKER_PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+
+          # Release images only exist in the registry of the repository that cut
+          # the release, so the scanned registry may hold a subset of them.
+          if skopeo inspect \
+            --override-os "${OSV_DOCKER_IMAGE_OS}" \
+            --override-arch "${OSV_DOCKER_IMAGE_ARCH}" \
+            "docker://${OSV_DOCKER_IMAGE}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+          echo "::${ANNOTATION_LEVEL}::Skipping image scan: ${OSV_DOCKER_IMAGE} (${OSV_DOCKER_PLATFORM}) is not published."
+          echo "- Skipped \`${OSV_DOCKER_IMAGE}\` (\`${OSV_DOCKER_PLATFORM}\`): image not published." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run image scanner
+        if: ${{ steps.image-probe.outputs.exists == 'true' }}
         shell: bash
         env:
           OSV_DOCKER_IMAGE: ${{ steps.image-target.outputs.image }}
           OSV_DOCKER_IMAGE_NAME: ${{ matrix.image }}
+          OSV_DOCKER_IMAGE_OS: ${{ steps.image-target.outputs.image_os }}
+          OSV_DOCKER_IMAGE_ARCH: ${{ steps.image-target.outputs.image_arch }}
           OSV_DOCKER_PLATFORM: ${{ matrix.platform }}
         run: |
           set -euo pipefail
@@ -251,14 +347,10 @@ jobs:
           result_json="image-result.json"
           result_sarif="image-result.sarif"
 
-          image_platform="${OSV_DOCKER_PLATFORM}"
-          image_os="${image_platform%%/*}"
-          image_arch="${image_platform#*/}"
-          image_arch="${image_arch%%/*}"
           rm -f "${image_archive}"
           skopeo copy \
-            --override-os "${image_os}" \
-            --override-arch "${image_arch}" \
+            --override-os "${OSV_DOCKER_IMAGE_OS}" \
+            --override-arch "${OSV_DOCKER_IMAGE_ARCH}" \
             "docker://${image}" \
             "docker-archive:${image_archive}:${image}"
 
