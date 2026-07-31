@@ -113,9 +113,10 @@ func TestSnapshotPerClientExcludesErroredClusterCLA(t *testing.T) {
 			"check then withholds every other cluster's endpoints")
 
 	// Do not generalize this to require every EDS resource to appear in dynamic
-	// CDS. Bootstrap-defined resources such as the local-cluster CLA are valid
-	// exceptions; the invariant here is specifically that an errored cluster
-	// omitted from CDS must not leave its own CLA behind.
+	// CDS. For example, Envoy's bootstrap defines the local EDS cluster, while
+	// the control plane serves its CLA dynamically without a matching cluster in
+	// CDS. The invariant here is specifically that an errored cluster omitted
+	// from CDS must not leave its own CLA behind.
 }
 
 // TestEndpointUpdatesFlowWhileAnotherClusterErrored drives the published
