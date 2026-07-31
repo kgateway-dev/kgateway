@@ -69,7 +69,7 @@ import (
 //     respondSOTWWatches deletes the watch anyway, so the proxy is left waiting
 //     forever. Endpoints for healthy clusters freeze until Envoy reconnects.
 //
-// Both tests below FAIL on main; the failures are the reproduction.
+// Both tests below fail without the errored-cluster CLA filtering in perclient.go.
 
 const (
 	reproHealthyCluster = "kube_default_service1_443"
@@ -157,7 +157,9 @@ func TestReproOrphanCLABlocksEndpointUpdatesForHealthyClusters(t *testing.T) {
 	clusters = envoy.awaitClusters(g)
 	g.Expect(clusters).To(gomega.ConsistOf(reproHealthyCluster),
 		"errored cluster is withheld from CDS, so Envoy stops subscribing to its endpoints")
-	envoy.resubscribeEndpoints()
+	claNames = envoy.syncEndpoints(g)
+	g.Expect(claNames).To(gomega.ConsistOf(reproHealthyCluster),
+		"EDS must immediately withdraw the errored cluster's CLA without withholding healthy endpoints")
 
 	// MARK: phase 3 - the healthy Service scales; its endpoints must still flow
 	f.updateEndpoints(reproHealthyCluster, 2)
@@ -174,6 +176,18 @@ func TestReproOrphanCLABlocksEndpointUpdatesForHealthyClusters(t *testing.T) {
 			"endpoints until it reconnects. control-plane warnings: %v", logs.warnings()))
 	g.Expect(localityCount(g, resp, reproHealthyCluster)).To(gomega.Equal(2),
 		"Envoy must see the scaled-up endpoints of the healthy cluster")
+
+	// MARK: phase 4 - fixing the policy restores the cluster and its endpoints
+	f.restoreCluster(reproBrokenCluster)
+	snap = f.awaitSnapshot(g, func(s XdsSnapWrapper) bool { return len(s.erroredClusters) == 0 })
+	f.setSnapshot(g, ctx, cache, snap)
+
+	clusters = envoy.awaitClusters(g)
+	g.Expect(clusters).To(gomega.ConsistOf(reproHealthyCluster, reproBrokenCluster),
+		"the recovered cluster must return to CDS")
+	claNames = envoy.syncEndpoints(g)
+	g.Expect(claNames).To(gomega.ConsistOf(reproHealthyCluster, reproBrokenCluster),
+		"the recovered cluster's CLA must be sent even when its endpoint content did not change")
 }
 
 // MARK: fixture
@@ -250,6 +264,10 @@ func (f *erroredClusterFixture) breakCluster(name string) {
 	c := edsCluster(f.ucc, name, 99)
 	c.Error = errors.New(reproValidationErr)
 	f.clusterCol.UpdateObject(c)
+}
+
+func (f *erroredClusterFixture) restoreCluster(name string) {
+	f.clusterCol.UpdateObject(edsCluster(f.ucc, name, 100))
 }
 
 func (f *erroredClusterFixture) updateEndpoints(name string, localities int) {
