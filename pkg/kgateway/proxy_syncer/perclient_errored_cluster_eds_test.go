@@ -81,11 +81,11 @@ const (
 		`rejected when tried individually: BOGUS_CIPHER_SUITE_1`
 )
 
-// TestReproErroredClusterPublishesOrphanCLA pins the invariant ADS mode requires:
-// every resource in the snapshot must be one the proxy is able to ask for. A
-// cluster dropped from CDS because its BackendConfigPolicy failed STRICT
+// TestSnapshotPerClientExcludesErroredClusterCLA pins the invariant ADS mode
+// requires: every resource in the snapshot must be one the proxy is able to ask
+// for. A cluster dropped from CDS because its BackendConfigPolicy failed STRICT
 // validation must not leave its CLA behind in the EDS payload.
-func TestReproErroredClusterPublishesOrphanCLA(t *testing.T) {
+func TestSnapshotPerClientExcludesErroredClusterCLA(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	f := newErroredClusterFixture(t)
@@ -105,8 +105,8 @@ func TestReproErroredClusterPublishesOrphanCLA(t *testing.T) {
 	g.Expect(cdsNames).ToNot(gomega.ContainElement(reproBrokenCluster),
 		"errored cluster is correctly withheld from CDS")
 
-	// This is the bug: the CLA for a cluster Envoy was never given is still
-	// published, and in ADS mode that poisons the whole EDS response.
+	// Without the errored-cluster filtering this CLA leaked into EDS, and in ADS
+	// mode one resource Envoy was never given poisons the whole EDS response.
 	g.Expect(edsNames).ToNot(gomega.ContainElement(reproBrokenCluster),
 		"CLA for the errored cluster must not be published: Envoy never received the cluster, "+
 			"so it will not list that CLA in its EDS request, and go-control-plane's ADS superset "+
@@ -118,13 +118,15 @@ func TestReproErroredClusterPublishesOrphanCLA(t *testing.T) {
 	}
 }
 
-// TestReproOrphanCLABlocksEndpointUpdatesForHealthyClusters drives the published
+// TestEndpointUpdatesFlowWhileAnotherClusterErrored drives the published
 // snapshots through the real ADS server and snapshot cache, with a client that
 // subscribes the way Envoy does: EDS resource names come from the clusters CDS
-// actually delivered. It reproduces the customer-visible symptom - after one
-// BackendConfigPolicy is rejected, endpoint updates for unrelated clusters never
-// arrive again.
-func TestReproOrphanCLABlocksEndpointUpdatesForHealthyClusters(t *testing.T) {
+// actually delivered. Before the errored-cluster CLA filtering, the customer
+// symptom appeared in phase 3 - after one BackendConfigPolicy was rejected,
+// endpoint updates for unrelated clusters never arrived again. Phase 4 pins the
+// version handling: recovery must re-deliver the CLA even when the endpoints
+// themselves never changed.
+func TestEndpointUpdatesFlowWhileAnotherClusterErrored(t *testing.T) {
 	g := gomega.NewWithT(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()

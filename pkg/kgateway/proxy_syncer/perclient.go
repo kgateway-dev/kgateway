@@ -306,9 +306,18 @@ func filterEndpointResourcesForStaticClusters(clusters envoycache.Resources, end
 }
 
 // filterEndpointResourcesForErroredClusters removes CLAs for clusters omitted from CDS
-// because backend translation failed. The original endpoint version remains part of the
-// filtered version so endpoint-policy changes that intentionally re-version an unchanged CLA
-// still trigger EDS updates for healthy clusters while another cluster is errored.
+// because backend translation failed.
+//
+// The version handling is load-bearing. Filtering must change the EDS version (the
+// "-errors-" suffix), and clearing the error must restore the original version, because
+// go-control-plane's SOTW push path responds only when the snapshot version differs from
+// the watch's last-acked version. If the version stayed the same across an error->recovery
+// flap, a recovered cluster whose endpoints never changed would get no EDS push, and the
+// request path can also stay silent (the client's returned-resources state still lists the
+// CLA if Envoy never sent a narrowed EDS request between the two CDS updates) - leaving the
+// cluster warming until some unrelated endpoint change bumps the version. The original
+// endpoint version remains part of the filtered version so endpoint changes for healthy
+// clusters keep triggering EDS updates while another cluster is errored.
 func filterEndpointResourcesForErroredClusters(endpoints envoycache.Resources, erroredClusters []string) envoycache.Resources {
 	if len(erroredClusters) == 0 {
 		return endpoints
