@@ -53,13 +53,15 @@ If the release branch **does not** exist, create one:
 - Add the new release branch to both CI workflows that hardcode a branch list. Neither discovers branches automatically, so a newly cut branch gets no coverage until it is listed:
   - [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml): add it to the scheduled scan matrix (the `branches='[...]'` array) *and* the `workflow_dispatch` branch options.
     This allowlist is the single source of truth for which branches get scanned: tooling such as [`hack/osvtool`](../../hack/osvtool) and the `cve-bump` skill reads it rather than hardcoding the branch list, so keeping it current is all that is needed.
+    An allowlisted branch that does not exist in the repository being scanned, and a release image that has not been published to its registry, are reported as annotations and skipped rather than failing the run.
+    That keeps the scan green on forks, which carry only a subset of the release branches and publish no release images; on `kgateway-dev/kgateway` the same gaps are annotated at error level, so a newly cut branch that is missing a scan target is still visible in the run summary.
   - [.github/workflows/nightly-tests.yaml](../../.github/workflows/nightly-tests.yaml): add it to the scheduled `refs` array in the `determine_refs` job, which drives the nightly conformance, load, and e2e matrices.
 
 ### Retiring an LTS branch
 
 When a release branch reaches end of life, remove it from the same two workflows it was added to when it was cut:
 
-- [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml): drop it from the scheduled `branches='[...]'` array, the `workflow_dispatch` options, and the dispatch `case` arm.
+- [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml): drop it from the scheduled `branches='[...]'` array and the `workflow_dispatch` options.
 - [.github/workflows/nightly-tests.yaml](../../.github/workflows/nightly-tests.yaml): drop it from the scheduled `refs` array.
 
 Both edits land on `main` only. Scheduled runs always use the workflow definition from the default branch even though they check out each ref, so removing a ref from `main`'s matrix retires it everywhere -- there is no corresponding change to make on the release branch itself.
