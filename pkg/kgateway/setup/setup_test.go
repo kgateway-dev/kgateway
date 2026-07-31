@@ -48,7 +48,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
-	"github.com/kgateway-dev/kgateway/v2/test/envtestassets"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 )
 
@@ -115,6 +114,11 @@ func init() {
 		grpclog.SetLoggerV2(grpclog.NewLoggerV2WithVerbosity(writer, writer, writer, 100))
 	}
 }
+
+// sharedTestEnv is started once in TestMain and reused across all tests in this
+// package; each test still starts its own kgateway controller against it (settings
+// differ per test), so only the expensive etcd+apiserver boot is shared.
+var sharedTestEnv *envtest.Environment
 
 func TestServiceEntry(t *testing.T) {
 	st, err := envtestutil.BuildSettings()
@@ -202,6 +206,26 @@ func TestWithAutoDns(t *testing.T) {
 	runScenario(t, "testdata/autodns", st)
 }
 
+// applyYAMLContents writes yamls to a temp file, applies them, and registers a
+// cleanup that deletes them. Deletion matters because the envtest apiserver is
+// shared across tests in this package: leftovers would pollute later tests (and
+// repeated runs via `go test -count=N`).
+func applyYAMLContents(t *testing.T, client istiokube.CLIClient, ns string, yamls ...string) {
+	t.Helper()
+	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
+	if err := os.WriteFile(yamlfile, []byte(strings.Join(yamls, "\n---\n")), 0o600); err != nil {
+		t.Fatalf("failed to write yaml: %v", err)
+	}
+	if err := client.ApplyYAMLFiles(ns, yamlfile); err != nil {
+		t.Fatalf("failed to apply yaml: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := client.DeleteYAMLFiles(ns, yamlfile); err != nil {
+			t.Logf("failed to delete yaml: %v", err)
+		}
+	})
+}
+
 func TestPolicyUpdate(t *testing.T) {
 	st, err := envtestutil.BuildSettings()
 	if err != nil {
@@ -210,7 +234,7 @@ func TestPolicyUpdate(t *testing.T) {
 	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
 
-		err = client.ApplyYAMLContents("gwtest", `kind: Gateway
+		applyYAMLContents(t, client, "gwtest", `kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: http-gw
@@ -308,7 +332,7 @@ func TestServiceAppProtocolUpdate(t *testing.T) {
 	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
 
-		err = client.ApplyYAMLContents("gwtest", `kind: Gateway
+		applyYAMLContents(t, client, "gwtest", `kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: http-gw
@@ -351,9 +375,6 @@ spec:
       port: 8080
       targetPort: 8080
 `)
-		if err != nil {
-			t.Fatalf("failed to apply initial resources: %v", err)
-		}
 
 		time.Sleep(time.Second * 2)
 		t.Cleanup(func() {
@@ -459,28 +480,10 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 		writer.set(nil)
 	})
 
-	assetsDir, err := envtestassets.GetEnvTestAssetsDir()
-	if err != nil {
-		t.Fatalf("failed to get assets dir: %v", err)
-	}
-
-	testEnv := &envtest.Environment{
-		CRDDirectoryPaths: []string{
-			filepath.Join("..", "crds"),
-			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
-			filepath.Join("testdata", "istio_crds_setup"),
-		},
-		ErrorIfCRDPathMissing: true,
-		// set assets dir so we can run without the makefile
-		BinaryAssetsDirectory: assetsDir,
-		// This often hangs (for unknown reasons); we don't need cleanup so just kill it almost instantly
-		ControlPlaneStopTimeout: time.Millisecond,
-		// web hook to add cluster ips to services
-	}
 	envtestutil.RunController(
 		t,
 		globalSettings,
-		testEnv,
+		sharedTestEnv,
 		nil,
 		[][]string{
 			{"default", "testdata/setup_yaml/setup.yaml"},

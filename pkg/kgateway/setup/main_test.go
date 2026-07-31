@@ -1,8 +1,15 @@
 package setup_test
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
+	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	"github.com/kgateway-dev/kgateway/v2/test/envtestassets"
 )
 
 func TestMain(m *testing.M) {
@@ -19,5 +26,32 @@ func TestMain(m *testing.M) {
 	if os.Getenv("KGW_XDS_FIRST_CONNECT_DELAY") == "" {
 		os.Setenv("KGW_XDS_FIRST_CONNECT_DELAY", "0")
 	}
-	os.Exit(m.Run())
+
+	// Start a single envtest environment (etcd + kube-apiserver) shared by all
+	// tests in this package; booting one per test dominates the suite runtime.
+	assetsDir, err := envtestassets.GetEnvTestAssetsDir()
+	if err != nil {
+		fmt.Printf("failed to get assets dir: %v\n", err)
+		os.Exit(1)
+	}
+	sharedTestEnv = &envtest.Environment{
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "crds"),
+			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
+			filepath.Join("testdata", "istio_crds_setup"),
+		},
+		ErrorIfCRDPathMissing: true,
+		// set assets dir so we can run without the makefile
+		BinaryAssetsDirectory: assetsDir,
+		// This often hangs (for unknown reasons); we don't need cleanup so just kill it almost instantly
+		ControlPlaneStopTimeout: time.Millisecond,
+		// web hook to add cluster ips to services
+	}
+	if _, err := sharedTestEnv.Start(); err != nil {
+		fmt.Printf("failed to start envtest: %v\n", err)
+		os.Exit(1)
+	}
+	code := m.Run()
+	sharedTestEnv.Stop()
+	os.Exit(code)
 }
