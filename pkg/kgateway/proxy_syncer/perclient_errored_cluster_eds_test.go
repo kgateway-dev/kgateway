@@ -112,10 +112,10 @@ func TestSnapshotPerClientExcludesErroredClusterCLA(t *testing.T) {
 			"so it will not list that CLA in its EDS request, and go-control-plane's ADS superset "+
 			"check then withholds every other cluster's endpoints")
 
-	for _, name := range edsNames {
-		g.Expect(cdsNames).To(gomega.ContainElement(name),
-			fmt.Sprintf("snapshot publishes CLA %q with no matching cluster in CDS", name))
-	}
+	// Do not generalize this to require every EDS resource to appear in dynamic
+	// CDS. Bootstrap-defined resources such as the local-cluster CLA are valid
+	// exceptions; the invariant here is specifically that an errored cluster
+	// omitted from CDS must not leave its own CLA behind.
 }
 
 // TestEndpointUpdatesFlowWhileAnotherClusterErrored drives the published
