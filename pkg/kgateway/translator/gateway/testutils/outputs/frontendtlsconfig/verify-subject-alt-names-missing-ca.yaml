@@ -25,11 +25,6 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Successfully resolved all references
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        - lastTransitionTime: null
           message: verify-subject-alt-names annotation requires a trusted CA to be
             configured
           reason: Invalid
@@ -46,6 +41,11 @@ Statuses:
           reason: NoConflicts
           status: "False"
           type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
         name: https-mtls-strict-validation
         supportedKinds:
         - group: gateway.networking.k8s.io

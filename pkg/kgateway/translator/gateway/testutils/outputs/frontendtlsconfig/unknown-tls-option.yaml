@@ -64,11 +64,6 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Successfully resolved all references
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        - lastTransitionTime: null
           message: 'unknown tls option: kgateway.dev/signature-algorithm'
           reason: Invalid
           status: "False"
@@ -83,6 +78,11 @@ Statuses:
           reason: NoConflicts
           status: "False"
           type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
         name: https
         supportedKinds:
         - group: gateway.networking.k8s.io

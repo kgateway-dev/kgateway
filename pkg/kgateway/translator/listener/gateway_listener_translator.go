@@ -1388,14 +1388,11 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = fmt.Sprintf(ResourceNotFoundMessageTemplate, resourceType, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 	}
 
-	if resolvedRefsOK {
-		listenerReporter.SetCondition(reports.ListenerCondition{
-			Type:    gwv1.ListenerConditionResolvedRefs,
-			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.ListenerReasonResolvedRefs,
-			Message: "Successfully resolved all references",
-		})
-	} else {
+	// When resolvedRefsOK is true, do not set a ResolvedRefs condition at all
+	// — listenerConditionsWithDefaults sets ResolvedRefs=True as the default
+	// for any condition type that was not explicitly set. We only need to
+	// override it when references genuinely failed to resolve.
+	if !resolvedRefsOK {
 		listenerReporter.SetCondition(reports.ListenerCondition{
 			Type:    gwv1.ListenerConditionResolvedRefs,
 			Status:  metav1.ConditionFalse,
