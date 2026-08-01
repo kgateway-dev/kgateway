@@ -353,8 +353,9 @@ type Settings struct {
 	// this order via choose_first instead of the client's order.
 	// A TrafficPolicy still decides which codecs you offer. This sets the order Envoy picks from
 	// when the client has tied codec preferences.
-	// Empty by default, keeping client's order, requires opt-in.
-	CompressionLibraryPreference string `split_words:"true"`
+	// Defaults to Zstd, Brotli, Gzip so a stronger codec wins over gzip without extra configuration.
+	// Set it to an empty string to keep the client's order instead.
+	CompressionLibraryPreference string `split_words:"true" default:"zstd,brotli,gzip"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

@@ -1156,16 +1156,19 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy multi-codec compression with gateway-wide server preference", func(t *testing.T) {
+	t.Run("TrafficPolicy multi-codec compression preference can be opted out", func(t *testing.T) {
+		// The default gateway-wide preference applies server-side ordering (see the negotiation
+		// case). Setting it to an empty string opts out, so no choose_first is set and the codec
+		// order stays client-driven.
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/compression-negotiation-route.yaml"},
-			outputFile: "traffic-policy/compression-server-preference-route.yaml",
+			outputFile: "traffic-policy/compression-preference-optout-route.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
 		}, func(s *apisettings.Settings) {
-			s.CompressionLibraryPreference = "zstd,brotli,gzip"
+			s.CompressionLibraryPreference = ""
 		})
 	})
 
