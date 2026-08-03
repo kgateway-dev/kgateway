@@ -95,12 +95,33 @@ func (s *StatusCollections) SetQueue(queue WorkerQueue) []krt.Syncer {
 	})
 }
 
+// RemovalPolicy decides what to write when an element leaves a status collection. That
+// happens both when the object itself is deleted (harmless: the writer finds no object and
+// skips) and when the object outlives its desired status, e.g. it dropped out of the
+// translation report. The second case is the one this policy is about.
+type RemovalPolicy int
+
+const (
+	// ClearOnRemove publishes an empty desired status, which clears the entries this
+	// controller owns. Correct for multi-writer list statuses (route status.parents,
+	// policy status.ancestors) where the writer's merge preserves the entries owned by
+	// other controllers, so clearing ours is both safe and required to drop stale entries.
+	ClearOnRemove RemovalPolicy = iota
+
+	// KeepOnRemove leaves the live status untouched. Correct for single-writer statuses
+	// (Gateway, ListenerSet, Backend) where there is nothing to preserve and an empty
+	// desired status would wipe every condition rather than just our own entries.
+	KeepOnRemove
+)
+
 // RegisterStatus takes a status collection and registers it to be managed by the status queue.
 // The ObjectWithStatus elements must carry the live object (including its current status) in
 // Obj and the desired status in Status; getStatus extracts the live status from the object.
 // An event only reaches the write queue when the live status differs from the desired status,
 // so lost writes self-heal: a conflicted or dropped write leaves live != desired, and the next
 // informer event re-enqueues it.
+//
+// removal selects what an element removal means for this kind; see RemovalPolicy.
 //
 // gvk identifies the resource kind for write dispatch. If the live object carries its own
 // GroupVersionKind (e.g. legacy variants normalized into a shared type), that takes precedence.
@@ -109,12 +130,24 @@ func RegisterStatus[I controllers.Object, IS any](
 	gvk schema.GroupVersionKind,
 	statusCol krt.StatusCollection[I, IS],
 	getStatus func(I) IS,
+	removal RemovalPolicy,
 ) {
 	reg := func(statusWriter WorkerQueue) krt.HandlerRegistration {
 		return statusCol.Register(func(o krt.Event[krt.ObjectWithStatus[I, IS]]) {
 			l := o.Latest()
-			liveStatus := getStatus(l.Obj)
-			if krt.Equal(liveStatus, l.Status) {
+			desired := l.Status
+			if o.Event == controllers.EventDelete {
+				if removal == KeepOnRemove {
+					logger.Debug("status collection element removed, leaving live status untouched", "resource", l.ResourceName())
+					return
+				}
+				var empty IS
+				desired = empty
+			}
+			// Compare against the status we actually intend to write, which is why this runs
+			// after the removal handling: comparing the live status against the pre-removal
+			// desired would make clearing depend on whether the last write had landed yet.
+			if krt.Equal(getStatus(l.Obj), desired) {
 				// We want the same status we already have! No need for a write so skip this.
 				// Note: the Equals() function on ObjectWithStatus does not compare these. It only
 				// compares "old live + desired" == "new live + desired", so this callback triggers
@@ -122,12 +155,6 @@ func RegisterStatus[I controllers.Object, IS any](
 				// filtering and just check whether we already meet the desired state.
 				logger.Debug("suppressing status change, live == desired", "resource", l.ResourceName(), "resource_version", l.Obj.GetResourceVersion())
 				return
-			}
-			desired := l.Status
-			if o.Event == controllers.EventDelete {
-				// if the object is being deleted, we should not reset status
-				var empty IS
-				desired = empty
 			}
 			res := Resource{
 				GroupVersionKind: gvk,

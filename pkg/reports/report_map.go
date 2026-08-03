@@ -48,6 +48,26 @@ func MergeReportMaps(inputs ...ReportMap) ReportMap {
 	return merged
 }
 
+// MergePolicyReports merges only the Policies of the input report maps, returning a report
+// map owned by the caller. Policy status is built from Policies alone (see
+// ReportMap.BuildPolicyStatus), so this avoids the full-map deep clone MergeReportMaps
+// performs: on a large cluster that clone copies every route, gateway and backend report
+// on every translation event only to have them discarded.
+func MergePolicyReports(inputs ...ReportMap) ReportMap {
+	merged := NewReportMap()
+	for _, input := range inputs {
+		for key, report := range input.Policies {
+			existing := merged.Policies[key]
+			if existing == nil {
+				merged.Policies[key] = clonePolicyReport(report)
+				continue
+			}
+			mergeAncestorReports(existing, report)
+		}
+	}
+	return merged
+}
+
 func mergeRouteReportMap(dst, src map[types.NamespacedName]*RouteReport) {
 	for key, report := range src {
 		existing := dst[key]
