@@ -122,48 +122,7 @@ Pinned versions live in the `Makefile` (`ENVOY_IMAGE`, `ALPINE_BASE_IMAGE`, and 
 ### PR body
 PRs must follow `/.github/PULL_REQUEST_TEMPLATE.md`, which GitHub pre-fills in the web UI. **`gh pr create --body`/`--body-file` bypasses the template**, so when opening a PR from the CLI you must reproduce the structure yourself. The `labeler` workflow parses the body and is a **required check** — a missing change type or changelog block fails CI.
 
-````markdown
-# Description
-
-<why the change is needed, what changed, and `Fixes #123` links>
-
-# Change Type
-/kind fix
-
-# Changelog
-
-```release-note
-User-facing description, or NONE
-```
-
-# Additional Notes
-
-<optional extra context for reviewers>
-````
-
-- **Change Type**: one or more `/kind` slash-commands, each on its own line. Valid values: `breaking_change`, `bump`, `cleanup`, `design`, `deprecation`, `documentation`, `feature`, `fix`, `flake`, `install`, `test`.
-- **Changelog**: a fenced block tagged `release-note` containing the exact line to appear in release notes, or `NONE` if the change is not user-facing.
-- PRs are squash-merged and **the PR title becomes the commit message** — make it clear and descriptive.
-
-### CI notes
-- Conformance and e2e do not run on draft PRs; they start once the PR is marked ready for review.
-- Comment `/retest` to re-run failed jobs, `/merge` to enable auto-merge, `/unmerge` to disable it (kgateway org members only).
-- A `do-not-merge*` or `work in progress` label blocks merging.
-
 Full details: `/devel/contributing/pull-requests.md` and `/.github/workflows/README.md`.
-
-## Style
-
-All code and comments should use American English spelling (i.e. "color" not "colour", "honor" not "honour").
-
-### Markdown Output
-When generating markdown documentation:
-- Use ordered heading levels (no skipping from `#` to `###`)
-- Headings should not end in punctuation
-- Use consistent bullet types within a list (don't mix `-` and `*`)
-- No empty headings
-- Use `->` instead of `→` for arrows (ASCII-compatible)
-- **Prefer mermaid diagrams over ASCII art** - use fenced mermaid code blocks for flowcharts, sequence diagrams, and architecture diagrams instead of box-drawing characters (┌ └ │ ├ ─ ► ▼ etc.)
 
 ## Further Reading
 Docs not already linked above: `/devel/contributing/README.md` (contributing overview), `/devel/contributing/conventions.md` (coding conventions), `/devel/contributing/code-generation.md` (codegen internals).
