@@ -60,6 +60,9 @@ spec:
       labels:
         {{- include "kgateway.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: controller
+        {{- with .Values.commonLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
