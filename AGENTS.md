@@ -49,7 +49,7 @@ High-risk area: an incomplete `Equals` silently breaks KRT change detection.
 - `make generate-all`: Uses stamp files, only regenerates changed code (fast) — the usual choice
 - `make generated-code`: Ignores stamp files, force-regenerates everything
 - `make go-generate-apis`: Only API changes (~1m)
-- `make verify -B`: CI target - always regenerates and fails on any resulting git diff
+- `make verify`: CI target - always regenerates and fails on any resulting git diff
 - `make fmt` or `make fmt-changed`: Format code (always run before commit)
 
 After API changes: run `make go-generate-apis` then `make fmt-changed`. Dependency tracking lives in `_output/stamps/`; run `make clean-stamps` if regeneration seems stuck. If not sure, just run `make generate-all`.
@@ -114,10 +114,10 @@ Pinned versions live in the `Makefile` (`ENVOY_IMAGE`, `ALPINE_BASE_IMAGE`, and 
 ## Opening Pull Requests
 
 ### Before you open
-1. `make verify -B` - regenerates code and fails if it produces a local diff
-2. `make analyze -B` - runs the linter
+1. `make verify` - regenerates code and fails if it produces a local diff
+2. `make analyze` - runs the linter
 3. `make lint-actions` - only if you modified files in `.github/`
-4. Every commit needs a `Signed-off-by` trailer ([DCO](https://developercertificate.org/) is a required check). Use `git commit -s`, or run `make init-git-hooks` once to have it added automatically.
+4. Every commit needs a `Signed-off-by` trailer ([DCO](https://developercertificate.org/) is a required check). Use `git commit -s`.
 
 ### PR body
 PRs must follow the [org-level PR template](https://github.com/kgateway-dev/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md). The `labeler` workflow parses the body and is a **required check** — a missing change type or changelog block fails CI. Use these exact headings:
