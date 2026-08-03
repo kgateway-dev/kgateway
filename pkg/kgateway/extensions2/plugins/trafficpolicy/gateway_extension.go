@@ -121,11 +121,22 @@ func TranslateGatewayExtensionBuilder(
 	ctx context.Context,
 	commoncol *collections.CommonCollections,
 ) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
-	oidcDiscoverer := newOIDCProviderConfigDiscoverer(func() []string {
-		return oidcIssuerURIs(commoncol.GatewayExtensions.List())
-	})
+	oidcDiscoverer := newOIDCProviderConfigDiscoverer(
+		func() []string { return oidcIssuerURIs(commoncol.GatewayExtensions.List()) },
+		commoncol.KrtOpts.ToOptions("OIDCDiscoveryTrigger")...,
+	)
 	go oidcDiscoverer.run(ctx)
 
+	return gatewayExtensionBuilder(ctx, commoncol, oidcDiscoverer)
+}
+
+// gatewayExtensionBuilder is split out of TranslateGatewayExtensionBuilder so that tests can
+// supply a discoverer with shorter refresh intervals than the production defaults.
+func gatewayExtensionBuilder(
+	ctx context.Context,
+	commoncol *collections.CommonCollections,
+	oidcDiscoverer *oidcProviderConfigDiscoverer,
+) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
 			Name:             krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
@@ -231,20 +242,6 @@ func TranslateGatewayExtensionBuilder(
 		}
 		return p
 	}
-}
-
-// oidcIssuerURIs collects the OpenID issuer URIs referenced by the given extensions. It feeds
-// the discovery refresh loop so that issuers whose GatewayExtension was deleted, or which was
-// re-pointed at a different provider, stop being polled.
-func oidcIssuerURIs(exts []ir.GatewayExtension) []string {
-	issuerURIs := make([]string, 0, len(exts))
-	for _, ext := range exts {
-		if ext.OAuth2 == nil || ext.OAuth2.IssuerURI == nil {
-			continue
-		}
-		issuerURIs = append(issuerURIs, *ext.OAuth2.IssuerURI)
-	}
-	return issuerURIs
 }
 
 func resolveJwtProviders(

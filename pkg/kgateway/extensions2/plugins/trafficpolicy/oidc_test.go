@@ -3,6 +3,7 @@ package trafficpolicy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -280,6 +281,75 @@ func TestOIDCConfigDiscoveryInvalidIssuerURL(t *testing.T) {
 	r.Error(err)
 	r.Nil(config)
 	r.Contains(err.Error(), "error parsing discovery URL")
+
+	// A malformed issuer URI is not cached: it can only be fixed by editing the
+	// GatewayExtension, which re-runs the transform on its own, so there is nothing for the
+	// refresh loop to retry and it must not be polled (or warned about) every pass forever.
+	_, cached := o.load(invalidIssuer)
+	r.False(cached, "malformed issuer URI should not be cached")
+
+	o.refreshOnce(context.Background())
+	_, cached = o.load(invalidIssuer)
+	r.False(cached, "refresh should not resurrect a malformed issuer URI")
+}
+
+// TestOIDCConfigDiscoveryFailureBacksOff asserts consecutive failures are retried with an
+// exponential backoff capped at cacheRefreshInterval, so a multi-hour provider outage is not
+// polled at the base interval for its whole duration.
+func TestOIDCConfigDiscoveryFailureBacksOff(t *testing.T) {
+	r := require.New(t)
+
+	o := newOIDCProviderConfigDiscoverer(func() []string { return nil })
+	o.failureRetryInterval = time.Second
+	o.cacheRefreshInterval = 4 * time.Second
+	discoveryErr := errors.New("boom")
+
+	// failures=1 -> 1s, 2 -> 2s, 3 -> 4s, then capped at cacheRefreshInterval.
+	for _, tc := range []struct {
+		priorFailures int
+		wantTTL       time.Duration
+	}{
+		{priorFailures: 0, wantTTL: time.Second},
+		{priorFailures: 1, wantTTL: 2 * time.Second},
+		{priorFailures: 2, wantTTL: 4 * time.Second},
+		{priorFailures: 3, wantTTL: 4 * time.Second},
+		{priorFailures: 40, wantTTL: 4 * time.Second}, // no overflow at high failure counts
+	} {
+		before := time.Now()
+		result := o.newResult(nil, discoveryErr, tc.priorFailures)
+		r.Equal(tc.priorFailures+1, result.failures)
+		ttl := result.expiry.Sub(before)
+		r.GreaterOrEqual(ttl, tc.wantTTL, "ttl for %d prior failures", tc.priorFailures)
+		r.Less(ttl, tc.wantTTL+time.Second, "ttl for %d prior failures", tc.priorFailures)
+	}
+
+	// A success resets to the full refresh interval.
+	success := o.newResult(&oidcProviderConfig{}, nil, 9)
+	r.Equal(0, success.failures)
+	r.Greater(success.expiry.Sub(time.Now()), 3*time.Second) //nolint:gocritic // comparing against a computed TTL
+}
+
+// TestOIDCDiscovererRunClampsNonPositiveInterval guards against time.NewTicker panicking when a
+// discoverer is built with a zero interval, as the pruning test does.
+func TestOIDCDiscovererRunClampsNonPositiveInterval(t *testing.T) {
+	o := newOIDCProviderConfigDiscoverer(func() []string { return nil })
+	o.failureRetryInterval = 0
+	o.cacheRefreshInterval = 0
+
+	ctx, cancel := context.WithCancel(context.Background())
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		o.run(ctx) // must not panic
+	}()
+
+	time.Sleep(20 * time.Millisecond)
+	cancel()
+	select {
+	case <-stopped:
+	case <-time.After(5 * time.Second):
+		t.Fatal("run() did not return after context cancellation")
+	}
 }
 
 // TestOIDCConfigDiscoveryRetriesFailureAndRecovers covers the regression in
@@ -356,7 +426,6 @@ func TestOIDCConfigDiscoveryRefreshLoopRecovers(t *testing.T) {
 
 	issuer := server.URL
 	o := newTestDiscoverer(issuer)
-	o.failureRetryInterval = 10 * time.Millisecond
 
 	_, err := o.get(context.Background(), issuer)
 	r.Error(err)

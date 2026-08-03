@@ -6,14 +6,18 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"sync"
 	"time"
 
 	"github.com/avast/retry-go/v4"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 const (
@@ -24,16 +28,32 @@ const (
 	// defaultOIDCCacheRefreshInterval is how long a successful discovery is served from the
 	// cache before it is re-discovered. The OpenID provider configuration is not expected to
 	// change frequently, so caching it for a longer duration prevents excessive network calls.
+	// It also caps the backoff applied to repeated failures.
 	defaultOIDCCacheRefreshInterval = 5 * time.Minute
 
-	// defaultOIDCFailureRetryInterval is how long a failed discovery is served from the cache
-	// before it is retried. It is much shorter than the success interval so that a provider
-	// which was unreachable when kgateway started, or which was down during a provider
-	// outage, is picked up quickly rather than leaving the policy broken until restart.
+	// defaultOIDCFailureRetryInterval is the base interval after which a failed discovery is
+	// retried. It is much shorter than the success interval so that a provider which was
+	// unreachable when kgateway started, or which was down during a provider outage, is picked
+	// up quickly rather than leaving the policy broken until restart. Consecutive failures back
+	// off exponentially from here, capped at defaultOIDCCacheRefreshInterval.
 	defaultOIDCFailureRetryInterval = 30 * time.Second
 
 	// oidcDiscoveryHTTPTimeout bounds a single discovery request.
 	oidcDiscoveryHTTPTimeout = 30 * time.Second
+
+	// foregroundDiscoveryTimeout bounds discovery performed from a krt transform, which blocks
+	// the event loop and therefore translation of everything downstream of GatewayExtensions.
+	// It is deliberately tight: the background refresh loop retries, so giving up quickly costs
+	// only a short-lived error on the policy rather than a lost configuration.
+	foregroundDiscoveryTimeout = 10 * time.Second
+
+	// backgroundDiscoveryTimeout bounds discovery performed by the refresh loop. It can afford
+	// to be more generous than the foreground budget because it runs off the event loop.
+	backgroundDiscoveryTimeout = 30 * time.Second
+
+	// backgroundDiscoveryConcurrency bounds how many issuers the refresh loop re-discovers at
+	// once, so recovery latency does not scale with the number of unreachable providers.
+	backgroundDiscoveryConcurrency = 4
 )
 
 // oidcProviderConfig maps the OpenID provider config response.
@@ -66,6 +86,8 @@ type oidcDiscoveryResult struct {
 	err error
 	// expiry is when the refresh loop becomes eligible to re-discover this entry.
 	expiry time.Time
+	// failures counts consecutive failed discoveries, and drives the retry backoff.
+	failures int
 }
 
 // sameOutcome reports whether two results translate to the same GatewayExtension IR.
@@ -111,16 +133,30 @@ type oidcProviderConfigDiscoverer struct {
 // provider configurations. liveIssuerURIs must report the issuer URIs still referenced by
 // GatewayExtensions so the refresh loop can prune entries it no longer needs to poll.
 // Callers must start run() for cached entries to be refreshed and retried.
-func newOIDCProviderConfigDiscoverer(liveIssuerURIs func() []string) *oidcProviderConfigDiscoverer {
+func newOIDCProviderConfigDiscoverer(liveIssuerURIs func() []string, opts ...krt.CollectionOption) *oidcProviderConfigDiscoverer {
 	return &oidcProviderConfigDiscoverer{
 		// Start synced: get() discovers synchronously on first use, so dependent collections
 		// must not block waiting for the refresh loop to publish an initial state.
-		trigger:              krt.NewRecomputeTrigger(true),
+		trigger:              krt.NewRecomputeTrigger(true, opts...),
 		liveIssuerURIs:       liveIssuerURIs,
 		cacheRefreshInterval: defaultOIDCCacheRefreshInterval,
 		failureRetryInterval: defaultOIDCFailureRetryInterval,
 		cache:                map[string]oidcDiscoveryResult{},
 	}
+}
+
+// oidcIssuerURIs collects the OpenID issuer URIs referenced by the given extensions. It feeds
+// the discovery refresh loop so that issuers whose GatewayExtension was deleted, or which was
+// re-pointed at a different provider, stop being polled.
+func oidcIssuerURIs(exts []ir.GatewayExtension) []string {
+	issuerURIs := make([]string, 0, len(exts))
+	for _, ext := range exts {
+		if ext.OAuth2 == nil || ext.OAuth2.IssuerURI == nil {
+			continue
+		}
+		issuerURIs = append(issuerURIs, *ext.OAuth2.IssuerURI)
+	}
+	return issuerURIs
 }
 
 // markDependant registers the calling krt transform as depending on discovery results.
@@ -133,9 +169,15 @@ func (o *oidcProviderConfigDiscoverer) markDependant(krtctx krt.HandlerContext) 
 // run periodically re-discovers the provider configuration for every cached issuer that is
 // still referenced by a GatewayExtension, and triggers a krt recomputation whenever an
 // outcome changes. Successful entries are refreshed on cacheRefreshInterval; failed entries
-// are retried on the much shorter failureRetryInterval.
+// are retried on failureRetryInterval, backing off on consecutive failures.
 func (o *oidcProviderConfigDiscoverer) run(ctx context.Context) {
-	ticker := time.NewTicker(o.failureRetryInterval)
+	// Tick at half the retry interval so an entry expiring just after a tick is not delayed by
+	// a full extra period. time.NewTicker panics on a non-positive interval, so clamp.
+	interval := o.failureRetryInterval / 2
+	if interval <= 0 {
+		interval = time.Millisecond
+	}
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {
@@ -156,6 +198,8 @@ func (o *oidcProviderConfigDiscoverer) run(ctx context.Context) {
 // refreshOnce prunes issuers no longer referenced by any GatewayExtension, re-discovers the
 // expired ones, and triggers a single recomputation if any outcome changed.
 func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
+	// Resolve the live set outside the lock: it calls into krt, which must not be done while
+	// holding o.mu.
 	live := sets.New(o.liveIssuerURIs()...)
 
 	// Only refresh issuers that are both still referenced and already cached. Entries are
@@ -182,17 +226,26 @@ func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
 		o.mu.Unlock()
 	}
 
-	changed := false
-	for _, issuerURI := range expired {
-		if ctx.Err() != nil {
-			return
-		}
-		if o.rediscover(ctx, issuerURI) {
-			changed = true
-		}
+	if len(expired) == 0 {
+		return
 	}
 
-	if changed {
+	// Re-discover concurrently, with a bound, so that recovery latency for one issuer does not
+	// scale with the number of other unreachable issuers.
+	changed := make([]bool, len(expired))
+	var g errgroup.Group
+	g.SetLimit(backgroundDiscoveryConcurrency)
+	for i, issuerURI := range expired {
+		g.Go(func() error {
+			changed[i] = o.rediscover(ctx, issuerURI)
+			return nil
+		})
+	}
+	_ = g.Wait() // rediscover never returns an error; failures are recorded in the cache
+
+	// Trigger once for the whole pass, outside o.mu: the trigger synchronously drives the
+	// dependent transform, which calls back into load().
+	if slices.Contains(changed, true) {
 		logger.Debug("openid provider config changed, triggering recomputation")
 		o.trigger.TriggerRecomputation()
 	}
@@ -201,9 +254,20 @@ func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
 // rediscover re-runs discovery for issuerURI and replaces the cached entry, reporting whether
 // the new outcome differs from the cached one.
 func (o *oidcProviderConfigDiscoverer) rediscover(ctx context.Context, issuerURI string) bool {
-	next := o.newResult(o.discover(ctx, issuerURI))
-	if next.err != nil {
-		logger.Warn("error refreshing OpenID provider config", "issuer_uri", issuerURI, "error", next.err)
+	ctx, cancel := context.WithTimeout(ctx, backgroundDiscoveryTimeout)
+	defer cancel()
+
+	discoveryURL, err := oidcDiscoveryURL(issuerURI)
+	if err != nil {
+		// Not reachable in practice: the entry could only have been cached by a get() that
+		// parsed the same URI successfully.
+		logger.Warn("error refreshing OpenID provider config", "issuer_uri", issuerURI, "error", err)
+		return false
+	}
+
+	cfg, err := o.discover(ctx, discoveryURL)
+	if err != nil {
+		logger.Warn("error refreshing OpenID provider config", "issuer_uri", issuerURI, "error", err)
 	}
 
 	o.mu.Lock()
@@ -214,6 +278,7 @@ func (o *oidcProviderConfigDiscoverer) rediscover(ctx context.Context, issuerURI
 		// away. Don't resurrect it.
 		return false
 	}
+	next := o.newResult(cfg, err, prev.failures)
 	o.cache[issuerURI] = next
 	return !prev.sameOutcome(next)
 }
@@ -227,6 +292,19 @@ func (o *oidcProviderConfigDiscoverer) get(ctx context.Context, issuerURI string
 		return result.cfg, result.err
 	}
 
+	// A malformed issuer URI is deliberately not cached. It can only be corrected by editing
+	// the GatewayExtension, which is a tracked krt input that re-runs this transform on its
+	// own, so there is nothing for the refresh loop to usefully retry: caching it would just
+	// log a warning every pass, forever.
+	discoveryURL, err := oidcDiscoveryURL(issuerURI)
+	if err != nil {
+		return nil, err
+	}
+
+	// Bound the time spent blocking the krt event loop; run() retries in the background.
+	ctx, cancel := context.WithTimeout(ctx, foregroundDiscoveryTimeout)
+	defer cancel()
+
 	// Use singleflight to deduplicate concurrent discovery calls for the same issuer;
 	// several transforms may call get() for the same issuer at once.
 	v, _, _ := o.discoverGroup.Do(issuerURI, func() (any, error) {
@@ -235,7 +313,8 @@ func (o *oidcProviderConfigDiscoverer) get(ctx context.Context, issuerURI string
 		if result, ok := o.load(issuerURI); ok {
 			return result, nil
 		}
-		result := o.newResult(o.discover(ctx, issuerURI))
+		cfg, err := o.discover(ctx, discoveryURL)
+		result := o.newResult(cfg, err, 0)
 		o.mu.Lock()
 		o.cache[issuerURI] = result
 		o.mu.Unlock()
@@ -255,25 +334,41 @@ func (o *oidcProviderConfigDiscoverer) load(issuerURI string) (oidcDiscoveryResu
 }
 
 // newResult stamps a discovery outcome with the expiry after which run() may retry it.
-func (o *oidcProviderConfigDiscoverer) newResult(cfg *oidcProviderConfig, err error) oidcDiscoveryResult {
-	ttl := o.cacheRefreshInterval
-	if err != nil {
-		ttl = o.failureRetryInterval
+// priorFailures is the consecutive-failure count of the entry being replaced (0 for a first
+// discovery), so that a provider which stays down is polled with an exponential backoff rather
+// than at a fixed interval for the whole outage.
+func (o *oidcProviderConfigDiscoverer) newResult(cfg *oidcProviderConfig, err error, priorFailures int) oidcDiscoveryResult {
+	if err == nil {
+		return oidcDiscoveryResult{cfg: cfg, expiry: time.Now().Add(o.cacheRefreshInterval)}
 	}
-	return oidcDiscoveryResult{cfg: cfg, err: err, expiry: time.Now().Add(ttl)}
+
+	failures := priorFailures + 1
+	ttl := o.failureRetryInterval
+	// Cap the shift before it can overflow, then cap the interval itself.
+	if shift := min(failures-1, 16); shift > 0 {
+		ttl <<= shift
+	}
+	if ttl > o.cacheRefreshInterval {
+		ttl = o.cacheRefreshInterval
+	}
+	return oidcDiscoveryResult{err: err, expiry: time.Now().Add(ttl), failures: failures}
 }
 
-func (o *oidcProviderConfigDiscoverer) discover(ctx context.Context, issuerURI string) (*oidcProviderConfig, error) {
-	discoveryURL, err := url.Parse(issuerURI + wellKnownOpenIDConfPath)
+// oidcDiscoveryURL builds the well-known discovery URL for an issuer.
+func oidcDiscoveryURL(issuerURI string) (string, error) {
+	u, err := url.Parse(issuerURI + wellKnownOpenIDConfPath)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing discovery URL: %w", err)
+		return "", fmt.Errorf("error parsing discovery URL: %w", err)
 	}
+	return u.String(), nil
+}
 
+func (o *oidcProviderConfigDiscoverer) discover(ctx context.Context, discoveryURL string) (*oidcProviderConfig, error) {
 	cfg := &oidcProviderConfig{}
 	client := &http.Client{Timeout: oidcDiscoveryHTTPTimeout}
-	err = retry.Do(func() error {
+	err := retry.Do(func() error {
 		// TODO: allow using custom certs for HTTPS Issuer URI
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, discoveryURL.String(), nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, discoveryURL, nil)
 		if err != nil {
 			return fmt.Errorf("failed to create request: %w", err)
 		}
