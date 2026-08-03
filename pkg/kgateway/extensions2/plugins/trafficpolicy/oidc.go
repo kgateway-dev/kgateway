@@ -253,8 +253,16 @@ func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
 
 // rediscover re-runs discovery for issuerURI and replaces the cached entry, reporting whether
 // the new outcome differs from the cached one.
-func (o *oidcProviderConfigDiscoverer) rediscover(ctx context.Context, issuerURI string) bool {
-	ctx, cancel := context.WithTimeout(ctx, backgroundDiscoveryTimeout)
+func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, issuerURI string) bool {
+	// Never let shutdown look like a provider failure. A refresh pass can be cancelled part
+	// way through, and overwriting a healthy cached config with "context canceled" would
+	// report a change, trigger a recomputation, and set Err on every OAuth2 extension on the
+	// way out.
+	if parent.Err() != nil {
+		return false
+	}
+
+	ctx, cancel := context.WithTimeout(parent, backgroundDiscoveryTimeout)
 	defer cancel()
 
 	discoveryURL, err := oidcDiscoveryURL(issuerURI)
@@ -267,6 +275,12 @@ func (o *oidcProviderConfigDiscoverer) rediscover(ctx context.Context, issuerURI
 
 	cfg, err := o.discover(ctx, discoveryURL)
 	if err != nil {
+		// Check the parent, not ctx: a genuinely slow provider hits our own
+		// backgroundDiscoveryTimeout and should be cached as the failure it is, whereas a
+		// cancelled parent means we are shutting down and learned nothing about the provider.
+		if parent.Err() != nil {
+			return false
+		}
 		logger.Warn("error refreshing OpenID provider config", "issuer_uri", issuerURI, "error", err)
 	}
 

@@ -326,7 +326,71 @@ func TestOIDCConfigDiscoveryFailureBacksOff(t *testing.T) {
 	// A success resets to the full refresh interval.
 	success := o.newResult(&oidcProviderConfig{}, nil, 9)
 	r.Equal(0, success.failures)
-	r.Greater(success.expiry.Sub(time.Now()), 3*time.Second) //nolint:gocritic // comparing against a computed TTL
+	r.Greater(time.Until(success.expiry), 3*time.Second)
+}
+
+// TestOIDCConfigDiscoveryShutdownDoesNotClobberCache asserts a refresh pass interrupted by
+// shutdown leaves cached configs alone. Overwriting a healthy entry with "context canceled"
+// would report a change, trigger a recomputation, and set Err on every OAuth2 extension on the
+// way out.
+func TestOIDCConfigDiscoveryShutdownDoesNotClobberCache(t *testing.T) {
+	r := require.New(t)
+
+	// Block the handler until the test releases it, so cancellation can land mid-flight.
+	release := make(chan struct{})
+	var serving atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if serving.Load() {
+			serving.Store(false)
+			<-release
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(oidcProviderConfig{
+			TokenEndpoint:         "https://example.com/token",
+			AuthorizationEndpoint: "https://example.com/auth",
+		})
+	}))
+	defer server.Close()
+	defer close(release)
+
+	issuer := server.URL
+	o := newTestDiscoverer(issuer)
+
+	// Populate a healthy entry.
+	cfg, err := o.get(context.Background(), issuer)
+	r.NoError(err)
+	r.NotNil(cfg)
+
+	assertCacheIntact := func(when string) {
+		got, ok := o.load(issuer)
+		r.True(ok, "entry should still be cached %s", when)
+		r.NoError(got.err, "cached config should survive %s", when)
+		r.NotNil(got.cfg, "cached config should survive %s", when)
+		r.Equal("https://example.com/token", got.cfg.TokenEndpoint)
+	}
+
+	// Cancelled before the pass starts.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	r.False(o.rediscover(ctx, issuer), "a cancelled pass should not report a change")
+	assertCacheIntact("cancellation before the pass")
+
+	// Cancelled while the request is in flight.
+	serving.Store(true)
+	inflightCtx, cancelInflight := context.WithCancel(context.Background())
+	done := make(chan bool, 1)
+	go func() { done <- o.rediscover(inflightCtx, issuer) }()
+	require.Eventually(t, func() bool { return !serving.Load() }, 5*time.Second, 10*time.Millisecond,
+		"handler should have been entered")
+	cancelInflight()
+
+	select {
+	case changed := <-done:
+		r.False(changed, "a pass cancelled in flight should not report a change")
+	case <-time.After(5 * time.Second):
+		t.Fatal("rediscover did not return after cancellation")
+	}
+	assertCacheIntact("cancellation in flight")
 }
 
 // TestOIDCDiscovererRunClampsNonPositiveInterval guards against time.NewTicker panicking when a
