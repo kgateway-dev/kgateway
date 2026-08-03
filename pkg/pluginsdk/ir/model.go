@@ -153,11 +153,15 @@ type EndpointsForBackend struct {
 	// +krtEqualsTodo include backend labels in equality or confirm omission
 	BackendLabels map[string]string
 
-	// AttachedPolicies carries the policy attachment view already resolved for
-	// the backend. LbEpsEqualityHash includes backend policy versioning, so this
-	// field does not need to participate in equality directly.
-	// +noKrtEquals
-	AttachedPolicies AttachedPolicies
+	// attachedPolicies carries the policy attachment view already resolved for
+	// the backend. It is private so it cannot be assigned without recomputing
+	// policyHash; use AttachedPolicies() and SetAttachedPolicies().
+	// +noKrtEquals policyHash stands in for it in Equals, and SetAttachedPolicies is the only writer of the pair
+	attachedPolicies AttachedPolicies
+
+	// policyHash is attachedPolicies.VersionHash(). Written only by
+	// SetAttachedPolicies, so it can never drift from attachedPolicies.
+	policyHash uint64
 
 	// +krtEqualsTodo compare load-balanced endpoint map
 	LbEps                LocalityLbMap
@@ -168,9 +172,44 @@ type EndpointsForBackend struct {
 	// Inherited from the backend object
 	TrafficDistribution wellknown.TrafficDistribution
 
-	LbEpsEqualityHash uint64
-	upstreamHash      uint64
-	epsEqualityHash   uint64
+	upstreamHash    uint64
+	epsEqualityHash uint64
+}
+
+// AttachedPolicies returns the policy attachment view resolved for the backend.
+func (e EndpointsForBackend) AttachedPolicies() AttachedPolicies {
+	return e.attachedPolicies
+}
+
+// SetAttachedPolicies replaces the policy view and recomputes the hash that
+// stands in for it in Equals. This is the only way to change either half of the
+// pair, which is what keeps LbEpsEqualityHash honest about policy content.
+func (e *EndpointsForBackend) SetAttachedPolicies(policies AttachedPolicies) {
+	e.attachedPolicies = policies
+	e.policyHash = policies.VersionHash()
+}
+
+// LbEpsEqualityHash is the EDS version for this backend: it changes whenever
+// the backend identity, its endpoints, or its attached policy content changes.
+//
+// It is derived on read rather than stored, so no mutator can clobber a
+// contribution added by another one. Endpoints reach it through Add and
+// policies through SetAttachedPolicies, in any order.
+func (e EndpointsForBackend) LbEpsEqualityHash() uint64 {
+	h := e.upstreamHash
+	// Endpoints are folded in only once Add has run. We can't xor the endpoint
+	// hash with the upstream hash, because upstreams with different names and
+	// similar endpoints will cancel out, so endpoint changes won't result in
+	// different equality hashes.
+	if len(e.LbEps) > 0 {
+		h = hash(e.epsEqualityHash, e.upstreamHash)
+	}
+	// A same-named EDS cluster can still re-warm when policy changes CDS, so
+	// policy content has to move the endpoint version too.
+	if e.policyHash != 0 {
+		h = hash(h, e.policyHash)
+	}
+	return h
 }
 
 func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
@@ -207,18 +246,18 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	h.Write([]byte{byte(us.TrafficDistribution)})
 	upstreamHash := h.Sum64()
 
-	return &EndpointsForBackend{
+	ret := &EndpointsForBackend{
 		BackendLabels:        labels,
-		AttachedPolicies:     us.AttachedPolicies,
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          us.ClusterName(),
 		UpstreamResourceName: us.ResourceName(),
 		Port:                 uint32(us.GetPort()), //nolint:gosec // G115: upstream port is always valid port range
 		Hostname:             us.CanonicalHostname,
-		LbEpsEqualityHash:    upstreamHash,
 		upstreamHash:         upstreamHash,
 		TrafficDistribution:  us.TrafficDistribution,
 	}
+	ret.SetAttachedPolicies(us.AttachedPolicies)
+	return ret
 }
 
 // EmptyCopy creates a fresh EndpointsForBackend with no endpoints
@@ -226,13 +265,13 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
 	return EndpointsForBackend{
 		BackendLabels:        e.BackendLabels,
-		AttachedPolicies:     e.AttachedPolicies,
+		attachedPolicies:     e.attachedPolicies,
+		policyHash:           e.policyHash,
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          e.ClusterName,
 		UpstreamResourceName: e.UpstreamResourceName,
 		Port:                 e.Port,
 		Hostname:             e.Hostname,
-		LbEpsEqualityHash:    e.upstreamHash,
 		upstreamHash:         e.upstreamHash,
 		TrafficDistribution:  e.TrafficDistribution,
 	}
@@ -262,10 +301,6 @@ func (e *EndpointsForBackend) Add(l PodLocality, emd EndpointWithMd) {
 	// xor it as we dont care about order - if we have the same endpoints in the same locality
 	// we are good.
 	e.epsEqualityHash ^= hashEndpoints(l, emd)
-	// we can't xor the endpoint hash with the upstream hash, because upstreams with
-	// different names and similar endpoints will cancel out, so endpoint changes
-	// won't result in different equality hashes.
-	e.LbEpsEqualityHash = hash(e.epsEqualityHash, e.upstreamHash)
 	e.LbEps[l] = append(e.LbEps[l], emd)
 }
 
@@ -273,6 +308,16 @@ func (c EndpointsForBackend) ResourceName() string {
 	return c.UpstreamResourceName
 }
 
+// Equals compares the hash components rather than the combined
+// LbEpsEqualityHash: the combined value is a pure function of them, and
+// comparing the parts avoids collisions introduced by folding them together.
 func (c EndpointsForBackend) Equals(in EndpointsForBackend) bool {
-	return c.UpstreamResourceName == in.UpstreamResourceName && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname && c.TrafficDistribution == in.TrafficDistribution && c.upstreamHash == in.upstreamHash && c.epsEqualityHash == in.epsEqualityHash
+	return c.UpstreamResourceName == in.UpstreamResourceName &&
+		c.ClusterName == in.ClusterName &&
+		c.Port == in.Port &&
+		c.Hostname == in.Hostname &&
+		c.TrafficDistribution == in.TrafficDistribution &&
+		c.upstreamHash == in.upstreamHash &&
+		c.epsEqualityHash == in.epsEqualityHash &&
+		c.policyHash == in.policyHash
 }

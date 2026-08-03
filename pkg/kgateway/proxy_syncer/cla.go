@@ -52,7 +52,7 @@ func NewPerClientEnvoyEndpoints(
 			u := UccWithEndpoints{
 				Client:        ucc,
 				Endpoints:     cla,
-				EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash,
+				EndpointsHash: ep.LbEpsEqualityHash() ^ additionalHash,
 				endpointsName: ep.ResourceName(),
 			}
 			uccWithEndpointsRet = append(uccWithEndpointsRet, u)

@@ -1,10 +1,13 @@
 package ir
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
+	"hash/fnv"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 	"unique"
 
@@ -13,6 +16,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
 const delimiter = "/"
@@ -262,6 +266,60 @@ func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolici
 			a.Policies[k] = append(cp, a.Policies[k]...)
 		}
 	}
+}
+
+// VersionHash returns a hash that changes whenever the attached policy content
+// changes. It is the canonical stand-in for AttachedPolicies in the equality of
+// derived IR that carries a policy view but does not compare it field by field
+// (see EndpointsForBackend).
+//
+// The hash covers the same ground as Equals: the set of GroupKinds, and per
+// policy the ref, generation, errors, and IR content. Policy IRs that implement
+// PolicyHashIR contribute their own content hash; the rest fall back to
+// creation time, with Generation carrying spec changes.
+//
+// Iteration is over sorted GroupKinds so the result does not depend on Go's map
+// ordering.
+func (a AttachedPolicies) VersionHash() uint64 {
+	if len(a.Policies) == 0 {
+		return 0
+	}
+
+	hasher := fnv.New64a()
+	groupKinds := make([]schema.GroupKind, 0, len(a.Policies))
+	for groupKind := range a.Policies {
+		groupKinds = append(groupKinds, groupKind)
+	}
+	slices.SortFunc(groupKinds, func(a, b schema.GroupKind) int {
+		if a.Group != b.Group {
+			return cmp.Compare(a.Group, b.Group)
+		}
+		return cmp.Compare(a.Kind, b.Kind)
+	})
+
+	for _, groupKind := range groupKinds {
+		utils.HashStringField(hasher, groupKind.Group)
+		utils.HashStringField(hasher, groupKind.Kind)
+		for _, policy := range a.Policies[groupKind] {
+			utils.HashStringField(hasher, PolicyRefString(policy.PolicyRef))
+			utils.HashStringField(hasher, strconv.FormatInt(policy.Generation, 10))
+			for _, err := range policy.Errors {
+				if err != nil {
+					utils.HashStringField(hasher, err.Error())
+				}
+			}
+			if policy.PolicyIr == nil {
+				continue
+			}
+			if hashable, ok := policy.PolicyIr.(PolicyHashIR); ok {
+				utils.HashUint64(hasher, hashable.PolicyHash())
+				continue
+			}
+			utils.HashStringField(hasher, strconv.FormatInt(policy.PolicyIr.CreationTime().UnixNano(), 10))
+		}
+	}
+
+	return hasher.Sum64()
 }
 
 func (l AttachedPolicies) MarshalJSON() ([]byte, error) {

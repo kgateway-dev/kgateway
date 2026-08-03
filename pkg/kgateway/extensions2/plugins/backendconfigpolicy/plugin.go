@@ -540,7 +540,7 @@ func (p *backendConfigEndpointPlugin) processEndpoints(
 	ucc ir.UniquelyConnectedClient,
 	out *endpoints.EndpointsInputs,
 ) uint64 {
-	pol, bcpIR := selectZoneAwareBackendConfigPolicy(out.EndpointsForBackend.AttachedPolicies)
+	pol, bcpIR := selectZoneAwareBackendConfigPolicy(out.EndpointsForBackend.AttachedPolicies())
 	if bcpIR == nil {
 		return 0
 	}

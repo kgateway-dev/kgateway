@@ -146,7 +146,7 @@ func (t *BackendTranslator) runPolicies(
 		endpointInputs = &endpoints.EndpointsInputs{
 			EndpointsForBackend: *inlineEps,
 		}
-		endpointInputs.EndpointsForBackend.AttachedPolicies = backend.AttachedPolicies
+		endpointInputs.EndpointsForBackend.SetAttachedPolicies(backend.AttachedPolicies)
 	}
 
 	var errs []error

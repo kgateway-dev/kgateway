@@ -293,8 +293,8 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 		Zone:   "zone",
 	}, emd2)
 
-	h1 := result1.LbEpsEqualityHash ^ result2.LbEpsEqualityHash
-	h2 := result3.LbEpsEqualityHash ^ result4.LbEpsEqualityHash
+	h1 := result1.LbEpsEqualityHash() ^ result2.LbEpsEqualityHash()
+	h2 := result3.LbEpsEqualityHash() ^ result4.LbEpsEqualityHash()
 
 	g.Expect(h1).NotTo(Equal(h2), "not expected %v, got %v", h1, h2)
 }
@@ -374,7 +374,7 @@ func TestEndpointsForUpstreamWithDifferentTrafficDistributionButSameEndpoints(t 
 	}, emd)
 
 	// Verify that the hashes are different due to different traffic distribution
-	g.Expect(result1.LbEpsEqualityHash).NotTo(Equal(result2.LbEpsEqualityHash),
+	g.Expect(result1.LbEpsEqualityHash()).NotTo(Equal(result2.LbEpsEqualityHash()),
 		"Hash should be different when traffic distribution changes")
 
 	// Test with more traffic distribution values
@@ -398,10 +398,10 @@ func TestEndpointsForUpstreamWithDifferentTrafficDistributionButSameEndpoints(t 
 
 	// All hashes should be different
 	hashes := []uint64{
-		result1.LbEpsEqualityHash,
-		result2.LbEpsEqualityHash,
-		result3.LbEpsEqualityHash,
-		result4.LbEpsEqualityHash,
+		result1.LbEpsEqualityHash(),
+		result2.LbEpsEqualityHash(),
+		result3.LbEpsEqualityHash(),
+		result4.LbEpsEqualityHash(),
 	}
 
 	// Check that all hashes are unique
@@ -522,7 +522,7 @@ func TestEndpointsForGatewayScopedBackendsWithSameEndpointsHaveDifferentHashes(t
 
 	g.Expect(backend1.ResourceName()).NotTo(Equal(backend2.ResourceName()))
 	g.Expect(backend1.ClusterName()).NotTo(Equal(backend2.ClusterName()))
-	g.Expect(result1.LbEpsEqualityHash).NotTo(Equal(result2.LbEpsEqualityHash),
+	g.Expect(result1.LbEpsEqualityHash()).NotTo(Equal(result2.LbEpsEqualityHash()),
 		"Gateway-scoped backends with the same endpoints must still hash differently")
 }
 

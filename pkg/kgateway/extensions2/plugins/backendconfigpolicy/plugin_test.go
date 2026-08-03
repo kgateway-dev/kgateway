@@ -740,11 +740,11 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		Name:      "httpbin-policy",
 	}
 	withPolicies := func(inputs *endpoints.EndpointsInputs, policies ...ir.PolicyAtt) *endpoints.EndpointsInputs {
-		inputs.EndpointsForBackend.AttachedPolicies = ir.AttachedPolicies{
+		inputs.EndpointsForBackend.SetAttachedPolicies(ir.AttachedPolicies{
 			Policies: map[schema.GroupKind][]ir.PolicyAtt{
 				wellknown.BackendConfigPolicyGVK.GroupKind(): policies,
 			},
-		}
+		})
 		return inputs
 	}
 
