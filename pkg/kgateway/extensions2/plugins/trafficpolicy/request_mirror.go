@@ -39,10 +39,10 @@ func constructRequestMirror(spec kgateway.TrafficPolicySpec, out *trafficPolicyS
 	// Copy into fresh pointers so the IR does not alias the policy spec.
 	mirror := &requestMirrorIR{}
 	if spec.RequestMirror.DisableShadowHostSuffixAppend != nil {
-		mirror.disableShadowHostSuffixAppend = ptr.To(*spec.RequestMirror.DisableShadowHostSuffixAppend)
+		mirror.disableShadowHostSuffixAppend = new(*spec.RequestMirror.DisableShadowHostSuffixAppend)
 	}
 	if spec.RequestMirror.HostRewriteLiteral != nil {
-		mirror.hostRewriteLiteral = ptr.To(*spec.RequestMirror.HostRewriteLiteral)
+		mirror.hostRewriteLiteral = new(*spec.RequestMirror.HostRewriteLiteral)
 	}
 	out.requestMirror = mirror
 }

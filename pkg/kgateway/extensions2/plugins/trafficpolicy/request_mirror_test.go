@@ -180,6 +180,23 @@ func TestApplyRequestMirror(t *testing.T) {
 		assert.Equal(t, "shadow.example:8080", mirror.HostRewriteLiteral)
 		assert.False(t, mirror.DisableShadowHostSuffixAppend)
 	})
+
+	t.Run("both fields are applied independently", func(t *testing.T) {
+		plugin := &trafficPolicyPluginGwPass{}
+		// Start at true so an explicit false must be actively written, not just left as the zero value.
+		mirror := &envoyroutev3.RouteAction_RequestMirrorPolicy{DisableShadowHostSuffixAppend: true}
+		route := routeWithMirrors(mirror)
+
+		disable := false
+		literal := "shadow.example:8080"
+		plugin.applyRequestMirror(&requestMirrorIR{
+			disableShadowHostSuffixAppend: &disable,
+			hostRewriteLiteral:            &literal,
+		}, route)
+
+		assert.Equal(t, "shadow.example:8080", mirror.HostRewriteLiteral)
+		assert.False(t, mirror.DisableShadowHostSuffixAppend)
+	})
 }
 
 func requestMirrorIRWithValue(value bool) *requestMirrorIR {
