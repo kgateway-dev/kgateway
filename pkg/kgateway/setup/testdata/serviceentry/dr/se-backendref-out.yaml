@@ -32,7 +32,6 @@ endpoints:
           socketAddress:
             address: 255.0.0.1
             portValue: 80
-      loadBalancingWeight: 1
     loadBalancingWeight: 1
     priority: 3
   - lbEndpoints:
@@ -41,7 +40,6 @@ endpoints:
           socketAddress:
             address: 10.244.1.11
             portValue: 80
-      loadBalancingWeight: 1
     loadBalancingWeight: 1
     locality:
       region: r1
@@ -53,7 +51,6 @@ endpoints:
           socketAddress:
             address: 10.244.2.14
             portValue: 80
-      loadBalancingWeight: 1
     loadBalancingWeight: 1
     locality:
       region: r1
@@ -66,7 +63,6 @@ endpoints:
           socketAddress:
             address: 10.244.3.3
             portValue: 80
-      loadBalancingWeight: 1
     loadBalancingWeight: 1
     locality:
       region: r1
@@ -79,7 +75,6 @@ endpoints:
           socketAddress:
             address: 10.244.4.4
             portValue: 80
-      loadBalancingWeight: 1
     loadBalancingWeight: 1
     locality:
       region: r2

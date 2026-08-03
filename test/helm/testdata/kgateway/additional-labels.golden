@@ -331,6 +331,8 @@ spec:
         app.kubernetes.io/name: kgateway
         app.kubernetes.io/instance: test-release
         app.kubernetes.io/component: controller
+        another-label: "true"
+        extra-label-key: extra-label-value
     spec:
       serviceAccountName: test-release-kgateway
       containers:

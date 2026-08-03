@@ -8,7 +8,7 @@ The following checks are required to pass in order for a PR to be merged:
 Ensures that each commit contains a `Signed-off-by` trailer to adhere to [DCO](https://developercertificate.org/) requirements. See [Submission Process](/devel/contributing/pull-requests.md#submission-process) for more details.
 
 ### [Labeler](./labeler.yaml)
-Parses the PR description to extract the change type and changelog for release notes. PR descriptions must adhere to the [Pull Request template](https://github.com/kgateway-dev/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md).
+Parses the PR description to extract the change type and changelog for release notes. PR descriptions must adhere to the [Pull Request template](/.github/PULL_REQUEST_TEMPLATE.md).
 
 ### [Lint](./lint.yaml)
 Checks if there are any linting errors in the Go code, Rust code, Helm charts, or GitHub workflow files.
