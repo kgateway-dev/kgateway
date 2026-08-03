@@ -78,6 +78,21 @@ func TestMergeRequestMirror(t *testing.T) {
 		require.NotNil(t, p1.spec.requestMirror.disableShadowHostSuffixAppend)
 		assert.True(t, *p1.spec.requestMirror.disableShadowHostSuffixAppend)
 	})
+
+	// requestMirror is merged as a whole block: a more-specific block wins entirely rather than
+	// combining field-by-field with a less-specific one.
+	t.Run("more-specific block wins entirely, no field-by-field combine", func(t *testing.T) {
+		p1 := &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithLiteral("literal.example:8080")}}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithValue(true)}}
+
+		MergeTrafficPolicies(p1, p2, p2Ref, nil, mergeOptions, ir.MergeOrigins{}, TrafficPolicyMergeOpts{})
+
+		require.NotNil(t, p1.spec.requestMirror)
+		// The more-specific block only had the literal, so the less-specific bool must not leak in.
+		require.NotNil(t, p1.spec.requestMirror.hostRewriteLiteral)
+		assert.Equal(t, "literal.example:8080", *p1.spec.requestMirror.hostRewriteLiteral)
+		assert.Nil(t, p1.spec.requestMirror.disableShadowHostSuffixAppend)
+	})
 }
 
 func TestMergeHttpACL(t *testing.T) {

@@ -267,8 +267,9 @@ type trafficPolicyPluginGwPass struct {
 	corsInChain              map[string]*corsv3.Cors
 	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
 	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
-	// Route names we've already set the mirror shadow-suffix on this pass, so the first (most-specific)
-	// policy wins and later ones skip. Route names are unique within a pass, so the name is a safe key.
+	// Route names we've already applied requestMirror settings to on this pass, so the first
+	// (most-specific) policy owns the whole block and later ones skip. Route names are unique within a
+	// pass, so the name is a safe key.
 	requestMirrorConfigured map[string]struct{}
 	bufferInChain           map[string]*bufferv3.Buffer
 	compressorInChain       map[string][]compressorEntry

@@ -44,6 +44,25 @@ func TestConstructRequestMirror(t *testing.T) {
 			assert.Equal(t, tt.value, *out.requestMirror.disableShadowHostSuffixAppend)
 		})
 	}
+
+	t.Run("hostRewriteLiteral is copied", func(t *testing.T) {
+		input := "shadow.example:8080"
+		out := &trafficPolicySpecIr{}
+
+		constructRequestMirror(kgateway.TrafficPolicySpec{
+			RequestMirror: &kgateway.RequestMirrorPolicy{
+				HostRewriteLiteral: &input,
+			},
+		}, out)
+
+		require.NotNil(t, out.requestMirror)
+		assert.Nil(t, out.requestMirror.disableShadowHostSuffixAppend)
+		require.NotNil(t, out.requestMirror.hostRewriteLiteral)
+		assert.Equal(t, "shadow.example:8080", *out.requestMirror.hostRewriteLiteral)
+
+		input = "mutated"
+		assert.Equal(t, "shadow.example:8080", *out.requestMirror.hostRewriteLiteral)
+	})
 }
 
 func TestRequestMirrorIREquals(t *testing.T) {
@@ -58,6 +77,9 @@ func TestRequestMirrorIREquals(t *testing.T) {
 		{name: "both fields nil", left: &requestMirrorIR{}, right: &requestMirrorIR{}, expected: true},
 		{name: "same value", left: requestMirrorIRWithValue(true), right: requestMirrorIRWithValue(true), expected: true},
 		{name: "different values", left: requestMirrorIRWithValue(true), right: requestMirrorIRWithValue(false)},
+		{name: "same literal", left: requestMirrorIRWithLiteral("a"), right: requestMirrorIRWithLiteral("a"), expected: true},
+		{name: "different literals", left: requestMirrorIRWithLiteral("a"), right: requestMirrorIRWithLiteral("b")},
+		{name: "literal set vs unset", left: requestMirrorIRWithLiteral("a"), right: &requestMirrorIR{}},
 	}
 
 	for _, tt := range tests {
@@ -147,10 +169,25 @@ func TestApplyRequestMirror(t *testing.T) {
 		assert.False(t, mirrorA.DisableShadowHostSuffixAppend)
 		assert.True(t, mirrorB.DisableShadowHostSuffixAppend)
 	})
+
+	t.Run("literal-only policy applies the literal", func(t *testing.T) {
+		plugin := &trafficPolicyPluginGwPass{}
+		mirror := &envoyroutev3.RouteAction_RequestMirrorPolicy{}
+		route := routeWithMirrors(mirror)
+
+		plugin.applyRequestMirror(requestMirrorIRWithLiteral("shadow.example:8080"), route)
+
+		assert.Equal(t, "shadow.example:8080", mirror.HostRewriteLiteral)
+		assert.False(t, mirror.DisableShadowHostSuffixAppend)
+	})
 }
 
 func requestMirrorIRWithValue(value bool) *requestMirrorIR {
 	return &requestMirrorIR{disableShadowHostSuffixAppend: &value}
+}
+
+func requestMirrorIRWithLiteral(value string) *requestMirrorIR {
+	return &requestMirrorIR{hostRewriteLiteral: &value}
 }
 
 func routeWithMirrors(mirrors ...*envoyroutev3.RouteAction_RequestMirrorPolicy) *envoyroutev3.Route {
