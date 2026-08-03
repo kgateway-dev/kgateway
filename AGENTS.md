@@ -120,7 +120,7 @@ Pinned versions live in the `Makefile` (`ENVOY_IMAGE`, `ALPINE_BASE_IMAGE`, and 
 4. Every commit needs a `Signed-off-by` trailer ([DCO](https://developercertificate.org/) is a required check). Use `git commit -s`.
 
 ### PR body
-PRs must follow the [org-level PR template](https://github.com/kgateway-dev/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md). The `labeler` workflow parses the body and is a **required check** — a missing change type or changelog block fails CI. Use these exact headings:
+PRs must follow `/.github/PULL_REQUEST_TEMPLATE.md`, which GitHub pre-fills in the web UI. **`gh pr create --body`/`--body-file` bypasses the template**, so when opening a PR from the CLI you must reproduce the structure yourself. The `labeler` workflow parses the body and is a **required check** — a missing change type or changelog block fails CI.
 
 ````markdown
 # Description
