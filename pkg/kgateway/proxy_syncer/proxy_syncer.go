@@ -318,6 +318,10 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// policy's status is built from the union of its ancestors, no matter which path
 	// produced them. (The previous syncer wrote the two paths independently, which could
 	// race when a policy was attached via both.)
+	//
+	// Only the Policies of each input are merged: policy status is derived from Policies
+	// alone, and cloning the route/gateway/backend reports on every translation event
+	// would be pure waste (it would also make this singleton's Equals compare them).
 	s.policyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *statussync.ReportsWrapper {
 		merged := []reports.ReportMap{}
 		if gwReports := krt.FetchOne(kctx, s.statusReport.AsCollection()); gwReports != nil {
@@ -326,7 +330,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		if backendReports := krt.FetchOne(kctx, s.backendPolicyReport.AsCollection()); backendReports != nil {
 			merged = append(merged, backendReports.Reports())
 		}
-		w := statussync.NewReportsWrapper(reports.MergeReportMaps(merged...))
+		w := statussync.NewReportsWrapper(reports.MergePolicyReports(merged...))
 		return &w
 	}, krtopts.ToOptions("PolicyStatusReport")...)
 

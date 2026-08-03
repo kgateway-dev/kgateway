@@ -85,7 +85,7 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	}, 2)
 	var pushes atomic.Int32
 	sc := NewStatusCollections()
-	RegisterStatus(sc, gvk, statusCol, func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus })
+	RegisterStatus(sc, gvk, statusCol, func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus }, ClearOnRemove)
 	sc.SetQueue(countingQueue{inner: pool, pushes: &pushes})
 
 	c.RunAndWait(stop)

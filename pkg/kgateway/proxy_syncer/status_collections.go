@@ -59,15 +59,13 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 			// Not in the report: not translated by us (e.g. another controller's Gateway).
 			return nil
 		}
-		// Addresses are written by the deployer, not by translation; carry the live value
-		// (normalized through the same merge the writer applies) so the live-vs-desired
-		// comparison stays quiet. The writer additionally merges addresses at write time.
-		status.Addresses = statussync.MergeGatewayAddresses(gw.Status.Addresses, nil)
+		// BuildGWStatus already carries gw.Status.Addresses through verbatim, so the desired
+		// addresses match the live ones and the live-vs-desired comparison stays quiet.
 		return &krt.ObjectWithStatus[*gwv1.Gateway, gwv1.GatewayStatus]{Obj: gw, Status: *status}
 	}, krtopts.ToOptions("GatewayStatuses")...)
 	statussync.RegisterStatus(s.statusCollections, wellknown.GatewayGVK, gatewayStatuses, func(o *gwv1.Gateway) gwv1.GatewayStatus {
 		return o.Status
-	})
+	}, statussync.KeepOnRemove)
 	s.statusWriters[wellknown.GatewayGVK] = statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus]{
 		Name:   "gateway",
 		Client: kclient.NewFilteredDelayed[*gwv1.Gateway](cl, wellknown.GatewayGVR, f),
@@ -75,11 +73,8 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 			return &gwv1.Gateway{ObjectMeta: om, Status: st}
 		},
 		GetStatus: func(o *gwv1.Gateway) gwv1.GatewayStatus { return o.Status },
-		Merge: func(current *gwv1.Gateway, desired gwv1.GatewayStatus) gwv1.GatewayStatus {
-			desired.Addresses = statussync.MergeGatewayAddresses(current.Status.Addresses, desired.Addresses)
-			return desired
-		},
-		OnSync: gatewayStatusMetricsHook(),
+		Merge:     mergeGatewayStatusAddresses,
+		OnSync:    gatewayStatusMetricsHook(),
 	}
 
 	// Routes. Desired statuses carry the full RouteStatus (including preserved entries from
@@ -182,7 +177,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	}, krtopts.ToOptions("ListenerSetStatuses")...)
 	statussync.RegisterStatus(s.statusCollections, wellknown.ListenerSetGVK, listenerSetStatuses, func(o *gwv1.ListenerSet) gwv1.ListenerSetStatus {
 		return o.Status
-	})
+	}, statussync.KeepOnRemove)
 	lsWriter := &listenerSetStatusSyncer{
 		col:      s.commonCols.RawListenerSets,
 		promoted: kclient.NewFilteredDelayed[*gwv1.ListenerSet](cl, wellknown.ListenerSetGVR, f),
@@ -207,7 +202,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	}, krtopts.ToOptions("BackendStatuses")...)
 	statussync.RegisterStatus(s.statusCollections, wellknown.BackendGVK, backendStatuses, func(o *kgateway.Backend) kgateway.BackendStatus {
 		return o.Status
-	})
+	}, statussync.KeepOnRemove)
 	s.statusWriters[wellknown.BackendGVK] = statussync.Writer[*kgateway.Backend, kgateway.BackendStatus]{
 		Name:   "backend",
 		Client: kclient.NewFilteredDelayed[*kgateway.Backend](cl, wellknown.BackendGVR, f),
@@ -275,9 +270,12 @@ func registerRouteStatus[T controllers.ComparableObject](
 		status.Parents = statussync.MergeRouteParentStatuses(controllerName, routeStatusOf(route).Parents, status.Parents)
 		return &krt.ObjectWithStatus[T, gwv1.RouteStatus]{Obj: route, Status: *status}
 	}, krtopts.ToOptions(gvk.Kind+"Statuses")...)
+	// Routes clear on removal: status.parents is multi-writer, so an empty desired list drops
+	// only the parents we own (see MergeRouteParentStatuses) and is how a route that left the
+	// report sheds its stale parent entries.
 	statussync.RegisterStatus(s.statusCollections, gvk, statuses, func(o T) gwv1.RouteStatus {
 		return routeStatusOf(o)
-	})
+	}, statussync.ClearOnRemove)
 	s.waitForSync = append(s.waitForSync, statuses.HasSynced)
 }
 
@@ -324,8 +322,28 @@ func routeWriter[T controllers.ComparableObject](
 			desired.Parents = statussync.MergeRouteParentStatuses(controllerName, getStatus(current).Parents, desired.Parents)
 			return desired
 		},
-		OnSync: routeStatusMetricsHook(kind, parentRefs),
+		OnSync: routeStatusMetricsHook(kind, controllerName, parentRefs),
 	}
+}
+
+// mergeGatewayStatusAddresses carries the live Gateway status addresses into the status we
+// are about to write, verbatim and in their existing order.
+//
+// status.addresses is owned by the deployer (it derives them from the generated Service),
+// not by translation. Two properties matter here:
+//
+//   - We must take them from current, not from desired: desired.Addresses is a snapshot from
+//     when the status collection last recomputed, so writing it back could revert an address
+//     update the deployer made in the meantime.
+//   - We must not reorder them. The deployer decides whether to write with an order-sensitive
+//     slices.Equal against the live list (see updateGatewayAddresses), and it builds the list
+//     in source order: LoadBalancer ingress order, then Service ClusterIPs order, then
+//     spec.addresses order. Any normalization we apply here (e.g. sorting) makes that
+//     comparison fail forever, so the deployer rewrites its order, we rewrite ours, and
+//     status.addresses flip-flops with two redundant writes on every deployer reconcile.
+func mergeGatewayStatusAddresses(current *gwv1.Gateway, desired gwv1.GatewayStatus) gwv1.GatewayStatus {
+	desired.Addresses = current.Status.Addresses
+	return desired
 }
 
 // gatewayStatusMetricsHook records status sync metrics for Gateways, deriving an error
@@ -363,11 +381,17 @@ func gatewayStatusMetricsHook() func(res statussync.Resource, current *gwv1.Gate
 // deriving an error result from invalid route conditions like the previous syncer did.
 func routeStatusMetricsHook[T controllers.ComparableObject](
 	kind string,
+	controllerName string,
 	parentRefs func(T) []gwv1.ParentReference,
 ) func(res statussync.Resource, current T, status gwv1.RouteStatus, took time.Duration, err error) {
 	return func(res statussync.Resource, current T, status gwv1.RouteStatus, took time.Duration, err error) {
 		statusErrByGateway := map[string]error{}
 		for _, ps := range status.Parents {
+			// status is the merged status, so it also carries parents owned by other
+			// controllers. Their conditions are not ours to report on.
+			if string(ps.ControllerName) != controllerName {
+				continue
+			}
 			gwName := string(ps.ParentRef.Name)
 			for _, cond := range ps.Conditions {
 				switch {

@@ -71,7 +71,10 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 			status.Ancestors = statussync.MergePolicyAncestorStatuses(controllerName, getStatus(pol).Ancestors, status.Ancestors)
 			return &krt.ObjectWithStatus[T, gwv1.PolicyStatus]{Obj: pol, Status: *status}
 		}, in.KrtOpts.ToOptions(gvk.Kind+"Statuses")...)
-		statussync.RegisterStatus(in.Collections, gvk, statuses, getStatus)
+		// Policies clear on removal: status.ancestors is multi-writer, so an empty desired list
+		// drops only the ancestors we own (see MergePolicyAncestorStatuses) and is how a policy
+		// that left the report sheds its stale ancestor entries.
+		statussync.RegisterStatus(in.Collections, gvk, statuses, getStatus, statussync.ClearOnRemove)
 		in.RegisterWriter(gvk, statussync.Writer[T, gwv1.PolicyStatus]{
 			Name:      gvk.Kind,
 			Client:    cl,
@@ -84,7 +87,7 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 			OnSync: func(res statussync.Resource, current T, status gwv1.PolicyStatus, took time.Duration, err error) {
 				statusErr := err
 				if defaultBuild {
-					statusErr = errors.Join(statusErr, policyStatusConditionError(status))
+					statusErr = errors.Join(statusErr, policyStatusConditionError(status, controllerName))
 				}
 				statussync.RecordStatusSync(statussync.SyncMetricLabels{
 					Name:      gvk.Kind,
@@ -103,9 +106,14 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 }
 
 // policyStatusConditionError derives an error from invalid policy Accepted condition
-// reasons, mirroring the previous status syncer's metrics semantics.
-func policyStatusConditionError(status gwv1.PolicyStatus) error {
+// reasons, mirroring the previous status syncer's metrics semantics. status is the merged
+// status, so ancestors owned by other controllers are skipped: their conditions are not
+// ours to report on.
+func policyStatusConditionError(status gwv1.PolicyStatus, controllerName string) error {
 	for _, ancestor := range status.Ancestors {
+		if string(ancestor.ControllerName) != controllerName {
+			continue
+		}
 		for _, cond := range ancestor.Conditions {
 			if cond.Type != string(shared.PolicyConditionAccepted) {
 				continue

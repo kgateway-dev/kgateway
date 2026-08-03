@@ -116,31 +116,6 @@ func TestMergePolicyAncestorStatusesClearsAllOursOnEmptyDesired(t *testing.T) {
 	require.Empty(t, merged, "publishing an empty desired list must clear our stale entries")
 }
 
-func TestMergeGatewayAddressesPrefersDesired(t *testing.T) {
-	addrType := gwv1.IPAddressType
-	existing := []gwv1.GatewayStatusAddress{{Type: &addrType, Value: "1.1.1.1"}}
-	desired := []gwv1.GatewayStatusAddress{{Type: &addrType, Value: "2.2.2.2"}}
-
-	merged := MergeGatewayAddresses(existing, desired)
-
-	require.Len(t, merged, 1)
-	require.Equal(t, "2.2.2.2", merged[0].Value)
-}
-
-func TestMergeGatewayAddressesPreservesExistingWhenDesiredEmpty(t *testing.T) {
-	addrType := gwv1.IPAddressType
-	existing := []gwv1.GatewayStatusAddress{
-		{Type: &addrType, Value: "2.2.2.2"},
-		{Type: &addrType, Value: "1.1.1.1"},
-	}
-
-	merged := MergeGatewayAddresses(existing, nil)
-
-	require.Len(t, merged, 2, "addresses written by the deployer must be preserved")
-	require.Equal(t, "1.1.1.1", merged[0].Value, "addresses must be sorted for stable output")
-	require.Equal(t, "2.2.2.2", merged[1].Value)
-}
-
 func TestCompareParentReferenceCanonicalizesDefaults(t *testing.T) {
 	group := gwv1.Group(gwv1.GroupName)
 	kind := gwv1.Kind("Gateway")

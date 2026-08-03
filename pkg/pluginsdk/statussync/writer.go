@@ -244,28 +244,6 @@ func capMergedStatusEntries[T any](entries []T, limit int, field string) []T {
 	return entries[:limit]
 }
 
-// MergeGatewayAddresses preserves the current Gateway status addresses unless the desired
-// status explicitly sets them. Addresses are computed from the generated Service by the
-// deployer and are not part of the translation report.
-func MergeGatewayAddresses(existing, desired []gwv1.GatewayStatusAddress) []gwv1.GatewayStatusAddress {
-	var out []gwv1.GatewayStatusAddress
-	if len(desired) > 0 {
-		out = append(out, desired...)
-	} else {
-		out = append(out, existing...)
-	}
-
-	// Ensure stable ordering so status doesn't flap due to upstream iteration order.
-	slices.SortFunc(out, func(a, b gwv1.GatewayStatusAddress) int {
-		if c := cmp.Compare(addressTypeOrDefault(a.Type), addressTypeOrDefault(b.Type)); c != 0 {
-			return c
-		}
-		return cmp.Compare(a.Value, b.Value)
-	})
-
-	return out
-}
-
 func compareParentReference(a, b gwv1.ParentReference) int {
 	// ParentReference includes pointer fields with defaults. Canonicalize those defaults so nil
 	// vs explicitly-set default values don't introduce ordering churn.
@@ -321,12 +299,4 @@ func comparePortNumberPtr(a, b *gwv1.PortNumber) int {
 	default:
 		return cmp.Compare(int(*a), int(*b))
 	}
-}
-
-func addressTypeOrDefault(t *gwv1.AddressType) string {
-	if t == nil {
-		// GatewayStatusAddress.Type default.
-		return string(gwv1.IPAddressType)
-	}
-	return string(*t)
 }
