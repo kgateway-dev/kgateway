@@ -12,6 +12,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"k8s.io/utils/ptr"
+
+	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // newTestDiscoverer returns a discoverer whose refresh loop considers the given issuer URIs
@@ -552,6 +556,174 @@ func TestOIDCConfigDiscoveryPrunesDeletedIssuers(t *testing.T) {
 	o.refreshOnce(context.Background())
 	_, cached = o.load(issuer)
 	r.False(cached, "issuer with no referencing GatewayExtension should be pruned")
+
+	countAfterPrune := atomic.LoadInt64(&requestCount)
+	o.refreshOnce(context.Background())
+	r.Equal(countAfterPrune, atomic.LoadInt64(&requestCount), "pruned issuer should not be polled")
+}
+
+// TestOIDCDiscoveryRequired pins the predicate that defines "this extension will call
+// discoverer.get()". buildOAuth2ProviderConfig and the refresh loop's live set both use it, so a
+// change here silently changes which issuers are polled: widening it polls issuers nobody reads,
+// narrowing it prunes entries that are still needed and re-latches discovery failures.
+func TestOIDCDiscoveryRequired(t *testing.T) {
+	const uri = kgwv1a1.HttpsUri("https://idp.example.com/x")
+	issuer := "https://idp.example.com"
+
+	// allExplicit is the only shape that does not need discovery while still naming an issuer.
+	allExplicit := func() *kgwv1a1.OAuth2Provider {
+		return &kgwv1a1.OAuth2Provider{
+			IssuerURI:             &issuer,
+			TokenEndpoint:         ptr.To(uri),
+			AuthorizationEndpoint: ptr.To(uri),
+			EndSessionEndpoint:    ptr.To(uri),
+		}
+	}
+
+	tests := []struct {
+		name string
+		in   *kgwv1a1.OAuth2Provider
+		want bool
+	}{
+		{name: "nil provider", in: nil, want: false},
+		{name: "no issuer at all", in: &kgwv1a1.OAuth2Provider{}, want: false},
+		{
+			name: "no issuer, endpoints explicit",
+			in:   &kgwv1a1.OAuth2Provider{TokenEndpoint: ptr.To(uri), AuthorizationEndpoint: ptr.To(uri)},
+			want: false,
+		},
+		{name: "issuer only", in: &kgwv1a1.OAuth2Provider{IssuerURI: &issuer}, want: true},
+		{name: "issuer and every endpoint explicit", in: allExplicit(), want: false},
+		{
+			name: "issuer, token endpoint missing",
+			in: func() *kgwv1a1.OAuth2Provider {
+				p := allExplicit()
+				p.TokenEndpoint = nil
+				return p
+			}(),
+			want: true,
+		},
+		{
+			name: "issuer, authorization endpoint missing",
+			in: func() *kgwv1a1.OAuth2Provider {
+				p := allExplicit()
+				p.AuthorizationEndpoint = nil
+				return p
+			}(),
+			want: true,
+		},
+		{
+			name: "issuer, end session endpoint missing",
+			in: func() *kgwv1a1.OAuth2Provider {
+				p := allExplicit()
+				p.EndSessionEndpoint = nil
+				return p
+			}(),
+			want: true,
+		},
+		{
+			name: "issuer, endpoints explicit, JWT without jwksURI",
+			in: func() *kgwv1a1.OAuth2Provider {
+				p := allExplicit()
+				p.JWT = &kgwv1a1.OAuth2JWTConfig{}
+				return p
+			}(),
+			want: true,
+		},
+		{
+			name: "issuer, endpoints explicit, JWT with jwksURI",
+			in: func() *kgwv1a1.OAuth2Provider {
+				p := allExplicit()
+				p.JWT = &kgwv1a1.OAuth2JWTConfig{JWKSURI: ptr.To(uri)}
+				return p
+			}(),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, oidcDiscoveryRequired(tt.in))
+
+			// oidcIssuerURIs must agree: it lists exactly the issuers that will be discovered.
+			got := oidcIssuerURIs([]ir.GatewayExtension{{OAuth2: tt.in}})
+			if tt.want {
+				require.Equal(t, []string{issuer}, got)
+			} else {
+				require.Empty(t, got)
+			}
+		})
+	}
+}
+
+// TestOIDCIssuerURIsSharedIssuer asserts an issuer stays live while any one extension still
+// discovers from it, even if another has every endpoint configured explicitly.
+func TestOIDCIssuerURIsSharedIssuer(t *testing.T) {
+	issuer := "https://idp.example.com"
+	uri := kgwv1a1.HttpsUri("https://idp.example.com/x")
+
+	needsDiscovery := &kgwv1a1.OAuth2Provider{IssuerURI: &issuer}
+	fullyExplicit := &kgwv1a1.OAuth2Provider{
+		IssuerURI:             &issuer,
+		TokenEndpoint:         new(uri),
+		AuthorizationEndpoint: new(uri),
+		EndSessionEndpoint:    new(uri),
+	}
+
+	require.Equal(t, []string{issuer}, oidcIssuerURIs([]ir.GatewayExtension{
+		{OAuth2: fullyExplicit}, {OAuth2: needsDiscovery},
+	}), "issuer should stay live while any extension still discovers from it")
+}
+
+// TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered covers the transition the deletion-based
+// prune test does not: the GatewayExtension still exists and still names the issuer, but every
+// endpoint is now configured explicitly, so nothing reads the discovered config any more.
+func TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered(t *testing.T) {
+	r := require.New(t)
+
+	var requestCount int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		atomic.AddInt64(&requestCount, 1)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(oidcProviderConfig{
+			TokenEndpoint:         "https://example.com/token",
+			AuthorizationEndpoint: "https://example.com/auth",
+		})
+	}))
+	defer server.Close()
+
+	issuer := server.URL
+	uri := kgwv1a1.HttpsUri("https://example.com/x")
+
+	// The extension starts out relying on discovery, then is edited to spell out every endpoint
+	// while keeping issuerURI.
+	ext := &kgwv1a1.OAuth2Provider{IssuerURI: &issuer}
+	o := newOIDCProviderConfigDiscoverer(func() []string {
+		return oidcIssuerURIs([]ir.GatewayExtension{{OAuth2: ext}})
+	})
+	// Expire immediately so every pass re-discovers whatever is still live.
+	o.cacheRefreshInterval = 0
+	o.failureRetryInterval = 0
+
+	_, err := o.get(context.Background(), issuer)
+	r.NoError(err)
+	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
+
+	// While discovery is still required, the entry is refreshed.
+	o.refreshOnce(context.Background())
+	r.Equal(int64(2), atomic.LoadInt64(&requestCount))
+	_, cached := o.load(issuer)
+	r.True(cached)
+
+	// The user fills in every endpoint. buildOAuth2ProviderConfig will no longer call get() for
+	// this extension, so the cached entry must be dropped rather than polled forever.
+	ext.TokenEndpoint = new(uri)
+	ext.AuthorizationEndpoint = new(uri)
+	ext.EndSessionEndpoint = new(uri)
+
+	o.refreshOnce(context.Background())
+	_, cached = o.load(issuer)
+	r.False(cached, "issuer should be pruned once no extension discovers from it")
 
 	countAfterPrune := atomic.LoadInt64(&requestCount)
 	o.refreshOnce(context.Background())

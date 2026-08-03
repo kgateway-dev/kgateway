@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
 
+	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -111,9 +112,9 @@ type oidcProviderConfigDiscoverer struct {
 	// control plane is restarted.
 	trigger *krt.RecomputeTrigger
 
-	// liveIssuerURIs returns the issuer URIs currently referenced by GatewayExtensions. The
-	// refresh loop intersects this with the cache so it stops polling issuers whose
-	// GatewayExtension was deleted or re-pointed at a different provider.
+	// liveIssuerURIs returns the issuer URIs some GatewayExtension currently discovers from,
+	// per oidcDiscoveryRequired. The refresh loop intersects this with the cache so it stops
+	// polling an issuer as soon as nothing reads its discovered config.
 	liveIssuerURIs func() []string
 
 	cacheRefreshInterval time.Duration
@@ -145,13 +146,31 @@ func newOIDCProviderConfigDiscoverer(liveIssuerURIs func() []string, opts ...krt
 	}
 }
 
-// oidcIssuerURIs collects the OpenID issuer URIs referenced by the given extensions. It feeds
-// the discovery refresh loop so that issuers whose GatewayExtension was deleted, or which was
-// re-pointed at a different provider, stop being polled.
+// oidcDiscoveryRequired reports whether an extension relies on OpenID discovery: it names an
+// issuer and leaves at least one endpoint for the well-known document to supply.
+//
+// This is the single definition of "this extension will call discoverer.get()". It is shared by
+// buildOAuth2ProviderConfig and by the refresh loop's live set so the two cannot drift: a live
+// set wider than this polls issuers nobody reads, and one narrower prunes entries that are still
+// needed, which would re-latch a discovery failure with nothing left to retry it.
+func oidcDiscoveryRequired(in *kgwv1a1.OAuth2Provider) bool {
+	if in == nil || in.IssuerURI == nil {
+		return false
+	}
+	return in.TokenEndpoint == nil ||
+		in.AuthorizationEndpoint == nil ||
+		in.EndSessionEndpoint == nil ||
+		(in.JWT != nil && in.JWT.JWKSURI == nil)
+}
+
+// oidcIssuerURIs collects the issuer URIs of the given extensions that rely on discovery. It
+// feeds the discovery refresh loop, so that an issuer stops being polled once no extension
+// discovers from it any more: because its GatewayExtension was deleted, was re-pointed at a
+// different provider, or had every endpoint filled in explicitly.
 func oidcIssuerURIs(exts []ir.GatewayExtension) []string {
 	issuerURIs := make([]string, 0, len(exts))
 	for _, ext := range exts {
-		if ext.OAuth2 == nil || ext.OAuth2.IssuerURI == nil {
+		if !oidcDiscoveryRequired(ext.OAuth2) {
 			continue
 		}
 		issuerURIs = append(issuerURIs, *ext.OAuth2.IssuerURI)
@@ -202,9 +221,10 @@ func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
 	// holding o.mu.
 	live := sets.New(o.liveIssuerURIs()...)
 
-	// Only refresh issuers that are both still referenced and already cached. Entries are
-	// only ever added by get(), so this never discovers a config no GatewayExtension asked
-	// for, e.g. an issuerURI whose endpoints are all explicitly configured.
+	// Only refresh issuers that are both still discovered-from and already cached. Entries are
+	// only ever added by get(), so a config no extension has ever asked for is never
+	// discovered here; the live set additionally drops entries cached earlier that are no
+	// longer needed.
 	var pruned, expired []string
 	now := time.Now()
 	o.mu.RLock()
