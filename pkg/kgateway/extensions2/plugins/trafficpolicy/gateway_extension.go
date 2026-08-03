@@ -121,8 +121,10 @@ func TranslateGatewayExtensionBuilder(
 	ctx context.Context,
 	commoncol *collections.CommonCollections,
 ) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
-	oidcDiscoverer := newOIDCProviderConfigDiscoverer()
-	go oidcDiscoverer.refresh(ctx)
+	oidcDiscoverer := newOIDCProviderConfigDiscoverer(func() []string {
+		return oidcIssuerURIs(commoncol.GatewayExtensions.List())
+	})
+	go oidcDiscoverer.run(ctx)
 
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
@@ -220,7 +222,7 @@ func TranslateGatewayExtensionBuilder(
 			p.Jwt = buildCompositeJwtFilter(jwtConfig)
 
 		case gExt.OAuth2 != nil:
-			out, err := buildOAuth2ProviderConfig(krtctx, &gExt, commoncol.BackendIndex, commoncol.Secrets, oidcDiscoverer)
+			out, err := buildOAuth2ProviderConfig(ctx, krtctx, &gExt, commoncol.BackendIndex, commoncol.Secrets, oidcDiscoverer)
 			if err != nil {
 				p.Err = fmt.Errorf("error building OAuth2 config: %w", err)
 				return p
@@ -229,6 +231,20 @@ func TranslateGatewayExtensionBuilder(
 		}
 		return p
 	}
+}
+
+// oidcIssuerURIs collects the OpenID issuer URIs referenced by the given extensions. It feeds
+// the discovery refresh loop so that issuers whose GatewayExtension was deleted, or which was
+// re-pointed at a different provider, stop being polled.
+func oidcIssuerURIs(exts []ir.GatewayExtension) []string {
+	issuerURIs := make([]string, 0, len(exts))
+	for _, ext := range exts {
+		if ext.OAuth2 == nil || ext.OAuth2.IssuerURI == nil {
+			continue
+		}
+		issuerURIs = append(issuerURIs, *ext.OAuth2.IssuerURI)
+	}
+	return issuerURIs
 }
 
 func resolveJwtProviders(

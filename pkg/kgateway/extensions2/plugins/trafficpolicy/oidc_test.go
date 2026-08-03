@@ -13,6 +13,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// newTestDiscoverer returns a discoverer whose refresh loop considers the given issuer URIs
+// live, with short intervals so refresh behavior is observable in tests.
+func newTestDiscoverer(issuerURIs ...string) *oidcProviderConfigDiscoverer {
+	o := newOIDCProviderConfigDiscoverer(func() []string { return issuerURIs })
+	o.cacheRefreshInterval = 50 * time.Millisecond
+	o.failureRetryInterval = 20 * time.Millisecond
+	return o
+}
+
 func TestOIDCConfigDiscovery(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -121,10 +130,10 @@ func TestOIDCConfigDiscovery(t *testing.T) {
 			issuer := issuerURL.String()
 
 			// Create new OIDC config discovery instance for each test
-			o := newOIDCProviderConfigDiscoverer()
+			o := newTestDiscoverer(issuer)
 
 			// Test the discovery
-			config, err := o.get(issuer)
+			config, err := o.get(context.Background(), issuer)
 
 			if tt.expectError {
 				r.Error(err)
@@ -166,17 +175,17 @@ func TestOIDCConfigDiscoveryCache(t *testing.T) {
 	}))
 	defer server.Close()
 
-	o := newOIDCProviderConfigDiscoverer()
 	issuer := server.URL
+	o := newTestDiscoverer(issuer)
 
 	// First call should make HTTP request
-	config1, err := o.get(issuer)
+	config1, err := o.get(context.Background(), issuer)
 	r.NoError(err)
 	r.NotNil(config1)
 	r.Equal(1, requestCount)
 
 	// Second call should use cache
-	config2, err := o.get(issuer)
+	config2, err := o.get(context.Background(), issuer)
 	r.NoError(err)
 	r.NotNil(config2)
 	r.Equal(1, requestCount) // Should still be 1, no new request
@@ -184,6 +193,34 @@ func TestOIDCConfigDiscoveryCache(t *testing.T) {
 	// Verify configs are the same
 	r.Equal(config1.TokenEndpoint, config2.TokenEndpoint)
 	r.Equal(config1.AuthorizationEndpoint, config2.AuthorizationEndpoint)
+}
+
+// TestOIDCConfigDiscoveryFailureIsCached asserts that a discovery failure is served from the
+// cache, so a GatewayExtension re-translated for an unrelated reason does not re-block the krt
+// event loop contacting a provider already known to be unreachable.
+func TestOIDCConfigDiscoveryFailureIsCached(t *testing.T) {
+	r := require.New(t)
+
+	var requestCount int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		atomic.AddInt64(&requestCount, 1)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	issuer := server.URL
+	o := newTestDiscoverer(issuer)
+
+	cfg, err := o.get(context.Background(), issuer)
+	r.Error(err)
+	r.Nil(cfg)
+	// 404 is unrecoverable, so exactly one request is made.
+	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
+
+	cfg, err = o.get(context.Background(), issuer)
+	r.Error(err)
+	r.Nil(cfg)
+	r.Equal(int64(1), atomic.LoadInt64(&requestCount), "failed discovery should be served from cache")
 }
 
 func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
@@ -204,8 +241,8 @@ func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
 	}))
 	defer server.Close()
 
-	o := newOIDCProviderConfigDiscoverer()
 	issuer := server.URL
+	o := newTestDiscoverer(issuer)
 
 	// Launch many concurrent get() calls for the same issuer.
 	const goroutines = 10
@@ -213,7 +250,7 @@ func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
 	configs := make(chan *oidcProviderConfig, goroutines)
 	for range goroutines {
 		go func() {
-			cfg, err := o.get(issuer)
+			cfg, err := o.get(context.Background(), issuer)
 			errs <- err
 			configs <- cfg
 		}()
@@ -235,107 +272,155 @@ func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
 func TestOIDCConfigDiscoveryInvalidIssuerURL(t *testing.T) {
 	r := require.New(t)
 
-	o := newOIDCProviderConfigDiscoverer()
-
 	// Test with invalid URL that would cause url.Parse to fail
 	invalidIssuer := "://invalid-url"
+	o := newTestDiscoverer(invalidIssuer)
 
-	config, err := o.get(invalidIssuer)
+	config, err := o.get(context.Background(), invalidIssuer)
 	r.Error(err)
 	r.Nil(config)
 	r.Contains(err.Error(), "error parsing discovery URL")
 }
 
-func TestOIDCProviderConfigDiscovererRun(t *testing.T) {
+// TestOIDCConfigDiscoveryRetriesFailureAndRecovers covers the regression in
+// https://github.com/kgateway-dev/kgateway/issues/14497: an issuer that is unreachable when
+// the config is first discovered must be re-discovered by the refresh loop, and the recovery
+// must trigger a krt recomputation so the GatewayExtension stops reporting the error.
+func TestOIDCConfigDiscoveryRetriesFailureAndRecovers(t *testing.T) {
 	r := require.New(t)
 
-	// Track the number of requests made to the server
-	var requestCount int64
-
+	// Serve the 521 from the issue report until the test flips the switch, mirroring a
+	// provider that is still starting up while the control plane translates.
+	var healthy atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		atomic.AddInt64(&requestCount, 1)
-
+		if !healthy.Load() {
+			w.WriteHeader(521)
+			return
+		}
 		config := oidcProviderConfig{
 			TokenEndpoint:         "https://example.com/token",
 			AuthorizationEndpoint: "https://example.com/auth",
-			EndSessionEndpoint:    new("https://example.com/logout"),
+			JWKSURI:               "https://example.com/keys",
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(config)
 	}))
 	defer server.Close()
 
-	// Create discoverer with very short refresh interval for testing
-	o := &oidcProviderConfigDiscoverer{
-		cacheRefreshInterval: 50 * time.Millisecond,
-	}
+	issuer := server.URL
+	o := newTestDiscoverer(issuer)
+
+	// Initial translation fails, exactly as reported in the issue.
+	cfg, err := o.get(context.Background(), issuer)
+	r.Error(err)
+	r.Nil(cfg)
+	r.Contains(err.Error(), "unexpected status code 521")
+
+	// While the provider is still down, refreshing must not report a change: the error is
+	// identical, so krt should not be churned.
+	r.False(o.rediscover(context.Background(), issuer), "unchanged failure should not trigger recomputation")
+
+	// The provider comes back.
+	healthy.Store(true)
+
+	// The refresh loop re-discovers and reports the changed outcome.
+	r.True(o.rediscover(context.Background(), issuer), "recovery should trigger recomputation")
+
+	// A subsequent translation now sees the discovered config instead of the latched error.
+	cfg, err = o.get(context.Background(), issuer)
+	r.NoError(err)
+	r.NotNil(cfg)
+	r.Equal("https://example.com/token", cfg.TokenEndpoint)
+	r.Equal("https://example.com/keys", cfg.JWKSURI)
+}
+
+// TestOIDCConfigDiscoveryRefreshLoopRecovers exercises the same recovery through the running
+// refresh loop rather than by calling rediscover() directly.
+func TestOIDCConfigDiscoveryRefreshLoopRecovers(t *testing.T) {
+	r := require.New(t)
+
+	var healthy atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if !healthy.Load() {
+			w.WriteHeader(http.StatusNotFound) // unrecoverable, so no retry backoff
+			return
+		}
+		config := oidcProviderConfig{
+			TokenEndpoint:         "https://example.com/token",
+			AuthorizationEndpoint: "https://example.com/auth",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(config)
+	}))
+	defer server.Close()
+
+	issuer := server.URL
+	o := newTestDiscoverer(issuer)
+	o.failureRetryInterval = 10 * time.Millisecond
+
+	_, err := o.get(context.Background(), issuer)
+	r.Error(err)
+
+	ctx := t.Context()
+	go o.run(ctx)
+
+	healthy.Store(true)
+
+	require.Eventually(t, func() bool {
+		cfg, err := o.get(context.Background(), issuer)
+		return err == nil && cfg != nil && cfg.TokenEndpoint == "https://example.com/token"
+	}, 5*time.Second, 10*time.Millisecond, "refresh loop should re-discover the recovered provider")
+}
+
+// TestOIDCConfigDiscoveryPrunesDeletedIssuers asserts the refresh loop stops polling an issuer
+// once no GatewayExtension references it, so a deleted or re-pointed extension does not leave
+// kgateway contacting a dead endpoint forever.
+func TestOIDCConfigDiscoveryPrunesDeletedIssuers(t *testing.T) {
+	r := require.New(t)
+
+	var requestCount int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		atomic.AddInt64(&requestCount, 1)
+		config := oidcProviderConfig{
+			TokenEndpoint:         "https://example.com/token",
+			AuthorizationEndpoint: "https://example.com/auth",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(config)
+	}))
+	defer server.Close()
 
 	issuer := server.URL
 
-	// Initial request to populate cache
-	config1, err := o.get(issuer)
+	var live atomic.Bool
+	live.Store(true)
+	o := newOIDCProviderConfigDiscoverer(func() []string {
+		if !live.Load() {
+			return nil
+		}
+		return []string{issuer}
+	})
+	// Expire immediately so every refresh pass re-discovers a live issuer.
+	o.cacheRefreshInterval = 0
+	o.failureRetryInterval = 0
+
+	_, err := o.get(context.Background(), issuer)
 	r.NoError(err)
-	r.NotNil(config1)
-	r.Equal("https://example.com/token", config1.TokenEndpoint)
-	r.Equal(int64(1), atomic.LoadInt64(&requestCount)) // First request
+	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
 
-	// Second get should use cache (no new request)
-	config2, err := o.get(issuer)
-	r.NoError(err)
-	r.NotNil(config2)
-	r.Equal("https://example.com/token", config2.TokenEndpoint)
-	r.Equal(int64(1), atomic.LoadInt64(&requestCount)) // Still only 1 request (from cache)
+	// While referenced, a refresh pass re-discovers.
+	o.refreshOnce(context.Background())
+	r.Equal(int64(2), atomic.LoadInt64(&requestCount))
+	_, cached := o.load(issuer)
+	r.True(cached)
 
-	// Start the background cache clearing
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// Once the GatewayExtension is gone, the entry is pruned and no longer polled.
+	live.Store(false)
+	o.refreshOnce(context.Background())
+	_, cached = o.load(issuer)
+	r.False(cached, "issuer with no referencing GatewayExtension should be pruned")
 
-	go o.refresh(ctx)
-
-	// Poll until the cache is cleared; avoids goroutine scheduling races on loaded CI runners.
-	require.Eventually(t, func() bool {
-		_, ok := o.cache.Load(issuer)
-		return !ok
-	}, 500*time.Millisecond, 10*time.Millisecond)
-
-	// Now get should make a new request because cache was cleared
-	config3, err := o.get(issuer)
-	r.NoError(err)
-	r.NotNil(config3)
-	r.Equal("https://example.com/token", config3.TokenEndpoint)
-	r.Equal(int64(2), atomic.LoadInt64(&requestCount)) // Second request after cache clear
-
-	// Verify cache is working again (no new request)
-	config4, err := o.get(issuer)
-	r.NoError(err)
-	r.NotNil(config4)
-	r.Equal("https://example.com/token", config4.TokenEndpoint)
-	r.Equal(int64(2), atomic.LoadInt64(&requestCount)) // Still 2 requests (from cache)
-
-	// Poll until the cache is cleared again.
-	require.Eventually(t, func() bool {
-		_, ok := o.cache.Load(issuer)
-		return !ok
-	}, 500*time.Millisecond, 10*time.Millisecond)
-
-	// Another get should make a third request because cache was cleared again
-	config5, err := o.get(issuer)
-	r.NoError(err)
-	r.NotNil(config5)
-	r.Equal("https://example.com/token", config5.TokenEndpoint)
-	r.Equal(int64(3), atomic.LoadInt64(&requestCount)) // Third request after second cache clear
-
-	// Cancel context and verify no more cache clearing
-	cancel()
-	requestCountBeforeCancel := atomic.LoadInt64(&requestCount)
-
-	// Wait longer than the refresh interval
-	time.Sleep(100 * time.Millisecond)
-
-	// Get should still use cache since run() stopped
-	config6, err := o.get(issuer)
-	r.NoError(err)
-	r.NotNil(config6)
-	r.Equal("https://example.com/token", config6.TokenEndpoint)
-	r.Equal(requestCountBeforeCancel, atomic.LoadInt64(&requestCount)) // No new requests after cancel
+	countAfterPrune := atomic.LoadInt64(&requestCount)
+	o.refreshOnce(context.Background())
+	r.Equal(countAfterPrune, atomic.LoadInt64(&requestCount), "pruned issuer should not be polled")
 }
