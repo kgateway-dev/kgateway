@@ -1,9 +1,7 @@
-# kgateway AI Agent Instructions
-
-## Project Overview
+# Project Overview
 kgateway is a control plane implementing the Kubernetes Gateway API for Envoy. It's built on KRT (Kubernetes Declarative Controller Runtime from Istio) and uses a plugin-based architecture for extensibility.
 
-## Architecture (Read This First!)
+## Architecture
 
 ### Translation Pipeline (3 phases)
 1. **Policy → IR**: Plugins translate CRDs to PolicyIR (close to Envoy protos). Done once per policy CRD change.
@@ -17,19 +15,13 @@ See `/devel/architecture/overview.md` and the translation diagram at `/devel/arc
 - **api/v1alpha1/kgateway/**: kgateway CRD definitions. Use `+kubebuilder` markers for validation/generation
 - **pkg/pluginsdk/**: Plugin interfaces (`Plugin`, `PolicyPlugin`, `BackendPlugin`)
 - **pkg/kgateway/extensions2/plugins/**: Plugin implementations (trafficpolicy, httplistenerpolicy, etc.)
-- **pkg/kgateway/krtcollections/**: KRT collections for core resources
+- **pkg/krtcollections/**: KRT collections for core resources
 - **test/e2e/**: End-to-end tests using custom framework (see test/e2e/README.md)
 
 ### Plugin System
-At the core kgateway translates kubernetes Gateway API resources to Envoy configuration. To add features
-like policies, or backends, we use a plugin system. Each plugin *contributes* to the translation, usually by
-adding a new type of CRD (most commonly a Policy CRD) that users can create to express their desired configuration.
+kgateway translates Kubernetes Gateway API resources into Envoy configuration. Plugins *contribute* to that translation, usually by adding a new CRD (most commonly a Policy CRD) that users create to express their desired configuration. Policy CRDs attach to Gateway API resources via `targetRefs` or `targetSelectors`; kgateway manages the attachment during translation.
 
-Policy CRDs are attached to Gateway API resources via `targetRefs` or `targetSelectors`. kgateway manages the attachment
-of policies to the appropriate resources during translation.
-
-The plugin is then called in the translation process to affect the dataplane configuration.
-To do this efficiently, the plugin should convert the CRD to an intermediate representation (IR) that is as close to Envoy protos as possible. This minimizes the amount of logic needed in the final translation, and allows for better status reflected back to the user if there are errors.
+Convert the CRD to an intermediate representation (IR) that is as close to Envoy protos as possible. This minimizes logic in the final translation and allows better status to be reported back to the user on errors.
 
 Plugins are **stateless across translations** but maintain state during a single gateway translation via `ProxyTranslationPass`. Each plugin:
 - Provides a KRT collection of `ir.PolicyWrapper` (contains `PolicyIR` + `TargetRefs`)
@@ -38,30 +30,29 @@ Plugins are **stateless across translations** but maintain state during a single
 
 Example: `/pkg/kgateway/extensions2/plugins/trafficpolicy/traffic_policy_plugin.go`
 
-## Development
-
 ## Critical Developer Patterns
 
 ### go build tag e2e
-
-If you intend to include all source code, run 'go' commands that accept '-tags' with '-tags e2e'.
+If you intend to include all source code, run `go` commands that accept `-tags` with `-tags e2e`.
 
 ### IR Equals() Methods (STRICTLY ENFORCED)
 IRs output by KRT collections **must** implement `Equals(other T) bool`:
 - **Compare ALL fields** or mark with `// +noKrtEquals` (last line of comment)
-- **Never use `reflect.DeepEqual`** (flagged by custom analyzer in `/hack/krtequals/`)
+- `+krtEqualsTODO` exists only to track legacy gaps — never use it in new code
+- **Never use `reflect.DeepEqual`** — flagged by the custom `krtequals` analyzer (external module wired up in `.custom-gcl.yml`, configured in `.golangci.yaml`)
 - Use proto equality helpers: `proto.Equal()`, not `==`
+- Unit test the `Equals` method
+
+High-risk area: an incomplete `Equals` silently breaks KRT change detection.
 
 ### Code Generation Workflow
-Common targets:
-- `make generate-code`: Ignores stamp files, generates all (takes around 30 seconds)
-- `make generate-all`: Uses stamp files, only regenerates changed code (fast)
-- `make verify`: CI target - always regenerates everything, checks git diff
+- `make generate-all`: Uses stamp files, only regenerates changed code (fast) — the usual choice
+- `make generated-code`: Ignores stamp files, force-regenerates everything
 - `make go-generate-apis`: Only API changes (~1m)
+- `make verify`: CI target - always regenerates and fails on any resulting git diff
 - `make fmt` or `make fmt-changed`: Format code (always run before commit)
 
-After API changes: Run `make go-generate-apis` then `make fmt-changed`. The Makefile uses dependency tracking in `_output/stamps/`.
-If not sure, just run `make generate-all`.
+After API changes: run `make go-generate-apis` then `make fmt-changed`. Dependency tracking lives in `_output/stamps/`; run `make clean-stamps` if regeneration seems stuck. If not sure, just run `make generate-all`.
 
 ### Testing Conventions
 - **Unit tests**: For new code, avoid Ginkgo. You may use Gomega matchers if appropriate.
@@ -70,12 +61,12 @@ If not sure, just run `make generate-all`.
 - **Transforms**: Compose matchers with `WithTransform()` (see `/devel/testing/writing-tests.md`)
 - Prefer explicit error checking: `Expect(err).To(MatchError("msg"))` over `HaveOccurred()`
 - Add descriptions: `Expect(x).To(BeEmpty(), "list should be empty on init")`
+- Never manually delete e2e resources in a specific order - let the framework handle teardown
 
-Run tests:
 ```bash
-make test TEST_PKG=./path/to/package  # Unit tests
-make e2e-test TEST_PKG=./test/e2e/tests/...  # E2E tests
-make unit  # All unit tests (excludes e2e)
+make test TEST_PKG=./path/to/package        # Unit tests
+make e2e-test TEST_PKG=./test/e2e/tests/... # E2E tests
+make unit                                   # All unit tests (excludes e2e)
 ```
 
 ### API/CRD Development
@@ -93,147 +84,45 @@ make unit  # All unit tests (excludes e2e)
 See `/api/README.md` for full guidelines.
 
 #### Adding fields to Policy CRDs
-
 1. Add the field to the appropriate `Spec` struct in the CRD Go type in `api/v1alpha1/`.
 2. Add validation markers as needed (e.g., `+kubebuilder:validation:MinLength=1`, `+optional`, etc.)
 3. Run `make go-generate-apis` to regenerate code.
-4. Update the IR struct in the plugin package (`pkg/kgateway/extensions2/plugins/<plugin_name>/`) to include the new field.
-5. Add yaml tests cases in `pkg/kgateway/translator/gateway/gateway_translator_test.go`.
+4. Update the IR struct in the plugin package (`pkg/kgateway/extensions2/plugins/<plugin_name>/`) to include the new field. Translate as close to Envoy protos as possible here, not in the translation pass — the translation pass should stay very lightweight.
+5. Add yaml test cases in `pkg/kgateway/translator/gateway/gateway_translator_test.go`.
    The yaml inputs go in `pkg/kgateway/translator/gateway/testutils/inputs/`. DO NOT create the outputs by yourself.
    Instead, run your tests with environment variable `REFRESH_GOLDEN=true`. For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/gateway`
    It will generate the outputs for you automatically in the `pkg/kgateway/translator/gateway/testutils/outputs/` folder.
    Once the outputs are generated, inspect them to see they contain the changes you expect, and alert the user if that's not the case.
 6. For non-trivial changes, also add unit tests.
-7. Consider also adding E2E tests using the framework. You can look at `test/e2e/features/cors/suite.go` as an example for an E2E test.
+7. Consider also adding E2E tests using the framework. You can look at `test/e2e/features/cors/suite.go` as an example.
    When writing an E2E test, prefer to use `base.NewBaseTestingSuite` as the base suite, as it provides many useful utilities.
    If you are adding a new test suite, remember to register it in `test/e2e/tests/kgateway/suite_runner.go`.
    Additionally add it to one of the test kind clusters in `.github/workflows/e2e.yaml`.
 
-### Directory Conventions
-- **Avoid "util" packages** - use descriptive names
-- **Lowercase filenames**, underscores for Go files (`my_file.go`), dashes for docs (`my-doc.md`)
-- **Package names**: Avoid separators, use nested dirs for multi-word names
-- **VSCode markers**: Use `// MARK: Section Name` for long file navigation
-
-## Development Workflows
-
-### Local Development with Tilt
+## Local Development
 ```bash
-# Initial setup
-ctlptl create cluster kind --name kind-kind --registry=ctlptl-registry
+make run                    # kind + CRDs + MetalLB + images + charts
+make kind-reload-kgateway   # Rebuild, load, and restart after a code change
 
-# Build images and load into kind
-VERSION=v1.0.0-ci1 CLUSTER_NAME=kind make kind-build-and-load  # Builds all 3 images
-
-# Deploy with Tilt (live reload enabled)
-tilt up  # Configure via tilt-settings.yaml
-
-# as long as tilt is running, it will auto-reload on code changes
+make conformance                               # Gateway API conformance
+make all-conformance                           # All suites
+make conformance-HTTPRouteSimpleSameNamespace  # Specific test by ShortName
 ```
 
-See `Tiltfile` and `tilt-settings.yaml` for configuration.
-
-### Manual Development
-```bash
-# Set up complete development environment
-make run  # kind + CRDs + MetalLB + images + charts
-
-# Update after code change
-make kind-reload-kgateway
-```
-
-### Running Conformance Tests
-```bash
-make conformance  # Gateway API conformance
-make all-conformance  # All suites
-
-# Run specific test by ShortName
-make conformance-HTTPRouteSimpleSameNamespace
-```
-
-## Common Gotchas
-
-1. **IR Equals() bugs**: High-risk area. MUST compare all fields or mark `+noKrtEquals`.
-2. **Proto comparison**: Use `proto.Equal()`, not `==` or `reflect.DeepEqual`
-3. **Codegen stamps**: `make clean-stamps` if regeneration seems stuck
-4. **E2E test resources**: Never manually delete resources in specific order - let framework handle it
-5. **PolicyIR translation**: Translate as close to Envoy protos as possible in the Plugin IR, not in translation pass. The translation pass should be very light weight.
-6. **KRT collections**: Changes trigger minimal recomputation - dependencies tracked automatically
-7. **Envoy image version**: Defined in `Makefile` as `ENVOY_IMAGE` (update with care)
-
-## File Reference Quick Guide
-- Architecture: `/devel/architecture/overview.md`
-- Contributing: `/devel/contributing/README.md`
-- API conventions: `/api/README.md`
-- Testing guide: `/devel/testing/writing-tests.md`
-- Code generation: `/devel/contributing/code-generation.md`
-- E2E framework: `/test/e2e/README.md`
-- Plugin SDK: `/pkg/pluginsdk/types.go`
-- Example plugin: `/pkg/kgateway/extensions2/plugins/trafficpolicy/`
-
-## Build Details
-- **Go version**: Specified in `go.mod`
-- **Base image**: Alpine 3.17.6 (distroless for production)
-- **Architectures**: amd64, arm64 (controlled via `GOARCH`)
-- **Image registry**: `ghcr.io/kgateway-dev` (override via `IMAGE_REGISTRY`)
-- **Rust components**: envoyinit includes dynamic filters built from `/internal/envoy_modules/`
-
-## Key Make Targets
-```bash
-make help               # Self-documenting targets
-make analyze            # Run golangci-lint (custom config)
-make test               # Run unit tests
-make e2e-test          # Run e2e tests
-make generate-all       # Smart codegen (uses stamps)
-make verify            # CI codegen check (always regenerates)
-make fmt               # Format all code
-make fmt-changed       # Format only changed files
-make kind-create       # Create kind cluster
-make setup             # Full local setup
-make deploy-kgateway   # Deploy to cluster
-```
-
-## Dependencies & Bumping
-```bash
-make bump-gtw DEP_REF=v1.3.0     # Bump Gateway API
-make generate-licenses            # Update license attribution
-```
-
-Gateway API version is in `go.mod` and CRD install URL in Makefile (`CONFORMANCE_VERSION`).
+Pinned versions live in the `Makefile` (`ENVOY_IMAGE`, `ALPINE_BASE_IMAGE`, and `CONFORMANCE_VERSION` for the Gateway API CRDs); bump Gateway API with `make bump-gtw DEP_REF=v1.3.0`. Run `make help` for all targets.
 
 ## Opening Pull Requests
 
-1. Ensure all linters pass: `make analyze`, `make verify`
-2. If you modified files in `.github/`: Run `make lint-actions` to lint GitHub Actions workflows
-3. Ensure tests pass in CI (unit + e2e + conformance)
-4. Use the PR template structure below
+### Before you open
+1. `make verify` - regenerates code and fails if it produces a local diff
+2. `make analyze` - runs the linter
+3. `make lint-actions` - only if you modified files in `.github/`
+4. Every commit needs a `Signed-off-by` trailer ([DCO](https://developercertificate.org/) is a required check). Use `git commit -s`.
 
-### PR Body Structure
+### PR body
+PRs must follow `/.github/PULL_REQUEST_TEMPLATE.md`, which GitHub pre-fills in the web UI. **`gh pr create --body`/`--body-file` bypasses the template**, so when opening a PR from the CLI you must reproduce the structure yourself. The `labeler` workflow parses the body and is a **required check** — a missing change type or changelog block fails CI.
 
-Every PR must include these sections:
+Full details: `/devel/contributing/pull-requests.md` and `/.github/workflows/README.md`.
 
-1. **Description** - Explain motivation, what changed, and link issues (`Fixes #123`)
-
-2. **Change Type** - Include one or more `/kind` commands in the PR body:
-   - `/kind feature`, `/kind fix`, `/kind cleanup`, `/kind documentation`
-   - `/kind breaking_change`, `/kind deprecation`, `/kind design`
-   - `/kind bump`, `/kind flake`, `/kind install`
-
-3. **Changelog** - A fenced code block with `release-note` as the language identifier containing the release note text, or `NONE` if not user-facing
-
-4. **Additional Notes** (optional) - Extra context for reviewers
-
-## Style
-
-All code and comments should use American English spelling (i.e. "color" not "colour", "honor" not "honour").
-
-### Markdown Output
-
-When generating markdown documentation:
-
-- Use ordered heading levels (no skipping from `#` to `###`)
-- Headings should not end in punctuation
-- Use consistent bullet types within a list (don't mix `-` and `*`)
-- No empty headings
-- Use `->` instead of `→` for arrows (ASCII-compatible)
-- **Prefer mermaid diagrams over ASCII art** - use fenced mermaid code blocks for flowcharts, sequence diagrams, and architecture diagrams instead of box-drawing characters (┌ └ │ ├ ─ ► ▼ etc.)
+## Further Reading
+Docs not already linked above: `/devel/contributing/README.md` (contributing overview), `/devel/contributing/conventions.md` (coding conventions), `/devel/contributing/code-generation.md` (codegen internals).
