@@ -2,10 +2,15 @@ package ir
 
 import (
 	"fmt"
+	"reflect"
+	"slices"
 	"testing"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func epsBackend(name string) BackendObjectIR {
@@ -130,5 +135,114 @@ func TestReuseEndpointsFromEmpty(t *testing.T) {
 	readded := NewEndpointsForBackend(epsBackend("svc-variant"))
 	if clone.LbEpsEqualityHash != readded.LbEpsEqualityHash {
 		t.Fatalf("empty reuse hash mismatch: reuse=%d readd=%d", clone.LbEpsEqualityHash, readded.LbEpsEqualityHash)
+	}
+}
+
+// reuseCmpOpts compares two EndpointsForBackend in full, including the unexported
+// equality hashes.
+//
+// AttachedPolicies is ignored rather than compared: it is +noKrtEquals,
+// ReuseEndpointsFrom does not touch it, and cmp cannot traverse it — PolicyAtt
+// holds a PolicyIR interface whose concrete plugin types have unexported fields,
+// so cmp panics ("cannot handle unexported field") as soon as a fixture attaches
+// a real policy. There is no finite set of types to pass to AllowUnexported.
+var reuseCmpOpts = []cmp.Option{
+	cmp.AllowUnexported(EndpointsForBackend{}),
+	cmpopts.IgnoreFields(EndpointsForBackend{}, "AttachedPolicies"),
+	protocmp.Transform(),
+}
+
+// TestReuseEndpointsFromCopiesEveryDerivedField compares the whole struct against
+// one built by re-Adding every endpoint. Unlike an assertion on the hashes alone,
+// this fails when a future field is maintained incrementally by Add() and
+// ReuseEndpointsFrom forgets to reproduce it, and when ReuseEndpointsFrom starts
+// copying a backend-identity field it should have left to the caller.
+func TestReuseEndpointsFromCopiesEveryDerivedField(t *testing.T) {
+	base := NewEndpointsForBackend(epsBackend("svc"))
+	for i := range 10 {
+		base.Add(
+			PodLocality{
+				Region: "us-east-1",
+				Zone:   fmt.Sprintf("zone-%d", i%3),
+			},
+			testEndpointWithMd(i),
+		)
+	}
+
+	readded := NewEndpointsForBackend(epsBackend("svc-variant"))
+	for locality, endpoints := range base.LbEps {
+		for _, endpoint := range endpoints {
+			readded.Add(locality, endpoint)
+		}
+	}
+
+	clone := NewEndpointsForBackend(epsBackend("svc-variant"))
+	clone.ReuseEndpointsFrom(base)
+
+	if diff := cmp.Diff(readded, clone, reuseCmpOpts...); diff != "" {
+		t.Fatalf("ReuseEndpointsFrom differs from re-Add (-want +got):\n%s", diff)
+	}
+
+	// Equal contents do not prove that each locality has its own backing slice,
+	// so assert non-aliasing separately.
+	for locality, baseEndpoints := range base.LbEps {
+		clonedEndpoints := clone.LbEps[locality]
+		if len(baseEndpoints) > 0 && len(clonedEndpoints) > 0 && &baseEndpoints[0] == &clonedEndpoints[0] {
+			t.Errorf("endpoint slice for %v aliases the base backing array", locality)
+		}
+	}
+}
+
+// TestReuseEndpointsFromCopiesEmptyLocality covers the len(eps) > 0 == false
+// branch, which needs a locality key with no endpoints.
+//
+// Such a locality is unreachable in production: Add is the only writer of LbEps
+// anywhere in the tree, and it always appends an endpoint. It is also the one
+// input where reuse and re-Add disagree on state — the re-Add loop never calls
+// Add for a zero-length slice, so it drops the key, while reuse preserves it. The
+// equality hash agrees either way, and the hash is what Equals compares, so this
+// documents the divergence rather than asserting equivalence.
+func TestReuseEndpointsFromCopiesEmptyLocality(t *testing.T) {
+	base := NewEndpointsForBackend(epsBackend("svc"))
+	emptyLocality := PodLocality{Region: "empty-region"}
+	base.LbEps[emptyLocality] = nil
+
+	clone := NewEndpointsForBackend(epsBackend("svc-variant"))
+	initialHash := clone.LbEpsEqualityHash
+	clone.ReuseEndpointsFrom(base)
+
+	if _, ok := clone.LbEps[emptyLocality]; !ok {
+		t.Error("empty locality was not copied")
+	}
+	if clone.LbEpsEqualityHash != initialHash {
+		t.Errorf(
+			"empty endpoint set changed hash: got %d want %d",
+			clone.LbEpsEqualityHash,
+			initialHash,
+		)
+	}
+}
+
+// TestEndpointHashInputsUnchanged is a canary on the structs hashEndpoints reads.
+// EndpointsForBackend.Equals compares equality hashes instead of endpoints, so a
+// new field on any of these is invisible to KRT until hashEndpoints folds it in.
+// This cannot prove an existing field is actually hashed; it forces a conscious
+// decision when one of these structs grows.
+func TestEndpointHashInputsUnchanged(t *testing.T) {
+	for ty, want := range map[reflect.Type][]string{
+		reflect.TypeFor[PodLocality]():      {"Region", "Zone", "Subzone"},
+		reflect.TypeFor[EndpointWithMd]():   {"LbEndpoint", "EndpointMd"},
+		reflect.TypeFor[EndpointMetadata](): {"Labels"},
+	} {
+		var got []string
+		for field := range ty.Fields() {
+			got = append(got, field.Name)
+		}
+		if !slices.Equal(got, want) {
+			t.Errorf(
+				"%s fields changed: got %v want %v; update hashEndpoints or explicitly document the exclusion",
+				ty.Name(), got, want,
+			)
+		}
 	}
 }
