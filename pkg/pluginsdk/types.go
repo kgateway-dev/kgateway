@@ -16,8 +16,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // ErrNotFound is returned when a requested resource is not found
@@ -47,14 +49,19 @@ type PerClientProcessBackend func(
 )
 
 // PolicyStatusInputs is provided to a PolicyPlugin's RegisterPolicyStatus hook. The plugin
-// registers its existing raw collection as a reconciliation source and a writer that builds
-// status just-in-time from PolicyReports.
+// registers its raw collection, keyed report reducer, and just-in-time writer.
 type PolicyStatusInputs struct {
 	// Collections is where the plugin registers its raw policy collection.
 	Collections *StatusCollections
-	// PolicyReports is a singleton collection holding the merged report map (gateway and
-	// backend report paths combined) from which policy statuses are built.
-	PolicyReports krt.Collection[statussync.ReportsWrapper]
+	// StatusContributions contains Gateway- and Backend-produced facts keyed by status owner.
+	StatusContributions krt.Collection[reports.StatusContribution]
+	// ContributionsByTarget selects all contributions for one status owner.
+	ContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
+	// KrtOpts supplies standard collection lifecycle and debugging options.
+	KrtOpts krtutil.KrtOptions
+	// RegisterResourceReports registers a per-policy reducer as both a status
+	// event source and a cache dependency.
+	RegisterResourceReports func(krt.Collection[statussync.ResourceReports])
 	// RegisterWriter registers the writer that persists this plugin's policy status.
 	RegisterWriter func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer)
 }

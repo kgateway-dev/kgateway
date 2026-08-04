@@ -11,6 +11,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -56,16 +57,37 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 		}
 	}
 	return func(in pluginsdk.PolicyStatusInputs) {
+		statusReports := statussync.NewResourceReports(
+			col,
+			in.StatusContributions,
+			in.ContributionsByTarget,
+			func(pol T) statussync.Resource {
+				return statussync.Resource{
+					GroupVersionKind: gvk,
+					NamespacedName:   types.NamespacedName{Namespace: pol.GetNamespace(), Name: pol.GetName()},
+				}
+			},
+			in.KrtOpts.ToOptions(gvk.Kind+"StatusReports")...,
+		)
 		statussync.RegisterResource(in.Collections, gvk, col)
+		in.RegisterResourceReports(statusReports)
 		in.RegisterWriter(gvk, statussync.Writer[T, gwv1.PolicyStatus]{
 			Name:   gvk.Kind,
 			Client: cl,
 			Desired: func(pol T) (gwv1.PolicyStatus, bool) {
-				rw := in.PolicyReports.GetKey("report")
+				target := reports.StatusKey{
+					GroupKind:      gvk.GroupKind(),
+					NamespacedName: types.NamespacedName{Namespace: pol.GetNamespace(), Name: pol.GetName()},
+				}
+				rw := statusReports.GetKey(target.String())
 				if rw == nil {
 					return gwv1.PolicyStatus{}, false
 				}
-				status := buildDesired(rw.Reports(), pol, controllerName)
+				reportMap := rw.Report.ReportMap(reports.StatusTarget{
+					GroupVersionKind: rw.Resource.GroupVersionKind,
+					NamespacedName:   rw.Resource.NamespacedName,
+				})
+				status := buildDesired(reportMap, pol, controllerName)
 				if status == nil {
 					// Merge will clear only ancestors owned by this controller.
 					return gwv1.PolicyStatus{}, true

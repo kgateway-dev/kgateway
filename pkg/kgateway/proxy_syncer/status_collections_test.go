@@ -5,13 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -96,96 +91,4 @@ func TestBuildGWStatusCarriesLiveAddresses(t *testing.T) {
 	status := rm.BuildGWStatus(t.Context(), *gw, nil)
 	require.NotNil(t, status)
 	require.Equal(t, live, status.Addresses, "BuildGWStatus must carry live addresses through verbatim")
-}
-
-func TestChangedGatewayResourcesQueuesOnlyChangedReportKeys(t *testing.T) {
-	unchanged := types.NamespacedName{Namespace: "default", Name: "unchanged"}
-	changed := types.NamespacedName{Namespace: "default", Name: "changed"}
-	old := reports.NewReportMap()
-	old.HTTPRoutes[unchanged] = nil
-	current := reports.NewReportMap()
-	current.HTTPRoutes[unchanged] = nil
-	current.HTTPRoutes[changed] = nil
-
-	resources := changedGatewayResources(old, current, wellknown.TCPRouteV1GVK, wellknown.TLSRouteV1GVK)
-
-	require.Equal(t, []types.NamespacedName{changed}, statusResourceNames(resources))
-	require.Equal(t, wellknown.HTTPRouteGVK, resources[0].GroupVersionKind)
-}
-
-func TestChangedGatewayResourcesUsesServedRouteVersions(t *testing.T) {
-	nn := types.NamespacedName{Namespace: "default", Name: "route"}
-	old := reports.NewReportMap()
-	current := reports.NewReportMap()
-	current.TCPRoutes[nn] = nil
-	current.TLSRoutes[nn] = nil
-
-	tcpGVK, tlsGVK := routeWriteGVKs(wellknown.TCPRouteV1GVR, wellknown.TLSRouteV1Alpha3GVR)
-	resources := changedGatewayResources(old, current, tcpGVK, tlsGVK)
-
-	require.ElementsMatch(t, []schema.GroupVersionKind{
-		wellknown.TCPRouteV1GVK,
-		wellknown.TLSRouteV1Alpha3GVK,
-	}, resourceGVKs(resources))
-}
-
-func TestRouteWriteGVKsMatchResourceAndReportCoalescingKeys(t *testing.T) {
-	tests := []struct {
-		name       string
-		tcpGVR     schema.GroupVersionResource
-		tlsGVR     schema.GroupVersionResource
-		wantTCPGVK schema.GroupVersionKind
-		wantTLSGVK schema.GroupVersionKind
-	}{
-		{
-			name:       "promoted",
-			tcpGVR:     wellknown.TCPRouteV1GVR,
-			tlsGVR:     wellknown.TLSRouteV1GVR,
-			wantTCPGVK: wellknown.TCPRouteV1GVK,
-			wantTLSGVK: wellknown.TLSRouteV1GVK,
-		},
-		{
-			name:       "pre promotion",
-			tcpGVR:     wellknown.TCPRouteGVR,
-			tlsGVR:     wellknown.TLSRouteV1Alpha3GVR,
-			wantTCPGVK: wellknown.TCPRouteGVK,
-			wantTLSGVK: wellknown.TLSRouteV1Alpha3GVK,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tcpGVK, tlsGVK := routeWriteGVKs(tt.tcpGVR, tt.tlsGVR)
-			require.Equal(t, tt.wantTCPGVK, tcpGVK)
-			require.Equal(t, tt.wantTLSGVK, tlsGVK)
-		})
-	}
-}
-
-func TestChangedPolicyResourcesMapsPolicyGroupKindToWriterGVK(t *testing.T) {
-	gvk := schema.GroupVersionKind{Group: "gateway.example.io", Version: "v1", Kind: "ExamplePolicy"}
-	key := reporter.PolicyKey{Group: gvk.Group, Kind: gvk.Kind, Namespace: "default", Name: "policy"}
-	old := reports.NewReportMap()
-	current := reports.NewReportMap()
-	current.Policies[key] = nil
-
-	resources := changedPolicyResources(old, current, map[schema.GroupKind]schema.GroupVersionKind{gvk.GroupKind(): gvk})
-
-	require.Equal(t, []types.NamespacedName{{Namespace: "default", Name: "policy"}}, statusResourceNames(resources))
-	require.Equal(t, gvk, resources[0].GroupVersionKind)
-}
-
-func statusResourceNames(resources []statussync.Resource) []types.NamespacedName {
-	result := make([]types.NamespacedName, 0, len(resources))
-	for _, resource := range resources {
-		result = append(result, resource.NamespacedName)
-	}
-	return result
-}
-
-func resourceGVKs(resources []statussync.Resource) []schema.GroupVersionKind {
-	result := make([]schema.GroupVersionKind, 0, len(resources))
-	for _, resource := range resources {
-		result = append(result, resource.GroupVersionKind)
-	}
-	return result
 }

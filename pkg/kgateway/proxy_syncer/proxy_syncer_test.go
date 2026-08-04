@@ -3,186 +3,69 @@ package proxy_syncer
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-func TestMergeProxyReports(t *testing.T) {
-	tests := []struct {
-		name     string
-		proxies  []GatewayXdsResources
-		expected reports.ReportMap
-	}{
-		{
-			name: "Merge HTTPRoute reports for different parents",
-			proxies: []GatewayXdsResources{
-				{
-					reports: reports.ReportMap{
-						HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
-					{Name: "route1", Namespace: "default"}: {
-						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Merge TCPRoute reports for different parents",
-			proxies: []GatewayXdsResources{
-				{
-					reports: reports.ReportMap{
-						TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
-					{Name: "route1", Namespace: "default"}: {
-						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Merge TLSRoute reports for different parents",
-			proxies: []GatewayXdsResources{
-				{
-					reports: reports.ReportMap{
-						TLSRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						TLSRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				TLSRoutes: map[types.NamespacedName]*reports.RouteReport{
-					{Name: "route1", Namespace: "default"}: {
-						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Merge Policy reports for different parents",
-			proxies: []GatewayXdsResources{
-				{
-					reports: reports.ReportMap{
-						Policies: map[reporter.PolicyKey]*reports.PolicyReport{
-							{Name: "policy1", Namespace: "default"}: {
-								Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						Policies: map[reporter.PolicyKey]*reports.PolicyReport{
-							{Name: "policy1", Namespace: "default"}: {
-								Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				Policies: map[reporter.PolicyKey]*reports.PolicyReport{
-					{Name: "policy1", Namespace: "default"}: {
-						Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
-							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-						},
-					},
-				},
-			},
+func TestStatusContributionsMergeRouteParentsAcrossGateways(t *testing.T) {
+	route := types.NamespacedName{Namespace: "default", Name: "route"}
+	gw1 := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw-1"}}
+	gw2 := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw-2"}}
+
+	first := reports.NewReportMap()
+	first.HTTPRoutes[route] = &reports.RouteReport{Parents: map[reports.ParentRefKey]*reports.ParentRefReport{gw1: {}}}
+	second := reports.NewReportMap()
+	second.HTTPRoutes[route] = &reports.RouteReport{Parents: map[reports.ParentRefKey]*reports.ParentRefReport{gw2: {}}}
+
+	contributions := append(
+		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/gw-1"}, first),
+		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/gw-2"}, second)...,
+	)
+	merged := reports.MergeStatusContributions(contributions)
+
+	require.Equal(t, map[reports.ParentRefKey]*reports.ParentRefReport{gw1: {}, gw2: {}}, merged.HTTPRoutes[route].Parents)
+}
+
+func TestStatusContributionsMergePolicyAncestorsAcrossPaths(t *testing.T) {
+	policy := reporter.PolicyKey{Group: "example.io", Kind: "Policy", Namespace: "default", Name: "policy"}
+	gw := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw"}}
+	backend := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "backend"}}
+
+	gatewayReport := reports.NewReportMap()
+	gatewayReport.Policies[policy] = &reports.PolicyReport{Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{gw: {}}}
+	backendReport := reports.NewReportMap()
+	backendReport.Policies[policy] = &reports.PolicyReport{Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{backend: {}}}
+
+	contributions := append(
+		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/gw"}, gatewayReport),
+		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.BackendPolicyStatusSource, Name: "default/backend"}, backendReport)...,
+	)
+	merged := reports.MergeStatusContributions(contributions)
+
+	require.Equal(t, map[reports.ParentRefKey]*reports.AncestorRefReport{gw: {}, backend: {}}, merged.Policies[policy].Ancestors)
+}
+
+func TestGatewayTranslationOutputSeparatesStatusFromXdsEquality(t *testing.T) {
+	nn := types.NamespacedName{Namespace: "default", Name: "gateway"}
+	base := gatewayTranslationOutput{
+		Xds: GatewayXdsResources{NamespacedName: nn},
+		Status: GatewayStatusSnapshot{
+			NamespacedName: nn,
+			Contributions: []reports.StatusContribution{{
+				Target: reports.StatusTarget{NamespacedName: nn},
+				Source: reports.StatusSource{Kind: reports.GatewayStatusSource, Name: nn.String()},
+			}},
 		},
 	}
+	changed := base
+	changed.Status.Contributions = []reports.StatusContribution{{
+		Target: reports.StatusTarget{NamespacedName: nn},
+		Source: reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "changed"},
+	}}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := assert.New(t)
-
-			actual := mergeProxyReports(tt.proxies)
-			if tt.expected.HTTPRoutes != nil {
-				a.Equal(tt.expected.HTTPRoutes, actual.HTTPRoutes)
-			}
-			if tt.expected.TCPRoutes != nil {
-				a.Equal(tt.expected.TCPRoutes, actual.TCPRoutes)
-			}
-			if tt.expected.TLSRoutes != nil {
-				a.Equal(tt.expected.TLSRoutes, actual.TLSRoutes)
-			}
-			if tt.expected.Policies != nil {
-				a.Equal(tt.expected.Policies, actual.Policies)
-			}
-		})
-	}
+	require.True(t, base.Xds.Equals(changed.Xds), "status-only changes must not invalidate the xDS projection")
+	require.False(t, base.Equals(changed), "the status projection must still observe status-only changes")
 }

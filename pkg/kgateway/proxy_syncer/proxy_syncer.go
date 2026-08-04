@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"sync/atomic"
 
@@ -55,10 +56,8 @@ type ProxySyncer struct {
 
 	uniqueClients krt.Collection[ir.UniquelyConnectedClient]
 
-	statusReport            krt.Singleton[statussync.ReportsWrapper]
-	backendPolicyReport     krt.Singleton[statussync.ReportsWrapper]
-	backendStatusReport     krt.Singleton[statussync.ReportsWrapper]
-	policyReport            krt.Singleton[statussync.ReportsWrapper]
+	statusContributions     krt.Collection[reports.StatusContribution]
+	gatewayStatusSnapshots  krt.Collection[GatewayStatusSnapshot]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
@@ -71,8 +70,6 @@ type ProxySyncer struct {
 
 type GatewayXdsResources struct {
 	types.NamespacedName
-
-	reports reports.ReportMap
 	// Clusters are items in the CDS response payload.
 	// +krtEqualsTodo include CDC resources in equality for diff detection
 	Clusters     []envoycachetypes.ResourceWithTTL
@@ -94,11 +91,42 @@ func (r GatewayXdsResources) ResourceName() string {
 
 func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 	return r.NamespacedName == in.NamespacedName &&
-		reports.EqualReportMaps(r.reports, in.reports) &&
 		r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version &&
 		r.Listeners.Version == in.Listeners.Version &&
 		r.Secrets.Version == in.Secrets.Version
+}
+
+// GatewayStatusSnapshot is the status-only projection of one Gateway
+// translation. Keeping it separate prevents status-only changes from
+// invalidating the xDS projection.
+type GatewayStatusSnapshot struct {
+	types.NamespacedName
+	Contributions []reports.StatusContribution
+}
+
+func (r GatewayStatusSnapshot) ResourceName() string {
+	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, r.Namespace, r.Name)
+}
+
+func (r GatewayStatusSnapshot) Equals(other GatewayStatusSnapshot) bool {
+	return r.NamespacedName == other.NamespacedName &&
+		slices.EqualFunc(r.Contributions, other.Contributions, func(a, b reports.StatusContribution) bool {
+			return a.Equals(b)
+		})
+}
+
+type gatewayTranslationOutput struct {
+	Xds    GatewayXdsResources
+	Status GatewayStatusSnapshot
+}
+
+func (r gatewayTranslationOutput) ResourceName() string {
+	return r.Xds.ResourceName()
+}
+
+func (r gatewayTranslationOutput) Equals(other gatewayTranslationOutput) bool {
+	return r.Xds.Equals(other.Xds) && r.Status.Equals(other.Status)
 }
 
 func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.ResourceWithTTL, uint64) {
@@ -119,19 +147,28 @@ func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 	return envoycache.NewResourcesWithTTL(strconv.FormatUint(h, 10), r)
 }
 
-func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *GatewayXdsResources {
+func toTranslationOutput(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *gatewayTranslationOutput {
 	c, ch := sliceToResourcesHash(xdsSnap.ExtraClusters)
-	return &GatewayXdsResources{
-		NamespacedName: types.NamespacedName{
-			Namespace: gw.Obj.GetNamespace(),
-			Name:      gw.Obj.GetName(),
+	nn := types.NamespacedName{
+		Namespace: gw.Obj.GetNamespace(),
+		Name:      gw.Obj.GetName(),
+	}
+	return &gatewayTranslationOutput{
+		Xds: GatewayXdsResources{
+			NamespacedName: nn,
+			ClustersHash:   ch,
+			Clusters:       c,
+			Routes:         sliceToResources(xdsSnap.Routes),
+			Listeners:      sliceToResources(xdsSnap.Listeners),
+			Secrets:        sliceToResources(xdsSnap.Secrets),
 		},
-		reports:      r,
-		ClustersHash: ch,
-		Clusters:     c,
-		Routes:       sliceToResources(xdsSnap.Routes),
-		Listeners:    sliceToResources(xdsSnap.Listeners),
-		Secrets:      sliceToResources(xdsSnap.Secrets),
+		Status: GatewayStatusSnapshot{
+			NamespacedName: nn,
+			Contributions: reports.StatusContributionsFromReportMap(reports.StatusSource{
+				Kind: reports.GatewayStatusSource,
+				Name: nn.String(),
+			}, r),
+		},
 	}
 }
 
@@ -209,7 +246,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 	s.translator.Init(ctx)
 
-	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
+	translationOutputs := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *gatewayTranslationOutput {
 		// Note: s.commonCols.GatewayIndex.Gateways is already filtered to only include Gateways
 		// with controllerName matching s.controllerName (envoy controller). The filtering happens
 		// in GatewaysForEnvoyTransformationFunc in pkg/krtcollections/policy.go
@@ -220,8 +257,14 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 			return nil
 		}
 
-		return toResources(gw, *xdsSnap, rm)
+		return toTranslationOutput(gw, *xdsSnap, rm)
+	}, krtopts.ToOptions("GatewayTranslationOutputs")...)
+	s.mostXdsSnapshots = krt.NewCollection(translationOutputs, func(_ krt.HandlerContext, output gatewayTranslationOutput) *GatewayXdsResources {
+		return &output.Xds
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
+	s.gatewayStatusSnapshots = krt.NewCollection(translationOutputs, func(_ krt.HandlerContext, output gatewayTranslationOutput) *GatewayStatusSnapshot {
+		return &output.Status
+	}, krtopts.ToOptions("GatewayStatusSnapshots")...)
 
 	epPerClient := NewPerClientEnvoyEndpoints(
 		krtopts,
@@ -258,87 +301,50 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		}
 	}
 
-	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *statussync.ReportsWrapper {
-		backends := krt.Fetch(kctx, finalBackendsWithPolicyStatus)
-		merged := GenerateBackendPolicyReport(backends, excludedPolicyKinds)
+	backendPolicyContributions := backendPolicyStatusContributions(
+		finalBackendsWithPolicyStatus,
+		excludedPolicyKinds,
+		krtopts,
+	)
 
-		w := statussync.NewReportsWrapper(merged)
-		return &w
-	}, krtopts.ToOptions("BackendsPolicyReport")...)
-
-	// backendStatusReport is the sole writer of the Backend Accepted condition: it merges
-	// each Backend's IR errors with its per-client translation errors. It also merges any
-	// plugin-contributed conditions (e.g. the EC2 EndpointsDiscovered condition) so all
-	// Backend conditions are written by a single owner.
+	// Backend status is reduced per Backend. Indexed cluster and plugin-condition
+	// dependencies ensure one client's error only recomputes its owning Backend.
 	kgwBackendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
 	kgwBackendCol := kgwBackendPlugin.Backends
 	kgwBackendExtraConditions := kgwBackendPlugin.ExtraConditions
-	s.backendStatusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *statussync.ReportsWrapper {
-		var kgwBackends []ir.BackendObjectIR
-		if kgwBackendCol != nil {
-			kgwBackends = krt.Fetch(kctx, kgwBackendCol)
-		}
-		clusters := krt.Fetch(kctx, clustersPerClient.clusters)
-		var extraConditions []ir.BackendObjectStatus
-		if kgwBackendExtraConditions != nil {
-			extraConditions = krt.Fetch(kctx, kgwBackendExtraConditions)
-		}
-		merged := GenerateBackendStatusReport(kgwBackends, clusters, extraConditions)
-		w := statussync.NewReportsWrapper(merged)
-		return &w
-	}, krtopts.ToOptions("BackendStatusReport")...)
+	if kgwBackendCol == nil {
+		kgwBackendCol = krt.NewStaticCollection[ir.BackendObjectIR](nil, nil, krtopts.ToOptions("NoBackendStatusInputs")...)
+	}
+	if kgwBackendExtraConditions == nil {
+		kgwBackendExtraConditions = krt.NewStaticCollection[ir.BackendObjectStatus](nil, nil, krtopts.ToOptions("NoBackendExtraConditions")...)
+	}
+	backendContributions := backendStatusContributions(
+		kgwBackendCol,
+		clustersPerClient.clusters,
+		kgwBackendExtraConditions,
+		krtopts,
+	)
 
-	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
-	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
-	s.statusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *statussync.ReportsWrapper {
-		proxies := krt.Fetch(kctx, s.mostXdsSnapshots)
-
-		merged := mergeProxyReports(proxies)
-
-		w := statussync.NewReportsWrapper(merged)
-		return &w
-	})
-
-	// policyReport merges the gateway-translation and backend-attachment report paths so a
-	// policy's status is built from the union of its ancestors, no matter which path
-	// produced them. (The previous syncer wrote the two paths independently, which could
-	// race when a policy was attached via both.)
-	//
-	// Only the Policies of each input are merged: policy status is derived from Policies
-	// alone, and cloning the route/gateway/backend reports on every translation event
-	// would be pure waste (it would also make this singleton's Equals compare them).
-	s.policyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *statussync.ReportsWrapper {
-		merged := []reports.ReportMap{}
-		if gwReports := krt.FetchOne(kctx, s.statusReport.AsCollection()); gwReports != nil {
-			merged = append(merged, gwReports.Reports())
-		}
-		if backendReports := krt.FetchOne(kctx, s.backendPolicyReport.AsCollection()); backendReports != nil {
-			merged = append(merged, backendReports.Reports())
-		}
-		w := statussync.NewReportsWrapper(reports.MergePolicyReports(merged...))
-		return &w
-	}, krtopts.ToOptions("PolicyStatusReport")...)
+	// All status paths now meet as independently keyed contributions. Policy
+	// ancestors from Gateway and Backend translation naturally reduce under the
+	// same policy key without a competing singleton writer.
+	s.statusContributions = krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
+		gatewayStatusContributions(s.gatewayStatusSnapshots, krtopts),
+		backendPolicyContributions,
+		backendContributions,
+	}, krtopts.ToOptions("StatusContributions")...)
 
 	s.waitForSync = []cache.InformerSynced{
 		s.commonCols.HasSynced,
 		finalBackends.HasSynced,
 		s.perclientSnapCollection.HasSynced,
 		s.mostXdsSnapshots.HasSynced,
+		s.statusContributions.HasSynced,
 		s.plugins.HasSynced,
 		s.translator.HasSynced,
 	}
 
 	s.initStatusInfra(ctx, krtopts)
-}
-
-func mergeProxyReports(
-	proxies []GatewayXdsResources,
-) reports.ReportMap {
-	inputs := make([]reports.ReportMap, 0, len(proxies))
-	for _, proxy := range proxies {
-		inputs = append(inputs, proxy.reports)
-	}
-	return reports.MergeReportMaps(inputs...)
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
@@ -416,10 +422,10 @@ func (s *ProxySyncer) StatusWriters() map[schema.GroupVersionKind]statussync.Res
 	return s.statusWriters
 }
 
-// GatewayReports returns the merged gateway report singleton as a collection; used by the
-// status syncer's custom status sync hook.
-func (s *ProxySyncer) GatewayReports() krt.Collection[statussync.ReportsWrapper] {
-	return s.statusReport.AsCollection()
+// GatewayStatusSnapshots returns the Gateway-scoped translation outputs used
+// only to preserve the legacy custom status hook's once-per-Gateway behavior.
+func (s *ProxySyncer) GatewayStatusSnapshots() krt.Collection[GatewayStatusSnapshot] {
+	return s.gatewayStatusSnapshots
 }
 
 // WaitForSync returns a list of functions that can be used to determine if all its informers have synced.

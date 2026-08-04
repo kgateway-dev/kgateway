@@ -1,0 +1,288 @@
+package reports
+
+import (
+	"cmp"
+	"fmt"
+	"slices"
+	"strings"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+)
+
+// StatusTarget identifies the Kubernetes object that owns a status. Version is
+// retained for resources whose promoted and legacy forms have different status
+// writers; callers that normalize versions may use the selected write version.
+type StatusTarget struct {
+	schema.GroupVersionKind
+	types.NamespacedName
+}
+
+func (t StatusTarget) String() string {
+	return fmt.Sprintf("%s/%s/%s/%s/%s", t.Group, t.Version, t.Kind, t.Namespace, t.Name)
+}
+
+// StatusKey is the version-independent identity of a status owner. Multiple
+// served API versions of a Gateway API resource share storage and status.
+type StatusKey struct {
+	schema.GroupKind
+	types.NamespacedName
+}
+
+func (k StatusKey) String() string {
+	return fmt.Sprintf("%s/%s/%s/%s", k.Group, k.Kind, k.Namespace, k.Name)
+}
+
+func (t StatusTarget) Key() StatusKey {
+	return StatusKey{GroupKind: t.GroupKind(), NamespacedName: t.NamespacedName}
+}
+
+type StatusSourceKind string
+
+const (
+	GatewayStatusSource       StatusSourceKind = "gateway"
+	BackendPolicyStatusSource StatusSourceKind = "backend-policy"
+	BackendStatusSource       StatusSourceKind = "backend-status"
+)
+
+// StatusSource identifies the translation unit that produced a contribution.
+// Kind is used for semantic selection; Name provides uniqueness within that
+// producer kind.
+type StatusSource struct {
+	Kind StatusSourceKind
+	Name string
+}
+
+func (s StatusSource) String() string {
+	return string(s.Kind) + "/" + s.Name
+}
+
+// StatusReport is the compact report fragment retained for one status owner.
+// Exactly one field is populated.
+type StatusReport struct {
+	Gateway     *GatewayReport
+	ListenerSet *ListenerSetReport
+	Route       *RouteReport
+	Policy      *PolicyReport
+	Backend     *BackendReport
+}
+
+func (r StatusReport) Equals(other StatusReport) bool {
+	return gatewayReportEqual(r.Gateway, other.Gateway) &&
+		listenerSetReportEqual(r.ListenerSet, other.ListenerSet) &&
+		routeReportEqual(r.Route, other.Route) &&
+		policyReportEqual(r.Policy, other.Policy) &&
+		backendReportEqual(r.Backend, other.Backend)
+}
+
+// StatusContribution is one translation unit's status facts for one Kubernetes
+// object. Exactly one report field is populated. Source is a stable identity for
+// the producer (for example, a Gateway or Backend), allowing multiple producers
+// to contribute independently to the same target.
+type StatusContribution struct {
+	Target StatusTarget
+	Source StatusSource
+	StatusReport
+}
+
+func (c StatusContribution) ResourceName() string {
+	return c.Target.Key().String() + "/" + c.Source.String()
+}
+
+func (c StatusContribution) Equals(other StatusContribution) bool {
+	return c.Target == other.Target &&
+		c.Source == other.Source &&
+		c.StatusReport.Equals(other.StatusReport)
+}
+
+// StatusContributionsFromReportMap splits a translation-local ReportMap into
+// independently keyed status contributions. It transfers ownership of the
+// report fragments to the returned contributions; callers must not mutate the
+// input afterward. The result is deterministically sorted without formatting
+// keys in the comparator.
+func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) []StatusContribution {
+	listenerSetCount := 0
+	for _, byName := range reportMap.ListenerSets {
+		listenerSetCount += len(byName)
+	}
+	contributions := make([]StatusContribution, 0,
+		len(reportMap.Gateways)+listenerSetCount+
+			len(reportMap.HTTPRoutes)+len(reportMap.GRPCRoutes)+
+			len(reportMap.TCPRoutes)+len(reportMap.TLSRoutes)+
+			len(reportMap.Policies)+len(reportMap.Backends),
+	)
+
+	for nn, report := range reportMap.Gateways {
+		if report != nil {
+			contributions = append(contributions, StatusContribution{
+				Target:       StatusTarget{GroupVersionKind: wellknown.GatewayGVK, NamespacedName: nn},
+				Source:       source,
+				StatusReport: StatusReport{Gateway: report},
+			})
+		}
+	}
+	for gvk, byName := range reportMap.ListenerSets {
+		for nn, report := range byName {
+			if report != nil {
+				contributions = append(contributions, StatusContribution{
+					Target:       StatusTarget{GroupVersionKind: gvk, NamespacedName: nn},
+					Source:       source,
+					StatusReport: StatusReport{ListenerSet: report},
+				})
+			}
+		}
+	}
+	appendRoutes := func(gvk schema.GroupVersionKind, reportsByName map[types.NamespacedName]*RouteReport) {
+		for nn, report := range reportsByName {
+			if report != nil {
+				contributions = append(contributions, StatusContribution{
+					Target:       StatusTarget{GroupVersionKind: gvk, NamespacedName: nn},
+					Source:       source,
+					StatusReport: StatusReport{Route: report},
+				})
+			}
+		}
+	}
+	appendRoutes(wellknown.HTTPRouteGVK, reportMap.HTTPRoutes)
+	appendRoutes(wellknown.GRPCRouteGVK, reportMap.GRPCRoutes)
+	appendRoutes(wellknown.TCPRouteGVK, reportMap.TCPRoutes)
+	appendRoutes(wellknown.TLSRouteGVK, reportMap.TLSRoutes)
+
+	for key, report := range reportMap.Policies {
+		if report != nil {
+			contributions = append(contributions, StatusContribution{
+				Target: StatusTarget{
+					GroupVersionKind: schema.GroupVersionKind{Group: key.Group, Kind: key.Kind},
+					NamespacedName:   types.NamespacedName{Namespace: key.Namespace, Name: key.Name},
+				},
+				Source:       source,
+				StatusReport: StatusReport{Policy: report},
+			})
+		}
+	}
+	for nn, report := range reportMap.Backends {
+		if report != nil {
+			contributions = append(contributions, StatusContribution{
+				Target:       StatusTarget{GroupVersionKind: wellknown.BackendGVK, NamespacedName: nn},
+				Source:       source,
+				StatusReport: StatusReport{Backend: report},
+			})
+		}
+	}
+
+	slices.SortStableFunc(contributions, compareStatusContributions)
+	return contributions
+}
+
+func compareStatusContributions(a, b StatusContribution) int {
+	return cmp.Or(
+		strings.Compare(a.Target.Group, b.Target.Group),
+		strings.Compare(a.Target.Kind, b.Target.Kind),
+		strings.Compare(a.Target.Namespace, b.Target.Namespace),
+		strings.Compare(a.Target.Name, b.Target.Name),
+		strings.Compare(string(a.Source.Kind), string(b.Source.Kind)),
+		strings.Compare(a.Source.Name, b.Source.Name),
+		strings.Compare(a.Target.Version, b.Target.Version),
+	)
+}
+
+// ReduceStatusContributions combines contributions for one target into a
+// compact fragment. The result owns its reports and can be retained safely.
+func ReduceStatusContributions(contributions []StatusContribution) StatusReport {
+	ordered := slices.Clone(contributions)
+	slices.SortStableFunc(ordered, compareStatusContributions)
+	var reduced StatusReport
+	for _, contribution := range ordered {
+		switch {
+		case contribution.Gateway != nil:
+			reduced.Gateway = cloneGatewayReport(contribution.Gateway)
+		case contribution.ListenerSet != nil:
+			reduced.ListenerSet = cloneListenerSetReport(contribution.ListenerSet)
+		case contribution.Route != nil:
+			if reduced.Route == nil {
+				reduced.Route = cloneRouteReport(contribution.Route)
+			} else {
+				mergeParentReports(reduced.Route, contribution.Route)
+			}
+		case contribution.Policy != nil:
+			if reduced.Policy == nil {
+				reduced.Policy = clonePolicyReport(contribution.Policy)
+			} else {
+				mergeAncestorReports(reduced.Policy, contribution.Policy)
+			}
+		case contribution.Backend != nil:
+			reduced.Backend = cloneBackendReport(contribution.Backend)
+		}
+	}
+	return reduced
+}
+
+// MergeStatusContributions combines contributions across any number of targets
+// into the legacy report representation. It is reserved for compatibility
+// consumers that still require a whole ReportMap; normal status writers use
+// compact per-target reductions.
+func MergeStatusContributions(contributions []StatusContribution) ReportMap {
+	ordered := slices.Clone(contributions)
+	slices.SortStableFunc(ordered, compareStatusContributions)
+	reportMap := NewReportMap()
+	for _, contribution := range ordered {
+		contribution.StatusReport.addToReportMap(reportMap, contribution.Target)
+	}
+	return reportMap
+}
+
+// ReportMap materializes a compact fragment only when a status writer needs
+// the legacy status-builder input.
+func (r StatusReport) ReportMap(target StatusTarget) ReportMap {
+	reportMap := NewReportMap()
+	r.addToReportMap(reportMap, target)
+	return reportMap
+}
+
+func (r StatusReport) addToReportMap(reportMap ReportMap, target StatusTarget) {
+	switch {
+	case r.Gateway != nil:
+		reportMap.Gateways[target.NamespacedName] = cloneGatewayReport(r.Gateway)
+	case r.ListenerSet != nil:
+		if reportMap.ListenerSets[target.GroupVersionKind] == nil {
+			reportMap.ListenerSets[target.GroupVersionKind] = make(map[types.NamespacedName]*ListenerSetReport)
+		}
+		reportMap.ListenerSets[target.GroupVersionKind][target.NamespacedName] = cloneListenerSetReport(r.ListenerSet)
+	case r.Route != nil:
+		var routeReports map[types.NamespacedName]*RouteReport
+		switch target.Kind {
+		case wellknown.HTTPRouteKind:
+			routeReports = reportMap.HTTPRoutes
+		case wellknown.GRPCRouteKind:
+			routeReports = reportMap.GRPCRoutes
+		case wellknown.TCPRouteKind:
+			routeReports = reportMap.TCPRoutes
+		case wellknown.TLSRouteKind:
+			routeReports = reportMap.TLSRoutes
+		}
+		if routeReports != nil {
+			if routeReports[target.NamespacedName] == nil {
+				routeReports[target.NamespacedName] = cloneRouteReport(r.Route)
+			} else {
+				mergeParentReports(routeReports[target.NamespacedName], r.Route)
+			}
+		}
+	case r.Policy != nil:
+		key := reporter.PolicyKey{
+			Group:     target.Group,
+			Kind:      target.Kind,
+			Namespace: target.Namespace,
+			Name:      target.Name,
+		}
+		if reportMap.Policies[key] == nil {
+			reportMap.Policies[key] = clonePolicyReport(r.Policy)
+		} else {
+			mergeAncestorReports(reportMap.Policies[key], r.Policy)
+		}
+	case r.Backend != nil:
+		reportMap.Backends[target.NamespacedName] = cloneBackendReport(r.Backend)
+	}
+}

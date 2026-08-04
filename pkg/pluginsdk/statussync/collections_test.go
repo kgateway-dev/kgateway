@@ -103,29 +103,86 @@ func TestRegisterResourceByObjectGVKPreservesMixedSourceKinds(t *testing.T) {
 	require.Equal(t, actual, queue.awaitResources(t, 1)[0].GroupVersionKind)
 }
 
-func TestRegisterReportsSkipsInitialReplayAndQueuesChangedKeys(t *testing.T) {
+func TestResourceReportsReducesAndObservesContributionRemoval(t *testing.T) {
 	stop := test.NewStop(t)
-	initial := reports.NewReportMap()
-	reportCol := krt.NewStaticCollection(nil, []ReportsWrapper{NewReportsWrapper(initial)}, krt.WithStop(stop))
-	gvk := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "Gateway"}
-	nn := types.NamespacedName{Namespace: "default", Name: "gateway"}
-	want := Resource{GroupVersionKind: gvk, NamespacedName: nn}
+	gvk := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute"}
+	route := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}
+	otherRoute := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "other", Namespace: "default"}}
+	objects := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{route, otherRoute}, krt.WithStop(stop))
 
-	sources := NewStatusCollections()
-	queue := &recordingQueue{}
-	RegisterReports(sources, reportCol, func(old, current reports.ReportMap) []Resource {
-		if len(old.Gateways) == len(current.Gateways) {
-			return nil
-		}
-		return []Resource{want}
+	first := routeContribution(t, route, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/first"}, "first")
+	second := routeContribution(t, route, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/second"}, "second")
+	other := routeContribution(t, otherRoute, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/first"}, "first")
+	contributions := krt.NewStaticCollection(nil, []reports.StatusContribution{first, second, other}, krt.WithStop(stop))
+	byTarget := krt.NewIndex(contributions, "status-target", func(c reports.StatusContribution) []reports.StatusKey {
+		return []reports.StatusKey{c.Target.Key()}
 	})
-	sources.SetQueue(queue)
-	require.Never(t, func() bool {
-		return len(queue.resources()) > 0
-	}, 200*time.Millisecond, 20*time.Millisecond, "raw object replay owns the initial sweep")
+	reduced := NewResourceReports(
+		objects,
+		contributions,
+		byTarget,
+		func(object *gwv1.HTTPRoute) Resource {
+			return Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: object.Namespace, Name: object.Name}}
+		},
+		krt.WithStop(stop),
+	)
+	require.True(t, reduced.WaitUntilSynced(nil))
 
-	updated := reports.NewReportMap()
-	updated.Gateways[nn] = nil
-	reportCol.UpdateObject(NewReportsWrapper(updated))
-	require.Equal(t, want, queue.awaitResources(t, 1)[0])
+	routeKey := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: types.NamespacedName{Namespace: route.Namespace, Name: route.Name}}
+	otherKey := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: types.NamespacedName{Namespace: otherRoute.Namespace, Name: otherRoute.Name}}
+	require.Eventually(t, func() bool {
+		current := reduced.GetKey(routeKey.String())
+		return routeParentCount(current) == 2
+	}, 5*time.Second, 10*time.Millisecond)
+
+	updatedSecond := routeContribution(t, route, second.Source, "second-updated")
+	contributions.UpdateObject(updatedSecond)
+	require.Eventually(t, func() bool {
+		current := reduced.GetKey(routeKey.String())
+		return routeParentCount(current) == 2 &&
+			hasRouteParent(current, "second-updated") &&
+			!hasRouteParent(current, "second")
+	}, 5*time.Second, 10*time.Millisecond, "updating one producer must replace only that producer's facts")
+
+	contributions.DeleteObject(second.ResourceName())
+	require.Eventually(t, func() bool {
+		current := reduced.GetKey(routeKey.String())
+		return routeParentCount(current) == 1
+	}, 5*time.Second, 10*time.Millisecond, "removing one producer must remove only its parent status")
+	require.Len(t, reduced.GetKey(otherKey.String()).Report.Route.Parents, 1,
+		"an unrelated status owner must not be recomputed into a different value")
+
+	contributions.DeleteObject(first.ResourceName())
+	require.Eventually(t, func() bool {
+		current := reduced.GetKey(routeKey.String())
+		return current != nil && current.Report.Route == nil
+	}, 5*time.Second, 10*time.Millisecond, "the raw owner must retain an empty reduction after its final contribution disappears")
+}
+
+func routeParentCount(current *ResourceReports) int {
+	if current == nil || current.Report.Route == nil {
+		return 0
+	}
+	return len(current.Report.Route.Parents)
+}
+
+func hasRouteParent(current *ResourceReports, name string) bool {
+	if current == nil || current.Report.Route == nil {
+		return false
+	}
+	for parent := range current.Report.Route.Parents {
+		if parent.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func routeContribution(t *testing.T, route *gwv1.HTTPRoute, source reports.StatusSource, gatewayName string) reports.StatusContribution {
+	t.Helper()
+	reportMap := reports.NewReportMap()
+	reports.NewReporter(&reportMap).Route(route).ParentRef(&gwv1.ParentReference{Name: gwv1.ObjectName(gatewayName)})
+	contributions := reports.StatusContributionsFromReportMap(source, reportMap)
+	require.Len(t, contributions, 1)
+	return contributions[0]
 }

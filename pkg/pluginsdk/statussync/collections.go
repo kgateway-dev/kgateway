@@ -17,6 +17,47 @@ import (
 
 var logger = logging.New("statussync")
 
+// ResourceReports is the current reduction of all status contributions for one
+// Kubernetes object. It remains present while the raw object exists, even when
+// Report is empty, so disappearance of the last contribution is observable.
+type ResourceReports struct {
+	Resource Resource
+	Target   reports.StatusKey
+	Report   reports.StatusReport
+}
+
+func (r ResourceReports) ResourceName() string {
+	return r.Target.String()
+}
+
+func (r ResourceReports) Equals(other ResourceReports) bool {
+	return r.Resource == other.Resource &&
+		r.Target == other.Target &&
+		r.Report.Equals(other.Report)
+}
+
+// NewResourceReports builds one lightweight report reduction per raw object.
+// KRT tracks the filtered contribution dependency, so only the owner of a
+// changed contribution recomputes.
+func NewResourceReports[I controllers.Object](
+	objects krt.Collection[I],
+	contributions krt.Collection[reports.StatusContribution],
+	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
+	resource func(I) Resource,
+	opts ...krt.CollectionOption,
+) krt.Collection[ResourceReports] {
+	return krt.NewCollection(objects, func(kctx krt.HandlerContext, object I) *ResourceReports {
+		res := resource(object)
+		target := reports.StatusKey{GroupKind: res.GroupVersionKind.GroupKind(), NamespacedName: res.NamespacedName}
+		fragments := krt.Fetch(kctx, contributions, krt.FilterIndex(byTarget, target))
+		return &ResourceReports{
+			Resource: res,
+			Target:   target,
+			Report:   reports.ReduceStatusContributions(fragments),
+		}
+	}, opts...)
+}
+
 // ReportsWrapper wraps a merged reports.ReportMap as a krt singleton value so
 // derived status collections can Fetch it.
 type ReportsWrapper struct {
@@ -141,6 +182,19 @@ func registerResource[I controllers.Object](
 		})
 	}
 	s.Register(reg)
+}
+
+// RegisterResourceReports enqueues an owner whenever its reduced contribution
+// set changes. Deletes are ignored because the corresponding raw object is gone.
+func RegisterResourceReports(s *StatusCollections, col krt.Collection[ResourceReports]) {
+	s.Register(func(statusWriter WorkerQueue) krt.HandlerRegistration {
+		return col.Register(func(event krt.Event[ResourceReports]) {
+			if event.Event == controllers.EventDelete {
+				return
+			}
+			statusWriter.Push(event.Latest().Resource)
+		})
+	})
 }
 
 // RegisterReports registers a report singleton as a reconciliation source. Initial Add

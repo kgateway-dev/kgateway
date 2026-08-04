@@ -12,9 +12,9 @@ import (
 )
 
 // MergeReportMaps returns a report map owned by the caller. The returned reports
-// do not alias the input report objects, so later status rendering and status
-// marker processing can safely mutate the merged map without writing into
-// per-translation reports.
+// do not alias the input report objects, so later status rendering can safely
+// mutate the merged map without writing into source
+// contributions.
 func MergeReportMaps(inputs ...ReportMap) ReportMap {
 	merged := NewReportMap()
 	for _, input := range inputs {
@@ -43,26 +43,6 @@ func MergeReportMaps(inputs ...ReportMap) ReportMap {
 		}
 		for key, report := range input.Backends {
 			merged.Backends[key] = cloneBackendReport(report)
-		}
-	}
-	return merged
-}
-
-// MergePolicyReports merges only the Policies of the input report maps, returning a report
-// map owned by the caller. Policy status is built from Policies alone (see
-// ReportMap.BuildPolicyStatus), so this avoids the full-map deep clone MergeReportMaps
-// performs: on a large cluster that clone copies every route, gateway and backend report
-// on every translation event only to have them discarded.
-func MergePolicyReports(inputs ...ReportMap) ReportMap {
-	merged := NewReportMap()
-	for _, input := range inputs {
-		for key, report := range input.Policies {
-			existing := merged.Policies[key]
-			if existing == nil {
-				merged.Policies[key] = clonePolicyReport(report)
-				continue
-			}
-			mergeAncestorReports(existing, report)
 		}
 	}
 	return merged
@@ -237,11 +217,6 @@ func gatewayReportEqual(a, b *GatewayReport) bool {
 		maps.EqualFunc(a.listeners, b.listeners, listenerReportEqual)
 }
 
-// GatewayReportEqual compares two gateway report fragments by their status semantics.
-func GatewayReportEqual(a, b *GatewayReport) bool {
-	return gatewayReportEqual(a, b)
-}
-
 func listenerSetReportEqual(a, b *ListenerSetReport) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -249,11 +224,6 @@ func listenerSetReportEqual(a, b *ListenerSetReport) bool {
 	return a.observedGeneration == b.observedGeneration &&
 		conditionsEqual(a.conditions, b.conditions) &&
 		maps.EqualFunc(a.listeners, b.listeners, listenerReportEqual)
-}
-
-// ListenerSetReportEqual compares two listener set report fragments by their status semantics.
-func ListenerSetReportEqual(a, b *ListenerSetReport) bool {
-	return listenerSetReportEqual(a, b)
 }
 
 func listenerReportEqual(a, b *ListenerReport) bool {
@@ -289,11 +259,6 @@ func routeReportEqual(a, b *RouteReport) bool {
 		maps.EqualFunc(a.Parents, b.Parents, parentRefReportEqual)
 }
 
-// RouteReportEqual compares two route report fragments by their status semantics.
-func RouteReportEqual(a, b *RouteReport) bool {
-	return routeReportEqual(a, b)
-}
-
 func parentRefReportEqual(a, b *ParentRefReport) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -307,11 +272,6 @@ func policyReportEqual(a, b *PolicyReport) bool {
 	}
 	return a.observedGeneration == b.observedGeneration &&
 		maps.EqualFunc(a.Ancestors, b.Ancestors, ancestorRefReportEqual)
-}
-
-// PolicyReportEqual compares two policy report fragments by their status semantics.
-func PolicyReportEqual(a, b *PolicyReport) bool {
-	return policyReportEqual(a, b)
 }
 
 func ancestorRefReportEqual(a, b *AncestorRefReport) bool {
@@ -328,11 +288,6 @@ func backendReportEqual(a, b *BackendReport) bool {
 	}
 	return a.observedGeneration == b.observedGeneration &&
 		conditionsEqual(a.Conditions, b.Conditions)
-}
-
-// BackendReportEqual compares two backend report fragments by their status semantics.
-func BackendReportEqual(a, b *BackendReport) bool {
-	return backendReportEqual(a, b)
 }
 
 func conditionsEqual(a, b []metav1.Condition) bool {

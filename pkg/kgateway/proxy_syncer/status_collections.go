@@ -28,32 +28,50 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
-// initStatusInfra registers existing raw KRT collections and report singletons as compact
-// reconciliation sources. No per-object desired-status collection is created: writers build
-// status just-in-time from the latest raw object and report fragment on the leader.
-func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions) {
+// initStatusInfra reduces keyed translation contributions per status owner and
+// registers both raw-object and reduced-report reconciliation sources. Desired
+// Kubernetes status is still built just in time by the leader's writer.
+func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.statusCollections = statussync.NewStatusCollections()
 	s.statusWriters = map[schema.GroupVersionKind]statussync.ResourceStatusSyncer{}
 
 	cl := s.apiClient
 	f := kclient.Filter{ObjectFilter: cl.ObjectFilter()}
 	controllerName := s.controllerName
-
-	gatewayReports := s.statusReport.AsCollection()
-	backendReports := s.backendStatusReport.AsCollection()
-	policyReports := s.policyReport.AsCollection()
-	tcpRouteGVK, tlsRouteGVK := routeWriteGVKs(s.commonCols.TCPRouteWriteGVR, s.commonCols.TLSRouteWriteGVR)
+	contributionsByTarget := krtpkg.UnnamedIndex(s.statusContributions, func(contribution reports.StatusContribution) []reports.StatusKey {
+		return []reports.StatusKey{contribution.Target.Key()}
+	})
+	resourceFor := func(gvk schema.GroupVersionKind, object controllers.Object) statussync.Resource {
+		return statussync.Resource{
+			GroupVersionKind: gvk,
+			NamespacedName:   types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()},
+		}
+	}
+	resourceForObjectGVK := func(fallback schema.GroupVersionKind, object controllers.Object) statussync.Resource {
+		gvk := object.GetObjectKind().GroupVersionKind()
+		if gvk.Empty() {
+			gvk = fallback
+		}
+		return resourceFor(gvk, object)
+	}
 
 	// Gateway
+	gatewayReports := statussync.NewResourceReports(
+		s.commonCols.RawGateways, s.statusContributions, contributionsByTarget,
+		func(object *gwv1.Gateway) statussync.Resource { return resourceFor(wellknown.GatewayGVK, object) },
+		krtopts.ToOptions("GatewayStatusReports")...,
+	)
 	statussync.RegisterResource(s.statusCollections, wellknown.GatewayGVK, s.commonCols.RawGateways)
+	statussync.RegisterResourceReports(s.statusCollections, gatewayReports)
 	s.statusWriters[wellknown.GatewayGVK] = statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus]{
 		Name:   "gateway",
 		Client: kclient.NewFilteredDelayed[*gwv1.Gateway](cl, wellknown.GatewayGVR, f),
 		Desired: func(gw *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
-			rm, ok := currentReports(gatewayReports)
+			rm, ok := currentReports(gatewayReports, wellknown.GatewayGVK, types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name})
 			if !ok {
 				return gwv1.GatewayStatus{}, false
 			}
@@ -71,12 +89,47 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 		OnSync:    gatewayStatusMetricsHook(),
 	}
 
+	httpRouteReports := statussync.NewResourceReports(
+		s.commonCols.RawHTTPRoutes, s.statusContributions, contributionsByTarget,
+		func(object *gwv1.HTTPRoute) statussync.Resource { return resourceFor(wellknown.HTTPRouteGVK, object) },
+		krtopts.ToOptions("HTTPRouteStatusReports")...,
+	)
+	grpcRouteReports := statussync.NewResourceReports(
+		s.commonCols.RawGRPCRoutes, s.statusContributions, contributionsByTarget,
+		func(object *gwv1.GRPCRoute) statussync.Resource { return resourceFor(wellknown.GRPCRouteGVK, object) },
+		krtopts.ToOptions("GRPCRouteStatusReports")...,
+	)
+	tcpGVK := wellknown.TCPRouteGVK
+	if s.commonCols.TCPRouteWriteGVR == wellknown.TCPRouteV1GVR {
+		tcpGVK = wellknown.TCPRouteV1GVK
+	}
+	tcpRouteReports := statussync.NewResourceReports(
+		s.commonCols.RawTCPRoutes, s.statusContributions, contributionsByTarget,
+		func(object *gwv1a2.TCPRoute) statussync.Resource { return resourceFor(tcpGVK, object) },
+		krtopts.ToOptions("TCPRouteStatusReports")...,
+	)
+	tlsGVK := wellknown.TLSRouteGVK
+	switch s.commonCols.TLSRouteWriteGVR {
+	case wellknown.TLSRouteV1GVR:
+		tlsGVK = wellknown.TLSRouteV1GVK
+	case wellknown.TLSRouteV1Alpha3GVR:
+		tlsGVK = wellknown.TLSRouteV1Alpha3GVK
+	}
+	tlsRouteReports := statussync.NewResourceReports(
+		s.commonCols.RawTLSRoutes, s.statusContributions, contributionsByTarget,
+		func(object *gwv1a2.TLSRoute) statussync.Resource { return resourceFor(tlsGVK, object) },
+		krtopts.ToOptions("TLSRouteStatusReports")...,
+	)
 	statussync.RegisterResource(s.statusCollections, wellknown.HTTPRouteGVK, s.commonCols.RawHTTPRoutes)
 	statussync.RegisterResource(s.statusCollections, wellknown.GRPCRouteGVK, s.commonCols.RawGRPCRoutes)
-	statussync.RegisterResource(s.statusCollections, tcpRouteGVK, s.commonCols.RawTCPRoutes)
-	statussync.RegisterResource(s.statusCollections, tlsRouteGVK, s.commonCols.RawTLSRoutes)
+	statussync.RegisterResource(s.statusCollections, tcpGVK, s.commonCols.RawTCPRoutes)
+	statussync.RegisterResource(s.statusCollections, tlsGVK, s.commonCols.RawTLSRoutes)
+	statussync.RegisterResourceReports(s.statusCollections, httpRouteReports)
+	statussync.RegisterResourceReports(s.statusCollections, grpcRouteReports)
+	statussync.RegisterResourceReports(s.statusCollections, tcpRouteReports)
+	statussync.RegisterResourceReports(s.statusCollections, tlsRouteReports)
 
-	s.statusWriters[wellknown.HTTPRouteGVK] = routeWriter[*gwv1.HTTPRoute](ctx, cl, f, gatewayReports, "httpRoute", wellknown.HTTPRouteGVR, wellknown.HTTPRouteKind, controllerName,
+	s.statusWriters[wellknown.HTTPRouteGVK] = routeWriter[*gwv1.HTTPRoute](ctx, cl, f, httpRouteReports, wellknown.HTTPRouteGVK, "httpRoute", wellknown.HTTPRouteGVR, wellknown.HTTPRouteKind, controllerName,
 		func(rm reports.ReportMap) map[types.NamespacedName]*reports.RouteReport { return rm.HTTPRoutes },
 		func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
 			return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
@@ -84,7 +137,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 		func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 		func(o *gwv1.HTTPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 	)
-	s.statusWriters[wellknown.GRPCRouteGVK] = routeWriter[*gwv1.GRPCRoute](ctx, cl, f, gatewayReports, "grpcRoute", wellknown.GRPCRouteGVR, wellknown.GRPCRouteKind, controllerName,
+	s.statusWriters[wellknown.GRPCRouteGVK] = routeWriter[*gwv1.GRPCRoute](ctx, cl, f, grpcRouteReports, wellknown.GRPCRouteGVK, "grpcRoute", wellknown.GRPCRouteGVR, wellknown.GRPCRouteKind, controllerName,
 		func(rm reports.ReportMap) map[types.NamespacedName]*reports.RouteReport { return rm.GRPCRoutes },
 		func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.GRPCRoute {
 			return &gwv1.GRPCRoute{ObjectMeta: om, Status: gwv1.GRPCRouteStatus{RouteStatus: st}}
@@ -97,7 +150,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 	// resolved at startup; all versions share the same storage object.
 	var tcpWriter statussync.ResourceStatusSyncer
 	if s.commonCols.TCPRouteWriteGVR == wellknown.TCPRouteV1GVR {
-		tcpWriter = routeWriter[*gwv1.TCPRoute](ctx, cl, f, gatewayReports, "tcpRoute", wellknown.TCPRouteV1GVR, wellknown.TCPRouteKind, controllerName,
+		tcpWriter = routeWriter[*gwv1.TCPRoute](ctx, cl, f, tcpRouteReports, tcpGVK, "tcpRoute", wellknown.TCPRouteV1GVR, wellknown.TCPRouteKind, controllerName,
 			func(rm reports.ReportMap) map[types.NamespacedName]*reports.RouteReport { return rm.TCPRoutes },
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TCPRoute {
 				return &gwv1.TCPRoute{ObjectMeta: om, Status: gwv1.TCPRouteStatus{RouteStatus: st}}
@@ -106,7 +159,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 			func(o *gwv1.TCPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 		)
 	} else {
-		tcpWriter = routeWriter[*gwv1a2.TCPRoute](ctx, cl, f, gatewayReports, "tcpRoute", wellknown.TCPRouteGVR, wellknown.TCPRouteKind, controllerName,
+		tcpWriter = routeWriter[*gwv1a2.TCPRoute](ctx, cl, f, tcpRouteReports, tcpGVK, "tcpRoute", wellknown.TCPRouteGVR, wellknown.TCPRouteKind, controllerName,
 			func(rm reports.ReportMap) map[types.NamespacedName]*reports.RouteReport { return rm.TCPRoutes },
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TCPRoute {
 				return &gwv1a2.TCPRoute{ObjectMeta: om, Status: gwv1a2.TCPRouteStatus{RouteStatus: st}}
@@ -121,7 +174,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 	var tlsWriter statussync.ResourceStatusSyncer
 	switch s.commonCols.TLSRouteWriteGVR {
 	case wellknown.TLSRouteV1GVR:
-		tlsWriter = routeWriter[*gwv1.TLSRoute](ctx, cl, f, gatewayReports, "tlsRoute", wellknown.TLSRouteV1GVR, wellknown.TLSRouteKind, controllerName,
+		tlsWriter = routeWriter[*gwv1.TLSRoute](ctx, cl, f, tlsRouteReports, tlsGVK, "tlsRoute", wellknown.TLSRouteV1GVR, wellknown.TLSRouteKind, controllerName,
 			func(rm reports.ReportMap) map[types.NamespacedName]*reports.RouteReport { return rm.TLSRoutes },
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TLSRoute {
 				return &gwv1.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
@@ -130,7 +183,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 			func(o *gwv1.TLSRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 		)
 	case wellknown.TLSRouteV1Alpha3GVR:
-		tlsWriter = routeWriter[*gwv1a3.TLSRoute](ctx, cl, f, gatewayReports, "tlsRoute", wellknown.TLSRouteV1Alpha3GVR, wellknown.TLSRouteKind, controllerName,
+		tlsWriter = routeWriter[*gwv1a3.TLSRoute](ctx, cl, f, tlsRouteReports, tlsGVK, "tlsRoute", wellknown.TLSRouteV1Alpha3GVR, wellknown.TLSRouteKind, controllerName,
 			func(rm reports.ReportMap) map[types.NamespacedName]*reports.RouteReport { return rm.TLSRoutes },
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a3.TLSRoute {
 				return &gwv1a3.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
@@ -139,7 +192,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 			func(o *gwv1a3.TLSRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 		)
 	default:
-		tlsWriter = routeWriter[*gwv1a2.TLSRoute](ctx, cl, f, gatewayReports, "tlsRoute", wellknown.TLSRouteGVR, wellknown.TLSRouteKind, controllerName,
+		tlsWriter = routeWriter[*gwv1a2.TLSRoute](ctx, cl, f, tlsRouteReports, tlsGVK, "tlsRoute", wellknown.TLSRouteGVR, wellknown.TLSRouteKind, controllerName,
 			func(rm reports.ReportMap) map[types.NamespacedName]*reports.RouteReport { return rm.TLSRoutes },
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TLSRoute {
 				return &gwv1a2.TLSRoute{ObjectMeta: om, Status: gwv1a2.TLSRouteStatus{RouteStatus: st}}
@@ -152,28 +205,40 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 	s.statusWriters[wellknown.TLSRouteV1GVK] = tlsWriter
 	s.statusWriters[wellknown.TLSRouteV1Alpha3GVK] = tlsWriter
 
+	listenerSetReports := statussync.NewResourceReports(
+		s.commonCols.RawListenerSets, s.statusContributions, contributionsByTarget,
+		func(object *gwv1.ListenerSet) statussync.Resource {
+			return resourceForObjectGVK(wellknown.ListenerSetGVK, object)
+		},
+		krtopts.ToOptions("ListenerSetStatusReports")...,
+	)
 	statussync.RegisterResourceByObjectGVK(s.statusCollections, wellknown.ListenerSetGVK, s.commonCols.RawListenerSets)
+	statussync.RegisterResourceReports(s.statusCollections, listenerSetReports)
 	lsWriter := &listenerSetStatusSyncer{
 		col:      s.commonCols.RawListenerSets,
 		promoted: kclient.NewFilteredDelayed[*gwv1.ListenerSet](cl, wellknown.ListenerSetGVR, f),
 		client:   cl,
-		reports:  gatewayReports,
+		reports:  listenerSetReports,
 	}
 	s.statusWriters[wellknown.ListenerSetGVK] = lsWriter
 	s.statusWriters[wellknown.XListenerSetGVK] = lsWriter
 
 	backendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
-	if backendPlugin.RawBackends == nil {
-		logger.Error("backend plugin is missing RawBackends; Backend status will not reconcile from resource events",
-			"group_kind", wellknown.BackendGVK.GroupKind().String())
-	} else {
+	var backendReports krt.Collection[statussync.ResourceReports]
+	if backendPlugin.RawBackends != nil {
+		backendReports = statussync.NewResourceReports(
+			backendPlugin.RawBackends, s.statusContributions, contributionsByTarget,
+			func(object *kgateway.Backend) statussync.Resource { return resourceFor(wellknown.BackendGVK, object) },
+			krtopts.ToOptions("BackendStatusReports")...,
+		)
 		statussync.RegisterResource(s.statusCollections, wellknown.BackendGVK, backendPlugin.RawBackends)
+		statussync.RegisterResourceReports(s.statusCollections, backendReports)
 	}
 	s.statusWriters[wellknown.BackendGVK] = statussync.Writer[*kgateway.Backend, kgateway.BackendStatus]{
 		Name:   "backend",
 		Client: kclient.NewFilteredDelayed[*kgateway.Backend](cl, wellknown.BackendGVR, f),
 		Desired: func(be *kgateway.Backend) (kgateway.BackendStatus, bool) {
-			rm, ok := currentReports(backendReports)
+			rm, ok := currentReports(backendReports, wellknown.BackendGVK, types.NamespacedName{Namespace: be.Namespace, Name: be.Name})
 			if !ok {
 				return kgateway.BackendStatus{}, false
 			}
@@ -190,13 +255,17 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 		OnSync:    simpleStatusMetricsHook[*kgateway.Backend, kgateway.BackendStatus]("BackendStatusSyncer", wellknown.BackendGVK.Kind),
 	}
 
-	policyGVKs := map[schema.GroupKind]schema.GroupVersionKind{}
 	policyStatusInputs := plug.PolicyStatusInputs{
-		Collections:   s.statusCollections,
-		PolicyReports: policyReports,
+		Collections:           s.statusCollections,
+		StatusContributions:   s.statusContributions,
+		ContributionsByTarget: contributionsByTarget,
+		KrtOpts:               krtopts,
+		RegisterResourceReports: func(reports krt.Collection[statussync.ResourceReports]) {
+			statussync.RegisterResourceReports(s.statusCollections, reports)
+			s.waitForSync = append(s.waitForSync, reports.HasSynced)
+		},
 		RegisterWriter: func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer) {
 			s.statusWriters[gvk] = syncer
-			policyGVKs[gvk.GroupKind()] = gvk
 		},
 	}
 	for _, plugin := range s.plugins.ContributesPolicies {
@@ -205,121 +274,37 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 		}
 	}
 
-	statussync.RegisterReports(s.statusCollections, gatewayReports, func(old, current reports.ReportMap) []statussync.Resource {
-		return changedGatewayResources(old, current, tcpRouteGVK, tlsRouteGVK)
-	})
-	statussync.RegisterReports(s.statusCollections, backendReports, changedBackendResources)
-	statussync.RegisterReports(s.statusCollections, policyReports, func(old, current reports.ReportMap) []statussync.Resource {
-		return changedPolicyResources(old, current, policyGVKs)
-	})
-	// RegisterReports skips its initial replay because the raw collections own the leader
-	// sweep. Ensure all report singletons are populated before those raw handlers attach.
-	s.waitForSync = append(s.waitForSync, gatewayReports.HasSynced, backendReports.HasSynced, policyReports.HasSynced)
+	s.waitForSync = append(s.waitForSync,
+		gatewayReports.HasSynced,
+		httpRouteReports.HasSynced,
+		grpcRouteReports.HasSynced,
+		tcpRouteReports.HasSynced,
+		tlsRouteReports.HasSynced,
+		listenerSetReports.HasSynced,
+	)
+	if backendReports != nil {
+		s.waitForSync = append(s.waitForSync, backendReports.HasSynced)
+	}
 }
 
-func currentReports(col krt.Collection[statussync.ReportsWrapper]) (reports.ReportMap, bool) {
-	wrapper := col.GetKey("report")
-	if wrapper == nil {
+func currentReports(
+	col krt.Collection[statussync.ResourceReports],
+	gvk schema.GroupVersionKind,
+	nn types.NamespacedName,
+) (reports.ReportMap, bool) {
+	if col == nil {
 		return reports.ReportMap{}, false
 	}
-	return wrapper.Reports(), true
-}
-
-func changedGatewayResources(
-	old, current reports.ReportMap,
-	tcpRouteGVK, tlsRouteGVK schema.GroupVersionKind,
-) []statussync.Resource {
-	resources := resourcesForNames(wellknown.GatewayGVK,
-		changedKeys(old.Gateways, current.Gateways, reports.GatewayReportEqual))
-	resources = append(resources, resourcesForNames(wellknown.HTTPRouteGVK,
-		changedKeys(old.HTTPRoutes, current.HTTPRoutes, reports.RouteReportEqual))...)
-	resources = append(resources, resourcesForNames(wellknown.GRPCRouteGVK,
-		changedKeys(old.GRPCRoutes, current.GRPCRoutes, reports.RouteReportEqual))...)
-
-	resources = append(resources, resourcesForNames(tcpRouteGVK,
-		changedKeys(old.TCPRoutes, current.TCPRoutes, reports.RouteReportEqual))...)
-
-	resources = append(resources, resourcesForNames(tlsRouteGVK,
-		changedKeys(old.TLSRoutes, current.TLSRoutes, reports.RouteReportEqual))...)
-
-	listenerSetGVKs := map[schema.GroupVersionKind]struct{}{}
-	for gvk := range old.ListenerSets {
-		listenerSetGVKs[gvk] = struct{}{}
+	target := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn}
+	current := col.GetKey(target.String())
+	if current == nil {
+		return reports.ReportMap{}, false
 	}
-	for gvk := range current.ListenerSets {
-		listenerSetGVKs[gvk] = struct{}{}
+	materializeTarget := reports.StatusTarget{
+		GroupVersionKind: current.Resource.GroupVersionKind,
+		NamespacedName:   current.Resource.NamespacedName,
 	}
-	for gvk := range listenerSetGVKs {
-		resources = append(resources, resourcesForNames(gvk,
-			changedKeys(old.ListenerSets[gvk], current.ListenerSets[gvk], reports.ListenerSetReportEqual))...)
-	}
-	return resources
-}
-
-func routeWriteGVKs(
-	tcpWriteGVR, tlsWriteGVR schema.GroupVersionResource,
-) (schema.GroupVersionKind, schema.GroupVersionKind) {
-	tcpGVK := wellknown.TCPRouteGVK
-	if tcpWriteGVR == wellknown.TCPRouteV1GVR {
-		tcpGVK = wellknown.TCPRouteV1GVK
-	}
-
-	tlsGVK := wellknown.TLSRouteGVK
-	switch tlsWriteGVR {
-	case wellknown.TLSRouteV1GVR:
-		tlsGVK = wellknown.TLSRouteV1GVK
-	case wellknown.TLSRouteV1Alpha3GVR:
-		tlsGVK = wellknown.TLSRouteV1Alpha3GVK
-	}
-	return tcpGVK, tlsGVK
-}
-
-func changedBackendResources(old, current reports.ReportMap) []statussync.Resource {
-	return resourcesForNames(wellknown.BackendGVK,
-		changedKeys(old.Backends, current.Backends, reports.BackendReportEqual))
-}
-
-func changedPolicyResources(
-	old, current reports.ReportMap,
-	gvks map[schema.GroupKind]schema.GroupVersionKind,
-) []statussync.Resource {
-	keys := changedKeys(old.Policies, current.Policies, reports.PolicyReportEqual)
-	resources := make([]statussync.Resource, 0, len(keys))
-	for _, key := range keys {
-		gvk, ok := gvks[schema.GroupKind{Group: key.Group, Kind: key.Kind}]
-		if !ok {
-			continue
-		}
-		resources = append(resources, statussync.Resource{
-			GroupVersionKind: gvk,
-			NamespacedName:   types.NamespacedName{Namespace: key.Namespace, Name: key.Name},
-		})
-	}
-	return resources
-}
-
-func changedKeys[K comparable, V any](old, current map[K]V, equal func(V, V) bool) []K {
-	changed := make([]K, 0)
-	for key, oldValue := range old {
-		currentValue, found := current[key]
-		if !found || !equal(oldValue, currentValue) {
-			changed = append(changed, key)
-		}
-	}
-	for key := range current {
-		if _, found := old[key]; !found {
-			changed = append(changed, key)
-		}
-	}
-	return changed
-}
-
-func resourcesForNames(gvk schema.GroupVersionKind, names []types.NamespacedName) []statussync.Resource {
-	resources := make([]statussync.Resource, 0, len(names))
-	for _, nn := range names {
-		resources = append(resources, statussync.Resource{GroupVersionKind: gvk, NamespacedName: nn})
-	}
-	return resources
+	return current.Report.ReportMap(materializeTarget), true
 }
 
 // routeWriter constructs the status writer for one route kind, wiring the multi-controller
@@ -328,7 +313,8 @@ func routeWriter[T controllers.ComparableObject](
 	ctx context.Context,
 	cl apiclient.Client,
 	f kclient.Filter,
-	reportCol krt.Collection[statussync.ReportsWrapper],
+	reportCol krt.Collection[statussync.ResourceReports],
+	gvk schema.GroupVersionKind,
 	name string,
 	gvr schema.GroupVersionResource,
 	kind string,
@@ -342,11 +328,11 @@ func routeWriter[T controllers.ComparableObject](
 		Name:   name,
 		Client: kclient.NewFilteredDelayed[T](cl, gvr, f),
 		Desired: func(current T) (gwv1.RouteStatus, bool) {
-			rm, ok := currentReports(reportCol)
+			nn := types.NamespacedName{Namespace: current.GetNamespace(), Name: current.GetName()}
+			rm, ok := currentReports(reportCol, gvk, nn)
 			if !ok {
 				return gwv1.RouteStatus{}, false
 			}
-			nn := types.NamespacedName{Namespace: current.GetNamespace(), Name: current.GetName()}
 			if reportsForKind(rm)[nn] == nil {
 				// An empty desired status clears only this controller's stale parents in Merge.
 				return gwv1.RouteStatus{}, true
@@ -494,7 +480,7 @@ type listenerSetStatusSyncer struct {
 	col      krt.Collection[*gwv1.ListenerSet]
 	promoted kclient.Client[*gwv1.ListenerSet]
 	client   apiclient.Client
-	reports  krt.Collection[statussync.ReportsWrapper]
+	reports  krt.Collection[statussync.ResourceReports]
 }
 
 func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussync.Resource) {
@@ -514,7 +500,7 @@ func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussyn
 			return nil
 		}
 		current = *cur
-		rm, ok := currentReports(s.reports)
+		rm, ok := currentReports(s.reports, res.GroupVersionKind, res.NamespacedName)
 		if !ok {
 			return nil
 		}
