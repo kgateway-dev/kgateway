@@ -312,27 +312,6 @@ func resourcesForNames(gvk schema.GroupVersionKind, names []types.NamespacedName
 	return resources
 }
 
-// routeStatusOf extracts the common RouteStatus from any supported route type.
-func routeStatusOf(o controllers.Object) gwv1.RouteStatus {
-	switch r := o.(type) {
-	case *gwv1.HTTPRoute:
-		return r.Status.RouteStatus
-	case *gwv1.GRPCRoute:
-		return r.Status.RouteStatus
-	case *gwv1.TCPRoute:
-		return r.Status.RouteStatus
-	case *gwv1.TLSRoute:
-		return r.Status.RouteStatus
-	case *gwv1a2.TCPRoute:
-		return r.Status.RouteStatus
-	case *gwv1a2.TLSRoute:
-		return r.Status.RouteStatus
-	case *gwv1a3.TLSRoute:
-		return r.Status.RouteStatus
-	}
-	return gwv1.RouteStatus{}
-}
-
 // routeWriter constructs the status writer for one route kind, wiring the multi-controller
 // parent merge and the per-parent status sync metrics.
 func routeWriter[T controllers.ComparableObject](
