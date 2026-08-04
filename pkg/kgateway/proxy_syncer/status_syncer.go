@@ -18,8 +18,11 @@ import (
 var _ manager.LeaderElectionRunnable = &StatusSyncer{}
 
 // statusSyncMaxWorkers bounds the number of concurrent status writes; the worker queue
-// additionally guarantees at most one in-flight write per resource.
-const statusSyncMaxWorkers = 2
+// additionally guarantees at most one in-flight write per resource. Keep this conservative:
+// at 5k routes, 8 workers retained one route write per route with no conflicts at 0, 10,
+// and 50ms write latency, while materially improving convergence under injected latency.
+// Higher caps reintroduced intermediate writes and conflicts at low latency.
+const statusSyncMaxWorkers = 8
 
 // StatusSyncer runs only on the leader and writes the status of resources.
 //
