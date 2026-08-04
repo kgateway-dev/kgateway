@@ -19,7 +19,7 @@ var _ manager.LeaderElectionRunnable = &StatusSyncer{}
 
 // statusSyncMaxWorkers bounds the number of concurrent status writes; the worker queue
 // additionally guarantees at most one in-flight write per resource.
-const statusSyncMaxWorkers = 100
+const statusSyncMaxWorkers = 2
 
 // StatusSyncer runs only on the leader and writes the status of resources.
 //
