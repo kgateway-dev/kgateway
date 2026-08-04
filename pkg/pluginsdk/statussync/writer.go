@@ -5,7 +5,6 @@ package statussync
 import (
 	"cmp"
 	"context"
-	"fmt"
 	"slices"
 	"time"
 
@@ -30,7 +29,7 @@ const (
 
 // ResourceStatusSyncer writes the desired status for a single resource kind.
 type ResourceStatusSyncer interface {
-	ApplyStatus(ctx context.Context, obj Resource, statusObj any)
+	ApplyStatus(ctx context.Context, obj Resource)
 }
 
 // Writer is a generic ResourceStatusSyncer that writes status via the istio kclient,
@@ -41,6 +40,11 @@ type Writer[O controllers.ComparableObject, S any] struct {
 
 	// Client reads the current object (from the shared informer cache) and writes status.
 	Client kclient.Client[O]
+
+	// Desired builds the desired status from the latest object and report state. Returning
+	// false suppresses the write. It is invoked for every retry so neither the object nor
+	// report snapshot is retained in the work queue.
+	Desired func(current O) (S, bool)
 
 	// Build constructs the object to pass to UpdateStatus. Only the status and minimal
 	// ObjectMeta (name, namespace, resourceVersion) should be set: the API server ignores
@@ -81,21 +85,14 @@ func RetryStatusWrite(ctx context.Context, attempt func() error) error {
 	)
 }
 
-func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource, statusObj any) {
-	desired, ok := statusObj.(S)
-	if !ok {
-		// This should never happen; it indicates a mismatch between the writer's type
-		// parameter S and the status type registered for this GVK.
-		logger.Error("unexpected status type; skipping status update", "kind", w.Name,
-			"resource", obj.NamespacedName.String(), "status_type", fmt.Sprintf("%T", statusObj))
-		return
-	}
-
+func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 	log := logger.With("kind", w.Name, "resource", obj.NamespacedName.String())
 	start := time.Now()
 	var lastCurrent O
-	lastMerged := desired
+	var lastMerged S
+	hasDesired := false
 	err := RetryStatusWrite(ctx, func() error {
+		hasDesired = false
 		// Fetch the current object so we can preserve status written by other controllers or
 		// subsystems, and suppress writes that would be no-ops.
 		current := w.Client.Get(obj.Name, obj.Namespace)
@@ -106,6 +103,12 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource, statusObj a
 		}
 		lastCurrent = current
 
+		desired, ok := w.Desired(current)
+		if !ok {
+			log.Debug("resource has no desired status, skipping status update")
+			return nil
+		}
+		hasDesired = true
 		merged := desired
 		if w.Merge != nil {
 			merged = w.Merge(current, desired)
@@ -126,7 +129,7 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource, statusObj a
 		}, merged))
 		if err != nil {
 			if apierrors.IsConflict(err) {
-				// This is normal. The status collection will re-enqueue the write once the
+				// This is normal. The raw collection will re-enqueue the write once the
 				// informer delivers the newer object.
 				log.Debug("updating stale status, skipping", "error", err)
 				return nil
@@ -145,7 +148,7 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource, statusObj a
 	if err != nil {
 		log.Error("failed to sync status after retries", "error", err)
 	}
-	if w.OnSync != nil {
+	if hasDesired && w.OnSync != nil {
 		w.OnSync(obj, lastCurrent, lastMerged, time.Since(start), err)
 	}
 }

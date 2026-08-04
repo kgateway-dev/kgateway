@@ -5,8 +5,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -31,8 +36,8 @@ func TestMergeGatewayStatusAddressesPreservesLiveOrder(t *testing.T) {
 }
 
 // TestMergeGatewayStatusAddressesPrefersLiveOverDesired ensures we write the freshest
-// addresses from the informer rather than the snapshot the status collection computed with,
-// so a concurrent deployer address update is never reverted.
+// addresses from the informer rather than an earlier report snapshot, so a concurrent
+// deployer address update is never reverted.
 func TestMergeGatewayStatusAddressesPrefersLiveOverDesired(t *testing.T) {
 	current := &gwv1.Gateway{Status: gwv1.GatewayStatus{Addresses: []gwv1.GatewayStatusAddress{
 		addr(gwv1.IPAddressType, "1.1.1.1"),
@@ -65,10 +70,8 @@ func TestMergeGatewayStatusAddressesLeavesConditionsAlone(t *testing.T) {
 	require.Equal(t, conditions, merged.Conditions, "conditions come from the desired status")
 }
 
-// TestBuildGWStatusCarriesLiveAddresses pins the assumption the Gateway status collection
-// relies on: BuildGWStatus copies the live addresses through verbatim, so the desired status
-// matches the live one and the live-vs-desired comparison stays quiet. If this ever changes,
-// the collection needs to carry addresses itself again.
+// TestBuildGWStatusCarriesLiveAddresses pins the status writer's assumption: BuildGWStatus
+// copies live addresses through verbatim before the write-time merge refreshes them again.
 func TestBuildGWStatusCarriesLiveAddresses(t *testing.T) {
 	live := []gwv1.GatewayStatusAddress{
 		addr(gwv1.IPAddressType, "10.0.0.9"),
@@ -93,4 +96,63 @@ func TestBuildGWStatusCarriesLiveAddresses(t *testing.T) {
 	status := rm.BuildGWStatus(t.Context(), *gw, nil)
 	require.NotNil(t, status)
 	require.Equal(t, live, status.Addresses, "BuildGWStatus must carry live addresses through verbatim")
+}
+
+func TestChangedGatewayResourcesQueuesOnlyChangedReportKeys(t *testing.T) {
+	unchanged := types.NamespacedName{Namespace: "default", Name: "unchanged"}
+	changed := types.NamespacedName{Namespace: "default", Name: "changed"}
+	old := reports.NewReportMap()
+	old.HTTPRoutes[unchanged] = nil
+	current := reports.NewReportMap()
+	current.HTTPRoutes[unchanged] = nil
+	current.HTTPRoutes[changed] = nil
+
+	resources := changedGatewayResources(old, current, wellknown.TCPRouteV1GVR, wellknown.TLSRouteV1GVR)
+
+	require.Equal(t, []types.NamespacedName{changed}, statusResourceNames(resources))
+	require.Equal(t, wellknown.HTTPRouteGVK, resources[0].GroupVersionKind)
+}
+
+func TestChangedGatewayResourcesUsesServedRouteVersions(t *testing.T) {
+	nn := types.NamespacedName{Namespace: "default", Name: "route"}
+	old := reports.NewReportMap()
+	current := reports.NewReportMap()
+	current.TCPRoutes[nn] = nil
+	current.TLSRoutes[nn] = nil
+
+	resources := changedGatewayResources(old, current, wellknown.TCPRouteV1GVR, wellknown.TLSRouteV1Alpha3GVR)
+
+	require.ElementsMatch(t, []schema.GroupVersionKind{
+		wellknown.TCPRouteV1GVK,
+		wellknown.TLSRouteV1Alpha3GVK,
+	}, resourceGVKs(resources))
+}
+
+func TestChangedPolicyResourcesMapsPolicyGroupKindToWriterGVK(t *testing.T) {
+	gvk := schema.GroupVersionKind{Group: "gateway.example.io", Version: "v1", Kind: "ExamplePolicy"}
+	key := reporter.PolicyKey{Group: gvk.Group, Kind: gvk.Kind, Namespace: "default", Name: "policy"}
+	old := reports.NewReportMap()
+	current := reports.NewReportMap()
+	current.Policies[key] = nil
+
+	resources := changedPolicyResources(old, current, map[schema.GroupKind]schema.GroupVersionKind{gvk.GroupKind(): gvk})
+
+	require.Equal(t, []types.NamespacedName{{Namespace: "default", Name: "policy"}}, statusResourceNames(resources))
+	require.Equal(t, gvk, resources[0].GroupVersionKind)
+}
+
+func statusResourceNames(resources []statussync.Resource) []types.NamespacedName {
+	result := make([]types.NamespacedName, 0, len(resources))
+	for _, resource := range resources {
+		result = append(result, resource.NamespacedName)
+	}
+	return result
+}
+
+func resourceGVKs(resources []statussync.Resource) []schema.GroupVersionKind {
+	result := make([]schema.GroupVersionKind, 0, len(resources))
+	for _, resource := range resources {
+		result = append(result, resource.GroupVersionKind)
+	}
+	return result
 }

@@ -40,14 +40,13 @@ func (r ReportsWrapper) Equals(in ReportsWrapper) bool {
 	return reports.EqualReportMaps(r.reports, in.reports)
 }
 
-// StatusRegistration attaches a handler to a status collection, feeding the
-// given queue. It is invoked when status writing becomes enabled (on the leader).
+// StatusRegistration attaches a source handler that feeds the given queue. It is invoked
+// when status writing becomes enabled on the leader.
 type StatusRegistration = func(statusWriter WorkerQueue) krt.HandlerRegistration
 
-// StatusCollections stores a set of collections that can write status.
-// These are fed into a queue which can be dynamically set and unset to handle
-// leader election: desired statuses are computed on every pod, but events only
-// flow to the write queue while a queue is set (i.e. on the leader).
+// StatusCollections stores the raw-resource and report event sources that can trigger a
+// status reconciliation. Handlers are attached only on the leader, and they enqueue only
+// resource identities; desired statuses are built just-in-time by the writer.
 type StatusCollections struct {
 	mu           sync.Mutex
 	constructors []StatusRegistration
@@ -80,9 +79,8 @@ func (s *StatusCollections) UnsetQueue() {
 	s.active = nil
 }
 
-// SetQueue enables status writing. All registered collections attach handlers to the
-// queue; krt replays existing state as Add events, so the full current desired state
-// is swept on leadership acquisition.
+// SetQueue enables status writing. All registered sources attach handlers to the queue;
+// raw KRT collections replay current objects as Add events to sweep them on leadership.
 func (s *StatusCollections) SetQueue(queue WorkerQueue) []krt.Syncer {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -95,77 +93,65 @@ func (s *StatusCollections) SetQueue(queue WorkerQueue) []krt.Syncer {
 	})
 }
 
-// RemovalPolicy decides what to write when an element leaves a status collection. That
-// happens both when the object itself is deleted (harmless: the writer finds no object and
-// skips) and when the object outlives its desired status, e.g. it dropped out of the
-// translation report. The second case is the one this policy is about.
-type RemovalPolicy int
-
-const (
-	// ClearOnRemove publishes an empty desired status, which clears the entries this
-	// controller owns. Correct for multi-writer list statuses (route status.parents,
-	// policy status.ancestors) where the writer's merge preserves the entries owned by
-	// other controllers, so clearing ours is both safe and required to drop stale entries.
-	ClearOnRemove RemovalPolicy = iota
-
-	// KeepOnRemove leaves the live status untouched. Correct for single-writer statuses
-	// (Gateway, ListenerSet, Backend) where there is nothing to preserve and an empty
-	// desired status would wipe every condition rather than just our own entries.
-	KeepOnRemove
-)
-
-// RegisterStatus takes a status collection and registers it to be managed by the status queue.
-// The ObjectWithStatus elements must carry the live object (including its current status) in
-// Obj and the desired status in Status; getStatus extracts the live status from the object.
-// An event only reaches the write queue when the live status differs from the desired status,
-// so lost writes self-heal: a conflicted or dropped write leaves live != desired, and the next
-// informer event re-enqueues it.
-//
-// removal selects what an element removal means for this kind; see RemovalPolicy.
-//
-// gvk identifies the resource kind for write dispatch. If the live object carries its own
-// GroupVersionKind (e.g. legacy variants normalized into a shared type), that takes precedence.
-func RegisterStatus[I controllers.Object, IS any](
+// RegisterResource registers an existing raw KRT collection as a reconciliation source.
+// Status-only informer updates are intentionally included: they provide the self-healing
+// event after a write conflict or after another controller updates a shared status field.
+// Deletes are ignored because there is no remaining object to update.
+func RegisterResource[I controllers.Object](
 	s *StatusCollections,
 	gvk schema.GroupVersionKind,
-	statusCol krt.StatusCollection[I, IS],
-	getStatus func(I) IS,
-	removal RemovalPolicy,
+	col krt.Collection[I],
 ) {
 	reg := func(statusWriter WorkerQueue) krt.HandlerRegistration {
-		return statusCol.Register(func(o krt.Event[krt.ObjectWithStatus[I, IS]]) {
-			l := o.Latest()
-			desired := l.Status
+		return col.Register(func(o krt.Event[I]) {
 			if o.Event == controllers.EventDelete {
-				if removal == KeepOnRemove {
-					logger.Debug("status collection element removed, leaving live status untouched", "resource", l.ResourceName())
-					return
-				}
-				var empty IS
-				desired = empty
-			}
-			// Compare against the status we actually intend to write, which is why this runs
-			// after the removal handling: comparing the live status against the pre-removal
-			// desired would make clearing depend on whether the last write had landed yet.
-			if krt.Equal(getStatus(l.Obj), desired) {
-				// We want the same status we already have! No need for a write so skip this.
-				// Note: the Equals() function on ObjectWithStatus does not compare these. It only
-				// compares "old live + desired" == "new live + desired", so this callback triggers
-				// when either the live OR the desired status changes; here we can do smarter
-				// filtering and just check whether we already meet the desired state.
-				logger.Debug("suppressing status change, live == desired", "resource", l.ResourceName(), "resource_version", l.Obj.GetResourceVersion())
 				return
 			}
+			obj := o.Latest()
 			res := Resource{
 				GroupVersionKind: gvk,
-				NamespacedName:   config.NamespacedName(l.Obj),
+				NamespacedName:   config.NamespacedName(obj),
 			}
-			if og := l.Obj.GetObjectKind().GroupVersionKind(); !og.Empty() {
+			if og := obj.GetObjectKind().GroupVersionKind(); !og.Empty() {
 				res.GroupVersionKind = og
 			}
-			statusWriter.Push(res, desired)
-			logger.Debug("enqueued status update", "resource", l.ResourceName(), "resource_version", l.Obj.GetResourceVersion())
+			statusWriter.Push(res, reconcileRequest{})
+			logger.Debug("enqueued status reconciliation", "resource", res.NamespacedName.String(), "resource_version", obj.GetResourceVersion())
 		})
 	}
 	s.Register(reg)
 }
+
+// RegisterReports registers a report singleton as a reconciliation source. Initial Add
+// events are skipped because RegisterResource replays every current object when leadership
+// is acquired. On later report changes, changedResources returns only the object identities
+// whose report fragments changed.
+func RegisterReports(
+	s *StatusCollections,
+	reportCol krt.Collection[ReportsWrapper],
+	changedResources func(old, current reports.ReportMap) []Resource,
+) {
+	s.Register(func(statusWriter WorkerQueue) krt.HandlerRegistration {
+		return reportCol.Register(func(o krt.Event[ReportsWrapper]) {
+			if o.Event == controllers.EventAdd {
+				return
+			}
+			oldReports := reports.NewReportMap()
+			if o.Old != nil {
+				oldReports = o.Old.Reports()
+			}
+			currentReports := reports.NewReportMap()
+			if o.New != nil {
+				currentReports = o.New.Reports()
+			}
+			for _, res := range changedResources(oldReports, currentReports) {
+				statusWriter.Push(res, reconcileRequest{})
+			}
+		})
+	})
+}
+
+// reconcileRequest is deliberately empty: queue entries retain only their Resource key.
+// It remains a non-nil interface value so an enqueue that arrives while the same resource
+// is being processed causes the worker pool to run it once more.
+type reconcileRequest struct{}

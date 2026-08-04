@@ -28,10 +28,9 @@ func (q countingQueue) Push(target Resource, data any) {
 	q.inner.Push(target, data)
 }
 
-// TestStatusCollectionEnqueueWriteNoopCycle exercises the full declarative write path:
-// a status collection event enqueues a write (live != desired), the writer persists the
-// desired status, and the resulting informer update is suppressed (live == desired) both
-// at the collection level (no new push) and at the writer level (no new API write).
+// TestStatusCollectionEnqueueWriteNoopCycle exercises the full just-in-time write path:
+// a raw collection event enqueues an identity, the writer builds and persists desired
+// status, and the resulting informer update reaches the writer but becomes a no-op.
 func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	stop := test.NewStop(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -59,14 +58,13 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 			}},
 		}},
 	}
-	statusCol := krt.NewCollection(routes, func(kctx krt.HandlerContext, r *gwv1.HTTPRoute) *krt.ObjectWithStatus[*gwv1.HTTPRoute, gwv1.RouteStatus] {
-		return &krt.ObjectWithStatus[*gwv1.HTTPRoute, gwv1.RouteStatus]{Obj: r, Status: desired}
-	}, krt.WithStop(stop))
-
 	var syncs atomic.Int32
 	writer := Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{
 		Name:   "httpRoute",
 		Client: routesClient,
+		Desired: func(*gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
+			return desired, true
+		},
 		Build: func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
 			return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 		},
@@ -81,11 +79,11 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	}
 
 	pool := NewWorkerPool(ctx, func(ctx context.Context, res Resource, data any) {
-		writer.ApplyStatus(ctx, res, data)
+		writer.ApplyStatus(ctx, res)
 	}, 2)
 	var pushes atomic.Int32
 	sc := NewStatusCollections()
-	RegisterStatus(sc, gvk, statusCol, func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus }, ClearOnRemove)
+	RegisterResource(sc, gvk, routes)
 	sc.SetQueue(countingQueue{inner: pool, pushes: &pushes})
 
 	c.RunAndWait(stop)
@@ -112,18 +110,17 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 		return err == nil && krt.Equal(got.Status.RouteStatus, desired)
 	}, 5*time.Second, 10*time.Millisecond, "desired status should be written to the API server")
 
-	// Phase 2: the informer update from our own write must be suppressed at the
-	// collection level (live == desired), so no second push arrives.
-	require.Never(t, func() bool {
-		return pushes.Load() > 1
-	}, 500*time.Millisecond, 50*time.Millisecond, "self-inflicted informer update must not re-enqueue a write")
-	require.Equal(t, int32(1), pushes.Load(), "exactly one enqueue for the initial write")
+	// Phase 2: the informer update from our own write re-enqueues the identity, and the
+	// writer suppresses the API call after rebuilding the same desired status.
+	require.Eventually(t, func() bool {
+		return pushes.Load() >= 2
+	}, 5*time.Second, 10*time.Millisecond, "status informer update must trigger reconciliation")
 	require.Equal(t, 1, countStatusWrites(), "exactly one API status write")
 
 	// Phase 3: a duplicate push (e.g. leader re-election replay) reaches the writer, which
 	// must detect live == merged desired and skip the API write.
 	prevSyncs := syncs.Load()
-	pool.Push(Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: "default", Name: "route"}}, desired)
+	pool.Push(Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: "default", Name: "route"}}, reconcileRequest{})
 	require.Eventually(t, func() bool {
 		return syncs.Load() > prevSyncs
 	}, 5*time.Second, 10*time.Millisecond, "writer should process the duplicate push")

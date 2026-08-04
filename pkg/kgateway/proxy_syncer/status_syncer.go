@@ -23,12 +23,10 @@ const statusSyncMaxWorkers = 100
 
 // StatusSyncer runs only on the leader and writes the status of resources.
 //
-// Desired statuses are computed declaratively on every pod by the ProxySyncer's status
-// collections; this runnable attaches those collections to a worker-pool write queue when
-// leadership is acquired (SetQueue), which replays the full current state, and detaches
-// them on shutdown. Writes go through the same istio informer cache translation reads
-// from; a write lost to a conflict self-heals because the informer event re-enqueues the
-// resource while its live status still differs from the desired status.
+// This runnable attaches raw KRT object and report handlers to a worker-pool write queue
+// when leadership is acquired. The queue retains only resource identities; each writer
+// builds desired status just-in-time from the latest KRT state. Writes go through the same
+// istio informer cache translation reads from, and informer updates self-heal conflicts.
 type StatusSyncer struct {
 	istioClient    apiclient.Client
 	plugins        plug.Plugin
@@ -99,7 +97,9 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 		})
 	}
 
-	pool := statussync.NewWorkerPool(ctx, s.syncStatus, statusSyncMaxWorkers)
+	pool := statussync.NewWorkerPool(ctx, func(ctx context.Context, resource statussync.Resource, _ any) {
+		s.syncStatus(ctx, resource)
+	}, statusSyncMaxWorkers)
 	s.statusCollections.SetQueue(pool)
 	defer s.statusCollections.UnsetQueue()
 
@@ -108,13 +108,13 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 }
 
 // syncStatus dispatches one queued status write to the writer registered for its GVK.
-func (s *StatusSyncer) syncStatus(ctx context.Context, resource statussync.Resource, statusObj any) {
+func (s *StatusSyncer) syncStatus(ctx context.Context, resource statussync.Resource) {
 	writer, ok := s.writers[resource.GroupVersionKind]
 	if !ok {
 		logger.Error("sync status: no writer registered for resource type", "gvk", resource.GroupVersionKind.String(), "resource", resource.NamespacedName.String())
 		return
 	}
-	writer.ApplyStatus(ctx, resource, statusObj)
+	writer.ApplyStatus(ctx, resource)
 }
 
 // NeedLeaderElection returns true to ensure that the StatusSyncer runs only on the leader

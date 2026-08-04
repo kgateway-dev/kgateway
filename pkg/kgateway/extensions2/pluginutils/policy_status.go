@@ -28,7 +28,7 @@ type BuildDesiredPolicyStatusFn[T controllers.ComparableObject] func(rm reports.
 
 // RegisterPolicyStatus returns a PolicyPlugin.RegisterPolicyStatus hook for a policy CRD
 // whose status is a standard gwv1.PolicyStatus. It derives a per-object desired-status
-// collection from the merged policy report singleton and registers a writer that merges
+// source and registers a writer that builds from the latest merged policy report, merging
 // ancestors owned by other controllers at write time.
 //
 // buildDesired may be nil, in which case the standard ReportMap.BuildPolicyStatus is used.
@@ -56,28 +56,22 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 		}
 	}
 	return func(in pluginsdk.PolicyStatusInputs) {
-		statuses := krt.NewCollection(col, func(kctx krt.HandlerContext, pol T) *krt.ObjectWithStatus[T, gwv1.PolicyStatus] {
-			rw := krt.FetchOne(kctx, in.PolicyReports)
-			if rw == nil {
-				return nil
-			}
-			status := buildDesired(rw.Reports(), pol, controllerName)
-			if status == nil {
-				return nil
-			}
-			// Normalize through the same merge the writer applies so the desired status is
-			// byte-identical to the written result; otherwise ordering differences would
-			// re-enqueue (suppressed) writes on every recompute.
-			status.Ancestors = statussync.MergePolicyAncestorStatuses(controllerName, getStatus(pol).Ancestors, status.Ancestors)
-			return &krt.ObjectWithStatus[T, gwv1.PolicyStatus]{Obj: pol, Status: *status}
-		}, in.KrtOpts.ToOptions(gvk.Kind+"Statuses")...)
-		// Policies clear on removal: status.ancestors is multi-writer, so an empty desired list
-		// drops only the ancestors we own (see MergePolicyAncestorStatuses) and is how a policy
-		// that left the report sheds its stale ancestor entries.
-		statussync.RegisterStatus(in.Collections, gvk, statuses, getStatus, statussync.ClearOnRemove)
+		statussync.RegisterResource(in.Collections, gvk, col)
 		in.RegisterWriter(gvk, statussync.Writer[T, gwv1.PolicyStatus]{
-			Name:      gvk.Kind,
-			Client:    cl,
+			Name:   gvk.Kind,
+			Client: cl,
+			Desired: func(pol T) (gwv1.PolicyStatus, bool) {
+				rw := in.PolicyReports.GetKey("report")
+				if rw == nil {
+					return gwv1.PolicyStatus{}, false
+				}
+				status := buildDesired(rw.Reports(), pol, controllerName)
+				if status == nil {
+					// Merge will clear only ancestors owned by this controller.
+					return gwv1.PolicyStatus{}, true
+				}
+				return *status, true
+			},
 			Build:     build,
 			GetStatus: getStatus,
 			Merge: func(current T, desired gwv1.PolicyStatus) gwv1.PolicyStatus {
