@@ -23,9 +23,9 @@ type countingQueue struct {
 	pushes *atomic.Int32
 }
 
-func (q countingQueue) Push(target Resource, data any) {
+func (q countingQueue) Push(target Resource) {
 	q.pushes.Add(1)
-	q.inner.Push(target, data)
+	q.inner.Push(target)
 }
 
 // TestStatusCollectionEnqueueWriteNoopCycle exercises the full just-in-time write path:
@@ -78,7 +78,7 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 		},
 	}
 
-	pool := NewWorkerPool(ctx, func(ctx context.Context, res Resource, data any) {
+	pool := NewWorkerPool(ctx, func(ctx context.Context, res Resource) {
 		writer.ApplyStatus(ctx, res)
 	}, 2)
 	var pushes atomic.Int32
@@ -120,7 +120,7 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	// Phase 3: a duplicate push (e.g. leader re-election replay) reaches the writer, which
 	// must detect live == merged desired and skip the API write.
 	prevSyncs := syncs.Load()
-	pool.Push(Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: "default", Name: "route"}}, reconcileRequest{})
+	pool.Push(Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: "default", Name: "route"}})
 	require.Eventually(t, func() bool {
 		return syncs.Load() > prevSyncs
 	}, 5*time.Second, 10*time.Millisecond, "writer should process the duplicate push")

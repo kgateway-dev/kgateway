@@ -97,6 +97,8 @@ type BackendPlugin struct {
 	AliasKinds []schema.GroupKind
 	// RawBackends is the informer-backed source for status reconciliation. It is shared
 	// with the translated Backends collection so status does not create another wrapper.
+	// Backend plugins for the Backend GVK must provide it; otherwise resource-driven Backend
+	// status reconciliation is disabled and the proxy syncer logs an error during setup.
 	RawBackends krt.Collection[*kgateway.Backend]
 	Backends    krt.Collection[ir.BackendObjectIR]
 	Endpoints   krt.Collection[ir.EndpointsForBackend]

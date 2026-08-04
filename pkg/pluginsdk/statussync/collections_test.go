@@ -21,7 +21,7 @@ type recordingQueue struct {
 	pushed []Resource
 }
 
-func (q *recordingQueue) Push(resource Resource, _ any) {
+func (q *recordingQueue) Push(resource Resource) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	q.pushed = append(q.pushed, resource)
@@ -70,7 +70,24 @@ func TestRegisterResourceReplaysAndTracksRawObjects(t *testing.T) {
 	}, 200*time.Millisecond, 20*time.Millisecond, "deleted objects cannot have status written")
 }
 
-func TestRegisterResourceUsesObjectGVKForNormalizedCollections(t *testing.T) {
+func TestRegisterResourceUsesConfiguredGVKForNormalizedCollections(t *testing.T) {
+	stop := test.NewStop(t)
+	fallback := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1alpha3", Kind: "ListenerSet"}
+	objectGVK := schema.GroupVersionKind{Group: "gateway.networking.x-k8s.io", Version: "v1alpha1", Kind: "XListenerSet"}
+	ls := &gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Name: "listeners", Namespace: "default"}}
+	ls.SetGroupVersionKind(objectGVK)
+	col := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{ls}, krt.WithStop(stop))
+
+	sources := NewStatusCollections()
+	queue := &recordingQueue{}
+	RegisterResource(sources, fallback, col)
+	sources.SetQueue(queue)
+
+	require.Equal(t, fallback, queue.awaitResources(t, 1)[0].GroupVersionKind,
+		"the configured write GVK must remain the coalescing key even when a normalized object has different TypeMeta")
+}
+
+func TestRegisterResourceByObjectGVKPreservesMixedSourceKinds(t *testing.T) {
 	stop := test.NewStop(t)
 	fallback := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1alpha3", Kind: "ListenerSet"}
 	actual := schema.GroupVersionKind{Group: "gateway.networking.x-k8s.io", Version: "v1alpha1", Kind: "XListenerSet"}
@@ -80,7 +97,7 @@ func TestRegisterResourceUsesObjectGVKForNormalizedCollections(t *testing.T) {
 
 	sources := NewStatusCollections()
 	queue := &recordingQueue{}
-	RegisterResource(sources, fallback, col)
+	RegisterResourceByObjectGVK(sources, fallback, col)
 	sources.SetQueue(queue)
 
 	require.Equal(t, actual, queue.awaitResources(t, 1)[0].GroupVersionKind)

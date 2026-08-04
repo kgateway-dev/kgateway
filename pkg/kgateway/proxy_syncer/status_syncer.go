@@ -100,7 +100,7 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 		})
 	}
 
-	pool := statussync.NewWorkerPool(ctx, func(ctx context.Context, resource statussync.Resource, _ any) {
+	pool := statussync.NewWorkerPool(ctx, func(ctx context.Context, resource statussync.Resource) {
 		s.syncStatus(ctx, resource)
 	}, statusSyncMaxWorkers)
 	s.statusCollections.SetQueue(pool)

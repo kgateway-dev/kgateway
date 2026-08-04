@@ -60,9 +60,9 @@ type Writer[O controllers.ComparableObject, S any] struct {
 	// (e.g. route status parents, policy ancestors, gateway addresses).
 	Merge func(current O, desired S) S
 
-	// OnSync, when set, is called once per ApplyStatus invocation with the write outcome.
-	// current is the last object read from the informer (may be nil if the resource is
-	// gone) and status the last merged status. Used to record status sync metrics.
+	// OnSync, when set, is called once per ApplyStatus invocation for which Desired returns
+	// true. current is the last object read from the informer and status the last merged
+	// status. Used to record status sync metrics.
 	OnSync func(res Resource, current O, status S, took time.Duration, err error)
 }
 
