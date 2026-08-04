@@ -13,9 +13,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -48,18 +48,16 @@ type PerClientProcessBackend func(
 )
 
 // PolicyStatusInputs is provided to a PolicyPlugin's RegisterPolicyStatus hook. The plugin
-// derives a per-object desired-status collection from PolicyReports and registers it (via
-// statussync.RegisterStatus) on Collections, along with a status writer for its GVK.
+// registers its existing raw collection as a reconciliation source and a writer that builds
+// status just-in-time from PolicyReports.
 type PolicyStatusInputs struct {
-	// Collections is where the plugin registers its desired-status collection.
+	// Collections is where the plugin registers its raw policy collection.
 	Collections *StatusCollections
 	// PolicyReports is a singleton collection holding the merged report map (gateway and
 	// backend report paths combined) from which policy statuses are built.
 	PolicyReports krt.Collection[statussync.ReportsWrapper]
 	// RegisterWriter registers the writer that persists this plugin's policy status.
 	RegisterWriter func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer)
-	// KrtOpts are the standard krt collection options.
-	KrtOpts krtutil.KrtOptions
 }
 
 // StatusCollections aliases the statussync type for plugin convenience.
@@ -97,8 +95,11 @@ type PolicyPlugin struct {
 type BackendPlugin struct {
 	ir.BackendInit
 	AliasKinds []schema.GroupKind
-	Backends   krt.Collection[ir.BackendObjectIR]
-	Endpoints  krt.Collection[ir.EndpointsForBackend]
+	// RawBackends is the informer-backed source for status reconciliation. It is shared
+	// with the translated Backends collection so status does not create another wrapper.
+	RawBackends krt.Collection[*kgateway.Backend]
+	Backends    krt.Collection[ir.BackendObjectIR]
+	Endpoints   krt.Collection[ir.EndpointsForBackend]
 	// ExtraConditions, when set, contributes additional status conditions to the
 	// Backend resource beyond the Accepted condition (e.g. the EC2 EndpointsDiscovered
 	// condition produced by runtime endpoint discovery). May be nil.

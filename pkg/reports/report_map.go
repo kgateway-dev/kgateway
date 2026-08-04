@@ -237,6 +237,11 @@ func gatewayReportEqual(a, b *GatewayReport) bool {
 		maps.EqualFunc(a.listeners, b.listeners, listenerReportEqual)
 }
 
+// GatewayReportEqual compares two gateway report fragments by their status semantics.
+func GatewayReportEqual(a, b *GatewayReport) bool {
+	return gatewayReportEqual(a, b)
+}
+
 func listenerSetReportEqual(a, b *ListenerSetReport) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -244,6 +249,11 @@ func listenerSetReportEqual(a, b *ListenerSetReport) bool {
 	return a.observedGeneration == b.observedGeneration &&
 		conditionsEqual(a.conditions, b.conditions) &&
 		maps.EqualFunc(a.listeners, b.listeners, listenerReportEqual)
+}
+
+// ListenerSetReportEqual compares two listener set report fragments by their status semantics.
+func ListenerSetReportEqual(a, b *ListenerSetReport) bool {
+	return listenerSetReportEqual(a, b)
 }
 
 func listenerReportEqual(a, b *ListenerReport) bool {
@@ -279,6 +289,11 @@ func routeReportEqual(a, b *RouteReport) bool {
 		maps.EqualFunc(a.Parents, b.Parents, parentRefReportEqual)
 }
 
+// RouteReportEqual compares two route report fragments by their status semantics.
+func RouteReportEqual(a, b *RouteReport) bool {
+	return routeReportEqual(a, b)
+}
+
 func parentRefReportEqual(a, b *ParentRefReport) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -292,6 +307,11 @@ func policyReportEqual(a, b *PolicyReport) bool {
 	}
 	return a.observedGeneration == b.observedGeneration &&
 		maps.EqualFunc(a.Ancestors, b.Ancestors, ancestorRefReportEqual)
+}
+
+// PolicyReportEqual compares two policy report fragments by their status semantics.
+func PolicyReportEqual(a, b *PolicyReport) bool {
+	return policyReportEqual(a, b)
 }
 
 func ancestorRefReportEqual(a, b *AncestorRefReport) bool {
@@ -308,6 +328,11 @@ func backendReportEqual(a, b *BackendReport) bool {
 	}
 	return a.observedGeneration == b.observedGeneration &&
 		conditionsEqual(a.Conditions, b.Conditions)
+}
+
+// BackendReportEqual compares two backend report fragments by their status semantics.
+func BackendReportEqual(a, b *BackendReport) bool {
+	return backendReportEqual(a, b)
 }
 
 func conditionsEqual(a, b []metav1.Condition) bool {

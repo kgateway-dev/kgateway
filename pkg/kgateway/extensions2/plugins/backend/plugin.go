@@ -132,6 +132,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				BackendInit: ir.BackendInit{
 					InitEnvoyBackend: processBackendForEnvoy,
 				},
+				RawBackends:     col,
 				Backends:        bcol,
 				Endpoints:       ec2Endpoints.Endpoints,
 				ExtraConditions: ec2Endpoints.DiscoveryStatus,
