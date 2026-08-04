@@ -3,6 +3,7 @@ package statussync
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -20,8 +21,8 @@ func testResource(name string) Resource {
 
 func newTestQueue() *WorkQueue {
 	return &WorkQueue{
-		pending:    make(map[Resource]any),
-		processing: make(map[Resource]any),
+		pending:    make(map[Resource]struct{}),
+		processing: make(map[Resource]bool),
 	}
 }
 
@@ -29,59 +30,78 @@ func TestWorkQueueCoalescesPendingItems(t *testing.T) {
 	q := newTestQueue()
 	res := testResource("a")
 
-	q.Enqueue(res, "v1")
-	q.Enqueue(res, "v2")
+	q.Enqueue(res)
+	q.Enqueue(res)
 
 	require.Equal(t, 1, q.Length(), "same resource must be queued once")
-	_, data, ok := q.Dequeue()
+	got, ok := q.Dequeue()
 	require.True(t, ok)
-	require.Equal(t, "v2", data, "the latest data must win")
+	require.Equal(t, res, got)
 }
 
 func TestWorkQueueReenqueuesWhileProcessing(t *testing.T) {
 	q := newTestQueue()
 	res := testResource("a")
 
-	q.Enqueue(res, "v1")
-	got, _, ok := q.Dequeue()
+	q.Enqueue(res)
+	got, ok := q.Dequeue()
 	require.True(t, ok)
 	require.Equal(t, res, got)
 
 	// While the item is processing, a new push must not be dequeued concurrently...
-	q.Enqueue(res, "v2")
-	_, _, ok = q.Dequeue()
+	q.Enqueue(res)
+	_, ok = q.Dequeue()
 	require.False(t, ok, "an in-flight resource must never be processed concurrently")
 
 	// ...but must be requeued once the in-flight work completes.
 	q.MarkDone(res)
 	require.Equal(t, 1, q.Length())
-	_, data, ok := q.Dequeue()
+	got, ok = q.Dequeue()
 	require.True(t, ok)
-	require.Equal(t, "v2", data)
+	require.Equal(t, res, got)
 }
 
 func TestWorkQueueShutDownStopsEnqueue(t *testing.T) {
 	q := newTestQueue()
+	q.Enqueue(testResource("pending"))
 	q.ShutDown()
-	q.Enqueue(testResource("a"), "v1")
+	q.Enqueue(testResource("late"))
 	require.Zero(t, q.Length())
+}
+
+func TestWorkerPoolRejectsPushAfterCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	var calls atomic.Int32
+	pool := NewWorkerPool(ctx, func(context.Context, Resource) {
+		calls.Add(1)
+	}, 1)
+	cancel()
+	require.Eventually(t, func() bool {
+		pool.lock.Lock()
+		defer pool.lock.Unlock()
+		return pool.closing
+	}, time.Second, time.Millisecond)
+
+	pool.Push(testResource("late"))
+	require.Zero(t, pool.q.Length(), "late pushes must not accumulate after shutdown")
+	require.Zero(t, calls.Load(), "work pushed after cancellation must not run")
 }
 
 func TestWorkerPoolProcessesAllItems(t *testing.T) {
 	var mu sync.Mutex
-	seen := map[string]any{}
+	seen := map[string]struct{}{}
 	done := make(chan struct{}, 10)
 
-	pool := NewWorkerPool(context.Background(), func(_ context.Context, res Resource, data any) {
+	pool := NewWorkerPool(context.Background(), func(_ context.Context, res Resource) {
 		mu.Lock()
-		seen[res.Name] = data
+		seen[res.Name] = struct{}{}
 		mu.Unlock()
 		done <- struct{}{}
 	}, 4)
 
 	names := []string{"a", "b", "c", "d", "e"}
 	for _, n := range names {
-		pool.Push(testResource(n), n+"-data")
+		pool.Push(testResource(n))
 	}
 
 	for range names {
@@ -95,6 +115,7 @@ func TestWorkerPoolProcessesAllItems(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 	for _, n := range names {
-		require.Equal(t, n+"-data", seen[n])
+		_, found := seen[n]
+		require.True(t, found)
 	}
 }

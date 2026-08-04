@@ -45,6 +45,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 	gatewayReports := s.statusReport.AsCollection()
 	backendReports := s.backendStatusReport.AsCollection()
 	policyReports := s.policyReport.AsCollection()
+	tcpRouteGVK, tlsRouteGVK := routeWriteGVKs(s.commonCols.TCPRouteWriteGVR, s.commonCols.TLSRouteWriteGVR)
 
 	// Gateway
 	statussync.RegisterResource(s.statusCollections, wellknown.GatewayGVK, s.commonCols.RawGateways)
@@ -72,8 +73,8 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 
 	statussync.RegisterResource(s.statusCollections, wellknown.HTTPRouteGVK, s.commonCols.RawHTTPRoutes)
 	statussync.RegisterResource(s.statusCollections, wellknown.GRPCRouteGVK, s.commonCols.RawGRPCRoutes)
-	statussync.RegisterResource(s.statusCollections, wellknown.TCPRouteGVK, s.commonCols.RawTCPRoutes)
-	statussync.RegisterResource(s.statusCollections, wellknown.TLSRouteGVK, s.commonCols.RawTLSRoutes)
+	statussync.RegisterResource(s.statusCollections, tcpRouteGVK, s.commonCols.RawTCPRoutes)
+	statussync.RegisterResource(s.statusCollections, tlsRouteGVK, s.commonCols.RawTLSRoutes)
 
 	s.statusWriters[wellknown.HTTPRouteGVK] = routeWriter[*gwv1.HTTPRoute](ctx, cl, f, gatewayReports, "httpRoute", wellknown.HTTPRouteGVR, wellknown.HTTPRouteKind, controllerName,
 		func(rm reports.ReportMap) map[types.NamespacedName]*reports.RouteReport { return rm.HTTPRoutes },
@@ -151,19 +152,21 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 	s.statusWriters[wellknown.TLSRouteV1GVK] = tlsWriter
 	s.statusWriters[wellknown.TLSRouteV1Alpha3GVK] = tlsWriter
 
-	statussync.RegisterResource(s.statusCollections, wellknown.ListenerSetGVK, s.commonCols.RawListenerSets)
+	statussync.RegisterResourceByObjectGVK(s.statusCollections, wellknown.ListenerSetGVK, s.commonCols.RawListenerSets)
 	lsWriter := &listenerSetStatusSyncer{
 		col:      s.commonCols.RawListenerSets,
 		promoted: kclient.NewFilteredDelayed[*gwv1.ListenerSet](cl, wellknown.ListenerSetGVR, f),
 		client:   cl,
 		reports:  gatewayReports,
-		ctx:      ctx,
 	}
 	s.statusWriters[wellknown.ListenerSetGVK] = lsWriter
 	s.statusWriters[wellknown.XListenerSetGVK] = lsWriter
 
 	backendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
-	if backendPlugin.RawBackends != nil {
+	if backendPlugin.RawBackends == nil {
+		logger.Error("backend plugin is missing RawBackends; Backend status will not reconcile from resource events",
+			"group_kind", wellknown.BackendGVK.GroupKind().String())
+	} else {
 		statussync.RegisterResource(s.statusCollections, wellknown.BackendGVK, backendPlugin.RawBackends)
 	}
 	s.statusWriters[wellknown.BackendGVK] = statussync.Writer[*kgateway.Backend, kgateway.BackendStatus]{
@@ -203,7 +206,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, _ krtutil.KrtOptions)
 	}
 
 	statussync.RegisterReports(s.statusCollections, gatewayReports, func(old, current reports.ReportMap) []statussync.Resource {
-		return changedGatewayResources(old, current, s.commonCols.TCPRouteWriteGVR, s.commonCols.TLSRouteWriteGVR)
+		return changedGatewayResources(old, current, tcpRouteGVK, tlsRouteGVK)
 	})
 	statussync.RegisterReports(s.statusCollections, backendReports, changedBackendResources)
 	statussync.RegisterReports(s.statusCollections, policyReports, func(old, current reports.ReportMap) []statussync.Resource {
@@ -224,7 +227,7 @@ func currentReports(col krt.Collection[statussync.ReportsWrapper]) (reports.Repo
 
 func changedGatewayResources(
 	old, current reports.ReportMap,
-	tcpWriteGVR, tlsWriteGVR schema.GroupVersionResource,
+	tcpRouteGVK, tlsRouteGVK schema.GroupVersionKind,
 ) []statussync.Resource {
 	resources := resourcesForNames(wellknown.GatewayGVK,
 		changedKeys(old.Gateways, current.Gateways, reports.GatewayReportEqual))
@@ -233,21 +236,10 @@ func changedGatewayResources(
 	resources = append(resources, resourcesForNames(wellknown.GRPCRouteGVK,
 		changedKeys(old.GRPCRoutes, current.GRPCRoutes, reports.RouteReportEqual))...)
 
-	tcpGVK := wellknown.TCPRouteGVK
-	if tcpWriteGVR == wellknown.TCPRouteV1GVR {
-		tcpGVK = wellknown.TCPRouteV1GVK
-	}
-	resources = append(resources, resourcesForNames(tcpGVK,
+	resources = append(resources, resourcesForNames(tcpRouteGVK,
 		changedKeys(old.TCPRoutes, current.TCPRoutes, reports.RouteReportEqual))...)
 
-	tlsGVK := wellknown.TLSRouteGVK
-	switch tlsWriteGVR {
-	case wellknown.TLSRouteV1GVR:
-		tlsGVK = wellknown.TLSRouteV1GVK
-	case wellknown.TLSRouteV1Alpha3GVR:
-		tlsGVK = wellknown.TLSRouteV1Alpha3GVK
-	}
-	resources = append(resources, resourcesForNames(tlsGVK,
+	resources = append(resources, resourcesForNames(tlsRouteGVK,
 		changedKeys(old.TLSRoutes, current.TLSRoutes, reports.RouteReportEqual))...)
 
 	listenerSetGVKs := map[schema.GroupVersionKind]struct{}{}
@@ -262,6 +254,24 @@ func changedGatewayResources(
 			changedKeys(old.ListenerSets[gvk], current.ListenerSets[gvk], reports.ListenerSetReportEqual))...)
 	}
 	return resources
+}
+
+func routeWriteGVKs(
+	tcpWriteGVR, tlsWriteGVR schema.GroupVersionResource,
+) (schema.GroupVersionKind, schema.GroupVersionKind) {
+	tcpGVK := wellknown.TCPRouteGVK
+	if tcpWriteGVR == wellknown.TCPRouteV1GVR {
+		tcpGVK = wellknown.TCPRouteV1GVK
+	}
+
+	tlsGVK := wellknown.TLSRouteGVK
+	switch tlsWriteGVR {
+	case wellknown.TLSRouteV1GVR:
+		tlsGVK = wellknown.TLSRouteV1GVK
+	case wellknown.TLSRouteV1Alpha3GVR:
+		tlsGVK = wellknown.TLSRouteV1Alpha3GVK
+	}
+	return tcpGVK, tlsGVK
 }
 
 func changedBackendResources(old, current reports.ReportMap) []statussync.Resource {
@@ -485,7 +495,6 @@ type listenerSetStatusSyncer struct {
 	promoted kclient.Client[*gwv1.ListenerSet]
 	client   apiclient.Client
 	reports  krt.Collection[statussync.ReportsWrapper]
-	ctx      context.Context
 }
 
 func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussync.Resource) {
@@ -511,7 +520,7 @@ func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussyn
 		}
 		lsCopy := *current
 		lsCopy.SetGroupVersionKind(res.GroupVersionKind)
-		status := rm.BuildListenerSetStatus(s.ctx, lsCopy)
+		status := rm.BuildListenerSetStatus(ctx, lsCopy)
 		if status == nil {
 			return nil
 		}

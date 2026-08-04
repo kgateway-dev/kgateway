@@ -102,6 +102,30 @@ func RegisterResource[I controllers.Object](
 	gvk schema.GroupVersionKind,
 	col krt.Collection[I],
 ) {
+	registerResource(s, col, func(I) schema.GroupVersionKind { return gvk })
+}
+
+// RegisterResourceByObjectGVK registers a normalized collection whose objects retain
+// distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
+func RegisterResourceByObjectGVK[I controllers.Object](
+	s *StatusCollections,
+	fallback schema.GroupVersionKind,
+	col krt.Collection[I],
+) {
+	registerResource(s, col, func(obj I) schema.GroupVersionKind {
+		gvk := obj.GetObjectKind().GroupVersionKind()
+		if gvk.Empty() {
+			return fallback
+		}
+		return gvk
+	})
+}
+
+func registerResource[I controllers.Object](
+	s *StatusCollections,
+	col krt.Collection[I],
+	gvkFor func(I) schema.GroupVersionKind,
+) {
 	reg := func(statusWriter WorkerQueue) krt.HandlerRegistration {
 		return col.Register(func(o krt.Event[I]) {
 			if o.Event == controllers.EventDelete {
@@ -109,13 +133,10 @@ func RegisterResource[I controllers.Object](
 			}
 			obj := o.Latest()
 			res := Resource{
-				GroupVersionKind: gvk,
+				GroupVersionKind: gvkFor(obj),
 				NamespacedName:   config.NamespacedName(obj),
 			}
-			if og := obj.GetObjectKind().GroupVersionKind(); !og.Empty() {
-				res.GroupVersionKind = og
-			}
-			statusWriter.Push(res, reconcileRequest{})
+			statusWriter.Push(res)
 			logger.Debug("enqueued status reconciliation", "resource", res.NamespacedName.String(), "resource_version", obj.GetResourceVersion())
 		})
 	}
@@ -145,13 +166,8 @@ func RegisterReports(
 				currentReports = o.New.Reports()
 			}
 			for _, res := range changedResources(oldReports, currentReports) {
-				statusWriter.Push(res, reconcileRequest{})
+				statusWriter.Push(res)
 			}
 		})
 	})
 }
-
-// reconcileRequest is deliberately empty: queue entries retain only their Resource key.
-// It remains a non-nil interface value so an enqueue that arrives while the same resource
-// is being processed causes the worker pool to run it once more.
-type reconcileRequest struct{}

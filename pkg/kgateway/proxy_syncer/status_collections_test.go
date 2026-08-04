@@ -107,7 +107,7 @@ func TestChangedGatewayResourcesQueuesOnlyChangedReportKeys(t *testing.T) {
 	current.HTTPRoutes[unchanged] = nil
 	current.HTTPRoutes[changed] = nil
 
-	resources := changedGatewayResources(old, current, wellknown.TCPRouteV1GVR, wellknown.TLSRouteV1GVR)
+	resources := changedGatewayResources(old, current, wellknown.TCPRouteV1GVK, wellknown.TLSRouteV1GVK)
 
 	require.Equal(t, []types.NamespacedName{changed}, statusResourceNames(resources))
 	require.Equal(t, wellknown.HTTPRouteGVK, resources[0].GroupVersionKind)
@@ -120,12 +120,45 @@ func TestChangedGatewayResourcesUsesServedRouteVersions(t *testing.T) {
 	current.TCPRoutes[nn] = nil
 	current.TLSRoutes[nn] = nil
 
-	resources := changedGatewayResources(old, current, wellknown.TCPRouteV1GVR, wellknown.TLSRouteV1Alpha3GVR)
+	tcpGVK, tlsGVK := routeWriteGVKs(wellknown.TCPRouteV1GVR, wellknown.TLSRouteV1Alpha3GVR)
+	resources := changedGatewayResources(old, current, tcpGVK, tlsGVK)
 
 	require.ElementsMatch(t, []schema.GroupVersionKind{
 		wellknown.TCPRouteV1GVK,
 		wellknown.TLSRouteV1Alpha3GVK,
 	}, resourceGVKs(resources))
+}
+
+func TestRouteWriteGVKsMatchResourceAndReportCoalescingKeys(t *testing.T) {
+	tests := []struct {
+		name       string
+		tcpGVR     schema.GroupVersionResource
+		tlsGVR     schema.GroupVersionResource
+		wantTCPGVK schema.GroupVersionKind
+		wantTLSGVK schema.GroupVersionKind
+	}{
+		{
+			name:       "promoted",
+			tcpGVR:     wellknown.TCPRouteV1GVR,
+			tlsGVR:     wellknown.TLSRouteV1GVR,
+			wantTCPGVK: wellknown.TCPRouteV1GVK,
+			wantTLSGVK: wellknown.TLSRouteV1GVK,
+		},
+		{
+			name:       "pre promotion",
+			tcpGVR:     wellknown.TCPRouteGVR,
+			tlsGVR:     wellknown.TLSRouteV1Alpha3GVR,
+			wantTCPGVK: wellknown.TCPRouteGVK,
+			wantTLSGVK: wellknown.TLSRouteV1Alpha3GVK,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tcpGVK, tlsGVK := routeWriteGVKs(tt.tcpGVR, tt.tlsGVR)
+			require.Equal(t, tt.wantTCPGVK, tcpGVK)
+			require.Equal(t, tt.wantTLSGVK, tlsGVK)
+		})
+	}
 }
 
 func TestChangedPolicyResourcesMapsPolicyGroupKindToWriterGVK(t *testing.T) {
