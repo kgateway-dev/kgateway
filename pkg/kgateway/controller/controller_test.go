@@ -12,7 +12,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 	istiosets "istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -70,8 +69,6 @@ var (
 )
 
 type ControllerSuite struct {
-	suite.Suite
-
 	// fields below are set in SetupSuite
 	suitCtxCancelFn context.CancelFunc
 	env             *envtest.Environment
@@ -81,10 +78,20 @@ type ControllerSuite struct {
 }
 
 func TestControllerSuite(t *testing.T) {
-	suite.Run(t, new(ControllerSuite))
+	s := new(ControllerSuite)
+	t.Cleanup(func() {
+		s.TearDownSuite(t)
+	})
+	s.SetupSuite(t)
+
+	t.Run("GatewayStatus", s.TestGatewayStatus)
+	t.Run("InvalidGatewayParameters", s.TestInvalidGatewayParameters)
+	t.Run("GatewayClassStatus", s.TestGatewayClassStatus)
+	t.Run("Metrics", s.TestMetrics)
+	t.Run("GatewayClass", s.TestGatewayClass)
 }
 
-func (s *ControllerSuite) SetupSuite() {
+func (s *ControllerSuite) SetupSuite(t *testing.T) {
 	// Don't use the testing.T.Context because it is cancelled before the corresponding
 	// Cleanup function is called, and we need the Client/Manager to be alive in t.Cleanup handlers
 	ctx, cancel := context.WithCancel(context.Background())
@@ -92,9 +99,10 @@ func (s *ControllerSuite) SetupSuite() {
 
 	// Create a scheme and add Gateway types.
 	scheme := schemes.GatewayScheme()
+	r := require.New(t)
 
 	assetsDir, err := envtestassets.GetEnvTestAssetsDir()
-	s.Require().NoError(err)
+	r.NoError(err)
 
 	s.env = &envtest.Environment{
 		CRDDirectoryPaths: []string{
@@ -110,41 +118,47 @@ func (s *ControllerSuite) SetupSuite() {
 	controllerLogger := logr.FromSlogHandler(slog.Default().Handler())
 	ctrl.SetLogger(controllerLogger)
 	cfg, err := s.env.Start()
-	s.Require().NoError(err)
-	s.Require().NotNil(cfg)
+	r.NoError(err)
+	r.NotNil(cfg)
 
 	s.client, err = client.New(cfg, client.Options{Scheme: scheme})
-	s.Require().NoError(err)
-	s.Require().NotNil(s.client)
+	r.NoError(err)
+	r.NotNil(s.client)
 
-	err = s.startController(ctx, cfg, scheme, s.env)
-	s.Require().NoError(err)
+	err = s.startController(t, ctx, cfg, scheme, s.env)
+	r.NoError(err)
 }
 
-// Does not use s.Require() so that we can perform all cleanup steps without early termination
-func (s *ControllerSuite) TearDownSuite() {
+// Does not use require so that we can perform all cleanup steps without early termination.
+func (s *ControllerSuite) TearDownSuite(t *testing.T) {
 	// Envtest must be stopped after the manager/controllers stop, so cancel the Context first
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/1571#issuecomment-945535598
-	s.suitCtxCancelFn()
+	if s.suitCtxCancelFn != nil {
+		s.suitCtxCancelFn()
+	}
 	if s.managerErr != nil {
 		select {
 		case err := <-s.managerErr:
-			assert.NoError(s.T(), err, "controller-manager returned error")
+			assert.NoError(t, err, "controller-manager returned error")
 		case <-time.After(defaultPollTimeout):
-			s.T().Error("timed out waiting for controller-manager to stop")
+			t.Error("timed out waiting for controller-manager to stop")
 		}
 	}
-	err := s.env.Stop()
-	if err != nil {
-		s.T().Logf("error stopping Envtest after manager exit %v", err)
+	if s.env != nil {
+		err := s.env.Stop()
+		if err != nil {
+			t.Logf("error stopping Envtest after manager exit %v", err)
+		}
 	}
 
-	err = os.Remove(s.kubeconfigPath)
-	s.NoError(err)
+	if s.kubeconfigPath != "" {
+		err := os.Remove(s.kubeconfigPath)
+		assert.NoError(t, err)
+	}
 }
 
 // TestGatewayStatus tests the Status on Gateway creation
-func (s *ControllerSuite) TestGatewayStatus() {
+func (s *ControllerSuite) TestGatewayStatus(t *testing.T) {
 	testCases := []struct {
 		name         string
 		gatewayClass string
@@ -164,8 +178,7 @@ func (s *ControllerSuite) TestGatewayStatus() {
 	}
 
 	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			t := s.T()
+		t.Run(tc.name, func(t *testing.T) {
 			r := require.New(t)
 			ctx := t.Context()
 			gwName := "test-" + tc.gatewayClass
@@ -240,17 +253,18 @@ func (s *ControllerSuite) TestGatewayStatus() {
 }
 
 // TestInvalidGatewayParameters tests that a Gateway with invalid GatewayParameters attached
-func (s *ControllerSuite) TestInvalidGatewayParameters() {
+func (s *ControllerSuite) TestInvalidGatewayParameters(t *testing.T) {
 	ctx := context.Background()
 	var gwp *kgateway.GatewayParameters
 	var gw *gwv1.Gateway
 
-	s.T().Cleanup(func() {
+	t.Cleanup(func() {
 		err := s.client.Delete(ctx, gwp)
-		s.NoError(err)
+		assert.NoError(t, err)
 		err = s.client.Delete(ctx, gw)
-		s.NoError(err)
+		assert.NoError(t, err)
 	})
+	r := require.New(t)
 
 	gwp = &kgateway.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
@@ -288,11 +302,11 @@ func (s *ControllerSuite) TestInvalidGatewayParameters() {
 		},
 	}
 	err := s.client.Create(ctx, gwp)
-	s.Require().NoError(err)
+	r.NoError(err)
 	err = s.client.Create(ctx, gw)
-	s.Require().NoError(err)
+	r.NoError(err)
 
-	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+	r.EventuallyWithT(func(c *assert.CollectT) {
 		err := s.client.Get(ctx, types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace}, gw)
 		require.NoError(c, err, "error getting Gateway")
 
@@ -305,10 +319,11 @@ func (s *ControllerSuite) TestInvalidGatewayParameters() {
 }
 
 // TestGatewayClassStatus tests the Status conditions on GatewayClass
-func (s *ControllerSuite) TestGatewayClassStatus() {
+func (s *ControllerSuite) TestGatewayClassStatus(t *testing.T) {
 	ctx := context.Background()
+	r := require.New(t)
 
-	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+	r.EventuallyWithT(func(c *assert.CollectT) {
 		gc := &gwv1.GatewayClass{}
 		err := s.client.Get(ctx, types.NamespacedName{Name: gatewayClassName}, gc)
 		require.NoError(c, err, "error getting GatewayClass")
@@ -326,7 +341,7 @@ func (s *ControllerSuite) TestGatewayClassStatus() {
 	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass to be present")
 }
 
-func (s *ControllerSuite) TestMetrics() {
+func (s *ControllerSuite) TestMetrics(t *testing.T) {
 	ctx := context.Background()
 	var gw *gwv1.Gateway
 
@@ -377,8 +392,7 @@ func (s *ControllerSuite) TestMetrics() {
 		r.Empty(probs)
 	}
 
-	s.Run("metrics generation", func() {
-		t := s.T()
+	t.Run("metrics generation", func(t *testing.T) {
 		t.Cleanup(func() {
 			err := s.client.Delete(ctx, gw)
 			assert.NoError(t, err)
@@ -456,8 +470,7 @@ func (s *ControllerSuite) TestMetrics() {
 		}})
 	})
 
-	s.Run("metrics disabled", func() {
-		t := s.T()
+	t.Run("metrics disabled", func(t *testing.T) {
 		metrics.SetActive(false)
 		oldRegistry := metrics.Registry()
 		metrics.SetRegistry(false, metrics.NewRegistry())
@@ -481,11 +494,10 @@ func (s *ControllerSuite) TestMetrics() {
 }
 
 // TestGatewayClass tests the GatewayClass controller
-func (s *ControllerSuite) TestGatewayClass() {
+func (s *ControllerSuite) TestGatewayClass(t *testing.T) {
 	ctx := context.Background()
 
-	s.Run("default GatewayClasses should be created", func() {
-		t := s.T()
+	t.Run("default GatewayClasses should be created", func(t *testing.T) {
 		r := require.New(t)
 
 		for _, gwClass := range gwClasses {
@@ -497,8 +509,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 		}
 	})
 
-	s.Run("GatewayClass owned by external controller should not be mutated", func() {
-		t := s.T()
+	t.Run("GatewayClass owned by external controller should not be mutated", func(t *testing.T) {
 		externalController := gwv1.GatewayController("external.controller/name")
 		externalGC := &gwv1.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
@@ -532,8 +543,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 		r.Equal(externalController, externalGC.Spec.ControllerName)
 	})
 
-	s.Run("default GatewayClasses should be recreated on deletion", func() {
-		t := s.T()
+	t.Run("default GatewayClasses should be recreated on deletion", func(t *testing.T) {
 		r := require.New(t)
 
 		for _, gwClass := range gwClasses {
@@ -556,8 +566,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 		}
 	})
 
-	s.Run("default GatewayClass should not be overwritten when it is updated", func() {
-		t := s.T()
+	t.Run("default GatewayClass should not be overwritten when it is updated", func(t *testing.T) {
 		r := require.New(t)
 		gwc := &gwv1.GatewayClass{}
 
@@ -583,8 +592,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s", gatewayClassName)
 	})
 
-	s.Run("default GatewayClass ParametersRef should be restored when changed", func() {
-		t := s.T()
+	t.Run("default GatewayClass ParametersRef should be restored when changed", func(t *testing.T) {
 		r := require.New(t)
 		gwc := &gwv1.GatewayClass{}
 
@@ -680,6 +688,7 @@ func generateKubeconfig(restconfig *rest.Config) (string, error) {
 }
 
 func (s *ControllerSuite) startController(
+	t *testing.T,
 	ctx context.Context,
 	cfg *rest.Config,
 	scheme *runtime.Scheme,
@@ -785,7 +794,7 @@ func (s *ControllerSuite) startController(
 
 	// Wait for manager to be ready by checking if we can list GatewayClasses
 	// This ensures the controller is fully started before tests run
-	s.EventuallyWithT(func(c *assert.CollectT) {
+	require.New(t).EventuallyWithT(func(c *assert.CollectT) {
 		var gcList gwv1.GatewayClassList
 		err := mgr.GetClient().List(ctx, &gcList)
 		assert.NoError(c, err, assert.NoError)
