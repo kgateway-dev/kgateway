@@ -233,6 +233,9 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		)
 		statussync.RegisterResource(s.statusCollections, wellknown.BackendGVK, backendPlugin.RawBackends)
 		statussync.RegisterResourceReports(s.statusCollections, backendReports)
+	} else {
+		logger.Error("backend plugin is missing RawBackends; Backend status reconciliation is disabled",
+			"group_kind", wellknown.BackendGVK.GroupKind().String())
 	}
 	s.statusWriters[wellknown.BackendGVK] = statussync.Writer[*kgateway.Backend, kgateway.BackendStatus]{
 		Name:   "backend",

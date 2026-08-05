@@ -10,6 +10,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -87,7 +88,7 @@ func TestBuildPolicyConditions(t *testing.T) {
 	})
 }
 
-func TestBuildPolicyStatusFn(t *testing.T) {
+func TestBuildDesiredPolicyStatusEmitsOnlyOwnedAncestors(t *testing.T) {
 	key := pluginreporter.PolicyKey{
 		Group:     gwv1.GroupVersion.Group,
 		Kind:      "BackendTLSPolicy",
@@ -141,22 +142,15 @@ func TestBuildPolicyStatusFn(t *testing.T) {
 		Status:     currentStatus,
 	}, "kgateway.dev/kgateway")
 	require.NotNil(t, status)
-	require.Len(t, status.Ancestors, 2)
-
-	var ours *gwv1.PolicyAncestorStatus
-	for i := range status.Ancestors {
-		if status.Ancestors[i].ControllerName == gwv1.GatewayController("kgateway.dev/kgateway") {
-			ours = &status.Ancestors[i]
-			break
-		}
-	}
-	require.NotNil(t, ours)
+	require.Len(t, status.Ancestors, 1)
+	ours := &status.Ancestors[0]
+	require.Equal(t, gwv1.GatewayController("kgateway.dev/kgateway"), ours.ControllerName)
 	require.Nil(t, findCondition(ours.Conditions, "Attached"))
 	requireCondition(t, ours.Conditions, string(gwv1.PolicyConditionAccepted), metav1.ConditionTrue, string(gwv1.PolicyReasonAccepted))
 	requireCondition(t, ours.Conditions, string(gwv1.BackendTLSPolicyConditionResolvedRefs), metav1.ConditionTrue, string(gwv1.BackendTLSPolicyReasonResolvedRefs))
 }
 
-func TestBuildPolicyStatusFnCapsAncestorsAtAPILimit(t *testing.T) {
+func TestBuildDesiredPolicyStatusLeavesAncestorCapToWriter(t *testing.T) {
 	key := pluginreporter.PolicyKey{
 		Group:     gwv1.GroupVersion.Group,
 		Kind:      "BackendTLSPolicy",
@@ -185,10 +179,10 @@ func TestBuildPolicyStatusFnCapsAncestorsAtAPILimit(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Namespace: key.Namespace, Name: key.Name},
 	}, "kgateway.dev/kgateway")
 	require.NotNil(t, status)
-	require.Len(t, status.Ancestors, reports.MaxPolicyStatusAncestors)
-	for _, ancestor := range status.Ancestors {
-		require.NotEqual(t, gwv1.ObjectName("StatusSummary"), ancestor.AncestorRef.Name)
-	}
+	require.Len(t, status.Ancestors, reports.MaxPolicyStatusAncestors+1)
+
+	merged := statussync.MergePolicyAncestorStatuses("kgateway.dev/kgateway", nil, status.Ancestors)
+	require.Len(t, merged, reports.MaxPolicyStatusAncestors)
 }
 
 func newTestPolicyAtt(name string, created time.Time) ir.PolicyAtt {

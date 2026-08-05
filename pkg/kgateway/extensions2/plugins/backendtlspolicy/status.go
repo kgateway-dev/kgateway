@@ -2,7 +2,6 @@ package backendtlspolicy
 
 import (
 	"slices"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,9 +11,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-// BuildDesiredPolicyStatus builds a BackendTLSPolicy's desired status from the merged
-// report map, preserving LastTransitionTime for unchanged conditions and ancestors owned
-// by other controllers.
+// BuildDesiredPolicyStatus builds the controller-owned portion of a BackendTLSPolicy's
+// desired status from the merged report map, preserving LastTransitionTime for unchanged
+// conditions. The status writer preserves other controllers' ancestors and enforces the
+// Gateway API ancestor limit when it merges this desired status with the live object.
 func BuildDesiredPolicyStatus(rm reports.ReportMap, pol *gwv1.BackendTLSPolicy, controller string) *gwv1.PolicyStatus {
 	key := pluginreporter.PolicyKey{
 		Group:     gwv1.GroupName,
@@ -70,29 +70,6 @@ func BuildDesiredPolicyStatus(rm reports.ReportMap, pol *gwv1.BackendTLSPolicy, 
 			ControllerName: gwv1.GatewayController(controller),
 			Conditions:     finalConditions,
 		})
-	}
-
-	for _, ancestor := range currentStatus.Ancestors {
-		if ancestor.ControllerName != gwv1.GatewayController(controller) {
-			status.Ancestors = append(status.Ancestors, ancestor)
-		}
-	}
-
-	slices.SortStableFunc(status.Ancestors, func(a, b gwv1.PolicyAncestorStatus) int {
-		return strings.Compare(reports.ParentString(a.AncestorRef), reports.ParentString(b.AncestorRef))
-	})
-
-	if len(status.Ancestors) > reports.MaxPolicyStatusAncestors {
-		// Gateway API caps PolicyStatus.ancestors at 16 real entries. We can't
-		// invent a synthetic ancestor entry here, so log the truncation explicitly.
-		logger.Warn(
-			"truncating BackendTLSPolicy status ancestors to Gateway API limit",
-			"policy", key.DisplayString(),
-			"controller", controller,
-			"total_ancestors", len(status.Ancestors),
-			"dropped_ancestors", len(status.Ancestors)-reports.MaxPolicyStatusAncestors,
-		)
-		status.Ancestors = status.Ancestors[:reports.MaxPolicyStatusAncestors]
 	}
 
 	return &status
