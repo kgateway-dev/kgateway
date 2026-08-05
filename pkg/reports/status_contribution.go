@@ -260,14 +260,6 @@ func MergeStatusContributions(contributions []StatusContribution) ReportMap {
 	return reportMap
 }
 
-// ReportMap materializes a compact fragment only when a status writer needs
-// the legacy status-builder input.
-func (r StatusReport) ReportMap(target StatusTarget) ReportMap {
-	reportMap := NewReportMap()
-	r.addToReportMap(reportMap, target)
-	return reportMap
-}
-
 func (r StatusReport) addToReportMap(reportMap ReportMap, target StatusTarget) {
 	switch {
 	case r.Gateway != nil:

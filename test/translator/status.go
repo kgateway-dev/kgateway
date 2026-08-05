@@ -198,7 +198,7 @@ func buildPolicyStatus(
 			},
 			Status: currentStatus,
 		}
-		return backendtlspolicy.BuildDesiredPolicyStatus(reportsMap, pol, wellknown.DefaultGatewayControllerName)
+		return backendtlspolicy.BuildDesiredPolicyStatus(reportsMap.PolicyReport(policyKey), pol, wellknown.DefaultGatewayControllerName)
 	}
 
 	return reportsMap.BuildPolicyStatus(context.Background(), policyKey, wellknown.DefaultGatewayControllerName, currentStatus)

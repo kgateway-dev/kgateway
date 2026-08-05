@@ -7,23 +7,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // BuildDesiredPolicyStatus builds the controller-owned portion of a BackendTLSPolicy's
-// desired status from the merged report map, preserving LastTransitionTime for unchanged
+// desired status from its typed report fragment, preserving LastTransitionTime for unchanged
 // conditions. The status writer preserves other controllers' ancestors and enforces the
 // Gateway API ancestor limit when it merges this desired status with the live object.
-func BuildDesiredPolicyStatus(rm reports.ReportMap, pol *gwv1.BackendTLSPolicy, controller string) *gwv1.PolicyStatus {
-	key := pluginreporter.PolicyKey{
-		Group:     gwv1.GroupName,
-		Kind:      "BackendTLSPolicy",
-		Namespace: pol.GetNamespace(),
-		Name:      pol.GetName(),
-	}
+func BuildDesiredPolicyStatus(report *reports.PolicyReport, pol *gwv1.BackendTLSPolicy, controller string) *gwv1.PolicyStatus {
 	currentStatus := pol.Status
-	report := rm.Policies[key]
 	if report == nil {
 		return nil
 	}

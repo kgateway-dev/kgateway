@@ -58,6 +58,11 @@ func (r *ReportMap) policy(key reporter.PolicyKey) *PolicyReport {
 	return r.Policies[key]
 }
 
+// PolicyReport returns the report for a policy, or nil if no report is present.
+func (r *ReportMap) PolicyReport(key reporter.PolicyKey) *PolicyReport {
+	return r.policy(key)
+}
+
 func (r *ReportMap) newPolicyReport(key reporter.PolicyKey, observedGeneration int64) *PolicyReport {
 	pr := &PolicyReport{
 		observedGeneration: observedGeneration,
@@ -108,7 +113,17 @@ func (r *ReportMap) BuildPolicyStatus(
 	controller string,
 	currentStatus gwv1.PolicyStatus,
 ) *gwv1.PolicyStatus {
-	report := r.policy(key)
+	return BuildPolicyStatus(ctx, r.policy(key), key, controller, currentStatus)
+}
+
+// BuildPolicyStatus builds a Policy status directly from its typed report fragment.
+func BuildPolicyStatus(
+	ctx context.Context,
+	report *PolicyReport,
+	key reporter.PolicyKey,
+	controller string,
+	currentStatus gwv1.PolicyStatus,
+) *gwv1.PolicyStatus {
 	if report == nil {
 		// no report for this policy
 		return nil

@@ -23,16 +23,15 @@ import (
 )
 
 // BuildDesiredPolicyStatusFn builds the desired PolicyStatus for one policy object from
-// the merged report map, returning nil when the object has no report (in which case no
-// status is written).
-type BuildDesiredPolicyStatusFn[T controllers.ComparableObject] func(rm reports.ReportMap, pol T, controllerName string) *gwv1.PolicyStatus
+// its typed report fragment, returning nil when the object has no report.
+type BuildDesiredPolicyStatusFn[T controllers.ComparableObject] func(report *reports.PolicyReport, pol T, controllerName string) *gwv1.PolicyStatus
 
 // RegisterPolicyStatus returns a PolicyPlugin.RegisterPolicyStatus hook for a policy CRD
 // whose status is a standard gwv1.PolicyStatus. It derives a per-object desired-status
 // source and registers a writer that builds from the latest merged policy report, merging
 // ancestors owned by other controllers at write time.
 //
-// buildDesired may be nil, in which case the standard ReportMap.BuildPolicyStatus is used.
+// buildDesired may be nil, in which case the standard typed policy status builder is used.
 func RegisterPolicyStatus[T controllers.ComparableObject](
 	gvk schema.GroupVersionKind,
 	col krt.Collection[T],
@@ -46,14 +45,14 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 	// builders (e.g. BackendTLSPolicy) own their condition semantics.
 	defaultBuild := buildDesired == nil
 	if buildDesired == nil {
-		buildDesired = func(rm reports.ReportMap, pol T, controllerName string) *gwv1.PolicyStatus {
+		buildDesired = func(report *reports.PolicyReport, pol T, controllerName string) *gwv1.PolicyStatus {
 			key := reporter.PolicyKey{
 				Group:     gvk.Group,
 				Kind:      gvk.Kind,
 				Namespace: pol.GetNamespace(),
 				Name:      pol.GetName(),
 			}
-			return rm.BuildPolicyStatus(context.Background(), key, controllerName, getStatus(pol))
+			return reports.BuildPolicyStatus(context.Background(), report, key, controllerName, getStatus(pol))
 		}
 	}
 	return func(in pluginsdk.PolicyStatusInputs) {
@@ -83,11 +82,7 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 				if rw == nil {
 					return gwv1.PolicyStatus{}, false
 				}
-				reportMap := rw.Report.ReportMap(reports.StatusTarget{
-					GroupVersionKind: rw.Resource.GroupVersionKind,
-					NamespacedName:   rw.Resource.NamespacedName,
-				})
-				status := buildDesired(reportMap, pol, controllerName)
+				status := buildDesired(rw.Report.Policy, pol, controllerName)
 				if status == nil {
 					// Merge will clear only ancestors owned by this controller.
 					return gwv1.PolicyStatus{}, true

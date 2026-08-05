@@ -41,7 +41,11 @@ const (
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
 
 func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
-	gwReport := r.GatewayNamespaceName(key(&gw))
+	return BuildGWStatus(ctx, r.GatewayNamespaceName(key(&gw)), gw, attachedRoutes)
+}
+
+// BuildGWStatus builds a Gateway status directly from its typed report fragment.
+func BuildGWStatus(ctx context.Context, gwReport *GatewayReport, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
 	if gwReport == nil {
 		return nil
 	}
@@ -270,7 +274,11 @@ func shouldPreserveGatewayCondition(condition metav1.Condition, finalConditions 
 }
 
 func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
-	lsReport := r.ListenerSet(&ls)
+	return BuildListenerSetStatus(ctx, r.ListenerSet(&ls), ls)
+}
+
+// BuildListenerSetStatus builds a ListenerSet status directly from its typed report fragment.
+func BuildListenerSetStatus(ctx context.Context, lsReport *ListenerSetReport, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
 	if lsReport == nil {
 		return nil
 	}
@@ -401,7 +409,15 @@ func (r *ReportMap) BuildBackendStatus(
 	obj metav1.Object,
 	currentStatus kgateway.BackendStatus,
 ) *kgateway.BackendStatus {
-	report := r.backend(obj)
+	return BuildBackendStatus(ctx, r.backend(obj), currentStatus)
+}
+
+// BuildBackendStatus builds a Backend status directly from its typed report fragment.
+func BuildBackendStatus(
+	ctx context.Context,
+	report *BackendReport,
+	currentStatus kgateway.BackendStatus,
+) *kgateway.BackendStatus {
 	if report == nil {
 		return nil
 	}
@@ -456,7 +472,7 @@ func (r *ReportMap) BuildRouteStatus(
 	obj client.Object,
 	controller string,
 ) *gwv1.RouteStatus {
-	return r.BuildRouteStatusWithParentRefDefaulting(ctx, obj, controller, false)
+	return BuildRouteStatus(ctx, r.route(obj), obj, controller)
 }
 
 func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
@@ -465,7 +481,28 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 	controller string,
 	defaultParentRef bool,
 ) *gwv1.RouteStatus {
-	routeReport := r.route(obj)
+	return BuildRouteStatusWithParentRefDefaulting(ctx, r.route(obj), obj, controller, defaultParentRef)
+}
+
+// BuildRouteStatus builds a Route status directly from its typed report fragment.
+func BuildRouteStatus(
+	ctx context.Context,
+	routeReport *RouteReport,
+	obj client.Object,
+	controller string,
+) *gwv1.RouteStatus {
+	return BuildRouteStatusWithParentRefDefaulting(ctx, routeReport, obj, controller, false)
+}
+
+// BuildRouteStatusWithParentRefDefaulting builds a Route status directly from its typed
+// report fragment and optionally defaults parent reference fields.
+func BuildRouteStatusWithParentRefDefaulting(
+	ctx context.Context,
+	routeReport *RouteReport,
+	obj client.Object,
+	controller string,
+	defaultParentRef bool,
+) *gwv1.RouteStatus {
 	if routeReport == nil {
 		logger.Info("missing route report", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 		return nil
