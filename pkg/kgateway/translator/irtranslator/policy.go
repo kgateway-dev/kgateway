@@ -151,6 +151,11 @@ func addRouteSourceMetadata(in ir.HttpRouteRuleMatchIR, metadata *envoycorev3.Me
 		// This way, the same field can be used for named and unnamed rules without risk of conflict.
 		fields["rule"] = structpb.NewStringValue(fmt.Sprintf("_rule-%d", in.RuleIndex))
 	}
+	// Gate on unique name being set because default value (0) is a valid index
+	if in.Name != "" {
+		// Use string value so all fields are strings and because struct number type is floating point.
+		fields["match"] = structpb.NewStringValue(fmt.Sprintf("_match-%d", in.MatchIndex))
+	}
 
 	if len(fields) == 0 {
 		return metadata

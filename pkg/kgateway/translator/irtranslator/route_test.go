@@ -545,6 +545,7 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 				"name":      "test-route",
 				"namespace": "default",
 				"rule":      "test-rule",
+				"match":     "_match-2",
 			},
 		},
 		{
@@ -568,6 +569,7 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 				"name":      "test-route",
 				"namespace": "default",
 				"rule":      "_rule-1",
+				"match":     "_match-2",
 			},
 		},
 		{
@@ -719,6 +721,7 @@ func TestRouteSourceMetadataFlag(t *testing.T) {
 			assert.Equal(t, "my-route", fields["name"].GetStringValue())
 			assert.Equal(t, "default", fields["namespace"].GetStringValue())
 			assert.Equal(t, "_rule-0", fields["rule"].GetStringValue())
+			assert.Equal(t, "_match-0", fields["match"].GetStringValue())
 		})
 	}
 }
