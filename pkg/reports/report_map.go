@@ -6,58 +6,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
-
-// MergeReportMaps returns a report map owned by the caller. The returned reports
-// do not alias the input report objects, so later status rendering can safely
-// mutate the merged map without writing into source
-// contributions.
-func MergeReportMaps(inputs ...ReportMap) ReportMap {
-	merged := NewReportMap()
-	for _, input := range inputs {
-		for key, report := range input.Gateways {
-			merged.Gateways[key] = cloneGatewayReport(report)
-		}
-		for gvk, reportsByName := range input.ListenerSets {
-			if merged.ListenerSets[gvk] == nil {
-				merged.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport, len(reportsByName))
-			}
-			for key, report := range reportsByName {
-				merged.ListenerSets[gvk][key] = cloneListenerSetReport(report)
-			}
-		}
-		mergeRouteReportMap(merged.HTTPRoutes, input.HTTPRoutes)
-		mergeRouteReportMap(merged.GRPCRoutes, input.GRPCRoutes)
-		mergeRouteReportMap(merged.TCPRoutes, input.TCPRoutes)
-		mergeRouteReportMap(merged.TLSRoutes, input.TLSRoutes)
-		for key, report := range input.Policies {
-			existing := merged.Policies[key]
-			if existing == nil {
-				merged.Policies[key] = clonePolicyReport(report)
-				continue
-			}
-			mergeAncestorReports(existing, report)
-		}
-		for key, report := range input.Backends {
-			merged.Backends[key] = cloneBackendReport(report)
-		}
-	}
-	return merged
-}
-
-func mergeRouteReportMap(dst, src map[types.NamespacedName]*RouteReport) {
-	for key, report := range src {
-		existing := dst[key]
-		if existing == nil {
-			dst[key] = cloneRouteReport(report)
-			continue
-		}
-		mergeParentReports(existing, report)
-	}
-}
 
 func mergeParentReports(dst, src *RouteReport) {
 	if dst == nil || src == nil {
@@ -183,28 +133,6 @@ func cloneBackendReport(in *BackendReport) *BackendReport {
 		Conditions:         slices.Clone(in.Conditions),
 		observedGeneration: in.observedGeneration,
 	}
-}
-
-// EqualReportMaps compares report maps by semantic report contents rather than
-// report pointer identity. LastTransitionTime is intentionally ignored so
-// timestamp-only status changes do not cause KRT churn.
-func EqualReportMaps(a, b ReportMap) bool {
-	return maps.EqualFunc(a.Gateways, b.Gateways, gatewayReportEqual) &&
-		listenerSetMapsEqual(a.ListenerSets, b.ListenerSets) &&
-		maps.EqualFunc(a.HTTPRoutes, b.HTTPRoutes, routeReportEqual) &&
-		maps.EqualFunc(a.GRPCRoutes, b.GRPCRoutes, routeReportEqual) &&
-		maps.EqualFunc(a.TCPRoutes, b.TCPRoutes, routeReportEqual) &&
-		maps.EqualFunc(a.TLSRoutes, b.TLSRoutes, routeReportEqual) &&
-		maps.EqualFunc(a.Policies, b.Policies, policyReportEqual) &&
-		maps.EqualFunc(a.Backends, b.Backends, backendReportEqual)
-}
-
-func listenerSetMapsEqual(
-	a, b map[schema.GroupVersionKind]map[types.NamespacedName]*ListenerSetReport,
-) bool {
-	return maps.EqualFunc(a, b, func(a, b map[types.NamespacedName]*ListenerSetReport) bool {
-		return maps.EqualFunc(a, b, listenerSetReportEqual)
-	})
 }
 
 func gatewayReportEqual(a, b *GatewayReport) bool {

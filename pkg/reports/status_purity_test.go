@@ -161,57 +161,6 @@ func TestBuildListenerSetStatusDoesNotMutateReportMapEntry(t *testing.T) {
 	require.Equal(t, before, lsr, "BuildListenerSetStatus must not mutate ListenerSetReport")
 }
 
-func TestMergeReportMapsOwnsRouteAndPolicyReports(t *testing.T) {
-	routeKey := types.NamespacedName{Namespace: "default", Name: "route"}
-	policyKey := pluginreporter.PolicyKey{Group: "example.com", Kind: "Policy", Namespace: "default", Name: "policy"}
-
-	first := NewReportMap()
-	firstReporter := NewReporter(&first)
-	firstRoute := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Namespace: routeKey.Namespace, Name: routeKey.Name}}
-	firstParent := gwv1.ParentReference{Name: "gw-a"}
-	firstReporter.Route(firstRoute).ParentRef(&firstParent).SetCondition(pluginreporter.RouteCondition{
-		Type:   gwv1.RouteConditionAccepted,
-		Status: metav1.ConditionTrue,
-		Reason: gwv1.RouteReasonAccepted,
-	})
-	firstAncestor := gwv1.ParentReference{Name: "policy-gw-a"}
-	firstReporter.Policy(policyKey, 1).AncestorRef(firstAncestor).SetCondition(pluginreporter.PolicyCondition{
-		Type:   string(shared.PolicyConditionAccepted),
-		Status: metav1.ConditionTrue,
-		Reason: string(shared.PolicyReasonValid),
-	})
-
-	second := NewReportMap()
-	secondReporter := NewReporter(&second)
-	secondRoute := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Namespace: routeKey.Namespace, Name: routeKey.Name}}
-	secondParent := gwv1.ParentReference{Name: "gw-b"}
-	secondReporter.Route(secondRoute).ParentRef(&secondParent).SetCondition(pluginreporter.RouteCondition{
-		Type:   gwv1.RouteConditionResolvedRefs,
-		Status: metav1.ConditionTrue,
-		Reason: gwv1.RouteReasonResolvedRefs,
-	})
-	secondAncestor := gwv1.ParentReference{Name: "policy-gw-b"}
-	secondReporter.Policy(policyKey, 1).AncestorRef(secondAncestor).SetAttachmentState(pluginreporter.PolicyAttachmentStateAttached)
-
-	merged := MergeReportMaps(first, second)
-	require.Len(t, merged.HTTPRoutes[routeKey].Parents, 2)
-	require.Len(t, merged.Policies[policyKey].Ancestors, 2)
-
-	for _, parent := range merged.HTTPRoutes[routeKey].Parents {
-		parent.Conditions = append(parent.Conditions, metav1.Condition{Type: "mutated"})
-		break
-	}
-	for _, ancestor := range merged.Policies[policyKey].Ancestors {
-		ancestor.Conditions = append(ancestor.Conditions, metav1.Condition{Type: "mutated"})
-		break
-	}
-
-	require.NotContains(t, conditionTypesFromParents(first.HTTPRoutes[routeKey]), "mutated")
-	require.NotContains(t, conditionTypesFromParents(second.HTTPRoutes[routeKey]), "mutated")
-	require.NotContains(t, conditionTypesFromAncestors(first.Policies[policyKey]), "mutated")
-	require.NotContains(t, conditionTypesFromAncestors(second.Policies[policyKey]), "mutated")
-}
-
 func slicesCloneConditions(in []metav1.Condition) []metav1.Condition {
 	return append([]metav1.Condition(nil), in...)
 }
@@ -240,24 +189,4 @@ func requireConditionForTest(t *testing.T, conditions []metav1.Condition, condit
 		}
 	}
 	t.Fatalf("expected condition %q", conditionType)
-}
-
-func conditionTypesFromParents(rr *RouteReport) []string {
-	var out []string
-	for _, parent := range rr.Parents {
-		for _, condition := range parent.Conditions {
-			out = append(out, condition.Type)
-		}
-	}
-	return out
-}
-
-func conditionTypesFromAncestors(pr *PolicyReport) []string {
-	var out []string
-	for _, ancestor := range pr.Ancestors {
-		for _, condition := range ancestor.Conditions {
-			out = append(out, condition.Type)
-		}
-	}
-	return out
 }

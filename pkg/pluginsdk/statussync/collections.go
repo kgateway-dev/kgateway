@@ -58,29 +58,6 @@ func NewResourceReports[I controllers.Object](
 	}, opts...)
 }
 
-// ReportsWrapper wraps a merged reports.ReportMap as a krt singleton value so
-// derived status collections can Fetch it.
-type ReportsWrapper struct {
-	// lower case so krt doesn't error in debug handler
-	reports reports.ReportMap
-}
-
-func NewReportsWrapper(rm reports.ReportMap) ReportsWrapper {
-	return ReportsWrapper{reports: rm}
-}
-
-func (r ReportsWrapper) Reports() reports.ReportMap {
-	return r.reports
-}
-
-func (r ReportsWrapper) ResourceName() string {
-	return "report"
-}
-
-func (r ReportsWrapper) Equals(in ReportsWrapper) bool {
-	return reports.EqualReportMaps(r.reports, in.reports)
-}
-
 // StatusRegistration attaches a source handler that feeds the given queue. It is invoked
 // when status writing becomes enabled on the leader.
 type StatusRegistration = func(statusWriter WorkerQueue) krt.HandlerRegistration
@@ -193,35 +170,6 @@ func RegisterResourceReports(s *StatusCollections, col krt.Collection[ResourceRe
 				return
 			}
 			statusWriter.Push(event.Latest().Resource)
-		})
-	})
-}
-
-// RegisterReports registers a report singleton as a reconciliation source. Initial Add
-// events are skipped because RegisterResource replays every current object when leadership
-// is acquired. On later report changes, changedResources returns only the object identities
-// whose report fragments changed.
-func RegisterReports(
-	s *StatusCollections,
-	reportCol krt.Collection[ReportsWrapper],
-	changedResources func(old, current reports.ReportMap) []Resource,
-) {
-	s.Register(func(statusWriter WorkerQueue) krt.HandlerRegistration {
-		return reportCol.Register(func(o krt.Event[ReportsWrapper]) {
-			if o.Event == controllers.EventAdd {
-				return
-			}
-			oldReports := reports.NewReportMap()
-			if o.Old != nil {
-				oldReports = o.Old.Reports()
-			}
-			currentReports := reports.NewReportMap()
-			if o.New != nil {
-				currentReports = o.New.Reports()
-			}
-			for _, res := range changedResources(oldReports, currentReports) {
-				statusWriter.Push(res)
-			}
 		})
 	})
 }
