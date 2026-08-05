@@ -3,6 +3,7 @@ package reports
 import (
 	"cmp"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 
@@ -195,12 +196,18 @@ func ReduceStatusContributions(contributions []StatusContribution) StatusReport 
 	ordered := slices.Clone(contributions)
 	slices.SortStableFunc(ordered, compareStatusContributions)
 	var reduced StatusReport
+	var gatewaySource, listenerSetSource, backendSource StatusSource
+	var hasGateway, hasListenerSet, hasBackend bool
 	for _, contribution := range ordered {
 		switch {
 		case contribution.Gateway != nil:
+			warnOnMultipleSingleWriterContributions("Gateway", contribution, gatewaySource, hasGateway)
 			reduced.Gateway = cloneGatewayReport(contribution.Gateway)
+			gatewaySource, hasGateway = contribution.Source, true
 		case contribution.ListenerSet != nil:
+			warnOnMultipleSingleWriterContributions("ListenerSet", contribution, listenerSetSource, hasListenerSet)
 			reduced.ListenerSet = cloneListenerSetReport(contribution.ListenerSet)
+			listenerSetSource, hasListenerSet = contribution.Source, true
 		case contribution.Route != nil:
 			if reduced.Route == nil {
 				reduced.Route = cloneRouteReport(contribution.Route)
@@ -214,10 +221,29 @@ func ReduceStatusContributions(contributions []StatusContribution) StatusReport 
 				mergeAncestorReports(reduced.Policy, contribution.Policy)
 			}
 		case contribution.Backend != nil:
+			warnOnMultipleSingleWriterContributions("Backend", contribution, backendSource, hasBackend)
 			reduced.Backend = cloneBackendReport(contribution.Backend)
+			backendSource, hasBackend = contribution.Source, true
 		}
 	}
 	return reduced
+}
+
+// Gateway, ListenerSet, and Backend reports are complete owner snapshots, not
+// independently keyed facts like route parents or policy ancestors. Their
+// current producers are therefore intentionally single-writer. Keep the
+// deterministic last-writer behavior for resilience, but make any violation of
+// that topology visible rather than silently discarding one producer's report.
+func warnOnMultipleSingleWriterContributions(kind string, replacement StatusContribution, previous StatusSource, hasPrevious bool) {
+	if !hasPrevious {
+		return
+	}
+	slog.Warn("multiple status contributions for single-writer report kind; replacing earlier contribution",
+		"report_kind", kind,
+		"target", replacement.Target.Key().String(),
+		"previous_source", previous.String(),
+		"replacement_source", replacement.Source.String(),
+	)
 }
 
 // MergeStatusContributions combines contributions across any number of targets

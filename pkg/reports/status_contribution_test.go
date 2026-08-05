@@ -10,6 +10,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 func TestStatusContributionsFromReportMapSplitsAndTransfersOwnership(t *testing.T) {
@@ -40,4 +41,23 @@ func TestStatusKeyIsVersionIndependent(t *testing.T) {
 		NamespacedName:   nn,
 	}
 	require.Equal(t, v1.Key(), v1beta1.Key())
+}
+
+func TestReduceStatusContributionsMergesPolicyAncestorsAcrossSources(t *testing.T) {
+	policy := reporter.PolicyKey{Group: "example.io", Kind: "Policy", Namespace: "default", Name: "policy"}
+	gw := ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw"}}
+	backend := ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "backend"}}
+
+	gatewayReport := NewReportMap()
+	gatewayReport.Policies[policy] = &PolicyReport{Ancestors: map[ParentRefKey]*AncestorRefReport{gw: {}}}
+	backendReport := NewReportMap()
+	backendReport.Policies[policy] = &PolicyReport{Ancestors: map[ParentRefKey]*AncestorRefReport{backend: {}}}
+
+	contributions := append(
+		StatusContributionsFromReportMap(StatusSource{Kind: GatewayStatusSource, Name: "default/gw"}, gatewayReport),
+		StatusContributionsFromReportMap(StatusSource{Kind: BackendPolicyStatusSource, Name: "default/backend"}, backendReport)...,
+	)
+	reduced := ReduceStatusContributions(contributions)
+
+	require.Equal(t, map[ParentRefKey]*AncestorRefReport{gw: {}, backend: {}}, reduced.Policy.Ancestors)
 }
