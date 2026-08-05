@@ -109,8 +109,9 @@ func NewCommonCollections(
 	secretClient := kclient.NewFiltered[*corev1.Secret](
 		client,
 		kclient.Filter{
-			FieldSelector: apiclient.SecretsFieldSelector,
-			ObjectFilter:  client.ObjectFilter(),
+			FieldSelector:   apiclient.SecretsFieldSelector,
+			ObjectFilter:    client.ObjectFilter(),
+			ObjectTransform: apiclient.StripUnusedMetadata,
 		},
 	)
 	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(krtOptions.Stop), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
@@ -163,7 +164,13 @@ func NewCommonCollections(
 
 	cmClient := kclient.NewFiltered[*corev1.ConfigMap](
 		client,
-		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+		// Keep this Filter in sync with the ConfigMap client in
+		// pkg/kgateway/controller/gw_controller.go: both resolve to the same shared
+		// informer, and whichever registers first supplies the ObjectTransform.
+		kclient.Filter{
+			ObjectFilter:    client.ObjectFilter(),
+			ObjectTransform: apiclient.StripUnusedMetadata,
+		},
 	)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 

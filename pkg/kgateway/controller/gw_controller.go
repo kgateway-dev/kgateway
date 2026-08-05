@@ -31,6 +31,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -77,6 +78,14 @@ func NewGatewayReconciler(
 	controllerExtension pluginsdk.GatewayControllerExtension,
 ) *gatewayReconciler {
 	filter := kclient.Filter{ObjectFilter: cfg.Client.ObjectFilter()}
+	// ConfigMaps resolve to the same shared informer as the ConfigMap collection in
+	// pkg/pluginsdk/collections, and whichever registers first supplies the
+	// ObjectTransform. Set it here too so the cache is stripped deterministically
+	// regardless of construction order.
+	configMapFilter := kclient.Filter{
+		ObjectFilter:    cfg.Client.ObjectFilter(),
+		ObjectTransform: apiclient.StripUnusedMetadata,
+	}
 	r := &gatewayReconciler{
 		deployer:            deployer,
 		gwParams:            gwParams,
@@ -90,7 +99,7 @@ func NewGatewayReconciler(
 		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, filter),
 		deploymentClient: kclient.NewFiltered[*appsv1.Deployment](cfg.Client, filter),
 		svcAccountClient: kclient.NewFiltered[*corev1.ServiceAccount](cfg.Client, filter),
-		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, filter),
+		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, configMapFilter),
 	}
 
 	// Reuse the parameter client from the deployer to avoid duplicate watches.
