@@ -28,7 +28,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -37,7 +36,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
@@ -216,21 +214,12 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("ListenerPolicy")...)
 	gk := kgwwellknown.ListenerPolicyGVK.GroupKind()
 
-	policyStatusMarker, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *kgateway.ListenerPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.ListenerPolicy) *ir.PolicyWrapper {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
 			Namespace: i.Namespace,
 			Name:      i.Name,
-		}
-
-		// Create status marker if existing status has kgateway controller
-		var statusMarker *krtcollections.StatusMarker
-		for _, ancestor := range i.Status.Ancestors {
-			if string(ancestor.ControllerName) == commoncol.ControllerName {
-				statusMarker = &krtcollections.StatusMarker{}
-				break
-			}
 		}
 
 		polIr, errs := newListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &i.Spec, objSrc)
@@ -242,35 +231,14 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			Errors:       errs,
 		}
 
-		return statusMarker, pol
+		return pol
 	}, commoncol.KrtOpts.ToOptions("ListenerPolicyWrapper")...)
-
-	// processMarkers for policies that have existing status but no current report
-	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
-		objStatus := krt.Fetch(kctx, policyStatusMarker)
-		for _, status := range objStatus {
-			policyKey := reporter.PolicyKey{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: status.Obj.GetNamespace(),
-				Name:      status.Obj.GetName(),
-			}
-
-			// Add empty status to clear stale status for policies with no valid targets
-			if reportMap.Policies[policyKey] == nil {
-				rp := reports.NewReporter(reportMap)
-				// create empty policy report entry with no ancestor refs
-				rp.Policy(policyKey, 0)
-			}
-		}
-	}
 	return sdk.Plugin{
 		ExtraHasSynced: col.HasSynced,
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			kgwwellknown.ListenerPolicyGVK.GroupKind(): {
-				NewGatewayTranslationPass:       NewGatewayTranslationPass,
-				Policies:                        policyCol,
-				ProcessPolicyStaleStatusMarkers: processMarkers,
+				NewGatewayTranslationPass: NewGatewayTranslationPass,
+				Policies:                  policyCol,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
 					kgwwellknown.ListenerPolicyGVK,
 					col,

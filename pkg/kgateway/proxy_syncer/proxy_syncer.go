@@ -262,12 +262,6 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		backends := krt.Fetch(kctx, finalBackendsWithPolicyStatus)
 		merged := GenerateBackendPolicyReport(backends, excludedPolicyKinds)
 
-		for _, plugin := range s.plugins.ContributesPolicies {
-			if plugin.ProcessPolicyStaleStatusMarkers != nil && plugin.ProcessBackend != nil && !plugin.PolicyStatusFromGatewayReports {
-				plugin.ProcessPolicyStaleStatusMarkers(kctx, &merged)
-			}
-		}
-
 		w := statussync.NewReportsWrapper(merged)
 		return &w
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
@@ -300,15 +294,6 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		proxies := krt.Fetch(kctx, s.mostXdsSnapshots)
 
 		merged := mergeProxyReports(proxies)
-
-		// Process status markers
-		s.commonCols.Routes.ProcessRouteStatusMarkers(kctx, merged)
-
-		for _, plugin := range s.plugins.ContributesPolicies {
-			if plugin.ProcessPolicyStaleStatusMarkers != nil && (plugin.ProcessBackend == nil || plugin.PolicyStatusFromGatewayReports) {
-				plugin.ProcessPolicyStaleStatusMarkers(kctx, &merged)
-			}
-		}
 
 		w := statussync.NewReportsWrapper(merged)
 		return &w
