@@ -29,15 +29,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -154,19 +151,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
 	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
 
-	policyStatusMarker, backendConfigPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, b *kgateway.BackendConfigPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	backendConfigPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, b *kgateway.BackendConfigPolicy) *ir.PolicyWrapper {
 		policyIR, errs := translate(commoncol, krtctx, b)
 		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			errs = append(errs, err)
-		}
-
-		// Create status marker if existing status has kgateway controller
-		var statusMarker *krtcollections.StatusMarker
-		for _, ancestor := range b.Status.Ancestors {
-			if string(ancestor.ControllerName) == commoncol.ControllerName {
-				statusMarker = &krtcollections.StatusMarker{}
-				break
-			}
 		}
 
 		pol := &ir.PolicyWrapper{
@@ -182,39 +170,18 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 			Errors:     errs,
 		}
 
-		return statusMarker, pol
+		return pol
 	})
-
-	// processMarkers for policies that have existing status but no current report
-	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
-		objStatus := krt.Fetch(kctx, policyStatusMarker)
-		for _, status := range objStatus {
-			policyKey := reporter.PolicyKey{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: status.Obj.GetNamespace(),
-				Name:      status.Obj.GetName(),
-			}
-
-			// Add empty status to clear stale status for policies with no valid targets
-			if reportMap.Policies[policyKey] == nil {
-				rp := reports.NewReporter(reportMap)
-				// create empty policy report entry with no ancestor refs
-				rp.Policy(policyKey, 0)
-			}
-		}
-	}
 
 	endpointPlugin := &backendConfigEndpointPlugin{}
 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
-				Name:                            "BackendConfigPolicy",
-				Policies:                        backendConfigPolicyCol,
-				ProcessPolicyStaleStatusMarkers: processMarkers,
-				ProcessBackend:                  processBackend,
-				PerClientProcessEndpoints:       endpointPlugin.processEndpoints,
+				Name:                      "BackendConfigPolicy",
+				Policies:                  backendConfigPolicyCol,
+				ProcessBackend:            processBackend,
+				PerClientProcessEndpoints: endpointPlugin.processEndpoints,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
 				},

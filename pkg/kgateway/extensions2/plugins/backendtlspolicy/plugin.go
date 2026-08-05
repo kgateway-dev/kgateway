@@ -32,9 +32,7 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 var logger = logging.New("plugin/backendtlspolicy")
@@ -97,17 +95,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 	translate := buildTranslateFunc(commoncol.ConfigMaps.Collection(), commoncol.Secrets)
 
-	policyStatusMarker, tlsPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		tlsPolicyIR, err := translate(krtctx, i)
-
-		// Create status marker if existing status has kgateway controller
-		var statusMarker *krtcollections.StatusMarker
-		for _, ancestor := range i.Status.Ancestors {
-			if string(ancestor.ControllerName) == kgwellknown.DefaultGatewayControllerName {
-				statusMarker = &krtcollections.StatusMarker{}
-				break
-			}
-		}
 
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -123,37 +112,16 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		if err != nil {
 			pol.Errors = []error{err}
 		}
-		return statusMarker, pol
+		return pol
 	})
-
-	// processMarkers for policies that have existing status but no current report
-	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
-		objStatus := krt.Fetch(kctx, policyStatusMarker)
-		for _, status := range objStatus {
-			policyKey := reporter.PolicyKey{
-				Group:     backendTlsPolicyGroupKind.Group,
-				Kind:      backendTlsPolicyGroupKind.Kind,
-				Namespace: status.Obj.GetNamespace(),
-				Name:      status.Obj.GetName(),
-			}
-
-			// Add empty status to clear stale status for policies with no valid targets
-			if reportMap.Policies[policyKey] == nil {
-				rp := reports.NewReporter(reportMap)
-				// create empty policy report entry with no ancestor refs
-				rp.Policy(policyKey, 0)
-			}
-		}
-	}
 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			backendTlsPolicyGroupKind.GroupKind(): {
-				Name:                            "BackendTLSPolicy",
-				Policies:                        tlsPolicyCol,
-				ProcessPolicyStaleStatusMarkers: processMarkers,
-				ProcessBackend:                  processBackend,
-				MergePolicies:                   MergePolicies,
+				Name:           "BackendTLSPolicy",
+				Policies:       tlsPolicyCol,
+				ProcessBackend: processBackend,
+				MergePolicies:  MergePolicies,
 				RegisterPolicyStatus: tlsutils.RegisterPolicyStatus(
 					kgwellknown.BackendTLSPolicyGVK,
 					col,
