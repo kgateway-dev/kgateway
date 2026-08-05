@@ -38,6 +38,8 @@ type HttpRouteRuleMatchIR struct {
 	Match      gwv1.HTTPRouteMatch
 	MatchIndex int
 	Name       string
+	// RuleIndex is the position of the route rule in the Gateway API resource's rules slice
+	RuleIndex int
 	// RuleName is the user-authored name of the route rule (Gateway API
 	// rule.name), or empty if the rule is unnamed. Unlike Name, it is not made
 	// unique per match; it is surfaced for user-facing features such as the

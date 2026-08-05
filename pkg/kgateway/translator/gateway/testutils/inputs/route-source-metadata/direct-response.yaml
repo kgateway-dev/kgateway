@@ -40,3 +40,10 @@ spec:
           name: direct-response
           group: gateway.kgateway.dev
           kind: DirectResponse
+    # explicitly unnamed rule
+    - filters:
+        - type: ExtensionRef
+          extensionRef:
+            name: direct-response
+            group: gateway.kgateway.dev
+            kind: DirectResponse

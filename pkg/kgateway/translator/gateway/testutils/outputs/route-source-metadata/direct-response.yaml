@@ -50,8 +50,25 @@ Routes:
             kind: HTTPRoute
             name: example
             namespace: default
-            rule: httproute-example-default-0-0-direct-response-rule
+            rule: direct-response-rule
       name: listener~8080~example_com-route-0-httproute-example-default-0-0-direct-response-rule-matcher-0
+    - directResponse:
+        body:
+          inlineString: |
+            User-agent: *
+            Disallow: /direct-response
+        status: 510
+      match:
+        prefix: /
+      metadata:
+        filterMetadata:
+          dev.kgateway.route_source:
+            group: gateway.networking.k8s.io
+            kind: HTTPRoute
+            name: example
+            namespace: default
+            rule: _rule-1
+      name: listener~8080~example_com-route-1-httproute-example-default-1-0-matcher-0
 Statuses:
   gateways:
     default/example-gateway:
