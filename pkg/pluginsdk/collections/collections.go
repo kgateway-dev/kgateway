@@ -165,7 +165,14 @@ func NewCommonCollections(
 		client,
 		kclient.Filter{ObjectFilter: client.ObjectFilter()},
 	)
-	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
+	// No debug here: this collection holds every ConfigMap in the discovered
+	// namespaces and the krt debugger serializes each one in full, data included.
+	// On a large cluster that alone can push /snapshots/krt past 100MB, which both
+	// discloses ConfigMap contents and makes the snapshot impractical for support.
+	// Secrets are withheld for the same reason; ir.Secret additionally redacts Data
+	// in its MarshalJSON, which is why the derived secrets collection stays
+	// registered while this one cannot.
+	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptionsNoDebug("ConfigMaps")...)
 
 	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
 
